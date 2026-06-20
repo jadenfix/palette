@@ -262,8 +262,13 @@ scripts/check-gate2-public-handoff.py --full-run
 
 That mode first preflights the local runtime: canonical public source URL only,
 `docker`, Docker Compose v2, `curl`, reachable Docker daemon, and free default
-ports after removing any previous `beater-stopwatch` Compose project. It then
-performs the clean public clone and wrapper dry run, executes the cloned `scripts/gate2-outside-run.sh` wrapper with the clone-start timestamp captured
+ports after removing any previous `beater-stopwatch` Compose project. It runs
+`scripts/check-gate2-outside-readiness.py`, performs a fresh clone from `https://github.com/jadenfix/beater.git`, verifies the clone is on the exact
+same commit, reruns the cloned readiness check, and dry-runs the cloned
+`scripts/gate2-outside-run.sh` wrapper. The readiness check verifies clean
+`main`, the expected GitHub remote, this proof file's structure, and public
+current-SHA multi-arch `beaterd`, `dashboard`, `dashboard-e2e`, and `otel-python` GHCR
+images for the exact commit. The verifier then executes the cloned `scripts/gate2-outside-run.sh` wrapper with the clone-start timestamp captured
 before the verifier's `git clone`, and cleans up the `beater-stopwatch` Compose
 project after the wrapper exits. This is maintainer runtime evidence that the
 exact public outside-run path, current GHCR images, OTLP ingest, dashboard
