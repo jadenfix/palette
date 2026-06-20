@@ -46,9 +46,16 @@ export default async function DashboardPage({
   return (
     <main className="shell">
       <header className="topbar">
-        <div>
-          <p className="eyebrow">Beater</p>
+        <div className="brand-block">
+          <p className="eyebrow">Beater / {data.query.environmentId ?? "environment"}</p>
           <h1>Agent Trace Debugger</h1>
+          <p className="scope-line">
+            {data.query.tenantId}
+            <span>/</span>
+            {data.query.projectId ?? "all-projects"}
+            <span>/</span>
+            {data.query.traceId ?? "latest trace"}
+          </p>
         </div>
         <div className="api-pill">{data.apiBaseUrl}</div>
       </header>
@@ -164,7 +171,7 @@ export default async function DashboardPage({
               placeholder="ms"
             />
           </label>
-          <button type="submit">Refresh</button>
+          <button type="submit">Apply</button>
         </form>
       </section>
 
@@ -177,6 +184,15 @@ export default async function DashboardPage({
             <span>{data.runs.items.length}</span>
           </div>
           <div className="run-table">
+            <div className="run-table-head" aria-hidden="true">
+              <span>Status</span>
+              <span>Trace</span>
+              <span>Spans</span>
+              <span>Model</span>
+              <span>Cost</span>
+              <span>Latency</span>
+              <span>Release</span>
+            </div>
             {data.runs.items.map((run) => (
               <Link
                 key={run.trace_id}
@@ -184,13 +200,15 @@ export default async function DashboardPage({
                 href={hrefFor(data.query, { trace: run.trace_id, span: undefined })}
               >
                 <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>
-                <strong>{run.first_span_name}</strong>
-                <small>{run.trace_id}</small>
-                <span>{run.span_count} spans</span>
-                <span>{formatModels(run.models)}</span>
-                <span>{formatCost(run.total_cost)}</span>
-                <span>{formatLatency(run.duration_ms)}</span>
-                <span>{formatReleases(run.release_ids)}</span>
+                <span className="run-name">
+                  <strong>{run.first_span_name}</strong>
+                  <small>{run.trace_id}</small>
+                </span>
+                <span className="run-metric">{run.span_count}</span>
+                <span className="run-metric">{formatModels(run.models)}</span>
+                <span className="run-metric">{formatCost(run.total_cost)}</span>
+                <span className="run-metric">{formatLatency(run.duration_ms)}</span>
+                <span className="run-metric">{formatReleases(run.release_ids)}</span>
               </Link>
             ))}
             {data.runs.items.length === 0 ? (
@@ -205,6 +223,14 @@ export default async function DashboardPage({
             <span>{spans.length} spans</span>
           </div>
           <div className="waterfall" aria-label="Agent span waterfall">
+            {spans.length > 0 ? (
+              <div className="waterfall-head" aria-hidden="true">
+                <span>Span</span>
+                <span>Kind</span>
+                <span>Status</span>
+                <span>Duration</span>
+              </div>
+            ) : null}
             {spans.map((span) => {
               const depth = spanDepth(span, spans);
               const icon = kindIcon(span.kind);
@@ -225,19 +251,23 @@ export default async function DashboardPage({
                     } as React.CSSProperties
                   }
                 >
-                  <span
-                    className={`kind-icon ${kindClass(span.kind)}`}
-                    aria-label={`${span.kind} icon`}
-                    data-icon={icon.key}
-                    title={icon.title}
-                  >
-                    {icon.label}
+                  <span className="span-name">
+                    <span
+                      className={`kind-icon ${kindClass(span.kind)}`}
+                      aria-label={`${span.kind} icon`}
+                      data-icon={icon.key}
+                      title={icon.title}
+                    >
+                      {icon.label}
+                    </span>
+                    <span className="span-title">{span.name}</span>
                   </span>
-                  <span className="span-title">{span.name}</span>
                   <span className="span-kind">{span.kind}</span>
                   <span className={`status ${span.status}`}>{statusLabel(span.status)}</span>
-                  <span className="span-bar" />
-                  <span className="duration">{formatDuration(span.start_time, span.end_time)}</span>
+                  <span className="duration">
+                    <span className="span-bar" />
+                    {formatDuration(span.start_time, span.end_time)}
+                  </span>
                 </Link>
               );
             })}
@@ -275,7 +305,7 @@ function SpanDetail({
   const hasRedactedIo = io ? isRedactedIo(io.input) || isRedactedIo(io.output) : false;
   return (
     <div className="detail-stack">
-      <div>
+      <div className="span-identity">
         <h3>{span.name}</h3>
         <p>{span.span_id}</p>
       </div>
@@ -391,7 +421,7 @@ function IoBlock({ label, value }: { label: string; value: SpanIoResponse["input
   }
   if (value?.kind === "redacted") body = value.reason;
   return (
-    <div className="io">
+    <div className={value?.kind === "redacted" ? "io redacted" : "io"}>
       <h3>{label}</h3>
       <pre>{body}</pre>
     </div>
@@ -475,9 +505,9 @@ function kindIcon(kind: string): { key: string; label: string; title: string } {
   if (kind === "agent.turn") return { key: "agent-turn", label: "T", title: "Agent turn" };
   if (kind === "agent.plan") return { key: "agent-plan", label: "P", title: "Agent plan" };
   if (kind === "agent.step") return { key: "agent-step", label: "S", title: "Agent step" };
-  if (kind === "llm.call") return { key: "llm", label: "AI", title: "LLM call" };
-  if (kind === "tool.call") return { key: "tool", label: "{}", title: "Tool call" };
-  if (kind === "mcp.request") return { key: "mcp", label: "<>", title: "MCP request" };
+  if (kind === "llm.call") return { key: "llm", label: "L", title: "LLM call" };
+  if (kind === "tool.call") return { key: "tool", label: "T", title: "Tool call" };
+  if (kind === "mcp.request") return { key: "mcp", label: "M", title: "MCP request" };
   if (kind === "retrieval.query") return { key: "retrieval", label: "Q", title: "Retrieval query" };
   if (kind === "memory.read") return { key: "memory-read", label: "Mr", title: "Memory read" };
   if (kind === "memory.write") return { key: "memory-write", label: "Mw", title: "Memory write" };
