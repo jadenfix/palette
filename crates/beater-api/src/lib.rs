@@ -673,7 +673,7 @@ async fn drain_trace_writes_route(
     headers: HeaderMap,
     Path((tenant_id, project_id)): Path<(String, String)>,
     Query(params): Query<DrainTraceWritesQuery>,
-) -> Result<Json<TraceWriteDrainReport>, ApiError> {
+) -> Result<(StatusCode, Json<TraceWriteDrainReport>), ApiError> {
     let tenant_id =
         TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
     let project_id =
@@ -684,7 +684,7 @@ async fn drain_trace_writes_route(
         .ingest
         .drain_trace_writes_for(&tenant_id, &project_id, limit)
         .await?;
-    Ok(Json(report))
+    Ok((trace_write_drain_status(&report), Json(report)))
 }
 
 async fn drain_trace_ingested_route(
@@ -692,7 +692,7 @@ async fn drain_trace_ingested_route(
     headers: HeaderMap,
     Path((tenant_id, project_id)): Path<(String, String)>,
     Query(params): Query<DrainTraceWritesQuery>,
-) -> Result<Json<TraceIngestedDrainReport>, ApiError> {
+) -> Result<(StatusCode, Json<TraceIngestedDrainReport>), ApiError> {
     let tenant_id =
         TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
     let project_id =
@@ -718,7 +718,23 @@ async fn drain_trace_ingested_route(
             }
         })
         .await?;
-    Ok(Json(report))
+    Ok((trace_ingested_drain_status(&report), Json(report)))
+}
+
+fn trace_write_drain_status(report: &TraceWriteDrainReport) -> StatusCode {
+    if report.dead_lettered > 0 {
+        StatusCode::UNPROCESSABLE_ENTITY
+    } else {
+        StatusCode::OK
+    }
+}
+
+fn trace_ingested_drain_status(report: &TraceIngestedDrainReport) -> StatusCode {
+    if report.dead_lettered > 0 {
+        StatusCode::UNPROCESSABLE_ENTITY
+    } else {
+        StatusCode::OK
+    }
 }
 
 async fn ingest_otlp_http(

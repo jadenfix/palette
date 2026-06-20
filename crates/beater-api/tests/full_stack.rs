@@ -6,11 +6,11 @@ use beater_api::{router, ApiState};
 use beater_archive::{ArchiveManifest, ParquetTraceArchive};
 use beater_audit::SqliteAuditStore;
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, SqliteApiKeyStore};
-use beater_bus::{DurableBus, InMemoryBus};
+use beater_bus::{BusMessage, DurableBus, InMemoryBus};
 use beater_calibration::{CalibrationReport, SqliteCalibrationStore};
 use beater_core::{
-    ApiKeyId, EnvironmentId, Money, OrganizationId, Page, ProjectId, SpanId, TenantId, TenantScope,
-    TraceId,
+    ApiKeyId, EnvironmentId, IdempotencyKey, Money, OrganizationId, Page, ProjectId, SpanId,
+    TenantId, TenantScope, TraceId,
 };
 use beater_datasets::{
     Dataset, DatasetCase, DatasetEvalReport, DatasetVersionSnapshot, SqliteDatasetStore,
@@ -1587,7 +1587,11 @@ async fn dlq_replay_restores_trace_ingested_work_through_api() {
             )
             .await
             .unwrap_or_else(|err| panic!("{err}"));
-        assert_eq!(response.status(), StatusCode::OK);
+        if attempt < 3 {
+            assert_eq!(response.status(), StatusCode::OK);
+        } else {
+            assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+        }
         let body = to_bytes(response.into_body(), 1024 * 1024)
             .await
             .unwrap_or_else(|err| panic!("{err}"));
@@ -1626,6 +1630,7 @@ async fn dlq_replay_restores_trace_ingested_work_through_api() {
     let dead_letter = &status.dead_letters[0];
     assert_eq!(dead_letter.message.kind, TRACE_INGESTED_KIND);
     assert_eq!(dead_letter.message.attempts, 3);
+    assert!(dead_letter.reason.contains("simulated search outage"));
     let message_id = dead_letter.message.message_id.clone();
 
     let response = app
@@ -1727,6 +1732,80 @@ async fn dlq_replay_restores_trace_ingested_work_through_api() {
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(status.trace_ingested_depth, 0);
     assert!(status.dead_letters.is_empty());
+}
+
+#[tokio::test]
+async fn malformed_trace_ingested_event_returns_error_and_lands_in_dlq() {
+    let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+    let artifacts = Arc::new(
+        FsArtifactStore::new(tempdir.path().join("artifacts"))
+            .unwrap_or_else(|err| panic!("{err}")),
+    );
+    let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+    let bus = Arc::new(InMemoryBus::new(16));
+    let ingest = IngestService::new(
+        artifacts,
+        traces.clone(),
+        bus.clone(),
+        IngestPolicy::default(),
+    );
+    let app = router(ApiState::new(ingest, traces));
+    let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+    let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+    let mut poison = BusMessage::new(
+        tenant.clone(),
+        project.clone(),
+        IdempotencyKey::new("poison-trace-ingested").unwrap_or_else(|err| panic!("{err}")),
+        TRACE_INGESTED_KIND,
+        b"not-json".to_vec(),
+    );
+    poison.max_attempts = 1;
+    bus.publish(poison)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest/tenant/project/trace-ingested/drain?limit=10")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let report: TraceIngestedDrainReport =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(report.consumed, 1);
+    assert_eq!(report.invalid_messages, 1);
+    assert_eq!(report.dead_lettered, 1);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/ingest/tenant/project/queue")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let status: IngestQueueStatus =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(status.dead_letters.len(), 1);
+    assert_eq!(status.dead_letters[0].message.kind, TRACE_INGESTED_KIND);
+    assert!(status.dead_letters[0]
+        .reason
+        .contains("invalid trace.ingested payload"));
 }
 
 #[tokio::test]
