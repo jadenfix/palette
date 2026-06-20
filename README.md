@@ -74,7 +74,7 @@ This repo now contains the first tested Rust vertical slice:
 - API route for native trace ingest and trace readback
 - API routes for trace lists, span detail, redaction-aware span I/O inspection, and audited unmask reads
 - `/openapi.json` documents the dashboard read surface and generates the dashboard TypeScript client
-- Dockerfile and `docker-compose.yml` for the current self-host topology
+- multi-stage cargo-chef Dockerfile and `docker-compose.yml` for the current self-host topology
 - migration contracts for SQLite local runtime plus Postgres and ClickHouse scale/control-plane paths
 - stock OpenTelemetry Python examples: a literal five-line quickstart snippet and an all-kind agent trace fixture
 - GHCR prebuilt image workflow plus a Compose override for the five-minute clean-machine stopwatch path

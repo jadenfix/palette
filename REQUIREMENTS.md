@@ -20,7 +20,7 @@ system, test output, or runtime behavior.
 
 | ID | Requirement | Evidence required |
 | --- | --- | --- |
-| R1.1 | MVP ships as one all-in-one `beaterd` binary. | Cargo workspace with `bins/beaterd`; compose uses one Beater process by default |
+| R1.1 | MVP ships as one all-in-one `beaterd` binary. | Cargo workspace with `bins/beaterd`; compose uses one Beater process by default; root Dockerfile builds `beaterd` with multi-stage cargo-chef dependency caching |
 | R1.2 | Future service split is logical, not operational. | Optional thin bins behind features; no mandatory 10-service deployment |
 | R1.3 | OSS runs without Beater Cloud. | Offline compose test with network calls disabled except configured providers |
 | R1.4 | Vercel is used only for stateless/control-plane work. | `web/dashboard/vercel.json` deploys the stateless Next.js UI; stateful workers run outside Vercel or in `beaterd`; Rust function config still required for hosted control plane |

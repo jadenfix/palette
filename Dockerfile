@@ -12,11 +12,22 @@ RUN apt-get update \
     protobuf-compiler \
   && rm -rf /var/lib/apt/lists/*
 
-FROM rust-base AS beaterd-builder
+FROM rust-base AS chef
+RUN cargo install cargo-chef --locked
+
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS rust-deps
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+
+FROM rust-deps AS beaterd-builder
 COPY . .
 RUN cargo build --release --locked -p beaterd
 
-FROM rust-base AS beaterctl-builder
+FROM rust-deps AS beaterctl-builder
 COPY . .
 RUN cargo build --release --locked -p beaterctl
 

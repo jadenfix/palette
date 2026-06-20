@@ -16,11 +16,18 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(compose.contains("http://beaterd:4317"));
     assert!(compose.contains("${BEATER_HTTP_PORT:-8080}:8080"));
     assert!(compose.contains("${BEATER_DASHBOARD_PORT:-3000}:3000"));
+    assert!(compose.contains("target: runtime"));
     assert!(compose.contains("target: tools"));
 
     let dockerfile = read(root.join("Dockerfile"));
-    assert!(dockerfile.contains("beaterd-builder"));
-    assert!(dockerfile.contains("beaterctl-builder"));
+    assert!(dockerfile.contains("cargo install cargo-chef --locked"));
+    assert!(dockerfile.contains("FROM chef AS planner"));
+    assert!(dockerfile.contains("cargo chef prepare --recipe-path recipe.json"));
+    assert!(dockerfile.contains("FROM chef AS rust-deps"));
+    assert!(dockerfile.contains("COPY --from=planner /app/recipe.json recipe.json"));
+    assert!(dockerfile.contains("cargo chef cook --release --recipe-path recipe.json"));
+    assert!(dockerfile.contains("FROM rust-deps AS beaterd-builder"));
+    assert!(dockerfile.contains("FROM rust-deps AS beaterctl-builder"));
     assert!(dockerfile.contains("FROM runtime AS tools"));
 
     let dashboard_dockerfile = read(root.join("web/dashboard/Dockerfile"));
@@ -37,7 +44,17 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(image_workflow.contains("ubuntu-24.04-arm"));
     assert!(image_workflow.contains("platform: linux/arm64"));
     assert!(image_workflow.contains("docker buildx imagetools create"));
+    assert!(image_workflow.contains("context: ."));
     assert!(image_workflow.contains("target: runtime"));
+    assert!(image_workflow.contains("Build beaterctl tools target"));
+    assert!(image_workflow.contains("target: tools"));
+    assert!(image_workflow.contains("push: false"));
+    assert!(image_workflow.contains("cache-from: type=gha,scope=beaterd-${{ matrix.suffix }}"));
+    assert!(
+        image_workflow.contains("cache-to: type=gha,mode=max,scope=beaterd-${{ matrix.suffix }}")
+    );
+    assert!(image_workflow
+        .contains("cache-to: type=gha,mode=max,scope=beaterctl-tools-${{ matrix.suffix }}"));
     assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/beaterd:main"));
     assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/dashboard:main"));
 }
