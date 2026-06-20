@@ -48,6 +48,7 @@ This repo now contains the first tested Rust vertical slice:
 - scoped trace-write drain/status API with typed 429 backpressure responses
 - trace-write retry semantics for downstream publish failures after successful trace storage, relying on store idempotency to avoid double writes
 - API quota 429 responses include retry/reset headers
+- `beaterd` quota flags/env (`--per-project-event-quota`, `--quota-window-seconds`, `--quota-db-path`) with live two-replica shared-counter/reset smoke coverage
 - API duplicate native-ingest fixture proves idempotent raw/span writes and downstream dedupe
 - native ingest pipeline with payload/attribute governance and trait-backed windowed quotas
 - `trace.ingested` downstream drain API and `beaterd` worker for off-hot-path search indexing with retry/DLQ handling

@@ -9,8 +9,8 @@ use beater_auth::{ApiKeyStore, CreateApiKeyRequest, SqliteApiKeyStore};
 use beater_bus::{BusMessage, DurableBus, InMemoryBus};
 use beater_calibration::{CalibrationReport, SqliteCalibrationStore};
 use beater_core::{
-    ApiKeyId, EnvironmentId, IdempotencyKey, Money, OrganizationId, Page, ProjectId, SpanId,
-    TenantId, TenantScope, TraceId,
+    ApiKeyId, Clock, EnvironmentId, IdempotencyKey, Money, OrganizationId, Page, ProjectId, SpanId,
+    TenantId, TenantScope, Timestamp, TraceId,
 };
 use beater_datasets::{
     Dataset, DatasetCase, DatasetEvalReport, DatasetVersionSnapshot, SqliteDatasetStore,
@@ -44,7 +44,7 @@ use beater_store::{
 };
 use beater_store_memory::InMemoryMetadataStore;
 use beater_store_obj::FsArtifactStore;
-use beater_store_sql::SqliteTraceStore;
+use beater_store_sql::{SqliteQuotaLimiter, SqliteTraceStore};
 use beater_usage::{SqliteUsageLedger, UsageMeter, UsageSummary};
 use chrono::{Duration, TimeZone, Utc};
 use http::header::RETRY_AFTER;
@@ -52,7 +52,7 @@ use http::{Request, StatusCode};
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
 
 struct FailNTimesSearchIndex {
@@ -66,6 +66,31 @@ impl FailNTimesSearchIndex {
             inner,
             remaining_failures: AtomicUsize::new(failures),
         }
+    }
+}
+
+struct MutableClock {
+    now: Mutex<Timestamp>,
+}
+
+impl MutableClock {
+    fn new(now: Timestamp) -> Self {
+        Self {
+            now: Mutex::new(now),
+        }
+    }
+
+    fn set(&self, now: Timestamp) {
+        *self.now.lock().unwrap_or_else(|err| panic!("{err}")) = now;
+    }
+}
+
+impl Clock for MutableClock {
+    fn now(&self) -> Timestamp {
+        self.now
+            .lock()
+            .unwrap_or_else(|err| panic!("{err}"))
+            .to_owned()
     }
 }
 
@@ -1939,6 +1964,74 @@ async fn api_quota_429_includes_reset_headers() {
 }
 
 #[tokio::test]
+async fn api_quota_is_shared_across_replicas_and_resets_on_window() {
+    let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+    let quota_path = tempdir.path().join("quotas.sqlite");
+    let now = Utc
+        .with_ymd_and_hms(2026, 1, 1, 0, 0, 5)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+    let reset_at = Utc
+        .with_ymd_and_hms(2026, 1, 1, 0, 1, 0)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+    let clock = Arc::new(MutableClock::new(now));
+    let policy = IngestPolicy {
+        per_project_event_quota: Some(1),
+        quota_window_seconds: 60,
+        ..IngestPolicy::default()
+    };
+    let app_a = quota_test_app(
+        tempdir.path(),
+        "replica-a",
+        &quota_path,
+        clock.clone(),
+        policy.clone(),
+    );
+    let app_b = quota_test_app(
+        tempdir.path(),
+        "replica-b",
+        &quota_path,
+        clock.clone(),
+        policy,
+    );
+
+    let (status, _, _) = post_native_span(&app_a, "quota-shared-span-1", 1).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, headers, error) = post_native_span(&app_b, "quota-shared-span-2", 2).await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(
+        headers
+            .get("x-ratelimit-limit")
+            .and_then(|value| value.to_str().ok()),
+        Some("1")
+    );
+    assert_eq!(
+        headers
+            .get("x-ratelimit-remaining")
+            .and_then(|value| value.to_str().ok()),
+        Some("0")
+    );
+    let reset_at_header = reset_at.timestamp().to_string();
+    assert_eq!(
+        headers
+            .get("x-ratelimit-reset")
+            .and_then(|value| value.to_str().ok()),
+        Some(reset_at_header.as_str())
+    );
+    assert_eq!(error["status"], json!(429));
+    assert!(error["error"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("quota exceeded"));
+
+    clock.set(now + Duration::seconds(65));
+    let (status, _, _) = post_native_span(&app_b, "quota-shared-span-3", 3).await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
 async fn hosted_judge_api_uses_byok_refs_cache_and_never_returns_secret() {
     let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
     let artifacts = Arc::new(
@@ -2566,6 +2659,58 @@ async fn post_judge_request(
         .await
         .unwrap_or_else(|err| panic!("{err}"));
     serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"))
+}
+
+fn quota_test_app(
+    root: &std::path::Path,
+    name: &str,
+    quota_path: &std::path::Path,
+    clock: Arc<dyn Clock>,
+    policy: IngestPolicy,
+) -> Router {
+    let artifacts = Arc::new(
+        FsArtifactStore::new(root.join(format!("artifacts-{name}")))
+            .unwrap_or_else(|err| panic!("{err}")),
+    );
+    let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+    let bus = Arc::new(InMemoryBus::new(16));
+    let ingest = IngestService::new(artifacts, traces.clone(), bus, policy)
+        .with_quota_limiter(Arc::new(
+            SqliteQuotaLimiter::open(quota_path).unwrap_or_else(|err| panic!("{err}")),
+        ))
+        .with_clock(clock);
+    router(ApiState::new(ingest, traces))
+}
+
+async fn post_native_span(
+    app: &Router,
+    span_id: &str,
+    seq: u64,
+) -> (StatusCode, http::HeaderMap, serde_json::Value) {
+    let mut request = native_request();
+    request.span_id = SpanId::new(span_id).unwrap_or_else(|err| panic!("{err}"));
+    request.seq = seq;
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/traces/native")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::to_vec(&request).unwrap_or_else(|err| panic!("{err}")),
+                ))
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let status = response.status();
+    let headers = response.headers().clone();
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let body = serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    (status, headers, body)
 }
 
 async fn get_usage_summary(app: &Router, admin_secret: Option<&str>) -> UsageSummary {

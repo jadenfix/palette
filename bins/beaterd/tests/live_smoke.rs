@@ -8,16 +8,22 @@ use opentelemetry_proto::tonic::trace::v1::{
     span, status, ResourceSpans, ScopeSpans, Span, Status,
 };
 use std::net::{SocketAddr, TcpListener};
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::OnceLock;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tonic::metadata::MetadataValue;
 use tonic::Request as TonicRequest;
 
+static LIVE_SMOKE_LOCK: OnceLock<tokio::sync::Mutex<()>> = OnceLock::new();
+
 #[tokio::test]
 async fn beaterd_accepts_otlp_http_and_grpc_and_makes_traces_queryable() -> anyhow::Result<()> {
+    let _guard = live_smoke_guard().await;
     let tempdir = tempfile::tempdir()?;
-    let http_addr = free_addr()?;
-    let grpc_addr = free_addr()?;
+    let addrs = free_addrs(2)?;
+    let http_addr = addrs[0];
+    let grpc_addr = addrs[1];
     let _server = BeaterdChild::spawn(tempdir.path(), http_addr, grpc_addr)?;
     let http_url = format!("http://{http_addr}");
     let grpc_url = format!("http://{grpc_addr}");
@@ -64,17 +70,113 @@ async fn beaterd_accepts_otlp_http_and_grpc_and_makes_traces_queryable() -> anyh
     Ok(())
 }
 
+#[tokio::test]
+async fn beaterd_quota_is_shared_across_two_replicas_and_resets_on_window() -> anyhow::Result<()> {
+    let _guard = live_smoke_guard().await;
+    let tempdir = tempfile::tempdir()?;
+    let quota_path = tempdir.path().join("shared").join("quotas.sqlite");
+    let addrs = free_addrs(4)?;
+    let http_a = addrs[0];
+    let grpc_a = addrs[1];
+    let http_b = addrs[2];
+    let grpc_b = addrs[3];
+    let quota_window_seconds = 3;
+    let options = BeaterdSpawnOptions {
+        per_project_event_quota: Some(1),
+        quota_window_seconds: Some(quota_window_seconds),
+        quota_db_path: Some(quota_path),
+    };
+    let _replica_a = BeaterdChild::spawn_with_options(
+        &tempdir.path().join("replica-a"),
+        http_a,
+        grpc_a,
+        options.clone(),
+    )?;
+    let http_url_a = format!("http://{http_a}");
+    wait_for_health(&http_url_a).await?;
+
+    let _replica_b = BeaterdChild::spawn_with_options(
+        &tempdir.path().join("replica-b"),
+        http_b,
+        grpc_b,
+        options,
+    )?;
+    let http_url_b = format!("http://{http_b}");
+    wait_for_health(&http_url_b).await?;
+    wait_for_quota_window_margin(quota_window_seconds as u64, Duration::from_millis(2_000)).await?;
+
+    let first = post_otlp_http(&http_url_a, "quota replica a").await?;
+    assert_eq!(first.status(), reqwest::StatusCode::OK);
+
+    let second = post_otlp_http(&http_url_b, "quota replica b throttled").await?;
+    assert_eq!(second.status(), reqwest::StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(
+        second
+            .headers()
+            .get("x-ratelimit-limit")
+            .and_then(|value| value.to_str().ok()),
+        Some("1")
+    );
+    assert_eq!(
+        second
+            .headers()
+            .get("x-ratelimit-remaining")
+            .and_then(|value| value.to_str().ok()),
+        Some("0")
+    );
+    let reset_at = second
+        .headers()
+        .get("x-ratelimit-reset")
+        .and_then(|value| value.to_str().ok())
+        .ok_or_else(|| anyhow::anyhow!("missing x-ratelimit-reset"))?
+        .parse::<i64>()?;
+    let error = second.json::<serde_json::Value>().await?;
+    assert_eq!(error["status"], 429);
+    assert!(error["error"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("quota exceeded"));
+
+    sleep_until_unix_second(reset_at + 1).await?;
+    let third = post_otlp_http(&http_url_b, "quota replica b after reset").await?;
+    assert_eq!(third.status(), reqwest::StatusCode::OK);
+
+    Ok(())
+}
+
 struct BeaterdChild {
     child: Child,
 }
 
+#[derive(Clone, Default)]
+struct BeaterdSpawnOptions {
+    per_project_event_quota: Option<u64>,
+    quota_window_seconds: Option<i64>,
+    quota_db_path: Option<PathBuf>,
+}
+
 impl BeaterdChild {
     fn spawn(
-        data_dir: &std::path::Path,
+        data_dir: &Path,
         http_addr: SocketAddr,
         grpc_addr: SocketAddr,
     ) -> anyhow::Result<Self> {
-        let child = Command::new(env!("CARGO_BIN_EXE_beaterd"))
+        Self::spawn_with_options(
+            data_dir,
+            http_addr,
+            grpc_addr,
+            BeaterdSpawnOptions::default(),
+        )
+    }
+
+    fn spawn_with_options(
+        data_dir: &Path,
+        http_addr: SocketAddr,
+        grpc_addr: SocketAddr,
+        options: BeaterdSpawnOptions,
+    ) -> anyhow::Result<Self> {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_beaterd"));
+        command
             .arg("--addr")
             .arg(http_addr.to_string())
             .arg("--otlp-grpc-addr")
@@ -84,7 +186,21 @@ impl BeaterdChild {
             .arg("--trace-write-drain-interval-ms")
             .arg("25")
             .arg("--trace-ingested-drain-interval-ms")
-            .arg("25")
+            .arg("25");
+        if let Some(limit) = options.per_project_event_quota {
+            command
+                .arg("--per-project-event-quota")
+                .arg(limit.to_string());
+        }
+        if let Some(window_seconds) = options.quota_window_seconds {
+            command
+                .arg("--quota-window-seconds")
+                .arg(window_seconds.to_string());
+        }
+        if let Some(path) = options.quota_db_path {
+            command.arg("--quota-db-path").arg(path);
+        }
+        let child = command
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()?;
@@ -99,9 +215,16 @@ impl Drop for BeaterdChild {
     }
 }
 
+async fn live_smoke_guard() -> tokio::sync::MutexGuard<'static, ()> {
+    LIVE_SMOKE_LOCK
+        .get_or_init(|| tokio::sync::Mutex::new(()))
+        .lock()
+        .await
+}
+
 async fn wait_for_health(http_url: &str) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     loop {
         if let Ok(response) = client.get(format!("{http_url}/health")).send().await {
             if response.status().is_success() {
@@ -161,6 +284,47 @@ async fn wait_for_search_hit(http_url: &str, trace_id: &str) -> anyhow::Result<s
     }
 }
 
+async fn wait_for_quota_window_margin(
+    window_seconds: u64,
+    min_remaining: Duration,
+) -> anyhow::Result<()> {
+    let window_millis = u128::from(window_seconds.max(1)) * 1_000;
+    let min_remaining_millis = min_remaining.as_millis();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let now_millis = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
+        let elapsed = now_millis % window_millis;
+        let remaining = window_millis.saturating_sub(elapsed);
+        if remaining >= min_remaining_millis {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            anyhow::bail!("quota window did not expose enough remaining time");
+        }
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+}
+
+async fn sleep_until_unix_second(target: i64) -> anyhow::Result<()> {
+    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as i64;
+    if target > now {
+        tokio::time::sleep(Duration::from_secs((target - now) as u64)).await;
+    }
+    Ok(())
+}
+
+async fn post_otlp_http(http_url: &str, name: &str) -> anyhow::Result<reqwest::Response> {
+    let (trace, span) = smoke_ids();
+    let export = otlp_smoke_export(trace, span, name);
+    let response = reqwest::Client::new()
+        .post(format!("{http_url}/v1/otlp/demo/demo/local/v1/traces"))
+        .header("content-type", "application/x-protobuf")
+        .body(encode_export_trace_request(&export))
+        .send()
+        .await?;
+    Ok(response)
+}
+
 fn span_count(trace: &serde_json::Value) -> usize {
     trace
         .get("spans")
@@ -180,6 +344,17 @@ fn hit_count(response: &serde_json::Value) -> usize {
 fn free_addr() -> anyhow::Result<SocketAddr> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     Ok(listener.local_addr()?)
+}
+
+fn free_addrs(count: usize) -> anyhow::Result<Vec<SocketAddr>> {
+    let mut addrs = Vec::with_capacity(count);
+    while addrs.len() < count {
+        let addr = free_addr()?;
+        if !addrs.contains(&addr) {
+            addrs.push(addr);
+        }
+    }
+    Ok(addrs)
 }
 
 fn metadata_value(value: &str) -> anyhow::Result<MetadataValue<tonic::metadata::Ascii>> {

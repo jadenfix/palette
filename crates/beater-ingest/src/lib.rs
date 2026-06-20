@@ -1,7 +1,7 @@
 use beater_bus::{BusError, BusMessage, DeadLetter, DurableBus, PublishAck};
 use beater_core::{
-    sha256_hex, EnvironmentId, IdempotencyKey, ProjectId, Sha256Hash, SpanId, TenantId,
-    TenantScope, Timestamp, TokenCounts, TraceId,
+    sha256_hex, Clock, EnvironmentId, IdempotencyKey, ProjectId, Sha256Hash, SpanId, SystemClock,
+    TenantId, TenantScope, Timestamp, TokenCounts, TraceId,
 };
 use beater_schema::{
     make_idempotency_key, AgentSpanKind, ArtifactRef, AuthContext, CanonicalAttrs, CanonicalSpan,
@@ -54,6 +54,7 @@ pub struct IngestService {
     bus: Arc<dyn DurableBus>,
     policy: IngestPolicy,
     quota_limiter: Arc<dyn QuotaLimiter>,
+    clock: Arc<dyn Clock>,
 }
 
 impl IngestService {
@@ -69,11 +70,17 @@ impl IngestService {
             bus,
             policy,
             quota_limiter: Arc::new(InMemoryQuotaLimiter::new()),
+            clock: Arc::new(SystemClock),
         }
     }
 
     pub fn with_quota_limiter(mut self, quota_limiter: Arc<dyn QuotaLimiter>) -> Self {
         self.quota_limiter = quota_limiter;
+        self
+    }
+
+    pub fn with_clock(mut self, clock: Arc<dyn Clock>) -> Self {
+        self.clock = clock;
         self
     }
 
@@ -807,7 +814,7 @@ impl IngestService {
             return Ok(());
         }
         let (window_start, reset_at) =
-            quota_window_bounds(Utc::now(), self.policy.quota_window_seconds)?;
+            quota_window_bounds(self.clock.now(), self.policy.quota_window_seconds)?;
         let decision = self
             .quota_limiter
             .reserve_quota(QuotaReservationRequest {

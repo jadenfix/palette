@@ -51,6 +51,12 @@ struct Args {
     bus_capacity: usize,
     #[arg(long, value_enum, default_value_t = BusBackendArg::Sqlite)]
     bus_backend: BusBackendArg,
+    #[arg(long, env = "BEATER_PER_PROJECT_EVENT_QUOTA")]
+    per_project_event_quota: Option<u64>,
+    #[arg(long, env = "BEATER_QUOTA_WINDOW_SECONDS", default_value_t = 60)]
+    quota_window_seconds: i64,
+    #[arg(long, env = "BEATER_QUOTA_DB_PATH")]
+    quota_db_path: Option<PathBuf>,
     #[arg(long, value_enum, default_value_t = AuthModeArg::Local)]
     auth_mode: AuthModeArg,
     #[arg(long, env = "BEATER_PROVIDER_SECRET_KEY")]
@@ -96,9 +102,11 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     let artifacts = Arc::new(FsArtifactStore::new(args.data_dir.join("artifacts"))?);
     let traces = Arc::new(SqliteTraceStore::open(args.data_dir.join("traces.sqlite"))?);
-    let quota_limiter = Arc::new(SqliteQuotaLimiter::open(
-        args.data_dir.join("quotas.sqlite"),
-    )?);
+    let quota_path = args
+        .quota_db_path
+        .clone()
+        .unwrap_or_else(|| args.data_dir.join("quotas.sqlite"));
+    let quota_limiter = Arc::new(SqliteQuotaLimiter::open(quota_path)?);
     let metadata = Arc::new(SqliteMetadataStore::open(
         args.data_dir.join("metadata.sqlite"),
     )?);
@@ -150,7 +158,12 @@ async fn main() -> anyhow::Result<()> {
         ),
         BusBackendArg::Memory => Arc::new(InMemoryBus::new(args.bus_capacity)),
     };
-    let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default())
+    let ingest_policy = IngestPolicy {
+        per_project_event_quota: args.per_project_event_quota,
+        quota_window_seconds: args.quota_window_seconds,
+        ..IngestPolicy::default()
+    };
+    let ingest = IngestService::new(artifacts, traces.clone(), bus, ingest_policy)
         .with_quota_limiter(quota_limiter);
     if args.trace_write_drain_interval_ms > 0 {
         spawn_trace_write_worker(
