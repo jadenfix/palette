@@ -170,6 +170,29 @@ sha256_file() {
   fi
 }
 
+service_image_digest() {
+  local service="$1"
+  local image_id
+  local repo_digest
+  local full_id
+  image_id="$(compose images -q "$service" 2>/dev/null | head -n 1 || true)"
+  if [[ -z "$image_id" ]]; then
+    echo "unknown"
+    return
+  fi
+  repo_digest="$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$image_id" 2>/dev/null | head -n 1 || true)"
+  if [[ -n "$repo_digest" ]]; then
+    echo "$repo_digest"
+    return
+  fi
+  full_id="$(docker image inspect --format '{{.Id}}' "$image_id" 2>/dev/null || true)"
+  if [[ -n "$full_id" ]]; then
+    echo "$full_id"
+    return
+  fi
+  echo "$image_id"
+}
+
 require_command() {
   local command_name="$1"
   if ! command -v "$command_name" >/dev/null 2>&1; then
@@ -310,6 +333,8 @@ duration_seconds=$(($(date +%s) - start_epoch))
 time_to_quickstart_click_display="${time_to_quickstart_click_seconds:+${time_to_quickstart_click_seconds}s}"
 time_to_quickstart_click_display="${time_to_quickstart_click_display:-not requested}"
 image_summary="$(compose images 2>/dev/null || true)"
+beater_image_digest="$(service_image_digest beaterd)"
+dashboard_image_digest="$(service_image_digest dashboard)"
 if (( time_to_first_trace_seconds > 300 )); then
   echo "Time-to-first-trace exceeded 300s: ${time_to_first_trace_seconds}s" >&2
   exit 1
@@ -339,6 +364,8 @@ if [[ "$write_proof" == "1" ]]; then
 - Reuse override: \`BEATER_GATE2_REUSE=$reuse\`
 - Prebuilt pull policy: \`$prebuilt_pull_policy\`
 - Compose project: $project
+- Beater image digest: \`$beater_image_digest\`
+- Dashboard image digest: \`$dashboard_image_digest\`
 - Quickstart snippet: \`examples/python/five_line_otel.py\`
 - OTLP endpoint: \`$otlp_url\`
 - Quickstart trace: \`$trace_id\`

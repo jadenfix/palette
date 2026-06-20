@@ -190,6 +190,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("BEATER_GATE2_PULL_POLICY"));
     assert!(stopwatch_script.contains("--pull \"$prebuilt_pull_policy\""));
     assert!(stopwatch_script.contains("BEATER_GATE2_LOCAL_BUILD"));
+    assert!(stopwatch_script.contains("service_image_digest"));
+    assert!(stopwatch_script.contains("docker image inspect"));
+    assert!(stopwatch_script.contains("Beater image digest"));
+    assert!(stopwatch_script.contains("Dashboard image digest"));
 
     let outside_validator = read(root.join("scripts/validate-gate2-outside-proof.sh"));
     assert!(outside_validator.contains("--allow-pending"));
@@ -202,6 +206,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("hashlib.sha256"));
     assert!(outside_validator.contains("parse_qs"));
     assert!(outside_validator.contains("screen recording sha mismatch"));
+    assert!(outside_validator.contains("require_image_digest"));
     assert!(outside_validator.contains("stopwatch proof file does not exist"));
     assert!(outside_validator.contains("DEFAULT_OTLP_ENDPOINT = \"http://127.0.0.1:4317\""));
     assert!(outside_validator.contains("forbid_alternate_evidence(stopwatch_text"));
@@ -210,6 +215,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("require_equal(\"quickstart dashboard URL\""));
     assert!(outside_validator.contains("require_equal(\"screen recording sha256\""));
     assert!(outside_validator.contains("require_equal(\"screen recording notes sha256\""));
+    assert!(outside_validator.contains("\"beater image digest\""));
+    assert!(outside_validator.contains("\"dashboard image digest\""));
     assert!(outside_validator.contains("require_equal(\"commit SHA\""));
     assert!(outside_validator.contains("tenant"));
     assert!(outside_validator.contains("screen recording notes dashboard base"));
@@ -234,8 +241,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("run -> turn -> step -> tool -> MCP"));
     assert!(outside_proof.contains("using only public repository instructions"));
     assert!(outside_proof.contains("cross-checks default"));
+    assert!(outside_proof.contains("image digests"));
     assert!(outside_proof.contains("screen-recording notes"));
-    assert!(outside_proof.contains("screen-recording SHA256"));
+    assert!(outside_proof.contains("SHA256 against the committed artifact"));
 
     let readme = read(root.join("README.md"));
     assert!(readme.contains("docs/demos/gate2-outside-person-proof.md"));
@@ -244,6 +252,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("removes any previous Beater stopwatch project"));
     assert!(readme.contains("gate2-compose-browser-demo.webm"));
     assert!(readme.contains("mismatched trace IDs"));
+    assert!(readme.contains("mismatched image digests"));
     assert!(readme.contains("recording notes from a different dashboard session"));
     assert!(readme.contains("hash that does not match the committed file"));
     assert!(readme.contains("gate2-proof-contract"));
@@ -251,6 +260,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     let requirements = read(root.join("REQUIREMENTS.md"));
     assert!(requirements.contains("docs/demos/gate2-outside-person-proof.md"));
     assert!(requirements.contains("scripts/validate-gate2-outside-proof.sh"));
+    assert!(requirements.contains("image-digest"));
     assert!(requirements.contains("recording-notes"));
     assert!(requirements.contains("recording-hash cross-checks"));
     assert!(requirements.contains("CI-enforced"));

@@ -9,6 +9,10 @@ const ALL_KIND_TRACE: &str = "22222222222222222222222222222222";
 const COMMIT_SHA: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const RECORDING_BYTES: &[u8] = b"beater gate2 validator video\n";
 const RECORDING_SHA: &str = "996b14a456ef7d971a97600ecf240cc5f22eb5b5c05235719a64a042a4fdb29e";
+const BEATER_IMAGE_DIGEST: &str =
+    "ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const DASHBOARD_IMAGE_DIGEST: &str =
+    "ghcr.io/jadenfix/beater/dashboard@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 
 #[test]
 fn gate2_outside_validator_allows_pending_template_with_allow_pending() {
@@ -110,6 +114,23 @@ fn gate2_outside_validator_rejects_bad_recording_hash() {
     assert_failure(output, "screen recording sha mismatch");
 }
 
+#[test]
+fn gate2_outside_validator_rejects_image_digest_mismatch() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        BEATER_IMAGE_DIGEST,
+        "ghcr.io/jadenfix/beater/beaterd@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "beater image digest mismatch between proof artifacts",
+    );
+}
+
 struct ValidatorFixture {
     dir: TempDir,
     proof_path: PathBuf,
@@ -177,8 +198,8 @@ Status: completed.
 - Commit SHA: {COMMIT_SHA}
 - Branch: main
 - OS/arch: Darwin arm64
-- Beater image digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-- Dashboard image digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+- Beater image digest: {BEATER_IMAGE_DIGEST}
+- Dashboard image digest: {DASHBOARD_IMAGE_DIGEST}
 - Started at: 2026-06-20T12:00:00Z
 - Ended at: 2026-06-20T12:00:40Z
 - Time-to-first-trace: 12s
@@ -253,6 +274,8 @@ fn stopwatch_proof(recording_path: &Path, notes_path: &Path) -> String {
 - Reuse override: `BEATER_GATE2_REUSE=0`
 - Prebuilt pull policy: `always`
 - Compose project: beater-stopwatch
+- Beater image digest: `{BEATER_IMAGE_DIGEST}`
+- Dashboard image digest: `{DASHBOARD_IMAGE_DIGEST}`
 - Quickstart snippet: `examples/python/five_line_otel.py`
 - OTLP endpoint: `http://127.0.0.1:4317`
 - Quickstart trace: `{QUICKSTART_TRACE}`

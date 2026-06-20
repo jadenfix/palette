@@ -94,6 +94,11 @@ def require_trace_id(name: str, value: str, source_name: str) -> None:
         fail(f"{name} in {source_name} must be a lowercase 32-character trace id")
 
 
+def require_image_digest(name: str, value: str, source_name: str) -> None:
+    if not re.fullmatch(r"(?:[^`\s]+@)?sha256:[0-9a-f]{64}", value):
+        fail(f"{name} in {source_name} must be a sha256 image digest")
+
+
 def require_default_dashboard_url(name: str, value: str, trace_id: str) -> None:
     parsed = urlparse(value)
     if parsed.scheme != "http" or parsed.netloc != "127.0.0.1:3000":
@@ -203,6 +208,12 @@ quickstart_trace_id = field_value("Quickstart trace ID")
 all_kind_trace_id = field_value("All-kind nested trace ID")
 require_trace_id("Quickstart trace ID", quickstart_trace_id, "outside-person proof")
 require_trace_id("All-kind nested trace ID", all_kind_trace_id, "outside-person proof")
+beater_image_digest = field_value("Beater image digest")
+dashboard_image_digest = field_value("Dashboard image digest")
+require_image_digest("Beater image digest", beater_image_digest, "outside-person proof")
+require_image_digest(
+    "Dashboard image digest", dashboard_image_digest, "outside-person proof"
+)
 quickstart_url = field_value("Quickstart dashboard URL")
 all_kind_url = field_value("All-kind dashboard URL")
 require_default_dashboard_url("Quickstart dashboard URL", quickstart_url, quickstart_trace_id)
@@ -341,6 +352,27 @@ if stopwatch_text:
     require_equal("screen recording path", recording, stopwatch_recording)
     require_equal("screen recording notes path", notes, stopwatch_notes)
     require_equal("screen recording sha256", sha, stopwatch_sha)
+
+    stopwatch_beater_image_digest = field_value_from(
+        stopwatch_text, "Beater image digest", "stopwatch proof"
+    )
+    stopwatch_dashboard_image_digest = field_value_from(
+        stopwatch_text, "Dashboard image digest", "stopwatch proof"
+    )
+    require_image_digest(
+        "Beater image digest", stopwatch_beater_image_digest, "stopwatch proof"
+    )
+    require_image_digest(
+        "Dashboard image digest", stopwatch_dashboard_image_digest, "stopwatch proof"
+    )
+    require_equal(
+        "beater image digest", beater_image_digest, stopwatch_beater_image_digest
+    )
+    require_equal(
+        "dashboard image digest",
+        dashboard_image_digest,
+        stopwatch_dashboard_image_digest,
+    )
 
     outside_commit_sha = field_value("Commit SHA")
     stopwatch_commit_sha = field_value_from(stopwatch_text, "Git SHA", "stopwatch proof")
