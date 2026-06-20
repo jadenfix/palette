@@ -17,6 +17,7 @@ serde_json.workspace = true
 beater-store-conformance = { path = "../beater-store-conformance" }
 beater-store-memory = { path = "../beater-store-memory" }
 beater-store-obj = { path = "../beater-store-obj" }
+tempfile.workspace = true
 tokio.workspace = true
 
 [lints]

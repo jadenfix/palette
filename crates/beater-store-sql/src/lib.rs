@@ -13,11 +13,12 @@ use beater_store::{
     TraceStore,
 };
 use chrono::{DateTime, Utc};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection, OptionalExtension, TransactionBehavior};
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::time::Duration as StdDuration;
 
 #[derive(Clone)]
 pub struct SqliteTraceStore {
@@ -37,6 +38,7 @@ pub struct SqliteQuotaLimiter {
 impl SqliteQuotaLimiter {
     pub fn in_memory() -> StoreResult<Self> {
         let connection = Connection::open_in_memory().map_err(StoreError::backend)?;
+        configure_quota_connection(&connection)?;
         let limiter = Self {
             connection: Arc::new(Mutex::new(connection)),
         };
@@ -50,6 +52,7 @@ impl SqliteQuotaLimiter {
             fs::create_dir_all(parent).map_err(StoreError::backend)?;
         }
         let connection = Connection::open(path).map_err(StoreError::backend)?;
+        configure_quota_connection(&connection)?;
         let limiter = Self {
             connection: Arc::new(Mutex::new(connection)),
         };
@@ -91,7 +94,9 @@ impl SqliteQuotaLimiter {
 impl QuotaLimiter for SqliteQuotaLimiter {
     async fn reserve_quota(&self, request: QuotaReservationRequest) -> StoreResult<QuotaDecision> {
         let mut connection = self.lock()?;
-        let tx = connection.transaction().map_err(StoreError::backend)?;
+        let tx = connection
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(StoreError::backend)?;
         let current_used = tx
             .query_row(
                 r#"
@@ -155,6 +160,12 @@ impl QuotaLimiter for SqliteQuotaLimiter {
             reset_at: request.reset_at,
         })
     }
+}
+
+fn configure_quota_connection(connection: &Connection) -> StoreResult<()> {
+    connection
+        .busy_timeout(StdDuration::from_secs(5))
+        .map_err(StoreError::backend)
 }
 
 impl SqliteMetadataStore {
@@ -821,6 +832,7 @@ mod tests {
         assert_trace_store_conformance,
     };
     use beater_store_memory::{InMemoryMetadataStore, InMemoryQuotaLimiter, InMemoryTraceStore};
+    use chrono::TimeZone;
 
     #[tokio::test]
     async fn sqlite_trace_store_conforms() {
@@ -854,6 +866,57 @@ mod tests {
             SqliteQuotaLimiter::in_memory().unwrap_or_else(|err| panic!("{err}")),
         )
         .await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn sqlite_quota_limiter_serializes_independent_connections() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let path = tempdir.path().join("quotas.sqlite");
+        let first = SqliteQuotaLimiter::open(&path).unwrap_or_else(|err| panic!("{err}"));
+        let second = SqliteQuotaLimiter::open(&path).unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let window_start = Utc
+            .with_ymd_and_hms(2026, 1, 1, 0, 0, 0)
+            .single()
+            .unwrap_or_else(|| panic!("valid timestamp"));
+        let reset_at = Utc
+            .with_ymd_and_hms(2026, 1, 1, 0, 1, 0)
+            .single()
+            .unwrap_or_else(|| panic!("valid timestamp"));
+        let request = QuotaReservationRequest {
+            tenant_id: tenant,
+            project_id: project,
+            amount: 1,
+            limit: 1,
+            window_start,
+            reset_at,
+        };
+        let first_request = request.clone();
+        let second_request = request;
+
+        let first_task = tokio::spawn(async move { first.reserve_quota(first_request).await });
+        let second_task = tokio::spawn(async move { second.reserve_quota(second_request).await });
+        let (first_result, second_result) = tokio::join!(first_task, second_task);
+        let decisions = [
+            first_result
+                .unwrap_or_else(|err| panic!("{err}"))
+                .unwrap_or_else(|err| panic!("{err}")),
+            second_result
+                .unwrap_or_else(|err| panic!("{err}"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        ];
+
+        assert_eq!(
+            decisions
+                .iter()
+                .filter(|decision| decision.accepted)
+                .count(),
+            1
+        );
+        assert!(decisions
+            .iter()
+            .any(|decision| !decision.accepted && decision.used == 1));
     }
 
     #[tokio::test]

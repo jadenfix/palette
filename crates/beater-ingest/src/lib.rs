@@ -1194,7 +1194,7 @@ mod tests {
     use beater_core::{Page, PageRequest};
     use beater_schema::{RunFilter, RunSummary, SpanFilter, SpanSummary, TraceView};
     use beater_store_obj::FsArtifactStore;
-    use beater_store_sql::SqliteTraceStore;
+    use beater_store_sql::{SqliteQuotaLimiter, SqliteTraceStore};
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     struct FailOnceTraceIngestedPublishBus {
@@ -1573,6 +1573,58 @@ mod tests {
             .unwrap_or_else(|| panic!("quota should fail"));
 
         assert!(matches!(error, IngestError::QuotaExceeded { limit: 1, .. }));
+    }
+
+    #[tokio::test]
+    async fn sqlite_project_quota_is_shared_across_service_instances() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let policy = IngestPolicy {
+            per_project_event_quota: Some(1),
+            quota_window_seconds: 86_400,
+            ..IngestPolicy::default()
+        };
+        let quota_path = tempdir.path().join("quotas.sqlite");
+        let first = IngestService::new(
+            artifacts.clone(),
+            Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}"))),
+            Arc::new(InMemoryBus::new(16)),
+            policy.clone(),
+        )
+        .with_quota_limiter(Arc::new(
+            SqliteQuotaLimiter::open(&quota_path).unwrap_or_else(|err| panic!("{err}")),
+        ));
+        let second = IngestService::new(
+            artifacts,
+            Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}"))),
+            Arc::new(InMemoryBus::new(16)),
+            policy,
+        )
+        .with_quota_limiter(Arc::new(
+            SqliteQuotaLimiter::open(&quota_path).unwrap_or_else(|err| panic!("{err}")),
+        ));
+
+        first
+            .ingest_native(fixture_request())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let error = second
+            .ingest_native(fixture_request_with_span("span-2"))
+            .await
+            .err()
+            .unwrap_or_else(|| panic!("shared quota should fail"));
+
+        assert!(matches!(
+            error,
+            IngestError::QuotaExceeded {
+                limit: 1,
+                used: 1,
+                ..
+            }
+        ));
     }
 
     #[tokio::test]
