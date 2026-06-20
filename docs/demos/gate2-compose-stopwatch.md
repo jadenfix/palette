@@ -1,15 +1,16 @@
 # Gate 2 Compose Stopwatch Proof
 
-- Started: 2026-06-20T07:05:29Z
-- Ended: 2026-06-20T07:06:01Z
-- Duration: 32s
+- Started: 2026-06-20T09:58:54Z
+- Ended: 2026-06-20T09:59:20Z
+- Duration: 26s
 - Limit: 300s
 - Startup mode: prebuilt-image
-- Compose project: beater-stopwatch-prebuilt
+- Compose project: beater-stopwatch-browser-proof-doc
 - Snippet: `examples/python/five_line_otel.py`
-- OTLP endpoint: `http://127.0.0.1:14317`
-- Trace: `27d7a29e0d2172cd88927fc29481aa5b`
-- Dashboard: http://127.0.0.1:13000/?tenant=demo&project=demo&environment=local&trace=27d7a29e0d2172cd88927fc29481aa5b
+- OTLP endpoint: `http://127.0.0.1:14325`
+- Trace: `12924879d3bfe1c498a2ea150e895d70`
+- Dashboard: http://127.0.0.1:13008/?tenant=demo&project=demo&environment=local&trace=12924879d3bfe1c498a2ea150e895d70
+- Browser proof: passed
 
 This is an automated local stopwatch proof. The mandate still requires an
 outside-person run to fully close Gate 2.

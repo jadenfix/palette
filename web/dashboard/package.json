@@ -8,6 +8,7 @@
     "start": "next start",
     "test": "node --test tests/render.test.mjs",
     "test:e2e": "playwright test",
+    "test:e2e:quickstart": "playwright test tests/e2e/quickstart.spec.ts",
     "record:gate2": "node tests/e2e/record-gate2-demo.mjs",
     "generate:api": "openapi-typescript openapi/beater-read-api.json -o lib/generated/api-types.ts"
   },

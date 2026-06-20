@@ -148,6 +148,8 @@ default so a human can click through the trace. By default it uses
 `docker-compose.prebuilt.yml` and pulls GHCR images published by
 `.github/workflows/container-images.yml`; set `BEATER_GATE2_LOCAL_BUILD=1` when
 you intentionally want to build the server and dashboard images from source.
+Set `BEATER_GATE2_BROWSER_PROOF=1` to also run the Playwright browser proof for
+the five-line trace inside the same stopwatch window.
 
 The five-line snippet is intentionally plain OpenTelemetry. To run the exact
 manual step after `docker compose up -d --build`, install stock OTEL packages

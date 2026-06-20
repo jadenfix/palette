@@ -123,6 +123,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("OTEL_EXPORTER_OTLP_ENDPOINT"));
     assert!(stopwatch_script.contains("duration_seconds > 300"));
     assert!(stopwatch_script.contains("BEATER_GATE2_WRITE_PROOF"));
+    assert!(stopwatch_script.contains("BEATER_GATE2_BROWSER_PROOF"));
+    assert!(stopwatch_script.contains("npm run test:e2e:quickstart"));
+    assert!(stopwatch_script.contains("PLAYWRIGHT_BASE_URL"));
     assert!(stopwatch_script.contains("docker-compose.prebuilt.yml"));
     assert!(stopwatch_script.contains("--pull missing"));
     assert!(stopwatch_script.contains("BEATER_GATE2_LOCAL_BUILD"));
@@ -175,6 +178,13 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(record_script.contains("recordVideo"));
     assert!(record_script.contains("docs/demos"));
     assert!(record_script.contains("gate2-browser-demo.webm"));
+
+    let quickstart_e2e = read(root.join("web/dashboard/tests/e2e/quickstart.spec.ts"));
+    assert!(quickstart_e2e.contains("five-line-llm-call"));
+    assert!(quickstart_e2e.contains("gpt-quickstart"));
+    assert!(quickstart_e2e.contains("hello from stock OpenTelemetry"));
+    assert!(quickstart_e2e.contains("hello from Beater"));
+    assert!(quickstart_e2e.contains("data-icon"));
 }
 
 fn repo_root() -> PathBuf {

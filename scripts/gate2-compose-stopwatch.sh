@@ -7,6 +7,7 @@ write_proof="${BEATER_GATE2_WRITE_PROOF:-0}"
 proof_path="${BEATER_GATE2_STOPWATCH_PROOF:-docs/demos/gate2-compose-stopwatch.md}"
 venv_dir="${BEATER_GATE2_QUICKSTART_VENV:-/tmp/beater-gate2-compose-otel-venv}"
 local_build="${BEATER_GATE2_LOCAL_BUILD:-0}"
+browser_proof="${BEATER_GATE2_BROWSER_PROOF:-0}"
 host_http_port="${BEATER_HTTP_PORT:-8080}"
 host_otlp_grpc_port="${BEATER_OTLP_GRPC_PORT:-4317}"
 host_dashboard_port="${BEATER_DASHBOARD_PORT:-3000}"
@@ -16,6 +17,7 @@ dashboard_base_url="http://127.0.0.1:$host_dashboard_port"
 start_epoch="$(date +%s)"
 deadline_epoch=$((start_epoch + 300))
 started_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+browser_proof_status="not requested"
 if [[ "$local_build" == "1" ]]; then
   compose_files=(-f docker-compose.yml)
   startup_mode="local-build"
@@ -136,6 +138,18 @@ wait_text "$dashboard_url" "five-line-llm-call" "dashboard quickstart trace"
 wait_text "$dashboard_url" "gpt-quickstart" "dashboard model detail"
 wait_text "$dashboard_url" "hello from stock OpenTelemetry" "dashboard prompt detail"
 
+if [[ "$browser_proof" == "1" ]]; then
+  (
+    cd web/dashboard
+    run_before_deadline "dashboard browser proof npm install" npm ci
+    run_before_deadline "dashboard browser proof chromium install" npx playwright install chromium
+    export BEATER_E2E_TRACE_ID="$trace_id"
+    export PLAYWRIGHT_BASE_URL="$dashboard_base_url"
+    run_before_deadline "five-line dashboard browser proof" npm run test:e2e:quickstart
+  )
+  browser_proof_status="passed"
+fi
+
 ended_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 duration_seconds=$(($(date +%s) - start_epoch))
 if (( duration_seconds > 300 )); then
@@ -158,6 +172,7 @@ if [[ "$write_proof" == "1" ]]; then
 - OTLP endpoint: \`$otlp_url\`
 - Trace: \`$trace_id\`
 - Dashboard: $dashboard_url
+- Browser proof: $browser_proof_status
 
 This is an automated local stopwatch proof. The mandate still requires an
 outside-person run to fully close Gate 2.
@@ -188,4 +203,6 @@ Startup mode:
 Set KEEP_BEATER_COMPOSE=0 to tear containers down automatically.
 Set BEATER_GATE2_LOCAL_BUILD=1 to build images from local source instead of
 pulling prebuilt GHCR images.
+Set BEATER_GATE2_BROWSER_PROOF=1 to run the Playwright browser proof for the
+five-line quickstart trace inside the same 300s stopwatch window.
 EOF

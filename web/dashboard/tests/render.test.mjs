@@ -103,4 +103,10 @@ test("browser proof covers all canonical span kinds and can record a demo", () =
   assert.match(recorder, /data-icon/);
   assert.match(recorder, /color\/icon-coded all-kind agent waterfall/);
   assert.match(recorder, /gate2-browser-demo\.webm/);
+  const quickstart = readFileSync(join(root, "tests/e2e/quickstart.spec.ts"), "utf8");
+  assert.match(quickstart, /five-line-llm-call/);
+  assert.match(quickstart, /gpt-quickstart/);
+  assert.match(quickstart, /hello from stock OpenTelemetry/);
+  assert.match(quickstart, /hello from Beater/);
+  assert.match(quickstart, /data-icon/);
 });
