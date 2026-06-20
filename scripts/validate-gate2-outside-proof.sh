@@ -114,6 +114,14 @@ def require_ghcr_image_digest(
         fail(f"{name} in {source_name} must be a GHCR repo digest for {expected_image}")
 
 
+def require_ghcr_sha_image_ref(
+    name: str, value: str, source_name: str, expected_image: str, commit_sha: str
+) -> None:
+    expected = f"ghcr.io/jadenfix/beater/{expected_image}:{commit_sha}"
+    if value != expected:
+        fail(f"{name} in {source_name} must be {expected!r}, got {value!r}")
+
+
 def require_default_dashboard_url(name: str, value: str, trace_id: str) -> None:
     parsed = urlparse(value)
     if parsed.scheme != "http" or parsed.netloc != "127.0.0.1:3000":
@@ -244,8 +252,12 @@ for field in [
     "Commit SHA",
     "Branch",
     "OS/arch",
+    "Beater image reference",
+    "Dashboard image reference",
+    "Dashboard e2e image reference",
     "Beater image digest",
     "Dashboard image digest",
+    "Dashboard e2e image digest",
     "API endpoint",
     "Dashboard base",
     "Started at",
@@ -308,8 +320,33 @@ quickstart_trace_id = field_value("Quickstart trace ID")
 all_kind_trace_id = field_value("All-kind nested trace ID")
 require_trace_id("Quickstart trace ID", quickstart_trace_id, "outside-person proof")
 require_trace_id("All-kind nested trace ID", all_kind_trace_id, "outside-person proof")
+beater_image_ref = field_value("Beater image reference")
+dashboard_image_ref = field_value("Dashboard image reference")
+dashboard_e2e_image_ref = field_value("Dashboard e2e image reference")
 beater_image_digest = field_value("Beater image digest")
 dashboard_image_digest = field_value("Dashboard image digest")
+dashboard_e2e_image_digest = field_value("Dashboard e2e image digest")
+require_ghcr_sha_image_ref(
+    "Beater image reference",
+    beater_image_ref,
+    "outside-person proof",
+    "beaterd",
+    commit_sha,
+)
+require_ghcr_sha_image_ref(
+    "Dashboard image reference",
+    dashboard_image_ref,
+    "outside-person proof",
+    "dashboard",
+    commit_sha,
+)
+require_ghcr_sha_image_ref(
+    "Dashboard e2e image reference",
+    dashboard_e2e_image_ref,
+    "outside-person proof",
+    "dashboard-e2e",
+    commit_sha,
+)
 require_ghcr_image_digest(
     "Beater image digest", beater_image_digest, "outside-person proof", "beaterd"
 )
@@ -318,6 +355,12 @@ require_ghcr_image_digest(
     dashboard_image_digest,
     "outside-person proof",
     "dashboard",
+)
+require_ghcr_image_digest(
+    "Dashboard e2e image digest",
+    dashboard_e2e_image_digest,
+    "outside-person proof",
+    "dashboard-e2e",
 )
 quickstart_url = field_value("Quickstart dashboard URL")
 all_kind_url = field_value("All-kind dashboard URL")
@@ -462,6 +505,46 @@ if stopwatch_text:
     require_equal("API endpoint", api_endpoint, stopwatch_api_endpoint)
     require_equal("Dashboard base", dashboard_base, stopwatch_dashboard_base)
 
+    stopwatch_beater_image_ref = field_value_from(
+        stopwatch_text, "Beater image reference", "stopwatch proof"
+    )
+    stopwatch_dashboard_image_ref = field_value_from(
+        stopwatch_text, "Dashboard image reference", "stopwatch proof"
+    )
+    stopwatch_dashboard_e2e_image_ref = field_value_from(
+        stopwatch_text, "Dashboard e2e image reference", "stopwatch proof"
+    )
+    require_ghcr_sha_image_ref(
+        "Beater image reference",
+        stopwatch_beater_image_ref,
+        "stopwatch proof",
+        "beaterd",
+        commit_sha,
+    )
+    require_ghcr_sha_image_ref(
+        "Dashboard image reference",
+        stopwatch_dashboard_image_ref,
+        "stopwatch proof",
+        "dashboard",
+        commit_sha,
+    )
+    require_ghcr_sha_image_ref(
+        "Dashboard e2e image reference",
+        stopwatch_dashboard_e2e_image_ref,
+        "stopwatch proof",
+        "dashboard-e2e",
+        commit_sha,
+    )
+    require_equal("beater image reference", beater_image_ref, stopwatch_beater_image_ref)
+    require_equal(
+        "dashboard image reference", dashboard_image_ref, stopwatch_dashboard_image_ref
+    )
+    require_equal(
+        "dashboard e2e image reference",
+        dashboard_e2e_image_ref,
+        stopwatch_dashboard_e2e_image_ref,
+    )
+
     stopwatch_recording = field_value_from(
         stopwatch_text, "Browser recording artifact", "stopwatch proof"
     )
@@ -481,6 +564,9 @@ if stopwatch_text:
     stopwatch_dashboard_image_digest = field_value_from(
         stopwatch_text, "Dashboard image digest", "stopwatch proof"
     )
+    stopwatch_dashboard_e2e_image_digest = field_value_from(
+        stopwatch_text, "Dashboard e2e image digest", "stopwatch proof"
+    )
     require_ghcr_image_digest(
         "Beater image digest",
         stopwatch_beater_image_digest,
@@ -493,6 +579,12 @@ if stopwatch_text:
         "stopwatch proof",
         "dashboard",
     )
+    require_ghcr_image_digest(
+        "Dashboard e2e image digest",
+        stopwatch_dashboard_e2e_image_digest,
+        "stopwatch proof",
+        "dashboard-e2e",
+    )
     require_equal(
         "beater image digest", beater_image_digest, stopwatch_beater_image_digest
     )
@@ -500,6 +592,11 @@ if stopwatch_text:
         "dashboard image digest",
         dashboard_image_digest,
         stopwatch_dashboard_image_digest,
+    )
+    require_equal(
+        "dashboard e2e image digest",
+        dashboard_e2e_image_digest,
+        stopwatch_dashboard_e2e_image_digest,
     )
 
     outside_commit_sha = field_value("Commit SHA")

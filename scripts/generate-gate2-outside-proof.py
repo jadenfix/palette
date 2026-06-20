@@ -122,8 +122,12 @@ unaided using public repository instructions.
 - Commit SHA: {field_value(stopwatch_text, "Git SHA", stopwatch_rel)}
 - Branch: {args.branch}
 - OS/arch: {field_value(stopwatch_text, "OS/arch", stopwatch_rel)}
+- Beater image reference: {field_value(stopwatch_text, "Beater image reference", stopwatch_rel)}
+- Dashboard image reference: {field_value(stopwatch_text, "Dashboard image reference", stopwatch_rel)}
+- Dashboard e2e image reference: {field_value(stopwatch_text, "Dashboard e2e image reference", stopwatch_rel)}
 - Beater image digest: {field_value(stopwatch_text, "Beater image digest", stopwatch_rel)}
 - Dashboard image digest: {field_value(stopwatch_text, "Dashboard image digest", stopwatch_rel)}
+- Dashboard e2e image digest: {field_value(stopwatch_text, "Dashboard e2e image digest", stopwatch_rel)}
 - API endpoint: {field_value(stopwatch_text, "API endpoint", stopwatch_rel)}
 - Dashboard base: {field_value(stopwatch_text, "Dashboard base", stopwatch_rel)}
 - Started at: {field_value(stopwatch_text, "Started", stopwatch_rel)}

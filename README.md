@@ -152,12 +152,17 @@ Before starting Compose it checks Docker, Python, and curl. It removes any previ
 outside-person evidence, free the default `8080`/`4317`/`3000` ports rather than
 using alternate ports.
 By default it uses `docker-compose.prebuilt.yml` and pulls current GHCR images
-published by `.github/workflows/container-images.yml`; set
+published by `.github/workflows/container-images.yml`. The stopwatch script
+pins `beaterd`, `dashboard`, and `dashboard-e2e` to the checked-out commit SHA
+tags by default, then records the image references and resolved GHCR digests in
+the proof. Set
 `BEATER_GATE2_LOCAL_BUILD=1` when you intentionally want to build the server and
 dashboard images from source. Set `BEATER_GATE2_REUSE=1` only for local
 warm-loop debugging. Set `BEATER_GATE2_BROWSER_PROOF=1` to also run the
 prebuilt `dashboard-e2e` Playwright browser proof for both the five-line trace
-and the all-kind nested agent waterfall inside the same stopwatch window. Set
+and the all-kind nested agent waterfall in the same proof run. The five-minute
+SLO is enforced for time-to-first-trace and time-to-quickstart-click; all-kind
+and recording steps run afterward with per-step timeouts. Set
 `BEATER_GATE2_RECORD_DEMO=1` to write `docs/demos/gate2-compose-browser-demo.webm`
 and its SHA-pinned notes from the same browser session.
 
@@ -241,8 +246,8 @@ The validator checks the outside-person template, stopwatch proof file, and
 screen-recording notes from the same run. It rejects alternate ports, warm-loop
 reuse, placeholder dashboard URLs, mismatched trace IDs, mismatched commit SHA,
 mismatched API/dashboard endpoints, non-main or stale commit evidence,
-mismatched image digests, non-repo-relative `docs/demos/` artifacts, and
-non-prebuilt GHCR image digests.
+mismatched SHA-pinned image references, mismatched image digests,
+non-repo-relative `docs/demos/` artifacts, and non-prebuilt GHCR image digests.
 It rejects recording notes from a different dashboard session and any screen
 recording hash that does not match the committed file.
 The `gate2-proof-contract` GitHub workflow runs the validator template check

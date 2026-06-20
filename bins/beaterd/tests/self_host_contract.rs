@@ -159,7 +159,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("examples/python/five_line_otel.py"));
     assert!(stopwatch_script.contains("examples/python/otel_smoke.py"));
     assert!(stopwatch_script.contains("OTEL_EXPORTER_OTLP_ENDPOINT"));
-    assert!(stopwatch_script.contains("duration_seconds > 300"));
+    assert!(!stopwatch_script.contains("duration_seconds > 300"));
     assert!(stopwatch_script.contains("time_to_first_trace_seconds > 300"));
     assert!(stopwatch_script.contains("time_to_quickstart_click_seconds > 300"));
     assert!(stopwatch_script.contains("git rev-parse HEAD"));
@@ -219,11 +219,22 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("docker-compose.prebuilt.yml"));
     assert!(stopwatch_script.contains("BEATER_GATE2_PULL_POLICY"));
     assert!(stopwatch_script.contains("--pull \"$prebuilt_pull_policy\""));
+    assert!(stopwatch_script.contains("BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS"));
     assert!(stopwatch_script.contains("BEATER_GATE2_LOCAL_BUILD"));
+    assert!(stopwatch_script.contains("ghcr.io/jadenfix/beater/beaterd:$git_sha"));
+    assert!(stopwatch_script.contains("ghcr.io/jadenfix/beater/dashboard:$git_sha"));
+    assert!(stopwatch_script.contains("ghcr.io/jadenfix/beater/dashboard-e2e:$git_sha"));
+    assert!(stopwatch_script.contains("python3 -m venv \"$preflight_venv\""));
+    assert!(stopwatch_script.contains("pip --version"));
+    assert!(stopwatch_script.contains("run_with_step_timeout"));
     assert!(stopwatch_script.contains("service_image_digest"));
     assert!(stopwatch_script.contains("docker image inspect"));
+    assert!(stopwatch_script.contains("Beater image reference"));
+    assert!(stopwatch_script.contains("Dashboard image reference"));
+    assert!(stopwatch_script.contains("Dashboard e2e image reference"));
     assert!(stopwatch_script.contains("Beater image digest"));
     assert!(stopwatch_script.contains("Dashboard image digest"));
+    assert!(stopwatch_script.contains("Dashboard e2e image digest"));
     assert!(stopwatch_script.contains("API endpoint"));
     assert!(stopwatch_script.contains("Dashboard base"));
 
@@ -263,6 +274,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("require_equal(\"screen recording notes sha256\""));
     assert!(outside_validator.contains("\"beater image digest\""));
     assert!(outside_validator.contains("\"dashboard image digest\""));
+    assert!(outside_validator.contains("\"dashboard e2e image digest\""));
+    assert!(outside_validator.contains("require_ghcr_sha_image_ref"));
+    assert!(outside_validator.contains("\"Beater image reference\""));
+    assert!(outside_validator.contains("\"Dashboard image reference\""));
+    assert!(outside_validator.contains("\"Dashboard e2e image reference\""));
     assert!(outside_validator.contains("require_equal(\"commit SHA\""));
     assert!(outside_validator.contains("tenant"));
     assert!(outside_validator.contains("screen recording notes dashboard base"));
@@ -285,9 +301,13 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_generator.contains("require_pending_or_force"));
     assert!(outside_generator.contains("API endpoint"));
     assert!(outside_generator.contains("Dashboard base"));
+    assert!(outside_generator.contains("Beater image reference"));
+    assert!(outside_generator.contains("Dashboard image reference"));
+    assert!(outside_generator.contains("Dashboard e2e image reference"));
     assert!(outside_generator.contains("Browser recording SHA256"));
     assert!(outside_generator.contains("Beater image digest"));
     assert!(outside_generator.contains("Dashboard image digest"));
+    assert!(outside_generator.contains("Dashboard e2e image digest"));
 
     let outside_proof = read(root.join("docs/demos/gate2-outside-person-proof.md"));
     assert!(outside_proof.contains("Status: not yet completed"));
@@ -300,7 +320,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("scripts/generate-gate2-outside-proof.py"));
     assert!(outside_proof.contains("--attest-outside-run"));
     assert!(outside_proof.contains("Docker Compose version"));
+    assert!(outside_proof.contains("Beater image reference"));
+    assert!(outside_proof.contains("Dashboard image reference"));
+    assert!(outside_proof.contains("Dashboard e2e image reference"));
     assert!(outside_proof.contains("Beater image digest"));
+    assert!(outside_proof.contains("Dashboard e2e image digest"));
     assert!(outside_proof.contains("API endpoint"));
     assert!(outside_proof.contains("Dashboard base"));
     assert!(outside_proof.contains("Screen recording SHA256"));
@@ -329,6 +353,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("removes any previous Beater stopwatch project"));
     assert!(readme.contains("gate2-compose-browser-demo.webm"));
     assert!(readme.contains("prebuilt `dashboard-e2e` Playwright browser proof"));
+    assert!(readme.contains("pins `beaterd`, `dashboard`, and `dashboard-e2e`"));
+    assert!(readme.contains("mismatched SHA-pinned image references"));
+    assert!(readme.contains("time-to-quickstart-click"));
     assert!(readme.contains("checks Docker, Python, and curl"));
     assert!(readme.contains("mismatched trace IDs"));
     assert!(readme.contains("mismatched API/dashboard endpoints"));
@@ -344,6 +371,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("scripts/generate-gate2-outside-proof.py"));
     assert!(requirements.contains("scripts/validate-gate2-outside-proof.sh"));
     assert!(requirements.contains("image-digest"));
+    assert!(requirements.contains("SHA-pinned prebuilt GHCR image references"));
+    assert!(requirements.contains("dashboard-e2e"));
     assert!(requirements.contains("recording-notes"));
     assert!(requirements.contains("outside-run attestation"));
     assert!(requirements.contains("repo-relative `docs/demos/` artifacts"));

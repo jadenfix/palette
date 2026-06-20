@@ -12,6 +12,8 @@ const BEATER_IMAGE_DIGEST: &str =
     "ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const DASHBOARD_IMAGE_DIGEST: &str =
     "ghcr.io/jadenfix/beater/dashboard@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+const DASHBOARD_E2E_IMAGE_DIGEST: &str =
+    "ghcr.io/jadenfix/beater/dashboard-e2e@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 const OUTSIDE_RUN_ATTESTATION: &str = "I attest that I am not a Beater project maintainer, I received no step-by-step help beyond public repository instructions, I used a fresh clone, and I completed the Gate 2 flow unaided.";
 
 #[test]
@@ -51,7 +53,12 @@ fn gate2_outside_generator_builds_valid_completed_proof() {
     assert!(generated_text.contains(OUTSIDE_RUN_ATTESTATION));
     assert!(generated_text.contains("- API endpoint: http://127.0.0.1:8080"));
     assert!(generated_text.contains("- Dashboard base: http://127.0.0.1:3000"));
+    assert!(generated_text.contains(&format!(
+        "- Beater image reference: ghcr.io/jadenfix/beater/beaterd:{}",
+        current_head()
+    )));
     assert!(generated_text.contains("- Beater image digest: ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
+    assert!(generated_text.contains("- Dashboard e2e image digest: ghcr.io/jadenfix/beater/dashboard-e2e@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"));
     assert!(generated_text.contains(
         "- [x] The runner completed the flow using only public repository instructions."
     ));
@@ -220,6 +227,23 @@ fn gate2_outside_validator_rejects_bare_image_digest() {
 }
 
 #[test]
+fn gate2_outside_validator_rejects_mutable_image_reference() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        &format!("ghcr.io/jadenfix/beater/dashboard-e2e:{}", current_head()),
+        "ghcr.io/jadenfix/beater/dashboard-e2e:main",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Dashboard e2e image reference in outside-person proof must be",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_alternate_port_stopwatch_artifact() {
     let fixture = ValidatorFixture::new();
     replace(&fixture.stopwatch_path, "127.0.0.1:3000", "127.0.0.1:13080");
@@ -334,6 +358,23 @@ fn gate2_outside_validator_rejects_image_digest_mismatch() {
     );
 }
 
+#[test]
+fn gate2_outside_validator_rejects_dashboard_e2e_digest_mismatch() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        DASHBOARD_E2E_IMAGE_DIGEST,
+        "ghcr.io/jadenfix/beater/dashboard-e2e@sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "dashboard e2e image digest mismatch between proof artifacts",
+    );
+}
+
 struct ValidatorFixture {
     _artifact_dir: TempDir,
     dir: TempDir,
@@ -418,8 +459,12 @@ Status: completed.
 - Commit SHA: {commit_sha}
 - Branch: main
 - OS/arch: Darwin arm64
+- Beater image reference: ghcr.io/jadenfix/beater/beaterd:{commit_sha}
+- Dashboard image reference: ghcr.io/jadenfix/beater/dashboard:{commit_sha}
+- Dashboard e2e image reference: ghcr.io/jadenfix/beater/dashboard-e2e:{commit_sha}
 - Beater image digest: {BEATER_IMAGE_DIGEST}
 - Dashboard image digest: {DASHBOARD_IMAGE_DIGEST}
+- Dashboard e2e image digest: {DASHBOARD_E2E_IMAGE_DIGEST}
 - API endpoint: http://127.0.0.1:8080
 - Dashboard base: http://127.0.0.1:3000
 - Started at: 2026-06-20T12:00:00Z
@@ -494,8 +539,12 @@ fn stopwatch_proof(recording: &str, notes: &str) -> String {
 - Reuse override: `BEATER_GATE2_REUSE=0`
 - Prebuilt pull policy: `always`
 - Compose project: beater-stopwatch
+- Beater image reference: `ghcr.io/jadenfix/beater/beaterd:{commit_sha}`
+- Dashboard image reference: `ghcr.io/jadenfix/beater/dashboard:{commit_sha}`
+- Dashboard e2e image reference: `ghcr.io/jadenfix/beater/dashboard-e2e:{commit_sha}`
 - Beater image digest: `{BEATER_IMAGE_DIGEST}`
 - Dashboard image digest: `{DASHBOARD_IMAGE_DIGEST}`
+- Dashboard e2e image digest: `{DASHBOARD_E2E_IMAGE_DIGEST}`
 - Quickstart snippet: `examples/python/five_line_otel.py`
 - API endpoint: `http://127.0.0.1:8080`
 - OTLP endpoint: `http://127.0.0.1:4317`

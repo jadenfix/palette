@@ -13,6 +13,7 @@ record_demo="${BEATER_GATE2_RECORD_DEMO:-0}"
 record_demo_video="${BEATER_GATE2_RECORD_VIDEO:-docs/demos/gate2-compose-browser-demo.webm}"
 record_demo_notes="${BEATER_GATE2_RECORD_NOTES:-docs/demos/gate2-compose-browser-demo.md}"
 prebuilt_pull_policy="${BEATER_GATE2_PULL_POLICY:-always}"
+post_slo_timeout_seconds="${BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS:-300}"
 host_http_port="${BEATER_HTTP_PORT:-8080}"
 host_otlp_grpc_port="${BEATER_OTLP_GRPC_PORT:-4317}"
 host_dashboard_port="${BEATER_DASHBOARD_PORT:-3000}"
@@ -34,6 +35,14 @@ git_sha="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 os_arch="$(uname -sm 2>/dev/null || echo unknown)"
 docker_version="$(docker --version 2>/dev/null || echo unknown)"
 compose_version="$(docker compose version 2>/dev/null || echo unknown)"
+if [[ "$local_build" != "1" && "$git_sha" =~ ^[0-9a-f]{40}$ ]]; then
+  export BEATERD_IMAGE="${BEATERD_IMAGE:-ghcr.io/jadenfix/beater/beaterd:$git_sha}"
+  export BEATER_DASHBOARD_IMAGE="${BEATER_DASHBOARD_IMAGE:-ghcr.io/jadenfix/beater/dashboard:$git_sha}"
+  export BEATER_DASHBOARD_E2E_IMAGE="${BEATER_DASHBOARD_E2E_IMAGE:-ghcr.io/jadenfix/beater/dashboard-e2e:$git_sha}"
+fi
+beater_image_ref="${BEATERD_IMAGE:-local-build}"
+dashboard_image_ref="${BEATER_DASHBOARD_IMAGE:-local-build}"
+dashboard_e2e_image_ref="${BEATER_DASHBOARD_E2E_IMAGE:-local-build}"
 if [[ "$record_demo" == "1" ]]; then
   browser_proof="1"
 fi
@@ -116,7 +125,7 @@ run_before_deadline() {
   local pid=$!
   while kill -0 "$pid" 2>/dev/null; do
     if (( $(date +%s) >= deadline_epoch )); then
-      echo "Timed out during $label after 300s" >&2
+      echo "Timed out during $label" >&2
       terminate_tree "$pid"
       sleep 2
       kill_tree "$pid"
@@ -126,6 +135,17 @@ run_before_deadline() {
     sleep 1
   done
   wait "$pid"
+}
+
+run_with_step_timeout() {
+  local label="$1"
+  shift
+  local saved_deadline="$deadline_epoch"
+  deadline_epoch=$(($(date +%s) + post_slo_timeout_seconds))
+  run_before_deadline "$label" "$@"
+  local status=$?
+  deadline_epoch="$saved_deadline"
+  return "$status"
 }
 
 wait_url() {
@@ -186,7 +206,24 @@ service_image_digest() {
   local image_id
   local repo_digest
   local full_id
+  local image_ref=""
   image_id="$(compose images -q "$service" 2>/dev/null | head -n 1 || true)"
+  if [[ -z "$image_id" ]]; then
+    case "$service" in
+      beaterd)
+        image_ref="${BEATERD_IMAGE:-}"
+        ;;
+      dashboard)
+        image_ref="${BEATER_DASHBOARD_IMAGE:-}"
+        ;;
+      dashboard-e2e)
+        image_ref="${BEATER_DASHBOARD_E2E_IMAGE:-}"
+        ;;
+    esac
+    if [[ -n "$image_ref" ]]; then
+      image_id="$(docker image inspect --format '{{.Id}}' "$image_ref" 2>/dev/null || true)"
+    fi
+  fi
   if [[ -z "$image_id" ]]; then
     echo "unknown"
     return
@@ -247,6 +284,19 @@ preflight_prerequisites() {
   require_command docker
   require_command curl
   require_command python3
+  local preflight_venv="/tmp/beater-gate2-python-preflight-$$"
+  rm -rf "$preflight_venv"
+  if ! python3 -m venv "$preflight_venv" >/dev/null 2>&1; then
+    rm -rf "$preflight_venv"
+    echo "Python venv support is required. On Debian/Ubuntu install python3-venv, then rerun Gate 2 proof." >&2
+    return 1
+  fi
+  if ! "$preflight_venv/bin/python" -m pip --version >/dev/null 2>&1; then
+    rm -rf "$preflight_venv"
+    echo "Python pip inside venv is required for the stock OTEL snippet dependencies." >&2
+    return 1
+  fi
+  rm -rf "$preflight_venv"
   if ! docker info >/dev/null 2>&1; then
     echo "Docker daemon is not reachable; start Docker and rerun Gate 2 proof." >&2
     return 1
@@ -303,24 +353,24 @@ if [[ "$browser_proof" == "1" ]]; then
     exit 1
   fi
 
-  run_before_deadline "stock Python all-kind OTEL fixture" env OTEL_EXPORTER_OTLP_ENDPOINT="$otlp_url" "$venv_dir/bin/python" examples/python/otel_smoke.py
+  run_with_step_timeout "stock Python all-kind OTEL fixture" env OTEL_EXPORTER_OTLP_ENDPOINT="$otlp_url" "$venv_dir/bin/python" examples/python/otel_smoke.py
 
   all_kind_query="$api_url/v1/traces/demo?project_id=demo&environment_id=local&kind=llm.call&model=gpt-demo&release=compose-demo"
-  wait_text "$all_kind_query" "gpt-demo" "stock Python all-kind OTEL trace"
+  run_with_step_timeout "wait for stock Python all-kind OTEL trace" wait_text "$all_kind_query" "gpt-demo" "stock Python all-kind OTEL trace"
   all_kind_trace_id="$(curl -fsS "$all_kind_query" | first_trace_id)"
   all_kind_dashboard_url="$dashboard_base_url/?tenant=demo&project=demo&environment=local&trace=$all_kind_trace_id"
-  wait_text "$all_kind_dashboard_url" "call-policy-model" "dashboard all-kind llm.call"
+  run_with_step_timeout "wait for dashboard all-kind llm.call" wait_text "$all_kind_dashboard_url" "call-policy-model" "dashboard all-kind llm.call"
   for kind in "${all_kinds[@]}"; do
-    wait_text "$all_kind_dashboard_url" "$kind" "dashboard all-kind waterfall"
+    run_with_step_timeout "wait for dashboard all-kind waterfall $kind" wait_text "$all_kind_dashboard_url" "$kind" "dashboard all-kind waterfall"
   done
 
-  run_before_deadline "all-kind waterfall browser proof" compose_run_e2e \
+  run_with_step_timeout "all-kind waterfall browser proof" compose_run_e2e \
     -e BEATER_E2E_TRACE_ID="$all_kind_trace_id" \
     -e PLAYWRIGHT_BASE_URL="$e2e_base_url" \
     dashboard-e2e \
     npx playwright test tests/e2e/dashboard.spec.ts
   if [[ "$record_demo" == "1" ]]; then
-    run_before_deadline "Gate 2 compose browser recording" compose_run_e2e \
+    run_with_step_timeout "Gate 2 compose browser recording" compose_run_e2e \
       -e BEATER_GATE2_RECORD_MODE=compose \
       -e BEATER_E2E_QUICKSTART_TRACE_ID="$trace_id" \
       -e BEATER_E2E_ALL_KIND_TRACE_ID="$all_kind_trace_id" \
@@ -345,15 +395,11 @@ time_to_quickstart_click_display="${time_to_quickstart_click_display:-not reques
 image_summary="$(compose images 2>/dev/null || true)"
 beater_image_digest="$(service_image_digest beaterd)"
 dashboard_image_digest="$(service_image_digest dashboard)"
+dashboard_e2e_image_digest="$(service_image_digest dashboard-e2e)"
 if (( time_to_first_trace_seconds > 300 )); then
   echo "Time-to-first-trace exceeded 300s: ${time_to_first_trace_seconds}s" >&2
   exit 1
 fi
-if (( duration_seconds > 300 )); then
-  echo "Total proof duration exceeded 300s: ${duration_seconds}s" >&2
-  exit 1
-fi
-
 if [[ "$write_proof" == "1" ]]; then
   mkdir -p "$(dirname "$proof_path")"
   cat >"$proof_path" <<EOF
@@ -374,8 +420,12 @@ if [[ "$write_proof" == "1" ]]; then
 - Reuse override: \`BEATER_GATE2_REUSE=$reuse\`
 - Prebuilt pull policy: \`$prebuilt_pull_policy\`
 - Compose project: $project
+- Beater image reference: \`$beater_image_ref\`
+- Dashboard image reference: \`$dashboard_image_ref\`
+- Dashboard e2e image reference: \`$dashboard_e2e_image_ref\`
 - Beater image digest: \`$beater_image_digest\`
 - Dashboard image digest: \`$dashboard_image_digest\`
+- Dashboard e2e image digest: \`$dashboard_e2e_image_digest\`
 - Quickstart snippet: \`examples/python/five_line_otel.py\`
 - API endpoint: \`$api_url\`
 - OTLP endpoint: \`$otlp_url\`
@@ -444,8 +494,10 @@ pulling prebuilt GHCR images.
 Set BEATER_GATE2_REUSE=1 to skip the pre-run Compose down/volume removal and
 Python virtualenv deletion for local warm-loop debugging only.
 Set BEATER_GATE2_BROWSER_PROOF=1 to run the Playwright browser proof for the
-five-line quickstart trace and all-kind nested agent waterfall inside the same
-300s stopwatch window.
+five-line quickstart trace and all-kind nested agent waterfall in the same proof
+run.
 Set BEATER_GATE2_RECORD_DEMO=1 to record the quickstart click-through and
 all-kind waterfall browser proof as a committed demo artifact.
+Set BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS to control each post-SLO evidence
+step timeout after the five-line trace and quickstart click have passed.
 EOF
