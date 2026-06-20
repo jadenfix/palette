@@ -25,6 +25,7 @@ This repo now contains the first tested Rust vertical slice:
 
 - all-in-one `beaterd` HTTP server
 - `beaterctl smoke` local OTLP ingest command that drains trace-write and trace-ingested work
+- `beaterctl smoke --http-url ...` remote mode for live `beaterd` OTLP HTTP/gRPC smoke checks
 - OTLP/HTTP protobuf trace ingest endpoint with raw protobuf preservation
 - OTLP/gRPC TraceService ingest mounted by `beaterd` alongside axum
 - Tantivy-backed structured and full-text span search
@@ -79,6 +80,7 @@ This repo now contains the first tested Rust vertical slice:
 - API routes and CLI fixture for online sampling and signed alert webhooks
 - `beaterd` defaults to a persistent SQLite bus backend, with an in-memory backend still available
 - `beaterd` runs configurable trace-write and trace-ingested background workers for buffered ingest and downstream indexing
+- live `beaterd` integration test proving OTLP HTTP and gRPC traces become readable and searchable through public APIs
 - `beaterctl bus-fixture` validates durable queue reopen, retry, and DLQ behavior
 - `beaterctl ingest-outage-fixture` validates accepted buffered ingest, retry during TraceStore outage, and recovery drain
 - `beaterctl replay-fixture` validates persisted cassette replay without live provider/tool calls
@@ -110,6 +112,14 @@ cargo run -q -p beaterctl -- gate-run-fixture --data-dir /tmp/beater-gate
 cargo run -q -p beaterctl -- review-fixture --data-dir /tmp/beater-review
 cargo run -q -p beaterctl -- calibration-fixture --data-dir /tmp/beater-calibration
 cargo run -q -p beaterd -- --data-dir /tmp/beaterd --judge-provider http-routing --auth-mode required
+```
+
+With `beaterd` running in local auth mode, remote smoke can target the live
+server:
+
+```bash
+cargo run -q -p beaterctl -- smoke --http-url http://127.0.0.1:8080
+cargo run -q -p beaterctl -- smoke --http-url http://127.0.0.1:8080 --otlp-grpc-url http://127.0.0.1:4317
 ```
 
 `beaterd` reads `BEATER_PROVIDER_SECRET_KEY` as a base64 32-byte provider-secret

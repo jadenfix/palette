@@ -64,7 +64,9 @@ use beater_usage::{
 };
 use chrono::Utc;
 use clap::{Parser, Subcommand, ValueEnum};
-use opentelemetry_proto::tonic::collector::trace::v1::ExportTraceServiceRequest;
+use opentelemetry_proto::tonic::collector::trace::v1::{
+    trace_service_client::TraceServiceClient, ExportTraceServiceRequest,
+};
 use opentelemetry_proto::tonic::common::v1::{any_value, AnyValue, InstrumentationScope, KeyValue};
 use opentelemetry_proto::tonic::resource::v1::Resource;
 use opentelemetry_proto::tonic::trace::v1::{
@@ -74,6 +76,9 @@ use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Duration as StdDuration;
+use tonic::metadata::MetadataValue;
+use tonic::Request as TonicRequest;
 
 #[derive(Debug, Parser)]
 #[command(name = "beaterctl", about = "Beater local development and CI helper")]
@@ -87,6 +92,18 @@ enum Command {
     Smoke {
         #[arg(long, default_value = ".beater")]
         data_dir: PathBuf,
+        #[arg(long)]
+        http_url: Option<String>,
+        #[arg(long)]
+        otlp_grpc_url: Option<String>,
+        #[arg(long, default_value = "demo")]
+        tenant_id: String,
+        #[arg(long, default_value = "demo")]
+        project_id: String,
+        #[arg(long, default_value = "local")]
+        environment_id: String,
+        #[arg(long, default_value_t = 5000)]
+        timeout_ms: u64,
     },
     Gate {
         #[arg(long, value_delimiter = ',')]
@@ -259,71 +276,29 @@ impl From<InconclusivePolicyArg> for InconclusivePolicy {
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     match args.command {
-        Command::Smoke { data_dir } => {
-            let artifacts = Arc::new(FsArtifactStore::new(data_dir.join("artifacts"))?);
-            let traces = Arc::new(SqliteTraceStore::open(data_dir.join("traces.sqlite"))?);
-            let bus = local_bus(&data_dir)?;
-            let service =
-                IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
-            let scope = TenantScope::new(
-                TenantId::new("demo")?,
-                ProjectId::new("demo")?,
-                EnvironmentId::new("local")?,
-            );
-            let export = otlp_smoke_export();
-            let raw_bytes = encode_export_trace_request(&export);
-            let raw_request = export_to_raw_trace_ingest_request(
-                scope.clone(),
-                raw_bytes,
-                export,
-                anonymous_auth_context(),
-            )
-            .context("build OTLP smoke ingest request")?;
-            let trace_id = raw_request
-                .spans
-                .first()
-                .map(|span| span.trace_id.clone())
-                .ok_or_else(|| anyhow::anyhow!("OTLP smoke export produced no spans"))?;
-            let outcome = service
-                .buffer_raw_trace_batch(raw_request)
-                .await
-                .context("buffer OTLP smoke trace")?;
-            let write_report = service
-                .drain_trace_writes_for(&scope.tenant_id, &scope.project_id, 10)
-                .await
-                .context("drain OTLP smoke trace writes")?;
-            let trace = traces
-                .get_trace(scope.tenant_id.clone(), trace_id.clone())
-                .await
-                .context("read OTLP smoke trace")?;
-            let downstream_report = service
-                .drain_trace_ingested_for(&scope.tenant_id, &scope.project_id, 10, {
-                    let traces = traces.clone();
-                    move |trace_ref| {
-                        let traces = traces.clone();
-                        async move {
-                            traces
-                                .get_trace(trace_ref.tenant_id, trace_ref.trace_id)
-                                .await
-                                .map(|_| ())
-                                .map_err(|err| err.to_string())
-                        }
-                    }
-                })
-                .await
-                .context("drain OTLP smoke downstream work")?;
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({
-                    "source": "otlp",
-                    "trace_id": trace_id,
-                    "outcome": outcome,
-                    "write_report": write_report,
-                    "downstream_report": downstream_report,
-                    "trace_span_count": trace.spans.len(),
-                    "normalizer_version": trace.spans.first().map(|span| span.normalizer_version.clone())
-                }))?
-            );
+        Command::Smoke {
+            data_dir,
+            http_url,
+            otlp_grpc_url,
+            tenant_id,
+            project_id,
+            environment_id,
+            timeout_ms,
+        } => {
+            let output = if let Some(http_url) = http_url {
+                run_remote_smoke(
+                    http_url,
+                    otlp_grpc_url,
+                    tenant_id,
+                    project_id,
+                    environment_id,
+                    timeout_ms,
+                )
+                .await?
+            } else {
+                run_local_smoke(data_dir).await?
+            };
+            println!("{}", serde_json::to_string_pretty(&output)?);
         }
         Command::Gate {
             baseline,
@@ -1650,7 +1625,242 @@ fn local_bus(data_dir: &Path) -> anyhow::Result<Arc<dyn DurableBus>> {
     )?))
 }
 
-fn otlp_smoke_export() -> ExportTraceServiceRequest {
+async fn run_local_smoke(data_dir: PathBuf) -> anyhow::Result<serde_json::Value> {
+    let artifacts = Arc::new(FsArtifactStore::new(data_dir.join("artifacts"))?);
+    let traces = Arc::new(SqliteTraceStore::open(data_dir.join("traces.sqlite"))?);
+    let bus = local_bus(&data_dir)?;
+    let service = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+    let scope = TenantScope::new(
+        TenantId::new("demo")?,
+        ProjectId::new("demo")?,
+        EnvironmentId::new("local")?,
+    );
+    let (trace_bytes, span_bytes) = smoke_ids();
+    let export = otlp_smoke_export(trace_bytes, span_bytes);
+    let raw_bytes = encode_export_trace_request(&export);
+    let raw_request = export_to_raw_trace_ingest_request(
+        scope.clone(),
+        raw_bytes,
+        export,
+        anonymous_auth_context(),
+    )
+    .context("build OTLP smoke ingest request")?;
+    let trace_id = raw_request
+        .spans
+        .first()
+        .map(|span| span.trace_id.clone())
+        .ok_or_else(|| anyhow::anyhow!("OTLP smoke export produced no spans"))?;
+    let outcome = service
+        .buffer_raw_trace_batch(raw_request)
+        .await
+        .context("buffer OTLP smoke trace")?;
+    let write_report = service
+        .drain_trace_writes_for(&scope.tenant_id, &scope.project_id, 10)
+        .await
+        .context("drain OTLP smoke trace writes")?;
+    let trace = traces
+        .get_trace(scope.tenant_id.clone(), trace_id.clone())
+        .await
+        .context("read OTLP smoke trace")?;
+    let downstream_report = service
+        .drain_trace_ingested_for(&scope.tenant_id, &scope.project_id, 10, {
+            let traces = traces.clone();
+            move |trace_ref| {
+                let traces = traces.clone();
+                async move {
+                    traces
+                        .get_trace(trace_ref.tenant_id, trace_ref.trace_id)
+                        .await
+                        .map(|_| ())
+                        .map_err(|err| err.to_string())
+                }
+            }
+        })
+        .await
+        .context("drain OTLP smoke downstream work")?;
+    Ok(json!({
+        "mode": "local",
+        "source": "otlp",
+        "trace_id": trace_id,
+        "outcome": outcome,
+        "write_report": write_report,
+        "downstream_report": downstream_report,
+        "trace_span_count": trace.spans.len(),
+        "normalizer_version": trace.spans.first().map(|span| span.normalizer_version.clone())
+    }))
+}
+
+async fn run_remote_smoke(
+    http_url: String,
+    otlp_grpc_url: Option<String>,
+    tenant_id: String,
+    project_id: String,
+    environment_id: String,
+    timeout_ms: u64,
+) -> anyhow::Result<serde_json::Value> {
+    let (trace_bytes, span_bytes) = smoke_ids();
+    let trace_id = hex(&trace_bytes);
+    let export = otlp_smoke_export(trace_bytes, span_bytes);
+    let protocol = if let Some(otlp_grpc_url) = otlp_grpc_url {
+        emit_remote_grpc(
+            otlp_grpc_url,
+            export,
+            &tenant_id,
+            &project_id,
+            &environment_id,
+        )
+        .await?;
+        "grpc"
+    } else {
+        emit_remote_http(
+            &http_url,
+            &tenant_id,
+            &project_id,
+            &environment_id,
+            &encode_export_trace_request(&export),
+        )
+        .await?;
+        "http"
+    };
+    let trace = wait_for_remote_trace(
+        &http_url,
+        &tenant_id,
+        &trace_id,
+        StdDuration::from_millis(timeout_ms),
+    )
+    .await?;
+    let spans = trace
+        .get("spans")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    Ok(json!({
+        "mode": "remote",
+        "protocol": protocol,
+        "source": "otlp",
+        "trace_id": trace_id,
+        "trace_read_url": format!("{}/v1/traces/{}/{}", trim_url(&http_url), tenant_id, trace_id),
+        "trace_span_count": spans.len(),
+        "normalizer_version": spans.first().and_then(|span| span.get("normalizer_version")).cloned(),
+    }))
+}
+
+async fn emit_remote_http(
+    http_url: &str,
+    tenant_id: &str,
+    project_id: &str,
+    environment_id: &str,
+    body: &[u8],
+) -> anyhow::Result<()> {
+    let url = format!(
+        "{}/v1/otlp/{}/{}/{}/v1/traces?durability=buffered",
+        trim_url(http_url),
+        tenant_id,
+        project_id,
+        environment_id
+    );
+    reqwest::Client::new()
+        .post(url)
+        .header("content-type", "application/x-protobuf")
+        .body(body.to_vec())
+        .send()
+        .await
+        .context("send OTLP HTTP smoke trace")?
+        .error_for_status()
+        .context("OTLP HTTP smoke trace was rejected")?;
+    Ok(())
+}
+
+async fn emit_remote_grpc(
+    otlp_grpc_url: String,
+    export: ExportTraceServiceRequest,
+    tenant_id: &str,
+    project_id: &str,
+    environment_id: &str,
+) -> anyhow::Result<()> {
+    let mut client = TraceServiceClient::connect(otlp_grpc_url)
+        .await
+        .context("connect to OTLP gRPC endpoint")?;
+    let mut request = TonicRequest::new(export);
+    request
+        .metadata_mut()
+        .insert("x-beater-tenant-id", metadata_value(tenant_id)?);
+    request
+        .metadata_mut()
+        .insert("x-beater-project-id", metadata_value(project_id)?);
+    request
+        .metadata_mut()
+        .insert("x-beater-environment-id", metadata_value(environment_id)?);
+    client
+        .export(request)
+        .await
+        .context("send OTLP gRPC smoke trace")?;
+    Ok(())
+}
+
+async fn wait_for_remote_trace(
+    http_url: &str,
+    tenant_id: &str,
+    trace_id: &str,
+    timeout: StdDuration,
+) -> anyhow::Result<serde_json::Value> {
+    let url = format!(
+        "{}/v1/traces/{}/{}",
+        trim_url(http_url),
+        tenant_id,
+        trace_id
+    );
+    let client = reqwest::Client::new();
+    let deadline = tokio::time::Instant::now() + timeout;
+    loop {
+        let trace = client
+            .get(&url)
+            .send()
+            .await
+            .context("read smoke trace")?
+            .error_for_status()
+            .context("smoke trace read failed")?
+            .json::<serde_json::Value>()
+            .await
+            .context("decode smoke trace response")?;
+        let span_count = trace
+            .get("spans")
+            .and_then(serde_json::Value::as_array)
+            .map(Vec::len)
+            .unwrap_or_default();
+        if span_count > 0 {
+            return Ok(trace);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            anyhow::bail!(
+                "trace {} was not queryable at {} before timeout; last response: {}",
+                trace_id,
+                url,
+                trace
+            );
+        }
+        tokio::time::sleep(StdDuration::from_millis(50)).await;
+    }
+}
+
+fn trim_url(url: &str) -> &str {
+    url.trim_end_matches('/')
+}
+
+fn metadata_value(value: &str) -> anyhow::Result<MetadataValue<tonic::metadata::Ascii>> {
+    value
+        .parse()
+        .map_err(|err| anyhow::anyhow!("invalid gRPC metadata value {value:?}: {err}"))
+}
+
+fn smoke_ids() -> ([u8; 16], [u8; 8]) {
+    let now = Utc::now().timestamp_nanos_opt().unwrap_or_default() as u128;
+    let trace = now.to_be_bytes();
+    let span = (now as u64).to_be_bytes();
+    (trace, span)
+}
+
+fn otlp_smoke_export(trace_id: [u8; 16], span_id: [u8; 8]) -> ExportTraceServiceRequest {
     ExportTraceServiceRequest {
         resource_spans: vec![ResourceSpans {
             resource: Some(Resource {
@@ -1666,10 +1876,8 @@ fn otlp_smoke_export() -> ExportTraceServiceRequest {
                     dropped_attributes_count: 0,
                 }),
                 spans: vec![Span {
-                    trace_id: vec![
-                        1, 35, 69, 103, 137, 171, 205, 239, 16, 50, 84, 118, 152, 186, 220, 254,
-                    ],
-                    span_id: vec![17, 34, 51, 68, 85, 102, 119, 136],
+                    trace_id: trace_id.to_vec(),
+                    span_id: span_id.to_vec(),
                     trace_state: String::new(),
                     parent_span_id: Vec::new(),
                     flags: 0,
@@ -1697,6 +1905,10 @@ fn otlp_smoke_export() -> ExportTraceServiceRequest {
             schema_url: "https://opentelemetry.io/schemas/1.37.0".to_string(),
         }],
     }
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 fn otel_kv(key: &str, value: AnyValue) -> KeyValue {

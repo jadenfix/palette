@@ -1060,9 +1060,11 @@ dependencies = [
  "chrono",
  "clap",
  "opentelemetry-proto",
+ "reqwest",
  "serde_json",
  "tempfile",
  "tokio",
+ "tonic",
 ]
 
 [[package]]
@@ -1092,6 +1094,10 @@ dependencies = [
  "beater-store-sql",
  "beater-usage",
  "clap",
+ "opentelemetry-proto",
+ "reqwest",
+ "serde_json",
+ "tempfile",
  "tokio",
  "tonic",
 ]

@@ -8,7 +8,7 @@ system, test output, or runtime behavior.
 
 | ID | Requirement | Evidence required |
 | --- | --- | --- |
-| R0.1 | A user can send agent telemetry without a Beater-specific SDK. | OTLP endpoint docs, smoke test, trace visible in UI |
+| R0.1 | A user can send agent telemetry without a Beater-specific SDK. | OTLP HTTP/gRPC endpoint docs, `beaterctl smoke` local/remote tests, live `beaterd` OTLP HTTP/gRPC test; trace visible in UI still required |
 | R0.2 | A user can inspect a trace as an agent-native span tree. | UI screenshots/tests covering `agent.*`, `llm.call`, `tool.call`, `mcp.request`, memory, guardrail, evaluator spans |
 | R0.3 | A failure can be promoted to a dataset case. | Trace-to-dataset API test, human-review annotation promotion API test, and `beaterctl review-fixture` |
 | R0.4 | Offline evals run over a dataset version. | Deterministic and judge-backed dataset eval integration tests plus `beaterctl judge-dataset-fixture` |
@@ -61,7 +61,7 @@ system, test output, or runtime behavior.
 | R4.7 | Trace completion handles root-end, idle timeout, late spans, and clock skew. | Out-of-order distributed trace fixtures |
 | R4.8 | Per-project quotas produce explicit 429 semantics. | Ingest quota test exercises typed 429 error semantics through a trait-backed fixed-window limiter; SQLite/in-memory limiter conformance proves window reset behavior; API reset headers still required |
 | R4.9 | Poison messages cannot stall a queue shard or consumer group. | Lane-aware and scoped bus consumption tests plus trace-write and trace-ingested worker invalid-payload DLQ tests |
-| R4.10 | ClickHouse or TraceStore outage does not silently drop accepted events. | `buffer_native` outage/recovery unit test, buffered ingest + scoped drain full-stack API test, `beaterd` background trace-write drain worker, `beaterd` background trace-ingested downstream worker, `beaterctl smoke` OTLP trace-write/downstream drain test, and `beaterctl ingest-outage-fixture` |
+| R4.10 | ClickHouse or TraceStore outage does not silently drop accepted events. | `buffer_native` outage/recovery unit test, buffered ingest + scoped drain full-stack API test, `beaterd` background trace-write drain worker, `beaterd` background trace-ingested downstream worker, `beaterctl smoke` OTLP trace-write/downstream drain test, live `beaterd` OTLP HTTP/gRPC smoke test, and `beaterctl ingest-outage-fixture` |
 
 ## R5. Evaluators
 
@@ -132,7 +132,7 @@ system, test output, or runtime behavior.
 | ID | Requirement | Evidence required |
 | --- | --- | --- |
 | R11.1 | Time-to-first-trace is under 5 minutes. | Fresh-machine quickstart runbook and timed smoke test |
-| R11.2 | Zero-SDK OTLP onboarding works. | OpenInference/OpenLLMetry/OTel fixture apps |
+| R11.2 | Zero-SDK OTLP onboarding works. | Live `beaterd` OTLP HTTP/gRPC smoke test uses stock OpenTelemetry protobuf service types; OpenInference/OpenLLMetry/OTel fixture apps still required |
 | R11.3 | Rust SDK is first-class. | `tracing`, OTLP, reqwest, axum, tonic, MCP examples |
 | R11.4 | Python/TS adoption is supported through standards on day one. | OTLP examples for common Python/TS frameworks |
 | R11.5 | `/v1` API is stable and versioned. | OpenAPI spec and deprecation policy |

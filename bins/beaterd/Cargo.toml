@@ -31,5 +31,11 @@ clap.workspace = true
 tokio.workspace = true
 tonic.workspace = true
 
+[dev-dependencies]
+opentelemetry-proto.workspace = true
+reqwest.workspace = true
+serde_json.workspace = true
+tempfile.workspace = true
+
 [lints]
 workspace = true
