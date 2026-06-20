@@ -386,10 +386,12 @@ async fn main() -> anyhow::Result<()> {
         }
         Command::BusFixture { data_dir } => {
             let path = data_dir.join("bus.sqlite");
+            let tenant = TenantId::new("demo")?;
+            let project = ProjectId::new("demo")?;
             let bus = SqliteDurableBus::open(&path, 128)?;
             let mut poison = BusMessage::new(
-                TenantId::new("demo")?,
-                ProjectId::new("demo")?,
+                tenant.clone(),
+                project.clone(),
                 IdempotencyKey::new("bus-fixture-poison")?,
                 "fixture.poison",
                 b"poison".to_vec(),
@@ -425,12 +427,36 @@ async fn main() -> anyhow::Result<()> {
                 .await
                 .context("move poison message to dlq")?;
             let dlq = bus.dlq().await.context("read bus dlq")?;
+            let dead_letter = dlq
+                .first()
+                .ok_or_else(|| anyhow::anyhow!("expected poison message in dlq"))?;
+            let replay_ack = bus
+                .replay_dead_letter(&tenant, &project, &dead_letter.message.message_id, true)
+                .await
+                .context("replay poison message from dlq")?;
+            let mut replayed = bus
+                .consume_batch(1)
+                .await
+                .context("consume replayed poison message")?;
+            let replayed_message = replayed
+                .pop()
+                .ok_or_else(|| anyhow::anyhow!("expected replayed poison message"))?;
+            let replayed_attempts = replayed_message.attempts;
+            let replayed_message_id = replayed_message.message_id.clone();
+            bus.ack(replayed_message)
+                .await
+                .context("ack replayed poison message")?;
+            let dlq_after_replay = bus.dlq().await.context("read bus dlq after replay")?;
             println!(
                 "{}",
                 serde_json::to_string_pretty(&serde_json::json!({
                     "depth": bus.depth().await?,
-                    "dlq_len": dlq.len(),
-                    "dlq": dlq
+                    "dlq_len_before_replay": dlq.len(),
+                    "dlq_len": dlq_after_replay.len(),
+                    "replay_ack": replay_ack,
+                    "replayed_attempts": replayed_attempts,
+                    "replayed_message_id": replayed_message_id,
+                    "dlq": dlq_after_replay
                 }))?
             );
         }

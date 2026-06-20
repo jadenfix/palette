@@ -37,8 +37,8 @@ use beater_human::{
     SubmitAnnotationRequest,
 };
 use beater_ingest::{
-    anonymous_auth_context, IngestError, IngestOutcome, IngestQueueStatus, IngestService,
-    NativeIngestRequest, TraceIngestedDrainReport, TraceWriteDrainReport,
+    anonymous_auth_context, DeadLetterReplayReport, IngestError, IngestOutcome, IngestQueueStatus,
+    IngestService, NativeIngestRequest, TraceIngestedDrainReport, TraceWriteDrainReport,
 };
 use beater_judge::{
     JudgeBroker, JudgeBrokerError, JudgeBrokerOutcome, JudgeBrokerRequest, JudgeLedgerStore,
@@ -293,6 +293,10 @@ pub fn router(state: ApiState) -> Router {
         .route(
             "/v1/ingest/:tenant_id/:project_id/queue",
             get(get_ingest_queue_status_route),
+        )
+        .route(
+            "/v1/ingest/:tenant_id/:project_id/dead-letters/:message_id/replay",
+            post(replay_dead_letter_route),
         )
         .route(
             "/v1/ingest/:tenant_id/:project_id/trace-writes/drain",
@@ -624,6 +628,25 @@ async fn get_ingest_queue_status_route(
     Ok(Json(
         state.ingest.queue_status(tenant_id, project_id).await?,
     ))
+}
+
+async fn replay_dead_letter_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id, message_id)): Path<(String, String, String)>,
+    Query(params): Query<ReplayDeadLetterQuery>,
+) -> Result<Json<DeadLetterReplayReport>, ApiError> {
+    let tenant_id =
+        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let project_id =
+        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
+    let reset_attempts = params.reset_attempts.unwrap_or(true);
+    let report = state
+        .ingest
+        .replay_dead_letter(&tenant_id, &project_id, &message_id, reset_attempts)
+        .await?;
+    Ok(Json(report))
 }
 
 async fn drain_trace_writes_route(
@@ -1991,6 +2014,11 @@ struct DrainTraceWritesQuery {
     limit: Option<usize>,
 }
 
+#[derive(Clone, Debug, Default, Deserialize)]
+struct ReplayDeadLetterQuery {
+    reset_attempts: Option<bool>,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 struct ArchiveQueryParams {
     environment_id: Option<String>,
@@ -2503,6 +2531,10 @@ impl From<IngestError> for ApiError {
             },
             IngestError::TooManyAttributes { .. } | IngestError::PayloadTooLarge { .. } => Self {
                 status: StatusCode::PAYLOAD_TOO_LARGE,
+                message: error.to_string(),
+            },
+            IngestError::NotFound(_) => Self {
+                status: StatusCode::NOT_FOUND,
                 message: error.to_string(),
             },
             IngestError::Store(error) => error.into(),

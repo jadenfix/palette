@@ -41,6 +41,8 @@ pub enum IngestError {
     },
     #[error("ingest bus is at capacity {capacity}")]
     Backpressure { capacity: usize },
+    #[error("ingest resource not found: {0}")]
+    NotFound(String),
     #[error(transparent)]
     Store(#[from] StoreError),
     #[error(transparent)]
@@ -342,6 +344,27 @@ impl IngestService {
             trace_write_depth,
             trace_ingested_depth,
             dead_letters,
+        })
+    }
+
+    pub async fn replay_dead_letter(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        message_id: &str,
+        reset_attempts: bool,
+    ) -> Result<DeadLetterReplayReport, IngestError> {
+        let ack = self
+            .bus
+            .replay_dead_letter(tenant_id, project_id, message_id, reset_attempts)
+            .await
+            .map_err(map_bus_error)?;
+        Ok(DeadLetterReplayReport {
+            tenant_id: tenant_id.clone(),
+            project_id: project_id.clone(),
+            message_id: message_id.to_string(),
+            reset_attempts,
+            ack,
         })
     }
 
@@ -1005,6 +1028,15 @@ pub struct IngestQueueStatus {
     pub dead_letters: Vec<DeadLetter>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeadLetterReplayReport {
+    pub tenant_id: TenantId,
+    pub project_id: ProjectId,
+    pub message_id: String,
+    pub reset_attempts: bool,
+    pub ack: PublishAck,
+}
+
 #[derive(Clone, Debug)]
 struct PreparedTraceBatch {
     tenant_id: TenantId,
@@ -1093,6 +1125,7 @@ fn quota_window_bounds(
 fn map_bus_error(error: BusError) -> IngestError {
     match error {
         BusError::Backpressure { capacity } => IngestError::Backpressure { capacity },
+        BusError::NotFound(message) => IngestError::NotFound(message),
         other => IngestError::Other(anyhow::Error::new(other)),
     }
 }

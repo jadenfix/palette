@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use axum::body::{to_bytes, Body};
 use axum::Router;
 use beater_alerts::{AlertDecision, SamplingDecision, SamplingReason};
@@ -24,22 +25,22 @@ use beater_human::{
     ReviewAnnotation, ReviewQueue, ReviewTask, ReviewTaskState, SqliteHumanReviewStore,
 };
 use beater_ingest::{
-    IngestPolicy, IngestQueueStatus, IngestService, NativeIngestRequest, TraceIngestedDrainReport,
-    TraceWriteDrainReport,
+    DeadLetterReplayReport, IngestPolicy, IngestQueueStatus, IngestService, NativeIngestRequest,
+    TraceIngestedDrainReport, TraceWriteDrainReport, TRACE_INGESTED_KIND,
 };
 use beater_judge::{JudgeBrokerService, KeywordJudgeProvider, SqliteJudgeLedger};
 use beater_replay::{plan_replay, ReplayMode};
 use beater_sandbox::WasmEvaluatorRuntime;
 use beater_schema::{
-    AgentSpanKind, AuthContext, EvaluatorLane, RedactionClass, ReplayCassette, SpanStatus,
-    TraceView,
+    AgentSpanKind, AuthContext, CanonicalSpan, EvaluatorLane, RedactionClass, ReplayCassette,
+    SpanStatus, TraceView,
 };
-use beater_search::{SearchResponse, TantivySearchIndex};
+use beater_search::{SearchIndex, SearchRequest, SearchResponse, TantivySearchIndex};
 use beater_secrets::{EncryptedSqliteProviderSecretStore, SecretKeyring};
 use beater_security::{api_key_id_from_secret, verify_webhook, ApiScope};
 use beater_store::{
     ArtifactStore, EnvironmentMetadata, InMemoryMetadataStore, MetadataStore, OrganizationMetadata,
-    ProjectMetadata, TraceStore,
+    ProjectMetadata, StoreError, StoreResult, TraceStore,
 };
 use beater_store_obj::FsArtifactStore;
 use beater_store_sql::SqliteTraceStore;
@@ -48,8 +49,42 @@ use chrono::{Duration, Utc};
 use http::{Request, StatusCode};
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tower::ServiceExt;
+
+struct FailNTimesSearchIndex {
+    inner: TantivySearchIndex,
+    remaining_failures: AtomicUsize,
+}
+
+impl FailNTimesSearchIndex {
+    fn new(inner: TantivySearchIndex, failures: usize) -> Self {
+        Self {
+            inner,
+            remaining_failures: AtomicUsize::new(failures),
+        }
+    }
+}
+
+#[async_trait]
+impl SearchIndex for FailNTimesSearchIndex {
+    async fn index_spans(&self, spans: &[CanonicalSpan]) -> StoreResult<()> {
+        if self.remaining_failures.load(Ordering::SeqCst) > 0 {
+            let _ = self.remaining_failures.fetch_update(
+                Ordering::SeqCst,
+                Ordering::SeqCst,
+                |remaining| remaining.checked_sub(1),
+            );
+            return Err(StoreError::backend("simulated search outage"));
+        }
+        self.inner.index_spans(spans).await
+    }
+
+    async fn search(&self, query: SearchRequest) -> StoreResult<SearchResponse> {
+        self.inner.search(query).await
+    }
+}
 
 #[tokio::test]
 async fn api_ingest_store_eval_gate_and_replay_are_integrated() {
@@ -1173,6 +1208,212 @@ async fn buffered_ingest_drains_scoped_trace_writes_through_api() {
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(status.trace_write_depth, 0);
     assert_eq!(status.trace_ingested_depth, 0);
+}
+
+#[tokio::test]
+async fn dlq_replay_restores_trace_ingested_work_through_api() {
+    let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+    let artifacts = Arc::new(
+        FsArtifactStore::new(tempdir.path().join("artifacts"))
+            .unwrap_or_else(|err| panic!("{err}")),
+    );
+    let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+    let search = Arc::new(FailNTimesSearchIndex::new(
+        TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}")),
+        3,
+    ));
+    let bus = Arc::new(InMemoryBus::new(32));
+    let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+    let app = router(ApiState::with_search(ingest, traces, search));
+
+    let request = native_request();
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/traces/native?durability=buffered")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::to_vec(&request).unwrap_or_else(|err| panic!("{err}")),
+                ))
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest/tenant/project/trace-writes/drain?limit=10")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let report: TraceWriteDrainReport =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(report.downstream_published, 1);
+
+    for attempt in 1..=3 {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/ingest/tenant/project/trace-ingested/drain?limit=10")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let report: TraceIngestedDrainReport =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(report.consumed, 1);
+        assert_eq!(report.failed_work, 1);
+        if attempt < 3 {
+            assert_eq!(report.retried, 1);
+            assert_eq!(report.dead_lettered, 0);
+        } else {
+            assert_eq!(report.retried, 0);
+            assert_eq!(report.dead_lettered, 1);
+        }
+    }
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/ingest/tenant/project/queue")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let status: IngestQueueStatus =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(status.trace_ingested_depth, 0);
+    assert_eq!(status.dead_letters.len(), 1);
+    let dead_letter = &status.dead_letters[0];
+    assert_eq!(dead_letter.message.kind, TRACE_INGESTED_KIND);
+    assert_eq!(dead_letter.message.attempts, 3);
+    let message_id = dead_letter.message.message_id.clone();
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!(
+                    "/v1/ingest/tenant/project/dead-letters/{message_id}/replay"
+                ))
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let replay: DeadLetterReplayReport =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(replay.message_id, message_id);
+    assert!(replay.reset_attempts);
+    assert!(replay.ack.accepted);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/ingest/tenant/project/queue")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let status: IngestQueueStatus =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(status.trace_ingested_depth, 1);
+    assert!(status.dead_letters.is_empty());
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest/tenant/project/trace-ingested/drain?limit=10")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let report: TraceIngestedDrainReport =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(report.completed, 1);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/search/tenant/spans?q=answer&kind=agent.run&status=ok")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let search: SearchResponse =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(search.hits.len(), 1);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/ingest/tenant/project/queue")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let status: IngestQueueStatus =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(status.trace_ingested_depth, 0);
+    assert!(status.dead_letters.is_empty());
 }
 
 #[tokio::test]

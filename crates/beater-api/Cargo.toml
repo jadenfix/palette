@@ -33,6 +33,7 @@ serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
+async-trait.workspace = true
 beater-bus = { path = "../beater-bus" }
 beater-eval = { path = "../beater-eval" }
 beater-replay = { path = "../beater-replay" }

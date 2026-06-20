@@ -13,6 +13,8 @@ use uuid::Uuid;
 pub enum BusError {
     #[error("bus is at capacity {capacity}")]
     Backpressure { capacity: usize },
+    #[error("bus message not found: {0}")]
+    NotFound(String),
     #[error("bus mutex poisoned: {0}")]
     Poisoned(String),
     #[error("bus storage error: {0}")]
@@ -101,6 +103,13 @@ pub trait DurableBus: Send + Sync {
     ) -> Result<Vec<BusMessage>, BusError>;
     async fn ack(&self, message: BusMessage) -> Result<(), BusError>;
     async fn retry_or_dlq(&self, message: BusMessage, reason: String) -> Result<(), BusError>;
+    async fn replay_dead_letter(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        message_id: &str,
+        reset_attempts: bool,
+    ) -> Result<PublishAck, BusError>;
     async fn dlq(&self) -> Result<Vec<DeadLetter>, BusError>;
     async fn depth(&self) -> Result<usize, BusError>;
     async fn depth_for_kind(&self, kind: &str) -> Result<usize, BusError>;
@@ -136,13 +145,9 @@ impl InMemoryBus {
     fn active_depth(state: &BusState) -> usize {
         state.queue.len().saturating_add(state.inflight.len())
     }
-}
 
-#[async_trait]
-impl DurableBus for InMemoryBus {
-    async fn publish(&self, message: BusMessage) -> Result<PublishAck, BusError> {
-        let mut state = self.lock()?;
-        let duplicate = state
+    fn has_active_duplicate(state: &BusState, message: &BusMessage) -> bool {
+        state
             .queue
             .iter()
             .chain(state.inflight.iter())
@@ -151,8 +156,15 @@ impl DurableBus for InMemoryBus {
                     && queued.project_id == message.project_id
                     && queued.kind == message.kind
                     && queued.idempotency_key == message.idempotency_key
-            });
-        if duplicate {
+            })
+    }
+}
+
+#[async_trait]
+impl DurableBus for InMemoryBus {
+    async fn publish(&self, message: BusMessage) -> Result<PublishAck, BusError> {
+        let mut state = self.lock()?;
+        if Self::has_active_duplicate(&state, &message) {
             return Ok(PublishAck::duplicate());
         }
         if Self::active_depth(&state) >= self.capacity {
@@ -258,6 +270,41 @@ impl DurableBus for InMemoryBus {
         }
         state.queue.push_back(message);
         Ok(())
+    }
+
+    async fn replay_dead_letter(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        message_id: &str,
+        reset_attempts: bool,
+    ) -> Result<PublishAck, BusError> {
+        let mut state = self.lock()?;
+        let index = state
+            .dlq
+            .iter()
+            .position(|dead_letter| {
+                dead_letter.message.tenant_id == *tenant_id
+                    && dead_letter.message.project_id == *project_id
+                    && dead_letter.message.message_id == message_id
+            })
+            .ok_or_else(|| BusError::NotFound(message_id.to_string()))?;
+        let mut message = state.dlq[index].message.clone();
+        if reset_attempts {
+            message.attempts = 0;
+        }
+        message.enqueued_at = Utc::now();
+        if Self::has_active_duplicate(&state, &message) {
+            return Ok(PublishAck::duplicate());
+        }
+        if Self::active_depth(&state) >= self.capacity {
+            return Err(BusError::Backpressure {
+                capacity: self.capacity,
+            });
+        }
+        state.dlq.remove(index);
+        state.queue.push_back(message);
+        Ok(PublishAck::accepted())
     }
 
     async fn dlq(&self) -> Result<Vec<DeadLetter>, BusError> {
@@ -407,6 +454,33 @@ impl SqliteDurableBus {
         Ok(Self::queue_depth(connection)?.saturating_add(Self::inflight_depth(connection)?))
     }
 
+    fn active_duplicate_exists(
+        connection: &Connection,
+        message: &BusMessage,
+    ) -> Result<bool, BusError> {
+        connection
+            .query_row(
+                r#"
+                SELECT EXISTS(
+                    SELECT 1 FROM queue_messages
+                    WHERE tenant_id = ?1 AND project_id = ?2 AND kind = ?3 AND idempotency_key = ?4
+                    UNION ALL
+                    SELECT 1 FROM inflight_messages
+                    WHERE tenant_id = ?1 AND project_id = ?2 AND kind = ?3 AND idempotency_key = ?4
+                )
+                "#,
+                params![
+                    message.tenant_id.as_str(),
+                    message.project_id.as_str(),
+                    message.kind.as_str(),
+                    message.idempotency_key.as_str()
+                ],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|exists| exists != 0)
+            .map_err(|err| BusError::Storage(err.to_string()))
+    }
+
     fn recover_inflight(connection: &Connection) -> Result<(), BusError> {
         let mut messages = Vec::new();
         {
@@ -497,6 +571,16 @@ impl SqliteDurableBus {
         Ok(())
     }
 
+    fn delete_dead_letter(connection: &Connection, message_id: &str) -> Result<(), BusError> {
+        connection
+            .execute(
+                "DELETE FROM dead_letters WHERE message_id = ?1",
+                params![message_id],
+            )
+            .map_err(|err| BusError::Storage(err.to_string()))?;
+        Ok(())
+    }
+
     fn insert_inflight(connection: &Connection, message: &BusMessage) -> Result<(), BusError> {
         let message_json =
             serde_json::to_string(message).map_err(|err| BusError::Storage(err.to_string()))?;
@@ -536,28 +620,7 @@ impl SqliteDurableBus {
 impl DurableBus for SqliteDurableBus {
     async fn publish(&self, message: BusMessage) -> Result<PublishAck, BusError> {
         let connection = self.lock()?;
-        let duplicate_exists = connection
-            .query_row(
-                r#"
-                SELECT EXISTS(
-                    SELECT 1 FROM queue_messages
-                    WHERE tenant_id = ?1 AND project_id = ?2 AND kind = ?3 AND idempotency_key = ?4
-                    UNION ALL
-                    SELECT 1 FROM inflight_messages
-                    WHERE tenant_id = ?1 AND project_id = ?2 AND kind = ?3 AND idempotency_key = ?4
-                )
-                "#,
-                params![
-                    message.tenant_id.as_str(),
-                    message.project_id.as_str(),
-                    message.kind.as_str(),
-                    message.idempotency_key.as_str()
-                ],
-                |row| row.get::<_, i64>(0),
-            )
-            .map_err(|err| BusError::Storage(err.to_string()))?
-            != 0;
-        if duplicate_exists {
+        if Self::active_duplicate_exists(&connection, &message)? {
             return Ok(PublishAck::duplicate());
         }
         if Self::active_depth(&connection)? >= self.capacity {
@@ -625,6 +688,55 @@ impl DurableBus for SqliteDurableBus {
             return Self::insert_dead_letter(&connection, &dead_letter);
         }
         Self::insert_message(&connection, &message).map(|_| ())
+    }
+
+    async fn replay_dead_letter(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        message_id: &str,
+        reset_attempts: bool,
+    ) -> Result<PublishAck, BusError> {
+        let mut connection = self.lock()?;
+        let tx = connection
+            .transaction()
+            .map_err(|err| BusError::Storage(err.to_string()))?;
+        let dead_letter_json = tx
+            .query_row(
+                r#"
+                SELECT dead_letter_json
+                FROM dead_letters
+                WHERE tenant_id = ?1 AND project_id = ?2 AND message_id = ?3
+                "#,
+                params![tenant_id.as_str(), project_id.as_str(), message_id],
+                |row| row.get::<_, String>(0),
+            )
+            .map_err(|err| match err {
+                rusqlite::Error::QueryReturnedNoRows => BusError::NotFound(message_id.to_string()),
+                other => BusError::Storage(other.to_string()),
+            })?;
+        let dead_letter = serde_json::from_str::<DeadLetter>(&dead_letter_json)
+            .map_err(|err| BusError::Storage(err.to_string()))?;
+        let mut message = dead_letter.message;
+        if reset_attempts {
+            message.attempts = 0;
+        }
+        message.enqueued_at = Utc::now();
+        if Self::active_duplicate_exists(&tx, &message)? {
+            return Ok(PublishAck::duplicate());
+        }
+        if Self::active_depth(&tx)? >= self.capacity {
+            return Err(BusError::Backpressure {
+                capacity: self.capacity,
+            });
+        }
+        let ack = Self::insert_message(&tx, &message)?;
+        if ack.accepted {
+            Self::delete_dead_letter(&tx, message_id)?;
+        }
+        tx.commit()
+            .map_err(|err| BusError::Storage(err.to_string()))?;
+        Ok(ack)
     }
 
     async fn dlq(&self) -> Result<Vec<DeadLetter>, BusError> {
@@ -877,6 +989,55 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn in_memory_bus_replays_scoped_dead_letter_with_reset_attempts() {
+        let bus = InMemoryBus::new(8);
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let other_tenant = TenantId::new("other-tenant").unwrap_or_else(|err| panic!("{err}"));
+        let mut message = scoped_fixture_message(&tenant, &project, "transient", "replay");
+        message.max_attempts = 1;
+
+        bus.publish(message)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let mut batch = bus
+            .consume_batch(1)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let failed = batch.remove(0);
+        bus.retry_or_dlq(failed, "transient failure".to_string())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let dlq = bus.dlq().await.unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(dlq.len(), 1);
+        let message_id = dlq[0].message.message_id.clone();
+        assert_eq!(dlq[0].message.attempts, 1);
+
+        assert!(matches!(
+            bus.replay_dead_letter(&other_tenant, &project, &message_id, true)
+                .await,
+            Err(BusError::NotFound(_))
+        ));
+        assert_eq!(
+            bus.replay_dead_letter(&tenant, &project, &message_id, true)
+                .await,
+            Ok(PublishAck::accepted())
+        );
+        assert!(bus
+            .dlq()
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .is_empty());
+        let replayed = bus
+            .consume_batch(1)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(replayed.len(), 1);
+        assert_eq!(replayed[0].message_id, message_id);
+        assert_eq!(replayed[0].attempts, 0);
+    }
+
+    #[tokio::test]
     async fn sqlite_bus_persists_queue_across_reopen_and_dedupes_publishes() {
         let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
         let path = tempdir.path().join("bus.sqlite");
@@ -1055,6 +1216,35 @@ mod tests {
         assert_eq!(dlq[0].reason, "invalid schema");
         assert_eq!(dlq[0].message.attempts, 2);
         assert_eq!(dlq[0].message.kind, "poison-sqlite");
+        let message_id = dlq[0].message.message_id.clone();
+        assert_eq!(
+            reopened
+                .replay_dead_letter(
+                    &TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                    &ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+                    &message_id,
+                    true,
+                )
+                .await,
+            Ok(PublishAck::accepted())
+        );
+        assert_eq!(reopened.depth().await, Ok(1));
+        assert!(reopened
+            .dlq()
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .is_empty());
+        let replayed = reopened
+            .consume_batch(1)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(replayed.len(), 1);
+        assert_eq!(replayed[0].message_id, message_id);
+        assert_eq!(replayed[0].attempts, 0);
+        reopened
+            .ack(replayed[0].clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
     }
 
     fn fixture_message(kind: &str) -> BusMessage {

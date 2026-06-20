@@ -169,6 +169,7 @@ fn status_from_ingest_error(error: IngestError) -> Status {
         IngestError::TooManyAttributes { .. } | IngestError::PayloadTooLarge { .. } => {
             Status::invalid_argument(error.to_string())
         }
+        IngestError::NotFound(_) => Status::not_found(error.to_string()),
         IngestError::Store(_) => Status::unavailable(error.to_string()),
         IngestError::Other(_) => Status::internal(error.to_string()),
     }

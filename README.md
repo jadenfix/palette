@@ -43,6 +43,7 @@ This repo now contains the first tested Rust vertical slice:
 - currency-checked `Money` math plus injectable core `Clock`
 - bounded in-memory bus plus SQLite durable bus with persisted retry and DLQ behavior
 - explicit bus ack/inflight semantics with SQLite recovery of unacked leased work after restart
+- tenant/project-scoped DLQ replay that resets attempts and requeues work without deleting unreplayed dead letters
 - buffered ingest mode that durably queues canonical trace writes before hot-store persistence
 - scoped trace-write drain/status API with typed 429 backpressure responses
 - native ingest pipeline with payload/attribute governance and trait-backed windowed quotas
@@ -72,6 +73,7 @@ This repo now contains the first tested Rust vertical slice:
 - API routes for provider-secret create/list/revoke, judge evaluation, and judge ledger readback
 - API route for tenant/project usage summaries over metered judge spend
 - API route for tenant/project audit event readback and audited trace unmasking
+- API route for scoped ingest DLQ replay
 - API routes for archiving hot traces and querying cold spans
 - API routes for dataset creation, trace promotion, versioning, deterministic eval runs, and judge-backed eval runs
 - API route and CLI fixtures for deterministic and judge-backed experiment comparison plus local agent harness runs
@@ -82,7 +84,7 @@ This repo now contains the first tested Rust vertical slice:
 - `beaterd` defaults to a persistent SQLite bus backend, with an in-memory backend still available
 - `beaterd` runs configurable trace-write and trace-ingested background workers for buffered ingest and downstream indexing
 - live `beaterd` integration test proving OTLP HTTP and gRPC traces become readable and searchable through public APIs
-- `beaterctl bus-fixture` validates durable queue reopen, retry, and DLQ behavior
+- `beaterctl bus-fixture` validates durable queue reopen, retry, DLQ, and replay behavior
 - `beaterctl ingest-outage-fixture` validates accepted buffered ingest, retry during TraceStore outage, and recovery drain
 - `beaterctl replay-fixture` validates persisted cassette replay without live provider/tool calls
 - `beaterctl judge-fixture` validates encrypted BYOK secret persistence, cached judge calls, budget metering, and ledger redaction
