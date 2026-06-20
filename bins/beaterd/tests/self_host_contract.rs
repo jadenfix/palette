@@ -34,8 +34,9 @@ fn self_host_files_define_gate_two_compose_surface() {
 
     let image_workflow = read(root.join(".github/workflows/container-images.yml"));
     assert!(image_workflow.contains("packages: write"));
-    assert!(image_workflow.contains("docker/setup-qemu-action@"));
-    assert!(image_workflow.contains("platforms: linux/amd64,linux/arm64"));
+    assert!(image_workflow.contains("ubuntu-24.04-arm"));
+    assert!(image_workflow.contains("platform: linux/arm64"));
+    assert!(image_workflow.contains("docker buildx imagetools create"));
     assert!(image_workflow.contains("target: runtime"));
     assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/beaterd:main"));
     assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/dashboard:main"));
