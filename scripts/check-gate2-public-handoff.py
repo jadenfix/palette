@@ -5,6 +5,7 @@ import argparse
 import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -99,12 +100,15 @@ def make_clone_parent(args: argparse.Namespace) -> tuple[Path, tempfile.Temporar
     return Path(temp_dir.name), temp_dir
 
 
-def clone_repo(args: argparse.Namespace, expected_commit: str) -> tuple[Path, tempfile.TemporaryDirectory | None]:
+def clone_repo(
+    args: argparse.Namespace, expected_commit: str
+) -> tuple[Path, tempfile.TemporaryDirectory | None, int]:
     parent, temp_owner = make_clone_parent(args)
     clone_dir = parent / "beater"
     if clone_dir.exists():
         raise SystemExit(f"clone destination already exists: {clone_dir}")
 
+    clone_started_epoch = int(time.time())
     clone_command = [
         "git",
         "clone",
@@ -134,7 +138,7 @@ def clone_repo(args: argparse.Namespace, expected_commit: str) -> tuple[Path, te
             f"public handoff clone origin must be {args.source_url!r}, got {clone_origin!r}"
         )
 
-    return clone_dir, temp_owner
+    return clone_dir, temp_owner, clone_started_epoch
 
 
 def run_cloned_checks(args: argparse.Namespace, clone_dir: Path) -> None:
@@ -179,25 +183,51 @@ def run_cloned_checks(args: argparse.Namespace, clone_dir: Path) -> None:
     run(["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env)
 
 
-def run_cloned_full_run(args: argparse.Namespace, clone_dir: Path) -> None:
+def cleanup_cloned_compose(clone_dir: Path) -> None:
+    result = subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            "docker-compose.prebuilt.yml",
+            "-p",
+            "beater-stopwatch",
+            "down",
+            "-v",
+            "--remove-orphans",
+        ],
+        cwd=clone_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(
+            "warning: Gate 2 full-run cleanup failed; clean the "
+            "beater-stopwatch Compose project manually if needed"
+        )
+        if result.stdout:
+            print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
+
+
+def run_cloned_full_run(
+    args: argparse.Namespace, clone_dir: Path, clone_started_epoch: int
+) -> None:
     if not args.full_run:
         return
 
-    if args.source_url != REMOTE_URL and not args.registry_fixture:
+    if args.source_url != REMOTE_URL:
         raise SystemExit(
-            "--full-run against a non-canonical source requires --registry-fixture; "
-            "canonical handoff should use the public GitHub repo and GHCR images"
+            "--full-run executes the exact scripts/gate2-outside-run.sh path and "
+            "is only supported against the canonical public GitHub repo and GHCR images"
         )
 
     env = clean_outside_env()
-    env["BEATER_GATE2_WRITE_PROOF"] = "1"
-    env["BEATER_GATE2_BROWSER_PROOF"] = "1"
-    env["BEATER_GATE2_RECORD_DEMO"] = "1"
-    env["BEATER_GATE2_REUSE"] = "0"
-    env["BEATER_GATE2_LOCAL_BUILD"] = "0"
-    env["BEATER_GATE2_PULL_POLICY"] = "always"
-    env["KEEP_BEATER_COMPOSE"] = "0"
-    run(["bash", "scripts/gate2-compose-stopwatch.sh"], cwd=clone_dir, env=env)
+    env["BEATER_GATE2_CLONE_STARTED_EPOCH"] = str(clone_started_epoch)
+    try:
+        run(["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env)
+    finally:
+        cleanup_cloned_compose(clone_dir)
 
 
 def parse_args() -> argparse.Namespace:
@@ -240,9 +270,9 @@ def parse_args() -> argparse.Namespace:
         "--full-run",
         action="store_true",
         help=(
-            "After the clean-clone dry-run checks, run the real prebuilt-image "
-            "Gate 2 stopwatch in the clone and clean up Compose. This is a "
-            "maintainer runtime verifier, not outside-person evidence."
+            "After the clean-clone dry-run checks, run the exact outside-run "
+            "wrapper in the clone with clone-start timing, then clean up "
+            "Compose. This is a maintainer runtime verifier, not outside-person evidence."
         ),
     )
     return parser.parse_args()
@@ -252,10 +282,10 @@ def main() -> None:
     args = parse_args()
     expected_commit = args.expected_commit or current_commit()
     run_local_readiness(args)
-    clone_dir, temp_owner = clone_repo(args, expected_commit)
+    clone_dir, temp_owner, clone_started_epoch = clone_repo(args, expected_commit)
     try:
         run_cloned_checks(args, clone_dir)
-        run_cloned_full_run(args, clone_dir)
+        run_cloned_full_run(args, clone_dir, clone_started_epoch)
         mode = "full run" if args.full_run else "clone"
         print(f"Gate 2 public handoff {mode} passed for {expected_commit}: {clone_dir}")
     finally:

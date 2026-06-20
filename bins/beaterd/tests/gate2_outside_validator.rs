@@ -1,4 +1,5 @@
 use std::fs;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
@@ -150,11 +151,11 @@ fn gate2_public_handoff_verifier_accepts_clean_clone_fixture() {
 }
 
 #[test]
-fn gate2_public_handoff_verifier_full_run_executes_cloned_stopwatch() {
+fn gate2_public_handoff_verifier_full_run_rejects_noncanonical_fixture_source() {
     let registry = TempDir::new().expect("create registry fixture dir");
     let clone_parent = TempDir::new().expect("create public handoff clone parent");
     write_registry_fixtures(registry.path());
-    let fixture_repo = write_public_handoff_fixture_repo_with_full_run_stub();
+    let fixture_repo = write_public_handoff_fixture_repo();
     let fixture_head = git_output(fixture_repo.path(), &["rev-parse", "HEAD"]);
     let source_url = format!("file://{}", fixture_repo.path().display());
 
@@ -165,19 +166,35 @@ fn gate2_public_handoff_verifier_full_run_executes_cloned_stopwatch() {
         clone_parent.path(),
     );
 
-    assert_success(output, "Gate 2 public handoff full run passed");
-    let env_marker = fs::read_to_string(clone_parent.path().join("beater/full-run-env.txt"))
-        .expect("read full-run marker from cloned verifier");
+    assert_failure(
+        output,
+        "--full-run executes the exact scripts/gate2-outside-run.sh path",
+    );
+}
+
+#[test]
+fn gate2_outside_wrapper_real_run_executes_stopwatch_with_clone_timer() {
+    let fixture = write_outside_wrapper_fixture_repo("main");
+    write_stopwatch_env_stub(fixture.path());
+    git_success(fixture.path(), &["add", "."]);
+    git_success(fixture.path(), &["commit", "-m", "add stopwatch stub"]);
+
+    let output = run_outside_wrapper_real_with_clone_timer_in_repo(fixture.path(), "1800000000");
+
+    assert_success(output, "fixture outside wrapper runtime executed");
+    let env_marker = fs::read_to_string(fixture.path().join("wrapper-real-env.txt"))
+        .expect("read outside wrapper runtime marker");
     assert!(env_marker.contains("write=1"));
     assert!(env_marker.contains("browser=1"));
     assert!(env_marker.contains("record=1"));
     assert!(env_marker.contains("reuse=0"));
     assert!(env_marker.contains("local_build=0"));
     assert!(env_marker.contains("pull_policy=always"));
-    assert!(env_marker.contains("keep=0"));
+    assert!(env_marker.contains("keep=1"));
+    assert!(env_marker.contains("outside_wrapper=1"));
     assert!(env_marker.contains("dry=unset"));
     assert!(env_marker.contains("expected_origin=unset"));
-    assert!(env_marker.contains("clone_started=unset"));
+    assert!(env_marker.contains("clone_started=1800000000"));
     assert!(env_marker.contains("dashboard_port=unset"));
 }
 
@@ -1193,6 +1210,34 @@ fn run_outside_wrapper_real_preflight_in_repo(repo: &Path) -> Output {
         .unwrap_or_else(|err| panic!("run Gate 2 outside wrapper fixture preflight: {err}"))
 }
 
+fn run_outside_wrapper_real_with_clone_timer_in_repo(repo: &Path, clone_started: &str) -> Output {
+    Command::new("bash")
+        .arg(repo.join("scripts/gate2-outside-run.sh"))
+        .current_dir(repo)
+        .env_remove("BEATER_GATE2_OUTSIDE_RUN_DRY_RUN")
+        .env("BEATER_GATE2_CLONE_STARTED_EPOCH", clone_started)
+        .env_remove("BEATER_DASHBOARD_PORT")
+        .env_remove("BEATER_HTTP_PORT")
+        .env_remove("BEATER_OTLP_GRPC_PORT")
+        .env_remove("BEATER_GATE2_REUSE")
+        .env_remove("BEATER_GATE2_LOCAL_BUILD")
+        .env_remove("BEATER_GATE2_PULL_POLICY")
+        .env_remove("BEATER_GATE2_WRITE_PROOF")
+        .env_remove("BEATER_GATE2_BROWSER_PROOF")
+        .env_remove("BEATER_GATE2_RECORD_DEMO")
+        .env_remove("BEATERD_IMAGE")
+        .env_remove("BEATER_DASHBOARD_IMAGE")
+        .env_remove("BEATER_DASHBOARD_E2E_IMAGE")
+        .env_remove("BEATER_OTEL_PYTHON_IMAGE")
+        .env_remove("BEATER_GATE2_STOPWATCH_PROOF")
+        .env_remove("BEATER_GATE2_RECORD_VIDEO")
+        .env_remove("BEATER_GATE2_RECORD_NOTES")
+        .env_remove("KEEP_BEATER_COMPOSE")
+        .env_remove("COMPOSE_PROJECT_NAME")
+        .output()
+        .unwrap_or_else(|err| panic!("run Gate 2 outside wrapper fixture real run: {err}"))
+}
+
 fn assert_success(output: Output, expected_stdout: &str) {
     if !output.status.success() {
         panic!(
@@ -1320,9 +1365,8 @@ fn write_public_handoff_fixture_repo() -> TempDir {
     fixture
 }
 
-fn write_public_handoff_fixture_repo_with_full_run_stub() -> TempDir {
-    let fixture = write_public_handoff_fixture_repo();
-    let stub = fixture.path().join("scripts/gate2-compose-stopwatch.sh");
+fn write_stopwatch_env_stub(repo: &Path) {
+    let stub = repo.join("scripts/gate2-compose-stopwatch.sh");
     fs::write(
         &stub,
         r#"#!/usr/bin/env bash
@@ -1335,18 +1379,22 @@ set -euo pipefail
   echo "local_build=${BEATER_GATE2_LOCAL_BUILD:-unset}"
   echo "pull_policy=${BEATER_GATE2_PULL_POLICY:-unset}"
   echo "keep=${KEEP_BEATER_COMPOSE:-unset}"
+  echo "outside_wrapper=${BEATER_GATE2_OUTSIDE_WRAPPER:-unset}"
   echo "dry=${BEATER_GATE2_OUTSIDE_RUN_DRY_RUN:-unset}"
   echo "expected_origin=${BEATER_GATE2_EXPECTED_ORIGIN:-unset}"
   echo "clone_started=${BEATER_GATE2_CLONE_STARTED_EPOCH:-unset}"
   echo "dashboard_port=${BEATER_DASHBOARD_PORT:-unset}"
-} > full-run-env.txt
-echo "fixture full public handoff runtime executed"
+} > wrapper-real-env.txt
+echo "fixture outside wrapper runtime executed"
 "#,
     )
-    .unwrap_or_else(|err| panic!("write full-run stopwatch stub {}: {err}", stub.display()));
-    git_success(fixture.path(), &["add", "."]);
-    git_success(fixture.path(), &["commit", "-m", "add full run stub"]);
-    fixture
+    .unwrap_or_else(|err| panic!("write stopwatch env stub {}: {err}", stub.display()));
+    let mut permissions = fs::metadata(&stub)
+        .unwrap_or_else(|err| panic!("stat stopwatch env stub {}: {err}", stub.display()))
+        .permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&stub, permissions)
+        .unwrap_or_else(|err| panic!("chmod stopwatch env stub {}: {err}", stub.display()));
 }
 
 fn write_outside_wrapper_fixture_repo(branch: &str) -> TempDir {

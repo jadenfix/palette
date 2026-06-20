@@ -430,6 +430,17 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("BEATER_GATE2_EXPECTED_ORIGIN"));
     assert!(public_handoff.contains("--registry-fixture"));
     assert!(public_handoff.contains("--skip-local-readiness"));
+    assert!(public_handoff.contains("import time"));
+    assert!(public_handoff.contains("clone_started_epoch = int(time.time())"));
+    assert!(public_handoff.contains("env[\"BEATER_GATE2_CLONE_STARTED_EPOCH\"]"));
+    assert!(
+        public_handoff.contains("run([\"scripts/gate2-outside-run.sh\"], cwd=clone_dir, env=env)")
+    );
+    assert!(public_handoff.contains("cleanup_cloned_compose"));
+    assert!(public_handoff.contains("docker-compose.prebuilt.yml"));
+    assert!(
+        public_handoff.contains("--full-run executes the exact scripts/gate2-outside-run.sh path")
+    );
 
     let outside_proof = read(root.join("docs/demos/gate2-outside-person-proof.md"));
     assert!(outside_proof.contains("Status: not yet completed"));
@@ -456,6 +467,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("--attest-outside-run"));
     assert!(outside_proof.contains("Docker Compose version"));
     assert!(outside_proof.contains("scripts/check-gate2-public-handoff.py"));
+    assert!(outside_proof.contains("executes the cloned `scripts/gate2-outside-run.sh` wrapper"));
+    assert!(outside_proof.contains("fixture or fork URLs"));
     assert!(outside_proof.contains("scripts/check-gate2-outside-readiness.py"));
     assert!(outside_proof.contains("fresh clone from"));
     assert!(outside_proof.contains("reruns the cloned readiness check"));
@@ -500,6 +513,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("docs/demos/gate2-outside-person-proof.md"));
     assert!(readme.contains("scripts/gate2-outside-run.sh"));
     assert!(readme.contains("scripts/check-gate2-public-handoff.py"));
+    assert!(readme.contains("executes the cloned `scripts/gate2-outside-run.sh` wrapper"));
+    assert!(readme.contains("fixture or fork URLs"));
     assert!(readme.contains("scripts/check-gate2-outside-readiness.py"));
     assert!(readme.contains("Outside-run wrapper: yes"));
     assert!(readme.contains("prebuilt image overrides"));
