@@ -230,6 +230,25 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(record_script.contains("docs/demos"));
     assert!(record_script.contains("gate2-browser-demo.webm"));
 
+    let compose_recording_notes = read(root.join("docs/demos/gate2-compose-browser-demo.md"));
+    assert!(compose_recording_notes.contains("# Gate 2 Compose Browser Demo"));
+    assert!(compose_recording_notes.contains("alternate host ports"));
+    assert!(compose_recording_notes.contains("http://127.0.0.1:3000"));
+    assert!(compose_recording_notes.contains("gate2-compose-browser-demo.webm"));
+    assert!(compose_recording_notes.contains("SHA256"));
+    assert!(compose_recording_notes.contains("Quickstart trace"));
+    assert!(compose_recording_notes.contains("All-kind trace"));
+    assert!(compose_recording_notes.contains("click five-line trace"));
+    assert!(compose_recording_notes.contains("docs/demos/gate2-outside-person-proof.md"));
+
+    let compose_recording = root.join("docs/demos/gate2-compose-browser-demo.webm");
+    let metadata = fs::metadata(&compose_recording)
+        .unwrap_or_else(|err| panic!("stat {}: {err}", compose_recording.display()));
+    assert!(
+        metadata.len() > 64 * 1024,
+        "Gate 2 compose recording must be a committed non-empty browser video"
+    );
+
     let quickstart_e2e = read(root.join("web/dashboard/tests/e2e/quickstart.spec.ts"));
     assert!(quickstart_e2e.contains("five-line-llm-call"));
     assert!(quickstart_e2e.contains("gpt-quickstart"));
