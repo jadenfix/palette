@@ -62,6 +62,7 @@ fn gate2_outside_generator_builds_valid_completed_proof() {
     assert!(generated_text.contains("- Beater image digest: ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
     assert!(generated_text.contains("- Dashboard e2e image digest: ghcr.io/jadenfix/beater/dashboard-e2e@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"));
     assert!(generated_text.contains("- OTEL Python image digest: ghcr.io/jadenfix/beater/otel-python@sha256:abababababababababababababababababababababababababababababababab"));
+    assert!(generated_text.contains("scripts/gate2-outside-run.sh"));
     assert!(generated_text.contains(
         "- [x] The runner completed the flow using only public repository instructions."
     ));
@@ -125,6 +126,20 @@ fn gate2_outside_readiness_rejects_missing_image_platform() {
     let output = run_readiness_with_fixture(registry.path());
 
     assert_failure(output, "platforms mismatch for dashboard");
+}
+
+#[test]
+fn gate2_outside_wrapper_accepts_default_dry_run() {
+    let output = run_outside_wrapper_dry_run(None);
+
+    assert_success(output, "Gate 2 outside-run wrapper preflight passed");
+}
+
+#[test]
+fn gate2_outside_wrapper_rejects_alternate_dashboard_port() {
+    let output = run_outside_wrapper_dry_run(Some(("BEATER_DASHBOARD_PORT", "13080")));
+
+    assert_failure(output, "BEATER_DASHBOARD_PORT must be unset or '3000'");
 }
 
 #[test]
@@ -538,7 +553,7 @@ Status: completed.
 ```bash
 git clone https://github.com/jadenfix/beater.git
 cd beater
-BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1 scripts/gate2-compose-stopwatch.sh
+scripts/gate2-outside-run.sh
 ```
 
 The runner completed the flow using only public repository instructions.
@@ -722,6 +737,29 @@ fn run_readiness_with_fixture(registry_path: &Path) -> Output {
         .current_dir(root)
         .output()
         .unwrap_or_else(|err| panic!("run Gate 2 outside readiness checker: {err}"))
+}
+
+fn run_outside_wrapper_dry_run(extra_env: Option<(&str, &str)>) -> Output {
+    let root = repo_root();
+    let mut command = Command::new(root.join("scripts/gate2-outside-run.sh"));
+    command
+        .current_dir(root)
+        .env("BEATER_GATE2_OUTSIDE_RUN_DRY_RUN", "1")
+        .env_remove("BEATER_DASHBOARD_PORT")
+        .env_remove("BEATER_HTTP_PORT")
+        .env_remove("BEATER_OTLP_GRPC_PORT")
+        .env_remove("BEATER_GATE2_REUSE")
+        .env_remove("BEATER_GATE2_LOCAL_BUILD")
+        .env_remove("BEATER_GATE2_PULL_POLICY")
+        .env_remove("BEATER_GATE2_WRITE_PROOF")
+        .env_remove("BEATER_GATE2_BROWSER_PROOF")
+        .env_remove("BEATER_GATE2_RECORD_DEMO");
+    if let Some((name, value)) = extra_env {
+        command.env(name, value);
+    }
+    command
+        .output()
+        .unwrap_or_else(|err| panic!("run Gate 2 outside wrapper dry-run: {err}"))
 }
 
 fn assert_success(output: Output, expected_stdout: &str) {

@@ -9,10 +9,7 @@ import tempfile
 from pathlib import Path
 
 
-CANONICAL_COMMAND = (
-    "BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 "
-    "BEATER_GATE2_RECORD_DEMO=1 scripts/gate2-compose-stopwatch.sh"
-)
+CANONICAL_COMMAND = "scripts/gate2-outside-run.sh"
 OUTSIDE_RUN_ATTESTATION = (
     "I attest that I am not a Beater project maintainer, I received no "
     "step-by-step help beyond public repository instructions, I used a fresh "

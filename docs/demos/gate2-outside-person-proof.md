@@ -46,11 +46,15 @@ outside the project who runs the flow unaided from a fresh clone.
 ```bash
 git clone https://github.com/jadenfix/beater.git
 cd beater
-BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1 scripts/gate2-compose-stopwatch.sh
+scripts/gate2-outside-run.sh
 ```
 
 No project maintainer may provide step-by-step help beyond public repo docs
 during the timed run.
+
+The wrapper sets the required proof/browser/recording flags and rejects
+warm-loop reuse, local source builds, alternate ports, and mutable pull-policy
+overrides before the stopwatch starts.
 
 The script fails before Compose startup if Docker is unavailable, if curl is
 missing, or if API `8080`, OTLP `4317`, or dashboard `3000` are still in use

@@ -238,10 +238,7 @@ elif status != "completed.":
     fail("Status must be 'completed.' for Gate 2 closure")
 
 for snippet, description in [
-    (
-        "BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1 scripts/gate2-compose-stopwatch.sh",
-        "canonical stopwatch command",
-    ),
+    ("scripts/gate2-outside-run.sh", "canonical outside-run command"),
     ("http://127.0.0.1:3000", "default dashboard URL"),
     ("Time-to-first-trace was 300 seconds or less", "first-trace checklist item"),
     ("Time-to-quickstart-click was 300 seconds or less", "browser-click checklist item"),

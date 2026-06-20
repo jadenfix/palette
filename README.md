@@ -139,10 +139,13 @@ Exact Docker Compose stopwatch proof for the mandate's clean-machine path:
 ```bash
 git clone https://github.com/jadenfix/beater.git
 cd beater
-BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1 scripts/gate2-compose-stopwatch.sh
+scripts/gate2-outside-run.sh
 ```
 
-The script first removes any previous Compose project/volumes, then runs
+The outside-run wrapper rejects warm-loop reuse, local source builds, alternate
+ports, and mutable pull-policy overrides, then runs the stopwatch script with
+proof writing, browser proof, and browser recording enabled. The script first
+removes any previous Compose project/volumes, then runs
 `docker compose up`, sends `examples/python/five_line_otel.py` from the
 prebuilt stock OpenTelemetry Python runner container, waits until the trace is
 visible in `localhost:3000`, and fails if time-to-first-trace exceeds 300
