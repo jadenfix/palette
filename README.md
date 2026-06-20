@@ -241,8 +241,11 @@ scripts/validate-gate2-outside-proof.sh
 The validator checks the outside-person template, stopwatch proof file, and
 screen-recording notes from the same run. It rejects alternate ports, warm-loop
 reuse, placeholder dashboard URLs, mismatched trace IDs, mismatched commit SHA,
-mismatched image digests, recording notes from a different dashboard session,
-and any screen recording hash that does not match the committed file.
+mismatched API/dashboard endpoints, non-main or stale commit evidence,
+mismatched image digests, non-repo-relative `docs/demos/` artifacts, and
+non-prebuilt GHCR image digests.
+It rejects recording notes from a different dashboard session and any screen
+recording hash that does not match the committed file.
 The `gate2-proof-contract` GitHub workflow runs the validator template check
 and the executable proof-artifact fixture tests on pull requests and `main`.
 

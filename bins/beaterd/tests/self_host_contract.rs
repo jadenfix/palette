@@ -38,6 +38,9 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(prebuilt_compose.contains("ghcr.io/jadenfix/beater/beaterd:main"));
     assert!(prebuilt_compose.contains("ghcr.io/jadenfix/beater/dashboard:main"));
     assert!(!prebuilt_compose.contains("build:"));
+    assert!(!prebuilt_compose.contains("BEATER_POSTGRES_PORT"));
+    assert!(!prebuilt_compose.contains("BEATER_NATS_PORT"));
+    assert!(!prebuilt_compose.contains("BEATER_MINIO_PORT"));
 
     let image_workflow = read(root.join(".github/workflows/container-images.yml"));
     assert!(image_workflow.contains("packages: write"));
@@ -197,6 +200,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("docker image inspect"));
     assert!(stopwatch_script.contains("Beater image digest"));
     assert!(stopwatch_script.contains("Dashboard image digest"));
+    assert!(stopwatch_script.contains("API endpoint"));
+    assert!(stopwatch_script.contains("Dashboard base"));
 
     let outside_validator = read(root.join("scripts/validate-gate2-outside-proof.sh"));
     assert!(outside_validator.contains("--allow-pending"));
@@ -204,14 +209,28 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains(":[ \\t]*(.*)$"));
     assert!(outside_validator.contains("BEATER_GATE2_REUSE=1"));
     assert!(outside_validator.contains("BEATER_DASHBOARD_PORT="));
+    assert!(outside_validator.contains("DEFAULT_API_ENDPOINT = \"http://127.0.0.1:8080\""));
     assert!(outside_validator.contains("DEFAULT_DASHBOARD_BASE = \"http://127.0.0.1:3000\""));
     assert!(outside_validator.contains("all pass-checklist boxes must be checked"));
     assert!(outside_validator.contains("hashlib.sha256"));
+    assert!(outside_validator.contains("subprocess.check_output"));
     assert!(outside_validator.contains("parse_qs"));
     assert!(outside_validator.contains("screen recording sha mismatch"));
     assert!(outside_validator.contains("require_image_digest"));
+    assert!(outside_validator.contains("require_ghcr_image_digest"));
+    assert!(outside_validator.contains("repo_artifact_path"));
+    assert!(outside_validator.contains("must be a repo-relative path under docs/demos"));
+    assert!(outside_validator.contains("must live under docs/demos"));
     assert!(outside_validator.contains("stopwatch proof file does not exist"));
     assert!(outside_validator.contains("DEFAULT_OTLP_ENDPOINT = \"http://127.0.0.1:4317\""));
+    assert!(outside_validator.contains("API endpoint must be"));
+    assert!(outside_validator.contains("(\"Startup mode\", \"prebuilt-image\")"));
+    assert!(outside_validator.contains("(\"Prebuilt pull policy\", \"always\")"));
+    assert!(outside_validator
+        .contains("Commit SHA must match current HEAD or be an evidence-only ancestor"));
+    assert!(outside_validator.contains("docs/demos evidence changes"));
+    assert!(outside_validator.contains("Branch must be main"));
+    assert!(outside_validator.contains("runner relationship/prior exposure"));
     assert!(outside_validator.contains("forbid_alternate_evidence(stopwatch_text"));
     assert!(outside_validator.contains("forbid_alternate_evidence(notes_text"));
     assert!(outside_validator.contains("require_equal(\"quickstart trace id\""));
@@ -240,6 +259,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_generator.contains("valid only when the named runner is outside"));
     assert!(outside_generator.contains("scripts/validate-gate2-outside-proof.sh"));
     assert!(outside_generator.contains("require_pending_or_force"));
+    assert!(outside_generator.contains("API endpoint"));
+    assert!(outside_generator.contains("Dashboard base"));
     assert!(outside_generator.contains("Browser recording SHA256"));
     assert!(outside_generator.contains("Beater image digest"));
     assert!(outside_generator.contains("Dashboard image digest"));
@@ -255,6 +276,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("--attest-outside-run"));
     assert!(outside_proof.contains("Docker Compose version"));
     assert!(outside_proof.contains("Beater image digest"));
+    assert!(outside_proof.contains("API endpoint"));
+    assert!(outside_proof.contains("Dashboard base"));
     assert!(outside_proof.contains("Screen recording SHA256"));
     assert!(outside_proof.contains("gate2-compose-browser-demo.webm"));
     assert!(outside_proof.contains("gate2-compose-browser-demo.md"));
@@ -265,6 +288,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("run -> turn -> step -> tool -> MCP"));
     assert!(outside_proof.contains("using only public repository instructions"));
     assert!(outside_proof.contains("Outside-run attestation"));
+    assert!(outside_proof.contains("Prior Beater repo exposure"));
+    assert!(outside_proof.contains("default API/OTLP/dashboard endpoints"));
     assert!(outside_proof.contains("cross-checks default"));
     assert!(outside_proof.contains("image digests"));
     assert!(outside_proof.contains("screen-recording notes"));
@@ -279,6 +304,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("removes any previous Beater stopwatch project"));
     assert!(readme.contains("gate2-compose-browser-demo.webm"));
     assert!(readme.contains("mismatched trace IDs"));
+    assert!(readme.contains("mismatched API/dashboard endpoints"));
+    assert!(readme.contains("repo-relative `docs/demos/` artifacts"));
+    assert!(readme.contains("prebuilt GHCR image digests"));
     assert!(readme.contains("mismatched image digests"));
     assert!(readme.contains("recording notes from a different dashboard session"));
     assert!(readme.contains("hash that does not match the committed file"));
@@ -291,6 +319,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("image-digest"));
     assert!(requirements.contains("recording-notes"));
     assert!(requirements.contains("outside-run attestation"));
+    assert!(requirements.contains("repo-relative `docs/demos/` artifacts"));
+    assert!(requirements.contains("prebuilt GHCR image digests"));
+    assert!(requirements.contains("default API/OTLP/dashboard endpoints"));
     assert!(requirements.contains("recording-hash cross-checks"));
     assert!(requirements.contains("CI-enforced"));
 

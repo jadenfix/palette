@@ -17,6 +17,7 @@ fi
 python3 - "$proof_path" "$allow_pending" <<'PY'
 import hashlib
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
@@ -31,6 +32,7 @@ if not proof_path.exists():
     raise SystemExit(f"missing outside-person proof file: {proof_path}")
 
 text = proof_path.read_text()
+DEFAULT_API_ENDPOINT = "http://127.0.0.1:8080"
 DEFAULT_DASHBOARD_BASE = "http://127.0.0.1:3000"
 DEFAULT_OTLP_ENDPOINT = "http://127.0.0.1:4317"
 OUTSIDE_RUN_ATTESTATION = (
@@ -104,6 +106,14 @@ def require_image_digest(name: str, value: str, source_name: str) -> None:
         fail(f"{name} in {source_name} must be a sha256 image digest")
 
 
+def require_ghcr_image_digest(
+    name: str, value: str, source_name: str, expected_image: str
+) -> None:
+    expected_prefix = f"ghcr.io/jadenfix/beater/{expected_image}@sha256:"
+    if not re.fullmatch(re.escape(expected_prefix) + r"[0-9a-f]{64}", value):
+        fail(f"{name} in {source_name} must be a GHCR repo digest for {expected_image}")
+
+
 def require_default_dashboard_url(name: str, value: str, trace_id: str) -> None:
     parsed = urlparse(value)
     if parsed.scheme != "http" or parsed.netloc != "127.0.0.1:3000":
@@ -130,6 +140,57 @@ def require_equal(name: str, outside_value: str, stopwatch_value: str) -> None:
 def repo_path(value: str) -> Path:
     path = Path(value)
     return path if path.is_absolute() else repo / path
+
+
+def repo_artifact_path(value: str, name: str) -> Path:
+    path = Path(value)
+    if path.is_absolute():
+        fail(f"{name} must be a repo-relative path under docs/demos")
+    if ".." in path.parts:
+        fail(f"{name} must not contain '..'")
+    if len(path.parts) < 2 or path.parts[0] != "docs" or path.parts[1] != "demos":
+        fail(f"{name} must live under docs/demos")
+    return repo / path
+
+
+def git_output(args: list[str]) -> str:
+    return subprocess.check_output(
+        ["git", *args], cwd=repo, text=True, stderr=subprocess.DEVNULL
+    ).strip()
+
+
+def git_head() -> str:
+    try:
+        return git_output(["rev-parse", "HEAD"])
+    except (OSError, subprocess.CalledProcessError):
+        return ""
+
+
+def require_current_or_evidence_only_commit(commit_sha: str) -> None:
+    if not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
+        fail("Commit SHA must be a lowercase 40-character git SHA")
+        return
+    current_head = git_head()
+    if not current_head or commit_sha == current_head:
+        return
+    try:
+        subprocess.check_call(
+            ["git", "merge-base", "--is-ancestor", commit_sha, "HEAD"],
+            cwd=repo,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        changed_paths = git_output(["diff", "--name-only", f"{commit_sha}..HEAD"])
+    except (OSError, subprocess.CalledProcessError):
+        fail("Commit SHA must match current HEAD or be an evidence-only ancestor")
+        return
+    non_evidence_paths = [
+        path for path in changed_paths.splitlines() if not path.startswith("docs/demos/")
+    ]
+    if non_evidence_paths:
+        fail(
+            "Commit SHA must match current HEAD or be followed only by docs/demos evidence changes"
+        )
 
 
 def forbid_alternate_evidence(source_text: str, source_name: str) -> None:
@@ -172,6 +233,7 @@ unresolved_fields = []
 for field in [
     "Name",
     "Organization or relationship to project",
+    "Prior Beater repo exposure",
     "Date",
     "Machine and OS",
     "Docker version",
@@ -184,6 +246,8 @@ for field in [
     "OS/arch",
     "Beater image digest",
     "Dashboard image digest",
+    "API endpoint",
+    "Dashboard base",
     "Started at",
     "Ended at",
     "Time-to-first-trace",
@@ -209,6 +273,32 @@ outside_run_attestation = field_value("Outside-run attestation")
 if outside_run_attestation != OUTSIDE_RUN_ATTESTATION:
     fail("Outside-run attestation must match the required unaided outside-run statement")
 
+relationship = field_value("Organization or relationship to project").lower()
+prior_exposure = field_value("Prior Beater repo exposure").lower()
+for outside_contradiction in [
+    "maintainer",
+    "internal",
+    "employee",
+    "founder",
+    "beater team",
+    "project team",
+]:
+    if outside_contradiction in relationship or outside_contradiction in prior_exposure:
+        fail("runner relationship/prior exposure must not contradict outside-run attestation")
+
+branch = field_value("Branch")
+if branch != "main":
+    fail(f"Branch must be main, got {branch!r}")
+commit_sha = field_value("Commit SHA")
+require_current_or_evidence_only_commit(commit_sha)
+
+api_endpoint = field_value("API endpoint")
+if api_endpoint != DEFAULT_API_ENDPOINT:
+    fail(f"API endpoint must be {DEFAULT_API_ENDPOINT}, got {api_endpoint!r}")
+dashboard_base = field_value("Dashboard base")
+if dashboard_base != DEFAULT_DASHBOARD_BASE:
+    fail(f"Dashboard base must be {DEFAULT_DASHBOARD_BASE}, got {dashboard_base!r}")
+
 if "- [ ]" in text:
     fail("all pass-checklist boxes must be checked")
 
@@ -220,9 +310,14 @@ require_trace_id("Quickstart trace ID", quickstart_trace_id, "outside-person pro
 require_trace_id("All-kind nested trace ID", all_kind_trace_id, "outside-person proof")
 beater_image_digest = field_value("Beater image digest")
 dashboard_image_digest = field_value("Dashboard image digest")
-require_image_digest("Beater image digest", beater_image_digest, "outside-person proof")
-require_image_digest(
-    "Dashboard image digest", dashboard_image_digest, "outside-person proof"
+require_ghcr_image_digest(
+    "Beater image digest", beater_image_digest, "outside-person proof", "beaterd"
+)
+require_ghcr_image_digest(
+    "Dashboard image digest",
+    dashboard_image_digest,
+    "outside-person proof",
+    "dashboard",
 )
 quickstart_url = field_value("Quickstart dashboard URL")
 all_kind_url = field_value("All-kind dashboard URL")
@@ -230,11 +325,11 @@ require_default_dashboard_url("Quickstart dashboard URL", quickstart_url, quicks
 require_default_dashboard_url("All-kind dashboard URL", all_kind_url, all_kind_trace_id)
 
 recording = field_value("Screen recording")
-recording_path = repo_path(recording) if recording else Path("")
+recording_path = repo_artifact_path(recording, "Screen recording") if recording else Path("")
 if recording and not recording_path.exists():
     fail(f"screen recording does not exist: {recording}")
 notes = field_value("Screen recording notes")
-notes_path = repo_path(notes) if notes else Path("")
+notes_path = repo_artifact_path(notes, "Screen recording notes") if notes else Path("")
 if notes and not notes_path.exists():
     fail(f"screen recording notes do not exist: {notes}")
 notes_text = notes_path.read_text() if notes and notes_path.exists() else ""
@@ -292,7 +387,11 @@ require_max_300(
 )
 
 stopwatch_proof = field_value("Stopwatch proof file")
-stopwatch_path = repo_path(stopwatch_proof) if stopwatch_proof else Path("")
+stopwatch_path = (
+    repo_artifact_path(stopwatch_proof, "Stopwatch proof file")
+    if stopwatch_proof
+    else Path("")
+)
 stopwatch_text = ""
 if stopwatch_proof and not stopwatch_path.exists():
     fail(f"stopwatch proof file does not exist: {stopwatch_proof}")
@@ -303,11 +402,15 @@ if stopwatch_text:
     forbid_alternate_evidence(stopwatch_text, "stopwatch proof")
     for field, expected in [
         ("Clean start", "yes"),
+        ("Startup mode", "prebuilt-image"),
         ("Reuse override", "BEATER_GATE2_REUSE=0"),
+        ("Prebuilt pull policy", "always"),
         ("Quickstart browser proof", "passed"),
         ("All-kind waterfall browser proof", "passed"),
         ("Browser recording", "passed"),
+        ("API endpoint", DEFAULT_API_ENDPOINT),
         ("OTLP endpoint", DEFAULT_OTLP_ENDPOINT),
+        ("Dashboard base", DEFAULT_DASHBOARD_BASE),
     ]:
         actual = field_value_from(stopwatch_text, field, "stopwatch proof")
         if actual != expected:
@@ -350,6 +453,15 @@ if stopwatch_text:
     require_equal("quickstart dashboard URL", quickstart_url, stopwatch_quickstart_url)
     require_equal("all-kind dashboard URL", all_kind_url, stopwatch_all_kind_url)
 
+    stopwatch_api_endpoint = field_value_from(
+        stopwatch_text, "API endpoint", "stopwatch proof"
+    )
+    stopwatch_dashboard_base = field_value_from(
+        stopwatch_text, "Dashboard base", "stopwatch proof"
+    )
+    require_equal("API endpoint", api_endpoint, stopwatch_api_endpoint)
+    require_equal("Dashboard base", dashboard_base, stopwatch_dashboard_base)
+
     stopwatch_recording = field_value_from(
         stopwatch_text, "Browser recording artifact", "stopwatch proof"
     )
@@ -369,11 +481,17 @@ if stopwatch_text:
     stopwatch_dashboard_image_digest = field_value_from(
         stopwatch_text, "Dashboard image digest", "stopwatch proof"
     )
-    require_image_digest(
-        "Beater image digest", stopwatch_beater_image_digest, "stopwatch proof"
+    require_ghcr_image_digest(
+        "Beater image digest",
+        stopwatch_beater_image_digest,
+        "stopwatch proof",
+        "beaterd",
     )
-    require_image_digest(
-        "Dashboard image digest", stopwatch_dashboard_image_digest, "stopwatch proof"
+    require_ghcr_image_digest(
+        "Dashboard image digest",
+        stopwatch_dashboard_image_digest,
+        "stopwatch proof",
+        "dashboard",
     )
     require_equal(
         "beater image digest", beater_image_digest, stopwatch_beater_image_digest

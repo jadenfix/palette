@@ -124,6 +124,8 @@ unaided using public repository instructions.
 - OS/arch: {field_value(stopwatch_text, "OS/arch", stopwatch_rel)}
 - Beater image digest: {field_value(stopwatch_text, "Beater image digest", stopwatch_rel)}
 - Dashboard image digest: {field_value(stopwatch_text, "Dashboard image digest", stopwatch_rel)}
+- API endpoint: {field_value(stopwatch_text, "API endpoint", stopwatch_rel)}
+- Dashboard base: {field_value(stopwatch_text, "Dashboard base", stopwatch_rel)}
 - Started at: {field_value(stopwatch_text, "Started", stopwatch_rel)}
 - Ended at: {field_value(stopwatch_text, "Ended", stopwatch_rel)}
 - Time-to-first-trace: {field_value(stopwatch_text, "Time-to-first-trace", stopwatch_rel)}

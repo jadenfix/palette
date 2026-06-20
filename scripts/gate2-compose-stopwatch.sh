@@ -367,7 +367,9 @@ if [[ "$write_proof" == "1" ]]; then
 - Beater image digest: \`$beater_image_digest\`
 - Dashboard image digest: \`$dashboard_image_digest\`
 - Quickstart snippet: \`examples/python/five_line_otel.py\`
+- API endpoint: \`$api_url\`
 - OTLP endpoint: \`$otlp_url\`
+- Dashboard base: \`$dashboard_base_url\`
 - Quickstart trace: \`$trace_id\`
 - Quickstart dashboard: $dashboard_url
 - Quickstart browser proof: $quickstart_browser_proof_status

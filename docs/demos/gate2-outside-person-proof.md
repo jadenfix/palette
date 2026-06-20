@@ -27,6 +27,8 @@ outside the project who runs the flow unaided from a fresh clone.
 - OS/arch:
 - Beater image digest:
 - Dashboard image digest:
+- API endpoint:
+- Dashboard base:
 - Started at:
 - Ended at:
 - Time-to-first-trace:
@@ -76,9 +78,11 @@ scripts/validate-gate2-outside-proof.sh
 ```
 
 The validator reads the listed stopwatch proof file and screen-recording notes,
-then cross-checks default ports, clean-start status, browser-proof status,
-trace IDs, dashboard URLs, image digests, commit SHA, and the screen-recording
-SHA256 against the committed artifact.
+then cross-checks default API/OTLP/dashboard endpoints, clean-start status,
+browser-proof status, trace IDs, dashboard URLs, prebuilt GHCR image digests,
+and the tested `main` commit SHA. If the proof commit is newer than the tested
+SHA, every later change must be under `docs/demos/`. It verifies screen-recording SHA256 against the committed artifact. Stopwatch, recording, and notes paths must
+be repo-relative paths under `docs/demos/`.
 
 ## Required Evidence
 

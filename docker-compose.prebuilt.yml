@@ -7,8 +7,6 @@ services:
       POSTGRES_DB: beater
       POSTGRES_USER: beater
       POSTGRES_PASSWORD: beater
-    ports:
-      - "${BEATER_POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./migrations/postgres:/docker-entrypoint-initdb.d:ro
@@ -21,9 +19,6 @@ services:
   nats:
     image: nats:2.11-alpine
     command: ["-js", "-sd", "/data", "-m", "8222"]
-    ports:
-      - "${BEATER_NATS_PORT:-4222}:4222"
-      - "${BEATER_NATS_MONITOR_PORT:-8222}:8222"
     volumes:
       - nats-data:/data
     healthcheck:
@@ -38,9 +33,6 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - "${BEATER_MINIO_PORT:-9000}:9000"
-      - "${BEATER_MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio-data:/data
     healthcheck:

@@ -6,7 +6,6 @@ use tempfile::TempDir;
 
 const QUICKSTART_TRACE: &str = "11111111111111111111111111111111";
 const ALL_KIND_TRACE: &str = "22222222222222222222222222222222";
-const COMMIT_SHA: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const RECORDING_BYTES: &[u8] = b"beater gate2 validator video\n";
 const RECORDING_SHA: &str = "996b14a456ef7d971a97600ecf240cc5f22eb5b5c05235719a64a042a4fdb29e";
 const BEATER_IMAGE_DIGEST: &str =
@@ -50,6 +49,8 @@ fn gate2_outside_generator_builds_valid_completed_proof() {
         .unwrap_or_else(|err| panic!("read {}: {err}", generated.display()));
     assert!(generated_text.contains("- Name: Validator Fixture Runner"));
     assert!(generated_text.contains(OUTSIDE_RUN_ATTESTATION));
+    assert!(generated_text.contains("- API endpoint: http://127.0.0.1:8080"));
+    assert!(generated_text.contains("- Dashboard base: http://127.0.0.1:3000"));
     assert!(generated_text.contains("- Beater image digest: ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
     assert!(generated_text.contains(
         "- [x] The runner completed the flow using only public repository instructions."
@@ -100,13 +101,8 @@ fn gate2_outside_validator_rejects_missing_stopwatch_proof() {
     let fixture = ValidatorFixture::new();
     replace(
         &fixture.proof_path,
-        fixture.stopwatch_path.to_str().unwrap(),
-        fixture
-            .dir
-            .path()
-            .join("missing-stopwatch.md")
-            .to_str()
-            .unwrap(),
+        &fixture.stopwatch_field,
+        "docs/demos/missing-stopwatch.md",
     );
 
     let output = run_validator(&fixture.proof_path);
@@ -129,6 +125,101 @@ fn gate2_outside_validator_rejects_missing_outside_run_attestation() {
 }
 
 #[test]
+fn gate2_outside_validator_rejects_maintainer_relationship() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "external validation fixture",
+        "Beater project maintainer",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "runner relationship/prior exposure must not contradict outside-run attestation",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_missing_prior_exposure() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "- Prior Beater repo exposure: no prior exposure",
+        "- Prior Beater repo exposure:",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "unresolved required fields: Prior Beater repo exposure",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_stale_commit_sha() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        &current_head(),
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    );
+    replace(
+        &fixture.stopwatch_path,
+        &current_head(),
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Commit SHA must match current HEAD or be an evidence-only ancestor",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_local_build_evidence() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.stopwatch_path,
+        "Startup mode: prebuilt-image",
+        "Startup mode: local-build",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Startup mode in stopwatch proof must be 'prebuilt-image'",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_bare_image_digest() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        BEATER_IMAGE_DIGEST,
+        "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    );
+    replace(
+        &fixture.stopwatch_path,
+        BEATER_IMAGE_DIGEST,
+        "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Beater image digest in outside-person proof must be a GHCR repo digest for beaterd",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_alternate_port_stopwatch_artifact() {
     let fixture = ValidatorFixture::new();
     replace(&fixture.stopwatch_path, "127.0.0.1:3000", "127.0.0.1:13080");
@@ -140,6 +231,25 @@ fn gate2_outside_validator_rejects_alternate_port_stopwatch_artifact() {
         output,
         "stopwatch proof must not use alternate/warm-loop evidence",
     );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_alternate_api_endpoint() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:18080",
+    );
+    replace(
+        &fixture.stopwatch_path,
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:18080",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(output, "API endpoint must be http://127.0.0.1:8080");
 }
 
 #[test]
@@ -191,6 +301,23 @@ fn gate2_outside_validator_rejects_bad_recording_hash() {
 }
 
 #[test]
+fn gate2_outside_validator_rejects_absolute_artifact_paths() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        &fixture.recording_field,
+        fixture.recording_path.to_str().unwrap(),
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Screen recording must be a repo-relative path under docs/demos",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_image_digest_mismatch() {
     let fixture = ValidatorFixture::new();
     replace(
@@ -208,19 +335,30 @@ fn gate2_outside_validator_rejects_image_digest_mismatch() {
 }
 
 struct ValidatorFixture {
+    _artifact_dir: TempDir,
     dir: TempDir,
     proof_path: PathBuf,
     stopwatch_path: PathBuf,
     notes_path: PathBuf,
+    recording_path: PathBuf,
+    stopwatch_field: String,
+    recording_field: String,
 }
 
 impl ValidatorFixture {
     fn new() -> Self {
+        let root = repo_root();
+        let artifact_dir = TempDir::new_in(root.join("docs/demos"))
+            .expect("create validator fixture artifact tempdir under docs/demos");
         let dir = TempDir::new().expect("create validator fixture tempdir");
         let proof_path = dir.path().join("outside-proof.md");
-        let stopwatch_path = dir.path().join("stopwatch-proof.md");
-        let notes_path = dir.path().join("recording-notes.md");
-        let recording_path = dir.path().join("recording.webm");
+        let stopwatch_path = artifact_dir.path().join("stopwatch-proof.md");
+        let notes_path = artifact_dir.path().join("recording-notes.md");
+        let recording_path = artifact_dir.path().join("recording.webm");
+        let artifact_rel = repo_relative_path(artifact_dir.path());
+        let stopwatch_field = format!("{artifact_rel}/stopwatch-proof.md");
+        let recording_field = format!("{artifact_rel}/recording.webm");
+        let notes_field = format!("{artifact_rel}/recording-notes.md");
 
         fs::write(&recording_path, RECORDING_BYTES)
             .unwrap_or_else(|err| panic!("write {}: {err}", recording_path.display()));
@@ -231,25 +369,30 @@ impl ValidatorFixture {
         .unwrap_or_else(|err| panic!("write {}: {err}", notes_path.display()));
         fs::write(
             &stopwatch_path,
-            stopwatch_proof(&recording_path, &notes_path),
+            stopwatch_proof(&recording_field, &notes_field),
         )
         .unwrap_or_else(|err| panic!("write {}: {err}", stopwatch_path.display()));
         fs::write(
             &proof_path,
-            outside_proof(&stopwatch_path, &recording_path, &notes_path),
+            outside_proof(&stopwatch_field, &recording_field, &notes_field),
         )
         .unwrap_or_else(|err| panic!("write {}: {err}", proof_path.display()));
 
         Self {
+            _artifact_dir: artifact_dir,
             dir,
             proof_path,
             stopwatch_path,
             notes_path,
+            recording_path,
+            stopwatch_field,
+            recording_field,
         }
     }
 }
 
-fn outside_proof(stopwatch_path: &Path, recording_path: &Path, notes_path: &Path) -> String {
+fn outside_proof(stopwatch: &str, recording: &str, notes: &str) -> String {
+    let commit_sha = current_head();
     format!(
         r#"# Gate 2 Outside-Person Proof
 
@@ -272,11 +415,13 @@ Status: completed.
 ## Repository
 
 - Clone URL: `https://github.com/jadenfix/beater.git`
-- Commit SHA: {COMMIT_SHA}
+- Commit SHA: {commit_sha}
 - Branch: main
 - OS/arch: Darwin arm64
 - Beater image digest: {BEATER_IMAGE_DIGEST}
 - Dashboard image digest: {DASHBOARD_IMAGE_DIGEST}
+- API endpoint: http://127.0.0.1:8080
+- Dashboard base: http://127.0.0.1:3000
 - Started at: 2026-06-20T12:00:00Z
 - Ended at: 2026-06-20T12:00:40Z
 - Time-to-first-trace: 12s
@@ -326,13 +471,11 @@ The runner completed the flow using only public repository instructions.
 - [x] A screen recording of the full flow is committed under `docs/demos/`.
 - [x] The runner completed the flow using only public repository instructions.
 "#,
-        stopwatch = stopwatch_path.display(),
-        recording = recording_path.display(),
-        notes = notes_path.display(),
     )
 }
 
-fn stopwatch_proof(recording_path: &Path, notes_path: &Path) -> String {
+fn stopwatch_proof(recording: &str, notes: &str) -> String {
+    let commit_sha = current_head();
     format!(
         r#"# Gate 2 Compose Stopwatch Proof
 
@@ -342,7 +485,7 @@ fn stopwatch_proof(recording_path: &Path, notes_path: &Path) -> String {
 - Time-to-quickstart-click: 20s
 - Total duration: 40s
 - Limit: 300s
-- Git SHA: `{COMMIT_SHA}`
+- Git SHA: `{commit_sha}`
 - OS/arch: `Darwin arm64`
 - Docker: `Docker version 29.2.0`
 - Docker Compose: `Docker Compose version v5.0.2`
@@ -354,7 +497,9 @@ fn stopwatch_proof(recording_path: &Path, notes_path: &Path) -> String {
 - Beater image digest: `{BEATER_IMAGE_DIGEST}`
 - Dashboard image digest: `{DASHBOARD_IMAGE_DIGEST}`
 - Quickstart snippet: `examples/python/five_line_otel.py`
+- API endpoint: `http://127.0.0.1:8080`
 - OTLP endpoint: `http://127.0.0.1:4317`
+- Dashboard base: `http://127.0.0.1:3000`
 - Quickstart trace: `{QUICKSTART_TRACE}`
 - Quickstart dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={QUICKSTART_TRACE}
 - Quickstart browser proof: passed
@@ -366,8 +511,6 @@ fn stopwatch_proof(recording_path: &Path, notes_path: &Path) -> String {
 - Browser recording notes: `{notes}`
 - Browser recording SHA256: `{RECORDING_SHA}`
 "#,
-        recording = recording_path.display(),
-        notes = notes_path.display(),
     )
 }
 
@@ -506,4 +649,32 @@ fn repo_root() -> PathBuf {
         panic!("beaterd manifest must live under bins/beaterd");
     };
     root.to_path_buf()
+}
+
+fn repo_relative_path(path: &Path) -> String {
+    let root = repo_root();
+    path.strip_prefix(&root)
+        .unwrap_or_else(|err| panic!("{} must be under repo root: {err}", path.display()))
+        .to_string_lossy()
+        .replace('\\', "/")
+}
+
+fn current_head() -> String {
+    let root = repo_root();
+    let output = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(root)
+        .output()
+        .unwrap_or_else(|err| panic!("read current git HEAD: {err}"));
+    if !output.status.success() {
+        panic!(
+            "git rev-parse HEAD failed\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    String::from_utf8(output.stdout)
+        .expect("git HEAD should be utf8")
+        .trim()
+        .to_owned()
 }
