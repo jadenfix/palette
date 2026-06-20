@@ -46,6 +46,7 @@ This repo now contains the first tested Rust vertical slice:
 - tenant/project-scoped DLQ replay that resets attempts and requeues work without deleting unreplayed dead letters
 - buffered ingest mode that durably queues canonical trace writes before hot-store persistence
 - scoped trace-write drain/status API with typed 429 backpressure responses
+- trace-write retry semantics for downstream publish failures after successful trace storage, relying on store idempotency to avoid double writes
 - native ingest pipeline with payload/attribute governance and trait-backed windowed quotas
 - `trace.ingested` downstream drain API and `beaterd` worker for off-hot-path search indexing with retry/DLQ handling
 - deterministic evaluator lane and judge-broker budget model

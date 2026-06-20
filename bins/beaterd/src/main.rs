@@ -219,10 +219,16 @@ fn spawn_trace_write_worker(ingest: IngestService, interval: Duration) {
                     continue;
                 }
             };
-            if report.consumed > 0 && report.failed_writes > 0 {
+            if report.consumed > 0
+                && (report.failed_writes > 0 || report.failed_downstream_publishes > 0)
+            {
                 eprintln!(
-                    "trace write drain completed with failed writes: consumed={} failed={} retried={} dlq={}",
-                    report.consumed, report.failed_writes, report.retried, report.dead_lettered
+                    "trace write drain completed with failures: consumed={} failed_writes={} failed_downstream_publishes={} retried={} dlq={}",
+                    report.consumed,
+                    report.failed_writes,
+                    report.failed_downstream_publishes,
+                    report.retried,
+                    report.dead_lettered
                 );
             }
         }

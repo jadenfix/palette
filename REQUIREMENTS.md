@@ -61,7 +61,7 @@ system, test output, or runtime behavior.
 | R4.7 | Trace completion handles root-end, idle timeout, late spans, and clock skew. | Out-of-order distributed trace fixtures |
 | R4.8 | Per-project quotas produce explicit 429 semantics. | Ingest quota test exercises typed 429 error semantics through a trait-backed fixed-window limiter; SQLite/in-memory limiter conformance proves window reset behavior; API reset headers still required |
 | R4.9 | Poison messages cannot stall a queue shard or consumer group. | Lane-aware and scoped bus consumption tests plus trace-write and trace-ingested worker invalid-payload DLQ tests |
-| R4.10 | ClickHouse or TraceStore outage does not silently drop accepted events. | `buffer_native` outage/recovery unit test, SQLite bus unacked-inflight recovery test, trace-ingested unacked-work recovery test, buffered ingest + scoped drain full-stack API test, DLQ replay API full-stack test, `beaterd` background trace-write drain worker, `beaterd` background trace-ingested downstream worker, `beaterctl smoke` OTLP trace-write/downstream drain test, live `beaterd` OTLP HTTP/gRPC smoke test, and `beaterctl ingest-outage-fixture` |
+| R4.10 | ClickHouse or TraceStore outage does not silently drop accepted events. | `buffer_native` outage/recovery unit test, downstream-publish-after-store-write recovery test, SQLite bus unacked-inflight recovery test, trace-ingested unacked-work recovery test, buffered ingest + scoped drain full-stack API test, DLQ replay API full-stack test, `beaterd` background trace-write drain worker, `beaterd` background trace-ingested downstream worker, `beaterctl smoke` OTLP trace-write/downstream drain test, live `beaterd` OTLP HTTP/gRPC smoke test, and `beaterctl ingest-outage-fixture` |
 
 ## R5. Evaluators
 

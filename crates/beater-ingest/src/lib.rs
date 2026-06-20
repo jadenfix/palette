@@ -718,6 +718,10 @@ impl IngestService {
                 return Ok(());
             }
         };
+        report.written_raw += write_ack.accepted_raw;
+        report.written_spans += write_ack.accepted_spans;
+        report.duplicate_raw += write_ack.duplicate_raw;
+        report.duplicate_spans += write_ack.duplicate_spans;
 
         match self
             .publish_trace_ingested(
@@ -729,10 +733,6 @@ impl IngestService {
             .await
         {
             Ok(published) => {
-                report.written_raw += write_ack.accepted_raw;
-                report.written_spans += write_ack.accepted_spans;
-                report.duplicate_raw += write_ack.duplicate_raw;
-                report.duplicate_spans += write_ack.duplicate_spans;
                 report.downstream_published += published;
                 report
                     .trace_refs
@@ -746,7 +746,7 @@ impl IngestService {
                 Ok(())
             }
             Err(err) => {
-                report.failed_writes += 1;
+                report.failed_downstream_publishes += 1;
                 self.retry_or_dlq_counted(
                     message,
                     format!("downstream publish failed after trace write: {err}"),
@@ -1003,6 +1003,7 @@ pub struct TraceWriteDrainReport {
     pub dead_lettered: usize,
     pub invalid_messages: usize,
     pub failed_writes: usize,
+    pub failed_downstream_publishes: usize,
     pub trace_refs: Vec<QueuedTraceWork>,
     pub trace_ids: Vec<TraceId>,
 }
@@ -1189,11 +1190,102 @@ pub async fn smoke_trace(service: &IngestService) -> Result<IngestOutcome, Inges
 #[cfg(test)]
 mod tests {
     use super::*;
-    use beater_bus::{DurableBus, InMemoryBus, SqliteDurableBus};
+    use async_trait::async_trait;
+    use beater_bus::{BusError, DurableBus, InMemoryBus, PublishAck, SqliteDurableBus};
     use beater_core::{Page, PageRequest};
     use beater_schema::{RunFilter, RunSummary, SpanFilter, SpanSummary, TraceView};
     use beater_store_obj::FsArtifactStore;
     use beater_store_sql::SqliteTraceStore;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    struct FailOnceTraceIngestedPublishBus {
+        inner: InMemoryBus,
+        remaining_failures: AtomicUsize,
+    }
+
+    impl FailOnceTraceIngestedPublishBus {
+        fn new(capacity: usize) -> Self {
+            Self {
+                inner: InMemoryBus::new(capacity),
+                remaining_failures: AtomicUsize::new(1),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl DurableBus for FailOnceTraceIngestedPublishBus {
+        async fn publish(&self, message: BusMessage) -> Result<PublishAck, BusError> {
+            if message.kind == TRACE_INGESTED_KIND
+                && self.remaining_failures.load(Ordering::SeqCst) > 0
+            {
+                let _ = self.remaining_failures.fetch_update(
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                    |remaining| remaining.checked_sub(1),
+                );
+                return Err(BusError::Storage(
+                    "simulated downstream publish outage".to_string(),
+                ));
+            }
+            self.inner.publish(message).await
+        }
+
+        async fn consume_batch(&self, limit: usize) -> Result<Vec<BusMessage>, BusError> {
+            self.inner.consume_batch(limit).await
+        }
+
+        async fn consume_kind_batch(
+            &self,
+            kind: &str,
+            limit: usize,
+        ) -> Result<Vec<BusMessage>, BusError> {
+            self.inner.consume_kind_batch(kind, limit).await
+        }
+
+        async fn consume_scoped_kind_batch(
+            &self,
+            tenant_id: &TenantId,
+            project_id: &ProjectId,
+            kind: &str,
+            limit: usize,
+        ) -> Result<Vec<BusMessage>, BusError> {
+            self.inner
+                .consume_scoped_kind_batch(tenant_id, project_id, kind, limit)
+                .await
+        }
+
+        async fn ack(&self, message: BusMessage) -> Result<(), BusError> {
+            self.inner.ack(message).await
+        }
+
+        async fn retry_or_dlq(&self, message: BusMessage, reason: String) -> Result<(), BusError> {
+            self.inner.retry_or_dlq(message, reason).await
+        }
+
+        async fn replay_dead_letter(
+            &self,
+            tenant_id: &TenantId,
+            project_id: &ProjectId,
+            message_id: &str,
+            reset_attempts: bool,
+        ) -> Result<PublishAck, BusError> {
+            self.inner
+                .replay_dead_letter(tenant_id, project_id, message_id, reset_attempts)
+                .await
+        }
+
+        async fn dlq(&self) -> Result<Vec<DeadLetter>, BusError> {
+            self.inner.dlq().await
+        }
+
+        async fn depth(&self) -> Result<usize, BusError> {
+            self.inner.depth().await
+        }
+
+        async fn depth_for_kind(&self, kind: &str) -> Result<usize, BusError> {
+            self.inner.depth_for_kind(kind).await
+        }
+    }
 
     #[tokio::test]
     async fn native_ingest_preserves_raw_and_canonical_span() {
@@ -1465,6 +1557,63 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(trace.spans.len(), 1);
         assert_eq!(trace.spans[0].name, "agent run");
+    }
+
+    #[tokio::test]
+    async fn trace_write_retries_after_downstream_publish_failure_without_double_writes() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(FailOnceTraceIngestedPublishBus::new(16));
+        let service = IngestService::new(
+            artifacts,
+            traces.clone(),
+            bus.clone(),
+            IngestPolicy::default(),
+        );
+        let request = fixture_request();
+
+        service
+            .buffer_native(request.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let first = service
+            .drain_trace_writes(10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(first.consumed, 1);
+        assert_eq!(first.written_spans, 1);
+        assert_eq!(first.failed_writes, 0);
+        assert_eq!(first.failed_downstream_publishes, 1);
+        assert_eq!(first.retried, 1);
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(1));
+        assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(0));
+        let trace = traces
+            .get_trace(request.scope.tenant_id.clone(), request.trace_id.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(trace.spans.len(), 1);
+
+        let second = service
+            .drain_trace_writes(10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(second.consumed, 1);
+        assert_eq!(second.written_spans, 0);
+        assert_eq!(second.duplicate_spans, 1);
+        assert_eq!(second.failed_writes, 0);
+        assert_eq!(second.failed_downstream_publishes, 0);
+        assert_eq!(second.downstream_published, 1);
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(0));
+        assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(1));
+        let trace = traces
+            .get_trace(request.scope.tenant_id, request.trace_id)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(trace.spans.len(), 1);
     }
 
     #[tokio::test]
