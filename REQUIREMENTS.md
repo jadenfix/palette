@@ -9,7 +9,7 @@ system, test output, or runtime behavior.
 | ID | Requirement | Evidence required |
 | --- | --- | --- |
 | R0.1 | A user can send agent telemetry without a Beater-specific SDK. | OTLP HTTP/gRPC endpoint docs, `beaterctl smoke` local/remote tests, live `beaterd` OTLP HTTP/gRPC test, initial `web/dashboard` trace table; recorded UI demo still required |
-| R0.2 | A user can inspect a trace as an agent-native span tree. | Initial `web/dashboard` waterfall/detail/I/O surface, generated read-client types, status/kind/time/model/cost/latency/release filter bar, dashboard static test, and Playwright browser check over a stock OTLP Python all-kind agent trace; outside-person stopwatch proof still required |
+| R0.2 | A user can inspect a trace as an agent-native span tree. | Initial `web/dashboard` waterfall/detail/I/O surface, generated read-client types, status/kind/time/model/cost/latency/release filter bar, dashboard static test, Playwright browser check over a stock OTLP Python all-kind agent trace, GHCR prebuilt-image workflow plus compose stopwatch script for a literal five-line OTEL snippet; outside-person stopwatch proof still required |
 | R0.3 | A failure can be promoted to a dataset case. | Trace-to-dataset API test, human-review annotation promotion API test, and `beaterctl review-fixture` |
 | R0.4 | Offline evals run over a dataset version. | Deterministic and judge-backed dataset eval integration tests plus `beaterctl judge-dataset-fixture` |
 | R0.5 | Candidate and baseline releases can be compared. | Experiment output with per-case scores, aggregate deltas, stored gate policy, deterministic/judge experiment API tests |

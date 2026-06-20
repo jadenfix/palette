@@ -3,6 +3,10 @@ set -euo pipefail
 
 project="${COMPOSE_PROJECT_NAME:-beater-smoke}"
 keep="${KEEP_BEATER_COMPOSE:-0}"
+host_http_port="${BEATER_HTTP_PORT:-8080}"
+host_dashboard_port="${BEATER_DASHBOARD_PORT:-3000}"
+api_url="http://127.0.0.1:$host_http_port"
+dashboard_url="http://127.0.0.1:$host_dashboard_port"
 all_kinds=(
   agent.run
   agent.turn
@@ -77,22 +81,22 @@ first_trace_id() {
 trap cleanup EXIT
 
 compose up -d --build postgres nats minio beaterd dashboard
-wait_url "http://127.0.0.1:8080/health" "beaterd"
+wait_url "$api_url/health" "beaterd"
 
 compose run --rm beaterctl
 compose run --rm otel-python-smoke
 
-wait_url "http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local" "dashboard"
-python_trace_query="http://127.0.0.1:8080/v1/traces/demo?project_id=demo&environment_id=local&kind=llm.call&model=gpt-demo&release=compose-demo"
+wait_url "$dashboard_url/?tenant=demo&project=demo&environment=local" "dashboard"
+python_trace_query="$api_url/v1/traces/demo?project_id=demo&environment_id=local&kind=llm.call&model=gpt-demo&release=compose-demo"
 wait_text "$python_trace_query" "gpt-demo" "stock Python OTLP trace"
 python_trace_id="$(curl -fsS "$python_trace_query" | first_trace_id)"
-python_trace_dashboard="http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace=$python_trace_id"
+python_trace_dashboard="$dashboard_url/?tenant=demo&project=demo&environment=local&trace=$python_trace_id"
 require_text "$python_trace_dashboard" "Agent Trace Debugger"
 wait_text "$python_trace_dashboard" "call-policy-model" "dashboard llm.call row"
 for kind in "${all_kinds[@]}"; do
   wait_text "$python_trace_dashboard" "$kind" "dashboard all-kind waterfall"
 done
-require_text "http://127.0.0.1:8080/openapi.json" "started_after"
+require_text "$api_url/openapi.json" "started_after"
 
 cat <<EOF
 Beater compose smoke passed.

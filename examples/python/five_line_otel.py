@@ -1,0 +1,5 @@
+import os; from opentelemetry import trace; from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter; from opentelemetry.sdk.trace import TracerProvider; from opentelemetry.sdk.trace.export import BatchSpanProcessor
+p=TracerProvider(); p.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT","http://127.0.0.1:4317"), insecure=True, headers=(("x-beater-tenant-id","demo"),("x-beater-project-id","demo"),("x-beater-environment-id","local"))))); trace.set_tracer_provider(p)
+t=trace.get_tracer("beater.quickstart")
+with t.start_as_current_span("five-line-llm-call", attributes={"openinference.span.kind":"llm.call","llm.provider":"openai","llm.model_name":"gpt-quickstart","llm.token_count.prompt":5,"llm.token_count.completion":7,"llm.cost.amount_micros":1200,"llm.cost.currency":"USD","input.value":"hello from stock OpenTelemetry","output.value":"hello from Beater"}): pass
+p.force_flush(); p.shutdown()

@@ -40,6 +40,18 @@ For the Docker Compose path from the repository root:
 scripts/smoke-compose.sh
 ```
 
+For the clean-machine stopwatch path with the literal five-line OTEL snippet:
+
+```bash
+scripts/gate2-compose-stopwatch.sh
+```
+
+That script runs the five-line snippet from the host through a temporary Python
+venv against `localhost:4317`, then waits for the trace to be visible in the
+dashboard. It pulls prebuilt GHCR images through `docker-compose.prebuilt.yml`
+by default; set `BEATER_GATE2_LOCAL_BUILD=1` to build images from source for
+development checks.
+
 For a strict-auth `beaterd`, set one server-only credential before starting the
 dashboard:
 

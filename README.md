@@ -75,7 +75,8 @@ This repo now contains the first tested Rust vertical slice:
 - `/openapi.json` documents the dashboard read surface and generates the dashboard TypeScript client
 - Dockerfile and `docker-compose.yml` for the current self-host topology
 - migration contracts for SQLite local runtime plus Postgres and ClickHouse scale/control-plane paths
-- stock OpenTelemetry Python example that emits an agent run with nested `llm.call` and `tool.call` spans
+- stock OpenTelemetry Python examples: a literal five-line quickstart snippet and an all-kind agent trace fixture
+- GHCR prebuilt image workflow plus a Compose override for the five-minute clean-machine stopwatch path
 - Gate 2 proof scripts for OpenAPI drift, local clone-to-browser smoke, compose smoke, and browser demo recording
 - API route for tenant-scoped span search
 - API routes for admin key creation/revocation and strict trace/search/dataset/eval/alert authorization
@@ -129,8 +130,35 @@ cargo run -q -p beaterd -- --data-dir /tmp/beaterd --judge-provider http-routing
 
 ## Clean Clone To Browser
 
-Fast local proof with built binaries, a stock Python OpenTelemetry trace, and the
-Next dashboard:
+Exact Docker Compose stopwatch proof for the mandate's clean-machine path:
+
+```bash
+git clone https://github.com/jadenfix/beater.git
+cd beater
+scripts/gate2-compose-stopwatch.sh
+```
+
+The script runs `docker compose up`, sends `examples/python/five_line_otel.py`,
+waits until the trace is visible in `localhost:3000`, and fails if
+time-to-first-trace exceeds 300 seconds. It leaves the dashboard running by
+default so a human can click through the trace. By default it uses
+`docker-compose.prebuilt.yml` and pulls GHCR images published by
+`.github/workflows/container-images.yml`; set `BEATER_GATE2_LOCAL_BUILD=1` when
+you intentionally want to build the server and dashboard images from source.
+
+The five-line snippet is intentionally plain OpenTelemetry. To run the exact
+manual step after `docker compose up -d --build`, install stock OTEL packages
+and execute it against the local OTLP port:
+
+```bash
+python3 -m venv /tmp/beater-otel
+/tmp/beater-otel/bin/pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc
+OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317 /tmp/beater-otel/bin/python examples/python/five_line_otel.py
+sed -n '1,5p' examples/python/five_line_otel.py
+```
+
+Fast local proof with built binaries, the all-kind stock Python OpenTelemetry
+trace, and the Next dashboard:
 
 ```bash
 scripts/gate2-proof.sh
@@ -164,6 +192,18 @@ To regenerate the committed Gate 2 browser capture under `docs/demos/`:
 
 ```bash
 BEATER_GATE2_RECORD_DEMO=1 scripts/gate2-proof.sh
+```
+
+To write the automated compose stopwatch artifact under `docs/demos/`:
+
+```bash
+BEATER_GATE2_WRITE_PROOF=1 KEEP_BEATER_COMPOSE=0 scripts/gate2-compose-stopwatch.sh
+```
+
+Local source builds are measured but are not the SLO path:
+
+```bash
+BEATER_GATE2_LOCAL_BUILD=1 scripts/gate2-compose-stopwatch.sh
 ```
 
 With `beaterd` running in local auth mode, remote smoke can target the live

@@ -14,15 +14,29 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(compose.contains("profiles: [\"clickhouse\"]"));
     assert!(compose.contains("http://beaterd:8080"));
     assert!(compose.contains("http://beaterd:4317"));
+    assert!(compose.contains("${BEATER_HTTP_PORT:-8080}:8080"));
+    assert!(compose.contains("${BEATER_DASHBOARD_PORT:-3000}:3000"));
+    assert!(compose.contains("target: tools"));
 
     let dockerfile = read(root.join("Dockerfile"));
-    assert!(dockerfile.contains("cargo-chef"));
-    assert!(dockerfile.contains("beaterd"));
-    assert!(dockerfile.contains("beaterctl"));
+    assert!(dockerfile.contains("beaterd-builder"));
+    assert!(dockerfile.contains("beaterctl-builder"));
+    assert!(dockerfile.contains("FROM runtime AS tools"));
 
     let dashboard_dockerfile = read(root.join("web/dashboard/Dockerfile"));
     assert!(dashboard_dockerfile.contains("npm run build"));
     assert!(dashboard_dockerfile.contains("server.js"));
+
+    let prebuilt_compose = read(root.join("docker-compose.prebuilt.yml"));
+    assert!(prebuilt_compose.contains("ghcr.io/jadenfix/beater/beaterd:main"));
+    assert!(prebuilt_compose.contains("ghcr.io/jadenfix/beater/dashboard:main"));
+    assert!(!prebuilt_compose.contains("build:"));
+
+    let image_workflow = read(root.join(".github/workflows/container-images.yml"));
+    assert!(image_workflow.contains("packages: write"));
+    assert!(image_workflow.contains("target: runtime"));
+    assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/beaterd:main"));
+    assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/dashboard:main"));
 }
 
 #[test]
@@ -81,6 +95,36 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(proof_script.contains("npm run test:e2e"));
     assert!(proof_script.contains("npm run record:gate2"));
     assert!(proof_script.contains("scripts/check-openapi-drift.sh"));
+
+    let stopwatch_script = read(root.join("scripts/gate2-compose-stopwatch.sh"));
+    assert!(stopwatch_script.contains("docker compose"));
+    assert!(stopwatch_script.contains("python3 -m venv"));
+    assert!(stopwatch_script.contains("examples/python/five_line_otel.py"));
+    assert!(stopwatch_script.contains("OTEL_EXPORTER_OTLP_ENDPOINT"));
+    assert!(stopwatch_script.contains("duration_seconds > 300"));
+    assert!(stopwatch_script.contains("BEATER_GATE2_WRITE_PROOF"));
+    assert!(stopwatch_script.contains("docker-compose.prebuilt.yml"));
+    assert!(stopwatch_script.contains("--pull missing"));
+    assert!(stopwatch_script.contains("BEATER_GATE2_LOCAL_BUILD"));
+
+    let compose = read(root.join("docker-compose.yml"));
+    assert!(compose.contains("otel-python-quickstart"));
+    assert!(compose.contains("five_line_otel.py"));
+
+    let quickstart = read(root.join("examples/python/five_line_otel.py"));
+    let code_lines = quickstart
+        .lines()
+        .filter(|line| !line.trim().is_empty() && !line.trim_start().starts_with('#'))
+        .count();
+    assert_eq!(
+        code_lines, 5,
+        "quickstart OTEL snippet must remain five executable lines"
+    );
+    assert!(quickstart.contains("opentelemetry"));
+    assert!(quickstart.contains("OTLPSpanExporter"));
+    assert!(quickstart.contains("five-line-llm-call"));
+    assert!(quickstart.contains("gpt-quickstart"));
+    assert!(!quickstart.contains("beaterctl"));
 
     let python = read(root.join("examples/python/otel_smoke.py"));
     assert!(python.contains("opentelemetry.exporter.otlp"));

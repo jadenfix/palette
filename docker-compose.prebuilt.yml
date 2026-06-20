@@ -50,9 +50,7 @@ services:
       retries: 20
 
   beaterd:
-    build:
-      context: .
-      target: runtime
+    image: ${BEATERD_IMAGE:-ghcr.io/jadenfix/beater/beaterd:main}
     depends_on:
       postgres:
         condition: service_started
@@ -75,8 +73,7 @@ services:
       retries: 30
 
   dashboard:
-    build:
-      context: ./web/dashboard
+    image: ${BEATER_DASHBOARD_IMAGE:-ghcr.io/jadenfix/beater/dashboard:main}
     depends_on:
       beaterd:
         condition: service_healthy
@@ -99,92 +96,8 @@ services:
       timeout: 5s
       retries: 30
 
-  beaterctl:
-    build:
-      context: .
-      target: tools
-    profiles: ["tools"]
-    depends_on:
-      beaterd:
-        condition: service_healthy
-    entrypoint: ["beaterctl"]
-    command:
-      [
-        "smoke",
-        "--http-url",
-        "http://beaterd:8080",
-        "--otlp-grpc-url",
-        "http://beaterd:4317",
-        "--tenant-id",
-        "demo",
-        "--project-id",
-        "demo",
-        "--environment-id",
-        "local",
-        "--timeout-ms",
-        "20000"
-      ]
-
-  otel-python-smoke:
-    image: python:3.12-slim
-    profiles: ["tools"]
-    depends_on:
-      beaterd:
-        condition: service_healthy
-    environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://beaterd:4317
-      BEATER_TENANT_ID: demo
-      BEATER_PROJECT_ID: demo
-      BEATER_ENVIRONMENT_ID: local
-    volumes:
-      - ./examples/python/otel_smoke.py:/otel_smoke.py:ro
-    command:
-      [
-        "sh",
-        "-c",
-        "pip install --no-cache-dir opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc >/tmp/pip.log && python /otel_smoke.py"
-      ]
-
-  otel-python-quickstart:
-    image: python:3.12-slim
-    profiles: ["tools"]
-    depends_on:
-      beaterd:
-        condition: service_healthy
-    environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://beaterd:4317
-    volumes:
-      - ./examples/python/five_line_otel.py:/five_line_otel.py:ro
-    command:
-      [
-        "sh",
-        "-c",
-        "pip install --no-cache-dir opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc >/tmp/pip.log && python /five_line_otel.py"
-      ]
-
-  clickhouse:
-    image: clickhouse/clickhouse-server:latest
-    profiles: ["clickhouse"]
-    environment:
-      CLICKHOUSE_DB: beater
-      CLICKHOUSE_USER: beater
-      CLICKHOUSE_PASSWORD: beater
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
-    ports:
-      - "${BEATER_CLICKHOUSE_HTTP_PORT:-8123}:8123"
-      - "${BEATER_CLICKHOUSE_NATIVE_PORT:-9002}:9000"
-    volumes:
-      - clickhouse-data:/var/lib/clickhouse
-      - ./migrations/clickhouse:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8123/ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 30
-
 volumes:
-  beater-data:
   postgres-data:
   nats-data:
   minio-data:
-  clickhouse-data:
+  beater-data:
