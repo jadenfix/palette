@@ -154,6 +154,8 @@ def run_cloned_checks(args: argparse.Namespace, clone_dir: Path) -> None:
         "BEATER_GATE2_STOPWATCH_PROOF",
         "BEATER_GATE2_RECORD_VIDEO",
         "BEATER_GATE2_RECORD_NOTES",
+        "KEEP_BEATER_COMPOSE",
+        "COMPOSE_PROJECT_NAME",
     ]:
         env.pop(name, None)
     run(["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env)

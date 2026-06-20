@@ -144,8 +144,9 @@ scripts/gate2-outside-run.sh
 
 The outside-run wrapper rejects warm-loop reuse, local source builds, alternate
 ports, mutable pull-policy overrides, prebuilt image overrides, and evidence
-artifact path overrides, then runs the stopwatch script with proof writing,
-browser proof, and browser recording enabled. It also sets an
+artifact path overrides, rejects alternate Compose project names and teardown
+overrides, then runs the stopwatch script with proof writing, browser proof,
+and browser recording enabled. It also sets an
 `Outside-run wrapper: yes` marker in the stopwatch proof; completed
 outside-person proof validation rejects evidence without that marker. The script
 first removes any previous Compose project/volumes, then runs

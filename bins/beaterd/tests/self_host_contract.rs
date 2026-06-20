@@ -278,6 +278,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_run.contains("docs/demos/gate2-compose-stopwatch.md"));
     assert!(outside_run.contains("docs/demos/gate2-compose-browser-demo.webm"));
     assert!(outside_run.contains("docs/demos/gate2-compose-browser-demo.md"));
+    assert!(outside_run.contains("require_unset_or_value KEEP_BEATER_COMPOSE 1"));
+    assert!(outside_run.contains("require_unset COMPOSE_PROJECT_NAME"));
+    assert!(outside_run.contains("default beater-stopwatch Compose project"));
+    assert!(outside_run.contains("export KEEP_BEATER_COMPOSE=1"));
     assert!(outside_run.contains("scripts/gate2-compose-stopwatch.sh"));
     assert!(outside_run.contains("Gate 2 outside-run wrapper preflight passed"));
 
@@ -311,6 +315,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("API endpoint must be"));
     assert!(outside_validator.contains("(\"Startup mode\", \"prebuilt-image\")"));
     assert!(outside_validator.contains("(\"Prebuilt pull policy\", \"always\")"));
+    assert!(outside_validator.contains("(\"Compose project\", \"beater-stopwatch\")"));
     assert!(outside_validator
         .contains("Commit SHA must match current HEAD or be an evidence-only ancestor"));
     assert!(outside_validator.contains("docs/demos evidence changes"));
@@ -396,6 +401,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("BEATER_GATE2_STOPWATCH_PROOF"));
     assert!(public_handoff.contains("BEATER_GATE2_RECORD_VIDEO"));
     assert!(public_handoff.contains("BEATER_GATE2_RECORD_NOTES"));
+    assert!(public_handoff.contains("KEEP_BEATER_COMPOSE"));
+    assert!(public_handoff.contains("COMPOSE_PROJECT_NAME"));
     assert!(public_handoff.contains("--registry-fixture"));
     assert!(public_handoff.contains("--skip-local-readiness"));
 
@@ -406,7 +413,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("Outside-run wrapper:"));
     assert!(outside_proof.contains("Outside-run wrapper: yes"));
     assert!(outside_proof.contains("prebuilt image"));
-    assert!(outside_proof.contains("evidence artifact path overrides"));
+    assert!(outside_proof.contains("evidence artifact path"));
+    assert!(outside_proof.contains("Compose project"));
+    assert!(outside_proof.contains("teardown overrides"));
     assert!(outside_proof.contains("rejects"));
     assert!(outside_proof.contains("warm-loop reuse"));
     assert!(outside_proof.contains("Preflight status"));
@@ -463,6 +472,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("prebuilt image overrides"));
     assert!(readme.contains("evidence"));
     assert!(readme.contains("artifact path overrides"));
+    assert!(readme.contains("alternate Compose project names"));
+    assert!(readme.contains("teardown"));
     assert!(readme.contains("scripts/generate-gate2-outside-proof.py"));
     assert!(readme.contains("--attest-outside-run"));
     assert!(readme.contains("proof writing"));
@@ -504,7 +515,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("scripts/check-gate2-outside-readiness.py"));
     assert!(requirements.contains("public-clone handoff verifier"));
     assert!(requirements.contains("requires the clone to match the current commit"));
-    assert!(requirements.contains("alternate-port/image-override/artifact-path evidence"));
+    assert!(requirements
+        .contains("alternate-port/image-override/artifact-path/compose-project/teardown evidence"));
     assert!(requirements.contains("wrapper marker"));
     assert!(requirements.contains("scripts/generate-gate2-outside-proof.py"));
     assert!(requirements.contains("scripts/validate-gate2-outside-proof.sh"));

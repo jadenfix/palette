@@ -55,9 +55,10 @@ during the timed run.
 
 The wrapper sets the required proof/browser/recording flags and rejects
 warm-loop reuse, local source builds, alternate ports, and mutable pull-policy
-overrides, plus prebuilt image and evidence artifact path overrides, before the
-stopwatch starts. The stopwatch proof records `Outside-run wrapper: yes`;
-completed outside-person evidence is invalid without that marker.
+overrides, plus prebuilt image, evidence artifact path, Compose project, and
+teardown overrides, before the stopwatch starts. The stopwatch proof records
+`Outside-run wrapper: yes`; completed outside-person evidence is invalid without
+that marker.
 
 The script fails before Compose startup if Docker is unavailable, if curl is
 missing, or if API `8080`, OTLP `4317`, or dashboard `3000` are still in use

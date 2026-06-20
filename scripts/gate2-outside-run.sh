@@ -42,6 +42,7 @@ require_unset_or_value BEATER_DASHBOARD_PORT 3000 "the default dashboard port is
 require_unset_or_value BEATER_GATE2_WRITE_PROOF 1 "the outside run must write a stopwatch proof"
 require_unset_or_value BEATER_GATE2_BROWSER_PROOF 1 "the outside run must prove the browser flow"
 require_unset_or_value BEATER_GATE2_RECORD_DEMO 1 "the outside run must record the browser flow"
+require_unset_or_value KEEP_BEATER_COMPOSE 1 "the dashboard must remain running for outside-person click-through"
 require_unset BEATERD_IMAGE "the wrapper pins beaterd to the checked-out commit SHA"
 require_unset BEATER_DASHBOARD_IMAGE "the wrapper pins dashboard to the checked-out commit SHA"
 require_unset BEATER_DASHBOARD_E2E_IMAGE "the wrapper pins dashboard-e2e to the checked-out commit SHA"
@@ -49,6 +50,7 @@ require_unset BEATER_OTEL_PYTHON_IMAGE "the wrapper pins otel-python to the chec
 require_unset BEATER_GATE2_STOPWATCH_PROOF "the outside run must write docs/demos/gate2-compose-stopwatch.md"
 require_unset BEATER_GATE2_RECORD_VIDEO "the outside run must write docs/demos/gate2-compose-browser-demo.webm"
 require_unset BEATER_GATE2_RECORD_NOTES "the outside run must write docs/demos/gate2-compose-browser-demo.md"
+require_unset COMPOSE_PROJECT_NAME "the outside run must use the default beater-stopwatch Compose project"
 
 export BEATER_GATE2_WRITE_PROOF=1
 export BEATER_GATE2_BROWSER_PROOF=1
@@ -57,6 +59,7 @@ export BEATER_GATE2_REUSE="${BEATER_GATE2_REUSE:-0}"
 export BEATER_GATE2_LOCAL_BUILD="${BEATER_GATE2_LOCAL_BUILD:-0}"
 export BEATER_GATE2_PULL_POLICY="${BEATER_GATE2_PULL_POLICY:-always}"
 export BEATER_GATE2_OUTSIDE_WRAPPER=1
+export KEEP_BEATER_COMPOSE=1
 
 cd "$repo_root"
 

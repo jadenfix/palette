@@ -182,6 +182,23 @@ fn gate2_outside_wrapper_rejects_artifact_path_override() {
 }
 
 #[test]
+fn gate2_outside_wrapper_rejects_compose_project_override() {
+    let output = run_outside_wrapper_dry_run(Some(("COMPOSE_PROJECT_NAME", "beater-alt")));
+
+    assert_failure(
+        output,
+        "COMPOSE_PROJECT_NAME must be unset for outside-person evidence",
+    );
+}
+
+#[test]
+fn gate2_outside_wrapper_rejects_compose_cleanup_override() {
+    let output = run_outside_wrapper_dry_run(Some(("KEEP_BEATER_COMPOSE", "0")));
+
+    assert_failure(output, "KEEP_BEATER_COMPOSE must be unset or '1'");
+}
+
+#[test]
 fn gate2_outside_validator_rejects_stopwatch_without_wrapper_marker() {
     let fixture = ValidatorFixture::new();
     replace(
@@ -212,6 +229,23 @@ fn gate2_outside_validator_rejects_missing_stopwatch_proof() {
     let output = run_validator(&fixture.proof_path);
 
     assert_failure(output, "stopwatch proof file does not exist");
+}
+
+#[test]
+fn gate2_outside_validator_rejects_noncanonical_compose_project() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.stopwatch_path,
+        "- Compose project: beater-stopwatch",
+        "- Compose project: beater-alt",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Compose project in stopwatch proof must be 'beater-stopwatch'",
+    );
 }
 
 #[test]
@@ -875,7 +909,9 @@ fn run_outside_wrapper_dry_run(extra_env: Option<(&str, &str)>) -> Output {
         .env_remove("BEATER_OTEL_PYTHON_IMAGE")
         .env_remove("BEATER_GATE2_STOPWATCH_PROOF")
         .env_remove("BEATER_GATE2_RECORD_VIDEO")
-        .env_remove("BEATER_GATE2_RECORD_NOTES");
+        .env_remove("BEATER_GATE2_RECORD_NOTES")
+        .env_remove("KEEP_BEATER_COMPOSE")
+        .env_remove("COMPOSE_PROJECT_NAME");
     if let Some((name, value)) = extra_env {
         command.env(name, value);
     }

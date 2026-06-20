@@ -504,6 +504,7 @@ if stopwatch_text:
         ("Reuse override", "BEATER_GATE2_REUSE=0"),
         ("Outside-run wrapper", "yes"),
         ("Prebuilt pull policy", "always"),
+        ("Compose project", "beater-stopwatch"),
         ("Quickstart browser proof", "passed"),
         ("All-kind waterfall browser proof", "passed"),
         ("Browser recording", "passed"),
