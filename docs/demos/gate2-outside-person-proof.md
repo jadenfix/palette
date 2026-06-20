@@ -55,9 +55,9 @@ during the timed run.
 
 The wrapper sets the required proof/browser/recording flags and rejects
 warm-loop reuse, local source builds, alternate ports, and mutable pull-policy
-overrides before the stopwatch starts. The stopwatch proof records
-`Outside-run wrapper: yes`; completed outside-person evidence is invalid without
-that marker.
+overrides, plus prebuilt image overrides, before the stopwatch starts. The
+stopwatch proof records `Outside-run wrapper: yes`; completed outside-person
+evidence is invalid without that marker.
 
 The script fails before Compose startup if Docker is unavailable, if curl is
 missing, or if API `8080`, OTLP `4317`, or dashboard `3000` are still in use
@@ -113,7 +113,8 @@ browser-proof status, trace IDs, dashboard URLs, SHA-pinned prebuilt GHCR image
 references, prebuilt GHCR image digests, and the tested `main` commit SHA. If
 the proof commit is newer than the tested
 SHA, every later change must be under `docs/demos/`. It verifies
-screen-recording SHA256 against the committed artifact and requires the
+screen-recording SHA256 against the committed artifact, requires the artifact to
+be a WebM capture of at least 64 KiB with a WebM/EBML header, and requires the
 recording notes to describe the full click-through: quickstart trace,
 `llm.call`, prompt, completion, model, tokens, cost, latency, and run -> turn ->
 step -> tool -> MCP waterfall. Stopwatch, recording, and notes paths must be

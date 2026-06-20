@@ -35,6 +35,7 @@ text = proof_path.read_text()
 DEFAULT_API_ENDPOINT = "http://127.0.0.1:8080"
 DEFAULT_DASHBOARD_BASE = "http://127.0.0.1:3000"
 DEFAULT_OTLP_ENDPOINT = "http://127.0.0.1:4317"
+MIN_RECORDING_BYTES = 64 * 1024
 OUTSIDE_RUN_ATTESTATION = (
     "I attest that I am not a Beater project maintainer, I received no "
     "step-by-step help beyond public repository instructions, I used a fresh "
@@ -164,6 +165,19 @@ def require_recording_shows_full_flow(notes_text: str) -> None:
             "screen recording notes Shows must describe the full Gate 2 flow; "
             "missing: " + ", ".join(missing)
         )
+
+
+def require_webm_recording(recording_path: Path) -> None:
+    recording_bytes = recording_path.read_bytes()
+    if len(recording_bytes) < MIN_RECORDING_BYTES:
+        fail(
+            "screen recording must be a real WebM capture of at least "
+            f"{MIN_RECORDING_BYTES} bytes"
+        )
+    if not recording_bytes.startswith(bytes.fromhex("1a45dfa3")):
+        fail("screen recording must start with a WebM/EBML header")
+    if b"webm" not in recording_bytes[:4096]:
+        fail("screen recording must declare WebM DocType in its EBML header")
 
 
 def repo_path(value: str) -> Path:
@@ -419,6 +433,7 @@ sha = field_value("Screen recording SHA256")
 if sha and not re.fullmatch(r"[0-9a-f]{64}", sha):
     fail("Screen recording SHA256 must be a lowercase 64-character sha256")
 if recording and recording_path.exists() and re.fullmatch(r"[0-9a-f]{64}", sha):
+    require_webm_recording(recording_path)
     actual = hashlib.sha256(recording_path.read_bytes()).hexdigest()
     if actual != sha:
         fail(f"screen recording sha mismatch: expected {sha}, got {actual}")

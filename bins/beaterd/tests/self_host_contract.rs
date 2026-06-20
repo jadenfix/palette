@@ -267,6 +267,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_run.contains("BEATER_GATE2_LOCAL_BUILD"));
     assert!(outside_run.contains("BEATER_DASHBOARD_PORT"));
     assert!(outside_run.contains("BEATER_GATE2_OUTSIDE_WRAPPER=1"));
+    assert!(outside_run.contains("require_unset BEATERD_IMAGE"));
+    assert!(outside_run.contains("require_unset BEATER_DASHBOARD_IMAGE"));
+    assert!(outside_run.contains("require_unset BEATER_DASHBOARD_E2E_IMAGE"));
+    assert!(outside_run.contains("require_unset BEATER_OTEL_PYTHON_IMAGE"));
+    assert!(outside_run.contains("the wrapper pins beaterd to the checked-out commit SHA"));
     assert!(outside_run.contains("scripts/gate2-compose-stopwatch.sh"));
     assert!(outside_run.contains("Gate 2 outside-run wrapper preflight passed"));
 
@@ -283,6 +288,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("DEFAULT_DASHBOARD_BASE = \"http://127.0.0.1:3000\""));
     assert!(outside_validator.contains("all pass-checklist boxes must be checked"));
     assert!(outside_validator.contains("hashlib.sha256"));
+    assert!(outside_validator.contains("MIN_RECORDING_BYTES"));
+    assert!(outside_validator.contains("require_webm_recording"));
+    assert!(outside_validator.contains("screen recording must start with a WebM/EBML header"));
+    assert!(outside_validator.contains("screen recording must declare WebM DocType"));
     assert!(outside_validator.contains("subprocess.check_output"));
     assert!(outside_validator.contains("parse_qs"));
     assert!(outside_validator.contains("screen recording sha mismatch"));
@@ -374,6 +383,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("scripts/check-gate2-outside-readiness.py"));
     assert!(public_handoff.contains("scripts/gate2-outside-run.sh"));
     assert!(public_handoff.contains("BEATER_GATE2_OUTSIDE_RUN_DRY_RUN"));
+    assert!(public_handoff.contains("BEATERD_IMAGE"));
+    assert!(public_handoff.contains("BEATER_DASHBOARD_IMAGE"));
+    assert!(public_handoff.contains("BEATER_DASHBOARD_E2E_IMAGE"));
+    assert!(public_handoff.contains("BEATER_OTEL_PYTHON_IMAGE"));
     assert!(public_handoff.contains("--registry-fixture"));
     assert!(public_handoff.contains("--skip-local-readiness"));
 
@@ -383,6 +396,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("sets the required proof/browser/recording flags"));
     assert!(outside_proof.contains("Outside-run wrapper:"));
     assert!(outside_proof.contains("Outside-run wrapper: yes"));
+    assert!(outside_proof.contains("prebuilt image overrides"));
     assert!(outside_proof.contains("rejects"));
     assert!(outside_proof.contains("warm-loop reuse"));
     assert!(outside_proof.contains("Preflight status"));
@@ -425,6 +439,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("cross-checks default"));
     assert!(outside_proof.contains("image digests"));
     assert!(outside_proof.contains("screen-recording notes"));
+    assert!(outside_proof.contains("WebM capture of at least 64 KiB"));
+    assert!(outside_proof.contains("WebM/EBML header"));
     assert!(outside_proof.contains("prompt, completion, model, tokens, cost, latency"));
     assert!(outside_proof.contains("SHA256 against the committed artifact"));
 
@@ -434,9 +450,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("scripts/check-gate2-public-handoff.py"));
     assert!(readme.contains("scripts/check-gate2-outside-readiness.py"));
     assert!(readme.contains("Outside-run wrapper: yes"));
+    assert!(readme.contains("prebuilt image overrides"));
     assert!(readme.contains("scripts/generate-gate2-outside-proof.py"));
     assert!(readme.contains("--attest-outside-run"));
-    assert!(readme.contains("proof writing, browser proof, and browser recording enabled"));
+    assert!(readme.contains("proof writing, browser proof, and browser recording"));
+    assert!(readme.contains("enabled. It also sets"));
     assert!(readme.contains("scripts/validate-gate2-outside-proof.sh"));
     assert!(readme.contains("removes any previous Beater stopwatch project"));
     assert!(readme.contains("gate2-compose-browser-demo.webm"));
@@ -454,7 +472,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("prebuilt GHCR image digests"));
     assert!(readme.contains("mismatched image digests"));
     assert!(readme.contains("recording notes from a different dashboard session"));
-    assert!(readme.contains("notes must also"));
+    assert!(readme.contains("WebM capture of at least 64 KiB"));
+    assert!(readme.contains("WebM/EBML header"));
+    assert!(readme.contains("The notes"));
+    assert!(readme.contains("must also describe the full recorded flow"));
     assert!(readme.contains("hash that does not match the committed file"));
     assert!(readme.contains("fresh clone from `https://github.com/jadenfix/beater.git`"));
     assert!(readme.contains("reruns the cloned readiness check"));
@@ -469,6 +490,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("scripts/check-gate2-outside-readiness.py"));
     assert!(requirements.contains("public-clone handoff verifier"));
     assert!(requirements.contains("requires the clone to match the current commit"));
+    assert!(requirements.contains("alternate-port/image-override evidence"));
     assert!(requirements.contains("wrapper marker"));
     assert!(requirements.contains("scripts/generate-gate2-outside-proof.py"));
     assert!(requirements.contains("scripts/validate-gate2-outside-proof.sh"));
@@ -482,6 +504,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("prebuilt GHCR image digests"));
     assert!(requirements.contains("default API/OTLP/dashboard endpoints"));
     assert!(requirements.contains("recording-notes full-flow check"));
+    assert!(requirements.contains("recording-file WebM/min-size guard"));
     assert!(requirements.contains("recording-hash cross-checks"));
     assert!(requirements.contains("public multi-arch GHCR images"));
     assert!(requirements.contains("CI-enforced"));

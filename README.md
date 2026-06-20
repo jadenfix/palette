@@ -143,11 +143,11 @@ scripts/gate2-outside-run.sh
 ```
 
 The outside-run wrapper rejects warm-loop reuse, local source builds, alternate
-ports, and mutable pull-policy overrides, then runs the stopwatch script with
-proof writing, browser proof, and browser recording enabled. It also sets an
-`Outside-run wrapper: yes` marker in the stopwatch proof; completed
-outside-person proof validation rejects evidence without that marker. The script
-first removes any previous Compose project/volumes, then runs
+ports, mutable pull-policy overrides, and prebuilt image overrides, then runs
+the stopwatch script with proof writing, browser proof, and browser recording
+enabled. It also sets an `Outside-run wrapper: yes` marker in the stopwatch
+proof; completed outside-person proof validation rejects evidence without that
+marker. The script first removes any previous Compose project/volumes, then runs
 `docker compose up`, sends `examples/python/five_line_otel.py` from the
 prebuilt stock OpenTelemetry Python runner container, waits until the trace is
 visible in `localhost:3000`, and fails if time-to-first-trace exceeds 300
@@ -272,10 +272,11 @@ mismatched API/dashboard endpoints, non-main or stale commit evidence,
 mismatched SHA-pinned image references, mismatched image digests,
 non-repo-relative `docs/demos/` artifacts, and non-prebuilt GHCR image digests.
 It rejects recording notes from a different dashboard session and any screen
-recording hash that does not match the committed file. The notes must also
-describe the full recorded flow: quickstart trace, `llm.call`, prompt,
-completion, model, tokens, cost, latency, and run -> turn -> step -> tool ->
-MCP waterfall.
+recording hash that does not match the committed file. The recording artifact
+must be a WebM capture of at least 64 KiB with a WebM/EBML header. The notes
+must also describe the full recorded flow: quickstart trace, `llm.call`,
+prompt, completion, model, tokens, cost, latency, and run -> turn -> step ->
+tool -> MCP waterfall.
 The `gate2-proof-contract` GitHub workflow runs the validator template check
 and the executable proof-artifact fixture tests on pull requests and `main`.
 

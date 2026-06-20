@@ -20,6 +20,15 @@ require_unset_or_value() {
   fi
 }
 
+require_unset() {
+  local name="$1"
+  local reason="$2"
+  local value="${!name:-}"
+  if [[ -n "$value" ]]; then
+    fail "$name must be unset for outside-person evidence ($reason); got '$value'"
+  fi
+}
+
 if [[ $# -ne 0 ]]; then
   fail "this wrapper takes no arguments"
 fi
@@ -33,6 +42,10 @@ require_unset_or_value BEATER_DASHBOARD_PORT 3000 "the default dashboard port is
 require_unset_or_value BEATER_GATE2_WRITE_PROOF 1 "the outside run must write a stopwatch proof"
 require_unset_or_value BEATER_GATE2_BROWSER_PROOF 1 "the outside run must prove the browser flow"
 require_unset_or_value BEATER_GATE2_RECORD_DEMO 1 "the outside run must record the browser flow"
+require_unset BEATERD_IMAGE "the wrapper pins beaterd to the checked-out commit SHA"
+require_unset BEATER_DASHBOARD_IMAGE "the wrapper pins dashboard to the checked-out commit SHA"
+require_unset BEATER_DASHBOARD_E2E_IMAGE "the wrapper pins dashboard-e2e to the checked-out commit SHA"
+require_unset BEATER_OTEL_PYTHON_IMAGE "the wrapper pins otel-python to the checked-out commit SHA"
 
 export BEATER_GATE2_WRITE_PROOF=1
 export BEATER_GATE2_BROWSER_PROOF=1

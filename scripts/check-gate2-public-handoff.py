@@ -147,6 +147,10 @@ def run_cloned_checks(args: argparse.Namespace, clone_dir: Path) -> None:
         "BEATER_GATE2_WRITE_PROOF",
         "BEATER_GATE2_BROWSER_PROOF",
         "BEATER_GATE2_RECORD_DEMO",
+        "BEATERD_IMAGE",
+        "BEATER_DASHBOARD_IMAGE",
+        "BEATER_DASHBOARD_E2E_IMAGE",
+        "BEATER_OTEL_PYTHON_IMAGE",
     ]:
         env.pop(name, None)
     run(["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env)

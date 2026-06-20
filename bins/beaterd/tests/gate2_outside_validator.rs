@@ -6,8 +6,7 @@ use tempfile::TempDir;
 
 const QUICKSTART_TRACE: &str = "11111111111111111111111111111111";
 const ALL_KIND_TRACE: &str = "22222222222222222222222222222222";
-const RECORDING_BYTES: &[u8] = b"beater gate2 validator video\n";
-const RECORDING_SHA: &str = "996b14a456ef7d971a97600ecf240cc5f22eb5b5c05235719a64a042a4fdb29e";
+const RECORDING_SHA: &str = "8dbf7556fbb705c3e00d5ec7604b3ce82482f7743f937d008d0913a96d0284dc";
 const BEATER_IMAGE_DIGEST: &str =
     "ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const DASHBOARD_IMAGE_DIGEST: &str =
@@ -154,6 +153,19 @@ fn gate2_outside_wrapper_rejects_alternate_dashboard_port() {
     let output = run_outside_wrapper_dry_run(Some(("BEATER_DASHBOARD_PORT", "13080")));
 
     assert_failure(output, "BEATER_DASHBOARD_PORT must be unset or '3000'");
+}
+
+#[test]
+fn gate2_outside_wrapper_rejects_image_override() {
+    let output = run_outside_wrapper_dry_run(Some((
+        "BEATERD_IMAGE",
+        "ghcr.io/jadenfix/beater/beaterd:main",
+    )));
+
+    assert_failure(
+        output,
+        "BEATERD_IMAGE must be unset for outside-person evidence",
+    );
 }
 
 #[test]
@@ -414,6 +426,41 @@ fn gate2_outside_validator_rejects_bad_recording_hash() {
 }
 
 #[test]
+fn gate2_outside_validator_rejects_non_webm_recording() {
+    let fixture = ValidatorFixture::new();
+    fs::write(&fixture.recording_path, b"not a webm recording")
+        .unwrap_or_else(|err| panic!("write {}: {err}", fixture.recording_path.display()));
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "screen recording must start with a WebM/EBML header",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_tiny_webm_recording() {
+    let fixture = ValidatorFixture::new();
+    fs::write(
+        &fixture.recording_path,
+        [
+            bytes_from_hex("1a45dfa39f4286810142f7810142f2810442f381084282847765626d"),
+            b" tiny".to_vec(),
+        ]
+        .concat(),
+    )
+    .unwrap_or_else(|err| panic!("write {}: {err}", fixture.recording_path.display()));
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "screen recording must be a real WebM capture of at least",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_absolute_artifact_paths() {
     let fixture = ValidatorFixture::new();
     replace(
@@ -507,7 +554,7 @@ impl ValidatorFixture {
         let recording_field = format!("{artifact_rel}/recording.webm");
         let notes_field = format!("{artifact_rel}/recording-notes.md");
 
-        fs::write(&recording_path, RECORDING_BYTES)
+        fs::write(&recording_path, recording_bytes())
             .unwrap_or_else(|err| panic!("write {}: {err}", recording_path.display()));
         fs::write(
             &notes_path,
@@ -808,7 +855,11 @@ fn run_outside_wrapper_dry_run(extra_env: Option<(&str, &str)>) -> Output {
         .env_remove("BEATER_GATE2_PULL_POLICY")
         .env_remove("BEATER_GATE2_WRITE_PROOF")
         .env_remove("BEATER_GATE2_BROWSER_PROOF")
-        .env_remove("BEATER_GATE2_RECORD_DEMO");
+        .env_remove("BEATER_GATE2_RECORD_DEMO")
+        .env_remove("BEATERD_IMAGE")
+        .env_remove("BEATER_DASHBOARD_IMAGE")
+        .env_remove("BEATER_DASHBOARD_E2E_IMAGE")
+        .env_remove("BEATER_OTEL_PYTHON_IMAGE");
     if let Some((name, value)) = extra_env {
         command.env(name, value);
     }
@@ -897,6 +948,24 @@ fn write_registry_manifest(dir: &Path, image: &str, platforms: &[&str]) {
         format!(r#"{{"manifests":[{manifests}]}}"#),
     )
     .unwrap_or_else(|err| panic!("write registry fixture for {image}: {err}"));
+}
+
+fn recording_bytes() -> Vec<u8> {
+    let mut bytes =
+        bytes_from_hex("1a45dfa39f4286810142f7810142f2810442f381084282847765626d4287810242858102");
+    bytes.resize(70_000, 0);
+    bytes
+}
+
+fn bytes_from_hex(hex: &str) -> Vec<u8> {
+    assert_eq!(hex.len() % 2, 0, "hex fixture should have even length");
+    (0..hex.len())
+        .step_by(2)
+        .map(|index| {
+            u8::from_str_radix(&hex[index..index + 2], 16)
+                .unwrap_or_else(|err| panic!("invalid hex fixture at {index}: {err}"))
+        })
+        .collect()
 }
 
 fn write_public_handoff_fixture_repo() -> TempDir {
