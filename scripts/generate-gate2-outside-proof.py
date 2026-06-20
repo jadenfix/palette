@@ -65,7 +65,11 @@ def compose_images_excerpt(stopwatch_text, stopwatch_path):
     lines = [line.strip() for line in match.group(1).splitlines() if line.strip()]
     if not lines:
         return f"see {relative_or_absolute(stopwatch_path)}"
-    services = [line for line in lines if "beaterd" in line or "dashboard" in line]
+    services = [
+        line
+        for line in lines
+        if "beaterd" in line or "dashboard" in line or "otel-python" in line
+    ]
     if services:
         return " | ".join(services)
     return " | ".join(lines[:3])
@@ -125,9 +129,11 @@ unaided using public repository instructions.
 - Beater image reference: {field_value(stopwatch_text, "Beater image reference", stopwatch_rel)}
 - Dashboard image reference: {field_value(stopwatch_text, "Dashboard image reference", stopwatch_rel)}
 - Dashboard e2e image reference: {field_value(stopwatch_text, "Dashboard e2e image reference", stopwatch_rel)}
+- OTEL Python image reference: {field_value(stopwatch_text, "OTEL Python image reference", stopwatch_rel)}
 - Beater image digest: {field_value(stopwatch_text, "Beater image digest", stopwatch_rel)}
 - Dashboard image digest: {field_value(stopwatch_text, "Dashboard image digest", stopwatch_rel)}
 - Dashboard e2e image digest: {field_value(stopwatch_text, "Dashboard e2e image digest", stopwatch_rel)}
+- OTEL Python image digest: {field_value(stopwatch_text, "OTEL Python image digest", stopwatch_rel)}
 - API endpoint: {field_value(stopwatch_text, "API endpoint", stopwatch_rel)}
 - Dashboard base: {field_value(stopwatch_text, "Dashboard base", stopwatch_rel)}
 - Started at: {field_value(stopwatch_text, "Started", stopwatch_rel)}
@@ -165,7 +171,7 @@ The runner completed the flow using only public repository instructions.
 
 - [x] Fresh clone was used.
 - [x] Docker was running before the stopwatch started.
-- [x] Python and curl were available before the stopwatch started.
+- [x] curl was available before the stopwatch started.
 - [x] Default ports were used: API `127.0.0.1:8080`, OTLP `127.0.0.1:4317`, dashboard `127.0.0.1:3000`.
 - [x] `BEATER_GATE2_REUSE` was not set.
 - [x] The script reported `Clean start: yes`.

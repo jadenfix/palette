@@ -14,6 +14,8 @@ const DASHBOARD_IMAGE_DIGEST: &str =
     "ghcr.io/jadenfix/beater/dashboard@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 const DASHBOARD_E2E_IMAGE_DIGEST: &str =
     "ghcr.io/jadenfix/beater/dashboard-e2e@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+const OTEL_PYTHON_IMAGE_DIGEST: &str =
+    "ghcr.io/jadenfix/beater/otel-python@sha256:abababababababababababababababababababababababababababababababab";
 const OUTSIDE_RUN_ATTESTATION: &str = "I attest that I am not a Beater project maintainer, I received no step-by-step help beyond public repository instructions, I used a fresh clone, and I completed the Gate 2 flow unaided.";
 
 #[test]
@@ -59,6 +61,7 @@ fn gate2_outside_generator_builds_valid_completed_proof() {
     )));
     assert!(generated_text.contains("- Beater image digest: ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
     assert!(generated_text.contains("- Dashboard e2e image digest: ghcr.io/jadenfix/beater/dashboard-e2e@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"));
+    assert!(generated_text.contains("- OTEL Python image digest: ghcr.io/jadenfix/beater/otel-python@sha256:abababababababababababababababababababababababababababababababab"));
     assert!(generated_text.contains(
         "- [x] The runner completed the flow using only public repository instructions."
     ));
@@ -375,6 +378,23 @@ fn gate2_outside_validator_rejects_dashboard_e2e_digest_mismatch() {
     );
 }
 
+#[test]
+fn gate2_outside_validator_rejects_otel_python_digest_mismatch() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        OTEL_PYTHON_IMAGE_DIGEST,
+        "ghcr.io/jadenfix/beater/otel-python@sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "otel python image digest mismatch between proof artifacts",
+    );
+}
+
 struct ValidatorFixture {
     _artifact_dir: TempDir,
     dir: TempDir,
@@ -462,9 +482,11 @@ Status: completed.
 - Beater image reference: ghcr.io/jadenfix/beater/beaterd:{commit_sha}
 - Dashboard image reference: ghcr.io/jadenfix/beater/dashboard:{commit_sha}
 - Dashboard e2e image reference: ghcr.io/jadenfix/beater/dashboard-e2e:{commit_sha}
+- OTEL Python image reference: ghcr.io/jadenfix/beater/otel-python:{commit_sha}
 - Beater image digest: {BEATER_IMAGE_DIGEST}
 - Dashboard image digest: {DASHBOARD_IMAGE_DIGEST}
 - Dashboard e2e image digest: {DASHBOARD_E2E_IMAGE_DIGEST}
+- OTEL Python image digest: {OTEL_PYTHON_IMAGE_DIGEST}
 - API endpoint: http://127.0.0.1:8080
 - Dashboard base: http://127.0.0.1:3000
 - Started at: 2026-06-20T12:00:00Z
@@ -502,7 +524,7 @@ The runner completed the flow using only public repository instructions.
 
 - [x] Fresh clone was used.
 - [x] Docker was running before the stopwatch started.
-- [x] Python and curl were available before the stopwatch started.
+- [x] curl was available before the stopwatch started.
 - [x] Default ports were used: API `127.0.0.1:8080`, OTLP `127.0.0.1:4317`, dashboard `127.0.0.1:3000`.
 - [x] `BEATER_GATE2_REUSE` was not set.
 - [x] The script reported `Clean start: yes`.
@@ -542,9 +564,11 @@ fn stopwatch_proof(recording: &str, notes: &str) -> String {
 - Beater image reference: `ghcr.io/jadenfix/beater/beaterd:{commit_sha}`
 - Dashboard image reference: `ghcr.io/jadenfix/beater/dashboard:{commit_sha}`
 - Dashboard e2e image reference: `ghcr.io/jadenfix/beater/dashboard-e2e:{commit_sha}`
+- OTEL Python image reference: `ghcr.io/jadenfix/beater/otel-python:{commit_sha}`
 - Beater image digest: `{BEATER_IMAGE_DIGEST}`
 - Dashboard image digest: `{DASHBOARD_IMAGE_DIGEST}`
 - Dashboard e2e image digest: `{DASHBOARD_E2E_IMAGE_DIGEST}`
+- OTEL Python image digest: `{OTEL_PYTHON_IMAGE_DIGEST}`
 - Quickstart snippet: `examples/python/five_line_otel.py`
 - API endpoint: `http://127.0.0.1:8080`
 - OTLP endpoint: `http://127.0.0.1:4317`

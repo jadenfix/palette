@@ -89,6 +89,18 @@ jobs:
             type=gha,scope=dashboard-e2e-${{ matrix.suffix }}
           cache-to: type=gha,mode=max,scope=dashboard-e2e-${{ matrix.suffix }}
 
+      - name: Build and push OTEL Python runner
+        uses: docker/build-push-action@v7
+        with:
+          context: ./examples/python
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/otel-python:${{ github.sha }}-${{ matrix.suffix }}
+            ghcr.io/${{ github.repository }}/otel-python:main-${{ matrix.suffix }}
+          cache-from: type=gha,scope=otel-python-${{ matrix.suffix }}
+          cache-to: type=gha,mode=max,scope=otel-python-${{ matrix.suffix }}
+
   publish:
     runs-on: ubuntu-latest
     needs: build
@@ -126,3 +138,11 @@ jobs:
             -t ghcr.io/${{ github.repository }}/dashboard-e2e:${{ github.sha }} \
             ghcr.io/${{ github.repository }}/dashboard-e2e:${{ github.sha }}-amd64 \
             ghcr.io/${{ github.repository }}/dashboard-e2e:${{ github.sha }}-arm64
+
+      - name: Publish OTEL Python runner manifest
+        run: |
+          docker buildx imagetools create \
+            -t ghcr.io/${{ github.repository }}/otel-python:main \
+            -t ghcr.io/${{ github.repository }}/otel-python:${{ github.sha }} \
+            ghcr.io/${{ github.repository }}/otel-python:${{ github.sha }}-amd64 \
+            ghcr.io/${{ github.repository }}/otel-python:${{ github.sha }}-arm64

@@ -142,18 +142,19 @@ cd beater
 BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1 scripts/gate2-compose-stopwatch.sh
 ```
 
-The script first removes any previous Compose project/volumes and deletes the
-quickstart virtualenv, then runs `docker compose up`, sends
-`examples/python/five_line_otel.py`, waits until the trace is visible in
-`localhost:3000`, and fails if time-to-first-trace exceeds 300 seconds. It
-also records time-to-quickstart-click when browser proof is enabled. It leaves
-the dashboard running by default so a human can click through the trace.
-Before starting Compose it checks Docker, Python, and curl. It removes any previous Beater stopwatch project, then checks the required host ports. For
+The script first removes any previous Compose project/volumes, then runs
+`docker compose up`, sends `examples/python/five_line_otel.py` from the
+prebuilt stock OpenTelemetry Python runner container, waits until the trace is
+visible in `localhost:3000`, and fails if time-to-first-trace exceeds 300
+seconds. It also records time-to-quickstart-click when browser proof is
+enabled. It leaves the dashboard running by default so a human can click
+through the trace.
+Before starting Compose it checks Docker and curl. It removes any previous Beater stopwatch project, then checks the required host ports. For
 outside-person evidence, free the default `8080`/`4317`/`3000` ports rather than
 using alternate ports.
 By default it uses `docker-compose.prebuilt.yml` and pulls current GHCR images
 published by `.github/workflows/container-images.yml`. The stopwatch script
-pins `beaterd`, `dashboard`, and `dashboard-e2e` to the checked-out commit SHA
+pins `beaterd`, `dashboard`, `dashboard-e2e`, and `otel-python` to the checked-out commit SHA
 tags by default, then records the image references and resolved GHCR digests in
 the proof. Set
 `BEATER_GATE2_LOCAL_BUILD=1` when you intentionally want to build the server and

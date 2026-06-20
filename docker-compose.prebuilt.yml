@@ -99,6 +99,29 @@ services:
     volumes:
       - ./docs/demos:/workspace/docs/demos
 
+  otel-python-smoke:
+    image: ${BEATER_OTEL_PYTHON_IMAGE:-ghcr.io/jadenfix/beater/otel-python:main}
+    profiles: ["tools"]
+    depends_on:
+      beaterd:
+        condition: service_healthy
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://beaterd:4317
+      BEATER_TENANT_ID: demo
+      BEATER_PROJECT_ID: demo
+      BEATER_ENVIRONMENT_ID: local
+    command: ["python", "/examples/otel_smoke.py"]
+
+  otel-python-quickstart:
+    image: ${BEATER_OTEL_PYTHON_IMAGE:-ghcr.io/jadenfix/beater/otel-python:main}
+    profiles: ["tools"]
+    depends_on:
+      beaterd:
+        condition: service_healthy
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://beaterd:4317
+    command: ["python", "/examples/five_line_otel.py"]
+
 volumes:
   postgres-data:
   nats-data:

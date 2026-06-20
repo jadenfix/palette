@@ -28,9 +28,11 @@ outside the project who runs the flow unaided from a fresh clone.
 - Beater image reference:
 - Dashboard image reference:
 - Dashboard e2e image reference:
+- OTEL Python image reference:
 - Beater image digest:
 - Dashboard image digest:
 - Dashboard e2e image digest:
+- OTEL Python image digest:
 - API endpoint:
 - Dashboard base:
 - Started at:
@@ -50,9 +52,10 @@ BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO
 No project maintainer may provide step-by-step help beyond public repo docs
 during the timed run.
 
-The script fails before Compose startup if Docker is unavailable, if Python or
-curl are missing, or if API `8080`, OTLP `4317`, or dashboard `3000` are still
-in use after it removes any previous Beater stopwatch project. Browser proof
+The script fails before Compose startup if Docker is unavailable, if curl is
+missing, or if API `8080`, OTLP `4317`, or dashboard `3000` are still in use
+after it removes any previous Beater stopwatch project. The stock OpenTelemetry
+Python snippet runs in the prebuilt `otel-python` container, and browser proof
 runs in the prebuilt `dashboard-e2e` container. For this outside-person proof,
 free those default ports instead of using alternate port environment variables.
 
@@ -108,7 +111,7 @@ be repo-relative paths under `docs/demos/`.
 
 - [ ] Fresh clone was used.
 - [ ] Docker was running before the stopwatch started.
-- [ ] Python and curl were available before the stopwatch started.
+- [ ] curl was available before the stopwatch started.
 - [ ] Default ports were used: API `127.0.0.1:8080`, OTLP `127.0.0.1:4317`,
       dashboard `127.0.0.1:3000`.
 - [ ] `BEATER_GATE2_REUSE` was not set.

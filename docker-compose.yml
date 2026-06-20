@@ -139,7 +139,8 @@ services:
       ]
 
   otel-python-smoke:
-    image: python:3.12-slim
+    build:
+      context: ./examples/python
     profiles: ["tools"]
     depends_on:
       beaterd:
@@ -149,31 +150,18 @@ services:
       BEATER_TENANT_ID: demo
       BEATER_PROJECT_ID: demo
       BEATER_ENVIRONMENT_ID: local
-    volumes:
-      - ./examples/python/otel_smoke.py:/otel_smoke.py:ro
-    command:
-      [
-        "sh",
-        "-c",
-        "pip install --no-cache-dir opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc >/tmp/pip.log && python /otel_smoke.py"
-      ]
+    command: ["python", "/examples/otel_smoke.py"]
 
   otel-python-quickstart:
-    image: python:3.12-slim
+    build:
+      context: ./examples/python
     profiles: ["tools"]
     depends_on:
       beaterd:
         condition: service_healthy
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://beaterd:4317
-    volumes:
-      - ./examples/python/five_line_otel.py:/five_line_otel.py:ro
-    command:
-      [
-        "sh",
-        "-c",
-        "pip install --no-cache-dir opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc >/tmp/pip.log && python /five_line_otel.py"
-      ]
+    command: ["python", "/examples/five_line_otel.py"]
 
   clickhouse:
     image: clickhouse/clickhouse-server:latest

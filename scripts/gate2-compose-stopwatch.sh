@@ -6,7 +6,6 @@ keep="${KEEP_BEATER_COMPOSE:-1}"
 reuse="${BEATER_GATE2_REUSE:-0}"
 write_proof="${BEATER_GATE2_WRITE_PROOF:-0}"
 proof_path="${BEATER_GATE2_STOPWATCH_PROOF:-docs/demos/gate2-compose-stopwatch.md}"
-venv_dir="${BEATER_GATE2_QUICKSTART_VENV:-/tmp/beater-gate2-compose-otel-venv}"
 local_build="${BEATER_GATE2_LOCAL_BUILD:-0}"
 browser_proof="${BEATER_GATE2_BROWSER_PROOF:-0}"
 record_demo="${BEATER_GATE2_RECORD_DEMO:-0}"
@@ -39,10 +38,12 @@ if [[ "$local_build" != "1" && "$git_sha" =~ ^[0-9a-f]{40}$ ]]; then
   export BEATERD_IMAGE="${BEATERD_IMAGE:-ghcr.io/jadenfix/beater/beaterd:$git_sha}"
   export BEATER_DASHBOARD_IMAGE="${BEATER_DASHBOARD_IMAGE:-ghcr.io/jadenfix/beater/dashboard:$git_sha}"
   export BEATER_DASHBOARD_E2E_IMAGE="${BEATER_DASHBOARD_E2E_IMAGE:-ghcr.io/jadenfix/beater/dashboard-e2e:$git_sha}"
+  export BEATER_OTEL_PYTHON_IMAGE="${BEATER_OTEL_PYTHON_IMAGE:-ghcr.io/jadenfix/beater/otel-python:$git_sha}"
 fi
 beater_image_ref="${BEATERD_IMAGE:-local-build}"
 dashboard_image_ref="${BEATER_DASHBOARD_IMAGE:-local-build}"
 dashboard_e2e_image_ref="${BEATER_DASHBOARD_E2E_IMAGE:-local-build}"
+otel_python_image_ref="${BEATER_OTEL_PYTHON_IMAGE:-local-build}"
 if [[ "$record_demo" == "1" ]]; then
   browser_proof="1"
 fi
@@ -86,6 +87,16 @@ compose_run_e2e() {
   compose "${run_args[@]}" "$@"
 }
 
+compose_run_tool() {
+  local run_args=(run --rm)
+  if [[ "$local_build" == "1" ]]; then
+    run_args+=(--build)
+  else
+    run_args+=(--pull "$prebuilt_pull_policy")
+  fi
+  compose "${run_args[@]}" "$@"
+}
+
 cleanup() {
   if [[ "$keep" != "1" ]]; then
     compose down -v --remove-orphans >/dev/null 2>&1 || true
@@ -97,7 +108,6 @@ clean_start() {
     return 0
   fi
   compose down -v --remove-orphans >/dev/null 2>&1 || true
-  rm -rf "$venv_dir"
 }
 
 terminate_tree() {
@@ -187,7 +197,7 @@ wait_text() {
 }
 
 first_trace_id() {
-  python3 -c 'import json,sys; print(json.load(sys.stdin)["items"][0]["trace_id"])'
+  sed -n 's/.*"trace_id"[[:space:]]*:[[:space:]]*"\([0-9a-f]\{32\}\)".*/\1/p' | head -n 1
 }
 
 sha256_file() {
@@ -218,6 +228,9 @@ service_image_digest() {
         ;;
       dashboard-e2e)
         image_ref="${BEATER_DASHBOARD_E2E_IMAGE:-}"
+        ;;
+      otel-python | otel-python-quickstart | otel-python-smoke)
+        image_ref="${BEATER_OTEL_PYTHON_IMAGE:-}"
         ;;
     esac
     if [[ -n "$image_ref" ]]; then
@@ -250,19 +263,10 @@ require_command() {
 }
 
 port_is_free() {
-  python3 - "$1" <<'PY'
-import socket
-import sys
-
-port = int(sys.argv[1])
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-    sock.bind(("127.0.0.1", port))
-except OSError:
-    sys.exit(1)
-finally:
-    sock.close()
-PY
+  if (: >/dev/tcp/127.0.0.1/"$1") >/dev/null 2>&1; then
+    return 1
+  fi
+  return 0
 }
 
 require_free_port() {
@@ -283,20 +287,6 @@ EOF
 preflight_prerequisites() {
   require_command docker
   require_command curl
-  require_command python3
-  local preflight_venv="/tmp/beater-gate2-python-preflight-$$"
-  rm -rf "$preflight_venv"
-  if ! python3 -m venv "$preflight_venv" >/dev/null 2>&1; then
-    rm -rf "$preflight_venv"
-    echo "Python venv support is required. On Debian/Ubuntu install python3-venv, then rerun Gate 2 proof." >&2
-    return 1
-  fi
-  if ! "$preflight_venv/bin/python" -m pip --version >/dev/null 2>&1; then
-    rm -rf "$preflight_venv"
-    echo "Python pip inside venv is required for the stock OTEL snippet dependencies." >&2
-    return 1
-  fi
-  rm -rf "$preflight_venv"
   if ! docker info >/dev/null 2>&1; then
     echo "Docker daemon is not reachable; start Docker and rerun Gate 2 proof." >&2
     return 1
@@ -324,14 +314,15 @@ run_before_deadline "compose startup ($startup_mode)" compose "${startup_args[@]
 wait_url "$api_url/health" "beaterd"
 wait_url "$dashboard_base_url/?tenant=demo&project=demo&environment=local" "dashboard"
 
-run_before_deadline "Python virtualenv creation" python3 -m venv "$venv_dir"
-run_before_deadline "pip upgrade" "$venv_dir/bin/pip" install --quiet --upgrade pip
-run_before_deadline "OTEL package install" "$venv_dir/bin/pip" install --quiet opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc
-run_before_deadline "five-line OTEL snippet" env OTEL_EXPORTER_OTLP_ENDPOINT="$otlp_url" "$venv_dir/bin/python" examples/python/five_line_otel.py
+run_before_deadline "five-line OTEL snippet" compose_run_tool otel-python-quickstart
 
 quickstart_query="$api_url/v1/traces/demo?project_id=demo&environment_id=local&kind=llm.call&model=gpt-quickstart"
 wait_text "$quickstart_query" "gpt-quickstart" "five-line OTEL trace"
 trace_id="$(curl -fsS "$quickstart_query" | first_trace_id)"
+if [[ -z "$trace_id" ]]; then
+  echo "Could not parse quickstart trace_id from $quickstart_query" >&2
+  exit 1
+fi
 dashboard_url="$dashboard_base_url/?tenant=demo&project=demo&environment=local&trace=$trace_id"
 
 wait_text "$dashboard_url" "Agent Trace Debugger" "dashboard"
@@ -353,11 +344,15 @@ if [[ "$browser_proof" == "1" ]]; then
     exit 1
   fi
 
-  run_with_step_timeout "stock Python all-kind OTEL fixture" env OTEL_EXPORTER_OTLP_ENDPOINT="$otlp_url" "$venv_dir/bin/python" examples/python/otel_smoke.py
+  run_with_step_timeout "stock Python all-kind OTEL fixture" compose_run_tool otel-python-smoke
 
   all_kind_query="$api_url/v1/traces/demo?project_id=demo&environment_id=local&kind=llm.call&model=gpt-demo&release=compose-demo"
   run_with_step_timeout "wait for stock Python all-kind OTEL trace" wait_text "$all_kind_query" "gpt-demo" "stock Python all-kind OTEL trace"
   all_kind_trace_id="$(curl -fsS "$all_kind_query" | first_trace_id)"
+  if [[ -z "$all_kind_trace_id" ]]; then
+    echo "Could not parse all-kind trace_id from $all_kind_query" >&2
+    exit 1
+  fi
   all_kind_dashboard_url="$dashboard_base_url/?tenant=demo&project=demo&environment=local&trace=$all_kind_trace_id"
   run_with_step_timeout "wait for dashboard all-kind llm.call" wait_text "$all_kind_dashboard_url" "call-policy-model" "dashboard all-kind llm.call"
   for kind in "${all_kinds[@]}"; do
@@ -396,6 +391,7 @@ image_summary="$(compose images 2>/dev/null || true)"
 beater_image_digest="$(service_image_digest beaterd)"
 dashboard_image_digest="$(service_image_digest dashboard)"
 dashboard_e2e_image_digest="$(service_image_digest dashboard-e2e)"
+otel_python_image_digest="$(service_image_digest otel-python-quickstart)"
 if (( time_to_first_trace_seconds > 300 )); then
   echo "Time-to-first-trace exceeded 300s: ${time_to_first_trace_seconds}s" >&2
   exit 1
@@ -423,9 +419,11 @@ if [[ "$write_proof" == "1" ]]; then
 - Beater image reference: \`$beater_image_ref\`
 - Dashboard image reference: \`$dashboard_image_ref\`
 - Dashboard e2e image reference: \`$dashboard_e2e_image_ref\`
+- OTEL Python image reference: \`$otel_python_image_ref\`
 - Beater image digest: \`$beater_image_digest\`
 - Dashboard image digest: \`$dashboard_image_digest\`
 - Dashboard e2e image digest: \`$dashboard_e2e_image_digest\`
+- OTEL Python image digest: \`$otel_python_image_digest\`
 - Quickstart snippet: \`examples/python/five_line_otel.py\`
 - API endpoint: \`$api_url\`
 - OTLP endpoint: \`$otlp_url\`
@@ -492,7 +490,7 @@ Set KEEP_BEATER_COMPOSE=0 to tear containers down automatically.
 Set BEATER_GATE2_LOCAL_BUILD=1 to build images from local source instead of
 pulling prebuilt GHCR images.
 Set BEATER_GATE2_REUSE=1 to skip the pre-run Compose down/volume removal and
-Python virtualenv deletion for local warm-loop debugging only.
+state cleanup for local warm-loop debugging only.
 Set BEATER_GATE2_BROWSER_PROOF=1 to run the Playwright browser proof for the
 five-line quickstart trace and all-kind nested agent waterfall in the same proof
 run.

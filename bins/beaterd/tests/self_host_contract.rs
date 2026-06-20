@@ -42,12 +42,20 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(dashboard_dockerignore.contains(".next"));
     assert!(dashboard_dockerignore.contains("test-results"));
     assert!(dashboard_dockerignore.contains("playwright-report"));
+    let otel_python_dockerfile = read(root.join("examples/python/Dockerfile"));
+    assert!(otel_python_dockerfile.contains("FROM python:3.12-slim"));
+    assert!(otel_python_dockerfile.contains("opentelemetry-sdk"));
+    assert!(otel_python_dockerfile.contains("opentelemetry-exporter-otlp-proto-grpc"));
+    assert!(otel_python_dockerfile.contains("COPY five_line_otel.py otel_smoke.py"));
 
     let prebuilt_compose = read(root.join("docker-compose.prebuilt.yml"));
     assert!(prebuilt_compose.contains("ghcr.io/jadenfix/beater/beaterd:main"));
     assert!(prebuilt_compose.contains("ghcr.io/jadenfix/beater/dashboard:main"));
     assert!(prebuilt_compose.contains("ghcr.io/jadenfix/beater/dashboard-e2e:main"));
+    assert!(prebuilt_compose.contains("ghcr.io/jadenfix/beater/otel-python:main"));
     assert!(prebuilt_compose.contains("dashboard-e2e:"));
+    assert!(prebuilt_compose.contains("otel-python-quickstart:"));
+    assert!(prebuilt_compose.contains("otel-python-smoke:"));
     assert!(prebuilt_compose.contains("profiles: [\"proof\"]"));
     assert!(prebuilt_compose.contains("PLAYWRIGHT_BASE_URL: http://dashboard:3000"));
     assert!(prebuilt_compose.contains("./docs/demos:/workspace/docs/demos"));
@@ -78,6 +86,10 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(image_workflow.contains("target: e2e"));
     assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/dashboard-e2e:main"));
     assert!(image_workflow.contains("Publish dashboard e2e manifest"));
+    assert!(image_workflow.contains("Build and push OTEL Python runner"));
+    assert!(image_workflow.contains("context: ./examples/python"));
+    assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/otel-python:main"));
+    assert!(image_workflow.contains("Publish OTEL Python runner manifest"));
 
     let gate2_workflow = read(root.join(".github/workflows/gate2-proof-contract.yml"));
     assert!(gate2_workflow.contains("pull_request:"));
@@ -155,10 +167,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
 
     let stopwatch_script = read(root.join("scripts/gate2-compose-stopwatch.sh"));
     assert!(stopwatch_script.contains("docker compose"));
-    assert!(stopwatch_script.contains("python3 -m venv"));
     assert!(stopwatch_script.contains("examples/python/five_line_otel.py"));
-    assert!(stopwatch_script.contains("examples/python/otel_smoke.py"));
-    assert!(stopwatch_script.contains("OTEL_EXPORTER_OTLP_ENDPOINT"));
+    assert!(stopwatch_script.contains("otel-python-quickstart"));
+    assert!(stopwatch_script.contains("otel-python-smoke"));
+    assert!(stopwatch_script.contains("compose_run_tool"));
     assert!(!stopwatch_script.contains("duration_seconds > 300"));
     assert!(stopwatch_script.contains("time_to_first_trace_seconds > 300"));
     assert!(stopwatch_script.contains("time_to_quickstart_click_seconds > 300"));
@@ -172,7 +184,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     );
     assert!(stopwatch_script.contains("require_command docker"));
     assert!(stopwatch_script.contains("require_command curl"));
-    assert!(stopwatch_script.contains("require_command python3"));
+    assert!(!stopwatch_script.contains("require_command python3"));
+    assert!(!stopwatch_script.contains("python3 -m venv"));
+    assert!(!stopwatch_script.contains("pip --version"));
     assert!(!stopwatch_script.contains("require_command npm"));
     assert!(stopwatch_script.contains("docker info"));
     assert!(stopwatch_script.contains("require_free_port \"$host_http_port\""));
@@ -215,7 +229,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("BEATER_GATE2_REUSE"));
     assert!(stopwatch_script.contains("clean_start"));
     assert!(stopwatch_script.contains("compose down -v --remove-orphans"));
-    assert!(stopwatch_script.contains("rm -rf \"$venv_dir\""));
+    assert!(!stopwatch_script.contains("venv_dir"));
     assert!(stopwatch_script.contains("docker-compose.prebuilt.yml"));
     assert!(stopwatch_script.contains("BEATER_GATE2_PULL_POLICY"));
     assert!(stopwatch_script.contains("--pull \"$prebuilt_pull_policy\""));
@@ -224,17 +238,18 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("ghcr.io/jadenfix/beater/beaterd:$git_sha"));
     assert!(stopwatch_script.contains("ghcr.io/jadenfix/beater/dashboard:$git_sha"));
     assert!(stopwatch_script.contains("ghcr.io/jadenfix/beater/dashboard-e2e:$git_sha"));
-    assert!(stopwatch_script.contains("python3 -m venv \"$preflight_venv\""));
-    assert!(stopwatch_script.contains("pip --version"));
+    assert!(stopwatch_script.contains("ghcr.io/jadenfix/beater/otel-python:$git_sha"));
     assert!(stopwatch_script.contains("run_with_step_timeout"));
     assert!(stopwatch_script.contains("service_image_digest"));
     assert!(stopwatch_script.contains("docker image inspect"));
     assert!(stopwatch_script.contains("Beater image reference"));
     assert!(stopwatch_script.contains("Dashboard image reference"));
     assert!(stopwatch_script.contains("Dashboard e2e image reference"));
+    assert!(stopwatch_script.contains("OTEL Python image reference"));
     assert!(stopwatch_script.contains("Beater image digest"));
     assert!(stopwatch_script.contains("Dashboard image digest"));
     assert!(stopwatch_script.contains("Dashboard e2e image digest"));
+    assert!(stopwatch_script.contains("OTEL Python image digest"));
     assert!(stopwatch_script.contains("API endpoint"));
     assert!(stopwatch_script.contains("Dashboard base"));
 
@@ -275,10 +290,12 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("\"beater image digest\""));
     assert!(outside_validator.contains("\"dashboard image digest\""));
     assert!(outside_validator.contains("\"dashboard e2e image digest\""));
+    assert!(outside_validator.contains("\"otel python image digest\""));
     assert!(outside_validator.contains("require_ghcr_sha_image_ref"));
     assert!(outside_validator.contains("\"Beater image reference\""));
     assert!(outside_validator.contains("\"Dashboard image reference\""));
     assert!(outside_validator.contains("\"Dashboard e2e image reference\""));
+    assert!(outside_validator.contains("\"OTEL Python image reference\""));
     assert!(outside_validator.contains("require_equal(\"commit SHA\""));
     assert!(outside_validator.contains("tenant"));
     assert!(outside_validator.contains("screen recording notes dashboard base"));
@@ -304,17 +321,20 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_generator.contains("Beater image reference"));
     assert!(outside_generator.contains("Dashboard image reference"));
     assert!(outside_generator.contains("Dashboard e2e image reference"));
+    assert!(outside_generator.contains("OTEL Python image reference"));
     assert!(outside_generator.contains("Browser recording SHA256"));
     assert!(outside_generator.contains("Beater image digest"));
     assert!(outside_generator.contains("Dashboard image digest"));
     assert!(outside_generator.contains("Dashboard e2e image digest"));
+    assert!(outside_generator.contains("OTEL Python image digest"));
 
     let outside_proof = read(root.join("docs/demos/gate2-outside-person-proof.md"));
     assert!(outside_proof.contains("Status: not yet completed"));
     assert!(outside_proof.contains("BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1"));
     assert!(outside_proof.contains("Preflight status"));
     assert!(outside_proof.contains("Docker was running before the stopwatch started"));
-    assert!(outside_proof.contains("Python and curl were available"));
+    assert!(outside_proof.contains("curl was available before the stopwatch started"));
+    assert!(outside_proof.contains("prebuilt `otel-python` container"));
     assert!(outside_proof.contains("prebuilt `dashboard-e2e` container"));
     assert!(outside_proof.contains("scripts/validate-gate2-outside-proof.sh"));
     assert!(outside_proof.contains("scripts/generate-gate2-outside-proof.py"));
@@ -323,8 +343,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("Beater image reference"));
     assert!(outside_proof.contains("Dashboard image reference"));
     assert!(outside_proof.contains("Dashboard e2e image reference"));
+    assert!(outside_proof.contains("OTEL Python image reference"));
     assert!(outside_proof.contains("Beater image digest"));
     assert!(outside_proof.contains("Dashboard e2e image digest"));
+    assert!(outside_proof.contains("OTEL Python image digest"));
     assert!(outside_proof.contains("API endpoint"));
     assert!(outside_proof.contains("Dashboard base"));
     assert!(outside_proof.contains("Screen recording SHA256"));
@@ -353,10 +375,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("removes any previous Beater stopwatch project"));
     assert!(readme.contains("gate2-compose-browser-demo.webm"));
     assert!(readme.contains("prebuilt `dashboard-e2e` Playwright browser proof"));
-    assert!(readme.contains("pins `beaterd`, `dashboard`, and `dashboard-e2e`"));
+    assert!(readme.contains("prebuilt stock OpenTelemetry Python runner container"));
+    assert!(readme.contains("pins `beaterd`, `dashboard`, `dashboard-e2e`, and `otel-python`"));
     assert!(readme.contains("mismatched SHA-pinned image references"));
     assert!(readme.contains("time-to-quickstart-click"));
-    assert!(readme.contains("checks Docker, Python, and curl"));
+    assert!(readme.contains("checks Docker and curl"));
     assert!(readme.contains("mismatched trace IDs"));
     assert!(readme.contains("mismatched API/dashboard endpoints"));
     assert!(readme.contains("repo-relative `docs/demos/` artifacts"));
@@ -373,6 +396,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("image-digest"));
     assert!(requirements.contains("SHA-pinned prebuilt GHCR image references"));
     assert!(requirements.contains("dashboard-e2e"));
+    assert!(requirements.contains("otel-python"));
     assert!(requirements.contains("recording-notes"));
     assert!(requirements.contains("outside-run attestation"));
     assert!(requirements.contains("repo-relative `docs/demos/` artifacts"));
@@ -384,6 +408,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     let compose = read(root.join("docker-compose.yml"));
     assert!(compose.contains("otel-python-quickstart"));
     assert!(compose.contains("five_line_otel.py"));
+    assert!(compose.contains("context: ./examples/python"));
+    assert!(!compose.contains("pip install --no-cache-dir opentelemetry-sdk"));
 
     let quickstart = read(root.join("examples/python/five_line_otel.py"));
     let code_lines = quickstart

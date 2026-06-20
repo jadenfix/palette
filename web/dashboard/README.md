@@ -49,16 +49,16 @@ For the clean-machine stopwatch path with the literal five-line OTEL snippet:
 BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1 scripts/gate2-compose-stopwatch.sh
 ```
 
-That script runs the five-line snippet from the host through a temporary Python
-venv against `localhost:4317`, then waits for the trace to be visible in the
-dashboard. With `BEATER_GATE2_BROWSER_PROOF=1`, it also sends the all-kind stock
-OTEL fixture and runs the prebuilt `dashboard-e2e` browser assertions for both
-the quickstart trace and the nested run -> turn -> step -> tool -> MCP
-waterfall. It pulls prebuilt GHCR images through `docker-compose.prebuilt.yml`
-by default; set `BEATER_GATE2_LOCAL_BUILD=1` to build images from source for
-development checks.
-For outside-person evidence, the script preflights Docker, Python, and curl,
-removes any previous Beater stopwatch project, then checks the default
+That script runs the five-line snippet from the prebuilt stock OpenTelemetry
+Python runner container against `beaterd:4317`, then waits for the trace to be
+visible in the dashboard. With `BEATER_GATE2_BROWSER_PROOF=1`, it also sends
+the all-kind stock OTEL fixture and runs the prebuilt `dashboard-e2e` browser
+assertions for both the quickstart trace and the nested run -> turn -> step ->
+tool -> MCP waterfall. It pulls prebuilt GHCR images through
+`docker-compose.prebuilt.yml` by default; set `BEATER_GATE2_LOCAL_BUILD=1` to
+build images from source for development checks.
+For outside-person evidence, the script preflights Docker and curl, removes any
+previous Beater stopwatch project, then checks the default
 `8080`/`4317`/`3000` ports before Compose startup.
 With `BEATER_GATE2_RECORD_DEMO=1`, the same browser session records
 `docs/demos/gate2-compose-browser-demo.webm` plus SHA-pinned notes.
