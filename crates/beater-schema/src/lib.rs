@@ -268,6 +268,10 @@ pub struct RunSummary {
     pub status: SpanStatus,
     pub started_at: Timestamp,
     pub ended_at: Option<Timestamp>,
+    pub duration_ms: Option<i64>,
+    pub total_cost: Option<Money>,
+    pub models: Vec<ModelRef>,
+    pub release_ids: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -280,15 +284,26 @@ pub struct SpanSummary {
     pub status: SpanStatus,
     pub started_at: Timestamp,
     pub ended_at: Option<Timestamp>,
+    pub model: Option<ModelRef>,
+    pub cost: Option<Money>,
+    pub release_id: Option<String>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct RunFilter {
     pub project_id: Option<ProjectId>,
     pub environment_id: Option<EnvironmentId>,
     pub trace_id: Option<TraceId>,
     pub status: Option<SpanStatus>,
     pub kind: Option<AgentSpanKind>,
+    pub started_after: Option<Timestamp>,
+    pub started_before: Option<Timestamp>,
+    pub model: Option<String>,
+    pub release: Option<String>,
+    pub min_cost_micros: Option<i64>,
+    pub max_cost_micros: Option<i64>,
+    pub min_latency_ms: Option<i64>,
+    pub max_latency_ms: Option<i64>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -488,6 +503,7 @@ pub fn span_matches(span: &CanonicalSpan, filter: &SpanFilter) -> bool {
 }
 
 pub fn span_summary(span: CanonicalSpan) -> SpanSummary {
+    let release_id = span_release_id(&span);
     SpanSummary {
         tenant_id: span.tenant_id,
         trace_id: span.trace_id,
@@ -497,7 +513,27 @@ pub fn span_summary(span: CanonicalSpan) -> SpanSummary {
         status: span.status,
         started_at: span.start_time,
         ended_at: span.end_time,
+        model: span.model,
+        cost: span.cost,
+        release_id,
     }
+}
+
+pub fn span_release_id(span: &CanonicalSpan) -> Option<String> {
+    [
+        "beater.release_id",
+        "agent.release_id",
+        "deployment.release_id",
+        "release.id",
+        "release_id",
+    ]
+    .iter()
+    .find_map(|key| {
+        span.attributes
+            .get(*key)
+            .and_then(serde_json::Value::as_str)
+            .map(ToString::to_string)
+    })
 }
 
 pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary> {
@@ -510,12 +546,17 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
                 run.first_span_name = span.name.clone();
             }
             run.status = aggregate_run_status(&run.status, &span.status);
+            run.total_cost = merge_cost(run.total_cost.clone(), span.cost.clone());
+            push_model(&mut run.models, span.model.clone());
+            push_release_id(&mut run.release_ids, span.release_id.clone());
             run.ended_at = match (run.ended_at, span.ended_at) {
                 (Some(left), Some(right)) => Some(left.max(right)),
                 (None, Some(right)) => Some(right),
                 (left, None) => left,
             };
+            run.duration_ms = run_duration_ms(run.started_at, run.ended_at);
         } else {
+            let ended_at = span.ended_at;
             runs.push(RunSummary {
                 tenant_id: tenant.clone(),
                 trace_id: span.trace_id.clone(),
@@ -523,7 +564,11 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
                 span_count: 1,
                 status: span.status.clone(),
                 started_at: span.started_at,
-                ended_at: span.ended_at,
+                ended_at,
+                duration_ms: run_duration_ms(span.started_at, ended_at),
+                total_cost: span.cost.clone(),
+                models: span.model.clone().into_iter().collect(),
+                release_ids: span.release_id.clone().into_iter().collect(),
             });
         }
     }
@@ -553,6 +598,48 @@ pub fn filter_run_summaries(
             Some(status) => &run.status == status,
             None => true,
         })
+        .filter(|run| match &filter.started_after {
+            Some(started_after) => run.started_at >= *started_after,
+            None => true,
+        })
+        .filter(|run| match &filter.started_before {
+            Some(started_before) => run.started_at <= *started_before,
+            None => true,
+        })
+        .filter(|run| match filter.min_latency_ms {
+            Some(min_latency_ms) => run
+                .duration_ms
+                .is_some_and(|duration_ms| duration_ms >= min_latency_ms),
+            None => true,
+        })
+        .filter(|run| match filter.max_latency_ms {
+            Some(max_latency_ms) => run
+                .duration_ms
+                .is_some_and(|duration_ms| duration_ms <= max_latency_ms),
+            None => true,
+        })
+        .filter(|run| match filter.min_cost_micros {
+            Some(min_cost_micros) => run
+                .total_cost
+                .as_ref()
+                .is_some_and(|cost| cost.amount_micros >= min_cost_micros),
+            None => true,
+        })
+        .filter(|run| match filter.max_cost_micros {
+            Some(max_cost_micros) => run
+                .total_cost
+                .as_ref()
+                .is_some_and(|cost| cost.amount_micros <= max_cost_micros),
+            None => true,
+        })
+        .filter(|run| match &filter.model {
+            Some(model) => run_model_matches(run, model),
+            None => true,
+        })
+        .filter(|run| match &filter.release {
+            Some(release) => run.release_ids.iter().any(|candidate| candidate == release),
+            None => true,
+        })
         .filter(|run| match &kind_trace_ids {
             Some(trace_ids) => trace_ids.contains(&run.trace_id),
             None => true,
@@ -568,6 +655,51 @@ fn aggregate_run_status(current: &SpanStatus, next: &SpanStatus) -> SpanStatus {
         return SpanStatus::Ok;
     }
     SpanStatus::Unset
+}
+
+fn run_duration_ms(started_at: Timestamp, ended_at: Option<Timestamp>) -> Option<i64> {
+    ended_at.map(|ended_at| (ended_at - started_at).num_milliseconds().max(0))
+}
+
+fn merge_cost(current: Option<Money>, next: Option<Money>) -> Option<Money> {
+    match (current, next) {
+        (Some(current), Some(next)) => current.try_add(&next).ok().or(Some(current)),
+        (Some(current), None) => Some(current),
+        (None, Some(next)) => Some(next),
+        (None, None) => None,
+    }
+}
+
+fn push_model(models: &mut Vec<ModelRef>, model: Option<ModelRef>) {
+    let Some(model) = model else {
+        return;
+    };
+    if !models
+        .iter()
+        .any(|existing| existing.provider == model.provider && existing.name == model.name)
+    {
+        models.push(model);
+    }
+}
+
+fn push_release_id(release_ids: &mut Vec<String>, release_id: Option<String>) {
+    let Some(release_id) = release_id else {
+        return;
+    };
+    if !release_ids.contains(&release_id) {
+        release_ids.push(release_id);
+    }
+}
+
+fn run_model_matches(run: &RunSummary, model: &str) -> bool {
+    let needle = model.to_ascii_lowercase();
+    run.models.iter().any(|candidate| {
+        candidate.provider.to_ascii_lowercase().contains(&needle)
+            || candidate.name.to_ascii_lowercase().contains(&needle)
+            || format!("{}/{}", candidate.provider, candidate.name)
+                .to_ascii_lowercase()
+                .contains(&needle)
+    })
 }
 
 #[cfg(test)]
@@ -647,6 +779,12 @@ mod tests {
                 status: SpanStatus::Ok,
                 started_at: late,
                 ended_at: Some(late),
+                model: Some(ModelRef {
+                    provider: "openai".to_string(),
+                    name: "gpt-test".to_string(),
+                }),
+                cost: Some(Money::usd_micros(300)),
+                release_id: Some("release-a".to_string()),
             },
             SpanSummary {
                 tenant_id: tenant.clone(),
@@ -657,6 +795,9 @@ mod tests {
                 status: SpanStatus::Error,
                 started_at: early,
                 ended_at: Some(middle),
+                model: None,
+                cost: Some(Money::usd_micros(200)),
+                release_id: Some("release-a".to_string()),
             },
             SpanSummary {
                 tenant_id: tenant.clone(),
@@ -667,6 +808,12 @@ mod tests {
                 status: SpanStatus::Ok,
                 started_at: middle,
                 ended_at: Some(middle),
+                model: Some(ModelRef {
+                    provider: "anthropic".to_string(),
+                    name: "claude-test".to_string(),
+                }),
+                cost: Some(Money::usd_micros(50)),
+                release_id: Some("release-b".to_string()),
             },
         ];
 
@@ -680,16 +827,27 @@ mod tests {
         assert_eq!(run.status, SpanStatus::Error);
         assert_eq!(run.started_at, early);
         assert_eq!(run.ended_at, Some(late));
+        assert_eq!(run.duration_ms, Some(2000));
+        assert_eq!(run.total_cost, Some(Money::usd_micros(500)));
+        assert_eq!(run.models.len(), 1);
+        assert_eq!(run.models[0].name, "gpt-test");
+        assert_eq!(run.release_ids, vec!["release-a".to_string()]);
 
         let error_agent_step_runs = filter_run_summaries(
             runs.clone(),
             &spans,
             &RunFilter {
-                project_id: None,
-                environment_id: None,
-                trace_id: None,
                 kind: Some(AgentSpanKind::AgentStep),
                 status: Some(SpanStatus::Error),
+                model: Some("gpt".to_string()),
+                release: Some("release-a".to_string()),
+                min_cost_micros: Some(400),
+                max_cost_micros: Some(600),
+                min_latency_ms: Some(1500),
+                max_latency_ms: Some(2500),
+                started_after: Some(early),
+                started_before: Some(middle),
+                ..RunFilter::default()
             },
         );
         assert_eq!(error_agent_step_runs.len(), 1);
@@ -700,11 +858,11 @@ mod tests {
             runs,
             &spans,
             &RunFilter {
-                project_id: None,
-                environment_id: None,
-                trace_id: None,
-                kind: None,
                 status: Some(SpanStatus::Ok),
+                release: Some("release-b".to_string()),
+                model: Some("anthropic/claude".to_string()),
+                max_cost_micros: Some(100),
+                ..RunFilter::default()
             },
         );
         assert_eq!(ok_runs.len(), 1);

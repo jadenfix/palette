@@ -67,6 +67,7 @@ thiserror = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "net", "time"] }
 tonic = { version = "0.14", features = ["transport"] }
 tower = { version = "0.5", features = ["util"] }
+utoipa = { version = "5.5.0", features = ["chrono"] }
 uuid = { version = "1", features = ["serde", "v4"] }
 wasmtime = { version = "45", default-features = false, features = ["runtime", "cranelift", "std"] }
 wat = "1"

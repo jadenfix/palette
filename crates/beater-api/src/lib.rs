@@ -68,6 +68,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
+pub mod openapi;
+
 const API_KEY_HEADER: &str = "x-beater-api-key";
 const PROJECT_ID_HEADER: &str = "x-beater-project-id";
 const ENVIRONMENT_ID_HEADER: &str = "x-beater-environment-id";
@@ -265,6 +267,7 @@ impl ApiState {
 pub fn router(state: ApiState) -> Router {
     Router::new()
         .route("/health", get(health))
+        .route("/openapi.json", get(openapi_json))
         .route("/v1/traces/native", post(ingest_native))
         .route(
             "/v1/api-keys/:tenant_id/:project_id/:environment_id",
@@ -398,6 +401,10 @@ pub fn router(state: ApiState) -> Router {
 
 async fn health() -> Json<HealthResponse> {
     Json(HealthResponse { ok: true })
+}
+
+async fn openapi_json() -> Json<utoipa::openapi::OpenApi> {
+    Json(openapi::openapi())
 }
 
 async fn ingest_native(
@@ -841,6 +848,14 @@ async fn list_traces(
             .map_err(|err| ApiError::bad_request(err.to_string()))?,
         kind: params.kind.map(parse_span_kind).transpose()?,
         status: params.status.map(parse_span_status).transpose()?,
+        started_after: parse_optional_timestamp(params.started_after, "started_after")?,
+        started_before: parse_optional_timestamp(params.started_before, "started_before")?,
+        model: params.model,
+        release: params.release,
+        min_cost_micros: params.min_cost_micros,
+        max_cost_micros: params.max_cost_micros,
+        min_latency_ms: params.min_latency_ms,
+        max_latency_ms: params.max_latency_ms,
     };
     let page = PageRequest {
         limit: params.limit.unwrap_or(50).clamp(1, 200),
@@ -2089,6 +2104,14 @@ struct ListTracesQuery {
     trace_id: Option<String>,
     kind: Option<String>,
     status: Option<String>,
+    started_after: Option<String>,
+    started_before: Option<String>,
+    model: Option<String>,
+    release: Option<String>,
+    min_cost_micros: Option<i64>,
+    max_cost_micros: Option<i64>,
+    min_latency_ms: Option<i64>,
+    max_latency_ms: Option<i64>,
     limit: Option<u32>,
     cursor: Option<String>,
 }
@@ -2674,6 +2697,21 @@ fn parse_span_kind(value: String) -> Result<AgentSpanKind, ApiError> {
         .ok_or_else(|| ApiError::bad_request(format!("unsupported span kind: {value}")))
 }
 
+fn parse_optional_timestamp(
+    value: Option<String>,
+    field_name: &str,
+) -> Result<Option<beater_core::Timestamp>, ApiError> {
+    value
+        .map(|value| {
+            chrono::DateTime::parse_from_rfc3339(&value)
+                .map(|timestamp| timestamp.with_timezone(&Utc))
+                .map_err(|err| {
+                    ApiError::bad_request(format!("{field_name} must be RFC3339: {err}"))
+                })
+        })
+        .transpose()
+}
+
 fn parse_span_status(value: String) -> Result<SpanStatus, ApiError> {
     SpanStatus::parse(&value)
         .ok_or_else(|| ApiError::bad_request(format!("unsupported span status: {value}")))
@@ -2780,6 +2818,49 @@ mod tests {
     use serde_json::json;
     use std::collections::BTreeMap;
     use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn openapi_json_documents_dashboard_read_surface() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+        let app = router(ApiState::new(ingest, traces));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/openapi.json")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let spec: serde_json::Value =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert!(spec["paths"].get("/v1/traces/{tenant_id}").is_some());
+        assert!(spec["paths"]
+            .get("/v1/spans/{tenant_id}/{trace_id}/{span_id}/io")
+            .is_some());
+        let trace_params = spec["paths"]["/v1/traces/{tenant_id}"]["get"]["parameters"]
+            .as_array()
+            .unwrap_or_else(|| panic!("trace list params must be an array"));
+        assert!(trace_params
+            .iter()
+            .any(|param| param["name"] == json!("started_after")));
+        assert!(trace_params
+            .iter()
+            .any(|param| param["name"] == json!("min_cost_micros")));
+    }
 
     #[tokio::test]
     async fn api_ingests_and_reads_trace() {

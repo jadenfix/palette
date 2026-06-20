@@ -109,7 +109,7 @@ h3 {
   align-items: end;
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(4, minmax(120px, 1fr)) 96px;
+  grid-template-columns: repeat(6, minmax(120px, 1fr)) 96px;
 }
 
 label {
@@ -123,7 +123,8 @@ label span {
   font-weight: 600;
 }
 
-input {
+input,
+select {
   background: #fff;
   border: 1px solid #cbd3df;
   border-radius: 6px;
@@ -191,7 +192,7 @@ button {
   border-bottom: 1px solid var(--line);
   display: grid;
   gap: 6px;
-  grid-template-columns: 58px 1fr;
+  grid-template-columns: 58px minmax(0, 1fr);
   padding: 12px;
 }
 
@@ -214,6 +215,9 @@ button {
 .run-row > span:not(.status) {
   color: var(--muted);
   font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .run-row.active,

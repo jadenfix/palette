@@ -9,7 +9,7 @@ system, test output, or runtime behavior.
 | ID | Requirement | Evidence required |
 | --- | --- | --- |
 | R0.1 | A user can send agent telemetry without a Beater-specific SDK. | OTLP HTTP/gRPC endpoint docs, `beaterctl smoke` local/remote tests, live `beaterd` OTLP HTTP/gRPC test, initial `web/dashboard` trace table; recorded UI demo still required |
-| R0.2 | A user can inspect a trace as an agent-native span tree. | Initial `web/dashboard` waterfall/detail/I/O surface and dashboard static test; screenshots/tests covering every canonical span kind still required |
+| R0.2 | A user can inspect a trace as an agent-native span tree. | Initial `web/dashboard` waterfall/detail/I/O surface, generated read-client types, status/kind/time/model/cost/latency/release filter bar, and dashboard static test; screenshots/tests covering every canonical span kind still required |
 | R0.3 | A failure can be promoted to a dataset case. | Trace-to-dataset API test, human-review annotation promotion API test, and `beaterctl review-fixture` |
 | R0.4 | Offline evals run over a dataset version. | Deterministic and judge-backed dataset eval integration tests plus `beaterctl judge-dataset-fixture` |
 | R0.5 | Candidate and baseline releases can be compared. | Experiment output with per-case scores, aggregate deltas, stored gate policy, deterministic/judge experiment API tests |
@@ -29,7 +29,7 @@ system, test output, or runtime behavior.
 
 | ID | Requirement | Evidence required |
 | --- | --- | --- |
-| R2.1 | Canonical entities exist: Run, Span, Event, Artifact, DatasetVersion, Experiment, EvaluatorVersion, EvalResult, Gate, GateRun, ReviewQueue, ReviewTask, Annotation, CalibrationReport, UsageRecord, AuditEvent. | Schema definitions and migrations |
+| R2.1 | Canonical entities exist: Run, Span, Event, Artifact, DatasetVersion, Experiment, EvaluatorVersion, EvalResult, Gate, GateRun, ReviewQueue, ReviewTask, Annotation, CalibrationReport, UsageRecord, AuditEvent. | Schema definitions; migrations still required |
 | R2.2 | Every raw event has `schema_version`, source dialect, source schema version/URL, payload hash, and raw artifact ref. | Unit tests and sample stored raw envelopes |
 | R2.3 | Normalized spans store `normalizer_version`, canonical attrs, unmapped attrs, and raw ref. | Golden normalizer tests |
 | R2.4 | Old raw traces can be re-normalized after schema changes. | Migration/replay test that reprojects an old fixture into a new canonical version |

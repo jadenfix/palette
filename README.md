@@ -72,6 +72,7 @@ This repo now contains the first tested Rust vertical slice:
 - optional strict API auth mode on `beaterd` with environment-bound scoped keys
 - API route for native trace ingest and trace readback
 - API routes for trace lists, span detail, and redaction-aware span I/O inspection
+- `/openapi.json` documents the dashboard read surface and generates the dashboard TypeScript client
 - API route for tenant-scoped span search
 - API routes for admin key creation/revocation and strict trace/search/dataset/eval/alert authorization
 - API routes for provider-secret create/list/revoke, judge evaluation, and judge ledger readback
@@ -100,7 +101,7 @@ This repo now contains the first tested Rust vertical slice:
 - `beaterctl review-fixture` validates human annotation promotion into an eval-ready dataset case
 - `beaterctl calibration-fixture` validates persisted judge/human agreement and kappa reports
 - `beaterctl api-key-create` / `api-key-revoke` bootstrap helpers for local and hosted deployments
-- `web/dashboard` Next.js trace debugger with filters, trace table, agent span waterfall, span detail, and I/O inspector
+- `web/dashboard` Next.js trace debugger with generated OpenAPI types, status/kind/time/model/cost/latency/release filters, trace table, agent span waterfall, span detail, and I/O inspector
 
 ## Verify
 

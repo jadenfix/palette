@@ -32,8 +32,8 @@ use beater_judge::{JudgeBrokerService, KeywordJudgeProvider, SqliteJudgeLedger};
 use beater_replay::{plan_replay, ReplayMode};
 use beater_sandbox::WasmEvaluatorRuntime;
 use beater_schema::{
-    AgentSpanKind, AuthContext, CanonicalSpan, EvaluatorLane, RedactionClass, ReplayCassette,
-    RunSummary, SpanStatus, TraceView,
+    AgentSpanKind, AuthContext, CanonicalSpan, EvaluatorLane, ModelRef, RedactionClass,
+    ReplayCassette, RunSummary, SpanStatus, TraceView,
 };
 use beater_search::{SearchIndex, SearchRequest, SearchResponse, TantivySearchIndex};
 use beater_secrets::{EncryptedSqliteProviderSecretStore, SecretKeyring};
@@ -45,7 +45,7 @@ use beater_store::{
 use beater_store_obj::FsArtifactStore;
 use beater_store_sql::SqliteTraceStore;
 use beater_usage::{SqliteUsageLedger, UsageMeter, UsageSummary};
-use chrono::{Duration, Utc};
+use chrono::{Duration, TimeZone, Utc};
 use http::header::RETRY_AFTER;
 use http::{Request, StatusCode};
 use serde_json::json;
@@ -1295,7 +1295,21 @@ async fn trace_list_span_and_io_endpoints_back_dashboard_reads() {
     let bus = Arc::new(InMemoryBus::new(16));
     let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
     let app = router(ApiState::new(ingest, traces));
-    let request = native_request();
+    let started_at = Utc
+        .with_ymd_and_hms(2026, 1, 1, 0, 0, 0)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+    let mut request = native_request();
+    request.start_time = Some(started_at);
+    request.end_time = Some(started_at + Duration::milliseconds(1000));
+    request.model = Some(ModelRef {
+        provider: "openai".to_string(),
+        name: "gpt-dashboard".to_string(),
+    });
+    request.cost = Some(Money::usd_micros(200));
+    request
+        .attributes
+        .insert("agent.release_id".to_string(), json!("release-a"));
 
     let response = app
         .clone()
@@ -1333,6 +1347,33 @@ async fn trace_list_span_and_io_endpoints_back_dashboard_reads() {
     assert_eq!(runs.items.len(), 1);
     assert_eq!(runs.items[0].trace_id, request.trace_id);
     assert_eq!(runs.items[0].span_count, 1);
+    assert_eq!(runs.items[0].duration_ms, Some(1000));
+    assert_eq!(runs.items[0].total_cost, Some(Money::usd_micros(200)));
+    assert_eq!(runs.items[0].models.len(), 1);
+    assert_eq!(runs.items[0].models[0].name, "gpt-dashboard");
+    assert_eq!(runs.items[0].release_ids, vec!["release-a".to_string()]);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(
+                    "/v1/traces/tenant?project_id=project&environment_id=prod&status=ok&kind=agent.run&started_after=2025-12-31T23:59:59Z&started_before=2026-01-01T00:00:01Z&model=gpt-dashboard&release=release-a&min_cost_micros=100&max_cost_micros=300&min_latency_ms=900&max_latency_ms=1100",
+                )
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let filtered_runs: Page<RunSummary> =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(filtered_runs.items.len(), 1);
+    assert_eq!(filtered_runs.items[0].trace_id, request.trace_id);
 
     let response = app
         .clone()

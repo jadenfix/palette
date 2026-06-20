@@ -25,6 +25,8 @@ NEXT_PUBLIC_BEATER_API_BASE_URL=http://127.0.0.1:8080 npm run dev
 ```
 
 Open `http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local`.
+The filter bar supports status, canonical span kind, RFC3339 start window,
+model, release, cost micros, and latency milliseconds.
 
 For a strict-auth `beaterd`, set one server-only credential before starting the
 dashboard:
@@ -38,6 +40,18 @@ npm run dev
 `BEATER_API_TOKEN` is sent as `Authorization: Bearer ...`. `BEATER_API_KEY` is
 also supported and is sent as `x-beater-api-key`. The dashboard derives
 `x-beater-project-id` and `x-beater-environment-id` from the selected scope.
+
+## Generated API Client
+
+The dashboard read client is generated from the Rust-owned OpenAPI surface:
+
+```bash
+cargo run -q -p beater-api --example dump_openapi > web/dashboard/openapi/beater-read-api.json
+cd web/dashboard
+npm run generate:api
+```
+
+Do not hand-edit `lib/generated/api-types.ts`.
 
 ## Vercel
 

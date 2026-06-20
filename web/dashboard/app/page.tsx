@@ -5,6 +5,9 @@ import {
   SpanIoResponse,
   formatCost,
   formatDuration,
+  formatLatency,
+  formatModels,
+  formatReleases,
   loadDashboardData,
   spanDepth,
   statusLabel
@@ -23,7 +26,17 @@ export default async function DashboardPage({
     projectId: value(params.project) || "demo",
     environmentId: value(params.environment) || "local",
     traceId: value(params.trace),
-    selectedSpanId: value(params.span)
+    selectedSpanId: value(params.span),
+    status: value(params.status),
+    kind: value(params.kind),
+    startedAfter: value(params.started_after),
+    startedBefore: value(params.started_before),
+    model: value(params.model),
+    release: value(params.release),
+    minCostMicros: numberValue(params.min_cost_micros),
+    maxCostMicros: numberValue(params.max_cost_micros),
+    minLatencyMs: numberValue(params.min_latency_ms),
+    maxLatencyMs: numberValue(params.max_latency_ms)
   };
   const data = await loadDashboardData(query);
   const spans = data.trace?.spans ?? [];
@@ -56,6 +69,99 @@ export default async function DashboardPage({
             <span>Trace</span>
             <input name="trace" defaultValue={data.query.traceId} placeholder="latest" />
           </label>
+          <label>
+            <span>Status</span>
+            <select name="status" defaultValue={data.query.status ?? ""}>
+              <option value="">Any</option>
+              <option value="ok">OK</option>
+              <option value="error">Error</option>
+              <option value="unset">Unset</option>
+            </select>
+          </label>
+          <label>
+            <span>Kind</span>
+            <select name="kind" defaultValue={data.query.kind ?? ""}>
+              <option value="">Any</option>
+              <option value="agent.run">agent.run</option>
+              <option value="agent.turn">agent.turn</option>
+              <option value="agent.plan">agent.plan</option>
+              <option value="agent.step">agent.step</option>
+              <option value="llm.call">llm.call</option>
+              <option value="tool.call">tool.call</option>
+              <option value="mcp.request">mcp.request</option>
+              <option value="retrieval.query">retrieval.query</option>
+              <option value="memory.read">memory.read</option>
+              <option value="memory.write">memory.write</option>
+              <option value="guardrail.check">guardrail.check</option>
+              <option value="human.review">human.review</option>
+              <option value="evaluator.run">evaluator.run</option>
+              <option value="replay.run">replay.run</option>
+            </select>
+          </label>
+          <label>
+            <span>Started After</span>
+            <input
+              name="started_after"
+              defaultValue={data.query.startedAfter}
+              placeholder="2026-01-01T00:00:00Z"
+            />
+          </label>
+          <label>
+            <span>Started Before</span>
+            <input
+              name="started_before"
+              defaultValue={data.query.startedBefore}
+              placeholder="2026-01-01T01:00:00Z"
+            />
+          </label>
+          <label>
+            <span>Model</span>
+            <input name="model" defaultValue={data.query.model} placeholder="gpt" />
+          </label>
+          <label>
+            <span>Release</span>
+            <input name="release" defaultValue={data.query.release} placeholder="release-a" />
+          </label>
+          <label>
+            <span>Min Cost</span>
+            <input
+              name="min_cost_micros"
+              type="number"
+              min="0"
+              defaultValue={numberInput(data.query.minCostMicros)}
+              placeholder="micros"
+            />
+          </label>
+          <label>
+            <span>Max Cost</span>
+            <input
+              name="max_cost_micros"
+              type="number"
+              min="0"
+              defaultValue={numberInput(data.query.maxCostMicros)}
+              placeholder="micros"
+            />
+          </label>
+          <label>
+            <span>Min Latency</span>
+            <input
+              name="min_latency_ms"
+              type="number"
+              min="0"
+              defaultValue={numberInput(data.query.minLatencyMs)}
+              placeholder="ms"
+            />
+          </label>
+          <label>
+            <span>Max Latency</span>
+            <input
+              name="max_latency_ms"
+              type="number"
+              min="0"
+              defaultValue={numberInput(data.query.maxLatencyMs)}
+              placeholder="ms"
+            />
+          </label>
           <button type="submit">Refresh</button>
         </form>
       </section>
@@ -79,7 +185,10 @@ export default async function DashboardPage({
                 <strong>{run.first_span_name}</strong>
                 <small>{run.trace_id}</small>
                 <span>{run.span_count} spans</span>
-                <span>{formatDuration(run.started_at, run.ended_at)}</span>
+                <span>{formatModels(run.models)}</span>
+                <span>{formatCost(run.total_cost)}</span>
+                <span>{formatLatency(run.duration_ms)}</span>
+                <span>{formatReleases(run.release_ids)}</span>
               </Link>
             ))}
             {data.runs.items.length === 0 ? (
@@ -154,7 +263,7 @@ function SpanDetail({ span, io }: { span: CanonicalSpan; io: SpanIoResponse | nu
         </div>
         <div>
           <dt>Tokens</dt>
-          <dd>{span.tokens ? span.tokens.input + span.tokens.output : "none"}</dd>
+          <dd>{span.tokens ? span.tokens.input + span.tokens.output + span.tokens.reasoning : "none"}</dd>
         </div>
         <div>
           <dt>Cost</dt>
@@ -190,6 +299,17 @@ function value(input: string | string[] | undefined): string | undefined {
   return Array.isArray(input) ? input[0] : input;
 }
 
+function numberValue(input: string | string[] | undefined): number | undefined {
+  const raw = value(input);
+  if (!raw) return undefined;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function numberInput(input: number | undefined): string | undefined {
+  return input === undefined ? undefined : String(input);
+}
+
 function hrefFor(
   query: DashboardQuery,
   next: { trace?: string; span?: string | undefined }
@@ -200,6 +320,16 @@ function hrefFor(
   if (query.environmentId) params.set("environment", query.environmentId);
   if (next.trace ?? query.traceId) params.set("trace", next.trace ?? query.traceId ?? "");
   if (next.span) params.set("span", next.span);
+  if (query.status) params.set("status", query.status);
+  if (query.kind) params.set("kind", query.kind);
+  if (query.startedAfter) params.set("started_after", query.startedAfter);
+  if (query.startedBefore) params.set("started_before", query.startedBefore);
+  if (query.model) params.set("model", query.model);
+  if (query.release) params.set("release", query.release);
+  if (query.minCostMicros !== undefined) params.set("min_cost_micros", String(query.minCostMicros));
+  if (query.maxCostMicros !== undefined) params.set("max_cost_micros", String(query.maxCostMicros));
+  if (query.minLatencyMs !== undefined) params.set("min_latency_ms", String(query.minLatencyMs));
+  if (query.maxLatencyMs !== undefined) params.set("max_latency_ms", String(query.maxLatencyMs));
   return `/?${params.toString()}`;
 }
 
