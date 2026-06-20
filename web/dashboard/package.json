@@ -13,15 +13,16 @@
     "generate:api": "openapi-typescript openapi/beater-read-api.json -o lib/generated/api-types.ts"
   },
   "dependencies": {
+    "lucide-react": "0.561.0",
     "next": "16.2.9",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
   "devDependencies": {
+    "@playwright/test": "1.57.0",
     "@types/node": "26.0.0",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
-    "@playwright/test": "1.57.0",
     "openapi-typescript": "7.13.0",
     "typescript": "5.9.3"
   },

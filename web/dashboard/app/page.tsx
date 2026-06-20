@@ -1,4 +1,23 @@
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
+import {
+  BadgePercent,
+  Bot,
+  BrainCircuit,
+  CircleDot,
+  ClipboardList,
+  Database,
+  DatabaseZap,
+  ListChecks,
+  MessageSquareText,
+  Network,
+  RotateCcw,
+  Search as SearchIcon,
+  ShieldCheck,
+  SlidersHorizontal,
+  UserCheck,
+  Wrench
+} from "lucide-react";
 import {
   CanonicalSpan,
   DashboardQuery,
@@ -137,10 +156,16 @@ export default async function DashboardPage({
                 <option value="replay.run">replay.run</option>
               </select>
             </label>
-            <button type="submit">Apply filters</button>
+            <button className="filter-submit" type="submit">
+              <SearchIcon aria-hidden="true" />
+              <span>Apply</span>
+            </button>
           </div>
           <details className="advanced-filters" open={advancedFiltersActive(data.query)}>
-            <summary>Advanced filters</summary>
+            <summary>
+              <SlidersHorizontal aria-hidden="true" />
+              Advanced filters
+            </summary>
             <div className="filter-secondary">
               <label>
                 <span>Started After</span>
@@ -280,6 +305,7 @@ export default async function DashboardPage({
             {spans.map((span) => {
               const depth = spanDepth(span, spans);
               const icon = kindIcon(span.kind);
+              const KindGlyph = icon.Icon;
               const timing = spanTimeline(span, spans);
               return (
                 <Link
@@ -306,7 +332,8 @@ export default async function DashboardPage({
                       data-icon={icon.key}
                       title={icon.title}
                     >
-                      {icon.label}
+                      <KindGlyph aria-hidden="true" />
+                      <span className="sr-only">{icon.title}</span>
                     </span>
                     <span className="span-title">
                       <span>{span.name}</span>
@@ -601,22 +628,34 @@ function kindClass(kind: string): string {
   return "other";
 }
 
-function kindIcon(kind: string): { key: string; label: string; title: string } {
-  if (kind === "agent.run") return { key: "agent-run", label: "R", title: "Agent run" };
-  if (kind === "agent.turn") return { key: "agent-turn", label: "T", title: "Agent turn" };
-  if (kind === "agent.plan") return { key: "agent-plan", label: "P", title: "Agent plan" };
-  if (kind === "agent.step") return { key: "agent-step", label: "S", title: "Agent step" };
-  if (kind === "llm.call") return { key: "llm", label: "AI", title: "LLM call" };
-  if (kind === "tool.call") return { key: "tool", label: "Fn", title: "Tool call" };
-  if (kind === "mcp.request") return { key: "mcp", label: "M", title: "MCP request" };
-  if (kind === "retrieval.query") return { key: "retrieval", label: "Q", title: "Retrieval query" };
-  if (kind === "memory.read") return { key: "memory-read", label: "Mr", title: "Memory read" };
-  if (kind === "memory.write") return { key: "memory-write", label: "Mw", title: "Memory write" };
-  if (kind === "guardrail.check") return { key: "guardrail", label: "!", title: "Guardrail check" };
-  if (kind === "human.review") return { key: "human", label: "H", title: "Human review" };
-  if (kind === "evaluator.run") return { key: "eval", label: "%", title: "Evaluator run" };
-  if (kind === "replay.run") return { key: "replay", label: "Re", title: "Replay run" };
-  return { key: "other", label: "?", title: kind };
+type KindIcon = { key: string; Icon: LucideIcon; title: string };
+
+function kindIcon(kind: string): KindIcon {
+  if (kind === "agent.run") return { key: "agent-run", Icon: Bot, title: "Agent run" };
+  if (kind === "agent.turn") {
+    return { key: "agent-turn", Icon: MessageSquareText, title: "Agent turn" };
+  }
+  if (kind === "agent.plan") return { key: "agent-plan", Icon: ClipboardList, title: "Agent plan" };
+  if (kind === "agent.step") return { key: "agent-step", Icon: ListChecks, title: "Agent step" };
+  if (kind === "llm.call") return { key: "llm", Icon: BrainCircuit, title: "LLM call" };
+  if (kind === "tool.call") return { key: "tool", Icon: Wrench, title: "Tool call" };
+  if (kind === "mcp.request") return { key: "mcp", Icon: Network, title: "MCP request" };
+  if (kind === "retrieval.query") {
+    return { key: "retrieval", Icon: SearchIcon, title: "Retrieval query" };
+  }
+  if (kind === "memory.read") return { key: "memory-read", Icon: Database, title: "Memory read" };
+  if (kind === "memory.write") {
+    return { key: "memory-write", Icon: DatabaseZap, title: "Memory write" };
+  }
+  if (kind === "guardrail.check") {
+    return { key: "guardrail", Icon: ShieldCheck, title: "Guardrail check" };
+  }
+  if (kind === "human.review") return { key: "human", Icon: UserCheck, title: "Human review" };
+  if (kind === "evaluator.run") {
+    return { key: "eval", Icon: BadgePercent, title: "Evaluator run" };
+  }
+  if (kind === "replay.run") return { key: "replay", Icon: RotateCcw, title: "Replay run" };
+  return { key: "other", Icon: CircleDot, title: kind };
 }
 
 function isRedactedIo(value: SpanIoResponse["input"] | undefined): boolean {
