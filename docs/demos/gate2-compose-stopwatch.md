@@ -2,17 +2,17 @@
 
 - Timing start source: script
 - Clone started at: not provided
-- Script started at: 2026-06-20T20:16:16Z
-- Started: 2026-06-20T20:16:16Z
-- Ended: 2026-06-20T20:17:35Z
-- Time-to-first-trace: 29s
-- Script-to-first-trace: 29s
-- Time-to-quickstart-click: 40s
-- Script-to-quickstart-click: 40s
-- Total duration: 79s
-- Script duration: 79s
+- Script started at: 2026-06-20T22:23:16Z
+- Started: 2026-06-20T22:23:16Z
+- Ended: 2026-06-20T22:24:25Z
+- Time-to-first-trace: 21s
+- Script-to-first-trace: 21s
+- Time-to-quickstart-click: 29s
+- Script-to-quickstart-click: 29s
+- Total duration: 69s
+- Script duration: 69s
 - Limit: 300s
-- Git SHA: `7298707d450007ee5135caab7c4a08c727d6744c`
+- Git SHA: `9abba1815e0113baf46660fd7384664d43bebd62`
 - Git branch: `main`
 - Git origin: `https://github.com/jadenfix/beater.git`
 - Git worktree clean: yes
@@ -25,35 +25,35 @@
 - Outside-run wrapper: no
 - Prebuilt pull policy: `always`
 - Compose project: beater-stopwatch
-- Beater image reference: `ghcr.io/jadenfix/beater/beaterd:7298707d450007ee5135caab7c4a08c727d6744c`
-- Dashboard image reference: `ghcr.io/jadenfix/beater/dashboard:7298707d450007ee5135caab7c4a08c727d6744c`
-- Dashboard e2e image reference: `ghcr.io/jadenfix/beater/dashboard-e2e:7298707d450007ee5135caab7c4a08c727d6744c`
-- OTEL Python image reference: `ghcr.io/jadenfix/beater/otel-python:7298707d450007ee5135caab7c4a08c727d6744c`
-- Beater image digest: `ghcr.io/jadenfix/beater/beaterd@sha256:ba70ab0487bd4d0ae52a5b39323a360c06a4a5361e4af5f517ebd7b01b5337d8`
-- Dashboard image digest: `ghcr.io/jadenfix/beater/dashboard@sha256:0569ca50316d912ff4dc3437b2978de3a4013dee287cbf6acb2dde1d661ba838`
-- Dashboard e2e image digest: `ghcr.io/jadenfix/beater/dashboard-e2e@sha256:fd97d7c50e85794e87398d20fbcb3747d42772ff9dfa869e9f58ef24daeaa1f7`
-- OTEL Python image digest: `ghcr.io/jadenfix/beater/otel-python@sha256:29b91431cc45713d80474972a4540fe7250fbdb0717f9a292741168639c0c192`
+- Beater image reference: `ghcr.io/jadenfix/beater/beaterd:9abba1815e0113baf46660fd7384664d43bebd62`
+- Dashboard image reference: `ghcr.io/jadenfix/beater/dashboard:9abba1815e0113baf46660fd7384664d43bebd62`
+- Dashboard e2e image reference: `ghcr.io/jadenfix/beater/dashboard-e2e:9abba1815e0113baf46660fd7384664d43bebd62`
+- OTEL Python image reference: `ghcr.io/jadenfix/beater/otel-python:9abba1815e0113baf46660fd7384664d43bebd62`
+- Beater image digest: `ghcr.io/jadenfix/beater/beaterd@sha256:9b8ed21a35c9e1b41bbd85ea628234c6ca52a537fcc1ae5ce659082a717967a2`
+- Dashboard image digest: `ghcr.io/jadenfix/beater/dashboard@sha256:d78d91dc932aa2157dfc0b07295eb7f9eb16a217b24519832630123b6f1c6e51`
+- Dashboard e2e image digest: `ghcr.io/jadenfix/beater/dashboard-e2e@sha256:f61e4d94cd625223d384ec80b819e6f52a7cba1653c2fe7c7ace0ee150ceaa51`
+- OTEL Python image digest: `ghcr.io/jadenfix/beater/otel-python@sha256:773fd0d3f8554a4f87ebc71be9f2debbff975aca5863d3f40eda191a145b957f`
 - Quickstart snippet: `examples/python/five_line_otel.py`
-- API endpoint: `http://127.0.0.1:18080`
-- OTLP endpoint: `http://127.0.0.1:14318`
-- Dashboard base: `http://127.0.0.1:13080`
-- Quickstart trace: `5daf8b3430985d346f1ea272bc8f579c`
-- Quickstart dashboard: http://127.0.0.1:13080/?tenant=demo&project=demo&environment=local&trace=5daf8b3430985d346f1ea272bc8f579c
+- API endpoint: `http://127.0.0.1:8080`
+- OTLP endpoint: `http://127.0.0.1:4317`
+- Dashboard base: `http://127.0.0.1:3000`
+- Quickstart trace: `c8fd1651c8ea514803dc1b86bd6c5411`
+- Quickstart dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace=c8fd1651c8ea514803dc1b86bd6c5411
 - Quickstart browser proof: passed
-- All-kind nested trace: `42215a4443efb0b4907da0a3ae06405c`
-- All-kind dashboard: http://127.0.0.1:13080/?tenant=demo&project=demo&environment=local&trace=42215a4443efb0b4907da0a3ae06405c
+- All-kind nested trace: `42bfb21a2a4dc58046869a20f079b9ec`
+- All-kind dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace=42bfb21a2a4dc58046869a20f079b9ec
 - All-kind waterfall browser proof: passed
 - Browser recording: passed
 - Browser recording artifact: `docs/demos/gate2-compose-browser-demo.webm`
 - Browser recording notes: `docs/demos/gate2-compose-browser-demo.md`
-- Browser recording SHA256: `011b41bcad6d2cd6ba982dd457b3da445a82b140d5d89b16adfd4836c2db0251`
+- Browser recording SHA256: `3dac802bc8f2db03406d0d76e4e1618ed5b516a2cf3d286589e1a588cf6e6534`
 
 ## Compose Images
 
 ```text
 CONTAINER                      REPOSITORY                          TAG                                        PLATFORM            IMAGE ID            SIZE                CREATED
-beater-stopwatch-beaterd-1     ghcr.io/jadenfix/beater/beaterd     7298707d450007ee5135caab7c4a08c727d6744c   linux/arm64         ba70ab0487bd        88.4MB              9 hours ago
-beater-stopwatch-dashboard-1   ghcr.io/jadenfix/beater/dashboard   7298707d450007ee5135caab7c4a08c727d6744c   linux/arm64         0569ca50316d        99.2MB              7 minutes ago
+beater-stopwatch-beaterd-1     ghcr.io/jadenfix/beater/beaterd     9abba1815e0113baf46660fd7384664d43bebd62   linux/arm64         9b8ed21a35c9        88.4MB              11 hours ago
+beater-stopwatch-dashboard-1   ghcr.io/jadenfix/beater/dashboard   9abba1815e0113baf46660fd7384664d43bebd62   linux/arm64         d78d91dc932a        99.2MB              8 minutes ago
 beater-stopwatch-minio-1       minio/minio                         latest                                     linux/arm64         14cea493d9a3        57.5MB              9 months ago
 beater-stopwatch-nats-1        nats                                2.11-alpine                                linux/arm64/v8      e4bf19f15fd3        10.5MB              7 weeks ago
 beater-stopwatch-postgres-1    postgres                            17-alpine                                  linux/arm64/v8      dc17045ccfd3        115MB               3 days ago

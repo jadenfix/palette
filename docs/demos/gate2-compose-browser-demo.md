@@ -4,14 +4,13 @@ Recorded from the Docker Compose stopwatch path using the literal five-line
 stock OpenTelemetry quickstart and the all-kind stock OpenTelemetry agent trace.
 
 - Artifact: `gate2-compose-browser-demo.webm`
-- SHA256: `011b41bcad6d2cd6ba982dd457b3da445a82b140d5d89b16adfd4836c2db0251`
-- Dashboard base: `http://127.0.0.1:13080`
-- Quickstart trace: `5daf8b3430985d346f1ea272bc8f579c`
-- All-kind trace: `42215a4443efb0b4907da0a3ae06405c`
+- SHA256: `3dac802bc8f2db03406d0d76e4e1618ed5b516a2cf3d286589e1a588cf6e6534`
+- Dashboard base: `http://127.0.0.1:3000`
+- Quickstart trace: `c8fd1651c8ea514803dc1b86bd6c5411`
+- All-kind trace: `42bfb21a2a4dc58046869a20f079b9ec`
 - Shows: open dashboard -> click five-line trace -> click `llm.call` span -> read prompt, completion, model, tokens, cost, and latency -> inspect run -> turn -> step -> tool -> MCP waterfall.
 
-This automated maintainer run used alternate host ports; the outside-person
-proof must still use the default dashboard URL `http://127.0.0.1:3000`.
+This automated maintainer run used the default dashboard URL `http://127.0.0.1:3000`; no alternate host ports were needed.
 
 Regenerate with:
 
