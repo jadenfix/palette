@@ -497,6 +497,14 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("does not support"));
     assert!(public_handoff.contains("run([\"docker\", \"info\"]"));
     assert!(public_handoff.contains("run([\"docker\", \"compose\", \"version\"]"));
+    assert!(public_handoff.contains("shasum or sha256sum"));
+    assert!(public_handoff.contains("DOCKER_HOST"));
+    assert!(public_handoff.contains("docker_endpoint_is_local"));
+    assert!(public_handoff.contains("require_local_docker_host_env"));
+    assert!(public_handoff.contains("require_local_docker_context"));
+    assert!(public_handoff.contains("[\"docker\", \"context\", \"inspect\""));
+    assert!(public_handoff.contains("requires a local Docker daemon"));
+    assert!(public_handoff.contains("requires a local Docker context"));
     assert!(public_handoff.contains("cleanup_local_stopwatch_compose"));
     assert!(public_handoff.contains("free it rather than setting"));
     assert!(public_handoff.contains("clone_started_epoch = int(time.time())"));

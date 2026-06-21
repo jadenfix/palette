@@ -1,5 +1,5 @@
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{symlink, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
@@ -219,6 +219,79 @@ fn gate2_public_handoff_verifier_full_run_rejects_noncanonical_fixture_source() 
 }
 
 #[test]
+fn gate2_public_handoff_full_run_rejects_missing_sha_tooling_before_clone() {
+    let clone_parent = tempdir("create public handoff clone parent");
+    let runtime = fake_public_handoff_runtime(false, "unix:///var/run/docker.sock");
+    let mut command = public_handoff_full_run_preflight_command(clone_parent.path());
+    command.env("PATH", &runtime.path_env);
+
+    let output = command
+        .output()
+        .unwrap_or_else(|err| panic!("run full-run missing-SHA preflight: {err}"));
+
+    assert_failure(output, "shasum or sha256sum");
+    assert!(
+        !clone_parent.path().join("beater").exists(),
+        "missing SHA tooling must fail before creating a clone"
+    );
+    assert!(
+        !runtime.docker_log.exists(),
+        "missing SHA tooling must fail before invoking Docker"
+    );
+}
+
+#[test]
+fn gate2_public_handoff_full_run_rejects_remote_docker_host_before_clone() {
+    let clone_parent = tempdir("create public handoff clone parent");
+    let runtime = fake_public_handoff_runtime(true, "unix:///var/run/docker.sock");
+    let mut command = public_handoff_full_run_preflight_command(clone_parent.path());
+    command
+        .env("PATH", &runtime.path_env)
+        .env("DOCKER_HOST", "ssh://builder.example.invalid");
+
+    let output = command
+        .output()
+        .unwrap_or_else(|err| panic!("run full-run remote DOCKER_HOST preflight: {err}"));
+
+    assert_failure(output, "requires a local Docker daemon");
+    assert!(
+        !clone_parent.path().join("beater").exists(),
+        "remote DOCKER_HOST must fail before creating a clone"
+    );
+    assert!(
+        !runtime.docker_log.exists(),
+        "remote DOCKER_HOST must fail before invoking Docker"
+    );
+}
+
+#[test]
+fn gate2_public_handoff_full_run_rejects_remote_docker_context_before_cleanup() {
+    let clone_parent = tempdir("create public handoff clone parent");
+    let runtime = fake_public_handoff_runtime(true, "ssh://builder.example.invalid");
+    let mut command = public_handoff_full_run_preflight_command(clone_parent.path());
+    command.env("PATH", &runtime.path_env);
+
+    let output = command
+        .output()
+        .unwrap_or_else(|err| panic!("run full-run remote Docker context preflight: {err}"));
+
+    assert_failure(output, "requires a local Docker context");
+    assert!(
+        !clone_parent.path().join("beater").exists(),
+        "remote Docker context must fail before creating a clone"
+    );
+    let docker_log = fs::read_to_string(&runtime.docker_log)
+        .unwrap_or_else(|err| panic!("read fake Docker log: {err}"));
+    assert!(docker_log.contains("info"));
+    assert!(docker_log.contains("compose version"));
+    assert!(docker_log.contains("context inspect"));
+    assert!(
+        !docker_log.contains("down -v --remove-orphans"),
+        "remote Docker context must fail before Compose cleanup"
+    );
+}
+
+#[test]
 fn gate2_public_handoff_full_run_has_local_runtime_preflight_contract() {
     let script = fs::read_to_string(repo_root().join("scripts/check-gate2-public-handoff.py"))
         .unwrap_or_else(|err| panic!("read Gate 2 public handoff verifier: {err}"));
@@ -235,6 +308,14 @@ fn gate2_public_handoff_full_run_has_local_runtime_preflight_contract() {
     assert!(script.contains("(3000, \"dashboard\", \"BEATER_DASHBOARD_PORT\")"));
     assert!(script.contains("run([\"docker\", \"info\"]"));
     assert!(script.contains("run([\"docker\", \"compose\", \"version\"]"));
+    assert!(script.contains("shasum or sha256sum"));
+    assert!(script.contains("DOCKER_HOST"));
+    assert!(script.contains("docker_endpoint_is_local"));
+    assert!(script.contains("require_local_docker_host_env"));
+    assert!(script.contains("require_local_docker_context"));
+    assert!(script.contains("[\"docker\", \"context\", \"inspect\""));
+    assert!(script.contains("requires a local Docker daemon"));
+    assert!(script.contains("requires a local Docker context"));
     assert!(script.contains("cleanup_local_stopwatch_compose"));
     assert!(script.contains("free it rather than setting"));
     assert!(script.contains("cleaning the beater-stopwatch Compose project"));
@@ -1278,6 +1359,118 @@ fn run_public_handoff_full_run_with_fixture(
         .current_dir(root)
         .output()
         .unwrap_or_else(|err| panic!("run Gate 2 public handoff full-run checker: {err}"))
+}
+
+fn public_handoff_full_run_preflight_command(clone_parent: &Path) -> Command {
+    let root = repo_root();
+    let head = git_output(&root, &["rev-parse", "HEAD"]);
+    let mut command = Command::new("python3");
+    command
+        .arg(root.join("scripts/check-gate2-public-handoff.py"))
+        .arg("--skip-local-readiness")
+        .arg("--expected-commit")
+        .arg(head)
+        .arg("--clone-parent")
+        .arg(clone_parent)
+        .arg("--full-run")
+        .current_dir(root)
+        .env_remove("DOCKER_HOST");
+    command
+}
+
+struct FakePublicHandoffRuntime {
+    _dir: TempDir,
+    path_env: String,
+    docker_log: PathBuf,
+}
+
+fn fake_public_handoff_runtime(
+    include_sha_tool: bool,
+    docker_context_host: &str,
+) -> FakePublicHandoffRuntime {
+    let dir = tempdir("create fake public handoff runtime PATH");
+    let python = python3_executable();
+    symlink(&python, dir.path().join("python3")).unwrap_or_else(|err| {
+        panic!(
+            "symlink fake python3 {} -> {}: {err}",
+            dir.path().join("python3").display(),
+            python.display()
+        )
+    });
+
+    let docker_log = dir.path().join("docker.log");
+    write_executable(
+        &dir.path().join("docker"),
+        &format!(
+            r#"#!/bin/sh
+printf '%s\n' "$*" >> {docker_log}
+case "$*" in
+  "info")
+    exit 0
+    ;;
+  "compose version")
+    exit 0
+    ;;
+  "context inspect --format {{{{.Endpoints.docker.Host}}}}")
+    printf '%s\n' {docker_context_host}
+    exit 0
+    ;;
+  "compose -f docker-compose.prebuilt.yml -p beater-stopwatch down -v --remove-orphans")
+    exit 0
+    ;;
+  *)
+    printf 'unexpected docker invocation: %s\n' "$*" >&2
+    exit 2
+    ;;
+esac
+"#,
+            docker_log = shell_single_quote(&docker_log.to_string_lossy()),
+            docker_context_host = shell_single_quote(docker_context_host)
+        ),
+    );
+    write_executable(&dir.path().join("curl"), "#!/bin/sh\nexit 0\n");
+    if include_sha_tool {
+        write_executable(
+            &dir.path().join("shasum"),
+            "#!/bin/sh\nprintf 'fixture  %s\\n' \"$2\"\n",
+        );
+    }
+
+    FakePublicHandoffRuntime {
+        path_env: dir.path().to_string_lossy().into_owned(),
+        docker_log,
+        _dir: dir,
+    }
+}
+
+fn python3_executable() -> PathBuf {
+    let output = Command::new("python3")
+        .arg("-c")
+        .arg("import sys; print(sys.executable)")
+        .output()
+        .unwrap_or_else(|err| panic!("resolve python3 executable: {err}"));
+    if !output.status.success() {
+        panic!(
+            "resolve python3 executable failed\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    PathBuf::from(String::from_utf8_lossy(&output.stdout).trim())
+}
+
+fn write_executable(path: &Path, contents: &str) {
+    fs::write(path, contents).unwrap_or_else(|err| panic!("write {}: {err}", path.display()));
+    let mut permissions = fs::metadata(path)
+        .unwrap_or_else(|err| panic!("stat {}: {err}", path.display()))
+        .permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(path, permissions)
+        .unwrap_or_else(|err| panic!("chmod +x {}: {err}", path.display()));
+}
+
+fn shell_single_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', r#"'"'"'"#))
 }
 
 fn run_outside_wrapper_dry_run(extra_env: Option<(&str, &str)>) -> Output {

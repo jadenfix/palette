@@ -24,6 +24,8 @@ instrument agent -> inspect trace -> promote failure to dataset -> run evals
 This is the public clean-clone path Gate 2 is measured on. Prerequisites:
 Docker Desktop or another local Docker daemon, Docker Compose v2, `git`, `curl`,
 and `shasum` or `sha256sum`, with local ports `8080`, `4317`, and `3000` free.
+Remote `DOCKER_HOST` values and remote Docker contexts are rejected because the
+browser proof connects to `127.0.0.1`.
 The public Compose path uses prebuilt Beater images and digest-pinned
 third-party service images for deterministic pulls.
 
@@ -272,8 +274,10 @@ scripts/check-gate2-public-handoff.py --full-run
 
 That mode first preflights the local runtime: canonical public source URL only,
 `docker`, Docker Compose v2, `curl`, local Docker daemon, SHA tooling, and free
-default ports after removing any previous `beater-stopwatch` Compose project. It runs
-`scripts/check-gate2-outside-readiness.py`, performs a fresh clone from `https://github.com/jadenfix/beater.git`, verifies the clone is on the exact
+default ports after removing any previous `beater-stopwatch` Compose project.
+Remote `DOCKER_HOST` values and remote Docker contexts fail before clone or
+Compose cleanup. It runs `scripts/check-gate2-outside-readiness.py`, performs a
+fresh clone from `https://github.com/jadenfix/beater.git`, verifies the clone is on the exact
 same commit, reruns the cloned readiness check, and dry-runs the cloned
 `scripts/gate2-outside-run.sh` wrapper. The readiness check verifies clean
 `main`, the expected GitHub remote, this proof file's structure, and public

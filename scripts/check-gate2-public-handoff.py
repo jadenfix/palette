@@ -114,6 +114,46 @@ def require_full_run_source(args: argparse.Namespace) -> None:
         )
 
 
+def docker_endpoint_is_local(endpoint: str) -> bool:
+    return (
+        not endpoint
+        or endpoint == "<no value>"
+        or endpoint.startswith("unix://")
+        or endpoint.startswith("npipe://")
+    )
+
+
+def require_local_docker_host_env() -> None:
+    docker_host = os.environ.get("DOCKER_HOST", "")
+    if not docker_endpoint_is_local(docker_host):
+        raise SystemExit(
+            "--full-run requires a local Docker daemon because the browser proof "
+            "uses 127.0.0.1; unset DOCKER_HOST or switch to a local Docker context"
+        )
+
+
+def docker_context_endpoint() -> str:
+    result = subprocess.run(
+        ["docker", "context", "inspect", "--format", "{{.Endpoints.docker.Host}}"],
+        cwd=repo_root(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip().splitlines()[0] if result.stdout.strip() else ""
+
+
+def require_local_docker_context() -> None:
+    endpoint = docker_context_endpoint()
+    if not docker_endpoint_is_local(endpoint):
+        raise SystemExit(
+            "--full-run requires a local Docker context because the browser proof "
+            f"uses 127.0.0.1; current Docker endpoint is {endpoint}"
+        )
+
+
 def cleanup_local_stopwatch_compose() -> None:
     result = subprocess.run(
         [
@@ -146,13 +186,17 @@ def preflight_full_run_runtime(args: argparse.Namespace) -> None:
     require_full_run_source(args)
 
     missing = [name for name in ["docker", "curl"] if shutil.which(name) is None]
+    if shutil.which("shasum") is None and shutil.which("sha256sum") is None:
+        missing.append("shasum or sha256sum")
     if missing:
         raise SystemExit(
             "--full-run requires local command(s): " + ", ".join(sorted(missing))
         )
 
+    require_local_docker_host_env()
     run(["docker", "info"], cwd=repo_root(), quiet=True)
     run(["docker", "compose", "version"], cwd=repo_root(), quiet=True)
+    require_local_docker_context()
     cleanup_local_stopwatch_compose()
 
     occupied = [

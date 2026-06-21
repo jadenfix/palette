@@ -18,9 +18,9 @@ system, test output, or runtime behavior.
 
 Gate 2 `--full-run` public handoff verification is maintainer-only runtime evidence.
 It must preflight canonical public source, Docker, Docker Compose v2,
-curl, reachable Docker, and free default `8080`/`4317`/`3000` ports before the
-public clone/full wrapper run, while still leaving the unaided outside-person
-proof as the only Gate 2 completion evidence.
+curl, SHA tooling, a local Docker daemon/context, and free default `8080`/`4317`/`3000` ports
+before the public clone/full wrapper run, while still leaving the unaided
+outside-person proof as the only Gate 2 completion evidence.
 
 ## R1. Architecture Shape
 
