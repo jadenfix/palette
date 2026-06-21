@@ -305,6 +305,7 @@ scripts/generate-gate2-outside-proof.py \
   --prior-exposure "none" \
   --machine-os "..." \
   --browser "..." \
+  --network-notes "..." \
   --preflight-status "passed" \
   --attest-outside-run
 ```

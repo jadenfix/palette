@@ -15,10 +15,18 @@ OUTSIDE_RUN_ATTESTATION = (
     "step-by-step help beyond public repository instructions, I used a fresh "
     "clone, and I completed the Gate 2 flow unaided."
 )
+UNRESOLVED_REQUIRED_VALUES = {"unknown", "not requested", "not reported", "tbd", "todo"}
 
 
 def clean_value(value):
     return value.strip().strip("`").strip()
+
+
+def require_meaningful_arg(name, value):
+    cleaned = clean_value(value)
+    if not cleaned or cleaned.lower() in UNRESOLVED_REQUIRED_VALUES:
+        raise SystemExit(f"{name} must be provided with a concrete value")
+    return cleaned
 
 
 def field_value(source_text, name, source_name):
@@ -93,7 +101,7 @@ def build_proof(args, stopwatch_path, stopwatch_text):
     logs_saved = args.compose_logs_saved or "not saved; stopwatch proof embeds compose image output"
     failure_notes = args.failure_notes or "none"
     runner_notes = args.runner_notes or "No extra runner notes."
-    network_notes = args.network_notes or "not reported"
+    network_notes = require_meaningful_arg("--network-notes", args.network_notes)
 
     return f"""# Gate 2 Outside-Person Proof
 
@@ -222,7 +230,7 @@ def parse_args():
         action="store_true",
         help="Required attestation that the runner is outside the project and unaided.",
     )
-    parser.add_argument("--network-notes", default="")
+    parser.add_argument("--network-notes", required=True)
     parser.add_argument("--terminal-output-excerpt", default="")
     parser.add_argument("--compose-logs-saved", default="")
     parser.add_argument("--failure-notes", default="")

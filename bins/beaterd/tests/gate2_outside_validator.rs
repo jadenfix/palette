@@ -196,6 +196,23 @@ fn gate2_outside_generator_requires_explicit_attestation() {
 }
 
 #[test]
+fn gate2_outside_generator_requires_network_notes() {
+    let fixture = ValidatorFixture::new();
+    let generated = fixture
+        .dir
+        .path()
+        .join("missing-network-notes-generated-proof.md");
+
+    let output = run_generator_without_network_notes(&fixture.stopwatch_path, &generated);
+
+    assert_failure(output, "--network-notes");
+    assert!(
+        !generated.exists(),
+        "generator must not write completed proof without network notes"
+    );
+}
+
+#[test]
 fn gate2_outside_generator_rejects_duplicate_source_field_without_writing() {
     let fixture = ValidatorFixture::new();
     let generated = fixture
@@ -717,6 +734,20 @@ fn gate2_outside_validator_rejects_missing_network_notes() {
         output,
         "missing field in outside-person proof: Network notes",
     );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_placeholder_network_notes() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "- Network notes: public docs only",
+        "- Network notes: not reported",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(output, "unresolved required fields: Network notes");
 }
 
 #[test]
@@ -1545,6 +1576,19 @@ fn run_generator_with_attestation(
     output_path: &Path,
     attest: bool,
 ) -> Output {
+    run_generator_with_options(stopwatch_path, output_path, attest, true)
+}
+
+fn run_generator_without_network_notes(stopwatch_path: &Path, output_path: &Path) -> Output {
+    run_generator_with_options(stopwatch_path, output_path, true, false)
+}
+
+fn run_generator_with_options(
+    stopwatch_path: &Path,
+    output_path: &Path,
+    attest: bool,
+    include_network_notes: bool,
+) -> Output {
     let root = repo_root();
     let mut command = Command::new("python3");
     command
@@ -1567,8 +1611,6 @@ fn run_generator_with_attestation(
         .arg("passed")
         .arg("--date")
         .arg("2026-06-20")
-        .arg("--network-notes")
-        .arg("public docs only")
         .arg("--terminal-output-excerpt")
         .arg("generated proof says browser recording passed")
         .arg("--compose-logs-saved")
@@ -1581,6 +1623,9 @@ fn run_generator_with_attestation(
         .env("BEATER_GATE2_ALLOW_UNTRACKED_ARTIFACTS", "1");
     if attest {
         command.arg("--attest-outside-run");
+    }
+    if include_network_notes {
+        command.arg("--network-notes").arg("public docs only");
     }
     command
         .output()
