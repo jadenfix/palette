@@ -15,7 +15,15 @@ OUTSIDE_RUN_ATTESTATION = (
     "step-by-step help beyond public repository instructions, I used a fresh "
     "clone, and I completed the Gate 2 flow unaided."
 )
-UNRESOLVED_REQUIRED_VALUES = {"unknown", "not requested", "not reported", "tbd", "todo"}
+UNRESOLVED_REQUIRED_VALUES = {
+    "...",
+    "…",
+    "unknown",
+    "not requested",
+    "not reported",
+    "tbd",
+    "todo",
+}
 
 
 def clean_value(value):
@@ -38,7 +46,7 @@ def field_value(source_text, name, source_name):
     if len(matches) > 1:
         raise SystemExit(f"duplicate field in {source_name}: {name}")
     value = clean_value(matches[0])
-    if not value or value == "not requested" or value == "unknown":
+    if not value or value.lower() in UNRESOLVED_REQUIRED_VALUES:
         raise SystemExit(f"unusable field in {source_name}: {name}={value!r}")
     return value
 
@@ -112,6 +120,15 @@ def build_proof(args, stopwatch_path, stopwatch_text):
     waterfall_observation = require_meaningful_arg(
         "--waterfall-observation", args.waterfall_observation
     )
+    runner_name = require_meaningful_arg("--runner-name", args.runner_name)
+    relationship = require_meaningful_arg("--relationship", args.relationship)
+    prior_exposure = require_meaningful_arg("--prior-exposure", args.prior_exposure)
+    machine_os = require_meaningful_arg("--machine-os", args.machine_os)
+    browser = require_meaningful_arg("--browser", args.browser)
+    preflight_status = require_meaningful_arg(
+        "--preflight-status", args.preflight_status
+    )
+    proof_date = require_meaningful_arg("--date", args.date)
 
     return f"""# Gate 2 Outside-Person Proof
 
@@ -123,16 +140,16 @@ unaided using public repository instructions.
 
 ## Runner
 
-- Name: {args.runner_name}
-- Organization or relationship to project: {args.relationship}
-- Prior Beater repo exposure: {args.prior_exposure}
-- Date: {args.date}
-- Machine and OS: {args.machine_os}
+- Name: {runner_name}
+- Organization or relationship to project: {relationship}
+- Prior Beater repo exposure: {prior_exposure}
+- Date: {proof_date}
+- Machine and OS: {machine_os}
 - Docker version: {field_value(stopwatch_text, "Docker", stopwatch_rel)}
 - Docker Compose version: {field_value(stopwatch_text, "Docker Compose", stopwatch_rel)}
-- Browser: {args.browser}
+- Browser: {browser}
 - Network notes: {network_notes}
-- Preflight status: {args.preflight_status}
+- Preflight status: {preflight_status}
 - Outside-run attestation: {OUTSIDE_RUN_ATTESTATION}
 
 ## Repository

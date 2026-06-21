@@ -787,7 +787,15 @@ if allow_pending and status == "not yet completed.":
     print(f"Gate 2 outside-person proof is pending but structurally valid: {proof_path}")
     raise SystemExit(0)
 
-UNRESOLVED_REQUIRED_VALUES = {"unknown", "not requested", "not reported", "tbd", "todo"}
+UNRESOLVED_REQUIRED_VALUES = {
+    "...",
+    "…",
+    "unknown",
+    "not requested",
+    "not reported",
+    "tbd",
+    "todo",
+}
 
 unresolved_fields = []
 for field in REQUIRED_PROOF_FIELDS:

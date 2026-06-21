@@ -2,8 +2,33 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import vm from "node:vm";
+import ts from "typescript";
 
 const root = new URL("..", import.meta.url).pathname;
+
+function loadDashboardApiModule() {
+  const source = readFileSync(join(root, "lib/api.ts"), "utf8");
+  const { outputText } = ts.transpileModule(source, {
+    compilerOptions: {
+      esModuleInterop: true,
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022
+    }
+  });
+  const module = { exports: {} };
+  vm.runInNewContext(
+    outputText,
+    {
+      exports: module.exports,
+      module,
+      process,
+      URLSearchParams
+    },
+    { filename: "lib/api.ts" }
+  );
+  return module.exports;
+}
 
 test("dashboard page exposes the trace inspection surface", () => {
   const page = readFileSync(join(root, "app/page.tsx"), "utf8");
@@ -152,6 +177,31 @@ test("dashboard client uses public beater read endpoints", () => {
   assert.match(api, /BEATER_API_TOKEN/);
   assert.match(api, /x-beater-project-id/);
   assert.match(api, /x-beater-environment-id/);
+  assert.match(api, /formatApiError\(response\.status, response\.statusText/);
+});
+
+test("dashboard API errors stay concise and user-facing", () => {
+  const { formatApiError } = loadDashboardApiModule();
+  assert.equal(
+    formatApiError(404, "Not Found", '{"error":"trace abc not found","status":404}'),
+    "API 404 Not Found: trace abc not found"
+  );
+  assert.equal(
+    formatApiError(503, "Service Unavailable", '{"message":"trace store unavailable"}'),
+    "API 503 Service Unavailable: trace store unavailable"
+  );
+  assert.equal(formatApiError(502, "Bad Gateway", ""), "API 502 Bad Gateway: empty response");
+  assert.equal(
+    formatApiError(500, "Internal Server Error", "\n<html>\n  backend failed\n</html>\n"),
+    "API 500 Internal Server Error: <html> backend failed </html>"
+  );
+  assert.equal(
+    formatApiError(400, "", JSON.stringify({ detail: "invalid project id" })),
+    "API 400: invalid project id"
+  );
+  const long = formatApiError(500, "Internal Server Error", "x".repeat(300));
+  assert.equal(long.length, "API 500 Internal Server Error: ".length + 240);
+  assert.ok(long.endsWith("..."));
 });
 
 test("generated api client is produced from the checked-in openapi snapshot", () => {

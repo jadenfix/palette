@@ -46,6 +46,14 @@ require_clone_timer() {
   fi
 }
 
+require_command() {
+  local name="$1"
+  local reason="$2"
+  if ! command -v "$name" >/dev/null 2>&1; then
+    fail "missing required command '$name' ($reason)"
+  fi
+}
+
 require_git_provenance() {
   local branch
   local origin
@@ -109,5 +117,7 @@ Would execute:
 EOF
   exit 0
 fi
+
+require_command python3 "post-run proof generation and validation require python3"
 
 exec scripts/gate2-compose-stopwatch.sh

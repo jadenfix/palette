@@ -197,10 +197,40 @@ export async function loadDashboardData(query: DashboardQuery): Promise<Dashboar
 async function fetchJson<T>(url: string, headers: HeadersInit): Promise<T> {
   const response = await fetch(url, { cache: "no-store", headers });
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`${response.status} ${response.statusText}: ${text.slice(0, 240)}`);
+    throw new Error(formatApiError(response.status, response.statusText, await response.text()));
   }
   return (await response.json()) as T;
+}
+
+export function formatApiError(status: number, statusText: string, body: string): string {
+  const statusLabel = statusText ? `${status} ${statusText}` : String(status);
+  return `API ${statusLabel}: ${apiErrorDetail(body)}`;
+}
+
+function apiErrorDetail(body: string): string {
+  const trimmed = body.trim();
+  if (!trimmed) return "empty response";
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (typeof parsed === "string") return truncateApiError(parsed);
+    if (parsed && typeof parsed === "object") {
+      const record = parsed as Record<string, unknown>;
+      for (const key of ["error", "message", "detail", "title"]) {
+        const value = record[key];
+        if (typeof value === "string" && value.trim()) {
+          return truncateApiError(value);
+        }
+      }
+    }
+  } catch {
+    // Fall through to the raw body preview.
+  }
+  return truncateApiError(trimmed.replace(/\s+/g, " "));
+}
+
+function truncateApiError(value: string): string {
+  const trimmed = value.trim();
+  return trimmed.length > 240 ? `${trimmed.slice(0, 237)}...` : trimmed;
 }
 
 export function durationMs(start: string, end: string | null | undefined): number | null {

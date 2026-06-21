@@ -257,6 +257,26 @@ fn gate2_outside_generator_requires_runner_observations() {
 }
 
 #[test]
+fn gate2_outside_generator_rejects_placeholder_runner_identity() {
+    let fixture = ValidatorFixture::new();
+    let generated = fixture
+        .dir
+        .path()
+        .join("placeholder-runner-generated-proof.md");
+
+    let output = run_generator_with_runner_name(&fixture.stopwatch_path, &generated, "...");
+
+    assert_failure(
+        output,
+        "--runner-name must be provided with a concrete value",
+    );
+    assert!(
+        !generated.exists(),
+        "generator must not write completed proof with placeholder runner identity"
+    );
+}
+
+#[test]
 fn gate2_outside_generator_rejects_duplicate_source_field_without_writing() {
     let fixture = ValidatorFixture::new();
     let generated = fixture
@@ -875,6 +895,40 @@ fn gate2_outside_wrapper_rejects_missing_clone_timer_for_real_run() {
 }
 
 #[test]
+fn gate2_outside_wrapper_rejects_missing_python3_before_stopwatch() {
+    let fixture = write_outside_wrapper_fixture_repo("main");
+    write_stopwatch_env_stub(fixture.path());
+    git_success(fixture.path(), &["add", "."]);
+    git_success(fixture.path(), &["commit", "-m", "add stopwatch stub"]);
+    let path_dir = tempdir("create outside wrapper PATH without python3");
+    symlink(&command_executable("git"), path_dir.path().join("git"))
+        .unwrap_or_else(|err| panic!("symlink git fixture: {err}"));
+    symlink(
+        &command_executable("dirname"),
+        path_dir.path().join("dirname"),
+    )
+    .unwrap_or_else(|err| panic!("symlink dirname fixture: {err}"));
+
+    let mut command = Command::new("/bin/bash");
+    command
+        .arg(fixture.path().join("scripts/gate2-outside-run.sh"))
+        .current_dir(fixture.path());
+    clear_outside_env(&mut command);
+    command
+        .env("PATH", path_dir.path())
+        .env("BEATER_GATE2_CLONE_STARTED_EPOCH", "1800000000");
+    let output = command
+        .output()
+        .unwrap_or_else(|err| panic!("run Gate 2 outside wrapper without python3: {err}"));
+
+    assert_failure(output, "missing required command 'python3'");
+    assert!(
+        !fixture.path().join("wrapper-real-env.txt").exists(),
+        "outside wrapper must fail before executing the stopwatch script"
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_stopwatch_without_wrapper_marker() {
     let fixture = ValidatorFixture::new();
     replace(
@@ -1007,6 +1061,16 @@ fn gate2_outside_validator_rejects_placeholder_required_field_value() {
         "- Browser: Chromium",
         "- Browser: unknown",
     );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(output, "unresolved required fields: Browser");
+}
+
+#[test]
+fn gate2_outside_validator_rejects_ellipsis_required_field_value() {
+    let fixture = ValidatorFixture::new();
+    replace(&fixture.proof_path, "- Browser: Chromium", "- Browser: ...");
 
     let output = run_validator(&fixture.proof_path);
 
@@ -2114,12 +2178,48 @@ fn run_generator_without_observations(stopwatch_path: &Path, output_path: &Path)
     run_generator_with_options(stopwatch_path, output_path, true, true, false)
 }
 
+fn run_generator_with_runner_name(
+    stopwatch_path: &Path,
+    output_path: &Path,
+    runner_name: &str,
+) -> Output {
+    run_generator_with_options_and_runner(
+        stopwatch_path,
+        output_path,
+        true,
+        true,
+        true,
+        runner_name,
+        "Chromium",
+    )
+}
+
 fn run_generator_with_options(
     stopwatch_path: &Path,
     output_path: &Path,
     attest: bool,
     include_network_notes: bool,
     include_observations: bool,
+) -> Output {
+    run_generator_with_options_and_runner(
+        stopwatch_path,
+        output_path,
+        attest,
+        include_network_notes,
+        include_observations,
+        "Validator Fixture Runner",
+        "Chromium",
+    )
+}
+
+fn run_generator_with_options_and_runner(
+    stopwatch_path: &Path,
+    output_path: &Path,
+    attest: bool,
+    include_network_notes: bool,
+    include_observations: bool,
+    runner_name: &str,
+    browser: &str,
 ) -> Output {
     let root = repo_root();
     let mut command = Command::new("python3");
@@ -2130,7 +2230,7 @@ fn run_generator_with_options(
         .arg("--output")
         .arg(output_path)
         .arg("--runner-name")
-        .arg("Validator Fixture Runner")
+        .arg(runner_name)
         .arg("--relationship")
         .arg("external validation fixture")
         .arg("--prior-exposure")
@@ -2138,7 +2238,7 @@ fn run_generator_with_options(
         .arg("--machine-os")
         .arg("macOS arm64")
         .arg("--browser")
-        .arg("Chromium")
+        .arg(browser)
         .arg("--preflight-status")
         .arg("passed")
         .arg("--date")
@@ -2342,19 +2442,28 @@ fn path_with_public_handoff_runtime(runtime: &FakePublicHandoffRuntime) -> Strin
 }
 
 fn python3_executable() -> PathBuf {
+    command_executable("python3")
+}
+
+fn command_executable(name: &str) -> PathBuf {
     let output = Command::new("python3")
         .arg("-c")
-        .arg("import sys; print(sys.executable)")
+        .arg("import shutil, sys; print(shutil.which(sys.argv[1]) or '')")
+        .arg(name)
         .output()
-        .unwrap_or_else(|err| panic!("resolve python3 executable: {err}"));
+        .unwrap_or_else(|err| panic!("resolve {name} executable: {err}"));
     if !output.status.success() {
         panic!(
-            "resolve python3 executable failed\nstdout:\n{}\nstderr:\n{}",
+            "resolve {name} executable failed\nstdout:\n{}\nstderr:\n{}",
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
     }
-    PathBuf::from(String::from_utf8_lossy(&output.stdout).trim())
+    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if path.is_empty() {
+        panic!("could not resolve executable in PATH: {name}");
+    }
+    PathBuf::from(path)
 }
 
 fn write_executable(path: &Path, contents: &str) {
