@@ -333,7 +333,8 @@ mismatched commit SHA,
 mismatched API/dashboard endpoints, non-main or stale commit evidence,
 mismatched SHA-pinned image references, mismatched image digests,
 non-repo-relative `docs/demos/` artifacts, and non-prebuilt GHCR image digests.
-It rejects recording notes from a different dashboard session and any screen
+It rejects recording notes from a different dashboard session. It rejects
+uncommitted non-evidence worktree changes at closure. It rejects any screen
 recording hash that does not match the committed file. The recording artifact
 must be a playable WebM capture of at least 64 KiB with EBML/WebM, Segment,
 Info, Tracks, Cluster, and video-track structure, and artifact paths must not

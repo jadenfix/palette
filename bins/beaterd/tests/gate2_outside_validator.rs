@@ -83,6 +83,7 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(readme.contains("--llm-observation"));
     assert!(readme.contains("--waterfall-observation"));
     assert!(readme.contains("Do not leave placeholder values such as `...`"));
+    assert!(readme.contains("uncommitted non-evidence worktree changes"));
     assert!(readme.contains(r#"--runner-name "Jane Outside Runner""#));
     assert!(readme.contains(r#"--relationship "external evaluator; no Beater project role""#));
     assert!(!readme.contains(r#"--relationship "external evaluator; no Beater maintainer role""#));
@@ -98,6 +99,7 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(proof_template.contains("curl\nor `ffprobe` is missing"));
     assert!(proof_template.contains("Docker Compose v2, `curl`, `ffprobe`, local Docker daemon"));
     assert!(proof_template.contains("`ffprobe` playable-video metadata"));
+    assert!(proof_template.contains("uncommitted non-evidence worktree changes"));
     assert!(proof_template.contains("playable WebM"));
     assert!(!proof_template.contains("none / describe"));
     assert!(!proof_template.contains("`python3` is required after the timed run"));
@@ -1805,6 +1807,29 @@ fn gate2_outside_validator_rejects_stale_commit_sha() {
 }
 
 #[test]
+fn gate2_outside_validator_accepts_evidence_only_ancestor_closure_repo() {
+    let fixture = write_validator_closure_fixture_repo();
+
+    let output = run_default_validator_in_repo(fixture.path());
+
+    assert_success(output, "Gate 2 outside-person proof is complete and valid");
+}
+
+#[test]
+fn gate2_outside_validator_rejects_dirty_non_evidence_worktree_at_closure() {
+    let fixture = write_validator_closure_fixture_repo();
+    fs::write(fixture.path().join("source-drift.txt"), "dirty\n")
+        .unwrap_or_else(|err| panic!("write dirty non-evidence fixture file: {err}"));
+
+    let output = run_default_validator_in_repo(fixture.path());
+
+    assert_failure(
+        output,
+        "Completed Gate 2 closure proof has uncommitted non-evidence worktree changes",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_local_build_evidence() {
     let fixture = ValidatorFixture::new();
     replace(
@@ -2574,6 +2599,19 @@ fn run_default_validator(args: &[&str]) -> Output {
         .unwrap_or_else(|err| panic!("run Gate 2 outside proof validator: {err}"))
 }
 
+fn run_default_validator_in_repo(repo: &Path) -> Output {
+    let ffprobe =
+        fake_ffprobe_dir("#!/bin/sh\nprintf 'codec_type=video\\n'\nprintf 'duration=1.25\\n'\n");
+    Command::new("bash")
+        .arg(repo.join("scripts/validate-gate2-outside-proof.sh"))
+        .current_dir(repo)
+        .env("PATH", path_with_tempdir(&ffprobe))
+        .env_remove("BEATER_GATE2_OUTSIDE_PROOF")
+        .env_remove("BEATER_GATE2_ALLOW_UNTRACKED_ARTIFACTS")
+        .output()
+        .unwrap_or_else(|err| panic!("run Gate 2 outside proof validator in fixture repo: {err}"))
+}
+
 fn run_generator(stopwatch_path: &Path, output_path: &Path) -> Output {
     run_generator_with_attestation(stopwatch_path, output_path, true)
 }
@@ -3204,6 +3242,61 @@ fn write_public_handoff_fixture_repo() -> TempDir {
     git_success(fixture.path(), &["add", "."]);
     git_success(fixture.path(), &["commit", "-m", "fixture"]);
     git_success(fixture.path(), &["branch", "-M", "main"]);
+    fixture
+}
+
+fn write_validator_closure_fixture_repo() -> TempDir {
+    let root = repo_root();
+    let fixture = tempdir("create validator closure fixture repo");
+    copy_fixture_file(
+        &root,
+        fixture.path(),
+        "scripts/validate-gate2-outside-proof.sh",
+    );
+
+    git_success(fixture.path(), &["init"]);
+    git_success(
+        fixture.path(),
+        &["config", "user.email", "fixture@example.invalid"],
+    );
+    git_success(fixture.path(), &["config", "user.name", "Gate 2 Fixture"]);
+    git_success(fixture.path(), &["add", "."]);
+    git_success(fixture.path(), &["commit", "-m", "base"]);
+    git_success(fixture.path(), &["branch", "-M", "main"]);
+
+    let tested_sha = git_output(fixture.path(), &["rev-parse", "HEAD"]);
+    let current_repo_sha = current_head();
+    let artifact_rel = "docs/demos/gate2-closure-fixture";
+    let artifact_dir = fixture.path().join(artifact_rel);
+    fs::create_dir_all(&artifact_dir)
+        .unwrap_or_else(|err| panic!("create validator closure artifact dir: {err}"));
+    fs::write(artifact_dir.join("recording.webm"), recording_bytes())
+        .unwrap_or_else(|err| panic!("write validator closure recording: {err}"));
+    fs::write(
+        artifact_dir.join("recording-notes.md"),
+        recording_notes("recording.webm"),
+    )
+    .unwrap_or_else(|err| panic!("write validator closure recording notes: {err}"));
+
+    let recording_field = format!("{artifact_rel}/recording.webm");
+    let notes_field = format!("{artifact_rel}/recording-notes.md");
+    let stopwatch_field = format!("{artifact_rel}/stopwatch-proof.md");
+    let stopwatch =
+        stopwatch_proof(&recording_field, &notes_field).replace(&current_repo_sha, &tested_sha);
+    fs::write(artifact_dir.join("stopwatch-proof.md"), stopwatch)
+        .unwrap_or_else(|err| panic!("write validator closure stopwatch proof: {err}"));
+    let outside = outside_proof(&stopwatch_field, &recording_field, &notes_field)
+        .replace(&current_repo_sha, &tested_sha);
+    fs::write(
+        fixture
+            .path()
+            .join("docs/demos/gate2-outside-person-proof.md"),
+        outside,
+    )
+    .unwrap_or_else(|err| panic!("write validator closure outside proof: {err}"));
+
+    git_success(fixture.path(), &["add", "docs/demos"]);
+    git_success(fixture.path(), &["commit", "-m", "add Gate 2 evidence"]);
     fixture
 }
 

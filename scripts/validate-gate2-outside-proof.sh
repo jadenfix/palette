@@ -689,6 +689,46 @@ def require_current_or_evidence_only_commit(commit_sha: str) -> None:
         )
 
 
+def dirty_worktree_paths() -> list[str]:
+    try:
+        raw = subprocess.check_output(
+            ["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
+            cwd=repo,
+            stderr=subprocess.DEVNULL,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        fail("could not inspect git worktree cleanliness")
+        return []
+
+    parts = [
+        part
+        for part in raw.decode("utf-8", errors="surrogateescape").split("\0")
+        if part
+    ]
+    paths: list[str] = []
+    index = 0
+    while index < len(parts):
+        entry = parts[index]
+        status = entry[:2]
+        path = entry[3:] if len(entry) > 3 else ""
+        if path:
+            paths.append(path)
+        index += 2 if "R" in status or "C" in status else 1
+    return paths
+
+
+def require_no_dirty_non_evidence_worktree() -> None:
+    if ALLOW_UNTRACKED_ARTIFACTS:
+        return
+    non_evidence_paths = [
+        path for path in dirty_worktree_paths() if not path.startswith("docs/demos/")
+    ]
+    if non_evidence_paths:
+        fail(
+            "Completed Gate 2 closure proof has uncommitted non-evidence worktree changes"
+        )
+
+
 def forbid_alternate_evidence(source_text: str, source_name: str) -> None:
     for forbidden in FORBIDDEN_EVIDENCE:
         if forbidden in source_text:
@@ -888,6 +928,7 @@ if worktree_clean != "yes":
     fail("Worktree clean must be yes")
 commit_sha = field_value("Commit SHA")
 require_current_or_evidence_only_commit(commit_sha)
+require_no_dirty_non_evidence_worktree()
 
 api_endpoint = field_value("API endpoint")
 if api_endpoint != DEFAULT_API_ENDPOINT:
