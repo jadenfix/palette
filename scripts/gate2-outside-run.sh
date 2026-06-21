@@ -79,6 +79,7 @@ require_unset_or_value BEATER_DASHBOARD_PORT 3000 "the default dashboard port is
 require_unset_or_value BEATER_GATE2_WRITE_PROOF 1 "the outside run must write a stopwatch proof"
 require_unset_or_value BEATER_GATE2_BROWSER_PROOF 1 "the outside run must prove the browser flow"
 require_unset_or_value BEATER_GATE2_RECORD_DEMO 1 "the outside run must record the browser flow"
+require_unset_or_value BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS 300 "the outside run must use the documented post-SLO timeout"
 require_unset_or_value KEEP_BEATER_COMPOSE 1 "the dashboard must remain running for outside-person click-through"
 require_unset BEATERD_IMAGE "the wrapper pins beaterd to the checked-out commit SHA"
 require_unset BEATER_DASHBOARD_IMAGE "the wrapper pins dashboard to the checked-out commit SHA"

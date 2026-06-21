@@ -304,6 +304,24 @@ fn gate2_public_handoff_verifier_accepts_clean_clone_fixture() {
 }
 
 #[test]
+fn gate2_public_handoff_verifier_clears_post_slo_timeout_override() {
+    let registry = tempdir("create registry fixture dir");
+    write_registry_fixtures(registry.path());
+    let fixture_repo = write_public_handoff_fixture_repo();
+    let fixture_head = git_output(fixture_repo.path(), &["rev-parse", "HEAD"]);
+    let source_url = format!("file://{}", fixture_repo.path().display());
+
+    let output = run_public_handoff_with_fixture_env(
+        &source_url,
+        &fixture_head,
+        registry.path(),
+        ("BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS", "1"),
+    );
+
+    assert_success(output, "Gate 2 public handoff clone passed");
+}
+
+#[test]
 fn gate2_public_handoff_verifier_rejects_invalid_stopwatch_shell() {
     let registry = tempdir("create registry fixture dir");
     write_registry_fixtures(registry.path());
@@ -514,6 +532,7 @@ fn gate2_outside_wrapper_real_run_executes_stopwatch_with_clone_timer() {
     assert!(env_marker.contains("write=1"));
     assert!(env_marker.contains("browser=1"));
     assert!(env_marker.contains("record=1"));
+    assert!(env_marker.contains("post_slo=unset"));
     assert!(env_marker.contains("reuse=0"));
     assert!(env_marker.contains("local_build=0"));
     assert!(env_marker.contains("pull_policy=always"));
@@ -537,6 +556,17 @@ fn gate2_outside_wrapper_rejects_alternate_dashboard_port() {
     let output = run_outside_wrapper_dry_run(Some(("BEATER_DASHBOARD_PORT", "13080")));
 
     assert_failure(output, "BEATER_DASHBOARD_PORT must be unset or '3000'");
+}
+
+#[test]
+fn gate2_outside_wrapper_rejects_post_slo_timeout_override() {
+    let output =
+        run_outside_wrapper_dry_run(Some(("BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS", "120")));
+
+    assert_failure(
+        output,
+        "BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS must be unset or '300'",
+    );
 }
 
 #[test]
@@ -908,7 +938,112 @@ fn gate2_outside_validator_rejects_script_only_timing_source() {
 }
 
 #[test]
-fn gate2_outside_validator_rejects_first_trace_less_than_script_runtime() {
+fn gate2_outside_validator_rejects_invalid_utc_timestamp() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "- Ended at: 2026-06-20T12:00:35Z",
+        "- Ended at: 2026/06/20 12:00:35",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Ended at in outside-person proof must be UTC ISO-8601",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_clone_started_after_script_started() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "- Clone started at: 2026-06-20T11:59:55Z",
+        "- Clone started at: 2026-06-20T12:00:05Z",
+    );
+    replace(
+        &fixture.stopwatch_path,
+        "- Clone started at: 2026-06-20T11:59:55Z",
+        "- Clone started at: 2026-06-20T12:00:05Z",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Clone started at in outside-person proof must be at or before Script started at",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_total_duration_mismatched_to_timestamps() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "- Total proof duration: 40s",
+        "- Total proof duration: 37s",
+    );
+    replace(
+        &fixture.stopwatch_path,
+        "- Total duration: 40s",
+        "- Total duration: 37s",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Total proof duration in outside-person proof must match timestamps",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_quickstart_click_after_total_duration() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "- Time-to-quickstart-click: 20s",
+        "- Time-to-quickstart-click: 45s",
+    );
+    replace(
+        &fixture.stopwatch_path,
+        "- Time-to-quickstart-click: 20s",
+        "- Time-to-quickstart-click: 45s",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Time-to-quickstart-click in outside-person proof must be within Total proof duration",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_script_quickstart_click_after_script_duration() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "- Script-to-quickstart-click: 15s",
+        "- Script-to-quickstart-click: 37s",
+    );
+    replace(
+        &fixture.stopwatch_path,
+        "- Script-to-quickstart-click: 15s",
+        "- Script-to-quickstart-click: 37s",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Script-to-quickstart-click in outside-person proof must be within Script duration",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_first_trace_missing_clone_offset() {
     let fixture = ValidatorFixture::new();
     replace(
         &fixture.stopwatch_path,
@@ -920,7 +1055,7 @@ fn gate2_outside_validator_rejects_first_trace_less_than_script_runtime() {
 
     assert_failure(
         output,
-        "Time-to-first-trace must include at least the script runtime",
+        "Time-to-first-trace in stopwatch proof must equal Script-to-first-trace plus clone-to-script time",
     );
 }
 
@@ -1386,7 +1521,7 @@ Status: completed.
 - Clone started at: 2026-06-20T11:59:55Z
 - Script started at: 2026-06-20T12:00:00Z
 - Started at: 2026-06-20T12:00:00Z
-- Ended at: 2026-06-20T12:00:40Z
+- Ended at: 2026-06-20T12:00:35Z
 - Time-to-first-trace: 12s
 - Script-to-first-trace: 7s
 - Time-to-quickstart-click: 20s
@@ -1460,7 +1595,7 @@ fn stopwatch_proof(recording: &str, notes: &str) -> String {
 - Clone started at: 2026-06-20T11:59:55Z
 - Script started at: 2026-06-20T12:00:00Z
 - Started: 2026-06-20T12:00:00Z
-- Ended: 2026-06-20T12:00:40Z
+- Ended: 2026-06-20T12:00:35Z
 - Time-to-first-trace: 12s
 - Script-to-first-trace: 7s
 - Time-to-quickstart-click: 20s
@@ -1649,8 +1784,33 @@ fn run_public_handoff_with_fixture(
     expected_commit: &str,
     registry_path: &Path,
 ) -> Output {
+    run_public_handoff_with_fixture_command(source_url, expected_commit, registry_path)
+        .output()
+        .unwrap_or_else(|err| panic!("run Gate 2 public handoff checker: {err}"))
+}
+
+fn run_public_handoff_with_fixture_env(
+    source_url: &str,
+    expected_commit: &str,
+    registry_path: &Path,
+    extra_env: (&str, &str),
+) -> Output {
+    let mut command =
+        run_public_handoff_with_fixture_command(source_url, expected_commit, registry_path);
+    command.env(extra_env.0, extra_env.1);
+    command
+        .output()
+        .unwrap_or_else(|err| panic!("run Gate 2 public handoff checker: {err}"))
+}
+
+fn run_public_handoff_with_fixture_command(
+    source_url: &str,
+    expected_commit: &str,
+    registry_path: &Path,
+) -> Command {
     let root = repo_root();
-    Command::new("python3")
+    let mut command = Command::new("python3");
+    command
         .arg(root.join("scripts/check-gate2-public-handoff.py"))
         .arg("--skip-local-readiness")
         .arg("--source-url")
@@ -1659,9 +1819,8 @@ fn run_public_handoff_with_fixture(
         .arg(expected_commit)
         .arg("--registry-fixture")
         .arg(registry_path)
-        .current_dir(root)
-        .output()
-        .unwrap_or_else(|err| panic!("run Gate 2 public handoff checker: {err}"))
+        .current_dir(root);
+    command
 }
 
 fn run_public_handoff_full_run_with_fixture(
@@ -1856,6 +2015,7 @@ fn clear_outside_env(command: &mut Command) {
         "BEATER_GATE2_WRITE_PROOF",
         "BEATER_GATE2_BROWSER_PROOF",
         "BEATER_GATE2_RECORD_DEMO",
+        "BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS",
         "BEATERD_IMAGE",
         "BEATER_DASHBOARD_IMAGE",
         "BEATER_DASHBOARD_E2E_IMAGE",
@@ -2020,6 +2180,7 @@ set -euo pipefail
   echo "write=${BEATER_GATE2_WRITE_PROOF:-unset}"
   echo "browser=${BEATER_GATE2_BROWSER_PROOF:-unset}"
   echo "record=${BEATER_GATE2_RECORD_DEMO:-unset}"
+  echo "post_slo=${BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS:-unset}"
   echo "reuse=${BEATER_GATE2_REUSE:-unset}"
   echo "local_build=${BEATER_GATE2_LOCAL_BUILD:-unset}"
   echo "pull_policy=${BEATER_GATE2_PULL_POLICY:-unset}"

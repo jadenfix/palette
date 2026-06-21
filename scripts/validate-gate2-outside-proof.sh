@@ -18,6 +18,7 @@ fi
 
 python3 - "$proof_path" "$allow_pending" "$repo_root" <<'PY'
 import hashlib
+import datetime as dt
 import os
 import re
 import subprocess
@@ -102,6 +103,140 @@ def parse_seconds_from_value(value: str, field_name: str, source_name: str) -> O
 def duration_seconds(source_text: str, field_name: str, source_name: str) -> Optional[int]:
     return parse_seconds_from_value(
         field_value_from(source_text, field_name, source_name), field_name, source_name
+    )
+
+
+def timestamp_value(
+    source_text: str, field_name: str, source_name: str
+) -> Optional[dt.datetime]:
+    value = field_value_from(source_text, field_name, source_name)
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", value):
+        fail(f"{field_name} in {source_name} must be UTC ISO-8601 like 2026-06-20T12:00:00Z")
+        return None
+    try:
+        return dt.datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=dt.timezone.utc
+        )
+    except ValueError:
+        fail(f"{field_name} in {source_name} must be a valid UTC timestamp")
+        return None
+
+
+def require_duration_matches(
+    actual_seconds: Optional[int],
+    expected_seconds: Optional[int],
+    field_name: str,
+    source_name: str,
+) -> None:
+    if actual_seconds is None or expected_seconds is None:
+        return
+    if abs(actual_seconds - expected_seconds) > 1:
+        fail(
+            f"{field_name} in {source_name} must match timestamps "
+            f"(expected about {expected_seconds}s, got {actual_seconds}s)"
+        )
+
+
+def require_duration_at_most(
+    actual_seconds: Optional[int],
+    max_seconds: Optional[int],
+    field_name: str,
+    max_field_name: str,
+    source_name: str,
+) -> None:
+    if actual_seconds is None or max_seconds is None:
+        return
+    if actual_seconds > max_seconds + 1:
+        fail(f"{field_name} in {source_name} must be within {max_field_name}")
+
+
+def require_relative_timing(
+    source_text: str,
+    source_name: str,
+    total_relative_field: str,
+    script_relative_field: str,
+    total_duration: Optional[int],
+    script_duration: Optional[int],
+    total_duration_field: str,
+    clone_to_script_seconds: int,
+) -> None:
+    total_relative = duration_seconds(source_text, total_relative_field, source_name)
+    script_relative = duration_seconds(source_text, script_relative_field, source_name)
+    require_duration_at_most(
+        total_relative,
+        total_duration,
+        total_relative_field,
+        total_duration_field,
+        source_name,
+    )
+    require_duration_at_most(
+        script_relative,
+        script_duration,
+        script_relative_field,
+        "Script duration",
+        source_name,
+    )
+    if total_relative is None or script_relative is None:
+        return
+    expected_total_relative = script_relative + clone_to_script_seconds
+    if abs(total_relative - expected_total_relative) > 1:
+        fail(
+            f"{total_relative_field} in {source_name} must equal "
+            f"{script_relative_field} plus clone-to-script time "
+            f"(expected about {expected_total_relative}s, got {total_relative}s)"
+        )
+
+
+def require_timeline(
+    source_text: str,
+    source_name: str,
+    started_field: str,
+    ended_field: str,
+    total_duration_field: str,
+) -> None:
+    clone_started = timestamp_value(source_text, "Clone started at", source_name)
+    script_started = timestamp_value(source_text, "Script started at", source_name)
+    started = timestamp_value(source_text, started_field, source_name)
+    ended = timestamp_value(source_text, ended_field, source_name)
+    if not all([clone_started, script_started, started, ended]):
+        return
+    if script_started != started:
+        fail(f"Script started at and {started_field} in {source_name} must match")
+    if clone_started > script_started:
+        fail(f"Clone started at in {source_name} must be at or before Script started at")
+    if script_started > ended:
+        fail(f"Script started at in {source_name} must be at or before {ended_field}")
+    if clone_started > script_started or script_started > ended:
+        return
+
+    total_duration = duration_seconds(source_text, total_duration_field, source_name)
+    script_duration = duration_seconds(source_text, "Script duration", source_name)
+    total_expected = int((ended - clone_started).total_seconds())
+    script_expected = int((ended - script_started).total_seconds())
+    require_duration_matches(
+        total_duration, total_expected, total_duration_field, source_name
+    )
+    require_duration_matches(script_duration, script_expected, "Script duration", source_name)
+    clone_to_script_seconds = int((script_started - clone_started).total_seconds())
+    require_relative_timing(
+        source_text,
+        source_name,
+        "Time-to-first-trace",
+        "Script-to-first-trace",
+        total_duration,
+        script_duration,
+        total_duration_field,
+        clone_to_script_seconds,
+    )
+    require_relative_timing(
+        source_text,
+        source_name,
+        "Time-to-quickstart-click",
+        "Script-to-quickstart-click",
+        total_duration,
+        script_duration,
+        total_duration_field,
+        clone_to_script_seconds,
     )
 
 
@@ -427,6 +562,13 @@ if timing_start_source != "external-clone":
 clone_started_at = field_value("Clone started at")
 if clone_started_at == "not provided":
     fail("Clone started at must be captured before git clone")
+require_timeline(
+    text,
+    "outside-person proof",
+    "Started at",
+    "Ended at",
+    "Total proof duration",
+)
 
 if "- [ ]" in text:
     fail("all pass-checklist boxes must be checked")
@@ -607,6 +749,13 @@ if stopwatch_text:
         actual = field_value_from(stopwatch_text, field, "stopwatch proof")
         if actual != expected:
             fail(f"{field} in stopwatch proof must be {expected!r}, got {actual!r}")
+    require_timeline(
+        stopwatch_text,
+        "stopwatch proof",
+        "Started",
+        "Ended",
+        "Total duration",
+    )
 
     stopwatch_first_trace = duration_seconds(
         stopwatch_text, "Time-to-first-trace", "stopwatch proof"
@@ -658,25 +807,6 @@ if stopwatch_text:
         field_value("Ended at"),
         field_value_from(stopwatch_text, "Ended", "stopwatch proof"),
     )
-    stopwatch_script_first_trace = duration_seconds(
-        stopwatch_text, "Script-to-first-trace", "stopwatch proof"
-    )
-    stopwatch_script_quickstart_click = duration_seconds(
-        stopwatch_text, "Script-to-quickstart-click", "stopwatch proof"
-    )
-    if (
-        stopwatch_first_trace is not None
-        and stopwatch_script_first_trace is not None
-        and stopwatch_first_trace < stopwatch_script_first_trace
-    ):
-        fail("Time-to-first-trace must include at least the script runtime")
-    if (
-        stopwatch_quickstart_click is not None
-        and stopwatch_script_quickstart_click is not None
-        and stopwatch_quickstart_click < stopwatch_script_quickstart_click
-    ):
-        fail("Time-to-quickstart-click must include at least the script runtime")
-
     stopwatch_quickstart_trace = field_value_from(
         stopwatch_text, "Quickstart trace", "stopwatch proof"
     )
