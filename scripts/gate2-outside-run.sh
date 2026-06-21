@@ -78,6 +78,7 @@ fi
 
 require_git_provenance
 require_clone_timer
+require_command python3 "post-run proof generation and validation require python3"
 require_unset_or_value BEATER_GATE2_REUSE 0 "warm-loop reuse is not valid evidence"
 require_unset_or_value BEATER_GATE2_LOCAL_BUILD 0 "the outside run must use prebuilt SHA-pinned images"
 require_unset_or_value BEATER_GATE2_PULL_POLICY always "the outside run must pull current images"
@@ -117,7 +118,5 @@ Would execute:
 EOF
   exit 0
 fi
-
-require_command python3 "post-run proof generation and validation require python3"
 
 exec scripts/gate2-compose-stopwatch.sh
