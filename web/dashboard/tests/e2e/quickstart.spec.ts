@@ -29,8 +29,12 @@ test("renders the five-line stock OTLP quickstart trace in a browser", async ({ 
   await expect(llm).toHaveAttribute("data-depth", "0");
   await expect(llm.locator(".kind-icon")).toHaveAttribute("data-icon", "llm");
   await llm.click();
+  await expect(llm).toHaveAttribute("aria-current", "location");
 
   const detail = page.getByLabel("Span detail");
+  const selectedPath = page.getByLabel("Selected span path");
+  await expect(selectedPath).toContainText("llm.call");
+  await expect(selectedPath).toContainText("five-line-llm-call");
   await expect(detail).toContainText("openai/gpt-quickstart");
   await expect(detail).toContainText("Tokens");
   await expect(detail).toContainText("USD 0.001200");

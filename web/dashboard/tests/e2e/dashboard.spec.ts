@@ -15,6 +15,13 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   await expect(traceList).toContainText("Release");
   await expect(traceList).toContainText("refund-agent-run");
   await expect(traceList).toContainText("openai/gpt-demo");
+  const summary = page.getByLabel("Trace summary");
+  await expect(summary.locator(".summary-item").filter({ hasText: "Spans" })).toHaveClass(
+    /tone-structure/
+  );
+  await expect(summary.locator(".summary-item").filter({ hasText: "Spans" })).toContainText(
+    "no failures"
+  );
 
   const waterfall = page.getByLabel("Agent span waterfall");
   for (const kind of [
@@ -91,6 +98,18 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   await waterfall.getByText("call-policy-model").click();
 
   const detail = page.getByLabel("Span detail");
+  await expect(waterfall.locator('[data-span-name="call-policy-model"]')).toHaveAttribute(
+    "aria-current",
+    "location"
+  );
+  const selectedPath = page.getByLabel("Selected span path");
+  await expect(selectedPath).toContainText("agent.run");
+  await expect(selectedPath).toContainText("refund-agent-run");
+  await expect(selectedPath).toContainText("agent.turn");
+  await expect(selectedPath).toContainText("customer-refund-turn");
+  await expect(selectedPath).toContainText("llm.call");
+  await expect(selectedPath).toContainText("call-policy-model");
+  await expect(detail.locator(".metrics").filter({ hasText: "Depth" })).toContainText("3");
   await expect(page.getByLabel("Detail sections")).toHaveCount(0);
   await expect(detail).toContainText("openai/gpt-demo");
   await expect(detail).toContainText("Tokens");
@@ -136,6 +155,7 @@ test("keeps an explicitly opened trace coherent when secondary filters exclude i
   const traceList = page.getByLabel("Traces");
   const selectedRow = traceList.locator('a.run-row[data-outside-filters="true"]');
   await expect(selectedRow).toHaveCount(1);
+  await expect(selectedRow).toHaveAttribute("aria-current", "location");
   await expect(selectedRow).toContainText("refund-agent-run");
   await expect(selectedRow).toContainText("outside filters");
   await expect(selectedRow).toContainText("compose-demo");

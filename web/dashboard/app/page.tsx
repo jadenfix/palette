@@ -75,6 +75,12 @@ export default async function DashboardPage({
   const runRows =
     selectedTraceOutsideFilters && selectedRun ? [selectedRun, ...data.runs.items] : data.runs.items;
   const failedSpanCount = spans.filter((span) => span.status === "error").length;
+  const spanSummaryMeta = activeRun
+    ? failedSpanCount > 0
+      ? `${failedSpanCount} failed`
+      : "no failures"
+    : "no trace";
+  const spanSummaryTone = failedSpanCount > 0 ? "error" : "structure";
   const tokenTotal = spans.reduce((total, span) => total + spanTokenTotal(span), 0);
   const activeFilters = filterChips(data.query);
   const traceLabel = traceBreadcrumbLabel(data.query.traceId, data.trace?.trace_id);
@@ -109,7 +115,7 @@ export default async function DashboardPage({
             <Activity aria-hidden="true" />
             <span className="live-dot" aria-hidden="true" />
             <span>Read API</span>
-            <code>{data.apiBaseUrl}</code>
+            <code title={data.apiBaseUrl}>{apiHostLabel(data.apiBaseUrl)}</code>
           </div>
           <Link
             className="refresh-action"
@@ -134,8 +140,8 @@ export default async function DashboardPage({
         <SummaryItem
           label="Spans"
           value={activeRun ? String(activeRun.span_count) : "0"}
-          meta={`${failedSpanCount} failed`}
-          tone="structure"
+          meta={spanSummaryMeta}
+          tone={spanSummaryTone}
         />
         <SummaryItem
           label="Model"
@@ -170,16 +176,12 @@ export default async function DashboardPage({
             <span>Query</span>
           </div>
           <div className="query-chips" aria-label="Active filters">
-            {activeFilters.length > 0 ? (
-              activeFilters.map((chip) => (
-                <span className="query-chip" key={`${chip.label}:${chip.value}`}>
-                  {chip.label}
-                  <strong>{chip.value}</strong>
-                </span>
-              ))
-            ) : (
-              <span className="query-chip muted">No secondary filters</span>
-            )}
+            {activeFilters.map((chip) => (
+              <span className="query-chip" key={`${chip.label}:${chip.value}`}>
+                {chip.label}
+                <strong>{chip.value}</strong>
+              </span>
+            ))}
           </div>
         </div>
         <form className="filters">
@@ -336,11 +338,12 @@ export default async function DashboardPage({
                 <Link
                   key={run.trace_id}
                   className={isSelected ? "run-row active" : "run-row"}
+                  aria-current={isSelected ? "location" : undefined}
                   data-status={run.status}
                   data-outside-filters={isOutsideFilters ? "true" : undefined}
                   href={hrefFor(data.query, { trace: run.trace_id, span: undefined })}
                 >
-                  <span className={`run-state ${run.status}`} aria-hidden="true" />
+                  <span className="run-state" aria-hidden="true" />
                   <span className="run-body">
                     <span className="run-title-line">
                       <span className="run-name">
@@ -410,6 +413,9 @@ export default async function DashboardPage({
                 <Link
                   key={span.span_id}
                   href={hrefFor(data.query, { trace: span.trace_id, span: span.span_id })}
+                  aria-current={
+                    data.selectedSpan?.span_id === span.span_id ? "location" : undefined
+                  }
                   className={
                     data.selectedSpan?.span_id === span.span_id ? "span-line selected" : "span-line"
                   }
@@ -462,7 +468,12 @@ export default async function DashboardPage({
             <span>{data.selectedSpan?.kind ?? "none"}</span>
           </div>
           {data.selectedSpan ? (
-            <SpanDetail span={data.selectedSpan} io={data.selectedIo} query={data.query} />
+            <SpanDetail
+              span={data.selectedSpan}
+              io={data.selectedIo}
+              query={data.query}
+              spans={spans}
+            />
           ) : (
             <div className="empty">Select a span in the waterfall.</div>
           )}
@@ -510,16 +521,19 @@ function advancedFiltersActive(query: DashboardQuery): boolean {
 function SpanDetail({
   span,
   io,
-  query
+  query,
+  spans
 }: {
   span: CanonicalSpan;
   io: SpanIoResponse | null;
   query: DashboardQuery;
+  spans: CanonicalSpan[];
 }) {
   const hasRedactedIo = io ? isRedactedIo(io.input) || isRedactedIo(io.output) : false;
   const icon = kindIcon(span.kind);
   const KindGlyph = icon.Icon;
   const artifacts = spanArtifactRefs(span);
+  const ancestry = spanAncestry(span, spans);
   return (
     <div className="detail-stack">
       <div className="span-identity">
@@ -542,10 +556,26 @@ function SpanDetail({
         </div>
         <span className={`status ${span.status}`}>{statusLabel(span.status)}</span>
       </div>
+      <div className="span-path" aria-label="Selected span path">
+        <span className="span-path-label">Path</span>
+        {ancestry.map((node, index) => (
+          <span className="path-fragment" key={node.span_id}>
+            {index > 0 ? (
+              <span className="path-separator" aria-hidden="true">
+                /
+              </span>
+            ) : null}
+            <span className={`path-node ${kindClass(node.kind)}`}>
+              <span>{node.kind}</span>
+              <strong>{node.name}</strong>
+            </span>
+          </span>
+        ))}
+      </div>
       <dl className="metrics">
         <div>
-          <dt>Status</dt>
-          <dd>{statusLabel(span.status)}</dd>
+          <dt>Depth</dt>
+          <dd>{String(ancestry.length - 1)}</dd>
         </div>
         <div>
           <dt>Model</dt>
@@ -577,7 +607,7 @@ function SpanDetail({
         </div>
       </dl>
       <RedactionControls span={span} query={query} hasRedactedIo={hasRedactedIo} />
-      <section className="detail-section io-section" aria-label="Span I/O">
+      <section className="detail-section" aria-label="Span I/O">
         <div className="detail-section-head">
           <h3>I/O</h3>
           <span>{hasRedactedIo && !query.unmask ? "redacted" : "captured"}</span>
@@ -603,10 +633,9 @@ function SpanDetail({
               </small>
             </div>
           ))}
-          {artifacts.length === 0 ? <p className="muted-copy">No artifact references.</p> : null}
         </div>
       </section>
-      <section className="detail-section attrs" aria-label="Span attributes">
+      <section className="detail-section" aria-label="Span attributes">
         <div className="detail-section-head">
           <h3>Attributes</h3>
           <span>canonical + unmapped</span>
@@ -693,7 +722,9 @@ function IoBlock({ label, value }: { label: string; value: SpanIoResponse["input
   let body = "No captured I/O";
   if (value?.kind === "inline") body = prettyJson(value.value);
   if (value?.kind === "artifact") {
-    body = `${value.artifact_ref.mime_type}\n${value.artifact_ref.uri}\n${value.artifact_ref.size_bytes} bytes`;
+    body = `${value.artifact_ref.mime_type}\n${value.artifact_ref.uri}\n${formatBytes(
+      value.artifact_ref.size_bytes
+    )}`;
   }
   if (value?.kind === "redacted") body = value.reason;
   return (
@@ -872,6 +903,21 @@ function spanTokenTotal(span: CanonicalSpan): number {
   return span.tokens.input + span.tokens.output + span.tokens.reasoning;
 }
 
+function spanAncestry(span: CanonicalSpan, spans: CanonicalSpan[]): CanonicalSpan[] {
+  const byId = new Map(spans.map((candidate) => [candidate.span_id, candidate]));
+  const ancestry = [span];
+  const seen = new Set([span.span_id]);
+  let parentId = span.parent_span_id;
+  while (parentId && byId.has(parentId) && !seen.has(parentId)) {
+    const parent = byId.get(parentId);
+    if (!parent) break;
+    ancestry.unshift(parent);
+    seen.add(parent.span_id);
+    parentId = parent.parent_span_id;
+  }
+  return ancestry;
+}
+
 function tokenSummary(span: CanonicalSpan): string {
   if (!span.tokens) return "none";
   const total = spanTokenTotal(span);
@@ -913,6 +959,14 @@ function traceBreadcrumbLabel(explicitTraceId: string | undefined, resolvedTrace
 
 function tracePlaceholder(resolvedTraceId: string | undefined): string {
   return resolvedTraceId ? `latest: ${shortHash(resolvedTraceId)}` : "latest";
+}
+
+function apiHostLabel(value: string): string {
+  try {
+    return new URL(value).host;
+  } catch {
+    return value.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  }
 }
 
 function filterChips(query: DashboardQuery): { label: string; value: string }[] {
