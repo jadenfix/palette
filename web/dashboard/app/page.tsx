@@ -22,8 +22,12 @@ import {
 import {
   CanonicalSpan,
   DashboardQuery,
+  Money,
+  RunSummary,
   SpanIoResponse,
+  TraceView,
   formatCost,
+  durationMs,
   formatDuration,
   formatLatency,
   formatModels,
@@ -62,8 +66,14 @@ export default async function DashboardPage({
   };
   const data = await loadDashboardData(query);
   const spans = data.trace?.spans ?? [];
-  const activeRun =
-    data.runs.items.find((run) => run.trace_id === data.trace?.trace_id) ?? data.runs.items[0];
+  const listedSelectedRun = data.trace
+    ? data.runs.items.find((run) => run.trace_id === data.trace?.trace_id)
+    : undefined;
+  const selectedRun = listedSelectedRun ?? runSummaryFromTrace(data.trace);
+  const selectedTraceOutsideFilters = Boolean(data.trace && selectedRun && !listedSelectedRun);
+  const activeRun = selectedRun ?? data.runs.items[0];
+  const runRows =
+    selectedTraceOutsideFilters && selectedRun ? [selectedRun, ...data.runs.items] : data.runs.items;
   const failedSpanCount = spans.filter((span) => span.status === "error").length;
   const tokenTotal = spans.reduce((total, span) => total + spanTokenTotal(span), 0);
   const activeFilters = filterChips(data.query);
@@ -308,55 +318,69 @@ export default async function DashboardPage({
         <aside className="trace-list" aria-label="Traces">
           <div className="section-heading">
             <h2>Traces</h2>
-            <span>{data.runs.items.length}</span>
+            <span>
+              {selectedTraceOutsideFilters
+                ? `${data.runs.items.length} + selected`
+                : data.runs.items.length}
+            </span>
           </div>
           <div className="run-table">
             <div className="run-table-head" aria-hidden="true">
               <span>Trace</span>
               <span>Signals</span>
             </div>
-            {data.runs.items.map((run) => (
-              <Link
-                key={run.trace_id}
-                className={run.trace_id === data.trace?.trace_id ? "run-row active" : "run-row"}
-                data-status={run.status}
-                href={hrefFor(data.query, { trace: run.trace_id, span: undefined })}
-              >
-                <span className={`run-state ${run.status}`} aria-hidden="true" />
-                <span className="run-body">
-                  <span className="run-title-line">
-                    <span className="run-name">
-                      <strong>{run.first_span_name}</strong>
-                      <small>{run.trace_id}</small>
+            {runRows.map((run) => {
+              const isSelected = run.trace_id === data.trace?.trace_id;
+              const isOutsideFilters = isSelected && selectedTraceOutsideFilters;
+              return (
+                <Link
+                  key={run.trace_id}
+                  className={isSelected ? "run-row active" : "run-row"}
+                  data-status={run.status}
+                  data-outside-filters={isOutsideFilters ? "true" : undefined}
+                  href={hrefFor(data.query, { trace: run.trace_id, span: undefined })}
+                >
+                  <span className={`run-state ${run.status}`} aria-hidden="true" />
+                  <span className="run-body">
+                    <span className="run-title-line">
+                      <span className="run-name">
+                        <strong>{run.first_span_name}</strong>
+                        <small>{run.trace_id}</small>
+                      </span>
+                      <span className="run-badges">
+                        <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>
+                        {isOutsideFilters ? (
+                          <span className="run-filter-note">outside filters</span>
+                        ) : null}
+                      </span>
                     </span>
-                    <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>
+                    <span className="run-metrics">
+                      <span className="run-cell metric-emphasis" data-label="Spans">
+                        <span className="sr-only">Spans </span>
+                        {run.span_count}
+                      </span>
+                      <span className="run-cell" data-label="Latency">
+                        <span className="sr-only">Latency </span>
+                        {formatLatency(run.duration_ms)}
+                      </span>
+                      <span className="run-cell" data-label="Cost">
+                        <span className="sr-only">Cost </span>
+                        {formatCost(run.total_cost)}
+                      </span>
+                      <span className="run-cell" data-label="Model">
+                        <span className="sr-only">Model </span>
+                        {formatModels(run.models)}
+                      </span>
+                      <span className="run-cell" data-label="Release">
+                        <span className="sr-only">Release </span>
+                        {formatReleases(run.release_ids)}
+                      </span>
+                    </span>
                   </span>
-                  <span className="run-metrics">
-                    <span className="run-cell metric-emphasis" data-label="Spans">
-                      <span className="sr-only">Spans </span>
-                      {run.span_count}
-                    </span>
-                    <span className="run-cell" data-label="Latency">
-                      <span className="sr-only">Latency </span>
-                      {formatLatency(run.duration_ms)}
-                    </span>
-                    <span className="run-cell" data-label="Cost">
-                      <span className="sr-only">Cost </span>
-                      {formatCost(run.total_cost)}
-                    </span>
-                    <span className="run-cell" data-label="Model">
-                      <span className="sr-only">Model </span>
-                      {formatModels(run.models)}
-                    </span>
-                    <span className="run-cell" data-label="Release">
-                      <span className="sr-only">Release </span>
-                      {formatReleases(run.release_ids)}
-                    </span>
-                  </span>
-                </span>
-              </Link>
-            ))}
-            {data.runs.items.length === 0 ? (
+                </Link>
+              );
+            })}
+            {runRows.length === 0 ? (
               <div className="empty">No traces match this scope.</div>
             ) : null}
           </div>
@@ -742,6 +766,105 @@ function numberValue(input: string | string[] | undefined): number | undefined {
 
 function numberInput(input: number | undefined): string | undefined {
   return input === undefined ? undefined : String(input);
+}
+
+function runSummaryFromTrace(trace: TraceView | null): RunSummary | null {
+  if (!trace || trace.spans.length === 0) return null;
+  const spans = [...trace.spans].sort(compareSpansByStart);
+  const firstSpan = spans[0];
+  const startedAt = firstSpan.start_time;
+  const endedAt = latestEndedAt(spans);
+  return {
+    tenant_id: trace.tenant_id,
+    trace_id: trace.trace_id,
+    first_span_name: firstSpan.name,
+    span_count: spans.length,
+    status: aggregateRunStatus(spans),
+    started_at: startedAt,
+    ended_at: endedAt,
+    duration_ms: durationMs(startedAt, endedAt),
+    total_cost: spans.reduce<Money | null>((total, span) => mergeRunCost(total, span.cost), null),
+    models: uniqueModels(spans),
+    release_ids: uniqueReleaseIds(spans)
+  };
+}
+
+function compareSpansByStart(left: CanonicalSpan, right: CanonicalSpan): number {
+  const leftStart = parsedTimeOrMax(left.start_time);
+  const rightStart = parsedTimeOrMax(right.start_time);
+  if (leftStart !== rightStart) return leftStart - rightStart;
+  return left.seq - right.seq;
+}
+
+function parsedTimeOrMax(value: string): number {
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+}
+
+function latestEndedAt(spans: CanonicalSpan[]): string | null {
+  let latest: { value: string; ms: number } | null = null;
+  for (const span of spans) {
+    if (!span.end_time) continue;
+    const ms = Date.parse(span.end_time);
+    if (!Number.isFinite(ms)) continue;
+    if (!latest || ms > latest.ms) latest = { value: span.end_time, ms };
+  }
+  return latest?.value ?? null;
+}
+
+function aggregateRunStatus(spans: CanonicalSpan[]): string {
+  if (spans.some((span) => span.status === "error")) return "error";
+  if (spans.some((span) => span.status === "ok")) return "ok";
+  return "unset";
+}
+
+function mergeRunCost(total: Money | null, next: Money | null | undefined): Money | null {
+  if (!next) return total;
+  if (!total) return next;
+  if (total.currency !== next.currency) return total;
+  return {
+    currency: total.currency,
+    amount_micros: total.amount_micros + next.amount_micros
+  };
+}
+
+function uniqueModels(spans: CanonicalSpan[]): RunSummary["models"] {
+  const models: RunSummary["models"] = [];
+  for (const span of spans) {
+    if (!span.model) continue;
+    if (
+      models.some(
+        (model) => model.provider === span.model?.provider && model.name === span.model?.name
+      )
+    ) {
+      continue;
+    }
+    models.push(span.model);
+  }
+  return models;
+}
+
+function uniqueReleaseIds(spans: CanonicalSpan[]): string[] {
+  const releaseIds: string[] = [];
+  for (const span of spans) {
+    const releaseId = stringAttribute(span.attributes, [
+      "agent.release_id",
+      "beater.release_id",
+      "release_id"
+    ]);
+    if (releaseId && !releaseIds.includes(releaseId)) releaseIds.push(releaseId);
+  }
+  return releaseIds;
+}
+
+function stringAttribute(attributes: unknown, keys: string[]): string | null {
+  if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) return null;
+  const record = attributes as Record<string, unknown>;
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return null;
 }
 
 function spanTokenTotal(span: CanonicalSpan): number {

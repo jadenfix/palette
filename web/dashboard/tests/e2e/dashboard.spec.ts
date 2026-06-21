@@ -119,6 +119,42 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   );
 });
 
+test("keeps an explicitly opened trace coherent when secondary filters exclude it", async ({
+  page
+}) => {
+  test.skip(!process.env.BEATER_E2E_TRACE_ID, "requires the seeded all-kind trace id");
+
+  const traceId = process.env.BEATER_E2E_TRACE_ID!;
+  await page.goto(
+    `/?tenant=demo&project=demo&environment=local&trace=${encodeURIComponent(traceId)}&status=error`
+  );
+
+  await expect(page.getByRole("heading", { name: "Agent Trace Debugger" })).toBeVisible();
+  await expect(page.locator('input[name="trace"]')).toHaveValue(traceId);
+  await expect(page.locator('select[name="status"]')).toHaveValue("error");
+
+  const traceList = page.getByLabel("Traces");
+  const selectedRow = traceList.locator('a.run-row[data-outside-filters="true"]');
+  await expect(selectedRow).toHaveCount(1);
+  await expect(selectedRow).toContainText("refund-agent-run");
+  await expect(selectedRow).toContainText("outside filters");
+  await expect(selectedRow).toContainText("compose-demo");
+
+  const summary = page.getByLabel("Trace summary");
+  await expect(summary).not.toContainText("No trace");
+  await expect(summary.locator(".summary-item").filter({ hasText: "Spans" })).toContainText("14");
+  await expect(summary.locator(".summary-item").filter({ hasText: "Model" })).toContainText(
+    "openai/gpt-demo"
+  );
+  await expect(summary.locator(".summary-item").filter({ hasText: "Model" })).toContainText(
+    "compose-demo"
+  );
+
+  const waterfall = page.getByLabel("Agent span waterfall");
+  await expect(waterfall).toContainText("refund-agent-run");
+  await expect(waterfall).toContainText("call-policy-model");
+});
+
 test("keeps the trace console inside the viewport on desktop and mobile", async ({ page }) => {
   const traceParam = process.env.BEATER_E2E_TRACE_ID
     ? `&trace=${encodeURIComponent(process.env.BEATER_E2E_TRACE_ID)}`

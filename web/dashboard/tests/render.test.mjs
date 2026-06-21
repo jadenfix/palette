@@ -50,6 +50,11 @@ test("dashboard page exposes the trace inspection surface", () => {
   assert.match(page, /traceBreadcrumbLabel/);
   assert.match(page, /tracePlaceholder/);
   assert.match(page, /placeholder=\{traceInputPlaceholder\}/);
+  assert.match(page, /runSummaryFromTrace/);
+  assert.match(page, /selectedTraceOutsideFilters/);
+  assert.match(page, /data-outside-filters/);
+  assert.match(page, /outside filters/);
+  assert.match(page, /agent\.release_id/);
   assert.match(page, /human\.review/);
   assert.match(page, /replay\.run/);
   assert.match(page, /kind === "human\.review"/);
@@ -76,6 +81,8 @@ test("dashboard chrome stays dense and tool-like", () => {
   assert.match(css, /\.run-state/);
   assert.match(css, /\.run-metrics/);
   assert.match(css, /\.run-row\[data-status="error"\]/);
+  assert.match(css, /\.run-row\[data-outside-filters="true"\]/);
+  assert.match(css, /\.run-filter-note/);
   assert.match(css, /\.run-cell::before/);
   assert.match(css, /\.timeline-axis/);
   assert.match(css, /\.axis-tick/);
@@ -171,6 +178,10 @@ test("browser proof covers all canonical span kinds and can record a demo", () =
   assert.match(e2e, /toHaveAttribute\("data-depth", "4"\)/);
   assert.match(e2e, /toHaveAttribute\("data-icon", "mcp"\)/);
   assert.match(e2e, /model=gpt-demo&release=compose-demo/);
+  assert.match(e2e, /status=error/);
+  assert.match(e2e, /data-outside-filters="true"/);
+  assert.match(e2e, /outside filters/);
+  assert.match(e2e, /compose-demo/);
   const recorder = readFileSync(join(root, "tests/e2e/record-gate2-demo.mjs"), "utf8");
   assert.match(recorder, /recordVideo/);
   assert.match(recorder, /requireAttribute/);

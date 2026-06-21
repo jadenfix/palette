@@ -649,6 +649,10 @@ button:hover {
   background: var(--accent-soft);
 }
 
+.run-row[data-outside-filters="true"] {
+  background: #fff8ea;
+}
+
 .run-state {
   align-self: stretch;
   background: var(--row-state);
@@ -694,6 +698,28 @@ button:hover {
   font-size: 10px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.run-badges {
+  align-items: flex-end;
+  display: grid;
+  flex: 0 0 auto;
+  gap: 5px;
+  justify-items: end;
+}
+
+.run-filter-note {
+  background: #f7ead1;
+  border: 1px solid #e5cfaa;
+  border-radius: 4px;
+  color: #73501c;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  padding: 4px 5px;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
