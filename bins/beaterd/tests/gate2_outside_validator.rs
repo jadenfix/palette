@@ -196,6 +196,7 @@ fn gate2_outside_generator_builds_valid_completed_proof() {
     assert!(generated_text.contains(OUTSIDE_RUN_ATTESTATION));
     assert!(generated_text.contains("- API endpoint: http://127.0.0.1:8080"));
     assert!(generated_text.contains("- Dashboard base: http://127.0.0.1:3000"));
+    assert!(generated_text.contains("- Quickstart snippet: examples/python/five_line_otel.py"));
     assert!(generated_text.contains("- Timing start source: external-clone"));
     assert!(generated_text.contains("- Clone started at: 2026-06-20T11:59:55Z"));
     assert!(generated_text.contains("- Script-to-first-trace: 7s"));
@@ -1295,6 +1296,40 @@ fn gate2_outside_validator_rejects_missing_stopwatch_proof() {
     let output = run_validator(&fixture.proof_path);
 
     assert_failure(output, "stopwatch proof file does not exist");
+}
+
+#[test]
+fn gate2_outside_validator_rejects_wrong_quickstart_snippet() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.stopwatch_path,
+        "- Quickstart snippet: `examples/python/five_line_otel.py`",
+        "- Quickstart snippet: `examples/python/custom_agent.py`",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Quickstart snippet in stopwatch proof must be 'examples/python/five_line_otel.py'",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_missing_quickstart_snippet() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.stopwatch_path,
+        "- Quickstart snippet: `examples/python/five_line_otel.py`\n",
+        "",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "missing field in stopwatch proof: Quickstart snippet",
+    );
 }
 
 #[test]

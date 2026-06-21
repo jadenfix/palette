@@ -42,6 +42,7 @@ DEFAULT_API_ENDPOINT = "http://127.0.0.1:8080"
 DEFAULT_DASHBOARD_BASE = "http://127.0.0.1:3000"
 DEFAULT_OTLP_ENDPOINT = "http://127.0.0.1:4317"
 EXPECTED_CLONE_URL = "https://github.com/jadenfix/beater.git"
+EXPECTED_QUICKSTART_SNIPPET = "examples/python/five_line_otel.py"
 EXPECTED_OUTSIDE_COMMAND = (
     "bash -lc 't=\"$(date +%s)\" && git clone "
     "https://github.com/jadenfix/beater.git && cd beater && "
@@ -1148,6 +1149,7 @@ if stopwatch_text:
         ("API endpoint", DEFAULT_API_ENDPOINT),
         ("OTLP endpoint", DEFAULT_OTLP_ENDPOINT),
         ("Dashboard base", DEFAULT_DASHBOARD_BASE),
+        ("Quickstart snippet", EXPECTED_QUICKSTART_SNIPPET),
     ]:
         actual = field_value_from(stopwatch_text, field, "stopwatch proof")
         if actual != expected:

@@ -152,7 +152,8 @@ The validator reads the listed stopwatch proof file, screen-recording notes, and
 `ffprobe` playable-video metadata,
 then cross-checks default API/OTLP/dashboard endpoints, clean-start status,
 browser-proof status, trace IDs, dashboard URLs, SHA-pinned prebuilt GHCR image
-references, prebuilt GHCR image digests, and the tested public GitHub origin,
+references, prebuilt GHCR image digests, stock quickstart snippet markers, and
+the tested public GitHub origin,
 `main` branch, clean-worktree state, and commit SHA. If the proof commit is newer
 than the tested SHA, every later committed change must be under `docs/demos/`;
 uncommitted non-evidence worktree changes are rejected at closure. It verifies
