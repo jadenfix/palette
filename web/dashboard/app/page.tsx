@@ -493,6 +493,7 @@ function SpanDetail({
   const hasRedactedIo = io ? isRedactedIo(io.input) || isRedactedIo(io.output) : false;
   const icon = kindIcon(span.kind);
   const KindGlyph = icon.Icon;
+  const artifacts = spanArtifactRefs(span);
   return (
     <div className="detail-stack">
       <div className="span-identity">
@@ -507,7 +508,10 @@ function SpanDetail({
         </span>
         <div>
           <h3>{span.name}</h3>
-          <p>{span.kind}</p>
+          <p>
+            <span>{span.kind}</span>
+            <span>{span.model ? `${span.model.provider}/${span.model.name}` : "no model"}</span>
+          </p>
           <p>{span.span_id}</p>
         </div>
         <span className={`status ${span.status}`}>{statusLabel(span.status)}</span>
@@ -523,7 +527,7 @@ function SpanDetail({
         </div>
         <div>
           <dt>Tokens</dt>
-          <dd>{span.tokens ? span.tokens.input + span.tokens.output + span.tokens.reasoning : "none"}</dd>
+          <dd>{tokenSummary(span)}</dd>
         </div>
         <div>
           <dt>Cost</dt>
@@ -541,14 +545,49 @@ function SpanDetail({
           <dt>Started</dt>
           <dd>{formatTimestamp(span.start_time)}</dd>
         </div>
+        <div>
+          <dt>Ended</dt>
+          <dd>{span.end_time ? formatTimestamp(span.end_time) : "open"}</dd>
+        </div>
       </dl>
       <RedactionControls span={span} query={query} hasRedactedIo={hasRedactedIo} />
-      <IoBlock label="Input" value={io?.input} />
-      <IoBlock label="Output" value={io?.output} />
-      <div className="attrs">
-        <h3>Attributes</h3>
-        <pre>{JSON.stringify(span.attributes, null, 2)}</pre>
-      </div>
+      <section className="detail-section io-section" aria-label="Span I/O">
+        <div className="detail-section-head">
+          <h3>I/O</h3>
+          <span>{hasRedactedIo && !query.unmask ? "redacted" : "captured"}</span>
+        </div>
+        <div className="io-grid">
+          <IoBlock label="Input" value={io?.input} />
+          <IoBlock label="Output" value={io?.output} />
+        </div>
+      </section>
+      <section className="detail-section" aria-label="Artifact references">
+        <div className="detail-section-head">
+          <h3>Artifacts</h3>
+          <span>{artifacts.length}</span>
+        </div>
+        <div className="artifact-list">
+          {artifacts.map((artifact) => (
+            <div className="artifact-row" key={`${artifact.label}:${artifact.ref.artifact_id}`}>
+              <span>{artifact.label}</span>
+              <code>{artifact.ref.uri}</code>
+              <small>
+                {artifact.ref.mime_type} | {formatBytes(artifact.ref.size_bytes)} |{" "}
+                {shortHash(artifact.ref.sha256)}
+              </small>
+            </div>
+          ))}
+          {artifacts.length === 0 ? <p className="muted-copy">No artifact references.</p> : null}
+        </div>
+      </section>
+      <section className="detail-section attrs" aria-label="Span attributes">
+        <div className="detail-section-head">
+          <h3>Attributes</h3>
+          <span>canonical + unmapped</span>
+        </div>
+        <JsonPanel label="Canonical" value={span.attributes} />
+        <JsonPanel label="Unmapped" value={span.unmapped_attrs} />
+      </section>
     </div>
   );
 }
@@ -626,17 +665,55 @@ function HiddenQueryInputs({
 
 function IoBlock({ label, value }: { label: string; value: SpanIoResponse["input"] | undefined }) {
   let body = "No captured I/O";
-  if (value?.kind === "inline") body = JSON.stringify(value.value, null, 2);
+  if (value?.kind === "inline") body = prettyJson(value.value);
   if (value?.kind === "artifact") {
     body = `${value.artifact_ref.mime_type}\n${value.artifact_ref.uri}\n${value.artifact_ref.size_bytes} bytes`;
   }
   if (value?.kind === "redacted") body = value.reason;
   return (
     <div className={ioClassName(value)}>
-      <h3>{label}</h3>
+      <div className="io-head">
+        <h4>{label}</h4>
+        <span>{ioStatus(value)}</span>
+      </div>
       <pre>{body}</pre>
     </div>
   );
+}
+
+function JsonPanel({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div className="json-panel">
+      <div className="json-panel-head">
+        <h4>{label}</h4>
+      </div>
+      <pre>{prettyJson(value)}</pre>
+    </div>
+  );
+}
+
+function prettyJson(value: unknown): string {
+  if (value === undefined || value === null) return "{}";
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === "object") return JSON.stringify(parsed, null, 2);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }
+  return JSON.stringify(value, null, 2);
+}
+
+function ioStatus(value: SpanIoResponse["input"] | undefined): string {
+  if (!value || value.kind === "missing") return "missing";
+  if (value.kind === "artifact") return "artifact";
+  if (value.kind === "redacted") return "redacted";
+  return "inline";
 }
 
 function ioClassName(value: SpanIoResponse["input"] | undefined): string {
@@ -668,6 +745,33 @@ function numberInput(input: number | undefined): string | undefined {
 function spanTokenTotal(span: CanonicalSpan): number {
   if (!span.tokens) return 0;
   return span.tokens.input + span.tokens.output + span.tokens.reasoning;
+}
+
+function tokenSummary(span: CanonicalSpan): string {
+  if (!span.tokens) return "none";
+  const total = spanTokenTotal(span);
+  return `${total.toLocaleString("en-US")} total`;
+}
+
+function spanArtifactRefs(span: CanonicalSpan) {
+  return [
+    { label: "raw", ref: span.raw_ref },
+    span.input_ref ? { label: "input", ref: span.input_ref } : null,
+    span.output_ref ? { label: "output", ref: span.output_ref } : null
+  ].filter(
+    (artifact): artifact is { label: string; ref: NonNullable<CanonicalSpan["raw_ref"]> } =>
+      artifact !== null
+  );
+}
+
+function shortHash(value: string): string {
+  return value.length > 18 ? `${value.slice(0, 12)}...${value.slice(-6)}` : value;
+}
+
+function formatBytes(value: number): string {
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KiB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MiB`;
 }
 
 function formatTimestamp(value: string): string {

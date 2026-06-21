@@ -322,6 +322,57 @@ fn gate2_public_handoff_verifier_clears_post_slo_timeout_override() {
 }
 
 #[test]
+fn gate2_public_handoff_verifier_ignores_alternate_outside_proof_env() {
+    let registry = tempdir("create registry fixture dir");
+    write_registry_fixtures(registry.path());
+    let fixture_repo = write_public_handoff_fixture_repo();
+    let proof_path = fixture_repo
+        .path()
+        .join("docs/demos/gate2-outside-person-proof.md");
+    let broken = fs::read_to_string(&proof_path)
+        .unwrap_or_else(|err| panic!("read fixture outside proof: {err}"))
+        .replace("- `docker compose images` excerpt:\n", "");
+    fs::write(&proof_path, broken)
+        .unwrap_or_else(|err| panic!("write broken fixture outside proof: {err}"));
+    git_success(
+        fixture_repo.path(),
+        &["add", "docs/demos/gate2-outside-person-proof.md"],
+    );
+    git_success(
+        fixture_repo.path(),
+        &["commit", "-m", "break outside proof template"],
+    );
+    let alternate_proof_dir = tempdir("create alternate proof env dir");
+    let alternate_proof = alternate_proof_dir
+        .path()
+        .join("alternate-outside-proof.md");
+    fs::copy(
+        repo_root().join("docs/demos/gate2-outside-person-proof.md"),
+        &alternate_proof,
+    )
+    .unwrap_or_else(|err| panic!("copy alternate outside proof: {err}"));
+    let fixture_head = git_output(fixture_repo.path(), &["rev-parse", "HEAD"]);
+    let source_url = format!("file://{}", fixture_repo.path().display());
+
+    let output = run_public_handoff_with_fixture_env(
+        &source_url,
+        &fixture_head,
+        registry.path(),
+        (
+            "BEATER_GATE2_OUTSIDE_PROOF",
+            alternate_proof
+                .to_str()
+                .unwrap_or_else(|| panic!("alternate proof path must be UTF-8")),
+        ),
+    );
+
+    assert_failure(
+        output,
+        "missing field in pending outside-person proof template: `docker compose images` excerpt",
+    );
+}
+
+#[test]
 fn gate2_public_handoff_verifier_rejects_invalid_stopwatch_shell() {
     let registry = tempdir("create registry fixture dir");
     write_registry_fixtures(registry.path());
@@ -972,7 +1023,29 @@ fn gate2_outside_validator_rejects_clone_started_after_script_started() {
 
     assert_failure(
         output,
-        "Clone started at in outside-person proof must be at or before Script started at",
+        "Clone started at in outside-person proof must be before Script started at",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_clone_started_at_script_started() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "- Clone started at: 2026-06-20T11:59:55Z",
+        "- Clone started at: 2026-06-20T12:00:00Z",
+    );
+    replace(
+        &fixture.stopwatch_path,
+        "- Clone started at: 2026-06-20T11:59:55Z",
+        "- Clone started at: 2026-06-20T12:00:00Z",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Clone started at in outside-person proof must be before Script started at",
     );
 }
 

@@ -203,11 +203,11 @@ def require_timeline(
         return
     if script_started != started:
         fail(f"Script started at and {started_field} in {source_name} must match")
-    if clone_started > script_started:
-        fail(f"Clone started at in {source_name} must be at or before Script started at")
+    if clone_started >= script_started:
+        fail(f"Clone started at in {source_name} must be before Script started at")
     if script_started > ended:
         fail(f"Script started at in {source_name} must be at or before {ended_field}")
-    if clone_started > script_started or script_started > ended:
+    if clone_started >= script_started or script_started > ended:
         return
 
     total_duration = duration_seconds(source_text, total_duration_field, source_name)

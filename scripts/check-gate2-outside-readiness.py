@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import os
 import re
 import subprocess
 import urllib.request
@@ -79,7 +80,9 @@ def require_repo_shape(args: argparse.Namespace) -> None:
 
 def validate_outside_proof_template() -> None:
     validator = repo_root() / "scripts/validate-gate2-outside-proof.sh"
-    subprocess.check_call([str(validator), "--allow-pending"], cwd=repo_root())
+    env = os.environ.copy()
+    env.pop("BEATER_GATE2_OUTSIDE_PROOF", None)
+    subprocess.check_call([str(validator), "--allow-pending"], cwd=repo_root(), env=env)
 
 
 def registry_manifest_from_fixture(image_name: str, fixture_dir: Path) -> dict:

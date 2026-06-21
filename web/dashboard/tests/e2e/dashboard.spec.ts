@@ -63,6 +63,15 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   await expect(tool.locator(".kind-icon")).toHaveAttribute("data-icon", "tool");
   await expect(mcp.locator(".kind-icon")).toHaveAttribute("data-icon", "mcp");
 
+  const axisRail = await waterfall.locator(".axis-rail").boundingBox();
+  const rootTrack = await run.locator(".span-track").boundingBox();
+  const mcpTrack = await mcp.locator(".span-track").boundingBox();
+  expect(axisRail).not.toBeNull();
+  expect(rootTrack).not.toBeNull();
+  expect(mcpTrack).not.toBeNull();
+  expect(Math.abs((rootTrack?.x ?? 0) - (axisRail?.x ?? 0))).toBeLessThanOrEqual(2);
+  expect(Math.abs((mcpTrack?.x ?? 0) - (axisRail?.x ?? 0))).toBeLessThanOrEqual(2);
+
   const orderedNames = await waterfall.locator("[data-span-name]").evaluateAll((rows) =>
     rows.map((row) => row.getAttribute("data-span-name"))
   );
@@ -89,9 +98,25 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   await expect(detail).toContainText("USD 0.002500");
   await expect(detail.getByRole("heading", { name: "Input" })).toBeVisible();
   await expect(detail.getByRole("heading", { name: "Output" })).toBeVisible();
-  await expect(detail.getByRole("heading", { name: "Attributes" })).toBeVisible();
+  await expect(detail.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
+  await expect(detail.getByRole("heading", { name: "Canonical" })).toBeVisible();
+  await expect(detail.getByRole("heading", { name: "Unmapped" })).toBeVisible();
+  await expect(detail.locator(".io").filter({ hasText: "Input" }).locator("pre")).toHaveText(
+    "Can this order be refunded after 31 days?"
+  );
+  await expect(detail.locator(".io").filter({ hasText: "Output" }).locator("pre")).toHaveText(
+    "Escalate because the order is outside the standard window."
+  );
   await expect(detail).toContainText("Can this order be refunded after 31 days?");
   await expect(detail).toContainText("Escalate because the order is outside the standard window.");
+
+  await waterfall.getByText("lookup-order-tool").click();
+  await expect(detail.locator(".io").filter({ hasText: "Input" }).locator("pre")).toHaveText(
+    '{\n  "order_id": "ord_123"\n}'
+  );
+  await expect(detail.locator(".io").filter({ hasText: "Output" }).locator("pre")).toHaveText(
+    '{\n  "status": "delivered",\n  "age_days": 31\n}'
+  );
 });
 
 test("keeps the trace console inside the viewport on desktop and mobile", async ({ page }) => {
