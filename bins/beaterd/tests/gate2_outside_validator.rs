@@ -65,6 +65,13 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     let readme = fs::read_to_string(root.join("README.md"))
         .unwrap_or_else(|err| panic!("read README.md: {err}"));
     assert!(readme.contains(r#"git clone https://github.com/jadenfix/beater.git && cd beater &&"#));
+    assert!(readme.contains(
+        "reaches the first trace and quickstart browser click unaided in\n5 minutes or less"
+    ));
+    assert!(readme.contains("`scripts/check-gate2-public-handoff.py` without `--full-run`"));
+    let proof_template = fs::read_to_string(root.join("docs/demos/gate2-outside-person-proof.md"))
+        .unwrap_or_else(|err| panic!("read outside proof template: {err}"));
+    assert!(proof_template.contains("`scripts/check-gate2-public-handoff.py` without `--full-run`"));
 }
 
 #[test]
@@ -148,6 +155,13 @@ fn gate2_outside_generator_builds_valid_completed_proof() {
         r#"BEATER_GATE2_CLONE_STARTED_EPOCH="$BEATER_GATE2_CLONE_STARTED_EPOCH" scripts/gate2-outside-run.sh"#
     ));
     assert!(generated_text.contains("- Outside-run wrapper: yes"));
+    assert!(generated_text.contains("Gate 2 compose stopwatch passed; Browser recording: passed"));
+    assert!(generated_text.contains(&format!(
+        "Quickstart dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={QUICKSTART_TRACE}"
+    )));
+    assert!(generated_text.contains(&format!(
+        "All-kind dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={ALL_KIND_TRACE}"
+    )));
     assert!(generated_text.contains("- `docker compose images` excerpt:"));
     assert!(generated_text.contains("ghcr.io/jadenfix/beater/beaterd"));
     assert!(generated_text.contains("ghcr.io/jadenfix/beater/dashboard"));
@@ -566,6 +580,10 @@ fn gate2_stopwatch_outside_next_steps_separate_dashboard_targets() {
         "Open ${all_kind_dashboard_url:-not requested} in a normal browser for the all-kind waterfall."
     ));
     assert!(script.contains("Confirm run -> turn -> step -> tool -> MCP nesting is visible."));
+    assert!(script.contains(
+        "Maintainer diagnostic overrides are intentionally suppressed for outside-person evidence."
+    ));
+    assert!(script.contains("if [[ \"$outside_wrapper\" == \"1\" ]]; then"));
 }
 
 #[test]
@@ -1338,6 +1356,25 @@ fn gate2_outside_validator_rejects_reused_trace_id_for_both_flows() {
 }
 
 #[test]
+fn gate2_outside_validator_rejects_weak_terminal_excerpt() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        &format!(
+            "- Terminal output excerpt: Gate 2 compose stopwatch passed; Browser recording: passed; Quickstart dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={QUICKSTART_TRACE}; All-kind dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={ALL_KIND_TRACE}"
+        ),
+        "- Terminal output excerpt: generated proof says browser recording passed",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Terminal output excerpt must include compose stopwatch pass line",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_stale_recording_notes() {
     let fixture = ValidatorFixture::new();
     replace(
@@ -1719,7 +1756,7 @@ The runner completed the flow using only public repository instructions.
 - Screen recording: `{recording}`
 - Screen recording notes: `{notes}`
 - Screen recording SHA256: {RECORDING_SHA}
-- Terminal output excerpt: generated proof says browser recording passed
+- Terminal output excerpt: Gate 2 compose stopwatch passed; Browser recording: passed; Quickstart dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={QUICKSTART_TRACE}; All-kind dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={ALL_KIND_TRACE}
 {compose_images_excerpt}
 - Quickstart trace ID: {QUICKSTART_TRACE}
 - Quickstart dashboard URL: `http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={QUICKSTART_TRACE}`
@@ -1918,8 +1955,6 @@ fn run_generator_with_options(
         .arg("passed")
         .arg("--date")
         .arg("2026-06-20")
-        .arg("--terminal-output-excerpt")
-        .arg("generated proof says browser recording passed")
         .arg("--compose-logs-saved")
         .arg("temp fixture")
         .arg("--failure-notes")

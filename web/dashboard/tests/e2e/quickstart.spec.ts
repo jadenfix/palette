@@ -8,6 +8,10 @@ test("renders the five-line stock OTLP quickstart trace in a browser", async ({ 
   const traceList = page.getByLabel("Traces");
   await expect(traceList).toContainText("five-line-llm-call");
   await expect(traceList).toContainText("openai/gpt-quickstart");
+  const traceFilter = page.locator('input[name="trace"]');
+  await expect(traceFilter).toHaveValue("");
+  await expect(traceFilter).toHaveAttribute("placeholder", /latest: /);
+  await expect(page).not.toHaveURL(/trace=/);
 
   const traceRow = traceId
     ? traceList.locator(`a.run-row[href*="trace=${encodeURIComponent(traceId)}"]`)
@@ -15,18 +19,16 @@ test("renders the five-line stock OTLP quickstart trace in a browser", async ({ 
   await expect(traceRow).toContainText("five-line-llm-call");
   await traceRow.click();
   await expect(page).toHaveURL(traceId ? new RegExp(`trace=${traceId}`) : /trace=/);
+  await expect(traceFilter).not.toHaveValue("");
 
   const waterfall = page.getByLabel("Agent span waterfall");
   await expect(waterfall).toContainText("five-line-llm-call");
   const llm = waterfall.locator('[data-span-name="five-line-llm-call"]');
-  if ((await llm.count()) > 0) {
-    await expect(llm).toHaveAttribute("data-kind", "llm.call");
-    await expect(llm).toHaveAttribute("data-depth", "0");
-    await expect(llm.locator(".kind-icon")).toHaveAttribute("data-icon", "llm");
-    await llm.click();
-  } else {
-    await waterfall.getByText("five-line-llm-call").click();
-  }
+  await expect(llm).toHaveCount(1);
+  await expect(llm).toHaveAttribute("data-kind", "llm.call");
+  await expect(llm).toHaveAttribute("data-depth", "0");
+  await expect(llm.locator(".kind-icon")).toHaveAttribute("data-icon", "llm");
+  await llm.click();
 
   const detail = page.getByLabel("Span detail");
   await expect(detail).toContainText("openai/gpt-quickstart");

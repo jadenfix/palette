@@ -93,10 +93,16 @@ def build_proof(args, stopwatch_path, stopwatch_text):
     stopwatch_rel = relative_or_absolute(stopwatch_path)
     recording = field_value(stopwatch_text, "Browser recording artifact", stopwatch_rel)
     notes = field_value(stopwatch_text, "Browser recording notes", stopwatch_rel)
+    quickstart_dashboard_url = field_value(stopwatch_text, "Quickstart dashboard", stopwatch_rel)
+    all_kind_dashboard_url = field_value(stopwatch_text, "All-kind dashboard", stopwatch_rel)
 
     terminal_excerpt = (
         args.terminal_output_excerpt
-        or "Gate 2 compose stopwatch passed; browser recording passed; see stopwatch proof."
+        or (
+            "Gate 2 compose stopwatch passed; Browser recording: passed; "
+            f"Quickstart dashboard: {quickstart_dashboard_url}; "
+            f"All-kind dashboard: {all_kind_dashboard_url}"
+        )
     )
     logs_saved = args.compose_logs_saved or "not saved; stopwatch proof embeds compose image output"
     failure_notes = args.failure_notes or "none"
@@ -174,9 +180,9 @@ The runner completed the flow using only public repository instructions.
 - Terminal output excerpt: {terminal_excerpt}
 - `docker compose images` excerpt: {compose_images_excerpt(stopwatch_text, stopwatch_path)}
 - Quickstart trace ID: {field_value(stopwatch_text, "Quickstart trace", stopwatch_rel)}
-- Quickstart dashboard URL: `{field_value(stopwatch_text, "Quickstart dashboard", stopwatch_rel)}`
+- Quickstart dashboard URL: `{quickstart_dashboard_url}`
 - All-kind nested trace ID: {field_value(stopwatch_text, "All-kind nested trace", stopwatch_rel)}
-- All-kind dashboard URL: `{field_value(stopwatch_text, "All-kind dashboard", stopwatch_rel)}`
+- All-kind dashboard URL: `{all_kind_dashboard_url}`
 - `docker compose` logs saved: {logs_saved}
 - Failure notes, if any: {failure_notes}
 

@@ -174,7 +174,7 @@ export async function loadDashboardData(query: DashboardQuery): Promise<Dashboar
         : null;
     return {
       apiBaseUrl,
-      query: { ...query, traceId: activeTraceId, selectedSpanId: activeSpanId },
+      query,
       runs,
       trace,
       selectedSpan,

@@ -563,6 +563,26 @@ EOF
 )"
 fi
 
+if [[ "$outside_wrapper" == "1" ]]; then
+  maintainer_diagnostic_tips="Maintainer diagnostic overrides are intentionally suppressed for outside-person evidence."
+else
+  maintainer_diagnostic_tips="$(cat <<'EOF'
+Set KEEP_BEATER_COMPOSE=0 to tear containers down automatically.
+Set BEATER_GATE2_LOCAL_BUILD=1 to build images from local source instead of
+pulling prebuilt GHCR images.
+Set BEATER_GATE2_REUSE=1 to skip the pre-run Compose down/volume removal and
+state cleanup for local warm-loop debugging only.
+Set BEATER_GATE2_BROWSER_PROOF=1 to run the Playwright browser proof for the
+five-line quickstart trace and all-kind nested agent waterfall in the same proof
+run.
+Set BEATER_GATE2_RECORD_DEMO=1 to record the quickstart click-through and
+all-kind waterfall browser proof as a committed demo artifact.
+Set BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS to control each post-SLO evidence
+step timeout after the five-line trace and quickstart click have passed.
+EOF
+)"
+fi
+
 cat <<EOF
 Gate 2 compose stopwatch passed in ${time_to_first_trace_seconds}s to first trace (${duration_seconds}s total).
 
@@ -599,17 +619,6 @@ Startup mode:
 Clean start:
   $([[ "$reuse" == "1" ]] && echo "no (BEATER_GATE2_REUSE=1)" || echo "yes")
 
-Set KEEP_BEATER_COMPOSE=0 to tear containers down automatically.
-Set BEATER_GATE2_LOCAL_BUILD=1 to build images from local source instead of
-pulling prebuilt GHCR images.
-Set BEATER_GATE2_REUSE=1 to skip the pre-run Compose down/volume removal and
-state cleanup for local warm-loop debugging only.
-Set BEATER_GATE2_BROWSER_PROOF=1 to run the Playwright browser proof for the
-five-line quickstart trace and all-kind nested agent waterfall in the same proof
-run.
-Set BEATER_GATE2_RECORD_DEMO=1 to record the quickstart click-through and
-all-kind waterfall browser proof as a committed demo artifact.
-Set BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS to control each post-SLO evidence
-step timeout after the five-line trace and quickstart click have passed.
+$maintainer_diagnostic_tips
 $outside_runner_next_steps
 EOF

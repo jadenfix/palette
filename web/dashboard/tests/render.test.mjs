@@ -38,6 +38,8 @@ test("dashboard page exposes the trace inspection surface", () => {
   assert.match(page, /Unmask redacted I\/O/);
   assert.match(page, /name="unmask"/);
   assert.match(page, /name="reason"/);
+  assert.match(page, /next\.unmask === true/);
+  assert.doesNotMatch(page, /next\.unmask \?\? query\.unmask/);
   assert.match(page, /name="status"/);
   assert.match(page, /name="kind"/);
   assert.match(page, /name="started_after"/);
@@ -45,6 +47,9 @@ test("dashboard page exposes the trace inspection surface", () => {
   assert.match(page, /name="release"/);
   assert.match(page, /name="min_cost_micros"/);
   assert.match(page, /name="min_latency_ms"/);
+  assert.match(page, /traceBreadcrumbLabel/);
+  assert.match(page, /tracePlaceholder/);
+  assert.match(page, /placeholder=\{traceInputPlaceholder\}/);
   assert.match(page, /human\.review/);
   assert.match(page, /replay\.run/);
   assert.match(page, /kind === "human\.review"/);
@@ -115,6 +120,9 @@ test("dashboard client uses public beater read endpoints", () => {
   assert.match(api, /params\.set\("reason"/);
   assert.match(api, /\/v1\/spans\//);
   assert.match(api, /\/io/);
+  assert.match(api, /const activeTraceId = query\.traceId \|\| runs\.items\[0\]\?\.trace_id/);
+  assert.match(api, /query,\n      runs,/);
+  assert.doesNotMatch(api, /query: \{ \.\.\.query, traceId: activeTraceId/);
   assert.match(api, /BEATER_API_TOKEN/);
   assert.match(api, /x-beater-project-id/);
   assert.match(api, /x-beater-environment-id/);
@@ -169,6 +177,8 @@ test("browser proof covers all canonical span kinds and can record a demo", () =
   assert.match(recorder, /BEATER_GATE2_RECORD_MODE/);
   assert.match(recorder, /recordQuickstartFlow/);
   assert.match(recorder, /recordAllKindFlow/);
+  assert.match(recorder, /quickstartNotes/);
+  assert.match(recorder, /literal five-line stock OpenTelemetry quickstart trace/);
   assert.match(recorder, /gate2-compose-browser-demo\.webm/);
   assert.match(recorder, /createHash\("sha256"\)/);
   assert.match(recorder, /data-depth/);
@@ -181,6 +191,10 @@ test("browser proof covers all canonical span kinds and can record a demo", () =
   assert.match(quickstart, /five-line-llm-call/);
   assert.match(quickstart, /gpt-quickstart/);
   assert.match(quickstart, /page\.goto\("\/\?tenant=demo&project=demo&environment=local&kind=llm\.call&model=gpt-quickstart"\)/);
+  assert.match(quickstart, /toHaveValue\(""\)/);
+  assert.match(quickstart, /placeholder", \/latest: \//);
+  assert.match(quickstart, /toHaveCount\(1\)/);
+  assert.doesNotMatch(quickstart, /waterfall\.getByText\("five-line-llm-call"\)\.click/);
   assert.match(quickstart, /traceRow\.click\(\)/);
   assert.match(quickstart, /toHaveURL/);
   assert.match(quickstart, /hello from stock OpenTelemetry/);

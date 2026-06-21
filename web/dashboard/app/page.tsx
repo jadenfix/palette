@@ -67,6 +67,8 @@ export default async function DashboardPage({
   const failedSpanCount = spans.filter((span) => span.status === "error").length;
   const tokenTotal = spans.reduce((total, span) => total + spanTokenTotal(span), 0);
   const activeFilters = filterChips(data.query);
+  const traceLabel = traceBreadcrumbLabel(data.query.traceId, data.trace?.trace_id);
+  const traceInputPlaceholder = tracePlaceholder(data.trace?.trace_id);
 
   return (
     <main className="shell">
@@ -88,7 +90,7 @@ export default async function DashboardPage({
               <span>/</span>
               <span>{data.query.environmentId ?? "environment"}</span>
               <span>/</span>
-              <span>{data.query.traceId ?? "latest trace"}</span>
+              <span>{traceLabel}</span>
             </p>
           </div>
         </div>
@@ -186,7 +188,7 @@ export default async function DashboardPage({
             </label>
             <label className="trace-filter">
               <span>Trace</span>
-              <input name="trace" defaultValue={data.query.traceId} placeholder="latest" />
+              <input name="trace" defaultValue={data.query.traceId} placeholder={traceInputPlaceholder} />
             </label>
             <label>
               <span>Status</span>
@@ -780,8 +782,19 @@ function formatTimestamp(value: string): string {
   return date.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "Z");
 }
 
+function traceBreadcrumbLabel(explicitTraceId: string | undefined, resolvedTraceId: string | undefined): string {
+  if (explicitTraceId) return explicitTraceId;
+  if (resolvedTraceId) return `latest: ${shortHash(resolvedTraceId)}`;
+  return "latest trace";
+}
+
+function tracePlaceholder(resolvedTraceId: string | undefined): string {
+  return resolvedTraceId ? `latest: ${shortHash(resolvedTraceId)}` : "latest";
+}
+
 function filterChips(query: DashboardQuery): { label: string; value: string }[] {
   const chips: { label: string; value: string }[] = [];
+  if (query.traceId) chips.push({ label: "Trace", value: shortHash(query.traceId) });
   if (query.status) chips.push({ label: "Status", value: query.status });
   if (query.kind) chips.push({ label: "Kind", value: query.kind });
   if (query.model) chips.push({ label: "Model", value: query.model });
@@ -831,7 +844,7 @@ function hrefFor(
   if (query.maxCostMicros !== undefined) params.set("max_cost_micros", String(query.maxCostMicros));
   if (query.minLatencyMs !== undefined) params.set("min_latency_ms", String(query.minLatencyMs));
   if (query.maxLatencyMs !== undefined) params.set("max_latency_ms", String(query.maxLatencyMs));
-  const unmask = next.unmask ?? query.unmask;
+  const unmask = next.unmask === true;
   if (unmask) params.set("unmask", "true");
   if (unmask && query.unmaskReason) params.set("reason", query.unmaskReason);
   return `/?${params.toString()}`;

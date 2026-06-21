@@ -65,7 +65,9 @@ await writeFile(
   notesPath,
   mode === "compose"
     ? composeNotes(videoSha256)
-    : allKindNotes(videoSha256)
+    : mode === "quickstart"
+      ? quickstartNotes(videoSha256)
+      : allKindNotes(videoSha256)
 );
 
 console.log(`Recorded Gate 2 browser demo to ${videoPath}`);
@@ -179,6 +181,34 @@ BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO
 \`\`\`
 
 For a local source build measurement, add \`BEATER_GATE2_LOCAL_BUILD=1\`.
+`;
+}
+
+function quickstartNotes(videoSha256) {
+  const traceParam = quickstartTraceId
+    ? `&trace=${encodeURIComponent(quickstartTraceId)}`
+    : "&kind=llm.call&model=gpt-quickstart";
+  return `# Gate 2 Browser Demo
+
+Recorded from the literal five-line stock OpenTelemetry quickstart trace.
+
+- Artifact: \`gate2-browser-demo.webm\`
+- SHA256: \`${videoSha256}\`
+- Dashboard: \`${baseUrl}/?tenant=demo&project=demo&environment=local${traceParam}\`
+- Shows: trace table, click five-line trace, click \`llm.call\` span, read prompt, completion, model, tokens, cost, and latency.
+
+Regenerate with:
+
+\`\`\`bash
+BEATER_E2E_TRACE_ID=<quickstart-trace-id> BEATER_GATE2_RECORD_MODE=quickstart npm run record:gate2
+\`\`\`
+
+For the Docker Compose stopwatch proof that records the full quickstart plus
+all-kind waterfall flow, run the prebuilt-image path:
+
+\`\`\`bash
+BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1 scripts/gate2-compose-stopwatch.sh
+\`\`\`
 `;
 }
 

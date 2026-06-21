@@ -133,9 +133,10 @@ public outside-run path and images can run, but it is not outside-person
 evidence and does not close this proof file. `--full-run` is intentionally
 supported only for the canonical public GitHub/GHCR handoff, not fixture or fork URLs.
 
-If Docker is unavailable on the maintainer machine, `scripts/check-gate2-public-handoff.py`
-still performs the public clone, exact-commit, wrapper dry-run, proof-structure,
-and multi-arch GHCR-image checks, but it is not a runtime handoff proof.
+If Docker is unavailable on the maintainer machine, run
+`scripts/check-gate2-public-handoff.py` without `--full-run`; that still
+performs the public clone, exact-commit, wrapper dry-run, proof-structure, and
+multi-arch GHCR-image checks, but it is not a runtime handoff proof.
 
 The validator reads the listed stopwatch proof file and screen-recording notes,
 then cross-checks default API/OTLP/dashboard endpoints, clean-start status,

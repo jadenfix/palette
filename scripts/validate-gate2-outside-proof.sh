@@ -267,6 +267,17 @@ def require_ghcr_sha_image_ref(
         fail(f"{name} in {source_name} must be {expected!r}, got {value!r}")
 
 
+def require_terminal_excerpt(value: str, quickstart_url: str, all_kind_url: str) -> None:
+    for snippet, description in [
+        ("Gate 2 compose stopwatch passed", "compose stopwatch pass line"),
+        ("Browser recording: passed", "browser recording pass line"),
+        (quickstart_url, "quickstart dashboard URL"),
+        (all_kind_url, "all-kind dashboard URL"),
+    ]:
+        if snippet not in value:
+            fail(f"Terminal output excerpt must include {description}: {snippet}")
+
+
 def require_default_dashboard_url(name: str, value: str, trace_id: str) -> None:
     parsed = urlparse(value)
     if parsed.scheme != "http" or parsed.netloc != "127.0.0.1:3000":
@@ -902,6 +913,7 @@ quickstart_url = field_value("Quickstart dashboard URL")
 all_kind_url = field_value("All-kind dashboard URL")
 require_default_dashboard_url("Quickstart dashboard URL", quickstart_url, quickstart_trace_id)
 require_default_dashboard_url("All-kind dashboard URL", all_kind_url, all_kind_trace_id)
+require_terminal_excerpt(field_value("Terminal output excerpt"), quickstart_url, all_kind_url)
 
 recording = field_value("Screen recording")
 recording_path = (

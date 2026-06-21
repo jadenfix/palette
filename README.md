@@ -41,7 +41,8 @@ printed quickstart dashboard URL, click the quickstart trace, then click the
 `llm.call` span. You should see the prompt, completion, model, tokens, cost, and
 latency. Then open the printed all-kind dashboard URL and verify the run -> turn
 -> step -> tool -> MCP waterfall. Gate 2 is not closed until someone outside
-the project completes this unaided in 5 minutes or less and fills
+the project reaches the first trace and quickstart browser click unaided in
+5 minutes or less, completes the post-SLO all-kind/recording evidence, and fills
 [docs/demos/gate2-outside-person-proof.md](docs/demos/gate2-outside-person-proof.md).
 
 ## Current State
@@ -290,9 +291,10 @@ render, browser proof, and browser recording work; it is not a substitute for
 the required outside-person proof below. `--full-run` is intentionally supported
 only for the canonical public GitHub/GHCR handoff, not fixture or fork URLs.
 
-If Docker is unavailable on the maintainer machine, `scripts/check-gate2-public-handoff.py`
-still performs the public clone, exact-commit, wrapper dry-run, proof-structure,
-and multi-arch GHCR-image checks, but it is not a runtime handoff proof.
+If Docker is unavailable on the maintainer machine, run
+`scripts/check-gate2-public-handoff.py` without `--full-run`; that still
+performs the public clone, exact-commit, wrapper dry-run, proof-structure, and
+multi-arch GHCR-image checks, but it is not a runtime handoff proof.
 
 Use [docs/demos/gate2-outside-person-proof.md](docs/demos/gate2-outside-person-proof.md)
 as the required evidence template for that run. After the outside runner has
