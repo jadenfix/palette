@@ -11,6 +11,14 @@ node_modules
 npm-debug.log*
 Dockerfile
 docker-compose.yml
+docker-compose.*.yml
+ARCHITECTURE.md
+README.md
+REQUIREMENTS.md
+docs
+examples
+scripts
+web
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal

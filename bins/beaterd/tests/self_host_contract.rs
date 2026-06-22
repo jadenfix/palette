@@ -55,6 +55,23 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(dockerfile.contains("FROM rust-deps AS beaterd-builder"));
     assert!(dockerfile.contains("FROM rust-deps AS beaterctl-builder"));
     assert!(dockerfile.contains("FROM runtime AS tools"));
+    let root_dockerignore = read(root.join(".dockerignore"));
+    for ignored in [
+        "web",
+        "examples",
+        "docs",
+        "scripts",
+        ".github",
+        ".vercel",
+        "README.md",
+        "REQUIREMENTS.md",
+        "docker-compose.*.yml",
+    ] {
+        assert!(
+            dockerignore_ignores(&root_dockerignore, ignored),
+            "root Rust image context should ignore {ignored}"
+        );
+    }
 
     let dashboard_dockerfile = read(root.join("web/dashboard/Dockerfile"));
     assert!(dashboard_dockerfile.contains("npm run build"));
@@ -936,6 +953,13 @@ fn assert_pinned_image(compose: &str, label: &str, image: &str, digest: &str) {
         !compose.lines().any(|line| line.trim() == floating),
         "{label} must not use floating image tag {image}"
     );
+}
+
+fn dockerignore_ignores(dockerignore: &str, pattern: &str) -> bool {
+    dockerignore.lines().any(|line| {
+        let trimmed = line.trim();
+        !trimmed.starts_with('#') && (trimmed == pattern || trimmed == format!("{pattern}/"))
+    })
 }
 
 fn read(path: PathBuf) -> String {
