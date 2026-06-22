@@ -164,6 +164,11 @@ async function recordAllKindFlow(page) {
     .filter({ hasText: "Input" })
     .getByText("Can this order be refunded after 31 days?")
     .waitFor();
+  await detail
+    .locator(".io")
+    .filter({ hasText: "Output" })
+    .getByText("Escalate because the order is outside the standard window.")
+    .waitFor();
   await page.waitForTimeout(reviewDwellMs);
   await tool.click();
   await detail.locator(".io").filter({ hasText: "Input" }).getByText("ord_123").waitFor();

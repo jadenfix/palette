@@ -92,6 +92,7 @@ ALLOW_UNTRACKED_ARTIFACTS = (
     and proof_abs.resolve() != default_proof_abs.resolve()
 )
 REGISTRY_FIXTURE_ENV = "BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS"
+REGISTRY_FIXTURE_TEST_MARKER = ".gate2-registry-fixture-ok-for-tests"
 registry_digest_cache: dict[tuple[str, str], set[str]] = {}
 
 
@@ -345,6 +346,13 @@ def registry_manifest_from_ghcr(image_name: str, commit_sha: str) -> tuple[dict,
 def registry_manifest_for(image_name: str, commit_sha: str) -> tuple[dict, str]:
     fixture = os.environ.get(REGISTRY_FIXTURE_ENV)
     if fixture:
+        test_marker = repo / REGISTRY_FIXTURE_TEST_MARKER
+        if not (diagnostic_mode or ALLOW_UNTRACKED_ARTIFACTS or test_marker.is_file()):
+            fail(
+                f"{REGISTRY_FIXTURE_ENV} is only allowed for diagnostic or "
+                "temporary generator validation, not normal Gate 2 closure"
+            )
+            return {}, ""
         return registry_manifest_from_fixture(image_name, Path(fixture))
     return registry_manifest_from_ghcr(image_name, commit_sha)
 
@@ -484,6 +492,18 @@ def require_runner_observation(
     field_name: str, value: str, required_fragments: list[str]
 ) -> None:
     normalized = value.lower()
+    negated = re.search(
+        r"\b(?:did\s+not|didn't|could\s+not|couldn't|cannot|can't|failed\s+to\s+see|"
+        r"not\s+visible|not\s+shown|not\s+showing|missing|without)\b",
+        normalized,
+    )
+    if negated:
+        fail(f"{field_name} must be a positive observation, not negated evidence")
+    if not re.search(
+        r"\b(?:saw|seen|visible|read|confirmed|verified|opened|clicked|showed|displayed|inspected)\b",
+        normalized,
+    ):
+        fail(f"{field_name} must describe a positive visible observation")
     missing = [
         fragment for fragment in required_fragments if fragment.lower() not in normalized
     ]

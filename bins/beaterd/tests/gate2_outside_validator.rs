@@ -666,7 +666,66 @@ fn gate2_public_handoff_verifier_rejects_missing_quickstart_timing_guard() {
 
     assert_failure(
         output,
-        "README.md must contain timing guard for outside runners",
+        "README.md must contain quickstart handoff guidance for outside runners",
+    );
+}
+
+#[test]
+fn gate2_public_handoff_verifier_rejects_unfiltered_quickstart_handoff_docs() {
+    let registry = tempdir("create registry fixture dir");
+    write_registry_fixtures(registry.path());
+    let fixture_repo = write_public_handoff_fixture_repo();
+    let readme_path = fixture_repo.path().join("README.md");
+    replace(
+        &readme_path,
+        "open that filtered trace-list URL",
+        "open the printed dashboard URL",
+    );
+    git_success(fixture_repo.path(), &["add", "README.md"]);
+    git_success(
+        fixture_repo.path(),
+        &["commit", "-m", "break filtered quickstart guidance"],
+    );
+    let fixture_head = git_output(fixture_repo.path(), &["rev-parse", "HEAD"]);
+    let source_url = format!("file://{}", fixture_repo.path().display());
+
+    let output = run_public_handoff_with_fixture(&source_url, &fixture_head, registry.path());
+
+    assert_failure(
+        output,
+        "README.md must contain quickstart handoff guidance for outside runners",
+    );
+}
+
+#[test]
+fn gate2_public_handoff_verifier_rejects_missing_quickstart_list_url_script() {
+    let registry = tempdir("create registry fixture dir");
+    write_registry_fixtures(registry.path());
+    let fixture_repo = write_public_handoff_fixture_repo();
+    let stopwatch_path = fixture_repo
+        .path()
+        .join("scripts/gate2-compose-stopwatch.sh");
+    replace(
+        &stopwatch_path,
+        "quickstart_list_url=\"$dashboard_base_url/?tenant=demo&project=demo&environment=local&kind=llm.call&model=gpt-quickstart&release=$gate2_run_id\"",
+        "quickstart_list_url=\"$dashboard_url\"",
+    );
+    git_success(
+        fixture_repo.path(),
+        &["add", "scripts/gate2-compose-stopwatch.sh"],
+    );
+    git_success(
+        fixture_repo.path(),
+        &["commit", "-m", "break quickstart list url"],
+    );
+    let fixture_head = git_output(fixture_repo.path(), &["rev-parse", "HEAD"]);
+    let source_url = format!("file://{}", fixture_repo.path().display());
+
+    let output = run_public_handoff_with_fixture(&source_url, &fixture_head, registry.path());
+
+    assert_failure(
+        output,
+        "scripts/gate2-compose-stopwatch.sh must contain quickstart handoff script for outside runners",
     );
 }
 
@@ -1248,6 +1307,12 @@ fn gate2_stopwatch_outside_next_steps_separate_dashboard_targets() {
     assert!(script.contains("quickstart_list_url="));
     assert!(script.contains("kind=llm.call&model=gpt-quickstart&release=$gate2_run_id"));
     assert!(script.contains("Direct quickstart trace URL:"));
+    assert!(script.contains(
+        "run_with_step_timeout \"five-line dashboard browser proof\" compose_run_e2e \"${quickstart_browser_proof_args[@]}\""
+    ));
+    assert!(script.contains(
+        "run_before_deadline \"five-line dashboard browser proof\" compose_run_e2e \"${quickstart_browser_proof_args[@]}\""
+    ));
     assert!(script.contains("Gate 2 recording proof requires ffprobe before the stopwatch starts."));
     assert!(script.contains("If another app is listed below, stop that app before rerunning"));
     assert!(script.contains("do not set\n$env_name for outside-person evidence"));
@@ -2464,6 +2529,18 @@ fn gate2_outside_validator_accepts_evidence_only_ancestor_closure_repo() {
 }
 
 #[test]
+fn gate2_outside_validator_rejects_registry_fixture_env_without_test_marker() {
+    let fixture = write_validator_closure_fixture_repo_with_registry_marker(false);
+
+    let output = run_default_validator_in_repo(fixture.path());
+
+    assert_failure(
+        output,
+        "BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS is only allowed for diagnostic or temporary generator validation",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_dirty_non_evidence_worktree_at_closure() {
     let fixture = write_validator_closure_fixture_repo();
     fs::write(fixture.path().join("source-drift.txt"), "dirty\n")
@@ -2648,6 +2725,23 @@ fn gate2_outside_validator_rejects_weak_llm_observation() {
     assert_failure(
         output,
         "Runner llm.call observation must mention: llm.call, prompt, completion, model, token breakdown, cost, latency",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_negated_llm_observation() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        &format!("- Runner llm.call observation: {LLM_OBSERVATION}"),
+        "- Runner llm.call observation: I did not see llm.call prompt, completion, model, token breakdown, cost, or latency",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Runner llm.call observation must be a positive observation, not negated evidence",
     );
 }
 
@@ -4198,6 +4292,12 @@ fn write_public_handoff_fixture_repo() -> TempDir {
 }
 
 fn write_validator_closure_fixture_repo() -> TempDir {
+    write_validator_closure_fixture_repo_with_registry_marker(true)
+}
+
+fn write_validator_closure_fixture_repo_with_registry_marker(
+    include_registry_marker: bool,
+) -> TempDir {
     let root = repo_root();
     let fixture = tempdir("create validator closure fixture repo");
     copy_fixture_file(
@@ -4205,6 +4305,13 @@ fn write_validator_closure_fixture_repo() -> TempDir {
         fixture.path(),
         "scripts/validate-gate2-outside-proof.sh",
     );
+    if include_registry_marker {
+        fs::write(
+            fixture.path().join(".gate2-registry-fixture-ok-for-tests"),
+            "synthetic validator fixture only\n",
+        )
+        .unwrap_or_else(|err| panic!("write registry fixture marker: {err}"));
+    }
 
     git_success(fixture.path(), &["init"]);
     git_success(
@@ -4268,6 +4375,10 @@ Manual outside-run checkpoint:
   Fixture waits here to prove the diagnostic full-run confirms only after the
   wrapper reaches the timing-critical quickstart browser checkpoint.
 EOF_PROMPT
+# Public handoff contract strings retained for cloned verifier checks.
+# quickstart_list_url="$dashboard_base_url/?tenant=demo&project=demo&environment=local&kind=llm.call&model=gpt-quickstart&release=$gate2_run_id"
+# Direct quickstart trace URL:
+# open $quickstart_list_url in a normal browser for the quickstart trace list
 if ! IFS= read -r _manual_checkpoint_confirmation; then
   echo "missing diagnostic manual checkpoint confirmation" >&2
   exit 42

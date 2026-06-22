@@ -503,13 +503,15 @@ def clone_repo(
     return clone_dir, temp_owner, clone_started_epoch
 
 
-def require_file_contains(clone_dir: Path, rel: str, snippets: list[str]) -> None:
+def require_file_contains(
+    clone_dir: Path, rel: str, snippets: list[str], *, contract: str
+) -> None:
     path = clone_dir / rel
     text = path.read_text()
     for snippet in snippets:
         if snippet not in text:
             raise SystemExit(
-                f"{rel} must contain timing guard for outside runners: {snippet!r}"
+                f"{rel} must contain {contract} for outside runners: {snippet!r}"
             )
 
 
@@ -519,16 +521,20 @@ def require_public_handoff_timing_guard(clone_dir: Path) -> None:
         "README.md",
         [
             "As soon as the first `Open the dashboard:` quickstart URL appears",
+            "open that filtered trace-list URL",
             "not wait for the script to finish",
         ],
+        contract="quickstart handoff guidance",
     )
     require_file_contains(
         clone_dir,
         "docs/demos/gate2-outside-person-proof.md",
         [
             "As soon as the first `Open the dashboard:` quickstart URL appears",
+            "filtered trace-list URL",
             "do not wait for the script to finish",
         ],
+        contract="quickstart handoff guidance",
     )
     require_file_contains(
         clone_dir,
@@ -536,7 +542,11 @@ def require_public_handoff_timing_guard(clone_dir: Path) -> None:
         [
             "Open the quickstart URL above in a normal browser now",
             "do not wait for the script to finish",
+            'quickstart_list_url="$dashboard_base_url/?tenant=demo&project=demo&environment=local&kind=llm.call&model=gpt-quickstart&release=$gate2_run_id"',
+            "open $quickstart_list_url in a normal browser for the quickstart trace list",
+            "Direct quickstart trace URL:",
         ],
+        contract="quickstart handoff script",
     )
 
 
