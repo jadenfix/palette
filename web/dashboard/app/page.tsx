@@ -89,6 +89,7 @@ export default async function DashboardPage({
   const spanSummaryTone = failedSpanCount > 0 ? "error" : "structure";
   const tokenTotal = spans.reduce((total, span) => total + spanTokenTotal(span), 0);
   const activeFilters = filterChips(data.query);
+  const advancedFilterTotal = advancedFilterCount(data.query);
   const traceLabel = traceBreadcrumbLabel(data.query.traceId, data.trace?.trace_id);
   const traceInputPlaceholder = tracePlaceholder(data.trace?.trace_id);
 
@@ -245,10 +246,16 @@ export default async function DashboardPage({
               Reset
             </Link>
           </div>
-          <details className="advanced-filters" open={advancedFiltersActive(data.query)}>
+          <details
+            className="advanced-filters"
+            data-active={advancedFilterTotal > 0 ? "true" : undefined}
+          >
             <summary>
               <SlidersHorizontal aria-hidden="true" />
-              Advanced filters
+              <span>Advanced filters</span>
+              <strong>
+                {advancedFilterTotal > 0 ? `${advancedFilterTotal} active` : "optional"}
+              </strong>
             </summary>
             <div className="filter-secondary">
               <label>
@@ -511,17 +518,17 @@ function SummaryItem({
   );
 }
 
-function advancedFiltersActive(query: DashboardQuery): boolean {
-  return Boolean(
-    query.startedAfter ||
-      query.startedBefore ||
-      query.model ||
-      query.release ||
-      query.minCostMicros !== undefined ||
-      query.maxCostMicros !== undefined ||
-      query.minLatencyMs !== undefined ||
-      query.maxLatencyMs !== undefined
-  );
+function advancedFilterCount(query: DashboardQuery): number {
+  return [
+    query.startedAfter,
+    query.startedBefore,
+    query.model,
+    query.release,
+    query.minCostMicros,
+    query.maxCostMicros,
+    query.minLatencyMs,
+    query.maxLatencyMs
+  ].filter((filter) => filter !== undefined && filter !== "").length;
 }
 
 function SpanDetail({
@@ -562,6 +569,35 @@ function SpanDetail({
         </div>
         <span className={`status ${span.status}`}>{statusLabel(span.status)}</span>
       </div>
+      <dl className="span-proof-strip" aria-label="Selected span essentials">
+        <div>
+          <dt>Model</dt>
+          <dd>{span.model ? `${span.model.provider}/${span.model.name}` : "none"}</dd>
+        </div>
+        <div>
+          <dt>Tokens</dt>
+          <dd>{spanTokenSummary(span)}</dd>
+        </div>
+        <div>
+          <dt>Cost</dt>
+          <dd>{formatCost(span.cost)}</dd>
+        </div>
+        <div>
+          <dt>Latency</dt>
+          <dd>{formatDuration(span.start_time, span.end_time)}</dd>
+        </div>
+      </dl>
+      <RedactionControls span={span} query={query} hasRedactedIo={hasRedactedIo} />
+      <section className="detail-section" aria-label="Span I/O">
+        <div className="detail-section-head">
+          <h3>I/O</h3>
+          <span>{ioVisibilityLabel(hasRedactedIo, query.unmask)}</span>
+        </div>
+        <div className="io-grid">
+          <IoBlock label={ioLabels.input} value={io?.input} />
+          <IoBlock label={ioLabels.output} value={io?.output} />
+        </div>
+      </section>
       <div className="span-path" aria-label="Selected span path">
         <span className="span-path-label">Path</span>
         {ancestry.map((node, index) => (
@@ -612,17 +648,6 @@ function SpanDetail({
           <dd>{span.end_time ? formatTimestamp(span.end_time) : "open"}</dd>
         </div>
       </dl>
-      <RedactionControls span={span} query={query} hasRedactedIo={hasRedactedIo} />
-      <section className="detail-section" aria-label="Span I/O">
-        <div className="detail-section-head">
-          <h3>I/O</h3>
-          <span>{ioVisibilityLabel(hasRedactedIo, query.unmask)}</span>
-        </div>
-        <div className="io-grid">
-          <IoBlock label={ioLabels.input} value={io?.input} />
-          <IoBlock label={ioLabels.output} value={io?.output} />
-        </div>
-      </section>
       <section className="detail-section" aria-label="Artifact references">
         <div className="detail-section-head">
           <h3>Artifacts</h3>

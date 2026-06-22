@@ -22,6 +22,9 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   await expect(summary.locator(".summary-item").filter({ hasText: "Spans" })).toContainText(
     "no failures"
   );
+  const expectedAdvancedFilters = traceParam.includes("model=") ? "2 active" : "optional";
+  await expect(page.locator(".advanced-filters summary")).toContainText(expectedAdvancedFilters);
+  await expect(page.locator(".filter-secondary")).not.toBeVisible();
 
   const waterfall = page.getByLabel("Agent span waterfall");
   for (const kind of [
@@ -139,6 +142,19 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   await expect(detail).toContainText("openai/gpt-demo");
   await expect(detail).toContainText("Tokens");
   await expect(detail).toContainText("33 total, 18 prompt, 11 completion, 4 reasoning");
+  const essentials = detail.getByLabel("Selected span essentials");
+  await expect(essentials.locator("div").filter({ hasText: "Model" })).toContainText(
+    "openai/gpt-demo"
+  );
+  await expect(essentials.locator("div").filter({ hasText: "Tokens" })).toContainText(
+    "33 total, 18 prompt, 11 completion, 4 reasoning"
+  );
+  await expect(essentials.locator("div").filter({ hasText: "Cost" })).toContainText(
+    "USD 0.002500"
+  );
+  await expect(essentials.locator("div").filter({ hasText: "Latency" })).toContainText(
+    /(?:\d+ ms|\d+\.\d+ s)/
+  );
   await expect(
     detail.getByLabel("Span metrics").locator("div").filter({ hasText: "Latency" })
   ).toContainText(/(?:\d+ ms|\d+\.\d+ s)/);
@@ -154,6 +170,17 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   await expect(detail.getByLabel("Completion I/O").locator("pre")).toHaveText(
     "Escalate because the order is outside the standard window."
   );
+  const proofOrder = await detail.evaluate((node) => {
+    const essentialsNode = node.querySelector(".span-proof-strip");
+    const ioNode = node.querySelector('[aria-label="Span I/O"]');
+    const pathNode = node.querySelector('[aria-label="Selected span path"]');
+    if (!essentialsNode || !ioNode || !pathNode) return null;
+    return {
+      essentialsBeforePath: Boolean(essentialsNode.compareDocumentPosition(pathNode) & 4),
+      ioBeforePath: Boolean(ioNode.compareDocumentPosition(pathNode) & 4)
+    };
+  });
+  expect(proofOrder).toEqual({ essentialsBeforePath: true, ioBeforePath: true });
   await expect(detail).toContainText("Can this order be refunded after 31 days?");
   await expect(detail).toContainText("Escalate because the order is outside the standard window.");
 

@@ -461,6 +461,23 @@ dt {
   padding: 5px 2px 3px;
 }
 
+.advanced-filters summary strong {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 7px;
+  text-transform: uppercase;
+}
+
+.advanced-filters[data-active="true"] summary strong {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--line));
+  color: var(--accent-ink);
+}
+
 .advanced-filters summary svg {
   height: 13px;
   stroke-width: 2.1;
@@ -1310,6 +1327,37 @@ button:hover {
   grid-column: 1 / -1;
 }
 
+.span-proof-strip {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  overflow: hidden;
+}
+
+.span-proof-strip div {
+  background: #f8fafb;
+  border-right: 1px solid var(--line);
+  display: grid;
+  gap: 4px;
+  min-height: 48px;
+  min-width: 0;
+  padding: 8px 9px;
+}
+
+.span-proof-strip div:last-child {
+  border-right: 0;
+}
+
+.span-proof-strip dd {
+  font-size: 12px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 dd {
   color: var(--ink);
   font-size: 13px;
@@ -1697,6 +1745,18 @@ pre {
 
   .metrics div:nth-last-child(2) {
     border-bottom: 1px solid var(--line);
+  }
+
+  .span-proof-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .span-proof-strip div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .span-proof-strip div:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
   }
 
   .span-identity {

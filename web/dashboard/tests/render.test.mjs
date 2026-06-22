@@ -96,6 +96,11 @@ test("dashboard page exposes the trace inspection surface", () => {
   assert.match(page, /data-outside-filters/);
   assert.match(page, /aria-current=\{isSelected \? "location" : undefined\}/);
   assert.match(page, /aria-label="Selected span path"/);
+  assert.match(page, /advancedFilterCount/);
+  assert.doesNotMatch(page, /advancedFiltersActive/);
+  assert.match(page, /data-active=\{advancedFilterTotal > 0 \? "true" : undefined\}/);
+  assert.match(page, /aria-label="Selected span essentials"/);
+  assert.match(page, /className="span-proof-strip"/);
   assert.match(page, /aria-label="Span metrics"/);
   assert.match(page, /aria-label=\{`\$\{label\} I\/O`\}/);
   assert.match(page, /spanAncestry/);
@@ -133,6 +138,7 @@ test("dashboard chrome stays dense and tool-like", () => {
   assert.match(css, /\.summary-item\.tone-release::before/);
   assert.match(css, /\.query-chip/);
   assert.match(css, /\.query-chips:empty/);
+  assert.match(css, /\.advanced-filters\[data-active="true"\] summary strong/);
   assert.match(css, /\.filter-reset/);
   assert.match(css, /\.span-detail \{\n  align-self: start;/);
   assert.match(css, /\.run-state/);
@@ -156,6 +162,8 @@ test("dashboard chrome stays dense and tool-like", () => {
   assert.match(css, /\.span-path \{/);
   assert.match(css, /\.path-node\.llm \{/);
   assert.match(css, /\.path-node strong \{/);
+  assert.match(css, /\.span-proof-strip \{/);
+  assert.match(css, /\.span-proof-strip dd \{/);
   assert.match(css, /\.span-track \{/);
   assert.match(css, /left: var\(--offset\);/);
   assert.match(css, /background: var\(--kind-color\);/);
@@ -626,6 +634,7 @@ test("browser proof covers all canonical span kinds and can record a demo", () =
   assert.match(quickstart, /data-icon/);
   assert.match(quickstart, /Selected span path/);
   assert.match(quickstart, /12 total, 5 prompt, 7 completion/);
+  assert.match(quickstart, /Selected span essentials/);
   assert.match(quickstart, /Span metrics/);
   assert.match(quickstart, /Latency/);
 });

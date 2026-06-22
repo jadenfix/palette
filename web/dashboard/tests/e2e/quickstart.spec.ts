@@ -7,6 +7,10 @@ test("renders the five-line stock OTLP quickstart trace in a browser", async ({ 
   await page.goto(`/?tenant=demo&project=demo&environment=local&kind=llm.call&model=gpt-quickstart${releaseParam}`);
 
   await expect(page.getByRole("heading", { name: "Agent Trace Debugger" })).toBeVisible();
+  await expect(page.locator(".advanced-filters summary")).toContainText(
+    release ? "2 active" : "1 active"
+  );
+  await expect(page.locator(".filter-secondary")).not.toBeVisible();
   const traceList = page.getByLabel("Traces");
   await expect(traceList).toContainText("five-line-llm-call");
   await expect(traceList).toContainText("openai/gpt-quickstart");
@@ -42,6 +46,19 @@ test("renders the five-line stock OTLP quickstart trace in a browser", async ({ 
   await expect(detail).toContainText("openai/gpt-quickstart");
   await expect(detail).toContainText("Tokens");
   await expect(detail).toContainText("12 total, 5 prompt, 7 completion");
+  const essentials = detail.getByLabel("Selected span essentials");
+  await expect(essentials.locator("div").filter({ hasText: "Model" })).toContainText(
+    "openai/gpt-quickstart"
+  );
+  await expect(essentials.locator("div").filter({ hasText: "Tokens" })).toContainText(
+    "12 total, 5 prompt, 7 completion"
+  );
+  await expect(essentials.locator("div").filter({ hasText: "Cost" })).toContainText(
+    "USD 0.001200"
+  );
+  await expect(essentials.locator("div").filter({ hasText: "Latency" })).toContainText(
+    /(?:\d+ ms|\d+\.\d+ s)/
+  );
   await expect(
     detail.getByLabel("Span metrics").locator("div").filter({ hasText: "Latency" })
   ).toContainText(/(?:\d+ ms|\d+\.\d+ s)/);
