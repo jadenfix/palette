@@ -174,6 +174,8 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(gate2_workflow.contains("pull_request:"));
     assert!(gate2_workflow.contains("permissions:"));
     assert!(gate2_workflow.contains("contents: read"));
+    assert!(gate2_workflow.contains("CARGO_NET_RETRY: \"10\""));
+    assert!(gate2_workflow.contains("CARGO_HTTP_MULTIPLEXING: \"false\""));
     assert!(gate2_workflow.contains("cargo fmt --all -- --check"));
     assert!(gate2_workflow.contains("bash -n \"$script\""));
     for script in [
@@ -210,6 +212,8 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(dashboard_workflow.contains("branches: [main]"));
     assert!(dashboard_workflow.contains("workflow_dispatch:"));
     assert!(dashboard_workflow.contains("contents: read"));
+    assert!(dashboard_workflow.contains("CARGO_NET_RETRY: \"10\""));
+    assert!(dashboard_workflow.contains("CARGO_HTTP_MULTIPLEXING: \"false\""));
     assert!(dashboard_workflow.contains("timeout-minutes: 20"));
     assert!(dashboard_workflow.contains("live-browser-proof:"));
     assert!(dashboard_workflow.contains("timeout-minutes: 25"));
@@ -238,6 +242,8 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(gate1_live_workflow.contains("branches: [main]"));
     assert!(gate1_live_workflow.contains("workflow_dispatch:"));
     assert!(gate1_live_workflow.contains("contents: read"));
+    assert!(gate1_live_workflow.contains("CARGO_NET_RETRY: \"10\""));
+    assert!(gate1_live_workflow.contains("CARGO_HTTP_MULTIPLEXING: \"false\""));
     assert!(gate1_live_workflow.contains("timeout-minutes: 20"));
     assert!(gate1_live_workflow.contains("Gate 1 live runtime smoke"));
     assert!(
