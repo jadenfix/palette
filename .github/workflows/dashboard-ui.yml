@@ -49,6 +49,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     needs: verify
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -75,9 +77,7 @@ jobs:
         working-directory: web/dashboard
         run: npm ci
 
-      - name: Install Playwright browser dependencies
-        working-directory: web/dashboard
-        run: npx playwright install --with-deps chromium
-
       - name: Run Gate 2 live browser proof
+        env:
+          BEATER_GATE2_SKIP_PLAYWRIGHT_INSTALL: "1"
         run: scripts/gate2-proof.sh

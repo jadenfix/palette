@@ -214,6 +214,8 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(dashboard_workflow.contains("live-browser-proof:"));
     assert!(dashboard_workflow.contains("timeout-minutes: 25"));
     assert!(dashboard_workflow.contains("needs: verify"));
+    assert!(dashboard_workflow.contains("container:"));
+    assert!(dashboard_workflow.contains("image: mcr.microsoft.com/playwright:v1.57.0-noble"));
     assert!(dashboard_workflow.contains("actions/setup-node@v4"));
     assert!(dashboard_workflow.contains("actions/setup-python@v5"));
     assert!(dashboard_workflow.contains("node-version: 24"));
@@ -225,9 +227,10 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(dashboard_workflow.contains("scripts/check-openapi-drift.sh"));
     assert!(dashboard_workflow.contains("npm test"));
     assert!(dashboard_workflow.contains("npm run build"));
-    assert!(dashboard_workflow.contains("npx playwright install --with-deps chromium"));
     assert!(dashboard_workflow.contains("scripts/gate2-proof.sh"));
+    assert!(dashboard_workflow.contains("BEATER_GATE2_SKIP_PLAYWRIGHT_INSTALL: \"1\""));
     assert!(!dashboard_workflow.contains("BEATER_GATE2_SKIP_BROWSER"));
+    assert!(!dashboard_workflow.contains("npx playwright install --with-deps chromium"));
 
     let gate1_live_workflow = read(root.join(".github/workflows/gate1-live-smoke.yml"));
     assert!(gate1_live_workflow.contains("pull_request:"));
@@ -379,6 +382,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(proof_script.contains("npm run test:e2e:quickstart"));
     assert!(proof_script.contains("npm run record:gate2"));
     assert!(proof_script.contains("scripts/check-openapi-drift.sh"));
+    assert!(proof_script.contains("BEATER_GATE2_SKIP_PLAYWRIGHT_INSTALL"));
 
     let stopwatch_script = read(root.join("scripts/gate2-compose-stopwatch.sh"));
     assert!(stopwatch_script.contains("docker compose"));

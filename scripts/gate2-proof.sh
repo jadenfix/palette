@@ -177,7 +177,9 @@ done
 if [[ "${BEATER_GATE2_SKIP_BROWSER:-0}" != "1" ]]; then
   (
     cd "$root/web/dashboard"
-    npx playwright install chromium
+    if [[ "${BEATER_GATE2_SKIP_PLAYWRIGHT_INSTALL:-0}" != "1" ]]; then
+      npx playwright install chromium
+    fi
     BEATER_E2E_TRACE_ID="$python_trace_id" PLAYWRIGHT_BASE_URL="$dashboard_url" \
       npx playwright test tests/e2e/dashboard.spec.ts
     BEATER_E2E_QUICKSTART_TRACE_ID="$quickstart_trace_id" PLAYWRIGHT_BASE_URL="$dashboard_url" \
