@@ -638,9 +638,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("https://github.com/jadenfix/beater.git"));
     assert!(public_handoff.contains("RAW_PUBLIC_PREFLIGHT_COMMAND"));
     assert!(public_handoff.contains("RAW_PREFLIGHT_URL"));
-    assert!(public_handoff.contains(
-        "https://raw.githubusercontent.com/jadenfix/beater/main/"
-    ));
+    assert!(public_handoff.contains("https://raw.githubusercontent.com/jadenfix/beater/main/"));
     assert!(public_handoff.contains("scripts/gate2-outside-local-preflight.sh"));
     assert!(public_handoff.contains("\"bash\", \"-o\", \"pipefail\", \"-lc\""));
     assert!(public_handoff.contains("run_raw_public_preflight(args)"));
