@@ -636,7 +636,14 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("playable WebM capture of at least 64 KiB"));
     assert!(outside_proof.contains("EBML/WebM, Segment, Info,"));
     assert!(outside_proof.contains("must not resolve through symlinks"));
-    for fragment in ["prompt", "completion", "model", "tokens", "cost", "latency"] {
+    for fragment in [
+        "prompt",
+        "completion",
+        "model",
+        "token breakdown",
+        "cost",
+        "latency",
+    ] {
         assert!(outside_proof.contains(fragment));
     }
     assert!(outside_proof.contains("SHA256 against the committed artifact"));
@@ -786,6 +793,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(record_script.contains("createHash(\"sha256\")"));
     assert!(record_script.contains("docs/demos"));
     assert!(record_script.contains("gate2-browser-demo.webm"));
+    assert!(record_script.contains("token breakdown"));
+    assert!(record_script.contains("12 total, 5 prompt, 7 completion"));
+    assert!(record_script.contains("33 total, 18 prompt, 11 completion, 4 reasoning"));
 
     let compose_recording_notes = read(root.join("docs/demos/gate2-compose-browser-demo.md"));
     assert!(compose_recording_notes.contains("# Gate 2 Compose Browser Demo"));
@@ -815,6 +825,13 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(quickstart_e2e.contains("hello from stock OpenTelemetry"));
     assert!(quickstart_e2e.contains("hello from Beater"));
     assert!(quickstart_e2e.contains("data-icon"));
+    assert!(quickstart_e2e.contains("12 total, 5 prompt, 7 completion"));
+    assert!(quickstart_e2e.contains("Span metrics"));
+    assert!(quickstart_e2e.contains("Latency"));
+
+    let readme = read(root.join("README.md"));
+    assert!(readme.contains("As soon as the first `Open the dashboard:` quickstart URL appears"));
+    assert!(readme.contains("not wait for the script to finish"));
 }
 
 fn repo_root() -> PathBuf {

@@ -99,7 +99,14 @@ async function recordQuickstartFlow(page) {
   await llm.click();
   const detail = page.getByLabel("Span detail");
   await detail.getByText("openai/gpt-quickstart").waitFor();
+  await detail.getByText("12 total, 5 prompt, 7 completion").waitFor();
   await detail.getByText("USD 0.001200").waitFor();
+  await detail
+    .getByLabel("Span metrics")
+    .locator("div")
+    .filter({ hasText: "Latency" })
+    .getByText(/(?:\d+ ms|\d+\.\d+ s)/)
+    .waitFor();
   await detail
     .locator(".io")
     .filter({ hasText: "Input" })
@@ -141,6 +148,15 @@ async function recordAllKindFlow(page) {
   await requireAttribute(mcp.locator(".kind-icon"), "data-icon", "mcp");
   await llm.click();
   const detail = page.getByLabel("Span detail");
+  await detail.getByText("openai/gpt-demo").waitFor();
+  await detail.getByText("33 total, 18 prompt, 11 completion, 4 reasoning").waitFor();
+  await detail.getByText("USD 0.002500").waitFor();
+  await detail
+    .getByLabel("Span metrics")
+    .locator("div")
+    .filter({ hasText: "Latency" })
+    .getByText(/(?:\d+ ms|\d+\.\d+ s)/)
+    .waitFor();
   await detail
     .locator(".io")
     .filter({ hasText: "Input" })
@@ -167,7 +183,7 @@ Recorded from the stock OpenTelemetry Python trace produced by \`examples/python
 - Artifact: \`gate2-browser-demo.webm\`
 - SHA256: \`${videoSha256}\`
 - Dashboard: \`${baseUrl}/?tenant=demo&project=demo&environment=local${traceParam}\`
-- Shows: trace table, color/icon-coded all-kind agent waterfall, run -> turn -> step -> tool -> MCP nesting, \`llm.call\` prompt/completion/model/tokens/cost/latency, and tool-call I/O.
+- Shows: trace table, color/icon-coded all-kind agent waterfall, run -> turn -> step -> tool -> MCP nesting, \`llm.call\` prompt/completion/model/token breakdown/cost/latency, and tool-call I/O.
 
 Regenerate with:
 
@@ -197,7 +213,7 @@ Recorded from the literal five-line stock OpenTelemetry quickstart trace.
 - Artifact: \`gate2-browser-demo.webm\`
 - SHA256: \`${videoSha256}\`
 - Dashboard: \`${baseUrl}/?tenant=demo&project=demo&environment=local${traceParam}\`
-- Shows: trace table, click five-line trace, click \`llm.call\` span, read prompt, completion, model, tokens, cost, and latency.
+- Shows: trace table, click five-line trace, click \`llm.call\` span, read prompt, completion, model, token breakdown, cost, and latency.
 
 Regenerate with:
 
@@ -233,7 +249,7 @@ stock OpenTelemetry quickstart and the all-kind stock OpenTelemetry agent trace.
 - Dashboard base: \`${publicDashboardBase}\`
 - Quickstart trace: \`${quickstartTrace}\`
 - All-kind trace: \`${allKindTrace}\`
-- Shows: open dashboard -> click five-line trace -> click \`llm.call\` span -> read prompt, completion, model, tokens, cost, and latency -> inspect run -> turn -> step -> tool -> MCP waterfall.
+- Shows: open dashboard -> click five-line trace -> click \`llm.call\` span -> read prompt, completion, model, token breakdown, cost, and latency -> inspect run -> turn -> step -> tool -> MCP waterfall.
 
 ${portNote}
 

@@ -325,7 +325,7 @@ def require_recording_shows_full_flow(notes_text: str) -> None:
         "prompt",
         "completion",
         "model",
-        "tokens",
+        "token breakdown",
         "cost",
         "latency",
         "run -> turn -> step -> tool -> MCP",
@@ -1049,7 +1049,7 @@ require_terminal_excerpt(field_value("Terminal output excerpt"), quickstart_url,
 require_runner_observation(
     "Runner llm.call observation",
     field_value("Runner llm.call observation"),
-    ["llm.call", "prompt", "completion", "model", "tokens", "cost", "latency"],
+    ["llm.call", "prompt", "completion", "model", "token breakdown", "cost", "latency"],
 )
 require_runner_observation(
     "Runner waterfall observation",

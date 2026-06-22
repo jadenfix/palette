@@ -17,7 +17,7 @@ const DASHBOARD_E2E_IMAGE_DIGEST: &str =
 const OTEL_PYTHON_IMAGE_DIGEST: &str =
     "ghcr.io/jadenfix/beater/otel-python@sha256:abababababababababababababababababababababababababababababababab";
 const LLM_OBSERVATION: &str =
-    "clicked llm.call and saw prompt, completion, model, tokens, cost, and latency";
+    "clicked llm.call and saw prompt, completion, model, token breakdown, cost, and latency";
 const WATERFALL_OBSERVATION: &str =
     "opened all-kind trace and saw run -> turn -> step -> tool -> MCP nesting";
 const OUTSIDE_RUN_ATTESTATION: &str = "I attest that I am not a Beater project maintainer, I received no step-by-step help beyond public repository instructions, I used a fresh clone, and I completed the Gate 2 flow unaided.";
@@ -69,9 +69,8 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     let readme = fs::read_to_string(root.join("README.md"))
         .unwrap_or_else(|err| panic!("read README.md: {err}"));
     assert!(readme.contains(r#"git clone https://github.com/jadenfix/beater.git && cd beater &&"#));
-    assert!(readme.contains(
-        "reaches the first trace and quickstart browser click unaided in\n5 minutes or less"
-    ));
+    assert!(readme
+        .contains("project reaches the first trace and quickstart browser click unaided in 5"));
     assert!(readme.contains("`scripts/check-gate2-public-handoff.py` without `--full-run`"));
     assert!(readme.contains("and `python3` 3.9+; local ports"));
     assert!(readme.contains("`ffprobe`, `shasum` or `sha256sum`"));
@@ -586,6 +585,33 @@ fn gate2_public_handoff_verifier_rejects_missing_ffprobe_from_cloned_wrapper() {
 }
 
 #[test]
+fn gate2_public_handoff_verifier_rejects_missing_quickstart_timing_guard() {
+    let registry = tempdir("create registry fixture dir");
+    write_registry_fixtures(registry.path());
+    let fixture_repo = write_public_handoff_fixture_repo();
+    let readme_path = fixture_repo.path().join("README.md");
+    replace(
+        &readme_path,
+        "not wait for the script to finish",
+        "wait for the script to finish",
+    );
+    git_success(fixture_repo.path(), &["add", "README.md"]);
+    git_success(
+        fixture_repo.path(),
+        &["commit", "-m", "break quickstart timing guard"],
+    );
+    let fixture_head = git_output(fixture_repo.path(), &["rev-parse", "HEAD"]);
+    let source_url = format!("file://{}", fixture_repo.path().display());
+
+    let output = run_public_handoff_with_fixture(&source_url, &fixture_head, registry.path());
+
+    assert_failure(
+        output,
+        "README.md must contain timing guard for outside runners",
+    );
+}
+
+#[test]
 fn gate2_public_handoff_verifier_clears_post_slo_timeout_override() {
     let registry = tempdir("create registry fixture dir");
     write_registry_fixtures(registry.path());
@@ -1039,10 +1065,15 @@ fn gate2_stopwatch_outside_next_steps_separate_dashboard_targets() {
     let script = fs::read_to_string(repo_root().join("scripts/gate2-compose-stopwatch.sh"))
         .unwrap_or_else(|err| panic!("read Gate 2 compose stopwatch script: {err}"));
 
-    assert!(script.contains("Open $dashboard_url in a normal browser for the quickstart trace."));
+    assert!(script.contains("Open the quickstart URL above in a normal browser now"));
+    assert!(script.contains("do not wait for the script to finish"));
     assert!(script.contains("Gate 2 recording proof requires ffprobe before the stopwatch starts."));
-    assert!(script
-        .contains("Confirm prompt, completion, model, tokens, cost, and latency are visible."));
+    assert!(script.contains(
+        "Confirm prompt, completion, model, token breakdown, cost, and latency are visible."
+    ));
+    assert!(script.contains(
+        "If you have not already done so, open $dashboard_url in a normal browser for the quickstart trace."
+    ));
     assert!(script.contains(
         "Open ${all_kind_dashboard_url:-not requested} in a normal browser for the all-kind waterfall."
     ));
@@ -2290,7 +2321,7 @@ fn gate2_outside_validator_rejects_weak_llm_observation() {
 
     assert_failure(
         output,
-        "Runner llm.call observation must mention: llm.call, prompt, completion, model, tokens, cost, latency",
+        "Runner llm.call observation must mention: llm.call, prompt, completion, model, token breakdown, cost, latency",
     );
 }
 
@@ -2333,8 +2364,25 @@ fn gate2_outside_validator_rejects_recording_notes_without_full_gate2_flow() {
     let fixture = ValidatorFixture::new();
     replace(
         &fixture.notes_path,
-        "read prompt, completion, model, tokens, cost, and latency -> ",
+        "read prompt, completion, model, token breakdown, cost, and latency -> ",
         "",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "screen recording notes Shows must describe the full Gate 2 flow",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_recording_notes_with_generic_tokens_only() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.notes_path,
+        "read prompt, completion, model, token breakdown, cost, and latency -> ",
+        "read prompt, completion, model, tokens, cost, and latency -> ",
     );
 
     let output = run_validator(&fixture.proof_path);
@@ -2728,7 +2776,7 @@ The runner completed the flow using only public repository instructions.
 - [x] Time-to-first-trace includes clone time.
 - [x] Time-to-quickstart-click was 300 seconds or less.
 - [x] The five-line stock OpenTelemetry trace appeared in `localhost:3000`.
-- [x] Clicking the `llm.call` span showed prompt, completion, model, tokens, cost, and latency.
+- [x] Clicking the `llm.call` span showed prompt, completion, model, token breakdown, cost, and latency.
 - [x] The all-kind trace rendered run -> turn -> step -> tool -> MCP nesting in the waterfall.
 - [x] The browser proof passed for both the quickstart trace and all-kind waterfall.
 - [x] The stopwatch script generated and reported the browser recording.
@@ -2821,7 +2869,7 @@ fn recording_notes(recording_name: &str) -> String {
 - Dashboard base: `http://127.0.0.1:3000`
 - Quickstart trace: `{QUICKSTART_TRACE}`
 - All-kind trace: `{ALL_KIND_TRACE}`
-- Shows: open dashboard -> click five-line trace -> click `llm.call` span -> read prompt, completion, model, tokens, cost, and latency -> inspect run -> turn -> step -> tool -> MCP waterfall.
+- Shows: open dashboard -> click five-line trace -> click `llm.call` span -> read prompt, completion, model, token breakdown, cost, and latency -> inspect run -> turn -> step -> tool -> MCP waterfall.
 "#
     )
 }
@@ -3596,6 +3644,7 @@ fn write_public_handoff_fixture_repo() -> TempDir {
         "scripts/smoke-compose.sh",
         "scripts/generate-gate2-outside-proof.py",
         "scripts/validate-gate2-outside-proof.sh",
+        "README.md",
         "docker-compose.yml",
         "docker-compose.prebuilt.yml",
         "docs/demos/gate2-outside-person-proof.md",
@@ -3677,6 +3726,7 @@ fn write_stopwatch_env_stub(repo: &Path) {
         r#"#!/usr/bin/env bash
 set -euo pipefail
 {
+  echo "Open the quickstart URL above in a normal browser now; do not wait for the script to finish."
   echo "write=${BEATER_GATE2_WRITE_PROOF:-unset}"
   echo "browser=${BEATER_GATE2_BROWSER_PROOF:-unset}"
   echo "record=${BEATER_GATE2_RECORD_DEMO:-unset}"

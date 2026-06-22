@@ -402,6 +402,43 @@ def clone_repo(
     return clone_dir, temp_owner, clone_started_epoch
 
 
+def require_file_contains(clone_dir: Path, rel: str, snippets: list[str]) -> None:
+    path = clone_dir / rel
+    text = path.read_text()
+    for snippet in snippets:
+        if snippet not in text:
+            raise SystemExit(
+                f"{rel} must contain timing guard for outside runners: {snippet!r}"
+            )
+
+
+def require_public_handoff_timing_guard(clone_dir: Path) -> None:
+    require_file_contains(
+        clone_dir,
+        "README.md",
+        [
+            "As soon as the first `Open the dashboard:` quickstart URL appears",
+            "not wait for the script to finish",
+        ],
+    )
+    require_file_contains(
+        clone_dir,
+        "docs/demos/gate2-outside-person-proof.md",
+        [
+            "As soon as the first `Open the dashboard:` quickstart URL appears",
+            "do not wait for the script to finish",
+        ],
+    )
+    require_file_contains(
+        clone_dir,
+        "scripts/gate2-compose-stopwatch.sh",
+        [
+            "Open the quickstart URL above in a normal browser now",
+            "do not wait for the script to finish",
+        ],
+    )
+
+
 def run_cloned_checks(args: argparse.Namespace, clone_dir: Path) -> None:
     registry_fixture = str(Path(args.registry_fixture).resolve()) if args.registry_fixture else None
 
@@ -423,6 +460,7 @@ def run_cloned_checks(args: argparse.Namespace, clone_dir: Path) -> None:
     )
     for script in GATE2_SHELL_SCRIPTS:
         run(["bash", "-n", script], cwd=clone_dir)
+    require_public_handoff_timing_guard(clone_dir)
 
     readiness = ["scripts/check-gate2-outside-readiness.py"]
     if args.source_url != REMOTE_URL or fixture_full_run_enabled(args):

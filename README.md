@@ -37,13 +37,15 @@ bash -lc 't="$(date +%s)" && git clone https://github.com/jadenfix/beater.git &&
 ```
 
 Run it from a directory that does not already contain `beater/`; reruns should
-start from a new or empty parent directory. When the script finishes, open the
-printed quickstart dashboard URL, click the quickstart trace, then click the
-`llm.call` span. You should see the prompt, completion, model, tokens, cost, and
-latency. Then open the printed all-kind dashboard URL and verify the run -> turn
--> step -> tool -> MCP waterfall. Gate 2 is not closed until someone outside
-the project reaches the first trace and quickstart browser click unaided in
-5 minutes or less, completes the post-SLO all-kind/recording evidence, and fills
+start from a new or empty parent directory. As soon as the first
+`Open the dashboard:` quickstart URL appears, open it in a normal browser; do
+not wait for the script to finish. Click the quickstart trace, then click the
+`llm.call` span. You should see the prompt, completion, model, token breakdown,
+cost, and latency. Then keep the script running for the post-SLO all-kind and
+recording evidence, open the printed all-kind dashboard URL, and verify the run
+-> turn -> step -> tool -> MCP waterfall. Gate 2 is not closed until someone outside the
+project reaches the first trace and quickstart browser click unaided in 5
+minutes or less, completes the post-SLO all-kind/recording evidence, and fills
 [docs/demos/gate2-outside-person-proof.md](docs/demos/gate2-outside-person-proof.md).
 
 ## Current State
@@ -173,6 +175,11 @@ bash -lc 't="$(date +%s)" && git clone https://github.com/jadenfix/beater.git &&
 
 Run it from a directory that does not already contain `beater/`; reruns should
 start from a new or empty parent directory.
+As soon as the first `Open the dashboard:` quickstart URL appears, open it in a
+normal browser and click the quickstart trace, then click the `llm.call` span.
+Do not wait for the script to finish; it continues with automated browser proof,
+the all-kind waterfall trace, and the recording after the timed quickstart
+click. Keep the command running until those post-SLO evidence steps finish.
 
 The outside-run wrapper rejects non-`main` checkouts, non-canonical GitHub
 origins, dirty worktrees, warm-loop reuse, local source builds, alternate ports,
@@ -315,7 +322,7 @@ scripts/generate-gate2-outside-proof.py \
   --machine-os "Ubuntu 24.04 x86_64" \
   --browser "Chrome stable" \
   --network-notes "home Wi-Fi; no VPN" \
-  --llm-observation "clicked llm.call and saw prompt, completion, model, tokens, cost, and latency" \
+  --llm-observation "clicked llm.call and saw prompt, completion, model, token breakdown, cost, and latency" \
   --waterfall-observation "opened all-kind trace and saw run -> turn -> step -> tool -> MCP nesting" \
   --preflight-status "passed" \
   --attest-outside-run
@@ -343,8 +350,8 @@ recording hash that does not match the committed file. The recording artifact
 must be a playable WebM capture of at least 64 KiB with EBML/WebM, Segment,
 Info, Tracks, Cluster, and video-track structure, and artifact paths must not
 traverse symlinks. The notes must also describe the full recorded flow: quickstart trace,
-`llm.call`, prompt, completion, model, tokens, cost, latency, and run -> turn ->
-step -> tool -> MCP waterfall. The completed proof must additionally include
+`llm.call`, prompt, completion, model, token breakdown, cost, latency, and run
+-> turn -> step -> tool -> MCP waterfall. The completed proof must additionally include
 the runner's own `llm.call` detail and waterfall observations, not only the
 automated browser recording notes.
 The `gate2-proof-contract` GitHub workflow runs the validator template check

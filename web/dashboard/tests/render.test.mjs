@@ -438,6 +438,9 @@ test("browser proof covers all canonical span kinds and can record a demo", () =
   assert.match(recorder, /data-icon/);
   assert.doesNotMatch(recorder, /data-span-seq/);
   assert.match(recorder, /five-line-llm-call/);
+  assert.match(recorder, /12 total, 5 prompt, 7 completion/);
+  assert.match(recorder, /33 total, 18 prompt, 11 completion, 4 reasoning/);
+  assert.match(recorder, /token breakdown/);
   assert.match(recorder, /hello from stock OpenTelemetry/);
   assert.match(recorder, /color\/icon-coded all-kind agent waterfall/);
   assert.match(recorder, /gate2-browser-demo\.webm/);
@@ -458,4 +461,7 @@ test("browser proof covers all canonical span kinds and can record a demo", () =
   assert.match(quickstart, /hello from Beater/);
   assert.match(quickstart, /data-icon/);
   assert.match(quickstart, /Selected span path/);
+  assert.match(quickstart, /12 total, 5 prompt, 7 completion/);
+  assert.match(quickstart, /Span metrics/);
+  assert.match(quickstart, /Latency/);
 });

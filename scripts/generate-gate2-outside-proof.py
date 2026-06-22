@@ -258,7 +258,7 @@ The runner completed the flow using only public repository instructions.
 - [x] Time-to-first-trace includes clone time.
 - [x] Time-to-quickstart-click was 300 seconds or less.
 - [x] The five-line stock OpenTelemetry trace appeared in `localhost:3000`.
-- [x] Clicking the `llm.call` span showed prompt, completion, model, tokens, cost, and latency.
+- [x] Clicking the `llm.call` span showed prompt, completion, model, token breakdown, cost, and latency.
 - [x] The all-kind trace rendered run -> turn -> step -> tool -> MCP nesting in the waterfall.
 - [x] The browser proof passed for both the quickstart trace and all-kind waterfall.
 - [x] The stopwatch script generated and reported the browser recording.

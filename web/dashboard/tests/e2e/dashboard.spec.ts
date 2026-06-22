@@ -132,7 +132,9 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   await expect(detail).toContainText("openai/gpt-demo");
   await expect(detail).toContainText("Tokens");
   await expect(detail).toContainText("33 total, 18 prompt, 11 completion, 4 reasoning");
-  await expect(detail).toContainText("Latency");
+  await expect(
+    detail.getByLabel("Span metrics").locator("div").filter({ hasText: "Latency" })
+  ).toContainText(/(?:\d+ ms|\d+\.\d+ s)/);
   await expect(detail).toContainText("USD 0.002500");
   await expect(detail.getByRole("heading", { name: "Input" })).toBeVisible();
   await expect(detail.getByRole("heading", { name: "Output" })).toBeVisible();

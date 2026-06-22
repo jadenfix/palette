@@ -85,12 +85,13 @@ proof connects to `127.0.0.1`. For
 this outside-person proof, free those default ports instead of using alternate
 port environment variables.
 
-After the script prints the dashboard URLs, the runner must open the
-quickstart dashboard URL in a normal browser, click the quickstart trace, click
-the `llm.call` span, and capture prompt, completion, model, tokens, cost, and
-latency. Then the runner must open the all-kind dashboard URL and capture the
-run -> turn -> step -> tool -> MCP waterfall. Cleanup can happen after the
-recording.
+As soon as the first `Open the dashboard:` quickstart URL appears, the runner
+must open it in a normal browser; do not wait for the script to finish. Click
+the quickstart trace, click the `llm.call` span, and capture prompt, completion,
+model, token breakdown, cost, and latency before the 5-minute quickstart-click
+SLO expires. Then keep the script running for the post-SLO all-kind and
+recording evidence, open the all-kind dashboard URL, and capture the run ->
+turn -> step -> tool -> MCP waterfall. Cleanup can happen after the recording.
 
 After the stopwatch command finishes, prefer generating completed evidence from
 the stopwatch proof instead of manually copying fields. Replace every identity
@@ -108,7 +109,7 @@ scripts/generate-gate2-outside-proof.py \
   --machine-os "Ubuntu 24.04 x86_64" \
   --browser "Chrome stable" \
   --network-notes "home Wi-Fi; no VPN" \
-  --llm-observation "clicked llm.call and saw prompt, completion, model, tokens, cost, and latency" \
+  --llm-observation "clicked llm.call and saw prompt, completion, model, token breakdown, cost, and latency" \
   --waterfall-observation "opened all-kind trace and saw run -> turn -> step -> tool -> MCP nesting" \
   --preflight-status "passed" \
   --attest-outside-run
@@ -163,8 +164,8 @@ screen-recording SHA256 against the committed artifact, requires the artifact to
 be a playable WebM capture of at least 64 KiB with EBML/WebM, Segment, Info,
 Tracks, and Cluster structure plus a video track, and requires the recording
 notes to describe the full click-through: quickstart trace, `llm.call`, prompt,
-completion, model, tokens, cost, latency, and run -> turn -> step -> tool -> MCP
-waterfall. Stopwatch, recording, and notes paths must be repo-relative paths
+completion, model, token breakdown, cost, latency, and run -> turn -> step ->
+tool -> MCP waterfall. Stopwatch, recording, and notes paths must be repo-relative paths
 under `docs/demos/` and must not resolve through symlinks.
 
 ## Required Evidence
@@ -197,8 +198,8 @@ under `docs/demos/` and must not resolve through symlinks.
 - [ ] Time-to-first-trace includes clone time.
 - [ ] Time-to-quickstart-click was 300 seconds or less.
 - [ ] The five-line stock OpenTelemetry trace appeared in `localhost:3000`.
-- [ ] Clicking the `llm.call` span showed prompt, completion, model, tokens,
-      cost, and latency.
+- [ ] Clicking the `llm.call` span showed prompt, completion, model, token
+      breakdown, cost, and latency.
 - [ ] The all-kind trace rendered run -> turn -> step -> tool -> MCP nesting in
       the waterfall.
 - [ ] The browser proof passed for both the quickstart trace and all-kind

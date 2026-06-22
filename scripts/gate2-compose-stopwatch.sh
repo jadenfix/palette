@@ -415,6 +415,17 @@ Open the dashboard:
   $dashboard_url
 EOF
 
+if [[ "$outside_wrapper" == "1" ]]; then
+  cat <<EOF
+
+Outside-run timing-critical browser step:
+  Open the quickstart URL above in a normal browser now; do not wait for the script to finish.
+  Click the quickstart trace, then click the llm.call span.
+  Confirm prompt, completion, model, token breakdown, cost, and latency are visible before 5 minutes.
+  Keep this command running for the post-SLO all-kind and recording evidence.
+EOF
+fi
+
 if [[ "$browser_proof" == "1" ]]; then
   run_before_deadline "five-line dashboard browser proof" compose_run_e2e \
     -e BEATER_E2E_QUICKSTART_TRACE_ID="$trace_id" \
@@ -554,9 +565,9 @@ if [[ "$outside_wrapper" == "1" ]]; then
   outside_runner_next_steps="$(cat <<EOF
 
 Outside-run next steps:
-  1. Open $dashboard_url in a normal browser for the quickstart trace.
+  1. If you have not already done so, open $dashboard_url in a normal browser for the quickstart trace.
   2. Click the quickstart trace, then click the llm.call span.
-  3. Confirm prompt, completion, model, tokens, cost, and latency are visible.
+  3. Confirm prompt, completion, model, token breakdown, cost, and latency are visible.
   4. Open ${all_kind_dashboard_url:-not requested} in a normal browser for the all-kind waterfall.
   5. Confirm run -> turn -> step -> tool -> MCP nesting is visible.
   6. Generate the completed proof with scripts/generate-gate2-outside-proof.py.
