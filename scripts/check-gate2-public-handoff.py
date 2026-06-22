@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import selectors
 import shutil
 import socket
 import subprocess
@@ -36,6 +37,7 @@ GATE2_SHELL_SCRIPTS = [
     "scripts/smoke-compose.sh",
     "scripts/validate-gate2-outside-proof.sh",
 ]
+MANUAL_CHECKPOINT_MARKER = "Manual outside-run checkpoint:"
 
 
 def repo_root() -> Path:
@@ -66,6 +68,78 @@ def run(
     if output and not quiet:
         print(output, end="" if output.endswith("\n") else "\n")
     return output.strip()
+
+
+def run_with_manual_checkpoint_confirmation(
+    args: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str],
+    timeout_seconds: int = 1800,
+) -> str:
+    process = subprocess.Popen(
+        args,
+        cwd=cwd,
+        env=env,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    assert process.stdout is not None
+    selector = selectors.DefaultSelector()
+    selector.register(process.stdout, selectors.EVENT_READ)
+    output = bytearray()
+    marker = MANUAL_CHECKPOINT_MARKER.encode()
+    confirmed = False
+    deadline = time.monotonic() + timeout_seconds
+
+    try:
+        while True:
+            if time.monotonic() > deadline:
+                process.kill()
+                decoded = output.decode(errors="replace")
+                raise SystemExit(
+                    f"timed out waiting for {' '.join(args)} in {cwd}\n{decoded}"
+                )
+
+            if process.poll() is not None:
+                while True:
+                    try:
+                        chunk = os.read(process.stdout.fileno(), 4096)
+                    except OSError:
+                        break
+                    if not chunk:
+                        break
+                    output.extend(chunk)
+                break
+
+            for key, _ in selector.select(timeout=0.25):
+                chunk = os.read(key.fileobj.fileno(), 4096)
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    continue
+                output.extend(chunk)
+                if not confirmed and marker in output:
+                    assert process.stdin is not None
+                    process.stdin.write(b"\n")
+                    process.stdin.flush()
+                    process.stdin.close()
+                    confirmed = True
+    finally:
+        selector.close()
+
+    returncode = process.wait()
+    decoded = output.decode(errors="replace")
+    if decoded:
+        print(decoded, end="" if decoded.endswith("\n") else "\n")
+    if returncode != 0:
+        raise SystemExit(f"command failed in {cwd}: {' '.join(args)}\n{decoded}")
+    if not confirmed:
+        raise SystemExit(
+            "diagnostic full-run did not observe the manual quickstart checkpoint; "
+            "the wrapper path did not prove the timing-critical browser handoff"
+        )
+    return decoded.strip()
 
 
 def current_commit() -> str:
@@ -567,7 +641,9 @@ def run_cloned_full_run(
             "Auto-confirming the manual quickstart checkpoint for maintainer "
             "diagnostic full-run only; this is not outside-person evidence."
         )
-        run(["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env, input_text="\n")
+        run_with_manual_checkpoint_confirmation(
+            ["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env
+        )
         run_generated_proof_check(clone_dir)
     finally:
         cleanup_cloned_compose(clone_dir)

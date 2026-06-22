@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::Write;
 use std::os::unix::fs::{symlink, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -916,6 +917,7 @@ fn gate2_public_handoff_verifier_full_run_accepts_rewritten_canonical_fixture() 
     assert_eq!(clone_origin, "https://github.com/jadenfix/beater.git");
     let env_marker = fs::read_to_string(clone_dir.join("docs/demos/wrapper-real-env.txt"))
         .unwrap_or_else(|err| panic!("read cloned wrapper runtime marker: {err}"));
+    assert!(env_marker.contains("manual_checkpoint_confirmed=yes"));
     assert!(env_marker.contains("write=1"));
     assert!(env_marker.contains("browser=1"));
     assert!(env_marker.contains("record=1"));
@@ -3901,7 +3903,20 @@ fn run_outside_wrapper_real_with_clone_timer_in_repo(repo: &Path, clone_started:
     command
         .env("PATH", path_with_tempdir(&ffprobe))
         .env("BEATER_GATE2_CLONE_STARTED_EPOCH", clone_started)
-        .output()
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    let mut child = command
+        .spawn()
+        .unwrap_or_else(|err| panic!("spawn Gate 2 outside wrapper fixture real run: {err}"));
+    child
+        .stdin
+        .as_mut()
+        .expect("fixture wrapper stdin should be piped")
+        .write_all(b"\n")
+        .expect("write manual checkpoint confirmation to fixture wrapper");
+    child
+        .wait_with_output()
         .unwrap_or_else(|err| panic!("run Gate 2 outside wrapper fixture real run: {err}"))
 }
 
@@ -4240,8 +4255,18 @@ fn write_stopwatch_env_stub(repo: &Path) {
 r#"#!/usr/bin/env bash
 set -euo pipefail
 mkdir -p docs/demos
+cat <<'EOF_PROMPT'
+Manual outside-run checkpoint:
+  Fixture waits here to prove the diagnostic full-run confirms only after the
+  wrapper reaches the timing-critical quickstart browser checkpoint.
+EOF_PROMPT
+if ! IFS= read -r _manual_checkpoint_confirmation; then
+  echo "missing diagnostic manual checkpoint confirmation" >&2
+  exit 42
+fi
 {
   echo "Open the quickstart URL above in a normal browser now; do not wait for the script to finish."
+  echo "manual_checkpoint_confirmed=yes"
   echo "write=${BEATER_GATE2_WRITE_PROOF:-unset}"
   echo "browser=${BEATER_GATE2_BROWSER_PROOF:-unset}"
   echo "record=${BEATER_GATE2_RECORD_DEMO:-unset}"

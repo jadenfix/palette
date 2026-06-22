@@ -595,8 +595,13 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("--registry-fixture"));
     assert!(public_handoff.contains("--skip-local-readiness"));
     assert!(public_handoff.contains("import time"));
+    assert!(public_handoff.contains("import selectors"));
     assert!(public_handoff.contains("import shutil"));
     assert!(public_handoff.contains("import socket"));
+    assert!(public_handoff.contains("MANUAL_CHECKPOINT_MARKER"));
+    assert!(public_handoff.contains("\"Manual outside-run checkpoint:\""));
+    assert!(public_handoff.contains("run_with_manual_checkpoint_confirmation"));
+    assert!(public_handoff.contains("diagnostic full-run did not observe"));
     assert!(public_handoff.contains("FULL_RUN_PORTS"));
     assert!(public_handoff.contains("(8080, \"beaterd HTTP\", \"BEATER_HTTP_PORT\")"));
     assert!(public_handoff.contains("(4317, \"OTLP gRPC\", \"BEATER_OTLP_GRPC_PORT\")"));
@@ -628,9 +633,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("free it rather than setting"));
     assert!(public_handoff.contains("clone_started_epoch = int(time.time())"));
     assert!(public_handoff.contains("env[\"BEATER_GATE2_CLONE_STARTED_EPOCH\"]"));
-    assert!(public_handoff.contains(
-        "run([\"scripts/gate2-outside-run.sh\"], cwd=clone_dir, env=env, input_text=\"\\n\")"
-    ));
+    assert!(public_handoff.contains("run_with_manual_checkpoint_confirmation("));
     assert!(public_handoff.contains("cleanup_cloned_compose"));
     assert!(public_handoff.contains("docker-compose.prebuilt.yml"));
     assert!(public_handoff.contains("Auto-confirming the manual quickstart checkpoint"));
@@ -676,9 +679,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("uses a second fresh clone"));
     assert!(outside_proof
         .contains("executes the second clone's\n`scripts/gate2-outside-run.sh` wrapper"));
-    assert!(outside_proof.contains(
-        "auto-confirms the manual quickstart\ncheckpoint for diagnostic automation only"
-    ));
+    assert!(
+        outside_proof.contains("waits until the wrapper prints the\nmanual quickstart checkpoint")
+    );
+    assert!(outside_proof.contains("auto-confirms that checkpoint for diagnostic\nautomation only"));
     assert!(outside_proof.contains("preflights the local runtime"));
     assert!(outside_proof.contains("local Docker daemon"));
     assert!(outside_proof.contains("SHA tooling"));
@@ -757,9 +761,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("uses one\nfresh clone"));
     assert!(readme.contains("uses a second fresh clone"));
     assert!(readme.contains("executes the second clone's\n`scripts/gate2-outside-run.sh` wrapper"));
-    assert!(readme.contains(
-        "auto-confirms the manual quickstart\ncheckpoint for diagnostic automation only"
-    ));
+    assert!(readme.contains("waits until the wrapper prints the\nmanual quickstart checkpoint"));
+    assert!(readme.contains("auto-confirms that checkpoint for diagnostic\nautomation only"));
     assert!(readme.contains("preflights the local runtime"));
     assert!(readme.contains("local Docker daemon"));
     assert!(readme.contains("`ffprobe`"));
