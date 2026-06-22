@@ -550,6 +550,42 @@ fn gate2_public_handoff_verifier_accepts_clean_clone_fixture() {
 }
 
 #[test]
+fn gate2_public_handoff_verifier_rejects_missing_ffprobe_from_cloned_wrapper() {
+    let registry = tempdir("create registry fixture dir");
+    write_registry_fixtures(registry.path());
+    let fixture_repo = write_public_handoff_fixture_repo();
+    let fixture_head = git_output(fixture_repo.path(), &["rev-parse", "HEAD"]);
+    let source_url = format!("file://{}", fixture_repo.path().display());
+    let path_dir = path_without_ffprobe(
+        "create public handoff PATH without ffprobe",
+        &["python3", "git", "bash", "dirname"],
+    );
+    let mut command =
+        run_public_handoff_with_fixture_command(&source_url, &fixture_head, registry.path());
+    command.env("PATH", path_with_isolated_tempdir(&path_dir));
+
+    let output = command
+        .output()
+        .unwrap_or_else(|err| panic!("run Gate 2 public handoff without ffprobe: {err}"));
+
+    assert!(
+        !output.status.success(),
+        "public handoff succeeded without ffprobe\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let output = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.contains("Gate 2 outside-run preflight failed"),
+        "expected public handoff failure to expose wrapper preflight failure, got:\n{output}"
+    );
+    assert!(
+        output.contains("missing required command 'ffprobe'"),
+        "expected public handoff failure to expose missing ffprobe, got:\n{output}"
+    );
+}
+
+#[test]
 fn gate2_public_handoff_verifier_clears_post_slo_timeout_override() {
     let registry = tempdir("create registry fixture dir");
     write_registry_fixtures(registry.path());

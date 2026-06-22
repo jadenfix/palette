@@ -51,6 +51,9 @@ test("dashboard page exposes the trace inspection surface", () => {
   assert.doesNotMatch(page, /aria-label=\{`\$\{span\.kind\} icon`\}/);
   assert.match(page, /span\.tokens\.cache_read/);
   assert.match(page, /input \+ output \+ cached \+ reasoning/);
+  assert.match(page, /span\.kind === "llm\.call" \? "prompt" : "input"/);
+  assert.match(page, /span\.kind === "llm\.call" \? "completion" : "output"/);
+  assert.match(page, /parts\.join\(", "\)/);
   assert.doesNotMatch(page, /label: "AI"/);
   assert.doesNotMatch(page, /label: "Fn"/);
   assert.match(page, /data-label="Spans"/);

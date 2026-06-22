@@ -919,8 +919,21 @@ function spanAncestry(span: CanonicalSpan, spans: CanonicalSpan[]): CanonicalSpa
 
 function tokenSummary(span: CanonicalSpan): string {
   if (!span.tokens) return "none";
-  const total = spanTokenTotal(span);
-  return `${total.toLocaleString("en-US")} total`;
+  const total = span.tokens.input + span.tokens.output + span.tokens.reasoning;
+  const inputLabel = span.kind === "llm.call" ? "prompt" : "input";
+  const outputLabel = span.kind === "llm.call" ? "completion" : "output";
+  const parts = [
+    `${total.toLocaleString("en-US")} total`,
+    `${span.tokens.input.toLocaleString("en-US")} ${inputLabel}`,
+    `${span.tokens.output.toLocaleString("en-US")} ${outputLabel}`
+  ];
+  if (span.tokens.reasoning > 0) {
+    parts.push(`${span.tokens.reasoning.toLocaleString("en-US")} reasoning`);
+  }
+  if (span.tokens.cache_read > 0) {
+    parts.push(`${span.tokens.cache_read.toLocaleString("en-US")} cached`);
+  }
+  return parts.join(", ");
 }
 
 function spanArtifactRefs(span: CanonicalSpan) {

@@ -39,6 +39,7 @@ test("renders the five-line stock OTLP quickstart trace in a browser", async ({ 
   await expect(selectedPath).toContainText("five-line-llm-call");
   await expect(detail).toContainText("openai/gpt-quickstart");
   await expect(detail).toContainText("Tokens");
+  await expect(detail).toContainText("12 total, 5 prompt, 7 completion");
   await expect(detail).toContainText("USD 0.001200");
   await expect(detail).toContainText("hello from stock OpenTelemetry");
   await expect(detail).toContainText("hello from Beater");
