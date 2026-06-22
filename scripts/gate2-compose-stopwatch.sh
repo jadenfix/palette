@@ -14,6 +14,7 @@ record_demo_notes="${BEATER_GATE2_RECORD_NOTES:-docs/demos/gate2-compose-browser
 outside_wrapper="${BEATER_GATE2_OUTSIDE_WRAPPER:-0}"
 prebuilt_pull_policy="${BEATER_GATE2_PULL_POLICY:-always}"
 post_slo_timeout_seconds="${BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS:-300}"
+min_recording_seconds="8.0"
 host_http_port="${BEATER_HTTP_PORT:-8080}"
 host_otlp_grpc_port="${BEATER_OTLP_GRPC_PORT:-4317}"
 host_dashboard_port="${BEATER_DASHBOARD_PORT:-3000}"
@@ -287,6 +288,39 @@ sha256_file() {
   fi
 }
 
+recording_probe() {
+  local file="$1"
+  ffprobe -v error \
+    -select_streams v:0 \
+    -show_entries stream=codec_type \
+    -show_entries format=duration \
+    -of default=noprint_wrappers=1:nokey=0 \
+    "$file" 2>/dev/null
+}
+
+recording_duration_seconds() {
+  awk -F= '/^duration=/ { print $2; exit }'
+}
+
+require_reviewable_recording() {
+  local file="$1"
+  local probe
+  local duration
+  probe="$(recording_probe "$file" || true)"
+  if ! printf '%s\n' "$probe" | grep -qx "codec_type=video"; then
+    echo "Gate 2 browser recording must contain a video stream: $file" >&2
+    return 1
+  fi
+  duration="$(printf '%s\n' "$probe" | recording_duration_seconds)"
+  if ! awk -v duration="$duration" -v minimum="$min_recording_seconds" 'BEGIN {
+    if (duration !~ /^[0-9]+([.][0-9]+)?$/) exit 1
+    exit ((duration + 0) >= (minimum + 0)) ? 0 : 1
+  }'; then
+    echo "Gate 2 browser recording must be a reviewable video of at least ${min_recording_seconds}s; got ${duration:-missing} for $file" >&2
+    return 1
+  fi
+}
+
 service_image_digest() {
   local service="$1"
   local image_id
@@ -556,6 +590,7 @@ if [[ "$browser_proof" == "1" ]]; then
   fi
   waterfall_browser_proof_status="passed"
   if [[ "$record_demo" == "1" ]]; then
+    require_reviewable_recording "$record_demo_video"
     record_demo_status="passed"
     record_demo_sha256="$(sha256_file "$record_demo_video")"
   fi

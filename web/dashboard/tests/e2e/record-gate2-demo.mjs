@@ -18,7 +18,9 @@ const quickstartTraceId =
   (mode === "quickstart" ? process.env.BEATER_E2E_TRACE_ID : undefined);
 const demoDir = resolve(repoRoot, "docs/demos");
 const scratchDir = resolve(dashboardRoot, "test-results/gate2-demo-video");
-const reviewDwellMs = 2500;
+const minimumRecordingMs = 9000;
+const llmReviewDwellMs = 4500;
+const toolReviewDwellMs = 2500;
 const videoPath = outputPath(
   process.env.BEATER_GATE2_RECORD_VIDEO,
   mode === "compose" ? "gate2-compose-browser-demo.webm" : "gate2-browser-demo.webm"
@@ -41,6 +43,7 @@ const context = await browser.newContext({
   viewport: { width: 1440, height: 1000 }
 });
 const page = await context.newPage();
+const recordingStartedAt = Date.now();
 
 if (mode === "compose") {
   await recordQuickstartFlow(page);
@@ -52,6 +55,7 @@ if (mode === "compose") {
 } else {
   throw new Error(`unknown BEATER_GATE2_RECORD_MODE '${mode}'`);
 }
+await waitForReviewableRecording(page, recordingStartedAt);
 
 const video = page.video();
 await context.close();
@@ -119,7 +123,7 @@ async function recordQuickstartFlow(page) {
     .filter({ hasText: "Completion" })
     .getByText("hello from Beater")
     .waitFor();
-  await page.waitForTimeout(reviewDwellMs);
+  await page.waitForTimeout(llmReviewDwellMs);
 }
 
 async function recordAllKindFlow(page) {
@@ -169,10 +173,10 @@ async function recordAllKindFlow(page) {
     .filter({ hasText: "Completion" })
     .getByText("Escalate because the order is outside the standard window.")
     .waitFor();
-  await page.waitForTimeout(reviewDwellMs);
+  await page.waitForTimeout(llmReviewDwellMs);
   await tool.click();
   await detail.locator(".io").filter({ hasText: "Input" }).getByText("ord_123").waitFor();
-  await page.waitForTimeout(reviewDwellMs);
+  await page.waitForTimeout(toolReviewDwellMs);
 }
 
 function spanRow(waterfall, kind, name) {
@@ -288,5 +292,12 @@ async function requireAttribute(locator, name, expected) {
   }
   if (actual !== expected) {
     throw new Error(`expected ${name}=${expected}, got ${actual}`);
+  }
+}
+
+async function waitForReviewableRecording(page, startedAt) {
+  const remainingMs = minimumRecordingMs - (Date.now() - startedAt);
+  if (remainingMs > 0) {
+    await page.waitForTimeout(remainingMs);
   }
 }

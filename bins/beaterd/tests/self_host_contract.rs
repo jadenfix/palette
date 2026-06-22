@@ -357,6 +357,22 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("gate2-compose-browser-demo.webm"));
     assert!(stopwatch_script.contains("Browser recording SHA256"));
     assert!(stopwatch_script.contains("sha256_file"));
+    assert!(stopwatch_script.contains("min_recording_seconds=\"8.0\""));
+    assert!(stopwatch_script.contains("recording_probe()"));
+    assert!(stopwatch_script.contains("recording_duration_seconds()"));
+    assert!(stopwatch_script.contains("codec_type=video"));
+    assert!(stopwatch_script.contains("require_reviewable_recording()"));
+    let reviewable_recording_check = find_required(
+        &stopwatch_script,
+        "require_reviewable_recording \"$record_demo_video\"",
+    );
+    let recording_pass_marker = stopwatch_script
+        .rfind("record_demo_status=\"passed\"")
+        .expect("expected recording pass marker");
+    assert!(
+        reviewable_recording_check < recording_pass_marker,
+        "recording duration must be validated before marking browser recording passed"
+    );
     assert!(stopwatch_script.contains("proof_followup_block"));
     assert!(stopwatch_script.contains("outside-run stopwatch source artifact"));
     assert!(stopwatch_script.contains("This is an automated local stopwatch proof"));
@@ -985,7 +1001,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(record_script.contains("docs/demos"));
     assert!(record_script.contains("gate2-browser-demo.webm"));
     assert!(record_script.contains("token breakdown"));
-    assert!(record_script.contains("reviewDwellMs"));
+    assert!(record_script.contains("minimumRecordingMs = 9000"));
+    assert!(record_script.contains("llmReviewDwellMs = 4500"));
+    assert!(record_script.contains("toolReviewDwellMs = 2500"));
+    assert!(record_script.contains("waitForReviewableRecording"));
     assert!(record_script.contains("Recording mode: compose"));
     assert!(record_script.contains("12 total, 5 prompt, 7 completion"));
     assert!(record_script.contains("33 total, 18 prompt, 11 completion, 4 reasoning"));

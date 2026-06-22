@@ -468,7 +468,10 @@ test("browser proof covers all canonical span kinds and can record a demo", () =
   assert.match(recorder, /literal five-line stock OpenTelemetry quickstart trace/);
   assert.match(recorder, /gate2-compose-browser-demo\.webm/);
   assert.match(recorder, /createHash\("sha256"\)/);
-  assert.match(recorder, /reviewDwellMs/);
+  assert.match(recorder, /minimumRecordingMs = 9000/);
+  assert.match(recorder, /llmReviewDwellMs = 4500/);
+  assert.match(recorder, /toolReviewDwellMs = 2500/);
+  assert.match(recorder, /waitForReviewableRecording/);
   assert.match(recorder, /Recording mode: compose/);
   assert.match(recorder, /data-depth/);
   assert.match(recorder, /data-icon/);
