@@ -811,6 +811,7 @@ def require_public_handoff_timing_guard(clone_dir: Path) -> None:
             'BEATER_GATE2_CONFIRMATION_SALT="$quickstart_confirmation_salt"',
             "open $quickstart_list_url in a normal browser for the quickstart trace list",
             r"Quickstart span: \`",
+            "Manual confirmation source: $manual_confirmation_source",
             "Manual confirmation code: $manual_quickstart_confirmation_code",
             r"Manual confirmation salt: \`$manual_quickstart_confirmation_salt\`",
             "Direct quickstart trace URL:",

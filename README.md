@@ -239,9 +239,10 @@ project/volumes and fails if that clean start does not complete, then runs
 prebuilt stock OpenTelemetry Python runner container, waits until the trace is
 visible in `localhost:3000`, and fails if time-to-first-trace exceeds 300
 seconds. It then requires the outside runner to confirm the manual quickstart
-click-through before 300 seconds; automated browser proof still runs afterward
-as secondary evidence. It leaves the dashboard running by default so a human can
-click through the trace.
+click-through before 300 seconds by reading the code from the selected
+`llm.call` detail; automated browser proof still runs afterward as secondary
+evidence. It leaves the dashboard running by default so a human can click
+through the trace.
 Before starting Compose it checks local Docker, Docker Compose, curl, `ffprobe`,
 and SHA tooling, and it requires `python3` 3.9+ before the timed run so proof
 generation and validation cannot fail late on missing local tooling.
@@ -447,9 +448,11 @@ uncommitted non-evidence worktree changes at closure. It rejects any screen
 recording hash that does not match the committed file. It requires
 `Quickstart click source: manual-outside-runner` and
 `Manual quickstart confirmation: yes` in both the completed proof and the
-stopwatch artifact, recomputes `Manual confirmation code` from the per-run salt
-plus quickstart trace and span IDs, and the stopwatch artifact must identify
-itself as an outside-run stopwatch source artifact rather than an automated local proof. The
+stopwatch artifact, requires
+`Manual confirmation source: browser-selected-llm-detail`, recomputes
+`Manual confirmation code` from the per-run salt plus quickstart trace and span
+IDs, and the stopwatch artifact must identify itself as an outside-run stopwatch
+source artifact rather than an automated local proof. The
 recording artifact must be a playable WebM capture of
 at least 64 KiB and at least 8 seconds with
 EBML/WebM, Segment, Info, Tracks, Cluster, and video-track structure, and

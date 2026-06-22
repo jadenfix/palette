@@ -384,6 +384,7 @@ Status: {status}
 - Script-to-quickstart-click: {field_value(stopwatch_text, "Script-to-quickstart-click", stopwatch_rel)}
 - Quickstart click source: {field_value(stopwatch_text, "Quickstart click source", stopwatch_rel)}
 - Manual quickstart confirmation: {field_value(stopwatch_text, "Manual quickstart confirmation", stopwatch_rel)}
+- Manual confirmation source: {field_value(stopwatch_text, "Manual confirmation source", stopwatch_rel)}
 - Manual confirmation code: {field_value(stopwatch_text, "Manual confirmation code", stopwatch_rel)}
 - Manual confirmation salt: {field_value(stopwatch_text, "Manual confirmation salt", stopwatch_rel)}
 - Total proof duration: {field_value(stopwatch_text, "Total duration", stopwatch_rel)}

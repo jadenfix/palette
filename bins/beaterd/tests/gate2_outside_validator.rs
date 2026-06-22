@@ -11,6 +11,7 @@ const QUICKSTART_SPAN: &str = "aaaaaaaaaaaaaaaa";
 const ALL_KIND_TRACE: &str = "22222222222222222222222222222222";
 const MANUAL_CONFIRMATION_CODE: &str = "682ABA78";
 const MANUAL_CONFIRMATION_SALT: &str = "gate2-test-salt-123";
+const MANUAL_CONFIRMATION_SOURCE: &str = "browser-selected-llm-detail";
 const RECORDING_SHA: &str = "3dac802bc8f2db03406d0d76e4e1618ed5b516a2cf3d286589e1a588cf6e6534";
 const BEATER_IMAGE_DIGEST: &str =
     "ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -3132,6 +3133,25 @@ fn gate2_outside_validator_rejects_missing_manual_quickstart_confirmation() {
 }
 
 #[test]
+fn gate2_outside_validator_rejects_wrong_manual_confirmation_source() {
+    let fixture = ValidatorFixture::new();
+    for path in [&fixture.proof_path, &fixture.stopwatch_path] {
+        replace(
+            path,
+            &format!("- Manual confirmation source: {MANUAL_CONFIRMATION_SOURCE}"),
+            "- Manual confirmation source: copied-from-terminal",
+        );
+    }
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Manual confirmation source must be browser-selected-llm-detail",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_first_trace_missing_clone_offset() {
     let fixture = ValidatorFixture::new();
     replace(
@@ -4248,6 +4268,7 @@ Status: completed.
 - Script-to-quickstart-click: 15s
 - Quickstart click source: manual-outside-runner
 - Manual quickstart confirmation: yes
+- Manual confirmation source: {MANUAL_CONFIRMATION_SOURCE}
 - Manual confirmation code: {MANUAL_CONFIRMATION_CODE}
 - Manual confirmation salt: {MANUAL_CONFIRMATION_SALT}
 - Total proof duration: 40s
@@ -4327,6 +4348,7 @@ fn stopwatch_proof(recording: &str, notes: &str, compose_logs: &str) -> String {
 - Script-to-quickstart-click: 15s
 - Quickstart click source: manual-outside-runner
 - Manual quickstart confirmation: yes
+- Manual confirmation source: {MANUAL_CONFIRMATION_SOURCE}
 - Manual confirmation code: {MANUAL_CONFIRMATION_CODE}
 - Manual confirmation salt: `{MANUAL_CONFIRMATION_SALT}`
 - Total duration: 40s
@@ -5654,6 +5676,7 @@ mkdir -p docs/demos
 # quickstart_confirmation_code="$(quickstart_confirmation_code_for_span "$trace_id" "$quickstart_span_id")"
 # export BEATER_GATE2_CONFIRMATION_SALT="$quickstart_confirmation_salt"
 # - Quickstart span: \`$quickstart_span_id\`
+# - Manual confirmation source: $manual_confirmation_source
 # - Manual confirmation code: $manual_quickstart_confirmation_code
 # - Manual confirmation salt: \`$manual_quickstart_confirmation_salt\`
 cat <<'EOF_PROMPT'
@@ -5740,6 +5763,7 @@ cat > docs/demos/gate2-compose-stopwatch.md <<'EOF_PROOF'
 - Script-to-quickstart-click: 15s
 - Quickstart click source: manual-outside-runner
 - Manual quickstart confirmation: yes
+- Manual confirmation source: browser-selected-llm-detail
 - Manual confirmation code: 682ABA78
 - Manual confirmation salt: gate2-test-salt-123
 - Total duration: 40s

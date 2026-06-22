@@ -658,6 +658,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("Quickstart click source must be manual-outside-runner"));
     assert!(outside_validator.contains("\"Manual quickstart confirmation\""));
     assert!(outside_validator.contains("Manual quickstart confirmation must be yes"));
+    assert!(outside_validator.contains("\"Manual confirmation source\""));
+    assert!(outside_validator
+        .contains("Manual confirmation source must be browser-selected-llm-detail"));
     assert!(outside_validator.contains(":[ \\t]*(.*)$"));
     assert!(outside_validator.contains("BEATER_GATE2_REUSE=1"));
     assert!(outside_validator.contains("BEATER_DASHBOARD_PORT="));
@@ -764,6 +767,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_generator.contains("Outside-run wrapper"));
     assert!(outside_generator.contains("Quickstart click source"));
     assert!(outside_generator.contains("Manual quickstart confirmation"));
+    assert!(outside_generator.contains("Manual confirmation source"));
     assert!(outside_generator.contains("Quickstart release ID"));
     assert!(outside_generator.contains("Git branch"));
     assert!(outside_generator.contains("Git origin"));
@@ -995,7 +999,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
         outside_proof.contains("waits until the wrapper prints the\nmanual quickstart checkpoint")
     );
     assert!(outside_proof.contains(
-        "uses a browser click to read and enter the confirmation\ncode for diagnostic automation only"
+        "uses a browser click to read and enter the confirmation\ncode from the selected `llm.call` detail for diagnostic automation only"
     ));
     assert!(outside_proof.contains("preflights the local runtime"));
     assert!(outside_proof
@@ -1053,6 +1057,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
         .contains("Manual quickstart click confirmation code was recorded before 300 seconds"));
     assert!(outside_proof.contains("Quickstart click source"));
     assert!(outside_proof.contains("Manual quickstart confirmation"));
+    assert!(outside_proof.contains("Manual confirmation source"));
     assert!(outside_proof.contains("Manual confirmation code"));
     assert!(outside_proof.contains("Quickstart span ID"));
     assert!(outside_proof.contains("run -> turn -> step -> tool -> MCP"));
@@ -1153,6 +1158,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("Time-to-quickstart-click"));
     assert!(readme.contains("manual\nquickstart click confirmation"));
     assert!(readme.contains("Manual confirmation code"));
+    assert!(readme.contains("Manual confirmation source: browser-selected-llm-detail"));
     assert!(readme.contains("checks local Docker, Docker Compose, curl, `ffprobe`,"));
     assert!(readme.contains("mismatched trace IDs"));
     assert!(readme.contains("mismatched recording-note quickstart release IDs"));

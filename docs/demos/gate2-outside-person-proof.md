@@ -50,6 +50,7 @@ For the short unaided runner instructions, use
 - Script-to-quickstart-click:
 - Quickstart click source:
 - Manual quickstart confirmation:
+- Manual confirmation source:
 - Manual confirmation code:
 - Manual confirmation salt:
 - Total proof duration:
@@ -109,8 +110,10 @@ capture prompt, completion, model, token breakdown, cost, latency, and the
 `Confirm` code shown in the selected detail. Type that confirmation code in the
 terminal and press Enter only after the manual click-through is complete; this
 records `Quickstart click source: manual-outside-runner`,
-`Manual quickstart confirmation: yes`, `Manual confirmation code: <code>`, the
-per-run manual confirmation salt, and the 5-minute quickstart-click SLO.
+`Manual quickstart confirmation: yes`,
+`Manual confirmation source: browser-selected-llm-detail`,
+`Manual confirmation code: <code>`, the per-run manual confirmation salt, and
+the 5-minute quickstart-click SLO.
 Then keep the script running for the post-SLO automated browser proof, all-kind
 trace, and recording evidence, open the all-kind dashboard URL, and capture the
 run -> turn -> step -> tool -> MCP waterfall. Cleanup can happen after the
@@ -193,7 +196,7 @@ for the exact commit. The verifier executes the second clone's
 `scripts/gate2-outside-run.sh` wrapper with the clone-start timestamp captured
 immediately before that second `git clone`, waits until the wrapper prints the
 manual quickstart checkpoint, uses a browser click to read and enter the confirmation
-code for diagnostic automation only, and cleans up the `beater-stopwatch` Compose project after the
+code from the selected `llm.call` detail for diagnostic automation only, and cleans up the `beater-stopwatch` Compose project after the
 wrapper exits. It proves the exact public outside-run path and images can run,
 but it is not outside-person evidence and does not close this proof file. Its
 generated report is `Status: diagnostic.` and default outside-person validation

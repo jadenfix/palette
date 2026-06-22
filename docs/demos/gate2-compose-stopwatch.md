@@ -11,6 +11,7 @@
 - Script-to-quickstart-click: 56s
 - Quickstart click source: automated-browser-proof
 - Manual quickstart confirmation: not requested
+- Manual confirmation source: not requested
 - Manual confirmation code: not requested
 - Manual confirmation salt: `not requested`
 - Total duration: 110s

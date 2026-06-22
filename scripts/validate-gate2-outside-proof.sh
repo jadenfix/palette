@@ -1083,6 +1083,7 @@ REQUIRED_PROOF_FIELDS = [
     "Script-to-quickstart-click",
     "Quickstart click source",
     "Manual quickstart confirmation",
+    "Manual confirmation source",
     "Manual confirmation code",
     "Manual confirmation salt",
     "Total proof duration",
@@ -1289,6 +1290,9 @@ if quickstart_click_source != "manual-outside-runner":
 manual_quickstart_confirmation = field_value("Manual quickstart confirmation")
 if manual_quickstart_confirmation != "yes":
     fail("Manual quickstart confirmation must be yes for outside-person evidence")
+manual_confirmation_source = field_value("Manual confirmation source")
+if manual_confirmation_source != "browser-selected-llm-detail":
+    fail("Manual confirmation source must be browser-selected-llm-detail")
 manual_confirmation_code = field_value("Manual confirmation code")
 manual_confirmation_salt = field_value("Manual confirmation salt")
 require_confirmation_salt(
@@ -1603,6 +1607,7 @@ if stopwatch_text:
         ("Browser recording", "passed"),
         ("Quickstart click source", "manual-outside-runner"),
         ("Manual quickstart confirmation", "yes"),
+        ("Manual confirmation source", "browser-selected-llm-detail"),
         ("API endpoint", DEFAULT_API_ENDPOINT),
         ("OTLP endpoint", DEFAULT_OTLP_ENDPOINT),
         ("Dashboard base", DEFAULT_DASHBOARD_BASE),
@@ -1786,6 +1791,11 @@ if stopwatch_text:
             "Manual quickstart confirmation",
             "stopwatch proof",
         ),
+    )
+    require_equal(
+        "manual confirmation source",
+        manual_confirmation_source,
+        field_value_from(stopwatch_text, "Manual confirmation source", "stopwatch proof"),
     )
     require_equal(
         "script duration",

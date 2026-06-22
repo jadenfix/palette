@@ -50,6 +50,7 @@ time_to_quickstart_click_seconds=""
 script_to_quickstart_click_seconds=""
 quickstart_click_source="not requested"
 manual_quickstart_confirmation="not requested"
+manual_confirmation_source="not requested"
 manual_quickstart_confirmation_code="not requested"
 manual_quickstart_confirmation_salt="not requested"
 quickstart_span_id=""
@@ -299,6 +300,7 @@ EOF
   time_to_quickstart_click_seconds=$(($(date +%s) - timing_start_epoch))
   quickstart_click_source="manual-outside-runner"
   manual_quickstart_confirmation="yes"
+  manual_confirmation_source="browser-selected-llm-detail"
   manual_quickstart_confirmation_code="$quickstart_confirmation_code"
   manual_quickstart_confirmation_salt="$quickstart_confirmation_salt"
   if (( time_to_quickstart_click_seconds > 300 )); then
@@ -772,6 +774,7 @@ if [[ "$write_proof" == "1" ]]; then
 - Script-to-quickstart-click: $script_to_quickstart_click_display
 - Quickstart click source: $quickstart_click_source
 - Manual quickstart confirmation: $manual_quickstart_confirmation
+- Manual confirmation source: $manual_confirmation_source
 - Manual confirmation code: $manual_quickstart_confirmation_code
 - Manual confirmation salt: \`$manual_quickstart_confirmation_salt\`
 - Total duration: ${duration_seconds}s
