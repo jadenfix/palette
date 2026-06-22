@@ -202,6 +202,7 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(runner_card.contains("# Gate 2 Outside Runner Card"));
     assert!(runner_card.contains("Use this card for the unaided Gate 2 run"));
     assert!(runner_card.contains("`ffprobe` (installed by common `ffmpeg` packages)"));
+    assert!(runner_card.contains("cleanup hint it prints"));
     assert!(runner_card.contains(CANONICAL_OUTSIDE_COMMAND));
     assert!(runner_card.contains("downloads preflight from the resolved public commit SHA"));
     assert!(runner_card.contains("verifies\nthe clone still matches that SHA"));
@@ -214,11 +215,15 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     );
     assert!(runner_card.contains("Type that confirmation code in the terminal"));
     assert!(runner_card.contains("5-minute clone-to-click SLO"));
+    assert!(runner_card.contains("Manual confirmation source: browser-selected-llm-detail"));
+    assert!(runner_card.contains("do not\ncopy the code from terminal logs"));
     assert!(runner_card.contains("leave the command running"));
     assert!(runner_card.contains("docs/demos/gate2-outside-compose.log"));
     assert!(runner_card.contains("run -> turn -> step -> tool -> MCP"));
     assert!(runner_card.contains("scripts/generate-gate2-outside-proof.py --print-command"));
     assert!(runner_card.contains("Replace every `...` field"));
+    assert!(runner_card.contains("fresh quickstart release ID"));
+    assert!(runner_card.contains("manual confirmation source"));
     assert!(runner_card.contains("git add docs/demos/gate2-outside-person-proof.md"));
     assert!(runner_card.contains("git commit -m \"add gate2 outside proof\""));
     assert!(runner_card.contains("scripts/validate-gate2-outside-proof.sh"));

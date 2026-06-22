@@ -16,6 +16,9 @@ Use a machine with:
 
 Run from an empty parent directory that does not already contain `beater/`.
 Do not set Beater, Docker Compose, or alternate port environment variables.
+If preflight reports stale `beater-stopwatch` containers or occupied default
+ports, run the cleanup hint it prints, then rerun this card from a new or empty
+parent directory.
 
 ## Timed Command
 
@@ -38,6 +41,8 @@ Click the quickstart trace, then click the `llm.call` span. Confirm that the
 prompt, completion, model, token breakdown, cost, latency, and the `Confirm`
 code are visible. Type that confirmation code in the terminal, then press Enter.
 The terminal checkpoint must happen before the 5-minute clone-to-click SLO expires.
+This records `Manual confirmation source: browser-selected-llm-detail`; do not
+copy the code from terminal logs or generated files.
 
 ## Post-SLO Evidence
 
@@ -55,6 +60,9 @@ run -> turn -> step -> tool -> MCP
 
 After the command exits, use the printed
 `scripts/generate-gate2-outside-proof.py --print-command` output. Replace every `...` field with real runner values, then run it.
+The generated proof must keep the stopwatch's fresh quickstart release ID,
+trace IDs, span ID, and manual confirmation source; validation rejects stale or
+mismatched values.
 
 Commit the evidence before validation:
 

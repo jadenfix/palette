@@ -360,7 +360,7 @@ exact commit. The verifier executes the second clone's
 `scripts/gate2-outside-run.sh` wrapper with the clone-start timestamp captured
 immediately before that second `git clone`, waits until the wrapper prints the
 manual quickstart checkpoint, uses a browser click to read and enter the confirmation
-code for diagnostic automation only, and cleans up the `beater-stopwatch` Compose project after the
+code from the selected `llm.call` detail for diagnostic automation only, and cleans up the `beater-stopwatch` Compose project after the
 wrapper exits. This is maintainer runtime evidence that the exact public
 outside-run path, current GHCR images, OTLP ingest, dashboard render, browser
 proof, and browser recording work; it is not a substitute for the required

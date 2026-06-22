@@ -1103,7 +1103,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("executes the second clone's\n`scripts/gate2-outside-run.sh` wrapper"));
     assert!(readme.contains("waits until the wrapper prints the\nmanual quickstart checkpoint"));
     assert!(readme.contains(
-        "uses a browser click to read and enter the confirmation\ncode for diagnostic automation only"
+        "uses a browser click to read and enter the confirmation\ncode from the selected `llm.call` detail for diagnostic automation only"
     ));
     assert!(readme.contains("preflights the local runtime"));
     assert!(
@@ -1382,12 +1382,16 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(!runner_card.contains("gate2-outside-local-preflight.sh | bash"));
     assert!(runner_card.contains("BEATER_GATE2_CLONE_STARTED_EPOCH"));
     assert!(runner_card.contains("`ffprobe` (installed by common `ffmpeg` packages)"));
+    assert!(runner_card.contains("cleanup hint it prints"));
     assert!(runner_card.contains("Open this quickstart trace-list URL first:"));
     assert!(runner_card.contains("Do not wait for the script to finish"));
     assert!(
         runner_card.contains("prompt, completion, model, token breakdown, cost, latency, and the")
     );
     assert!(runner_card.contains("Type that confirmation code in the terminal"));
+    assert!(runner_card.contains("Manual confirmation source: browser-selected-llm-detail"));
+    assert!(runner_card.contains("do not\ncopy the code from terminal logs"));
+    assert!(runner_card.contains("fresh quickstart release ID"));
     assert!(runner_card.contains("run -> turn -> step -> tool -> MCP"));
     assert!(runner_card.contains("scripts/validate-gate2-outside-proof.sh"));
 }
