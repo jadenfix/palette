@@ -214,8 +214,8 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(dashboard_workflow.contains("live-browser-proof:"));
     assert!(dashboard_workflow.contains("timeout-minutes: 25"));
     assert!(dashboard_workflow.contains("needs: verify"));
-    assert!(dashboard_workflow.contains("actions/setup-node@v7"));
-    assert!(dashboard_workflow.contains("actions/setup-python@v7"));
+    assert!(dashboard_workflow.contains("actions/setup-node@v4"));
+    assert!(dashboard_workflow.contains("actions/setup-python@v5"));
     assert!(dashboard_workflow.contains("node-version: 24"));
     assert!(dashboard_workflow.contains("python-version: \"3.12\""));
     assert!(dashboard_workflow.contains("cache: npm"));
