@@ -428,6 +428,25 @@ def require_compose_logs_saved(value: str) -> None:
         or "not saved" in normalized
     ):
         fail("`docker compose` logs saved must identify saved logs for Gate 2 evidence")
+        return
+    if value.startswith("https://"):
+        if not re.fullmatch(
+            r"https://github\.com/jadenfix/beater/actions/runs/[0-9]+(?:/job/[0-9]+)?",
+            value,
+        ):
+            fail(
+                "`docker compose` logs saved must be a repo-relative docs/demos log "
+                "file or immutable GitHub Actions run/job URL"
+            )
+        return
+    log_path = validated_artifact_path(
+        value,
+        "`docker compose` logs saved",
+        f"`docker compose` logs file does not exist: {value}",
+    )
+    if log_path:
+        require_committed_clean_path(log_path, "`docker compose` logs saved")
+        read_validated_text(log_path, "`docker compose` logs saved")
 
 
 def require_default_dashboard_url(name: str, value: str, trace_id: str) -> None:

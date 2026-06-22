@@ -524,6 +524,14 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("require_webm_recording"));
     assert!(outside_validator.contains("require_tracked_artifact"));
     assert!(outside_validator.contains("require_committed_clean_path"));
+    assert!(outside_validator.contains("def require_compose_logs_saved"));
+    assert!(outside_validator.contains("actions/runs/[0-9]+"));
+    assert!(outside_validator.contains("immutable GitHub Actions run/job URL"));
+    assert!(outside_validator.contains("`docker compose` logs file does not exist"));
+    assert!(outside_validator
+        .contains("require_committed_clean_path(log_path, \"`docker compose` logs saved\")"));
+    assert!(outside_validator
+        .contains("read_validated_text(log_path, \"`docker compose` logs saved\")"));
     assert!(outside_validator.contains("must be committed and clean before Gate 2 closure"));
     assert!(outside_validator.contains("must be tracked by git before Gate 2 closure"));
     assert!(outside_validator.contains("screen recording must start with a WebM/EBML header"));
@@ -613,6 +621,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_generator.contains("Git worktree clean"));
     assert!(outside_generator.contains("OUTSIDE_RUN_ATTESTATION"));
     assert!(outside_generator.contains("DIAGNOSTIC_ATTESTATION"));
+    assert!(outside_generator.contains("IMMUTABLE_LOG_URL"));
+    assert!(outside_generator.contains("actions/runs/[0-9]+"));
+    assert!(outside_generator.contains("--compose-logs-saved must live under docs/demos"));
+    assert!(outside_generator.contains("--compose-logs-saved file does not exist"));
     assert!(outside_generator.contains("--runner-name"));
     assert!(outside_generator.contains("--prior-exposure"));
     assert!(outside_generator.contains("--attest-outside-run"));
@@ -854,6 +866,12 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("gate2-compose-browser-demo.webm"));
     assert!(outside_proof.contains("gate2-compose-browser-demo.md"));
     assert!(outside_proof.contains("Terminal output excerpt"));
+    assert!(outside_proof.contains("repo-relative, committed/clean, non-symlink file"));
+    assert!(outside_proof.contains("immutable GitHub Actions run/job URL"));
+    assert!(outside_proof.contains("actions/runs/<run_id>"));
+    assert!(outside_proof.contains("saved compose-log paths"));
+    assert!(outside_proof.contains("compose-log evidence must be a committed/clean file"));
+    assert!(outside_proof.contains("repo-relative committed/clean non-symlink `docs/demos/`"));
     assert!(outside_proof.contains("Dashboard base: `http://127.0.0.1:3000`"));
     assert!(!outside_proof.contains("http://127.0.0.1:3000/..."));
     assert!(!outside_proof.contains("none / describe"));
@@ -955,11 +973,17 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("prebuilt GHCR image digests"));
     assert!(readme.contains("public GHCR manifest digest"));
     assert!(readme.contains("mismatched image digests"));
+    assert!(readme.contains("repo-relative, committed/clean"));
+    assert!(readme.contains("non-symlink file under `docs/demos/`"));
+    assert!(readme.contains("immutable GitHub Actions"));
+    assert!(readme.contains("actions/runs/<run_id>"));
+    assert!(readme.contains("ambiguous compose-log notes"));
+    assert!(readme.contains("dirty or uncommitted saved log\nartifacts at closure"));
     assert!(readme.contains("BEATER_GATE2_RUN_ID"));
     assert!(readme.contains("fresh per-run quickstart release ID"));
     assert!(readme.contains("Beater image service rows"));
     assert!(readme.contains("structured `proof-image` rows"));
-    assert!(readme.contains("recording notes from a different dashboard session"));
+    assert!(readme.contains("recording notes from a different dashboard"));
     assert!(readme.contains("playable WebM metadata"));
     assert!(readme.contains("playable WebM capture of\nat least 64 KiB and at least 8 seconds"));
     assert!(readme.contains("Recording mode: compose"));
@@ -1004,6 +1028,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("outside-run attestation"));
     assert!(requirements.contains("outside-run stopwatch source artifact marker"));
     assert!(requirements.contains("repo-relative non-symlink `docs/demos/` artifacts"));
+    assert!(requirements.contains("saved `docker compose` log evidence"));
+    assert!(requirements.contains("committed/clean non-symlink repo-relative `docs/demos/` file"));
+    assert!(requirements.contains("immutable GitHub Actions run/job URL"));
     assert!(requirements.contains("prebuilt GHCR image digests"));
     assert!(requirements.contains("public GHCR manifest digests"));
     assert!(requirements.contains("default API/OTLP/dashboard endpoints"));

@@ -29,6 +29,9 @@ UNRESOLVED_REQUIRED_VALUES = {
     "todo",
 }
 EMBEDDED_PLACEHOLDER = re.compile(r"(^|[\s:;,/()_-])(\.\.\.|…|tbd|todo)($|[\s:;,/()_-])", re.I)
+IMMUTABLE_LOG_URL = re.compile(
+    r"https://github\.com/jadenfix/beater/actions/runs/[0-9]+(?:/job/[0-9]+)?"
+)
 
 
 def clean_value(value):
@@ -103,6 +106,30 @@ def require_compose_logs_saved_arg(value):
         or "not saved" in normalized
     ):
         raise SystemExit("--compose-logs-saved must identify saved logs")
+    if cleaned.startswith("https://"):
+        if not IMMUTABLE_LOG_URL.fullmatch(cleaned):
+            raise SystemExit(
+                "--compose-logs-saved must be a repo-relative docs/demos log file "
+                "or immutable GitHub Actions run/job URL"
+            )
+        return cleaned
+    path = Path(cleaned)
+    if path.is_absolute() or ".." in path.parts:
+        raise SystemExit("--compose-logs-saved must be a repo-relative path under docs/demos")
+    if len(path.parts) < 2 or path.parts[0] != "docs" or path.parts[1] != "demos":
+        raise SystemExit("--compose-logs-saved must live under docs/demos")
+    log_path = repo_root() / path
+    if not log_path.is_file():
+        raise SystemExit(f"--compose-logs-saved file does not exist: {cleaned}")
+    try:
+        log_path.resolve().relative_to(repo_root().resolve())
+    except ValueError:
+        raise SystemExit("--compose-logs-saved must resolve inside the repository") from None
+    probe = repo_root()
+    for part in path.parts:
+        probe = probe / part
+        if probe.is_symlink():
+            raise SystemExit(f"--compose-logs-saved must not be a symlink: {cleaned}")
     return cleaned
 
 

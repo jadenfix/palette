@@ -113,8 +113,11 @@ placeholder values such as `...`; the generator and validator reject unresolved
 evidence. `--prior-exposure "none"` is valid when the runner has never seen the
 repository before, and the proof date defaults to the UTC date captured in the
 stopwatch proof's `Clone started at` field. Save the outside-run terminal
-transcript or compose logs, then pass the saved artifact path or immutable CI
-log URL with `--compose-logs-saved`.
+transcript or compose logs as a repo-relative, committed/clean, non-symlink file
+under `docs/demos/` (for example `docs/demos/gate2-outside-compose.log`), or
+use an immutable GitHub Actions run/job URL such as
+`https://github.com/jadenfix/beater/actions/runs/<run_id>`. Pass that value with
+`--compose-logs-saved`.
 
 ```bash
 quickstart_dashboard="$(sed -n 's/^- Quickstart dashboard: //p' docs/demos/gate2-compose-stopwatch.md)"
@@ -198,8 +201,11 @@ EBML/WebM, Segment, Info, Tracks, and Cluster structure plus a video track, and
 requires the recording notes to declare `Recording mode: compose` and describe
 the full click-through: quickstart trace, `llm.call`, prompt, completion, model,
 token breakdown, cost, latency, and run -> turn -> step -> tool -> MCP waterfall.
-Stopwatch, recording, and notes paths must be repo-relative paths
-under `docs/demos/` and must not resolve through symlinks.
+Stopwatch, recording, notes, and saved compose-log paths must be repo-relative
+paths under `docs/demos/` and must not resolve through symlinks. Saved
+compose-log evidence must be a committed/clean file at closure, or an immutable
+GitHub Actions run/job URL under
+`https://github.com/jadenfix/beater/actions/runs/`.
 
 ## Required Evidence
 
@@ -215,7 +221,7 @@ under `docs/demos/` and must not resolve through symlinks.
 - Quickstart dashboard URL:
 - All-kind nested trace ID:
 - All-kind dashboard URL:
-- `docker compose` logs saved:
+- `docker compose` logs saved: repo-relative committed/clean non-symlink `docs/demos/` log file or immutable GitHub Actions run/job URL
 - Failure notes, if any:
 
 ## Pass Checklist

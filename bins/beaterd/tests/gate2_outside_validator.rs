@@ -100,6 +100,10 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(readme.contains("--waterfall-observation"));
     assert!(readme.contains("--terminal-output-excerpt"));
     assert!(readme.contains("--compose-logs-saved"));
+    assert!(readme.contains("repo-relative, committed/clean"));
+    assert!(readme.contains("non-symlink file under `docs/demos/`"));
+    assert!(readme.contains("immutable GitHub Actions"));
+    assert!(readme.contains("actions/runs/<run_id>"));
     assert!(readme.contains("Do not leave placeholder values such as `...`"));
     assert!(readme.contains("uncommitted non-evidence worktree changes"));
     assert!(readme.contains(r#"--runner-name "Jane Outside Runner""#));
@@ -134,6 +138,13 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(proof_template.contains("--waterfall-observation"));
     assert!(proof_template.contains("--terminal-output-excerpt"));
     assert!(proof_template.contains("--compose-logs-saved"));
+    assert!(proof_template.contains("repo-relative, committed/clean"));
+    assert!(proof_template.contains("non-symlink file\nunder `docs/demos/`"));
+    assert!(proof_template.contains("immutable GitHub Actions run/job URL"));
+    assert!(proof_template.contains("actions/runs/<run_id>"));
+    assert!(proof_template.contains("saved compose-log paths"));
+    assert!(proof_template.contains("compose-log evidence must be a committed/clean file"));
+    assert!(proof_template.contains("repo-relative committed/clean non-symlink `docs/demos/`"));
     assert!(proof_template.contains("placeholder values such as `...`"));
     assert!(proof_template.contains(r#"--runner-name "Jane Outside Runner""#));
     assert!(
@@ -448,6 +459,24 @@ fn gate2_outside_generator_rejects_unsaved_compose_logs() {
     assert!(
         !generated.exists(),
         "generator must not write completed proof with unsaved compose logs"
+    );
+}
+
+#[test]
+fn gate2_outside_generator_rejects_ambiguous_compose_logs() {
+    let fixture = ValidatorFixture::new();
+    let generated = fixture
+        .dir
+        .path()
+        .join("ambiguous-compose-logs-generated-proof.md");
+
+    let output =
+        run_generator_with_compose_logs_saved(&fixture.stopwatch_path, &generated, "temp fixture");
+
+    assert_failure(output, "--compose-logs-saved must live under docs/demos");
+    assert!(
+        !generated.exists(),
+        "generator must not write completed proof with ambiguous compose logs"
     );
 }
 
@@ -3230,7 +3259,10 @@ fn gate2_outside_validator_rejects_unsaved_compose_logs() {
     let fixture = ValidatorFixture::new();
     replace(
         &fixture.proof_path,
-        "- `docker compose` logs saved: temp fixture",
+        &format!(
+            "- `docker compose` logs saved: {}",
+            fixture.compose_log_field
+        ),
         "- `docker compose` logs saved: not saved; stopwatch proof embeds compose image output",
     );
 
@@ -3239,6 +3271,125 @@ fn gate2_outside_validator_rejects_unsaved_compose_logs() {
     assert_failure(
         output,
         "`docker compose` logs saved must identify saved logs for Gate 2 evidence",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_ambiguous_compose_logs() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        &format!(
+            "- `docker compose` logs saved: {}",
+            fixture.compose_log_field
+        ),
+        "- `docker compose` logs saved: temp fixture",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "`docker compose` logs saved must live under docs/demos",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_missing_compose_log_artifact() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        &format!(
+            "- `docker compose` logs saved: {}",
+            fixture.compose_log_field
+        ),
+        "- `docker compose` logs saved: docs/demos/missing-compose.log",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "`docker compose` logs file does not exist: docs/demos/missing-compose.log",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_absolute_compose_log_artifact() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        &format!(
+            "- `docker compose` logs saved: {}",
+            fixture.compose_log_field
+        ),
+        "- `docker compose` logs saved: /tmp/gate2-compose.log",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "`docker compose` logs saved must be a repo-relative path under docs/demos",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_symlink_compose_log_artifact() {
+    let fixture = ValidatorFixture::new();
+    let linked_log = fixture
+        .compose_log_path
+        .parent()
+        .expect("compose log path should have parent")
+        .join("linked-compose.log");
+    symlink(&fixture.compose_log_path, &linked_log)
+        .unwrap_or_else(|err| panic!("symlink compose log artifact: {err}"));
+    let linked_field = repo_relative_path(&linked_log);
+    replace(
+        &fixture.proof_path,
+        &format!(
+            "- `docker compose` logs saved: {}",
+            fixture.compose_log_field
+        ),
+        &format!("- `docker compose` logs saved: {linked_field}"),
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(output, "`docker compose` logs saved must not be a symlink");
+}
+
+#[test]
+fn gate2_outside_validator_accepts_immutable_compose_log_url() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        &format!(
+            "- `docker compose` logs saved: {}",
+            fixture.compose_log_field
+        ),
+        "- `docker compose` logs saved: https://github.com/jadenfix/beater/actions/runs/123456789",
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_success(output, DRAFT_VALID);
+}
+
+#[test]
+fn gate2_outside_validator_rejects_dirty_compose_log_at_closure() {
+    let fixture_repo = write_validator_closure_fixture_repo();
+    let log_path = fixture_repo
+        .path()
+        .join("docs/demos/gate2-closure-fixture/gate2-outside-compose.log");
+    fs::write(&log_path, "mutated compose logs\n")
+        .unwrap_or_else(|err| panic!("mutate closure compose log: {err}"));
+
+    let output = run_default_validator_in_repo(fixture_repo.path());
+
+    assert_failure(
+        output,
+        "`docker compose` logs saved must be committed and clean before Gate 2 closure",
     );
 }
 
@@ -3682,8 +3833,10 @@ struct ValidatorFixture {
     stopwatch_path: PathBuf,
     notes_path: PathBuf,
     recording_path: PathBuf,
+    compose_log_path: PathBuf,
     stopwatch_field: String,
     recording_field: String,
+    compose_log_field: String,
 }
 
 impl ValidatorFixture {
@@ -3697,13 +3850,20 @@ impl ValidatorFixture {
         let stopwatch_path = artifact_dir.path().join("stopwatch-proof.md");
         let notes_path = artifact_dir.path().join("recording-notes.md");
         let recording_path = artifact_dir.path().join("recording.webm");
+        let compose_log_path = artifact_dir.path().join("gate2-outside-compose.log");
         let artifact_rel = repo_relative_path(artifact_dir.path());
         let stopwatch_field = format!("{artifact_rel}/stopwatch-proof.md");
         let recording_field = format!("{artifact_rel}/recording.webm");
         let notes_field = format!("{artifact_rel}/recording-notes.md");
+        let compose_log_field = format!("{artifact_rel}/gate2-outside-compose.log");
 
         fs::write(&recording_path, recording_bytes())
             .unwrap_or_else(|err| panic!("write {}: {err}", recording_path.display()));
+        fs::write(
+            &compose_log_path,
+            "Gate 2 compose stopwatch passed\nBrowser recording: passed\n",
+        )
+        .unwrap_or_else(|err| panic!("write {}: {err}", compose_log_path.display()));
         let recording_name = recording_path
             .file_name()
             .unwrap_or_else(|| {
@@ -3722,7 +3882,12 @@ impl ValidatorFixture {
         .unwrap_or_else(|err| panic!("write {}: {err}", stopwatch_path.display()));
         fs::write(
             &proof_path,
-            outside_proof(&stopwatch_field, &recording_field, &notes_field),
+            outside_proof(
+                &stopwatch_field,
+                &recording_field,
+                &notes_field,
+                &compose_log_field,
+            ),
         )
         .unwrap_or_else(|err| panic!("write {}: {err}", proof_path.display()));
 
@@ -3733,13 +3898,15 @@ impl ValidatorFixture {
             stopwatch_path,
             notes_path,
             recording_path,
+            compose_log_path,
             stopwatch_field,
             recording_field,
+            compose_log_field,
         }
     }
 }
 
-fn outside_proof(stopwatch: &str, recording: &str, notes: &str) -> String {
+fn outside_proof(stopwatch: &str, recording: &str, notes: &str, compose_log: &str) -> String {
     let commit_sha = current_head();
     let quickstart_release_id = quickstart_release_id();
     format!(
@@ -3816,7 +3983,7 @@ The runner completed the flow using only public repository instructions.
 - Quickstart dashboard URL: `http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={QUICKSTART_TRACE}`
 - All-kind nested trace ID: {ALL_KIND_TRACE}
 - All-kind dashboard URL: `http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={ALL_KIND_TRACE}`
-- `docker compose` logs saved: temp fixture
+- `docker compose` logs saved: {compose_log}
 - Failure notes, if any: none
 
 ## Pass Checklist
@@ -4076,7 +4243,7 @@ fn run_generator_without_fake_ffprobe(stopwatch_path: &Path, output_path: &Path)
         .arg("--terminal-output-excerpt")
         .arg(terminal_output_excerpt())
         .arg("--compose-logs-saved")
-        .arg("temp fixture")
+        .arg(compose_log_field_for_stopwatch(stopwatch_path))
         .env("PATH", path_with_isolated_tempdir(&path_dir));
     command
         .output()
@@ -4126,7 +4293,7 @@ fn run_generator_with_prior_exposure(
         .arg("--terminal-output-excerpt")
         .arg(terminal_output_excerpt())
         .arg("--compose-logs-saved")
-        .arg("temp fixture")
+        .arg(compose_log_field_for_stopwatch(stopwatch_path))
         .env("PATH", path_with_tempdir(&ffprobe));
     command.output().unwrap_or_else(|err| {
         panic!("run Gate 2 outside proof generator with prior exposure: {err}")
@@ -4153,7 +4320,7 @@ fn run_generator_with_date(stopwatch_path: &Path, output_path: &Path, date: &str
         .arg("--terminal-output-excerpt")
         .arg(terminal_output_excerpt())
         .arg("--compose-logs-saved")
-        .arg("temp fixture")
+        .arg(compose_log_field_for_stopwatch(stopwatch_path))
         .arg("--date")
         .arg(date)
         .env("PATH", path_with_tempdir(&ffprobe));
@@ -4275,11 +4442,34 @@ fn run_generator_with_options_and_runner(
             .arg(terminal_output_excerpt());
     }
     if include_compose_logs_saved {
-        command.arg("--compose-logs-saved").arg("temp fixture");
+        command
+            .arg("--compose-logs-saved")
+            .arg(compose_log_field_for_stopwatch(stopwatch_path));
     }
     command
         .output()
         .unwrap_or_else(|err| panic!("run Gate 2 outside proof generator: {err}"))
+}
+
+fn compose_log_field_for_stopwatch(stopwatch_path: &Path) -> String {
+    if stopwatch_path == repo_root().join("docs/demos/gate2-compose-stopwatch.md") {
+        return "https://github.com/jadenfix/beater/actions/runs/123456789".to_string();
+    }
+    let log_path = stopwatch_path
+        .parent()
+        .unwrap_or_else(|| {
+            panic!(
+                "stopwatch path should have parent: {}",
+                stopwatch_path.display()
+            )
+        })
+        .join("gate2-outside-compose.log");
+    assert!(
+        log_path.is_file(),
+        "compose log fixture must exist next to stopwatch proof: {}",
+        log_path.display()
+    );
+    repo_relative_path(&log_path)
 }
 
 fn generator_command(
@@ -5086,18 +5276,29 @@ fn write_validator_closure_fixture_repo_with_options(
         recording_notes("recording.webm"),
     )
     .unwrap_or_else(|err| panic!("write validator closure recording notes: {err}"));
+    fs::write(
+        artifact_dir.join("gate2-outside-compose.log"),
+        "Gate 2 compose stopwatch passed\nBrowser recording: passed\n",
+    )
+    .unwrap_or_else(|err| panic!("write validator closure compose log: {err}"));
 
     let recording_field = format!("{artifact_rel}/recording.webm");
     let notes_field = format!("{artifact_rel}/recording-notes.md");
     let stopwatch_field = format!("{artifact_rel}/stopwatch-proof.md");
+    let compose_log_field = format!("{artifact_rel}/gate2-outside-compose.log");
     let stopwatch = stopwatch_proof(&recording_field, &notes_field)
         .replace(&current_repo_sha, &tested_sha)
         .replace(&current_release_id, &tested_release_id);
     fs::write(artifact_dir.join("stopwatch-proof.md"), stopwatch)
         .unwrap_or_else(|err| panic!("write validator closure stopwatch proof: {err}"));
-    let outside = outside_proof(&stopwatch_field, &recording_field, &notes_field)
-        .replace(&current_repo_sha, &tested_sha)
-        .replace(&current_release_id, &tested_release_id);
+    let outside = outside_proof(
+        &stopwatch_field,
+        &recording_field,
+        &notes_field,
+        &compose_log_field,
+    )
+    .replace(&current_repo_sha, &tested_sha)
+    .replace(&current_release_id, &tested_release_id);
     fs::write(
         fixture
             .path()

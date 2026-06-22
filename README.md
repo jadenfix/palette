@@ -357,8 +357,11 @@ completed the stopwatch command, generate the proof from the stopwatch artifact.
 Before running the command, replace every identity and environment example below
 with the runner's actual values. Do not leave placeholder values such as `...`;
 the generator and validator reject unresolved evidence. Save the outside-run
-terminal transcript or compose logs, then pass the saved artifact path or
-immutable CI log URL with `--compose-logs-saved`.
+terminal transcript or compose logs as a repo-relative, committed/clean,
+non-symlink file under `docs/demos/` (for example
+`docs/demos/gate2-outside-compose.log`), or use an immutable GitHub Actions
+run/job URL such as `https://github.com/jadenfix/beater/actions/runs/<run_id>`.
+Pass that value with `--compose-logs-saved`.
 
 ```bash
 quickstart_dashboard="$(sed -n 's/^- Quickstart dashboard: //p' docs/demos/gate2-compose-stopwatch.md)"
@@ -396,7 +399,10 @@ wrong or missing stock quickstart snippet markers,
 proof dates that do not match the timed clone start,
 compose image excerpts missing runner images or structured `proof-image` rows,
 non-repo-relative `docs/demos/` artifacts, and non-prebuilt GHCR image digests.
-It rejects recording notes from a different dashboard session. It rejects
+It rejects ambiguous compose-log notes, missing saved log files, non-GitHub
+Actions log URLs, symlinked log artifacts, and dirty or uncommitted saved log
+artifacts at closure. It rejects recording notes from a different dashboard
+session. It rejects
 uncommitted non-evidence worktree changes at closure. It rejects any screen
 recording hash that does not match the committed file. It requires
 `Quickstart click source: manual-outside-runner` and
