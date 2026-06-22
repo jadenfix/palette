@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -29,6 +30,96 @@ function loadDashboardApiModule(context = {}) {
     { filename: "lib/api.ts" }
   );
   return module.exports;
+}
+
+function loadGate2ConfirmRouteModule(context = {}) {
+  const source = readFileSync(join(root, "app/api/gate2/confirm/route.ts"), "utf8");
+  const { outputText } = ts.transpileModule(source, {
+    compilerOptions: {
+      esModuleInterop: true,
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022
+    }
+  });
+  const module = { exports: {} };
+  vm.runInNewContext(
+    outputText,
+    {
+      exports: module.exports,
+      module,
+      process,
+      Response,
+      URL,
+      require(specifier) {
+        if (specifier === "node:crypto") return { createHash };
+        throw new Error(`unexpected route test import: ${specifier}`);
+      },
+      ...context
+    },
+    { filename: "app/api/gate2/confirm/route.ts" }
+  );
+  return module.exports;
+}
+
+function gate2ConfirmRequest({
+  session = "0123456789abcdef0123456789abcdef",
+  origin = "http://127.0.0.1:3000",
+  host = "127.0.0.1:3000",
+  fetchMetadata = true,
+  body = gate2ConfirmBody()
+} = {}) {
+  const headers = new Map();
+  if (origin) headers.set("origin", origin);
+  if (host) headers.set("host", host);
+  if (fetchMetadata) {
+    headers.set("sec-fetch-site", "same-origin");
+    headers.set("sec-fetch-mode", "cors");
+    headers.set("sec-fetch-dest", "empty");
+  }
+  return {
+    url: "http://localhost:3000/api/gate2/confirm",
+    cookies: {
+      get(name) {
+        return name === "beater_gate2_session" && session ? { value: session } : undefined;
+      }
+    },
+    headers: {
+      get(name) {
+        return headers.get(name.toLowerCase()) ?? null;
+      }
+    },
+    json: async () => body
+  };
+}
+
+function gate2ConfirmBody({
+  traceId = "00000000000000000000000000000000",
+  spanId = "0000000000000000",
+  nonce = "abcdef0123456789abcdef0123456789",
+  capturedAtMs = Date.now()
+} = {}) {
+  return {
+    traceId,
+    spanId,
+    click: {
+      nonce,
+      capturedAtMs,
+      isTrusted: true,
+      button: 0,
+      detail: 1,
+      clientX: 10,
+      clientY: 20,
+      screenX: 30,
+      screenY: 40
+    }
+  };
+}
+
+async function responseJson(response) {
+  return {
+    status: response.status,
+    body: await response.json()
+  };
 }
 
 test("dashboard page exposes the trace inspection surface", () => {
@@ -675,4 +766,61 @@ test("gate2 confirmation code is fetched only after a browser span click", () =>
   assert.match(proxy, /export function proxy/);
   assert.match(proxy, /beater_gate2_session/);
   assert.match(proxy, /httpOnly: true/);
+});
+
+test("gate2 confirmation route rejects non-browser requests and nonce replay", async () => {
+  const previousSalt = process.env.BEATER_GATE2_CONFIRMATION_SALT;
+  process.env.BEATER_GATE2_CONFIRMATION_SALT = "unit-salt";
+  try {
+    const { POST } = loadGate2ConfirmRouteModule();
+
+    assert.deepEqual(
+      await responseJson(await POST(gate2ConfirmRequest({ session: "" }))),
+      {
+        status: 403,
+        body: { error: "missing browser session" }
+      }
+    );
+    assert.deepEqual(
+      await responseJson(await POST(gate2ConfirmRequest({ fetchMetadata: false }))),
+      {
+        status: 403,
+        body: { error: "missing browser fetch metadata" }
+      }
+    );
+    assert.deepEqual(
+      await responseJson(await POST(gate2ConfirmRequest({ body: { traceId: "bad" } }))),
+      {
+        status: 400,
+        body: { error: "traceId, spanId, and browser click proof are required" }
+      }
+    );
+
+    const body = gate2ConfirmBody();
+    const expectedCode = createHash("sha256")
+      .update(`gate2:unit-salt:${body.traceId}:${body.spanId}`)
+      .digest("hex")
+      .slice(0, 8)
+      .toUpperCase();
+    assert.deepEqual(
+      await responseJson(await POST(gate2ConfirmRequest({ body }))),
+      {
+        status: 200,
+        body: { code: expectedCode }
+      }
+    );
+    assert.deepEqual(
+      await responseJson(await POST(gate2ConfirmRequest({ body }))),
+      {
+        status: 409,
+        body: { error: "browser click proof was already used" }
+      }
+    );
+  } finally {
+    if (previousSalt === undefined) {
+      delete process.env.BEATER_GATE2_CONFIRMATION_SALT;
+    } else {
+      process.env.BEATER_GATE2_CONFIRMATION_SALT = previousSalt;
+    }
+  }
 });
