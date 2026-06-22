@@ -197,8 +197,8 @@ attempt starts.
 As soon as the first `Open this quickstart trace-list URL first:` URL appears,
 open that filtered trace-list URL in a normal browser and click the quickstart
 trace, then click the `llm.call` span. The manual checkpoint prints the
-remaining seconds in the clone-to-click SLO. Press Enter in the terminal only
-after prompt, completion, model, token breakdown, cost, and latency are visible.
+remaining seconds in the 5-minute clone-to-click SLO. Press Enter in the
+terminal only after prompt, completion, model, token breakdown, cost, and latency are visible.
 Do not wait for the script to finish; it continues with automated browser
 proof, the all-kind waterfall trace, and the recording after the timed manual
 quickstart click. Keep the command running until those post-SLO evidence steps

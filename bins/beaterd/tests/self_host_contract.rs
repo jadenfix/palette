@@ -145,6 +145,8 @@ fn self_host_files_define_gate_two_compose_surface() {
 
     let image_workflow = read(root.join(".github/workflows/container-images.yml"));
     assert!(image_workflow.contains("packages: write"));
+    assert!(image_workflow.contains("group: container-images-${{ github.ref }}"));
+    assert!(image_workflow.contains("cancel-in-progress: true"));
     assert!(image_workflow.contains("ubuntu-24.04-arm"));
     assert!(image_workflow.contains("platform: linux/arm64"));
     assert!(image_workflow.contains("docker buildx imagetools create"));

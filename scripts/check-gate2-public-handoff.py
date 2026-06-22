@@ -555,12 +555,19 @@ def clone_repo(
 
 
 def require_file_contains(
-    clone_dir: Path, rel: str, snippets: list[str], *, contract: str
+    clone_dir: Path,
+    rel: str,
+    snippets: list[str],
+    *,
+    contract: str,
+    normalize_whitespace: bool = False,
 ) -> None:
     path = clone_dir / rel
     text = path.read_text()
+    haystack = re.sub(r"\s+", " ", text) if normalize_whitespace else text
     for snippet in snippets:
-        if snippet not in text:
+        needle = re.sub(r"\s+", " ", snippet) if normalize_whitespace else snippet
+        if needle not in haystack:
             raise SystemExit(
                 f"{rel} must contain {contract} for outside runners: {snippet!r}"
             )
@@ -575,10 +582,11 @@ def require_public_handoff_timing_guard(clone_dir: Path) -> None:
             "open that filtered trace-list URL",
             "not wait for the script to finish",
             "seconds remaining",
-            "5-minute clone-to-click\nSLO",
+            "5-minute clone-to-click SLO",
             "cleanup hint printed by",
         ],
         contract="quickstart handoff guidance",
+        normalize_whitespace=True,
     )
     require_file_contains(
         clone_dir,
@@ -586,16 +594,22 @@ def require_public_handoff_timing_guard(clone_dir: Path) -> None:
         [
             "As soon as the first `Open this quickstart trace-list URL first:` URL appears",
             "filtered trace-list URL",
-            "do not\nwait for the script to finish",
-            "seconds\nremaining in the 5-minute clone-to-click SLO",
+            "do not wait for the script to finish",
+            "seconds remaining in the 5-minute clone-to-click SLO",
             "cleanup hint printed",
         ],
         contract="quickstart handoff guidance",
+        normalize_whitespace=True,
     )
     require_file_contains(
         clone_dir,
         "scripts/gate2-compose-stopwatch.sh",
         [
+            "Manual outside-run checkpoint:\n"
+            "  ${remaining}s remain in the 5-minute clone-to-click SLO.\n"
+            "  In a normal browser, open the quickstart trace-list URL above first",
+            "Outside-run timing-critical browser step:\n"
+            "  Open the quickstart trace-list URL above in a normal browser now; do not wait for the script to finish.",
             "Open the quickstart trace-list URL above in a normal browser now",
             "do not wait for the script to finish",
             "${remaining}s remain in the 5-minute clone-to-click SLO",
@@ -604,6 +618,16 @@ def require_public_handoff_timing_guard(clone_dir: Path) -> None:
             "Direct quickstart trace URL:",
         ],
         contract="quickstart handoff script",
+    )
+    require_file_contains(
+        clone_dir,
+        "scripts/gate2-outside-local-preflight.sh",
+        [
+            "If this is a stale Beater Gate 2 run",
+            "docker-compose.prebuilt.yml -p beater-stopwatch down -v --remove-orphans",
+            "label=com.docker.compose.project=beater-stopwatch",
+        ],
+        contract="outside preflight stale-run cleanup guidance",
     )
 
 

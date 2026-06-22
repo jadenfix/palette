@@ -947,6 +947,11 @@ fn gate2_public_handoff_verifier_rejects_unfiltered_quickstart_handoff_docs() {
     let readme_path = fixture_repo.path().join("README.md");
     replace(
         &readme_path,
+        "open that filtered\ntrace-list URL",
+        "open the printed dashboard URL",
+    );
+    replace(
+        &readme_path,
         "open that filtered trace-list URL",
         "open the printed dashboard URL",
     );
@@ -995,6 +1000,38 @@ fn gate2_public_handoff_verifier_rejects_missing_quickstart_list_url_script() {
     assert_failure(
         output,
         "scripts/gate2-compose-stopwatch.sh must contain quickstart handoff script for outside runners",
+    );
+}
+
+#[test]
+fn gate2_public_handoff_verifier_rejects_missing_stale_cleanup_preflight_hint() {
+    let registry = tempdir("create registry fixture dir");
+    write_registry_fixtures(registry.path());
+    let fixture_repo = write_public_handoff_fixture_repo();
+    let preflight_path = fixture_repo
+        .path()
+        .join("scripts/gate2-outside-local-preflight.sh");
+    replace(
+        &preflight_path,
+        "If this is a stale Beater Gate 2 run",
+        "If this is an old local run",
+    );
+    git_success(
+        fixture_repo.path(),
+        &["add", "scripts/gate2-outside-local-preflight.sh"],
+    );
+    git_success(
+        fixture_repo.path(),
+        &["commit", "-m", "break stale cleanup preflight hint"],
+    );
+    let fixture_head = git_output(fixture_repo.path(), &["rev-parse", "HEAD"]);
+    let source_url = format!("file://{}", fixture_repo.path().display());
+
+    let output = run_public_handoff_with_fixture(&source_url, &fixture_head, registry.path());
+
+    assert_failure(
+        output,
+        "scripts/gate2-outside-local-preflight.sh must contain outside preflight stale-run cleanup guidance for outside runners",
     );
 }
 
@@ -1787,10 +1824,24 @@ fn gate2_stopwatch_service_image_digest_rejects_wrong_service_repo_digest() {
 fn gate2_stopwatch_outside_next_steps_separate_dashboard_targets() {
     let script = fs::read_to_string(repo_root().join("scripts/gate2-compose-stopwatch.sh"))
         .unwrap_or_else(|err| panic!("read Gate 2 compose stopwatch script: {err}"));
+    let checkpoint = script
+        .split("Manual outside-run checkpoint:")
+        .nth(1)
+        .and_then(|tail| tail.split("\nEOF").next())
+        .unwrap_or_else(|| panic!("missing manual outside-run checkpoint block"));
+    let outside_step = script
+        .split("Outside-run timing-critical browser step:")
+        .nth(1)
+        .and_then(|tail| tail.split("\nEOF").next())
+        .unwrap_or_else(|| panic!("missing outside-run timing-critical browser step block"));
 
-    assert!(script.contains("Open the quickstart trace-list URL above in a normal browser now"));
-    assert!(script.contains("do not wait for the script to finish"));
-    assert!(script.contains("${remaining}s remain in the 5-minute clone-to-click SLO"));
+    assert!(checkpoint.contains("${remaining}s remain in the 5-minute clone-to-click SLO"));
+    assert!(checkpoint.contains("open the quickstart trace-list URL above first"));
+    assert!(
+        outside_step.contains("Open the quickstart trace-list URL above in a normal browser now")
+    );
+    assert!(outside_step.contains("do not wait for the script to finish"));
+    assert!(script.contains("Open this quickstart trace-list URL first:"));
     assert!(script.contains("quickstart_list_url="));
     assert!(script.contains("kind=llm.call&model=gpt-quickstart&release=$gate2_run_id"));
     assert!(script.contains("Direct quickstart trace URL:"));
@@ -5406,14 +5457,25 @@ set -euo pipefail
 mkdir -p docs/demos
 cat <<'EOF_PROMPT'
 Manual outside-run checkpoint:
-  Fixture waits here to prove the diagnostic full-run confirms only after the
-  wrapper reaches the timing-critical quickstart browser checkpoint.
+  ${remaining}s remain in the 5-minute clone-to-click SLO.
+  In a normal browser, open the quickstart trace-list URL above first, click the
+  quickstart trace, click the llm.call span, and confirm prompt, completion,
+  model, token breakdown, cost, and latency are visible.
 EOF_PROMPT
-# Public handoff contract strings retained for cloned verifier checks.
-# ${remaining}s remain in the 5-minute clone-to-click SLO.
-# quickstart_list_url="$dashboard_base_url/?tenant=demo&project=demo&environment=local&kind=llm.call&model=gpt-quickstart&release=$gate2_run_id"
-# Direct quickstart trace URL:
-# open $quickstart_list_url in a normal browser for the quickstart trace list
+dashboard_base_url="${dashboard_base_url:-http://127.0.0.1:3000}"
+gate2_run_id="${gate2_run_id:-fixture-run}"
+quickstart_list_url="$dashboard_base_url/?tenant=demo&project=demo&environment=local&kind=llm.call&model=gpt-quickstart&release=$gate2_run_id"
+cat <<EOF_URLS
+Open this quickstart trace-list URL first:
+  $quickstart_list_url
+
+Direct quickstart trace URL:
+open $quickstart_list_url in a normal browser for the quickstart trace list
+EOF_URLS
+cat <<'EOF_STEP'
+Outside-run timing-critical browser step:
+  Open the quickstart trace-list URL above in a normal browser now; do not wait for the script to finish.
+EOF_STEP
 if ! IFS= read -r _manual_checkpoint_confirmation; then
   echo "missing diagnostic manual checkpoint confirmation" >&2
   exit 42
