@@ -268,17 +268,32 @@ function truncateApiError(value: string): string {
 
 export function durationMs(start: string, end: string | null | undefined): number | null {
   if (!end) return null;
-  const startMs = Date.parse(start);
-  const endMs = Date.parse(end);
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return null;
-  return Math.max(0, endMs - startMs);
+  const startMicros = timestampMicros(start);
+  const endMicros = timestampMicros(end);
+  if (startMicros === null || endMicros === null) return null;
+  return Math.max(0, endMicros - startMicros) / 1000;
 }
 
 export function formatDuration(start: string, end: string | null | undefined): string {
   const ms = durationMs(start, end);
   if (ms === null) return "open";
-  if (ms < 1000) return `${ms} ms`;
+  if (ms < 1000) return formatMilliseconds(ms);
   return `${(ms / 1000).toFixed(2)} s`;
+}
+
+export function timestampMicros(value: string): number | null {
+  const match = value.match(
+    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/
+  );
+  if (match) {
+    const [, wholeSecond, fraction = "", zone] = match;
+    const secondMs = Date.parse(`${wholeSecond}${zone}`);
+    if (!Number.isFinite(secondMs)) return null;
+    const micros = Number(fraction.padEnd(6, "0").slice(0, 6));
+    return secondMs * 1000 + micros;
+  }
+  const parsedMs = Date.parse(value);
+  return Number.isFinite(parsedMs) ? parsedMs * 1000 : null;
 }
 
 export function formatCost(cost: Money | null | undefined): string {
@@ -300,8 +315,14 @@ export function formatLatency(durationMs: number | null | undefined): string {
   if (durationMs === null || durationMs === undefined || !Number.isFinite(durationMs) || durationMs < 0) {
     return "open";
   }
-  if (durationMs < 1000) return `${durationMs} ms`;
+  if (durationMs < 1000) return formatMilliseconds(durationMs);
   return `${(durationMs / 1000).toFixed(2)} s`;
+}
+
+function formatMilliseconds(ms: number): string {
+  if (ms > 0 && ms < 1) return `${ms.toFixed(3)} ms`;
+  if (ms > 0 && ms < 10 && !Number.isInteger(ms)) return `${ms.toFixed(1)} ms`;
+  return `${Math.round(ms)} ms`;
 }
 
 export function spanDepth(span: CanonicalSpan, spans: CanonicalSpan[]): number {

@@ -74,6 +74,13 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   await expect(llm.locator(".kind-icon")).toHaveAttribute("data-icon", "llm");
   await expect(llm.locator(".span-track")).toBeVisible();
   await expect(llm.locator(".span-bar")).toBeVisible();
+  const llmTrackBox = await llm.locator(".span-track").boundingBox();
+  const llmBarBox = await llm.locator(".span-bar").boundingBox();
+  expect(llmTrackBox).not.toBeNull();
+  expect(llmBarBox).not.toBeNull();
+  if (!llmTrackBox || !llmBarBox) throw new Error("missing llm timeline bar geometry");
+  expect(llmBarBox.width).toBeGreaterThanOrEqual(4);
+  expect(llmBarBox.width).toBeLessThan(llmTrackBox.width * 0.95);
   await expect(tool.locator(".kind-icon")).toHaveAttribute("data-icon", "tool");
   await expect(mcp.locator(".kind-icon")).toHaveAttribute("data-icon", "mcp");
 

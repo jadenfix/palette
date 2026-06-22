@@ -34,7 +34,8 @@ import {
   formatReleases,
   loadDashboardData,
   spanDepth,
-  statusLabel
+  statusLabel,
+  timestampMicros
 } from "../lib/api";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -827,17 +828,16 @@ function compareSpansByStart(left: CanonicalSpan, right: CanonicalSpan): number 
 }
 
 function parsedTimeOrMax(value: string): number {
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+  return timestampMicros(value) ?? Number.MAX_SAFE_INTEGER;
 }
 
 function latestEndedAt(spans: CanonicalSpan[]): string | null {
-  let latest: { value: string; ms: number } | null = null;
+  let latest: { value: string; micros: number } | null = null;
   for (const span of spans) {
     if (!span.end_time) continue;
-    const ms = Date.parse(span.end_time);
-    if (!Number.isFinite(ms)) continue;
-    if (!latest || ms > latest.ms) latest = { value: span.end_time, ms };
+    const micros = timestampMicros(span.end_time);
+    if (micros === null) continue;
+    if (!latest || micros > latest.micros) latest = { value: span.end_time, micros };
   }
   return latest?.value ?? null;
 }
@@ -1045,9 +1045,9 @@ function spanTimeline(
 ): { offset: string; width: string } {
   const bounds = spans
     .map((candidate) => {
-      const start = Date.parse(candidate.start_time);
-      const end = candidate.end_time ? Date.parse(candidate.end_time) : start;
-      if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+      const start = timestampMicros(candidate.start_time);
+      const end = candidate.end_time ? timestampMicros(candidate.end_time) : start;
+      if (start === null || end === null) return null;
       return { start, end: Math.max(start, end) };
     })
     .filter((candidate): candidate is { start: number; end: number } => candidate !== null);
@@ -1056,12 +1056,16 @@ function spanTimeline(
 
   const traceStart = Math.min(...bounds.map((bound) => bound.start));
   const traceEnd = Math.max(...bounds.map((bound) => bound.end));
-  const traceDuration = Math.max(1, traceEnd - traceStart);
-  const spanStart = Date.parse(span.start_time);
-  const spanEnd = span.end_time ? Date.parse(span.end_time) : spanStart;
+  const traceDuration = traceEnd - traceStart;
+  const spanStart = timestampMicros(span.start_time);
+  const spanEnd = span.end_time ? timestampMicros(span.end_time) : spanStart;
 
-  if (!Number.isFinite(spanStart) || !Number.isFinite(spanEnd)) {
+  if (spanStart === null || spanEnd === null) {
     return { offset: "0%", width: "8%" };
+  }
+
+  if (traceDuration <= 0) {
+    return { offset: "0%", width: "4%" };
   }
 
   const offset = Math.min(96, Math.max(0, ((spanStart - traceStart) / traceDuration) * 100));
@@ -1098,22 +1102,30 @@ function traceAxis(
 ): { ticks: { offset: string; label: string }[] } | null {
   const bounds = spans
     .map((span) => {
-      const start = Date.parse(span.start_time);
-      const end = span.end_time ? Date.parse(span.end_time) : start;
-      if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+      const start = timestampMicros(span.start_time);
+      const end = span.end_time ? timestampMicros(span.end_time) : start;
+      if (start === null || end === null) return null;
       return { start, end: Math.max(start, end) };
     })
     .filter((span): span is { start: number; end: number } => span !== null);
   if (bounds.length === 0) return null;
   const start = Math.min(...bounds.map((span) => span.start));
   const end = Math.max(...bounds.map((span) => span.end));
-  const duration = Math.max(1, end - start);
-  const tickCount = duration < 10 ? 2 : 4;
+  const duration = end - start;
+  if (duration <= 0) {
+    return {
+      ticks: [
+        { offset: "0.0%", label: "0 ms" },
+        { offset: "100.0%", label: "same instant" }
+      ]
+    };
+  }
+  const tickCount = duration < 1000 ? 2 : 4;
   const ticks = Array.from({ length: tickCount + 1 }, (_, index) => {
     const ratio = index / tickCount;
     return {
       offset: `${(ratio * 100).toFixed(1)}%`,
-      label: formatAxisDuration(duration * ratio)
+      label: formatAxisDuration((duration * ratio) / 1000)
     };
   });
   return { ticks };

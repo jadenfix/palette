@@ -218,12 +218,26 @@ test("dashboard API errors stay concise and user-facing", () => {
 });
 
 test("dashboard time formatters hide invalid backend timing", () => {
-  const { durationMs, formatDuration, formatLatency } = loadDashboardApiModule();
+  const { durationMs, formatDuration, formatLatency, timestampMicros } =
+    loadDashboardApiModule();
 
   assert.equal(durationMs("bad-start", "2026-01-01T00:00:00Z"), null);
   assert.equal(durationMs("2026-01-01T00:00:00Z", "bad-end"), null);
+  assert.equal(
+    timestampMicros("2026-01-01T00:00:00.000123456Z") -
+      timestampMicros("2026-01-01T00:00:00Z"),
+    123
+  );
+  assert.equal(
+    durationMs("2026-01-01T00:00:00.000100Z", "2026-01-01T00:00:00.000410Z"),
+    0.31
+  );
   assert.equal(formatDuration("bad-start", "2026-01-01T00:00:00Z"), "open");
   assert.equal(formatDuration("2026-01-01T00:00:01Z", "2026-01-01T00:00:00Z"), "0 ms");
+  assert.equal(
+    formatDuration("2026-01-01T00:00:00.000100Z", "2026-01-01T00:00:00.000410Z"),
+    "0.310 ms"
+  );
   assert.equal(formatLatency(Number.NaN), "open");
   assert.equal(formatLatency(Number.POSITIVE_INFINITY), "open");
   assert.equal(formatLatency(-1), "open");
