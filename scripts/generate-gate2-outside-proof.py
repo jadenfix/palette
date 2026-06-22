@@ -104,7 +104,7 @@ def compose_images_excerpt(stopwatch_text, stopwatch_path):
         "ghcr.io/jadenfix/beater/dashboard-e2e",
         "ghcr.io/jadenfix/beater/otel-python",
     }
-    services = [line for line in lines if gate2_repos.intersection(line.split())]
+    services = [line for line in lines if any(repo in line for repo in gate2_repos)]
     if services:
         return " | ".join(services)
     return " | ".join(lines[:3])
@@ -217,6 +217,8 @@ unaided using public repository instructions.
 - Script-to-first-trace: {field_value(stopwatch_text, "Script-to-first-trace", stopwatch_rel)}
 - Time-to-quickstart-click: {field_value(stopwatch_text, "Time-to-quickstart-click", stopwatch_rel)}
 - Script-to-quickstart-click: {field_value(stopwatch_text, "Script-to-quickstart-click", stopwatch_rel)}
+- Quickstart click source: {field_value(stopwatch_text, "Quickstart click source", stopwatch_rel)}
+- Manual quickstart confirmation: {field_value(stopwatch_text, "Manual quickstart confirmation", stopwatch_rel)}
 - Total proof duration: {field_value(stopwatch_text, "Total duration", stopwatch_rel)}
 - Script duration: {field_value(stopwatch_text, "Script duration", stopwatch_rel)}
 - Outside-run wrapper: {field_value(stopwatch_text, "Outside-run wrapper", stopwatch_rel)}
@@ -256,7 +258,7 @@ The runner completed the flow using only public repository instructions.
 - [x] The script reported `Clean start: yes`.
 - [x] Time-to-first-trace was 300 seconds or less.
 - [x] Time-to-first-trace includes clone time.
-- [x] Time-to-quickstart-click was 300 seconds or less.
+- [x] Manual quickstart click confirmation was recorded before 300 seconds.
 - [x] The five-line stock OpenTelemetry trace appeared in `localhost:3000`.
 - [x] Clicking the `llm.call` span showed prompt, completion, model, token breakdown, cost, and latency.
 - [x] The all-kind trace rendered run -> turn -> step -> tool -> MCP nesting in the waterfall.

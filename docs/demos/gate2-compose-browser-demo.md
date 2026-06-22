@@ -11,7 +11,7 @@ stock OpenTelemetry quickstart and the all-kind stock OpenTelemetry agent trace.
 - All-kind trace: `42bfb21a2a4dc58046869a20f079b9ec`
 - Shows: open dashboard -> click five-line trace -> click `llm.call` span -> read prompt, completion, model, token breakdown, cost, and latency -> inspect run -> turn -> step -> tool -> MCP waterfall.
 
-This automated maintainer run used the default dashboard URL `http://127.0.0.1:3000`; no alternate host ports were needed.
+This run used the default dashboard URL `http://127.0.0.1:3000`; no alternate host ports were needed.
 
 Regenerate with:
 

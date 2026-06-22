@@ -233,6 +233,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(!stopwatch_script.contains("duration_seconds > 300"));
     assert!(stopwatch_script.contains("time_to_first_trace_seconds > 300"));
     assert!(stopwatch_script.contains("time_to_quickstart_click_seconds > 300"));
+    assert!(stopwatch_script.contains("confirm_manual_quickstart_click"));
+    assert!(stopwatch_script.contains("manual-outside-runner"));
+    assert!(stopwatch_script.contains("Manual quickstart confirmation"));
     assert!(stopwatch_script.contains("git rev-parse HEAD"));
     assert!(stopwatch_script.contains("git branch --show-current"));
     assert!(stopwatch_script.contains("git remote get-url origin"));
@@ -242,6 +245,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("Git worktree clean"));
     assert!(stopwatch_script.contains("docker compose version"));
     assert!(stopwatch_script.contains("compose images"));
+    assert!(stopwatch_script.contains("proof-image beaterd"));
+    assert!(stopwatch_script.contains("proof-image dashboard-e2e"));
     assert!(stopwatch_script
         .contains("run_before_deadline \"Gate 2 prerequisite preflight\" preflight_prerequisites"));
     assert!(
@@ -284,6 +289,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("BEATER_GATE2_BROWSER_PROOF"));
     assert!(stopwatch_script.contains("BEATER_GATE2_RECORD_DEMO"));
     assert!(stopwatch_script.contains("BEATER_GATE2_RECORD_MODE=compose"));
+    assert!(stopwatch_script.contains("BEATER_GATE2_OUTSIDE_WRAPPER=\"$outside_wrapper\""));
     assert!(stopwatch_script.contains("BEATER_E2E_QUICKSTART_TRACE_ID"));
     assert!(stopwatch_script.contains("compose_run_e2e"));
     assert!(stopwatch_script.contains("run_args+=(--build)"));
@@ -366,6 +372,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("scripts/gate2-outside-run.sh"));
     assert!(outside_validator.contains("\"Outside-run wrapper\""));
     assert!(outside_validator.contains("Outside-run wrapper must be yes"));
+    assert!(outside_validator.contains("\"Quickstart click source\""));
+    assert!(outside_validator.contains("Quickstart click source must be manual-outside-runner"));
+    assert!(outside_validator.contains("\"Manual quickstart confirmation\""));
+    assert!(outside_validator.contains("Manual quickstart confirmation must be yes"));
     assert!(outside_validator.contains(":[ \\t]*(.*)$"));
     assert!(outside_validator.contains("BEATER_GATE2_REUSE=1"));
     assert!(outside_validator.contains("BEATER_DASHBOARD_PORT="));
@@ -442,6 +452,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_generator.contains("CANONICAL_COMMAND"));
     assert!(outside_generator.contains("scripts/gate2-outside-run.sh"));
     assert!(outside_generator.contains("Outside-run wrapper"));
+    assert!(outside_generator.contains("Quickstart click source"));
+    assert!(outside_generator.contains("Manual quickstart confirmation"));
     assert!(outside_generator.contains("Git branch"));
     assert!(outside_generator.contains("Git origin"));
     assert!(outside_generator.contains("Git worktree clean"));
@@ -551,9 +563,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("free it rather than setting"));
     assert!(public_handoff.contains("clone_started_epoch = int(time.time())"));
     assert!(public_handoff.contains("env[\"BEATER_GATE2_CLONE_STARTED_EPOCH\"]"));
-    assert!(
-        public_handoff.contains("run([\"scripts/gate2-outside-run.sh\"], cwd=clone_dir, env=env)")
-    );
+    assert!(public_handoff.contains(
+        "run([\"scripts/gate2-outside-run.sh\"], cwd=clone_dir, env=env, input_text=\"\\n\")"
+    ));
     assert!(public_handoff.contains("cleanup_cloned_compose"));
     assert!(public_handoff.contains("docker-compose.prebuilt.yml"));
     assert!(
@@ -625,7 +637,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(!outside_proof.contains("`python3` is required after the timed run"));
     assert!(outside_proof.contains("Time-to-first-trace was 300 seconds or less"));
     assert!(outside_proof.contains("Time-to-first-trace includes clone time"));
-    assert!(outside_proof.contains("Time-to-quickstart-click was 300 seconds or less"));
+    assert!(outside_proof
+        .contains("Manual quickstart click confirmation was recorded before 300 seconds"));
+    assert!(outside_proof.contains("Quickstart click source"));
+    assert!(outside_proof.contains("Manual quickstart confirmation"));
     assert!(outside_proof.contains("run -> turn -> step -> tool -> MCP"));
     assert!(outside_proof.contains("using only public repository instructions"));
     assert!(outside_proof.contains("Outside-run attestation"));
@@ -691,7 +706,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("current-SHA"));
     assert!(readme.contains("`beaterd`, `dashboard`, `dashboard-e2e`, and `otel-python` GHCR"));
     assert!(readme.contains("mismatched SHA-pinned image references"));
-    assert!(readme.contains("time-to-quickstart-click"));
+    assert!(readme.contains("Time-to-quickstart-click"));
+    assert!(readme.contains("manual\nquickstart click confirmation"));
     assert!(readme.contains("checks local Docker, Docker Compose, curl, `ffprobe`,"));
     assert!(readme.contains("mismatched trace IDs"));
     assert!(readme.contains("mismatched API/dashboard endpoints"));
@@ -700,7 +716,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("mismatched image digests"));
     assert!(readme.contains("recording notes from a different dashboard session"));
     assert!(readme.contains("playable WebM metadata"));
-    assert!(readme.contains("playable WebM capture of at least 64 KiB and at least 8 seconds"));
+    assert!(readme.contains("playable WebM capture of\nat least 64 KiB and at least 8 seconds"));
     assert!(readme.contains("Recording mode: compose"));
     assert!(readme.contains("EBML/WebM, Segment,"));
     assert!(readme.contains("artifact paths must not traverse symlinks"));
@@ -794,6 +810,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     let record_script = read(root.join("web/dashboard/tests/e2e/record-gate2-demo.mjs"));
     assert!(record_script.contains("recordVideo"));
     assert!(record_script.contains("BEATER_GATE2_RECORD_MODE"));
+    assert!(record_script.contains("BEATER_GATE2_OUTSIDE_WRAPPER"));
     assert!(record_script.contains("BEATER_GATE2_PUBLIC_DASHBOARD_BASE"));
     assert!(record_script.contains("recordQuickstartFlow"));
     assert!(record_script.contains("recordAllKindFlow"));
@@ -815,7 +832,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
 
     let compose_recording_notes = read(root.join("docs/demos/gate2-compose-browser-demo.md"));
     assert!(compose_recording_notes.contains("# Gate 2 Compose Browser Demo"));
-    assert!(compose_recording_notes.contains("alternate host ports"));
+    assert!(compose_recording_notes.contains("default dashboard URL"));
     assert!(compose_recording_notes.contains("http://127.0.0.1:3000"));
     assert!(compose_recording_notes.contains("gate2-compose-browser-demo.webm"));
     assert!(compose_recording_notes.contains("SHA256"));

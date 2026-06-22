@@ -780,6 +780,8 @@ REQUIRED_PROOF_FIELDS = [
     "Script-to-first-trace",
     "Time-to-quickstart-click",
     "Script-to-quickstart-click",
+    "Quickstart click source",
+    "Manual quickstart confirmation",
     "Total proof duration",
     "Script duration",
     "Outside-run wrapper",
@@ -823,7 +825,10 @@ for snippet, description in [
     ("http://127.0.0.1:3000", "default dashboard URL"),
     ("Time-to-first-trace was 300 seconds or less", "first-trace checklist item"),
     ("Time-to-first-trace includes clone time", "clone-inclusive timing checklist item"),
-    ("Time-to-quickstart-click was 300 seconds or less", "browser-click checklist item"),
+    (
+        "Manual quickstart click confirmation was recorded before 300 seconds",
+        "manual browser-click checklist item",
+    ),
     ("using only public repository instructions", "unaided-run requirement"),
 ]:
     require_snippet(snippet, description)
@@ -953,6 +958,12 @@ if dashboard_base != DEFAULT_DASHBOARD_BASE:
 outside_wrapper = field_value("Outside-run wrapper")
 if outside_wrapper != "yes":
     fail("Outside-run wrapper must be yes; use scripts/gate2-outside-run.sh for evidence")
+quickstart_click_source = field_value("Quickstart click source")
+if quickstart_click_source != "manual-outside-runner":
+    fail("Quickstart click source must be manual-outside-runner for outside-person evidence")
+manual_quickstart_confirmation = field_value("Manual quickstart confirmation")
+if manual_quickstart_confirmation != "yes":
+    fail("Manual quickstart confirmation must be yes for outside-person evidence")
 timing_start_source = field_value("Timing start source")
 if timing_start_source != "external-clone":
     fail("Timing start source must be external-clone for outside-person evidence")
@@ -1176,6 +1187,8 @@ if stopwatch_text:
         ("Quickstart browser proof", "passed"),
         ("All-kind waterfall browser proof", "passed"),
         ("Browser recording", "passed"),
+        ("Quickstart click source", "manual-outside-runner"),
+        ("Manual quickstart confirmation", "yes"),
         ("API endpoint", DEFAULT_API_ENDPOINT),
         ("OTLP endpoint", DEFAULT_OTLP_ENDPOINT),
         ("Dashboard base", DEFAULT_DASHBOARD_BASE),
@@ -1300,6 +1313,20 @@ if stopwatch_text:
         "script-to-quickstart-click",
         field_value("Script-to-quickstart-click"),
         field_value_from(stopwatch_text, "Script-to-quickstart-click", "stopwatch proof"),
+    )
+    require_equal(
+        "quickstart click source",
+        quickstart_click_source,
+        field_value_from(stopwatch_text, "Quickstart click source", "stopwatch proof"),
+    )
+    require_equal(
+        "manual quickstart confirmation",
+        manual_quickstart_confirmation,
+        field_value_from(
+            stopwatch_text,
+            "Manual quickstart confirmation",
+            "stopwatch proof",
+        ),
     )
     require_equal(
         "script duration",

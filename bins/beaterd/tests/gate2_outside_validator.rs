@@ -69,8 +69,7 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     let readme = fs::read_to_string(root.join("README.md"))
         .unwrap_or_else(|err| panic!("read README.md: {err}"));
     assert!(readme.contains(r#"git clone https://github.com/jadenfix/beater.git && cd beater &&"#));
-    assert!(readme
-        .contains("project reaches the first trace and quickstart browser click unaided in 5"));
+    assert!(readme.contains("confirms the\nquickstart browser click unaided in 5"));
     assert!(readme.contains("`scripts/check-gate2-public-handoff.py` without `--full-run`"));
     assert!(readme.contains("and `python3` 3.9+; local ports"));
     assert!(readme.contains("`ffprobe`, `shasum` or `sha256sum`"));
@@ -2024,6 +2023,44 @@ fn gate2_outside_validator_rejects_script_quickstart_click_after_script_duration
 }
 
 #[test]
+fn gate2_outside_validator_rejects_automated_quickstart_click_source() {
+    let fixture = ValidatorFixture::new();
+    for path in [&fixture.proof_path, &fixture.stopwatch_path] {
+        replace(
+            path,
+            "- Quickstart click source: manual-outside-runner",
+            "- Quickstart click source: automated-browser-proof",
+        );
+    }
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Quickstart click source must be manual-outside-runner for outside-person evidence",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_missing_manual_quickstart_confirmation() {
+    let fixture = ValidatorFixture::new();
+    for path in [&fixture.proof_path, &fixture.stopwatch_path] {
+        replace(
+            path,
+            "- Manual quickstart confirmation: yes",
+            "- Manual quickstart confirmation: not requested",
+        );
+    }
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "Manual quickstart confirmation must be yes for outside-person evidence",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_first_trace_missing_clone_offset() {
     let fixture = ValidatorFixture::new();
     replace(
@@ -2791,6 +2828,8 @@ Status: completed.
 - Script-to-first-trace: 7s
 - Time-to-quickstart-click: 20s
 - Script-to-quickstart-click: 15s
+- Quickstart click source: manual-outside-runner
+- Manual quickstart confirmation: yes
 - Total proof duration: 40s
 - Script duration: 35s
 - Outside-run wrapper: yes
@@ -2830,7 +2869,7 @@ The runner completed the flow using only public repository instructions.
 - [x] The script reported `Clean start: yes`.
 - [x] Time-to-first-trace was 300 seconds or less.
 - [x] Time-to-first-trace includes clone time.
-- [x] Time-to-quickstart-click was 300 seconds or less.
+- [x] Manual quickstart click confirmation was recorded before 300 seconds.
 - [x] The five-line stock OpenTelemetry trace appeared in `localhost:3000`.
 - [x] Clicking the `llm.call` span showed prompt, completion, model, token breakdown, cost, and latency.
 - [x] The all-kind trace rendered run -> turn -> step -> tool -> MCP nesting in the waterfall.
@@ -2864,6 +2903,8 @@ fn stopwatch_proof(recording: &str, notes: &str) -> String {
 - Script-to-first-trace: 7s
 - Time-to-quickstart-click: 20s
 - Script-to-quickstart-click: 15s
+- Quickstart click source: manual-outside-runner
+- Manual quickstart confirmation: yes
 - Total duration: 40s
 - Script duration: 35s
 - Limit: 300s
@@ -2911,6 +2952,10 @@ beater-stopwatch-beaterd-1     ghcr.io/jadenfix/beater/beaterd     {commit_sha} 
 beater-stopwatch-dashboard-1   ghcr.io/jadenfix/beater/dashboard   {commit_sha}   linux/arm64         cccccccccccc        99.2MB              1 minute ago
 beater-stopwatch-dashboard-e2e-run-1 ghcr.io/jadenfix/beater/dashboard-e2e {commit_sha} linux/arm64 eeeeeeeeeeee 132MB 1 minute ago
 beater-stopwatch-otel-python-quickstart-run-1 ghcr.io/jadenfix/beater/otel-python {commit_sha} linux/arm64 aaaaaaaaaaaa 116MB 1 minute ago
+proof-image beaterd ghcr.io/jadenfix/beater/beaterd:{commit_sha} {BEATER_IMAGE_DIGEST}
+proof-image dashboard ghcr.io/jadenfix/beater/dashboard:{commit_sha} {DASHBOARD_IMAGE_DIGEST}
+proof-image dashboard-e2e ghcr.io/jadenfix/beater/dashboard-e2e:{commit_sha} {DASHBOARD_E2E_IMAGE_DIGEST}
+proof-image otel-python ghcr.io/jadenfix/beater/otel-python:{commit_sha} {OTEL_PYTHON_IMAGE_DIGEST}
 ```
 "#,
     )
@@ -3828,6 +3873,8 @@ cat > docs/demos/gate2-compose-stopwatch.md <<'EOF_PROOF'
 - Script-to-first-trace: 7s
 - Time-to-quickstart-click: 20s
 - Script-to-quickstart-click: 15s
+- Quickstart click source: manual-outside-runner
+- Manual quickstart confirmation: yes
 - Total duration: 40s
 - Script duration: 35s
 - Limit: 300s
@@ -3875,6 +3922,10 @@ beater-stopwatch-beaterd-1     ghcr.io/jadenfix/beater/beaterd     __COMMIT_SHA_
 beater-stopwatch-dashboard-1   ghcr.io/jadenfix/beater/dashboard   __COMMIT_SHA__   linux/arm64   cccccccccccc  99.2MB   1 minute ago
 beater-stopwatch-dashboard-e2e-run-1 ghcr.io/jadenfix/beater/dashboard-e2e __COMMIT_SHA__ linux/arm64 eeeeeeeeeeee 132MB 1 minute ago
 beater-stopwatch-otel-python-quickstart-run-1 ghcr.io/jadenfix/beater/otel-python __COMMIT_SHA__ linux/arm64 aaaaaaaaaaaa 116MB 1 minute ago
+proof-image beaterd ghcr.io/jadenfix/beater/beaterd:__COMMIT_SHA__ ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+proof-image dashboard ghcr.io/jadenfix/beater/dashboard:__COMMIT_SHA__ ghcr.io/jadenfix/beater/dashboard@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+proof-image dashboard-e2e ghcr.io/jadenfix/beater/dashboard-e2e:__COMMIT_SHA__ ghcr.io/jadenfix/beater/dashboard-e2e@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+proof-image otel-python ghcr.io/jadenfix/beater/otel-python:__COMMIT_SHA__ ghcr.io/jadenfix/beater/otel-python@sha256:abababababababababababababababababababababababababababababababab
 ```
 EOF_PROOF
 python3 - "$commit_sha" <<'PY'

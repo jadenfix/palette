@@ -41,11 +41,14 @@ start from a new or empty parent directory. As soon as the first
 `Open the dashboard:` quickstart URL appears, open it in a normal browser; do
 not wait for the script to finish. Click the quickstart trace, then click the
 `llm.call` span. You should see the prompt, completion, model, token breakdown,
-cost, and latency. Then keep the script running for the post-SLO all-kind and
-recording evidence, open the printed all-kind dashboard URL, and verify the run
--> turn -> step -> tool -> MCP waterfall. Gate 2 is not closed until someone outside the
-project reaches the first trace and quickstart browser click unaided in 5
-minutes or less, completes the post-SLO all-kind/recording evidence, and fills
+cost, and latency. Press Enter in the terminal only after that manual
+click-through is complete; the stopwatch records that as the quickstart-click
+SLO. Then keep the script running for the post-SLO automated browser proof,
+all-kind and recording evidence, open the printed all-kind dashboard URL, and
+verify the run -> turn -> step -> tool -> MCP waterfall. Gate 2 is not closed
+until someone outside the project reaches the first trace and confirms the
+quickstart browser click unaided in 5 minutes or less, completes the post-SLO
+all-kind/recording evidence, and fills
 [docs/demos/gate2-outside-person-proof.md](docs/demos/gate2-outside-person-proof.md).
 
 ## Current State
@@ -177,9 +180,11 @@ Run it from a directory that does not already contain `beater/`; reruns should
 start from a new or empty parent directory.
 As soon as the first `Open the dashboard:` quickstart URL appears, open it in a
 normal browser and click the quickstart trace, then click the `llm.call` span.
-Do not wait for the script to finish; it continues with automated browser proof,
-the all-kind waterfall trace, and the recording after the timed quickstart
-click. Keep the command running until those post-SLO evidence steps finish.
+Press Enter in the terminal only after prompt, completion, model, token
+breakdown, cost, and latency are visible. Do not wait for the script to finish;
+it continues with automated browser proof, the all-kind waterfall trace, and the
+recording after the timed manual quickstart click. Keep the command running
+until those post-SLO evidence steps finish.
 
 The outside-run wrapper rejects non-`main` checkouts, non-canonical GitHub
 origins, dirty worktrees, warm-loop reuse, local source builds, alternate ports,
@@ -188,7 +193,9 @@ artifact path overrides, alternate Compose project names, and teardown overrides
 then runs the stopwatch script with proof writing, browser proof, and browser recording
 enabled. The clone-start environment variable must be captured before
 `git clone`, so `Time-to-first-trace` and `Time-to-quickstart-click` include
-clone time. It also sets an
+clone time. For outside-person evidence, `Time-to-quickstart-click` is captured
+from the runner's Enter confirmation after manually clicking the trace and
+`llm.call` span, not from the automated Playwright proof. It also sets an
 `Outside-run wrapper: yes` marker in the stopwatch proof; completed
 outside-person proof validation rejects evidence without that marker and
 cross-checks the stopwatch branch, origin, and worktree-clean status. The script
@@ -196,9 +203,10 @@ first removes any previous Compose project/volumes, then runs
 `docker compose up`, sends `examples/python/five_line_otel.py` from the
 prebuilt stock OpenTelemetry Python runner container, waits until the trace is
 visible in `localhost:3000`, and fails if time-to-first-trace exceeds 300
-seconds. It also records time-to-quickstart-click when browser proof is
-enabled. It leaves the dashboard running by default so a human can click
-through the trace.
+seconds. It then requires the outside runner to confirm the manual quickstart
+click-through before 300 seconds; automated browser proof still runs afterward
+as secondary evidence. It leaves the dashboard running by default so a human can
+click through the trace.
 Before starting Compose it checks local Docker, Docker Compose, curl, `ffprobe`,
 and SHA tooling, and it requires `python3` 3.9+ before the timed run so proof
 generation and validation cannot fail late on missing local tooling.
@@ -215,8 +223,9 @@ dashboard images from source. Set `BEATER_GATE2_REUSE=1` only for local
 warm-loop debugging. Set `BEATER_GATE2_BROWSER_PROOF=1` to also run the
 prebuilt `dashboard-e2e` Playwright browser proof for both the five-line trace
 and the all-kind nested agent waterfall in the same proof run. The five-minute
-SLO is enforced for time-to-first-trace and time-to-quickstart-click; all-kind
-and recording steps run afterward with per-step timeouts. Set
+SLO is enforced for time-to-first-trace and, in outside-run mode, the manual
+quickstart click confirmation; all-kind and recording steps run afterward with
+per-step timeouts. Set
 `BEATER_GATE2_RECORD_DEMO=1` to write `docs/demos/gate2-compose-browser-demo.webm`
 and its SHA-pinned notes from the same browser session.
 
@@ -346,8 +355,11 @@ compose image excerpts missing runner images,
 non-repo-relative `docs/demos/` artifacts, and non-prebuilt GHCR image digests.
 It rejects recording notes from a different dashboard session. It rejects
 uncommitted non-evidence worktree changes at closure. It rejects any screen
-recording hash that does not match the committed file. The recording artifact
-must be a playable WebM capture of at least 64 KiB and at least 8 seconds with
+recording hash that does not match the committed file. It requires
+`Quickstart click source: manual-outside-runner` and
+`Manual quickstart confirmation: yes` in both the completed proof and the
+stopwatch artifact. The recording artifact must be a playable WebM capture of
+at least 64 KiB and at least 8 seconds with
 EBML/WebM, Segment, Info, Tracks, Cluster, and video-track structure, and
 artifact paths must not traverse symlinks. The notes must declare
 `Recording mode: compose` and describe the full recorded flow: quickstart trace,

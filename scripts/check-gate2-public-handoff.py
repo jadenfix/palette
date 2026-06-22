@@ -48,12 +48,14 @@ def run(
     cwd: Path,
     env: dict[str, str] | None = None,
     quiet: bool = False,
+    input_text: str | None = None,
 ) -> str:
     try:
         output = subprocess.check_output(
             args,
             cwd=cwd,
             env=env,
+            input=input_text,
             stderr=subprocess.STDOUT,
             text=True,
         )
@@ -528,7 +530,7 @@ def run_cloned_full_run(
     env = clean_outside_env()
     env["BEATER_GATE2_CLONE_STARTED_EPOCH"] = str(clone_started_epoch)
     try:
-        run(["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env)
+        run(["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env, input_text="\n")
         run_generated_proof_check(clone_dir)
     finally:
         cleanup_cloned_compose(clone_dir)

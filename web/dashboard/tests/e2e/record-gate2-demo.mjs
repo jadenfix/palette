@@ -9,6 +9,7 @@ const repoRoot = resolve(dashboardRoot, "../..");
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
 const publicDashboardBase = process.env.BEATER_GATE2_PUBLIC_DASHBOARD_BASE ?? baseUrl;
 const mode = process.env.BEATER_GATE2_RECORD_MODE ?? "all-kind";
+const outsideWrapper = process.env.BEATER_GATE2_OUTSIDE_WRAPPER === "1";
 const allKindTraceId =
   process.env.BEATER_E2E_ALL_KIND_TRACE_ID ??
   (mode === "all-kind" ? process.env.BEATER_E2E_TRACE_ID : undefined);
@@ -239,8 +240,12 @@ function composeNotes(videoSha256) {
   const defaultDashboardBase = "http://127.0.0.1:3000";
   const portNote =
     publicDashboardBase === defaultDashboardBase
-      ? `This automated maintainer run used the default dashboard URL \`${defaultDashboardBase}\`; no alternate host ports were needed.`
-      : `This automated maintainer run used alternate host ports; the outside-person proof must still use the default dashboard URL \`${defaultDashboardBase}\`.`;
+      ? `This run used the default dashboard URL \`${defaultDashboardBase}\`; no alternate host ports were needed.`
+      : `This run used alternate host ports; the outside-person proof must still use the default dashboard URL \`${defaultDashboardBase}\`.`;
+  const closureNote = outsideWrapper
+    ? `This recording was generated during the outside-person stopwatch path. The completed proof file must pair it with the runner attestation, manual quickstart confirmation, and runner observations.`
+    : `The mandate still requires the outside-person run recorded in
+\`docs/demos/gate2-outside-person-proof.md\` before Gate 2 can close.`;
 
   return `# Gate 2 Compose Browser Demo
 
@@ -257,14 +262,13 @@ stock OpenTelemetry quickstart and the all-kind stock OpenTelemetry agent trace.
 
 ${portNote}
 
+${closureNote}
+
 Regenerate with:
 
 \`\`\`bash
 BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1 scripts/gate2-compose-stopwatch.sh
 \`\`\`
-
-The mandate still requires the outside-person run recorded in
-\`docs/demos/gate2-outside-person-proof.md\` before Gate 2 can close.
 `;
 }
 

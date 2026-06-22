@@ -44,6 +44,9 @@ waterfall_browser_proof_status="not requested"
 record_demo_status="not requested"
 record_demo_sha256="not requested"
 time_to_quickstart_click_seconds=""
+script_to_quickstart_click_seconds=""
+quickstart_click_source="not requested"
+manual_quickstart_confirmation="not requested"
 all_kind_trace_id=""
 all_kind_dashboard_url=""
 outside_runner_next_steps=""
@@ -232,6 +235,40 @@ wait_text() {
     fi
     sleep 2
   done
+}
+
+confirm_manual_quickstart_click() {
+  if [[ "$outside_wrapper" != "1" ]]; then
+    return 0
+  fi
+  local now
+  local remaining
+  now="$(date +%s)"
+  remaining=$((deadline_epoch - now))
+  if (( remaining <= 0 )); then
+    echo "Timed out before manual quickstart click confirmation." >&2
+    return 1
+  fi
+  cat <<EOF
+
+Manual outside-run checkpoint:
+  In a normal browser, open the quickstart URL above, click the quickstart trace,
+  click the llm.call span, and confirm prompt, completion, model, token breakdown,
+  cost, and latency are visible.
+  Press Enter here only after that manual click-through is complete.
+EOF
+  if ! IFS= read -r -t "$remaining" _manual_quickstart_confirmation; then
+    echo "Timed out waiting for manual quickstart click confirmation." >&2
+    return 1
+  fi
+  script_to_quickstart_click_seconds=$(($(date +%s) - start_epoch))
+  time_to_quickstart_click_seconds=$(($(date +%s) - timing_start_epoch))
+  quickstart_click_source="manual-outside-runner"
+  manual_quickstart_confirmation="yes"
+  if (( time_to_quickstart_click_seconds > 300 )); then
+    echo "Time-to-quickstart-click exceeded 300s: ${time_to_quickstart_click_seconds}s" >&2
+    return 1
+  fi
 }
 
 first_trace_id() {
@@ -426,6 +463,8 @@ Outside-run timing-critical browser step:
 EOF
 fi
 
+confirm_manual_quickstart_click
+
 if [[ "$browser_proof" == "1" ]]; then
   run_before_deadline "five-line dashboard browser proof" compose_run_e2e \
     -e BEATER_E2E_QUICKSTART_TRACE_ID="$trace_id" \
@@ -433,11 +472,14 @@ if [[ "$browser_proof" == "1" ]]; then
     dashboard-e2e \
     npx playwright test tests/e2e/quickstart.spec.ts
   quickstart_browser_proof_status="passed"
-  script_to_quickstart_click_seconds=$(($(date +%s) - start_epoch))
-  time_to_quickstart_click_seconds=$(($(date +%s) - timing_start_epoch))
-  if (( time_to_quickstart_click_seconds > 300 )); then
-    echo "Time-to-quickstart-click exceeded 300s: ${time_to_quickstart_click_seconds}s" >&2
-    exit 1
+  if [[ -z "$time_to_quickstart_click_seconds" ]]; then
+    script_to_quickstart_click_seconds=$(($(date +%s) - start_epoch))
+    time_to_quickstart_click_seconds=$(($(date +%s) - timing_start_epoch))
+    quickstart_click_source="automated-browser-proof"
+    if (( time_to_quickstart_click_seconds > 300 )); then
+      echo "Time-to-quickstart-click exceeded 300s: ${time_to_quickstart_click_seconds}s" >&2
+      exit 1
+    fi
   fi
 
   run_with_step_timeout "stock Python all-kind OTEL fixture" compose_run_tool otel-python-smoke
@@ -463,6 +505,7 @@ if [[ "$browser_proof" == "1" ]]; then
   if [[ "$record_demo" == "1" ]]; then
     run_with_step_timeout "Gate 2 compose browser recording" compose_run_e2e \
       -e BEATER_GATE2_RECORD_MODE=compose \
+      -e BEATER_GATE2_OUTSIDE_WRAPPER="$outside_wrapper" \
       -e BEATER_E2E_QUICKSTART_TRACE_ID="$trace_id" \
       -e BEATER_E2E_ALL_KIND_TRACE_ID="$all_kind_trace_id" \
       -e BEATER_GATE2_RECORD_VIDEO="$record_demo_video" \
@@ -491,6 +534,14 @@ beater_image_digest="$(service_image_digest beaterd)"
 dashboard_image_digest="$(service_image_digest dashboard)"
 dashboard_e2e_image_digest="$(service_image_digest dashboard-e2e)"
 otel_python_image_digest="$(service_image_digest otel-python-quickstart)"
+proof_image_summary="$(cat <<EOF
+$image_summary
+proof-image beaterd $beater_image_ref $beater_image_digest
+proof-image dashboard $dashboard_image_ref $dashboard_image_digest
+proof-image dashboard-e2e $dashboard_e2e_image_ref $dashboard_e2e_image_digest
+proof-image otel-python $otel_python_image_ref $otel_python_image_digest
+EOF
+)"
 if [[ "$write_proof" == "1" ]]; then
   mkdir -p "$(dirname "$proof_path")"
   cat >"$proof_path" <<EOF
@@ -505,6 +556,8 @@ if [[ "$write_proof" == "1" ]]; then
 - Script-to-first-trace: ${script_to_first_trace_seconds}s
 - Time-to-quickstart-click: $time_to_quickstart_click_display
 - Script-to-quickstart-click: $script_to_quickstart_click_display
+- Quickstart click source: $quickstart_click_source
+- Manual quickstart confirmation: $manual_quickstart_confirmation
 - Total duration: ${duration_seconds}s
 - Script duration: ${script_duration_seconds}s
 - Limit: 300s
@@ -547,7 +600,7 @@ if [[ "$write_proof" == "1" ]]; then
 ## Compose Images
 
 \`\`\`text
-$image_summary
+$proof_image_summary
 \`\`\`
 
 This is an automated local stopwatch proof. The mandate still requires an

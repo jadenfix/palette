@@ -45,6 +45,8 @@ outside the project who runs the flow unaided from a fresh clone.
 - Script-to-first-trace:
 - Time-to-quickstart-click:
 - Script-to-quickstart-click:
+- Quickstart click source:
+- Manual quickstart confirmation:
 - Total proof duration:
 - Script duration:
 - Outside-run wrapper:
@@ -88,10 +90,14 @@ port environment variables.
 As soon as the first `Open the dashboard:` quickstart URL appears, the runner
 must open it in a normal browser; do not wait for the script to finish. Click
 the quickstart trace, click the `llm.call` span, and capture prompt, completion,
-model, token breakdown, cost, and latency before the 5-minute quickstart-click
-SLO expires. Then keep the script running for the post-SLO all-kind and
-recording evidence, open the all-kind dashboard URL, and capture the run ->
-turn -> step -> tool -> MCP waterfall. Cleanup can happen after the recording.
+model, token breakdown, cost, and latency. Press Enter in the terminal only
+after that manual click-through is complete; this records
+`Quickstart click source: manual-outside-runner`,
+`Manual quickstart confirmation: yes`, and the 5-minute quickstart-click SLO.
+Then keep the script running for the post-SLO automated browser proof, all-kind
+trace, and recording evidence, open the all-kind dashboard URL, and capture the
+run -> turn -> step -> tool -> MCP waterfall. Cleanup can happen after the
+recording.
 
 After the stopwatch command finishes, prefer generating completed evidence from
 the stopwatch proof instead of manually copying fields. Replace every identity
@@ -160,6 +166,8 @@ the tested public GitHub origin, Date-to-clone-start consistency,
 `main` branch, clean-worktree state, and commit SHA. If the proof commit is newer
 than the tested SHA, every later committed change must be under `docs/demos/`;
 uncommitted non-evidence worktree changes are rejected at closure. It verifies
+the stopwatch proof recorded a manual outside-runner quickstart click
+confirmation before the 5-minute SLO, verifies
 screen-recording SHA256 against the committed artifact, requires the artifact to
 be a playable WebM capture of at least 64 KiB and at least 8 seconds with
 EBML/WebM, Segment, Info, Tracks, and Cluster structure plus a video track, and
@@ -197,7 +205,7 @@ under `docs/demos/` and must not resolve through symlinks.
 - [ ] The script reported `Clean start: yes`.
 - [ ] Time-to-first-trace was 300 seconds or less.
 - [ ] Time-to-first-trace includes clone time.
-- [ ] Time-to-quickstart-click was 300 seconds or less.
+- [ ] Manual quickstart click confirmation was recorded before 300 seconds.
 - [ ] The five-line stock OpenTelemetry trace appeared in `localhost:3000`.
 - [ ] Clicking the `llm.call` span showed prompt, completion, model, token
       breakdown, cost, and latency.

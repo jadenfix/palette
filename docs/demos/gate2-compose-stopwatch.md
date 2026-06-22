@@ -9,6 +9,8 @@
 - Script-to-first-trace: 21s
 - Time-to-quickstart-click: 29s
 - Script-to-quickstart-click: 29s
+- Quickstart click source: automated-browser-proof
+- Manual quickstart confirmation: not requested
 - Total duration: 69s
 - Script duration: 69s
 - Limit: 300s
@@ -57,6 +59,10 @@ beater-stopwatch-dashboard-1   ghcr.io/jadenfix/beater/dashboard   9abba1815e011
 beater-stopwatch-minio-1       minio/minio                         latest                                     linux/arm64         14cea493d9a3        57.5MB              9 months ago
 beater-stopwatch-nats-1        nats                                2.11-alpine                                linux/arm64/v8      e4bf19f15fd3        10.5MB              7 weeks ago
 beater-stopwatch-postgres-1    postgres                            17-alpine                                  linux/arm64/v8      dc17045ccfd3        115MB               3 days ago
+proof-image beaterd ghcr.io/jadenfix/beater/beaterd:9abba1815e0113baf46660fd7384664d43bebd62 ghcr.io/jadenfix/beater/beaterd@sha256:9b8ed21a35c9e1b41bbd85ea628234c6ca52a537fcc1ae5ce659082a717967a2
+proof-image dashboard ghcr.io/jadenfix/beater/dashboard:9abba1815e0113baf46660fd7384664d43bebd62 ghcr.io/jadenfix/beater/dashboard@sha256:d78d91dc932aa2157dfc0b07295eb7f9eb16a217b24519832630123b6f1c6e51
+proof-image dashboard-e2e ghcr.io/jadenfix/beater/dashboard-e2e:9abba1815e0113baf46660fd7384664d43bebd62 ghcr.io/jadenfix/beater/dashboard-e2e@sha256:f61e4d94cd625223d384ec80b819e6f52a7cba1653c2fe7c7ace0ee150ceaa51
+proof-image otel-python ghcr.io/jadenfix/beater/otel-python:9abba1815e0113baf46660fd7384664d43bebd62 ghcr.io/jadenfix/beater/otel-python@sha256:773fd0d3f8554a4f87ebc71be9f2debbff975aca5863d3f40eda191a145b957f
 ```
 
 This is an automated local stopwatch proof. The mandate still requires an
