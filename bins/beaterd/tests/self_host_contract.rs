@@ -1303,6 +1303,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(local_recording_notes.contains("gate2-browser-demo.webm"));
     assert!(local_recording_notes.contains("Recording mode: all-kind"));
     assert!(local_recording_notes.contains("token breakdown"));
+    assert!(local_recording_notes.contains("confirmation code"));
     assert!(!local_recording_notes.contains("model/tokens/cost"));
 
     let compose_recording_notes = read(root.join("docs/demos/gate2-compose-browser-demo.md"));
@@ -1314,6 +1315,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(compose_recording_notes.contains("All-kind trace"));
     assert!(compose_recording_notes.contains("click five-line trace"));
     assert!(compose_recording_notes.contains("token breakdown"));
+    assert!(compose_recording_notes.contains("confirmation code"));
     assert!(!compose_recording_notes.contains("model, tokens, cost"));
     assert!(compose_recording_notes.contains("outside-person proof must still use the default"));
     assert!(compose_recording_notes.contains("http://127.0.0.1:3000"));

@@ -283,7 +283,7 @@ Manual outside-run checkpoint:
   ${remaining}s remain in the 5-minute clone-to-click SLO.
   In a normal browser, open the quickstart trace-list URL above first, click the
   quickstart trace, click the llm.call span, and confirm prompt, completion,
-  model, token breakdown, cost, and latency are visible.
+  model, token breakdown, cost, latency, and the confirmation code are visible.
   Type the confirmation code shown in the selected llm.call detail, then press Enter.
 EOF
   if ! IFS= read -r -t "$remaining" entered_code; then
