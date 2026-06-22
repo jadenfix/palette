@@ -3002,7 +3002,7 @@ fn gate2_outside_validator_rejects_symlink_recording_artifact() {
     fs::remove_file(&fixture.recording_path)
         .unwrap_or_else(|err| panic!("remove {}: {err}", fixture.recording_path.display()));
     symlink(
-        repo_root().join("docs/demos/gate2-compose-browser-demo.webm"),
+        repo_root().join("bins/beaterd/tests/fixtures/gate2-compose-browser-demo.webm"),
         &fixture.recording_path,
     )
     .unwrap_or_else(|err| panic!("symlink recording artifact: {err}"));
@@ -4266,8 +4266,8 @@ fn registry_digest_for_image(image: &str) -> &'static str {
 }
 
 fn recording_bytes() -> Vec<u8> {
-    fs::read(repo_root().join("docs/demos/gate2-compose-browser-demo.webm"))
-        .unwrap_or_else(|err| panic!("read committed Gate 2 compose recording fixture: {err}"))
+    fs::read(repo_root().join("bins/beaterd/tests/fixtures/gate2-compose-browser-demo.webm"))
+        .unwrap_or_else(|err| panic!("read Gate 2 compose recording test fixture: {err}"))
 }
 
 fn padded_webm_header_bytes() -> Vec<u8> {
@@ -4315,12 +4315,17 @@ fn write_public_handoff_fixture_repo() -> TempDir {
         "docker-compose.yml",
         "docker-compose.prebuilt.yml",
         "docs/demos/gate2-outside-person-proof.md",
-        "docs/demos/gate2-compose-browser-demo.webm",
         "docs/demos/gate2-compose-browser-demo.md",
         "docs/demos/gate2-compose-stopwatch.md",
     ] {
         copy_fixture_file(&root, fixture.path(), rel);
     }
+    copy_fixture_file_as(
+        &root,
+        fixture.path(),
+        "bins/beaterd/tests/fixtures/gate2-compose-browser-demo.webm",
+        "docs/demos/gate2-compose-browser-demo.webm",
+    );
 
     git_success(fixture.path(), &["init"]);
     git_success(
@@ -4608,8 +4613,12 @@ fn write_outside_wrapper_fixture_repo(branch: &str) -> TempDir {
 }
 
 fn copy_fixture_file(root: &Path, fixture_root: &Path, rel: &str) {
-    let source = root.join(rel);
-    let dest = fixture_root.join(rel);
+    copy_fixture_file_as(root, fixture_root, rel, rel);
+}
+
+fn copy_fixture_file_as(root: &Path, fixture_root: &Path, source_rel: &str, dest_rel: &str) {
+    let source = root.join(source_rel);
+    let dest = fixture_root.join(dest_rel);
     let parent = dest
         .parent()
         .unwrap_or_else(|| panic!("fixture destination should have parent: {}", dest.display()));

@@ -304,9 +304,9 @@ To write the automated compose stopwatch artifact under `docs/demos/`:
 BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1 KEEP_BEATER_COMPOSE=0 scripts/gate2-compose-stopwatch.sh
 ```
 
-The checked-in compose stopwatch recording is historical until regenerated: the
-current `docs/demos/gate2-compose-browser-demo.webm` predates the hardened
-8-second recording requirement. Default `127.0.0.1:3000` evidence must be
+The previous compose stopwatch recording was historical and has been removed
+from `docs/demos/gate2-compose-browser-demo.webm` until it can be regenerated
+from a valid default-port run. Default `127.0.0.1:3000` evidence must be
 captured from a run where that port is genuinely Beater, not another local app
 or an alternate-port diagnostic.
 

@@ -1030,7 +1030,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
 
     let compose_recording_notes = read(root.join("docs/demos/gate2-compose-browser-demo.md"));
     assert!(compose_recording_notes.contains("# Gate 2 Compose Browser Demo"));
-    assert!(compose_recording_notes.contains("Status: stale pre-hardening capture"));
+    assert!(compose_recording_notes.contains("Status: pending regeneration"));
     assert!(compose_recording_notes.contains("8-second reviewability floor"));
     assert!(compose_recording_notes.contains("default dashboard URL"));
     assert!(compose_recording_notes.contains("http://127.0.0.1:3000"));
@@ -1045,11 +1045,17 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(compose_recording_notes.contains("docs/demos/gate2-outside-person-proof.md"));
 
     let compose_recording = root.join("docs/demos/gate2-compose-browser-demo.webm");
-    let metadata = fs::metadata(&compose_recording)
-        .unwrap_or_else(|err| panic!("stat {}: {err}", compose_recording.display()));
+    assert!(
+        !compose_recording.exists(),
+        "stale Gate 2 compose recordings must not occupy the canonical evidence path"
+    );
+    let compose_recording_fixture =
+        root.join("bins/beaterd/tests/fixtures/gate2-compose-browser-demo.webm");
+    let metadata = fs::metadata(&compose_recording_fixture)
+        .unwrap_or_else(|err| panic!("stat {}: {err}", compose_recording_fixture.display()));
     assert!(
         metadata.len() > 64 * 1024,
-        "Gate 2 compose recording must be a committed non-empty browser video"
+        "Gate 2 compose recording test fixture must be a committed non-empty browser video"
     );
 
     let quickstart_e2e = read(root.join("web/dashboard/tests/e2e/quickstart.spec.ts"));

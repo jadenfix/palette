@@ -1,17 +1,19 @@
 # Gate 2 Compose Browser Demo
 
-Status: stale pre-hardening capture. This checked-in recording is retained as
-historical evidence only; it is 3.68s long and does not satisfy the current
-8-second reviewability floor enforced by `scripts/gate2-compose-stopwatch.sh`
-and `scripts/validate-gate2-outside-proof.sh`. Regenerate it from the default
-`http://127.0.0.1:3000` compose stopwatch path before using it as Gate 2
-evidence.
+Status: pending regeneration. The previous checked-in recording was a
+pre-hardening 3.68s capture and has been removed from the canonical
+`docs/demos/gate2-compose-browser-demo.webm` evidence path because it does not
+satisfy the current 8-second reviewability floor enforced by
+`scripts/gate2-compose-stopwatch.sh` and
+`scripts/validate-gate2-outside-proof.sh`. Regenerate the recording from the
+default `http://127.0.0.1:3000` compose stopwatch path before using this file as
+Gate 2 evidence.
 
 Recorded from the Docker Compose stopwatch path using the literal five-line
 stock OpenTelemetry quickstart and the all-kind stock OpenTelemetry agent trace.
 
-- Artifact: `gate2-compose-browser-demo.webm`
-- SHA256: `3dac802bc8f2db03406d0d76e4e1618ed5b516a2cf3d286589e1a588cf6e6534`
+- Artifact: `gate2-compose-browser-demo.webm` (not currently committed)
+- SHA256: pending regenerated recording
 - Recording mode: compose
 - Dashboard base: `http://127.0.0.1:3000`
 - Quickstart trace: `c8fd1651c8ea514803dc1b86bd6c5411`
