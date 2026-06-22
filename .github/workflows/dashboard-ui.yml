@@ -71,6 +71,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install Rust build tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential pkg-config
+          rm -rf /var/lib/apt/lists/*
+
       - name: Install Rust
         shell: bash
         run: |
