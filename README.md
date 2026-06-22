@@ -23,10 +23,12 @@ instrument agent -> inspect trace -> promote failure to dataset -> run evals
 
 This is the public clean-clone path Gate 2 is measured on. Prerequisites:
 Docker Desktop or another local Docker daemon, Docker Compose v2, `git`, `curl`,
-`ffprobe`, `shasum` or `sha256sum`, and `python3` 3.9+; local ports `8080`,
+`ffmpeg`/`ffprobe`, `shasum` or `sha256sum`, and `python3` 3.9+; local ports `8080`,
 `4317`, and `3000` free. Remote `DOCKER_HOST` values and
 remote Docker contexts are rejected because the browser proof connects to
 `127.0.0.1`.
+On macOS, `brew install ffmpeg` provides `ffprobe`; on Ubuntu/Debian, use
+`sudo apt-get install ffmpeg`.
 The public Compose path uses prebuilt Beater images. Optional third-party
 topology services remain digest-pinned for deterministic diagnostics, but they
 are not started in the timed default path until the Rust runtime uses them.
@@ -305,11 +307,13 @@ To write the automated compose stopwatch artifact under `docs/demos/`:
 BEATER_GATE2_WRITE_PROOF=1 BEATER_GATE2_BROWSER_PROOF=1 BEATER_GATE2_RECORD_DEMO=1 KEEP_BEATER_COMPOSE=0 scripts/gate2-compose-stopwatch.sh
 ```
 
-The previous compose stopwatch recording was historical and has been removed
-from `docs/demos/gate2-compose-browser-demo.webm` until it can be regenerated
-from a valid default-port run. Default `127.0.0.1:3000` evidence must be
-captured from a run where that port is genuinely Beater, not another local app
-or an alternate-port diagnostic.
+The committed compose recording in
+[docs/demos/gate2-compose-browser-demo.webm](docs/demos/gate2-compose-browser-demo.webm)
+is a maintainer diagnostic capture from the SHA-pinned prebuilt Compose path.
+It is reviewable demo evidence, but it does not close Gate 2. The outside-person
+proof still must use default `127.0.0.1:3000` evidence captured from a run where
+that port is genuinely Beater, not another local app or an alternate-port
+diagnostic.
 
 Gate 2 still requires an unaided outside-person run before it can be called
 passed. Before handing the repo to the outside runner, a maintainer should run

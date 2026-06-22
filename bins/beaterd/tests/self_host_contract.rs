@@ -1080,6 +1080,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     ));
     assert!(readme.contains("under `bash -o pipefail -lc` before any clone"));
     assert!(readme.contains("local Docker daemon"));
+    assert!(readme.contains("`ffmpeg`/`ffprobe`"));
+    assert!(readme.contains("brew install ffmpeg"));
+    assert!(readme.contains("sudo apt-get install ffmpeg"));
     assert!(readme.contains("`ffprobe`"));
     assert!(readme.contains("SHA tooling"));
     assert!(readme.contains("free the default"));
@@ -1107,6 +1110,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("scripts/validate-gate2-outside-proof.sh"));
     assert!(readme.contains("removes any previous Beater stopwatch project"));
     assert!(readme.contains("gate2-compose-browser-demo.webm"));
+    assert!(readme.contains("is a maintainer diagnostic capture"));
+    assert!(readme.contains("reviewable demo evidence"));
+    assert!(readme.contains("does not close Gate 2"));
+    assert!(!readme.contains("has been removed\nfrom `docs/demos/gate2-compose-browser-demo.webm`"));
+    assert!(!readme.contains("until it can be regenerated\nfrom a valid default-port run"));
     assert!(readme.contains("prebuilt `dashboard-e2e` Playwright browser proof"));
     assert!(readme.contains("prebuilt stock OpenTelemetry Python runner container"));
     assert!(readme.contains("pins `beaterd`, `dashboard`, `dashboard-e2e`, and `otel-python`"));
