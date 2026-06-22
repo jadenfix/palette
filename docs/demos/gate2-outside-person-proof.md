@@ -168,7 +168,8 @@ The validator reads the listed stopwatch proof file, screen-recording notes, and
 then cross-checks default API/OTLP/dashboard endpoints, clean-start status,
 browser-proof status, trace IDs, dashboard URLs, per-run quickstart release ID,
 SHA-pinned prebuilt GHCR image references, structured compose service and
-`proof-image` digest rows, prebuilt GHCR image digests, stock quickstart snippet markers, and
+`proof-image` digest rows, prebuilt GHCR image digests bound to the public GHCR
+manifest digest set for the exact SHA tag, stock quickstart snippet markers, and
 the tested public GitHub origin, Date-to-clone-start consistency,
 `main` branch, clean-worktree state, and commit SHA. If the proof commit is newer
 than the tested SHA, every later committed change must be under `docs/demos/`;

@@ -113,6 +113,7 @@ require_unset BEATER_DASHBOARD_IMAGE "the wrapper pins dashboard to the checked-
 require_unset BEATER_DASHBOARD_E2E_IMAGE "the wrapper pins dashboard-e2e to the checked-out commit SHA"
 require_unset BEATER_OTEL_PYTHON_IMAGE "the wrapper pins otel-python to the checked-out commit SHA"
 require_unset BEATER_GATE2_RUN_ID "the stopwatch creates a fresh per-run quickstart release ID"
+require_unset BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS "outside evidence must validate against public GHCR"
 require_unset BEATER_GATE2_STOPWATCH_PROOF "the outside run must write docs/demos/gate2-compose-stopwatch.md"
 require_unset BEATER_GATE2_RECORD_VIDEO "the outside run must write docs/demos/gate2-compose-browser-demo.webm"
 require_unset BEATER_GATE2_RECORD_NOTES "the outside run must write docs/demos/gate2-compose-browser-demo.md"

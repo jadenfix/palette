@@ -1409,6 +1409,19 @@ fn gate2_outside_wrapper_rejects_image_override() {
 }
 
 #[test]
+fn gate2_outside_wrapper_rejects_registry_fixture_override() {
+    let output = run_outside_wrapper_dry_run(Some((
+        "BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS",
+        "/tmp/registry",
+    )));
+
+    assert_failure(
+        output,
+        "BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS must be unset for outside-person evidence",
+    );
+}
+
+#[test]
 fn gate2_outside_wrapper_rejects_artifact_path_override() {
     let output = run_outside_wrapper_dry_run(Some((
         "BEATER_GATE2_RECORD_VIDEO",
@@ -2945,6 +2958,39 @@ fn gate2_outside_validator_rejects_image_digest_mismatch() {
 }
 
 #[test]
+fn gate2_outside_validator_rejects_registry_unbound_image_digest_at_closure() {
+    let fixture = write_validator_closure_fixture_repo();
+    let wrong_digest =
+        "ghcr.io/jadenfix/beater/beaterd@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+    replace(
+        &fixture
+            .path()
+            .join("docs/demos/gate2-outside-person-proof.md"),
+        BEATER_IMAGE_DIGEST,
+        wrong_digest,
+    );
+    replace(
+        &fixture
+            .path()
+            .join("docs/demos/gate2-closure-fixture/stopwatch-proof.md"),
+        BEATER_IMAGE_DIGEST,
+        wrong_digest,
+    );
+    git_success(fixture.path(), &["add", "docs/demos"]);
+    git_success(
+        fixture.path(),
+        &["commit", "-m", "corrupt Gate 2 digest evidence"],
+    );
+
+    let output = run_default_validator_in_repo(fixture.path());
+
+    assert_failure(
+        output,
+        "Beater image digest in outside-person proof must match public GHCR manifest digest",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_dashboard_e2e_digest_mismatch() {
     let fixture = ValidatorFixture::new();
     replace(
@@ -3319,10 +3365,16 @@ fn run_default_validator(args: &[&str]) -> Output {
 fn run_default_validator_in_repo(repo: &Path) -> Output {
     let ffprobe =
         fake_ffprobe_dir("#!/bin/sh\nprintf 'codec_type=video\\n'\nprintf 'duration=12.50\\n'\n");
+    let registry = tempdir("create validator registry fixture");
+    write_registry_fixtures(registry.path());
     Command::new("bash")
         .arg(repo.join("scripts/validate-gate2-outside-proof.sh"))
         .current_dir(repo)
         .env("PATH", path_with_tempdir(&ffprobe))
+        .env(
+            "BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS",
+            registry.path(),
+        )
         .env_remove("BEATER_GATE2_OUTSIDE_PROOF")
         .env_remove("BEATER_GATE2_ALLOW_UNTRACKED_ARTIFACTS")
         .output()
@@ -3938,6 +3990,7 @@ fn clear_outside_env(command: &mut Command) {
         "BEATER_DASHBOARD_IMAGE",
         "BEATER_DASHBOARD_E2E_IMAGE",
         "BEATER_OTEL_PYTHON_IMAGE",
+        "BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS",
         "BEATER_GATE2_STOPWATCH_PROOF",
         "BEATER_GATE2_RECORD_VIDEO",
         "BEATER_GATE2_RECORD_NOTES",
@@ -4021,21 +4074,36 @@ fn write_registry_fixtures(dir: &Path) {
 }
 
 fn write_registry_manifest(dir: &Path, image: &str, platforms: &[&str]) {
+    let digest = registry_digest_for_image(image);
     let manifests = platforms
         .iter()
         .map(|platform| {
             let (os, architecture) = platform
                 .split_once('/')
                 .unwrap_or_else(|| panic!("invalid platform fixture: {platform}"));
-            format!(r#"{{"platform":{{"os":"{os}","architecture":"{architecture}"}}}}"#)
+            format!(
+                r#"{{"digest":"{digest}","platform":{{"os":"{os}","architecture":"{architecture}"}}}}"#
+            )
         })
         .collect::<Vec<_>>()
         .join(",");
     fs::write(
         dir.join(format!("{image}.json")),
-        format!(r#"{{"manifests":[{manifests}]}}"#),
+        format!(r#"{{"digest":"{digest}","manifests":[{manifests}]}}"#),
     )
     .unwrap_or_else(|err| panic!("write registry fixture for {image}: {err}"));
+}
+
+fn registry_digest_for_image(image: &str) -> &'static str {
+    match image {
+        "beaterd" => "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "dashboard" => "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "dashboard-e2e" => {
+            "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+        "otel-python" => "sha256:abababababababababababababababababababababababababababababababab",
+        other => panic!("unknown registry fixture image: {other}"),
+    }
 }
 
 fn recording_bytes() -> Vec<u8> {

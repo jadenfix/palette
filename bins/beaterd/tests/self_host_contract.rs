@@ -385,6 +385,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_run.contains("require_unset BEATER_OTEL_PYTHON_IMAGE"));
     assert!(outside_run.contains("require_unset BEATER_GATE2_RUN_ID"));
     assert!(outside_run.contains("fresh per-run quickstart release ID"));
+    assert!(outside_run.contains("BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS"));
+    assert!(outside_run.contains("outside evidence must validate against public GHCR"));
     assert!(outside_run.contains("the wrapper pins beaterd to the checked-out commit SHA"));
     assert!(outside_run.contains("require_unset BEATER_GATE2_STOPWATCH_PROOF"));
     assert!(outside_run.contains("require_unset BEATER_GATE2_RECORD_VIDEO"));
@@ -481,6 +483,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("\"dashboard image digest\""));
     assert!(outside_validator.contains("\"dashboard e2e image digest\""));
     assert!(outside_validator.contains("\"otel python image digest\""));
+    assert!(outside_validator.contains("registry_manifest_from_ghcr"));
+    assert!(outside_validator.contains("Docker-Content-Digest"));
+    assert!(outside_validator.contains("must match public GHCR manifest digest"));
     assert!(outside_validator.contains("require_ghcr_sha_image_ref"));
     assert!(outside_validator.contains("\"Beater image reference\""));
     assert!(outside_validator.contains("\"Dashboard image reference\""));
@@ -583,6 +588,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("BEATER_GATE2_RECORD_VIDEO"));
     assert!(public_handoff.contains("BEATER_GATE2_RECORD_NOTES"));
     assert!(public_handoff.contains("BEATER_GATE2_RUN_ID"));
+    assert!(public_handoff.contains("BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS"));
     assert!(public_handoff.contains("KEEP_BEATER_COMPOSE"));
     assert!(public_handoff.contains("COMPOSE_PROJECT_NAME"));
     assert!(public_handoff.contains("BEATER_GATE2_EXPECTED_ORIGIN"));
@@ -793,6 +799,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("mismatched API/dashboard endpoints"));
     assert!(readme.contains("repo-relative `docs/demos/` artifacts"));
     assert!(readme.contains("prebuilt GHCR image digests"));
+    assert!(readme.contains("public GHCR manifest digest"));
     assert!(readme.contains("mismatched image digests"));
     assert!(readme.contains("BEATER_GATE2_RUN_ID"));
     assert!(readme.contains("fresh per-run quickstart release ID"));
@@ -821,7 +828,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("public-clone handoff verifier"));
     assert!(requirements.contains("requires the clone to match the current commit"));
     assert!(requirements.contains(
-        "alternate-port/image-override/artifact-path/compose-project/teardown/run-id evidence"
+        "alternate-port/image-override/artifact-path/compose-project/teardown/run-id/registry-fixture evidence"
     ));
     assert!(requirements.contains("wrapper marker"));
     assert!(requirements.contains("scripts/generate-gate2-outside-proof.py"));
@@ -837,6 +844,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("outside-run stopwatch source artifact marker"));
     assert!(requirements.contains("repo-relative non-symlink `docs/demos/` artifacts"));
     assert!(requirements.contains("prebuilt GHCR image digests"));
+    assert!(requirements.contains("public GHCR manifest digests"));
     assert!(requirements.contains("default API/OTLP/dashboard endpoints"));
     assert!(requirements.contains("recording-notes full-flow check"));
     assert!(requirements.contains("recording-file WebM/min-size/structure guard"));

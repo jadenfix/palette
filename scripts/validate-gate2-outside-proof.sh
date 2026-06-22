@@ -31,11 +31,13 @@ fi
 python3 - "$proof_path" "$allow_pending" "$repo_root" "$diagnostic" <<'PY'
 import hashlib
 import datetime as dt
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import urllib.request
 from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, urlparse
@@ -88,6 +90,8 @@ ALLOW_UNTRACKED_ARTIFACTS = (
     os.environ.get("BEATER_GATE2_ALLOW_UNTRACKED_ARTIFACTS") == "1"
     and proof_abs.resolve() != default_proof_abs.resolve()
 )
+REGISTRY_FIXTURE_ENV = "BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS"
+registry_digest_cache: dict[tuple[str, str], set[str]] = {}
 
 
 def fail(message: str) -> None:
@@ -292,6 +296,93 @@ def require_ghcr_image_digest(
     expected_prefix = f"ghcr.io/jadenfix/beater/{expected_image}@sha256:"
     if not re.fullmatch(re.escape(expected_prefix) + r"[0-9a-f]{64}", value):
         fail(f"{name} in {source_name} must be a GHCR repo digest for {expected_image}")
+
+
+def registry_manifest_from_fixture(image_name: str, fixture_dir: Path) -> tuple[dict, str]:
+    path = fixture_dir / f"{image_name}.json"
+    if not path.exists():
+        fail(f"missing registry fixture for {image_name}: {path}")
+        return {}, ""
+    try:
+        manifest = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError) as err:
+        fail(f"invalid registry fixture JSON for {image_name}: {err}")
+        return {}, ""
+    digest = str(manifest.get("digest") or manifest.get("Docker-Content-Digest") or "")
+    return manifest, digest
+
+
+def registry_manifest_from_ghcr(image_name: str, commit_sha: str) -> tuple[dict, str]:
+    image = f"jadenfix/beater/{image_name}"
+    token_url = f"https://ghcr.io/token?service=ghcr.io&scope=repository:{image}:pull"
+    try:
+        with urllib.request.urlopen(token_url, timeout=20) as response:
+            token = json.load(response)["token"]
+        request = urllib.request.Request(
+            f"https://ghcr.io/v2/{image}/manifests/{commit_sha}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": (
+                    "application/vnd.oci.image.index.v1+json, "
+                    "application/vnd.docker.distribution.manifest.list.v2+json, "
+                    "application/vnd.oci.image.manifest.v1+json, "
+                    "application/vnd.docker.distribution.manifest.v2+json"
+                ),
+            },
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            digest = response.headers.get("Docker-Content-Digest", "")
+            return json.load(response), digest
+    except Exception as err:
+        fail(
+            f"could not fetch public GHCR manifest for "
+            f"ghcr.io/jadenfix/beater/{image_name}:{commit_sha}: {err}"
+        )
+        return {}, ""
+
+
+def registry_manifest_for(image_name: str, commit_sha: str) -> tuple[dict, str]:
+    fixture = os.environ.get(REGISTRY_FIXTURE_ENV)
+    if fixture:
+        return registry_manifest_from_fixture(image_name, Path(fixture))
+    return registry_manifest_from_ghcr(image_name, commit_sha)
+
+
+def registry_digest_refs(image_name: str, commit_sha: str) -> set[str]:
+    key = (image_name, commit_sha)
+    if key in registry_digest_cache:
+        return registry_digest_cache[key]
+
+    manifest, index_digest = registry_manifest_for(image_name, commit_sha)
+    repo_ref = f"ghcr.io/jadenfix/beater/{image_name}@"
+    digests: set[str] = set()
+    for digest in [index_digest, str(manifest.get("digest") or "")]:
+        if re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+            digests.add(f"{repo_ref}{digest}")
+    for item in manifest.get("manifests", []):
+        digest = str(item.get("digest") or "")
+        if re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+            digests.add(f"{repo_ref}{digest}")
+    if not digests:
+        fail(
+            f"public GHCR manifest for ghcr.io/jadenfix/beater/{image_name}:{commit_sha} "
+            "did not expose any sha256 manifest digests"
+        )
+    registry_digest_cache[key] = digests
+    return digests
+
+
+def require_digest_bound_to_registry(
+    name: str, value: str, expected_image: str, commit_sha: str
+) -> None:
+    if ALLOW_UNTRACKED_ARTIFACTS:
+        return
+    allowed = registry_digest_refs(expected_image, commit_sha)
+    if value not in allowed:
+        fail(
+            f"{name} in outside-person proof must match public GHCR manifest digest "
+            f"for ghcr.io/jadenfix/beater/{expected_image}:{commit_sha}"
+        )
 
 
 def require_ghcr_sha_image_ref(
@@ -1161,6 +1252,21 @@ require_ghcr_image_digest(
     otel_python_image_digest,
     "outside-person proof",
     "otel-python",
+)
+require_digest_bound_to_registry(
+    "Beater image digest", beater_image_digest, "beaterd", commit_sha
+)
+require_digest_bound_to_registry(
+    "Dashboard image digest", dashboard_image_digest, "dashboard", commit_sha
+)
+require_digest_bound_to_registry(
+    "Dashboard e2e image digest",
+    dashboard_e2e_image_digest,
+    "dashboard-e2e",
+    commit_sha,
+)
+require_digest_bound_to_registry(
+    "OTEL Python image digest", otel_python_image_digest, "otel-python", commit_sha
 )
 require_compose_images_excerpt(
     compose_images_excerpt,

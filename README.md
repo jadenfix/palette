@@ -193,7 +193,9 @@ artifact path overrides, alternate Compose project names, and teardown overrides
 then runs the stopwatch script with proof writing, browser proof, and browser recording
 enabled. It rejects a pre-set `BEATER_GATE2_RUN_ID`; the stopwatch creates a
 fresh per-run quickstart release ID and filters the five-line trace on that ID
-so stale traces cannot satisfy the proof. The clone-start environment variable must be captured before
+so stale traces cannot satisfy the proof. Test-only registry fixtures are
+rejected; outside evidence must validate image digests against public GHCR. The
+clone-start environment variable must be captured before
 `git clone`, so `Time-to-first-trace` and `Time-to-quickstart-click` include
 clone time. For outside-person evidence, `Time-to-quickstart-click` is captured
 from the runner's Enter confirmation after manually clicking the trace and
@@ -224,7 +226,9 @@ By default it uses `docker-compose.prebuilt.yml` and pulls current GHCR images
 published by `.github/workflows/container-images.yml`. The stopwatch script
 pins `beaterd`, `dashboard`, `dashboard-e2e`, and `otel-python` to the checked-out commit SHA
 tags by default, then records the image references, service rows, and structured
-`proof-image` rows with resolved GHCR digests in the proof. Set
+`proof-image` rows with resolved GHCR digests in the proof. Closure validation
+requires those digests to match the public GHCR manifest digest set for the
+exact checked-out SHA tag. Set
 `BEATER_GATE2_LOCAL_BUILD=1` when you intentionally want to build the server and
 dashboard images from source. Set `BEATER_GATE2_REUSE=1` only for local
 warm-loop debugging. Set `BEATER_GATE2_BROWSER_PROOF=1` to also run the
@@ -359,6 +363,7 @@ alternate ports, warm-loop reuse, placeholder dashboard URLs, mismatched trace I
 mismatched commit SHA,
 mismatched API/dashboard endpoints, non-main or stale commit evidence,
 mismatched SHA-pinned image references, mismatched image digests,
+image digests not bound to the exact public GHCR SHA-tag manifest,
 wrong or missing stock quickstart snippet markers,
 proof dates that do not match the timed clone start,
 compose image excerpts missing runner images or structured `proof-image` rows,
