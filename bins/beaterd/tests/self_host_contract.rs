@@ -204,6 +204,32 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(gate2_workflow.contains("cargo test -p beaterd --test self_host_contract"));
     assert!(gate2_workflow.contains("cargo test -p beaterd --test gate2_outside_validator"));
 
+    let gate1_live_workflow = read(root.join(".github/workflows/gate1-live-smoke.yml"));
+    assert!(gate1_live_workflow.contains("pull_request:"));
+    assert!(gate1_live_workflow.contains("push:"));
+    assert!(gate1_live_workflow.contains("branches: [main]"));
+    assert!(gate1_live_workflow.contains("workflow_dispatch:"));
+    assert!(gate1_live_workflow.contains("contents: read"));
+    assert!(gate1_live_workflow.contains("timeout-minutes: 20"));
+    assert!(gate1_live_workflow.contains("Gate 1 live runtime smoke"));
+    assert!(
+        gate1_live_workflow.contains("cargo test -p beaterd --test live_smoke -- --test-threads=1")
+    );
+    let live_smoke = read(root.join("bins/beaterd/tests/live_smoke.rs"));
+    for proof in [
+        "beaterd_accepts_otlp_http_and_grpc_and_makes_traces_queryable",
+        "beaterd_quota_is_shared_across_two_replicas_and_resets_on_window",
+        "beaterd_consumer_kill_restart_dlq_replay_recovers_trace_ingested_work",
+        "beaterd_trace_write_kill_replay_preserves_buffered_trace",
+        "beaterd_external_trace_store_kill_replays_buffered_trace",
+        "beaterd_storage_failure_accounts_every_event_without_silent_drop",
+    ] {
+        assert!(
+            live_smoke.contains(proof),
+            "Gate 1 live smoke must keep proof {proof}"
+        );
+    }
+
     let gate0_contract = read(root.join("scripts/check-gate0-foundations.py"));
     assert!(gate0_contract.contains("cargo\", \"tree\", \"-p\", \"beater-store"));
     assert!(gate0_contract.contains("beater-store must stay trait/types-only"));
