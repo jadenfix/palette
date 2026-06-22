@@ -322,6 +322,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("require_free_port \"$host_otlp_grpc_port\""));
     assert!(stopwatch_script.contains("require_free_port \"$host_dashboard_port\""));
     assert!(stopwatch_script.contains("If another app is listed below, stop that app"));
+    assert!(stopwatch_script.contains("print_port_owner_details"));
+    assert!(stopwatch_script.contains("process $pid command:"));
+    assert!(stopwatch_script.contains("process $pid cwd:"));
     let prerequisite_preflight = find_required(
         &stopwatch_script,
         "run_before_deadline \"Gate 2 prerequisite preflight\" preflight_prerequisites",
@@ -466,6 +469,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_local_preflight.contains("Docker Compose v2"));
     assert!(outside_local_preflight.contains("browser proof uses 127.0.0.1"));
     assert!(outside_local_preflight.contains("free TCP $port before starting the stopwatch"));
+    assert!(outside_local_preflight.contains("print_port_owner_details"));
+    assert!(outside_local_preflight.contains("process $pid command:"));
+    assert!(outside_local_preflight.contains("process $pid cwd:"));
     for port in ["8080", "4317", "3000"] {
         assert!(
             outside_local_preflight.contains(port),

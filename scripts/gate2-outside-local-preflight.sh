@@ -51,9 +51,36 @@ print_port_owner() {
   local port="$1"
   if command -v lsof >/dev/null 2>&1; then
     lsof -nP -iTCP:"$port" -sTCP:LISTEN >&2 || true
+    print_port_owner_details "$port"
   elif command -v ss >/dev/null 2>&1; then
     ss -ltnp "sport = :$port" >&2 || true
   fi
+}
+
+print_port_owner_details() {
+  local port="$1"
+  local pid
+  local owner_command
+  local owner_cwd
+  if ! command -v lsof >/dev/null 2>&1; then
+    return 0
+  fi
+  while IFS= read -r pid; do
+    if [[ ! "$pid" =~ ^[0-9]+$ ]]; then
+      continue
+    fi
+    owner_command=""
+    if command -v ps >/dev/null 2>&1; then
+      owner_command="$(ps -p "$pid" -o command= 2>/dev/null | sed -n '1p' || true)"
+    fi
+    if [[ -n "$owner_command" ]]; then
+      echo "process $pid command: $owner_command" >&2
+    fi
+    owner_cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -n 1 || true)"
+    if [[ -n "$owner_cwd" ]]; then
+      echo "process $pid cwd: $owner_cwd" >&2
+    fi
+  done < <(lsof -nP -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null | awk '!seen[$0]++' || true)
 }
 
 require_command git "the timed run clones the public Beater repo"
