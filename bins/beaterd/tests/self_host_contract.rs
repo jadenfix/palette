@@ -372,7 +372,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
 
     let outside_validator = read(root.join("scripts/validate-gate2-outside-proof.sh"));
     assert!(outside_validator.contains("--allow-pending"));
+    assert!(outside_validator.contains("--diagnostic"));
     assert!(outside_validator.contains("Status must be 'completed.'"));
+    assert!(outside_validator.contains("diagnostic."));
+    assert!(outside_validator.contains("Diagnostic validation requires Status: diagnostic."));
+    assert!(outside_validator.contains("Gate 2 diagnostic proof is valid"));
     assert!(outside_validator.contains("scripts/gate2-outside-run.sh"));
     assert!(outside_validator.contains("\"Outside-run wrapper\""));
     assert!(outside_validator.contains("Outside-run wrapper must be yes"));
@@ -391,6 +395,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("MIN_RECORDING_SECONDS = 8.0"));
     assert!(outside_validator.contains("require_webm_recording"));
     assert!(outside_validator.contains("require_tracked_artifact"));
+    assert!(outside_validator.contains("require_committed_clean_path"));
+    assert!(outside_validator.contains("must be committed and clean before Gate 2 closure"));
     assert!(outside_validator.contains("must be tracked by git before Gate 2 closure"));
     assert!(outside_validator.contains("screen recording must start with a WebM/EBML header"));
     assert!(outside_validator.contains("screen recording must declare WebM DocType"));
@@ -451,6 +457,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("screen recording notes Shows must describe"));
     assert!(outside_validator.contains("must be the concrete dashboard URL"));
     assert!(outside_validator.contains("OUTSIDE_RUN_ATTESTATION"));
+    assert!(outside_validator.contains("DIAGNOSTIC_ATTESTATION"));
     assert!(outside_validator.contains("\"Outside-run attestation\""));
     assert!(outside_validator
         .contains("Outside-run attestation must match the required unaided outside-run statement"));
@@ -465,9 +472,12 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_generator.contains("Git origin"));
     assert!(outside_generator.contains("Git worktree clean"));
     assert!(outside_generator.contains("OUTSIDE_RUN_ATTESTATION"));
+    assert!(outside_generator.contains("DIAGNOSTIC_ATTESTATION"));
     assert!(outside_generator.contains("--runner-name"));
     assert!(outside_generator.contains("--prior-exposure"));
     assert!(outside_generator.contains("--attest-outside-run"));
+    assert!(outside_generator.contains("--diagnostic-report"));
+    assert!(outside_generator.contains("diagnostic."));
     assert!(outside_generator
         .contains("--attest-outside-run is required for completed Gate 2 proof generation"));
     assert!(outside_generator.contains("valid only when the named runner is outside"));
@@ -578,6 +588,14 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     ));
     assert!(public_handoff.contains("cleanup_cloned_compose"));
     assert!(public_handoff.contains("docker-compose.prebuilt.yml"));
+    assert!(public_handoff.contains("Auto-confirming the manual quickstart checkpoint"));
+    assert!(public_handoff.contains("diagnostic auto-confirmed the manual checkpoint"));
+    assert!(public_handoff.contains("def public_clone_env"));
+    assert!(public_handoff.contains("GIT_CONFIG_GLOBAL"));
+    assert!(public_handoff.contains("--diagnostic-report"));
+    assert!(
+        public_handoff.contains("[\"scripts/validate-gate2-outside-proof.sh\", \"--diagnostic\"]")
+    );
     assert!(
         public_handoff.contains("--full-run executes the exact scripts/gate2-outside-run.sh path")
     );
@@ -613,6 +631,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("uses a second fresh clone"));
     assert!(outside_proof
         .contains("executes the second clone's\n`scripts/gate2-outside-run.sh` wrapper"));
+    assert!(outside_proof.contains(
+        "auto-confirms the manual quickstart\ncheckpoint for diagnostic automation only"
+    ));
     assert!(outside_proof.contains("preflights the local runtime"));
     assert!(outside_proof.contains("local Docker daemon"));
     assert!(outside_proof.contains("SHA tooling"));
@@ -688,6 +709,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("uses one\nfresh clone"));
     assert!(readme.contains("uses a second fresh clone"));
     assert!(readme.contains("executes the second clone's\n`scripts/gate2-outside-run.sh` wrapper"));
+    assert!(readme.contains(
+        "auto-confirms the manual quickstart\ncheckpoint for diagnostic automation only"
+    ));
     assert!(readme.contains("preflights the local runtime"));
     assert!(readme.contains("local Docker daemon"));
     assert!(readme.contains("`ffprobe`"));

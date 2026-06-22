@@ -148,11 +148,14 @@ the timed runtime path. The readiness check verifies clean `main`, the expected
 GitHub remote, this proof file's structure, and public multi-arch GHCR images
 for the exact commit. The verifier executes the second clone's
 `scripts/gate2-outside-run.sh` wrapper with the clone-start timestamp captured
-immediately before that second `git clone`, and cleans up the `beater-stopwatch`
+immediately before that second `git clone`, auto-confirms the manual quickstart
+checkpoint for diagnostic automation only, and cleans up the `beater-stopwatch`
 Compose project after the wrapper exits. It proves the exact public outside-run
 path and images can run, but it is not outside-person evidence and does not
-close this proof file. `--full-run` is intentionally supported only for the
-canonical public GitHub/GHCR handoff, not fixture or fork URLs.
+close this proof file. Its generated report is `Status: diagnostic.` and
+default outside-person validation rejects it as closure evidence. `--full-run`
+is intentionally supported only for the canonical public GitHub/GHCR handoff,
+not fixture or fork URLs.
 
 If Docker is unavailable on the maintainer machine, run
 `scripts/check-gate2-public-handoff.py` without `--full-run`; that still

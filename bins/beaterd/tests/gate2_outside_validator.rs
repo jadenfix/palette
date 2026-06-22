@@ -21,6 +21,7 @@ const LLM_OBSERVATION: &str =
 const WATERFALL_OBSERVATION: &str =
     "opened all-kind trace and saw run -> turn -> step -> tool -> MCP nesting";
 const OUTSIDE_RUN_ATTESTATION: &str = "I attest that I am not a Beater project maintainer, I received no step-by-step help beyond public repository instructions, I used a fresh clone, and I completed the Gate 2 flow unaided.";
+const DIAGNOSTIC_ATTESTATION: &str = "Diagnostic maintainer full-run auto-confirmed the manual checkpoint; this is not outside-person evidence and cannot close Gate 2.";
 
 #[test]
 fn gate2_outside_validator_allows_pending_template_with_allow_pending() {
@@ -162,6 +163,49 @@ fn gate2_outside_validator_accepts_matching_default_port_artifacts() {
     let output = run_validator(&fixture.proof_path);
 
     assert_success(output, "Gate 2 outside-person proof is complete and valid");
+}
+
+#[test]
+fn gate2_outside_validator_rejects_diagnostic_status_for_closure() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "Status: completed.",
+        "Status: diagnostic.",
+    );
+    replace(
+        &fixture.proof_path,
+        OUTSIDE_RUN_ATTESTATION,
+        DIAGNOSTIC_ATTESTATION,
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(output, "Status must be 'completed.' for Gate 2 closure");
+}
+
+#[test]
+fn gate2_outside_validator_accepts_diagnostic_status_only_in_diagnostic_mode() {
+    let fixture = ValidatorFixture::new();
+    replace(
+        &fixture.proof_path,
+        "Status: completed.",
+        "Status: diagnostic.",
+    );
+    replace(
+        &fixture.proof_path,
+        OUTSIDE_RUN_ATTESTATION,
+        DIAGNOSTIC_ATTESTATION,
+    );
+    replace(
+        &fixture.proof_path,
+        "The runner completed the flow using only public repository instructions.",
+        "The maintainer diagnostic full-run auto-confirmed the manual checkpoint. This is not outside-person evidence.",
+    );
+
+    let output = run_validator_with_args(&fixture.proof_path, &["--diagnostic"]);
+
+    assert_success(output, "Gate 2 diagnostic proof is valid");
 }
 
 #[test]
@@ -837,6 +881,14 @@ fn gate2_public_handoff_verifier_full_run_accepts_rewritten_canonical_fixture() 
         stdout.contains("Gate 2 generated proof diagnostic passed"),
         "stdout did not contain generated-proof diagnostic pass line\nstdout:\n{stdout}"
     );
+    assert!(
+        stdout.contains("Gate 2 diagnostic proof is valid"),
+        "stdout did not contain diagnostic validator pass line\nstdout:\n{stdout}"
+    );
+    assert!(
+        stdout.contains("Auto-confirming the manual quickstart checkpoint"),
+        "full-run must disclose diagnostic-only manual checkpoint auto-confirmation\nstdout:\n{stdout}"
+    );
     let checks_clone_dir = clone_parent.path().join("beater-checks");
     assert!(
         checks_clone_dir.exists(),
@@ -874,9 +926,11 @@ fn gate2_public_handoff_verifier_full_run_accepts_rewritten_canonical_fixture() 
     let diagnostic_proof =
         fs::read_to_string(clone_dir.join("docs/demos/gate2-public-handoff-diagnostic-proof.md"))
             .unwrap_or_else(|err| panic!("read generated diagnostic proof: {err}"));
-    assert!(diagnostic_proof.contains("Status: completed."));
+    assert!(diagnostic_proof.contains("Status: diagnostic."));
     assert!(diagnostic_proof.contains("Public Handoff Diagnostic"));
     assert!(diagnostic_proof.contains("not outside-person evidence"));
+    assert!(diagnostic_proof.contains("diagnostic auto-confirmed the manual checkpoint"));
+    assert!(diagnostic_proof.contains(DIAGNOSTIC_ATTESTATION));
     assert!(diagnostic_proof.contains("token breakdown"));
     let docker_log = fs::read_to_string(&runtime.docker_log)
         .unwrap_or_else(|err| panic!("read fake Docker log: {err}"));
@@ -1089,6 +1143,63 @@ print(module.occupied_port_message(3000, "dashboard", "BEATER_DASHBOARD_PORT"))
         1,
         "port owner hint must dedupe listener pids\n{stdout}"
     );
+}
+
+#[test]
+fn gate2_public_handoff_sanitizes_git_config_rewrites_for_public_clone() {
+    let root = repo_root();
+    let output = Command::new(python3_executable())
+        .arg("-c")
+        .arg(
+            r#"
+import argparse
+import importlib.util
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location("handoff", path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+args = argparse.Namespace(
+    full_run=True,
+    source_url=module.REMOTE_URL,
+    registry_fixture="/tmp/registry",
+    skip_local_readiness=False,
+)
+env = module.public_clone_env(args)
+print("GIT_CONFIG_COUNT=" + env.get("GIT_CONFIG_COUNT", "unset"))
+print("GIT_CONFIG_GLOBAL=" + env.get("GIT_CONFIG_GLOBAL", "unset"))
+print("GIT_CONFIG_NOSYSTEM=" + env.get("GIT_CONFIG_NOSYSTEM", "unset"))
+args.skip_local_readiness = True
+module.os.environ["BEATER_GATE2_FIXTURE_FULL_RUN"] = "1"
+fixture_env = module.public_clone_env(args)
+print("fixture_GIT_CONFIG_COUNT=" + fixture_env.get("GIT_CONFIG_COUNT", "unset"))
+"#,
+        )
+        .arg(root.join("scripts/check-gate2-public-handoff.py"))
+        .current_dir(&root)
+        .env("GIT_CONFIG_COUNT", "1")
+        .env("GIT_CONFIG_KEY_0", "url.file:///tmp/fake.insteadOf")
+        .env(
+            "GIT_CONFIG_VALUE_0",
+            "https://github.com/jadenfix/beater.git",
+        )
+        .output()
+        .unwrap_or_else(|err| panic!("run public clone env fixture: {err}"));
+
+    if !output.status.success() {
+        panic!(
+            "public clone env fixture failed\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("GIT_CONFIG_COUNT=unset"));
+    assert!(stdout.contains("GIT_CONFIG_GLOBAL=/dev/null"));
+    assert!(stdout.contains("GIT_CONFIG_NOSYSTEM=1"));
+    assert!(stdout.contains("fixture_GIT_CONFIG_COUNT=1"));
 }
 
 #[test]
@@ -2444,6 +2555,24 @@ fn gate2_outside_validator_rejects_weak_waterfall_observation() {
     assert_failure(
         output,
         "Runner waterfall observation must mention: run, turn, step, tool, MCP",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_dirty_evidence_artifact_at_closure() {
+    let fixture = write_validator_closure_fixture_repo();
+    append(
+        &fixture
+            .path()
+            .join("docs/demos/gate2-closure-fixture/stopwatch-proof.md"),
+        "\n<!-- local evidence edit after commit -->\n",
+    );
+
+    let output = run_default_validator_in_repo(fixture.path());
+
+    assert_failure(
+        output,
+        "Stopwatch proof file must be committed and clean before Gate 2 closure",
     );
 }
 

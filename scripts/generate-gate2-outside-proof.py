@@ -15,6 +15,10 @@ OUTSIDE_RUN_ATTESTATION = (
     "step-by-step help beyond public repository instructions, I used a fresh "
     "clone, and I completed the Gate 2 flow unaided."
 )
+DIAGNOSTIC_ATTESTATION = (
+    "Diagnostic maintainer full-run auto-confirmed the manual checkpoint; "
+    "this is not outside-person evidence and cannot close Gate 2."
+)
 UNRESOLVED_REQUIRED_VALUES = {
     "...",
     "…",
@@ -167,14 +171,44 @@ def build_proof(args, stopwatch_path, stopwatch_text):
         raise SystemExit(
             f"--date must match Clone started at UTC date {run_date}, got {proof_date}"
         )
+    status = "diagnostic." if args.diagnostic_report else "completed."
+    attestation = DIAGNOSTIC_ATTESTATION if args.diagnostic_report else OUTSIDE_RUN_ATTESTATION
+    if args.diagnostic_report:
+        proof_intro = (
+            "Maintainer diagnostic report generated from the stopwatch proof listed below. "
+            "This is not outside-person evidence, auto-confirms the manual checkpoint for "
+            "automation, and cannot close Gate 2."
+        )
+        command_note = (
+            "The maintainer diagnostic full-run exercised the public wrapper path and "
+            "auto-confirmed the manual quickstart checkpoint. This is not outside-person "
+            "evidence."
+        )
+        recording_checklist = (
+            "- [x] A screen recording of the diagnostic full-run was generated under "
+            "`docs/demos/`."
+        )
+        runner_checklist = (
+            "- [x] The diagnostic verifier auto-confirmed the manual quickstart "
+            "checkpoint; not outside-person evidence."
+        )
+    else:
+        proof_intro = (
+            "Gate 2 evidence generated from the stopwatch proof listed below. This file is "
+            "valid only when the named runner is outside the project and completed the run "
+            "unaided using public repository instructions."
+        )
+        command_note = "The runner completed the flow using only public repository instructions."
+        recording_checklist = "- [x] A screen recording of the full flow is committed under `docs/demos/`."
+        runner_checklist = (
+            "- [x] The runner completed the flow using only public repository instructions."
+        )
 
     return f"""# Gate 2 Outside-Person Proof
 
-Status: completed.
+Status: {status}
 
-Gate 2 evidence generated from the stopwatch proof listed below. This file is
-valid only when the named runner is outside the project and completed the run
-unaided using public repository instructions.
+{proof_intro}
 
 ## Runner
 
@@ -188,7 +222,7 @@ unaided using public repository instructions.
 - Browser: {browser}
 - Network notes: {network_notes}
 - Preflight status: {preflight_status}
-- Outside-run attestation: {OUTSIDE_RUN_ATTESTATION}
+- Outside-run attestation: {attestation}
 
 ## Repository
 
@@ -229,7 +263,7 @@ unaided using public repository instructions.
 bash -lc 't="$(date +%s)" && git clone https://github.com/jadenfix/beater.git && cd beater && BEATER_GATE2_CLONE_STARTED_EPOCH="$t" {CANONICAL_COMMAND}'
 ```
 
-The runner completed the flow using only public repository instructions.
+{command_note}
 
 ## Required Evidence
 
@@ -264,8 +298,8 @@ The runner completed the flow using only public repository instructions.
 - [x] The all-kind trace rendered run -> turn -> step -> tool -> MCP nesting in the waterfall.
 - [x] The browser proof passed for both the quickstart trace and all-kind waterfall.
 - [x] The stopwatch script generated and reported the browser recording.
-- [x] A screen recording of the full flow is committed under `docs/demos/`.
-- [x] The runner completed the flow using only public repository instructions.
+{recording_checklist}
+{runner_checklist}
 
 ## Runner Notes
 
@@ -298,6 +332,14 @@ def parse_args():
         action="store_true",
         help="Required attestation that the runner is outside the project and unaided.",
     )
+    parser.add_argument(
+        "--diagnostic-report",
+        action="store_true",
+        help=(
+            "Generate a maintainer diagnostic report from full-run artifacts. "
+            "This cannot validate as outside-person closure evidence."
+        ),
+    )
     parser.add_argument("--network-notes", required=True)
     parser.add_argument("--llm-observation", required=True)
     parser.add_argument("--waterfall-observation", required=True)
@@ -313,7 +355,9 @@ def parse_args():
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--no-validate", action="store_true")
     args = parser.parse_args()
-    if not args.attest_outside_run:
+    if args.attest_outside_run and args.diagnostic_report:
+        parser.error("--diagnostic-report cannot be combined with --attest-outside-run")
+    if not args.attest_outside_run and not args.diagnostic_report:
         parser.error("--attest-outside-run is required for completed Gate 2 proof generation")
     return args
 
@@ -350,8 +394,12 @@ def main():
         env = dict(os.environ)
         try:
             env["BEATER_GATE2_OUTSIDE_PROOF"] = str(temp_path)
+            env["BEATER_GATE2_ALLOW_UNTRACKED_ARTIFACTS"] = "1"
+            validate = ["bash", "scripts/validate-gate2-outside-proof.sh"]
+            if args.diagnostic_report:
+                validate.append("--diagnostic")
             subprocess.run(
-                ["bash", "scripts/validate-gate2-outside-proof.sh"],
+                validate,
                 cwd=repo_root(),
                 env=env,
                 check=True,
@@ -364,7 +412,8 @@ def main():
             temp_path.unlink(missing_ok=True)
             raise
 
-    print(f"Wrote Gate 2 outside-person proof: {relative_or_absolute(output_path)}")
+    label = "Gate 2 diagnostic proof" if args.diagnostic_report else "Gate 2 outside-person proof"
+    print(f"Wrote {label}: {relative_or_absolute(output_path)}")
 
 
 if __name__ == "__main__":

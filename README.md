@@ -309,12 +309,15 @@ GitHub remote, this proof file's structure, and public current-SHA multi-arch
 `beaterd`, `dashboard`, `dashboard-e2e`, and `otel-python` GHCR images for the
 exact commit. The verifier executes the second clone's
 `scripts/gate2-outside-run.sh` wrapper with the clone-start timestamp captured
-immediately before that second `git clone`, and cleans up the `beater-stopwatch`
+immediately before that second `git clone`, auto-confirms the manual quickstart
+checkpoint for diagnostic automation only, and cleans up the `beater-stopwatch`
 Compose project after the wrapper exits. This is maintainer runtime evidence
 that the exact public outside-run path, current GHCR images, OTLP ingest, dashboard
 render, browser proof, and browser recording work; it is not a substitute for
-the required outside-person proof below. `--full-run` is intentionally supported
-only for the canonical public GitHub/GHCR handoff, not fixture or fork URLs.
+the required outside-person proof below. Its generated report is `Status:
+diagnostic.` and default outside-person validation rejects it as closure
+evidence. `--full-run` is intentionally supported only for the canonical public
+GitHub/GHCR handoff, not fixture or fork URLs.
 
 If Docker is unavailable on the maintainer machine, run
 `scripts/check-gate2-public-handoff.py` without `--full-run`; that still

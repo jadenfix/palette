@@ -5,18 +5,30 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd -- "$script_dir/.." && pwd -P)"
 proof_path="${BEATER_GATE2_OUTSIDE_PROOF:-docs/demos/gate2-outside-person-proof.md}"
 allow_pending=0
+diagnostic=0
 
-if [[ "${1:-}" == "--allow-pending" ]]; then
-  allow_pending=1
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --allow-pending)
+      allow_pending=1
+      ;;
+    --diagnostic)
+      diagnostic=1
+      ;;
+    *)
+      echo "usage: scripts/validate-gate2-outside-proof.sh [--allow-pending] [--diagnostic]" >&2
+      exit 2
+      ;;
+  esac
   shift
-fi
+done
 
 if [[ $# -ne 0 ]]; then
-  echo "usage: scripts/validate-gate2-outside-proof.sh [--allow-pending]" >&2
+  echo "usage: scripts/validate-gate2-outside-proof.sh [--allow-pending] [--diagnostic]" >&2
   exit 2
 fi
 
-python3 - "$proof_path" "$allow_pending" "$repo_root" <<'PY'
+python3 - "$proof_path" "$allow_pending" "$repo_root" "$diagnostic" <<'PY'
 import hashlib
 import datetime as dt
 import os
@@ -31,6 +43,7 @@ from urllib.parse import parse_qs, urlparse
 proof_arg = Path(sys.argv[1])
 allow_pending = sys.argv[2] == "1"
 repo = Path(sys.argv[3]).resolve()
+diagnostic_mode = sys.argv[4] == "1"
 proof_path = proof_arg if proof_arg.is_absolute() else repo / proof_arg
 errors: list[str] = []
 
@@ -54,6 +67,10 @@ OUTSIDE_RUN_ATTESTATION = (
     "I attest that I am not a Beater project maintainer, I received no "
     "step-by-step help beyond public repository instructions, I used a fresh "
     "clone, and I completed the Gate 2 flow unaided."
+)
+DIAGNOSTIC_ATTESTATION = (
+    "Diagnostic maintainer full-run auto-confirmed the manual checkpoint; "
+    "this is not outside-person evidence and cannot close Gate 2."
 )
 FORBIDDEN_EVIDENCE = [
     "http://127.0.0.1:13003",
@@ -628,6 +645,38 @@ def require_tracked_artifact(path: Path, name: str) -> bool:
     return True
 
 
+def require_committed_clean_path(path: Path, name: str) -> None:
+    if ALLOW_UNTRACKED_ARTIFACTS:
+        return
+    try:
+        rel = path.relative_to(repo)
+    except ValueError:
+        fail(f"{name} must be inside the repository")
+        return
+    try:
+        subprocess.check_call(
+            ["git", "ls-files", "--error-unmatch", "--", str(rel)],
+            cwd=repo,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        fail(f"{name} must be tracked by git before Gate 2 closure: {rel}")
+        return
+    try:
+        status = subprocess.check_output(
+            ["git", "status", "--porcelain=v1", "--", str(rel)],
+            cwd=repo,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        fail(f"could not inspect git status for {name}: {rel}")
+        return
+    if status:
+        fail(f"{name} must be committed and clean before Gate 2 closure: {rel}")
+
+
 def validated_artifact_path(value: str, name: str, missing_message: str) -> Optional[Path]:
     path = repo_artifact_path(value, name)
     if path is None:
@@ -815,10 +864,14 @@ elif len(status_matches) > 1:
     fail("duplicate Status line")
 elif status == "not yet completed." and allow_pending:
     pass
+elif status == "diagnostic." and diagnostic_mode:
+    pass
 elif status != "completed.":
     fail("Status must be 'completed.' for Gate 2 closure")
+if diagnostic_mode and status != "diagnostic.":
+    fail("Diagnostic validation requires Status: diagnostic.")
 
-for snippet, description in [
+required_snippets = [
     (EXPECTED_OUTSIDE_COMMAND, "fail-fast clone-to-browser command"),
     ("scripts/gate2-outside-run.sh", "canonical outside-run command"),
     ("BEATER_GATE2_CLONE_STARTED_EPOCH", "clone-to-browser stopwatch command"),
@@ -829,8 +882,14 @@ for snippet, description in [
         "Manual quickstart click confirmation was recorded before 300 seconds",
         "manual browser-click checklist item",
     ),
-    ("using only public repository instructions", "unaided-run requirement"),
-]:
+]
+if diagnostic_mode:
+    required_snippets.append(("not outside-person evidence", "diagnostic non-evidence marker"))
+else:
+    required_snippets.append(
+        ("using only public repository instructions", "unaided-run requirement")
+    )
+for snippet, description in required_snippets:
     require_snippet(snippet, description)
 
 if allow_pending and status == "not yet completed.":
@@ -842,6 +901,9 @@ if allow_pending and status == "not yet completed.":
         raise SystemExit(1)
     print(f"Gate 2 outside-person proof is pending but structurally valid: {proof_path}")
     raise SystemExit(0)
+
+if proof_abs.resolve() == default_proof_abs.resolve():
+    require_committed_clean_path(proof_abs, "Outside-person proof")
 
 UNRESOLVED_REQUIRED_VALUES = {
     "...",
@@ -917,7 +979,10 @@ if unresolved_fields:
 proof_date = require_date_field("Date", field_value("Date"), "outside-person proof")
 
 outside_run_attestation = field_value("Outside-run attestation")
-if outside_run_attestation != OUTSIDE_RUN_ATTESTATION:
+if diagnostic_mode:
+    if outside_run_attestation != DIAGNOSTIC_ATTESTATION:
+        fail("Diagnostic attestation must mark the proof as non-closure evidence")
+elif outside_run_attestation != OUTSIDE_RUN_ATTESTATION:
     fail("Outside-run attestation must match the required unaided outside-run statement")
 preflight_status = field_value("Preflight status")
 if preflight_status != "passed":
@@ -925,16 +990,17 @@ if preflight_status != "passed":
 
 relationship = contradiction_text(field_value("Organization or relationship to project"))
 prior_exposure = contradiction_text(field_value("Prior Beater repo exposure"))
-for outside_contradiction in [
-    "maintainer",
-    "internal",
-    "employee",
-    "founder",
-    "beater team",
-    "project team",
-]:
-    if outside_contradiction in relationship or outside_contradiction in prior_exposure:
-        fail("runner relationship/prior exposure must not contradict outside-run attestation")
+if not diagnostic_mode:
+    for outside_contradiction in [
+        "maintainer",
+        "internal",
+        "employee",
+        "founder",
+        "beater team",
+        "project team",
+    ]:
+        if outside_contradiction in relationship or outside_contradiction in prior_exposure:
+            fail("runner relationship/prior exposure must not contradict outside-run attestation")
 
 branch = field_value("Branch")
 if branch != "main":
@@ -1096,6 +1162,10 @@ notes_path = (
     if notes
     else None
 )
+if recording_path:
+    require_committed_clean_path(recording_path, "Screen recording")
+if notes_path:
+    require_committed_clean_path(notes_path, "Screen recording notes")
 notes_text = read_validated_text(notes_path, "Screen recording notes") if notes_path else ""
 sha = field_value("Screen recording SHA256")
 if sha and not re.fullmatch(r"[0-9a-f]{64}", sha):
@@ -1167,6 +1237,8 @@ stopwatch_path = (
     if stopwatch_proof
     else None
 )
+if stopwatch_path:
+    require_committed_clean_path(stopwatch_path, "Stopwatch proof file")
 stopwatch_text = ""
 if stopwatch_path:
     stopwatch_text = read_validated_text(stopwatch_path, "Stopwatch proof file")
@@ -1487,5 +1559,8 @@ if errors:
         print(f"- {error}", file=sys.stderr)
     raise SystemExit(1)
 
-print(f"Gate 2 outside-person proof is complete and valid: {proof_path}")
+if diagnostic_mode:
+    print(f"Gate 2 diagnostic proof is valid: {proof_path}")
+else:
+    print(f"Gate 2 outside-person proof is complete and valid: {proof_path}")
 PY

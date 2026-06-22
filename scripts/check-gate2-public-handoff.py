@@ -363,6 +363,19 @@ def clean_outside_env() -> dict[str, str]:
     return env
 
 
+def public_clone_env(args: argparse.Namespace) -> dict[str, str]:
+    env = os.environ.copy()
+    if fixture_full_run_enabled(args):
+        return env
+    for name in list(env):
+        if name.startswith("GIT_CONFIG_"):
+            env.pop(name, None)
+    env["GIT_CONFIG_GLOBAL"] = os.devnull
+    env["GIT_CONFIG_SYSTEM"] = os.devnull
+    env["GIT_CONFIG_NOSYSTEM"] = "1"
+    return env
+
+
 def make_clone_parent(args: argparse.Namespace) -> tuple[Path, tempfile.TemporaryDirectory | None]:
     if args.clone_parent:
         parent = Path(args.clone_parent).resolve()
@@ -384,7 +397,7 @@ def clone_repo(
 
     clone_started_epoch = int(time.time())
     clone_command = ["git", "clone", args.source_url, str(clone_dir)]
-    run(clone_command, cwd=parent)
+    run(clone_command, cwd=parent, env=public_clone_env(args))
 
     clone_commit = run(["git", "rev-parse", "HEAD"], cwd=clone_dir, quiet=True)
     if clone_commit != expected_commit:
@@ -502,7 +515,7 @@ def run_generated_proof_check(clone_dir: Path) -> None:
             "--runner-name",
             "Public Handoff Diagnostic",
             "--relationship",
-            "external verifier fixture; no Beater project role",
+            "maintainer diagnostic verifier; not outside-person evidence",
             "--prior-exposure",
             "none",
             "--machine-os",
@@ -512,12 +525,20 @@ def run_generated_proof_check(clone_dir: Path) -> None:
             "--network-notes",
             "diagnostic verifier path; not outside-person evidence",
             "--llm-observation",
-            "clicked llm.call and saw prompt, completion, model, token breakdown, cost, and latency",
+            (
+                "diagnostic auto-confirmed the manual checkpoint; not outside-person "
+                "evidence; browser proof inspected llm.call prompt, completion, "
+                "model, token breakdown, cost, and latency"
+            ),
             "--waterfall-observation",
-            "opened all-kind trace and saw run -> turn -> step -> tool -> MCP nesting",
+            (
+                "diagnostic browser proof opened the all-kind trace; not "
+                "outside-person evidence; observed run -> turn -> step -> tool "
+                "-> MCP nesting"
+            ),
             "--preflight-status",
             "passed",
-            "--attest-outside-run",
+            "--diagnostic-report",
             "--output",
             proof_path,
             "--force",
@@ -526,7 +547,8 @@ def run_generated_proof_check(clone_dir: Path) -> None:
     )
     env = clean_outside_env()
     env["BEATER_GATE2_OUTSIDE_PROOF"] = proof_path
-    run(["scripts/validate-gate2-outside-proof.sh"], cwd=clone_dir, env=env)
+    env["BEATER_GATE2_ALLOW_UNTRACKED_ARTIFACTS"] = "1"
+    run(["scripts/validate-gate2-outside-proof.sh", "--diagnostic"], cwd=clone_dir, env=env)
     print("Gate 2 generated proof diagnostic passed.")
 
 
@@ -539,6 +561,10 @@ def run_cloned_full_run(
     env = clean_outside_env()
     env["BEATER_GATE2_CLONE_STARTED_EPOCH"] = str(clone_started_epoch)
     try:
+        print(
+            "Auto-confirming the manual quickstart checkpoint for maintainer "
+            "diagnostic full-run only; this is not outside-person evidence."
+        )
         run(["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env, input_text="\n")
         run_generated_proof_check(clone_dir)
     finally:
