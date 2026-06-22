@@ -3,6 +3,7 @@ import argparse
 import datetime as dt
 import os
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -171,6 +172,75 @@ def compose_images_excerpt(stopwatch_text, stopwatch_path):
     if services:
         return " | ".join(services)
     return " | ".join(lines[:3])
+
+
+def terminal_output_excerpt_from_stopwatch(stopwatch_text, stopwatch_rel):
+    quickstart_dashboard = field_value(stopwatch_text, "Quickstart dashboard", stopwatch_rel)
+    all_kind_dashboard = field_value(stopwatch_text, "All-kind dashboard", stopwatch_rel)
+    recording_status = field_value(stopwatch_text, "Browser recording", stopwatch_rel)
+    return (
+        f"Gate 2 compose stopwatch passed; Browser recording: {recording_status}; "
+        f"Quickstart dashboard: {quickstart_dashboard}; "
+        f"All-kind dashboard: {all_kind_dashboard}"
+    )
+
+
+def compose_logs_from_stopwatch(stopwatch_text, stopwatch_rel):
+    return field_value(stopwatch_text, "Compose logs artifact", stopwatch_rel)
+
+
+def print_prefilled_command(args, stopwatch_path, output_path, stopwatch_text):
+    stopwatch_rel = relative_or_absolute(stopwatch_path)
+    require_source_field_equal(
+        stopwatch_text, stopwatch_rel, "Browser recording", "passed"
+    )
+    compose_logs_saved = compose_logs_from_stopwatch(stopwatch_text, stopwatch_rel)
+    terminal_excerpt = terminal_output_excerpt_from_stopwatch(stopwatch_text, stopwatch_rel)
+    command = [
+        "python3",
+        "scripts/generate-gate2-outside-proof.py",
+        "--stopwatch-proof",
+        relative_or_absolute(stopwatch_path),
+        "--output",
+        relative_or_absolute(output_path),
+        "--runner-name",
+        "... runner full name ...",
+        "--relationship",
+        "... external relationship to Beater; no project role ...",
+        "--prior-exposure",
+        "none",
+        "--machine-os",
+        "... OS and architecture ...",
+        "--browser",
+        "... browser and version ...",
+        "--network-notes",
+        "... network used; mention VPN/proxy if any ...",
+        "--llm-observation",
+        "... clicked llm.call and saw prompt, completion, model, token breakdown, cost, and latency ...",
+        "--waterfall-observation",
+        "... opened all-kind trace and saw run -> turn -> step -> tool -> MCP nesting ...",
+        "--terminal-output-excerpt",
+        terminal_excerpt,
+        "--compose-logs-saved",
+        compose_logs_saved,
+        "--preflight-status",
+        "passed",
+        "--failure-notes",
+        "none",
+        "--runner-notes",
+        "... add any confusing step, or say no extra runner notes ...",
+        "--attest-outside-run",
+    ]
+    print("Start from this command after replacing every ... field with runner-specific facts:")
+    for index in range(0, len(command), 2):
+        if index == 0:
+            print(f"{shlex.quote(command[0])} {shlex.quote(command[1])} \\")
+            continue
+        suffix = " \\" if index + 2 < len(command) else ""
+        if index + 1 < len(command):
+            print(f"  {shlex.quote(command[index])} {shlex.quote(command[index + 1])}{suffix}")
+        else:
+            print(f"  {shlex.quote(command[index])}{suffix}")
 
 
 def proof_status(text, output_path):
@@ -383,12 +453,12 @@ def parse_args():
         default="docs/demos/gate2-outside-person-proof.md",
         help="Proof file to write.",
     )
-    parser.add_argument("--runner-name", required=True)
-    parser.add_argument("--relationship", required=True)
-    parser.add_argument("--prior-exposure", required=True)
-    parser.add_argument("--machine-os", required=True)
-    parser.add_argument("--browser", required=True)
-    parser.add_argument("--preflight-status", required=True)
+    parser.add_argument("--runner-name", default="")
+    parser.add_argument("--relationship", default="")
+    parser.add_argument("--prior-exposure", default="")
+    parser.add_argument("--machine-os", default="")
+    parser.add_argument("--browser", default="")
+    parser.add_argument("--preflight-status", default="")
     parser.add_argument(
         "--attest-outside-run",
         action="store_true",
@@ -402,9 +472,17 @@ def parse_args():
             "This cannot validate as outside-person closure evidence."
         ),
     )
-    parser.add_argument("--network-notes", required=True)
-    parser.add_argument("--llm-observation", required=True)
-    parser.add_argument("--waterfall-observation", required=True)
+    parser.add_argument(
+        "--print-command",
+        action="store_true",
+        help=(
+            "Print a ready-to-edit proof-generation command using values from "
+            "the stopwatch proof. Does not write or validate a proof."
+        ),
+    )
+    parser.add_argument("--network-notes", default="")
+    parser.add_argument("--llm-observation", default="")
+    parser.add_argument("--waterfall-observation", default="")
     parser.add_argument("--terminal-output-excerpt", default="")
     parser.add_argument("--compose-logs-saved", default="")
     parser.add_argument("--failure-notes", default="")
@@ -417,9 +495,11 @@ def parse_args():
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--no-validate", action="store_true")
     args = parser.parse_args()
+    if args.print_command and (args.attest_outside_run or args.diagnostic_report):
+        parser.error("--print-command cannot be combined with proof-writing attestation flags")
     if args.attest_outside_run and args.diagnostic_report:
         parser.error("--diagnostic-report cannot be combined with --attest-outside-run")
-    if not args.attest_outside_run and not args.diagnostic_report:
+    if not args.print_command and not args.attest_outside_run and not args.diagnostic_report:
         parser.error("--attest-outside-run is required for completed Gate 2 proof generation")
     return args
 
@@ -435,8 +515,12 @@ def main():
     if not stopwatch_path.exists():
         raise SystemExit(f"missing stopwatch proof: {stopwatch_path}")
 
-    require_pending_or_force(output_path, args.force)
     stopwatch_text = stopwatch_path.read_text()
+    if args.print_command:
+        print_prefilled_command(args, stopwatch_path, output_path, stopwatch_text)
+        return
+
+    require_pending_or_force(output_path, args.force)
     proof = build_proof(args, stopwatch_path, stopwatch_text)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

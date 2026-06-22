@@ -100,12 +100,19 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(readme.contains("--waterfall-observation"));
     assert!(readme.contains("--terminal-output-excerpt"));
     assert!(readme.contains("--compose-logs-saved"));
+    assert!(readme.contains("--print-command"));
+    assert!(readme.contains("prefilled"));
+    assert!(readme.contains("ready-to-edit command"));
+    assert!(readme.contains("git add docs/demos/gate2-outside-person-proof.md"));
+    assert!(readme.contains("git commit -m \"add gate2 outside proof\""));
     assert!(readme.contains("repo-relative, committed/clean"));
-    assert!(readme.contains("non-symlink file under `docs/demos/`"));
+    assert!(readme.contains("non-symlink file under"));
+    assert!(readme.contains("`docs/demos/`"));
     assert!(readme.contains("immutable GitHub Actions"));
     assert!(readme.contains("actions/runs/<run_id>"));
-    assert!(readme.contains("writes `docs/demos/gate2-outside-compose.log`\nautomatically"));
-    assert!(readme.contains("Do not leave placeholder values such as `...`"));
+    assert!(readme.contains("writes `docs/demos/gate2-outside-compose.log`"));
+    assert!(readme.contains("automatically and\npre-fills that path"));
+    assert!(readme.contains("replace every `...` field"));
     assert!(readme.contains("uncommitted non-evidence worktree changes"));
     assert!(readme.contains(r#"--runner-name "Jane Outside Runner""#));
     assert!(readme.contains(r#"--relationship "external evaluator; no Beater project role""#));
@@ -139,15 +146,21 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(proof_template.contains("--waterfall-observation"));
     assert!(proof_template.contains("--terminal-output-excerpt"));
     assert!(proof_template.contains("--compose-logs-saved"));
-    assert!(proof_template.contains("repo-relative, committed/clean"));
-    assert!(proof_template.contains("non-symlink file\nunder `docs/demos/`"));
+    assert!(proof_template.contains("--print-command"));
+    assert!(proof_template.contains("ready-to-edit command"));
+    assert!(proof_template.contains("git add docs/demos/gate2-outside-person-proof.md"));
+    assert!(proof_template.contains("git commit -m \"add gate2 outside proof\""));
+    assert!(proof_template.contains("repo-relative"));
+    assert!(proof_template.contains("committed/clean, non-symlink file"));
+    assert!(proof_template.contains("under `docs/demos/`"));
     assert!(proof_template.contains("immutable GitHub Actions run/job URL"));
     assert!(proof_template.contains("actions/runs/<run_id>"));
-    assert!(proof_template.contains("writes `docs/demos/gate2-outside-compose.log` automatically"));
+    assert!(proof_template.contains("writes `docs/demos/gate2-outside-compose.log`"));
+    assert!(proof_template.contains("automatically and pre-fills that path"));
     assert!(proof_template.contains("saved compose-log paths"));
     assert!(proof_template.contains("compose-log evidence must be a committed/clean file"));
     assert!(proof_template.contains("repo-relative committed/clean non-symlink `docs/demos/`"));
-    assert!(proof_template.contains("placeholder values such as `...`"));
+    assert!(proof_template.contains("Replace every `...` field"));
     assert!(proof_template.contains(r#"--runner-name "Jane Outside Runner""#));
     assert!(
         proof_template.contains(r#"--relationship "external evaluator; no Beater project role""#)
@@ -334,6 +347,46 @@ fn gate2_outside_generator_builds_valid_completed_proof() {
     assert!(generated_text.contains(
         "- [x] The runner completed the flow using only public repository instructions."
     ));
+}
+
+#[test]
+fn gate2_outside_generator_prints_prefilled_command_from_stopwatch() {
+    let fixture = ValidatorFixture::new();
+    let generated = fixture.dir.path().join("printed-outside-proof.md");
+
+    let output = Command::new("python3")
+        .arg(repo_root().join("scripts/generate-gate2-outside-proof.py"))
+        .arg("--stopwatch-proof")
+        .arg(&fixture.stopwatch_path)
+        .arg("--output")
+        .arg(&generated)
+        .arg("--print-command")
+        .current_dir(repo_root())
+        .output()
+        .unwrap_or_else(|err| panic!("run Gate 2 outside proof print-command: {err}"));
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+
+    assert_success(
+        output,
+        "Start from this command after replacing every ... field",
+    );
+    assert!(stdout.contains("python3 scripts/generate-gate2-outside-proof.py \\"));
+    assert!(stdout.contains("--attest-outside-run"));
+    assert!(stdout.contains("--terminal-output-excerpt"));
+    assert!(stdout.contains("Gate 2 compose stopwatch passed; Browser recording: passed"));
+    assert!(stdout.contains(&format!(
+        "Quickstart dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={QUICKSTART_TRACE}"
+    )));
+    assert!(stdout.contains(&format!(
+        "All-kind dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={ALL_KIND_TRACE}"
+    )));
+    assert!(stdout.contains("--compose-logs-saved"));
+    assert!(stdout.contains(&fixture.compose_log_field));
+    assert!(stdout.contains("... runner full name ..."));
+    assert!(
+        !generated.exists(),
+        "--print-command must not write the outside-person proof"
+    );
 }
 
 #[test]
@@ -1869,6 +1922,12 @@ fn gate2_stopwatch_outside_next_steps_separate_dashboard_targets() {
     assert!(script.contains("logs --no-color --timestamps"));
     assert!(script.contains("Compose logs artifact"));
     assert!(script.contains("Use the saved docker compose logs artifact as evidence"));
+    assert!(script.contains("python3 scripts/generate-gate2-outside-proof.py --stopwatch-proof"));
+    assert!(script.contains("--print-command"));
+    assert!(script.contains("Generate the completed proof from this prefilled command"));
+    assert!(script.contains("Commit the evidence before closure validation"));
+    assert!(script.contains("git add docs/demos/gate2-outside-person-proof.md"));
+    assert!(script.contains("git commit -m \"add gate2 outside proof\""));
     assert!(script.contains(
         "Maintainer diagnostic overrides are intentionally suppressed for outside-person evidence."
     ));
@@ -2578,6 +2637,23 @@ fn gate2_outside_validator_accepts_compose_images_excerpt_from_all_gate2_service
 }
 
 #[test]
+fn gate2_outside_validator_accepts_one_shot_runner_images_as_proof_rows() {
+    let fixture = ValidatorFixture::new();
+    let commit_sha = current_head();
+    replace(
+        &fixture.proof_path,
+        &compose_images_excerpt_line(),
+        &format!(
+            "- `docker compose images` excerpt: beater-stopwatch-beaterd-1 ghcr.io/jadenfix/beater/beaterd {commit_sha} | beater-stopwatch-dashboard-1 ghcr.io/jadenfix/beater/dashboard {commit_sha} | proof-image beaterd ghcr.io/jadenfix/beater/beaterd:{commit_sha} {BEATER_IMAGE_DIGEST} | proof-image dashboard ghcr.io/jadenfix/beater/dashboard:{commit_sha} {DASHBOARD_IMAGE_DIGEST} | proof-image dashboard-e2e ghcr.io/jadenfix/beater/dashboard-e2e:{commit_sha} {DASHBOARD_E2E_IMAGE_DIGEST} | proof-image otel-python ghcr.io/jadenfix/beater/otel-python:{commit_sha} {OTEL_PYTHON_IMAGE_DIGEST}\n"
+        ),
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_success(output, DRAFT_VALID);
+}
+
+#[test]
 fn gate2_outside_validator_rejects_compose_images_without_proof_image_rows() {
     let fixture = ValidatorFixture::new();
     let commit_sha = current_head();
@@ -2613,7 +2689,7 @@ fn gate2_outside_validator_rejects_compose_images_missing_dashboard_e2e() {
 
     assert_failure(
         output,
-        "`docker compose images` excerpt must include ghcr.io/jadenfix/beater/dashboard-e2e tagged with the checked-out commit SHA",
+        "`docker compose images` excerpt must include proof-image row for ghcr.io/jadenfix/beater/dashboard-e2e",
     );
 }
 
@@ -2633,7 +2709,7 @@ fn gate2_outside_validator_rejects_compose_images_missing_otel_python() {
 
     assert_failure(
         output,
-        "`docker compose images` excerpt must include ghcr.io/jadenfix/beater/otel-python tagged with the checked-out commit SHA",
+        "`docker compose images` excerpt must include proof-image row for ghcr.io/jadenfix/beater/otel-python",
     );
 }
 
@@ -4012,7 +4088,7 @@ impl ValidatorFixture {
             .unwrap_or_else(|err| panic!("write {}: {err}", notes_path.display()));
         fs::write(
             &stopwatch_path,
-            stopwatch_proof(&recording_field, &notes_field),
+            stopwatch_proof(&recording_field, &notes_field, &compose_log_field),
         )
         .unwrap_or_else(|err| panic!("write {}: {err}", stopwatch_path.display()));
         fs::write(
@@ -4151,7 +4227,7 @@ fn compose_images_excerpt_line() -> String {
     )
 }
 
-fn stopwatch_proof(recording: &str, notes: &str) -> String {
+fn stopwatch_proof(recording: &str, notes: &str, compose_logs: &str) -> String {
     let commit_sha = current_head();
     let quickstart_release_id = quickstart_release_id();
     format!(
@@ -4184,6 +4260,7 @@ fn stopwatch_proof(recording: &str, notes: &str) -> String {
 - Outside-run wrapper: yes
 - Prebuilt pull policy: `always`
 - Compose project: beater-stopwatch
+- Compose logs artifact: `{compose_logs}`
 - Beater image reference: `ghcr.io/jadenfix/beater/beaterd:{commit_sha}`
 - Dashboard image reference: `ghcr.io/jadenfix/beater/dashboard:{commit_sha}`
 - Dashboard e2e image reference: `ghcr.io/jadenfix/beater/dashboard-e2e:{commit_sha}`
@@ -5422,7 +5499,7 @@ fn write_validator_closure_fixture_repo_with_options(
     let notes_field = format!("{artifact_rel}/recording-notes.md");
     let stopwatch_field = format!("{artifact_rel}/stopwatch-proof.md");
     let compose_log_field = format!("{artifact_rel}/gate2-outside-compose.log");
-    let stopwatch = stopwatch_proof(&recording_field, &notes_field)
+    let stopwatch = stopwatch_proof(&recording_field, &notes_field, &compose_log_field)
         .replace(&current_repo_sha, &tested_sha)
         .replace(&current_release_id, &tested_release_id);
     fs::write(artifact_dir.join("stopwatch-proof.md"), stopwatch)
@@ -5476,6 +5553,13 @@ cat <<'EOF_STEP'
 Outside-run timing-critical browser step:
   Open the quickstart trace-list URL above in a normal browser now; do not wait for the script to finish.
 EOF_STEP
+cat <<'EOF_PROOF_COMMAND'
+Generate the completed proof from this prefilled command:
+python3 scripts/generate-gate2-outside-proof.py --stopwatch-proof docs/demos/gate2-compose-stopwatch.md --print-command
+Commit the evidence before closure validation:
+git add docs/demos/gate2-outside-person-proof.md docs/demos/gate2-compose-stopwatch.md docs/demos/gate2-compose-browser-demo.webm docs/demos/gate2-compose-browser-demo.md docs/demos/gate2-outside-compose.log
+git commit -m "add gate2 outside proof"
+EOF_PROOF_COMMAND
 if ! IFS= read -r _manual_checkpoint_confirmation; then
   echo "missing diagnostic manual checkpoint confirmation" >&2
   exit 42

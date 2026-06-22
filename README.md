@@ -365,16 +365,26 @@ multi-arch GHCR-image checks, but it is not a runtime handoff proof.
 
 Use [docs/demos/gate2-outside-person-proof.md](docs/demos/gate2-outside-person-proof.md)
 as the required evidence template for that run. After the outside runner has
-completed the stopwatch command, generate the proof from the stopwatch artifact.
-Before running the command, replace every identity and environment example below
-with the runner's actual values. Do not leave placeholder values such as `...`;
-the generator and validator reject unresolved evidence. Save the outside-run
-terminal transcript or compose logs as a repo-relative, committed/clean,
-non-symlink file under `docs/demos/` (for example
-`docs/demos/gate2-outside-compose.log`), or use an immutable GitHub Actions
-run/job URL such as `https://github.com/jadenfix/beater/actions/runs/<run_id>`.
-The outside-run wrapper writes `docs/demos/gate2-outside-compose.log`
-automatically; pass that path with `--compose-logs-saved`.
+completed the stopwatch command, use the prefilled
+`scripts/generate-gate2-outside-proof.py --print-command` output printed in the
+terminal. It copies the stopwatch-derived dashboard URLs, terminal excerpt, and
+compose-log artifact into a ready-to-edit command. Before running the command,
+replace every `...` field with the runner's actual values; the generator and
+validator reject unresolved evidence. Save the outside-run terminal transcript
+or compose logs as a repo-relative, committed/clean, non-symlink file under
+`docs/demos/` (for example `docs/demos/gate2-outside-compose.log`), or use an
+immutable GitHub Actions run/job URL such as
+`https://github.com/jadenfix/beater/actions/runs/<run_id>`. The outside-run
+wrapper writes `docs/demos/gate2-outside-compose.log` automatically and
+pre-fills that path with `--compose-logs-saved`.
+
+To reprint the ready-to-edit command:
+
+```bash
+scripts/generate-gate2-outside-proof.py --print-command
+```
+
+The fully expanded form looks like this:
 
 ```bash
 quickstart_dashboard="$(sed -n 's/^- Quickstart dashboard: //p' docs/demos/gate2-compose-stopwatch.md)"
@@ -398,6 +408,12 @@ scripts/generate-gate2-outside-proof.py \
 Then validate it with:
 
 ```bash
+git add docs/demos/gate2-outside-person-proof.md \
+  docs/demos/gate2-compose-stopwatch.md \
+  docs/demos/gate2-compose-browser-demo.webm \
+  docs/demos/gate2-compose-browser-demo.md \
+  docs/demos/gate2-outside-compose.log
+git commit -m "add gate2 outside proof"
 scripts/validate-gate2-outside-proof.sh
 ```
 

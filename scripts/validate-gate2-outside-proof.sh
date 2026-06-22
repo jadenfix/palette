@@ -483,11 +483,15 @@ def require_compose_images_excerpt(
         ("otel-python", "otel-python"),
     ]:
         repo = f"ghcr.io/jadenfix/beater/{image}"
-        if not any(repo in segment and commit_sha in segment for segment in service_segments):
-            fail(f"`docker compose images` excerpt must include {repo} tagged with the checked-out commit SHA")
-            continue
         expected_ref = f"{repo}:{commit_sha}"
         expected_digest = expected_digests[image]
+        if service in {"beaterd", "dashboard"} and not any(
+            repo in segment and commit_sha in segment for segment in service_segments
+        ):
+            fail(
+                f"`docker compose images` excerpt must include {repo} "
+                "tagged with the checked-out commit SHA"
+            )
         if not any(
             segment.split()[:4] == ["proof-image", service, expected_ref, expected_digest]
             for segment in segments

@@ -110,19 +110,28 @@ trace, and recording evidence, open the all-kind dashboard URL, and capture the
 run -> turn -> step -> tool -> MCP waterfall. Cleanup can happen after the
 recording.
 
-After the stopwatch command finishes, prefer generating completed evidence from
-the stopwatch proof instead of manually copying fields. Replace every identity
-and environment example below with the runner's actual values. Do not leave
-placeholder values such as `...`; the generator and validator reject unresolved
-evidence. `--prior-exposure "none"` is valid when the runner has never seen the
-repository before, and the proof date defaults to the UTC date captured in the
-stopwatch proof's `Clone started at` field. Save the outside-run terminal
-transcript or compose logs as a repo-relative, committed/clean, non-symlink file
-under `docs/demos/` (for example `docs/demos/gate2-outside-compose.log`), or
-use an immutable GitHub Actions run/job URL such as
-`https://github.com/jadenfix/beater/actions/runs/<run_id>`. The outside-run
-wrapper writes `docs/demos/gate2-outside-compose.log` automatically; pass that
-path with `--compose-logs-saved`.
+After the stopwatch command finishes, use the prefilled
+`scripts/generate-gate2-outside-proof.py --print-command` output printed in the
+terminal. It copies the stopwatch-derived dashboard URLs, terminal excerpt, and
+compose-log artifact into a ready-to-edit command. Replace every `...` field
+with the runner's actual values before running it; the generator and validator
+reject unresolved evidence. `--prior-exposure "none"` is valid when the runner
+has never seen the repository before, and the proof date defaults to the UTC
+date captured in the stopwatch proof's `Clone started at` field. Save the
+outside-run terminal transcript or compose logs as a repo-relative,
+committed/clean, non-symlink file under `docs/demos/` (for example
+`docs/demos/gate2-outside-compose.log`), or use an immutable GitHub Actions
+run/job URL such as `https://github.com/jadenfix/beater/actions/runs/<run_id>`.
+The outside-run wrapper writes `docs/demos/gate2-outside-compose.log`
+automatically and pre-fills that path with `--compose-logs-saved`.
+
+If you need to reprint the command, run:
+
+```bash
+scripts/generate-gate2-outside-proof.py --print-command
+```
+
+The fully expanded form looks like this:
 
 ```bash
 quickstart_dashboard="$(sed -n 's/^- Quickstart dashboard: //p' docs/demos/gate2-compose-stopwatch.md)"
@@ -146,6 +155,12 @@ scripts/generate-gate2-outside-proof.py \
 After replacing this template with completed evidence, run:
 
 ```bash
+git add docs/demos/gate2-outside-person-proof.md \
+  docs/demos/gate2-compose-stopwatch.md \
+  docs/demos/gate2-compose-browser-demo.webm \
+  docs/demos/gate2-compose-browser-demo.md \
+  docs/demos/gate2-outside-compose.log
+git commit -m "add gate2 outside proof"
 scripts/validate-gate2-outside-proof.sh
 ```
 

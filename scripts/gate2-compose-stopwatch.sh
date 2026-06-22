@@ -771,6 +771,7 @@ EOF
 fi
 
 if [[ "$outside_wrapper" == "1" ]]; then
+  outside_proof_command="$(python3 scripts/generate-gate2-outside-proof.py --stopwatch-proof "$proof_path" --print-command)"
   outside_runner_next_steps="$(cat <<EOF
 
 Outside-run next steps:
@@ -780,9 +781,13 @@ Outside-run next steps:
   4. Open ${all_kind_dashboard_url:-not requested} in a normal browser for the all-kind waterfall.
   5. Confirm run -> turn -> step -> tool -> MCP nesting is visible.
   6. Use the saved docker compose logs artifact as evidence: $compose_logs_artifact
-  7. Generate the completed proof with scripts/generate-gate2-outside-proof.py.
-  8. Validate it with scripts/validate-gate2-outside-proof.sh.
-  9. After evidence is captured, clean up with:
+  7. Generate the completed proof from this prefilled command:
+$outside_proof_command
+  8. Commit the evidence before closure validation:
+       git add docs/demos/gate2-outside-person-proof.md docs/demos/gate2-compose-stopwatch.md docs/demos/gate2-compose-browser-demo.webm docs/demos/gate2-compose-browser-demo.md docs/demos/gate2-outside-compose.log
+       git commit -m "add gate2 outside proof"
+  9. Validate it with scripts/validate-gate2-outside-proof.sh.
+  10. After evidence is captured, clean up with:
        docker compose -f docker-compose.prebuilt.yml -p $project down -v --remove-orphans
 EOF
 )"
