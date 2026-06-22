@@ -797,6 +797,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(record_script.contains("12 total, 5 prompt, 7 completion"));
     assert!(record_script.contains("33 total, 18 prompt, 11 completion, 4 reasoning"));
 
+    let local_recording_notes = read(root.join("docs/demos/gate2-browser-demo.md"));
+    assert!(local_recording_notes.contains("gate2-browser-demo.webm"));
+    assert!(local_recording_notes.contains("token breakdown"));
+    assert!(!local_recording_notes.contains("model/tokens/cost"));
+
     let compose_recording_notes = read(root.join("docs/demos/gate2-compose-browser-demo.md"));
     assert!(compose_recording_notes.contains("# Gate 2 Compose Browser Demo"));
     assert!(compose_recording_notes.contains("alternate host ports"));
@@ -806,6 +811,8 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(compose_recording_notes.contains("Quickstart trace"));
     assert!(compose_recording_notes.contains("All-kind trace"));
     assert!(compose_recording_notes.contains("click five-line trace"));
+    assert!(compose_recording_notes.contains("token breakdown"));
+    assert!(!compose_recording_notes.contains("model, tokens, cost"));
     assert!(compose_recording_notes.contains("docs/demos/gate2-outside-person-proof.md"));
 
     let compose_recording = root.join("docs/demos/gate2-compose-browser-demo.webm");

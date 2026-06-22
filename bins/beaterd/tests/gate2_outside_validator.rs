@@ -822,20 +822,37 @@ fn gate2_public_handoff_verifier_full_run_accepts_rewritten_canonical_fixture() 
         .output()
         .unwrap_or_else(|err| panic!("run Gate 2 public handoff full-run fixture: {err}"));
 
-    assert_success(output, "Gate 2 public handoff fixture full run passed");
+    if !output.status.success() {
+        panic!(
+            "Gate 2 public handoff full-run fixture failed\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("Gate 2 public handoff fixture full run passed"),
+        "stdout did not contain full-run pass line\nstdout:\n{stdout}"
+    );
+    assert!(
+        stdout.contains("Gate 2 generated proof diagnostic passed"),
+        "stdout did not contain generated-proof diagnostic pass line\nstdout:\n{stdout}"
+    );
     let checks_clone_dir = clone_parent.path().join("beater-checks");
     assert!(
         checks_clone_dir.exists(),
         "full-run verifier must use a separate static-check clone"
     );
     assert!(
-        !checks_clone_dir.join("wrapper-real-env.txt").exists(),
+        !checks_clone_dir
+            .join("docs/demos/wrapper-real-env.txt")
+            .exists(),
         "static-check clone must not execute the timed outside wrapper"
     );
     let clone_dir = clone_parent.path().join("beater");
     let clone_origin = git_output(&clone_dir, &["remote", "get-url", "origin"]);
     assert_eq!(clone_origin, "https://github.com/jadenfix/beater.git");
-    let env_marker = fs::read_to_string(clone_dir.join("wrapper-real-env.txt"))
+    let env_marker = fs::read_to_string(clone_dir.join("docs/demos/wrapper-real-env.txt"))
         .unwrap_or_else(|err| panic!("read cloned wrapper runtime marker: {err}"));
     assert!(env_marker.contains("write=1"));
     assert!(env_marker.contains("browser=1"));
@@ -855,6 +872,13 @@ fn gate2_public_handoff_verifier_full_run_accepts_rewritten_canonical_fixture() 
         env_marker.contains("clone_started=") && !env_marker.contains("clone_started=unset"),
         "full-run fixture must pass clone-start timing into the wrapper\n{env_marker}"
     );
+    let diagnostic_proof =
+        fs::read_to_string(clone_dir.join("docs/demos/gate2-public-handoff-diagnostic-proof.md"))
+            .unwrap_or_else(|err| panic!("read generated diagnostic proof: {err}"));
+    assert!(diagnostic_proof.contains("Status: completed."));
+    assert!(diagnostic_proof.contains("Public Handoff Diagnostic"));
+    assert!(diagnostic_proof.contains("not outside-person evidence"));
+    assert!(diagnostic_proof.contains("token breakdown"));
     let docker_log = fs::read_to_string(&runtime.docker_log)
         .unwrap_or_else(|err| panic!("read fake Docker log: {err}"));
     assert!(docker_log.contains("info"));
@@ -1094,7 +1118,7 @@ fn gate2_outside_wrapper_real_run_executes_stopwatch_with_clone_timer() {
     let output = run_outside_wrapper_real_with_clone_timer_in_repo(fixture.path(), "1800000000");
 
     assert_success(output, "fixture outside wrapper runtime executed");
-    let env_marker = fs::read_to_string(fixture.path().join("wrapper-real-env.txt"))
+    let env_marker = fs::read_to_string(fixture.path().join("docs/demos/wrapper-real-env.txt"))
         .unwrap_or_else(|err| panic!("read outside wrapper runtime marker: {err}"));
     assert!(env_marker.contains("write=1"));
     assert!(env_marker.contains("browser=1"));
@@ -3648,6 +3672,9 @@ fn write_public_handoff_fixture_repo() -> TempDir {
         "docker-compose.yml",
         "docker-compose.prebuilt.yml",
         "docs/demos/gate2-outside-person-proof.md",
+        "docs/demos/gate2-compose-browser-demo.webm",
+        "docs/demos/gate2-compose-browser-demo.md",
+        "docs/demos/gate2-compose-stopwatch.md",
     ] {
         copy_fixture_file(&root, fixture.path(), rel);
     }
@@ -3723,8 +3750,9 @@ fn write_stopwatch_env_stub(repo: &Path) {
     let stub = repo.join("scripts/gate2-compose-stopwatch.sh");
     fs::write(
         &stub,
-        r#"#!/usr/bin/env bash
+r#"#!/usr/bin/env bash
 set -euo pipefail
+mkdir -p docs/demos
 {
   echo "Open the quickstart URL above in a normal browser now; do not wait for the script to finish."
   echo "write=${BEATER_GATE2_WRITE_PROOF:-unset}"
@@ -3742,7 +3770,85 @@ set -euo pipefail
   echo "dashboard_port=${BEATER_DASHBOARD_PORT:-unset}"
   echo "fixture_full_run=${BEATER_GATE2_FIXTURE_FULL_RUN:-unset}"
   echo "git_config_count=${GIT_CONFIG_COUNT:-unset}"
-} > wrapper-real-env.txt
+} > docs/demos/wrapper-real-env.txt
+cat > docs/demos/gate2-compose-browser-demo.md <<'EOF_NOTES'
+# Gate 2 Compose Browser Demo
+
+- Artifact: `gate2-compose-browser-demo.webm`
+- SHA256: `3dac802bc8f2db03406d0d76e4e1618ed5b516a2cf3d286589e1a588cf6e6534`
+- Dashboard base: `http://127.0.0.1:3000`
+- Quickstart trace: `11111111111111111111111111111111`
+- All-kind trace: `22222222222222222222222222222222`
+- Shows: open dashboard -> click five-line trace -> click `llm.call` span -> read prompt, completion, model, token breakdown, cost, and latency -> inspect run -> turn -> step -> tool -> MCP waterfall.
+EOF_NOTES
+commit_sha="$(git rev-parse HEAD)"
+cat > docs/demos/gate2-compose-stopwatch.md <<'EOF_PROOF'
+# Gate 2 Compose Stopwatch Proof
+
+- Timing start source: external-clone
+- Clone started at: 2026-06-20T11:59:55Z
+- Script started at: 2026-06-20T12:00:00Z
+- Started: 2026-06-20T12:00:00Z
+- Ended: 2026-06-20T12:00:35Z
+- Time-to-first-trace: 12s
+- Script-to-first-trace: 7s
+- Time-to-quickstart-click: 20s
+- Script-to-quickstart-click: 15s
+- Total duration: 40s
+- Script duration: 35s
+- Limit: 300s
+- Git SHA: __COMMIT_SHA__
+- Git branch: main
+- Git origin: https://github.com/jadenfix/beater.git
+- Git worktree clean: yes
+- OS/arch: Darwin arm64
+- Docker: Docker version 29.2.0
+- Docker Compose: Docker Compose version v5.0.2
+- Startup mode: prebuilt-image
+- Clean start: yes
+- Reuse override: BEATER_GATE2_REUSE=0
+- Outside-run wrapper: yes
+- Prebuilt pull policy: always
+- Compose project: beater-stopwatch
+- Beater image reference: ghcr.io/jadenfix/beater/beaterd:__COMMIT_SHA__
+- Dashboard image reference: ghcr.io/jadenfix/beater/dashboard:__COMMIT_SHA__
+- Dashboard e2e image reference: ghcr.io/jadenfix/beater/dashboard-e2e:__COMMIT_SHA__
+- OTEL Python image reference: ghcr.io/jadenfix/beater/otel-python:__COMMIT_SHA__
+- Beater image digest: ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+- Dashboard image digest: ghcr.io/jadenfix/beater/dashboard@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+- Dashboard e2e image digest: ghcr.io/jadenfix/beater/dashboard-e2e@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+- OTEL Python image digest: ghcr.io/jadenfix/beater/otel-python@sha256:abababababababababababababababababababababababababababababababab
+- Quickstart snippet: examples/python/five_line_otel.py
+- API endpoint: http://127.0.0.1:8080
+- OTLP endpoint: http://127.0.0.1:4317
+- Dashboard base: http://127.0.0.1:3000
+- Quickstart trace: 11111111111111111111111111111111
+- Quickstart dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace=11111111111111111111111111111111
+- Quickstart browser proof: passed
+- All-kind nested trace: 22222222222222222222222222222222
+- All-kind dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace=22222222222222222222222222222222
+- All-kind waterfall browser proof: passed
+- Browser recording: passed
+- Browser recording artifact: docs/demos/gate2-compose-browser-demo.webm
+- Browser recording notes: docs/demos/gate2-compose-browser-demo.md
+- Browser recording SHA256: 3dac802bc8f2db03406d0d76e4e1618ed5b516a2cf3d286589e1a588cf6e6534
+
+## Compose Images
+
+```text
+CONTAINER                      REPOSITORY                          TAG              PLATFORM      IMAGE ID      SIZE     CREATED
+beater-stopwatch-beaterd-1     ghcr.io/jadenfix/beater/beaterd     __COMMIT_SHA__   linux/arm64   bbbbbbbbbbbb  88.4MB   1 minute ago
+beater-stopwatch-dashboard-1   ghcr.io/jadenfix/beater/dashboard   __COMMIT_SHA__   linux/arm64   cccccccccccc  99.2MB   1 minute ago
+beater-stopwatch-dashboard-e2e-run-1 ghcr.io/jadenfix/beater/dashboard-e2e __COMMIT_SHA__ linux/arm64 eeeeeeeeeeee 132MB 1 minute ago
+beater-stopwatch-otel-python-quickstart-run-1 ghcr.io/jadenfix/beater/otel-python __COMMIT_SHA__ linux/arm64 aaaaaaaaaaaa 116MB 1 minute ago
+```
+EOF_PROOF
+python3 - "$commit_sha" <<'PY'
+from pathlib import Path
+import sys
+path = Path("docs/demos/gate2-compose-stopwatch.md")
+path.write_text(path.read_text().replace("__COMMIT_SHA__", sys.argv[1]))
+PY
 echo "fixture outside wrapper runtime executed"
 "#,
     )

@@ -479,6 +479,46 @@ def cleanup_cloned_compose(clone_dir: Path) -> None:
     cleanup_stopwatch_compose(clone_dir, fatal=False)
 
 
+def run_generated_proof_check(clone_dir: Path) -> None:
+    proof_path = "docs/demos/gate2-public-handoff-diagnostic-proof.md"
+    print(
+        "Validating generated Gate 2 proof from full-run artifacts "
+        "(diagnostic only; not outside-person evidence)."
+    )
+    run(
+        [
+            "scripts/generate-gate2-outside-proof.py",
+            "--runner-name",
+            "Public Handoff Diagnostic",
+            "--relationship",
+            "external verifier fixture; no Beater project role",
+            "--prior-exposure",
+            "none",
+            "--machine-os",
+            "diagnostic verifier environment",
+            "--browser",
+            "prebuilt dashboard-e2e browser proof plus normal-browser handoff check",
+            "--network-notes",
+            "diagnostic verifier path; not outside-person evidence",
+            "--llm-observation",
+            "clicked llm.call and saw prompt, completion, model, token breakdown, cost, and latency",
+            "--waterfall-observation",
+            "opened all-kind trace and saw run -> turn -> step -> tool -> MCP nesting",
+            "--preflight-status",
+            "passed",
+            "--attest-outside-run",
+            "--output",
+            proof_path,
+            "--force",
+        ],
+        cwd=clone_dir,
+    )
+    env = clean_outside_env()
+    env["BEATER_GATE2_OUTSIDE_PROOF"] = proof_path
+    run(["scripts/validate-gate2-outside-proof.sh"], cwd=clone_dir, env=env)
+    print("Gate 2 generated proof diagnostic passed.")
+
+
 def run_cloned_full_run(
     args: argparse.Namespace, clone_dir: Path, clone_started_epoch: int
 ) -> None:
@@ -489,6 +529,7 @@ def run_cloned_full_run(
     env["BEATER_GATE2_CLONE_STARTED_EPOCH"] = str(clone_started_epoch)
     try:
         run(["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env)
+        run_generated_proof_check(clone_dir)
     finally:
         cleanup_cloned_compose(clone_dir)
 
