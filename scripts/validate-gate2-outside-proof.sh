@@ -80,7 +80,7 @@ OUTSIDE_RECORDING_NOTE = (
     "This recording was generated during the outside-person stopwatch path."
 )
 DIAGNOSTIC_ATTESTATION = (
-    "Diagnostic maintainer full-run entered the derived manual confirmation code; "
+    "Diagnostic maintainer full-run used a browser click to read the manual confirmation code; "
     "this is not outside-person evidence and cannot close Gate 2."
 )
 FORBIDDEN_EVIDENCE = [

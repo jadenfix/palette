@@ -25,7 +25,7 @@ const LLM_OBSERVATION: &str =
 const WATERFALL_OBSERVATION: &str =
     "opened all-kind trace and saw run -> turn -> step -> tool -> MCP nesting";
 const OUTSIDE_RUN_ATTESTATION: &str = "I attest that I am not a Beater project maintainer, I received no step-by-step help beyond public repository instructions, I used a fresh clone, and I completed the Gate 2 flow unaided.";
-const DIAGNOSTIC_ATTESTATION: &str = "Diagnostic maintainer full-run entered the derived manual confirmation code; this is not outside-person evidence and cannot close Gate 2.";
+const DIAGNOSTIC_ATTESTATION: &str = "Diagnostic maintainer full-run used a browser click to read the manual confirmation code; this is not outside-person evidence and cannot close Gate 2.";
 const CANONICAL_OUTSIDE_COMMAND: &str = r#"bash -o pipefail -lc 'sha_line="$(git ls-remote --exit-code https://github.com/jadenfix/beater.git refs/heads/main)" && sha="${sha_line%%[[:space:]]*}" && test -n "$sha" && preflight="$(mktemp "${TMPDIR:-/tmp}/beater-gate2-preflight.XXXXXX")" && curl -fsSL "https://raw.githubusercontent.com/jadenfix/beater/$sha/scripts/gate2-outside-local-preflight.sh" -o "$preflight" && bash "$preflight" && t="$(date +%s)" && git clone https://github.com/jadenfix/beater.git && cd beater && test "$(git rev-parse HEAD)" = "$sha" && BEATER_GATE2_CLONE_STARTED_EPOCH="$t" scripts/gate2-outside-run.sh'"#;
 const DRAFT_VALID: &str = "Gate 2 outside-person proof draft is internally consistent";
 const CLOSURE_VALID: &str = "Gate 2 outside-person proof is complete and valid";
@@ -323,7 +323,7 @@ fn gate2_outside_validator_accepts_diagnostic_status_only_in_diagnostic_mode() {
     replace(
         &fixture.proof_path,
         "The runner completed the flow using only public repository instructions.",
-        "The maintainer diagnostic full-run entered the derived manual quickstart confirmation code. This is not outside-person evidence.",
+        "The maintainer diagnostic full-run used a browser click to read the manual quickstart confirmation code. This is not outside-person evidence.",
     );
 
     let output = run_validator_with_args(&fixture.proof_path, &["--diagnostic"]);
@@ -1374,7 +1374,7 @@ fn gate2_public_handoff_verifier_full_run_accepts_rewritten_canonical_fixture() 
         "stdout did not contain raw public preflight fixture line\nstdout:\n{stdout}"
     );
     assert!(
-        stdout.contains("Entering the derived manual quickstart confirmation code"),
+        stdout.contains("Entering the browser-read manual quickstart confirmation code"),
         "full-run must disclose diagnostic-only manual confirmation code entry\nstdout:\n{stdout}"
     );
     let checks_clone_dir = clone_parent.path().join("beater-checks");
@@ -1418,7 +1418,8 @@ fn gate2_public_handoff_verifier_full_run_accepts_rewritten_canonical_fixture() 
     assert!(diagnostic_proof.contains("Status: diagnostic."));
     assert!(diagnostic_proof.contains("Public Handoff Diagnostic"));
     assert!(diagnostic_proof.contains("not outside-person evidence"));
-    assert!(diagnostic_proof.contains("diagnostic entered the derived manual confirmation code"));
+    assert!(diagnostic_proof
+        .contains("diagnostic used a browser click to read the manual confirmation code"));
     assert!(diagnostic_proof.contains(DIAGNOSTIC_ATTESTATION));
     assert!(diagnostic_proof.contains("token breakdown"));
     let docker_log = fs::read_to_string(&runtime.docker_log)

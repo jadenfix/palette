@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import re
 import selectors
@@ -11,7 +10,6 @@ import socket
 import subprocess
 import tempfile
 import time
-import urllib.request
 from pathlib import Path
 
 
@@ -66,68 +64,103 @@ GATE2_SHELL_SCRIPTS = [
 MANUAL_CHECKPOINT_MARKER = "Manual outside-run checkpoint:"
 
 
-def manual_confirmation_code_from_output(output: bytes) -> bytes:
+def manual_confirmation_code_from_output(
+    output: bytes, *, cwd: Path, expected_commit: str
+) -> bytes:
     if os.environ.get("BEATER_GATE2_FIXTURE_FULL_RUN") == "1":
         return b"682ABA78\n"
     decoded = output.decode(errors="replace")
     matches = re.findall(
-        r"Direct quickstart trace URL:\s*\n\s*(http://127\.0\.0\.1:3000/[^\s]+)",
+        r"Open this quickstart trace-list URL first:\s*\n\s*(http://127\.0\.0\.1:3000/[^\s]+)",
         decoded,
     )
     if not matches:
         raise SystemExit(
             "diagnostic full-run reached the manual checkpoint before printing a "
-            "parseable direct quickstart dashboard URL"
+            "parseable quickstart trace-list dashboard URL"
         )
-    code = quickstart_confirmation_code_from_dashboard(matches[-1])
+    code = quickstart_confirmation_code_from_browser(matches[-1], cwd, expected_commit)
     return f"{code}\n".encode()
 
 
-def quickstart_confirmation_code_from_dashboard(url: str) -> str:
-    html = dashboard_html(url)
-    match = re.search(r"Confirm(?:.|\n){0,240}?([0-9A-F]{8})", html)
-    if match:
-        return match.group(1)
-    trace_matches = re.findall(r"[?&]trace=([0-9a-f]{32})(?:[&#\s]|$)", url)
-    if trace_matches:
-        separator = "&" if "?" in url else "?"
-        span_url = f"{url}{separator}span={quickstart_llm_span_id(trace_matches[-1])}"
-        html = dashboard_html(span_url)
-        match = re.search(r"Confirm(?:.|\n){0,240}?([0-9A-F]{8})", html)
-        if match:
-            return match.group(1)
-    raise SystemExit(
-        f"diagnostic full-run could not find a rendered confirmation code in {url}"
+def quickstart_confirmation_code_from_browser(
+    url: str, clone_dir: Path, expected_commit: str
+) -> str:
+    internal_url = re.sub(r"^http://127\.0\.0\.1:3000", "http://dashboard:3000", url)
+    env = clean_outside_env()
+    env["BEATER_DASHBOARD_E2E_IMAGE"] = (
+        f"ghcr.io/jadenfix/beater/dashboard-e2e:{expected_commit}"
     )
+    env["BEATER_GATE2_DIAGNOSTIC_QUICKSTART_URL"] = internal_url
+    script = r"""
+const { chromium } = require("playwright");
 
-
-def dashboard_html(url: str) -> str:
-    try:
-        with urllib.request.urlopen(url, timeout=10) as response:
-            return response.read().decode("utf-8", errors="replace")
-    except Exception as err:
+(async () => {
+  const quickstartUrl = process.env.BEATER_GATE2_DIAGNOSTIC_QUICKSTART_URL;
+  if (!quickstartUrl) throw new Error("missing quickstart URL");
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  try {
+    await page.goto(quickstartUrl, { waitUntil: "networkidle" });
+    const traces = page.getByLabel("Traces");
+    const row = traces.locator("a.run-row").filter({ hasText: "five-line-llm-call" }).first();
+    await row.click();
+    const waterfall = page.getByLabel("Agent span waterfall");
+    const llm = waterfall.locator('[data-kind="llm.call"]').first();
+    await llm.click();
+    const code = await page
+      .getByLabel("Selected span essentials")
+      .locator(".confirmation-code dd")
+      .textContent({ timeout: 15000 });
+    const normalized = (code || "").trim();
+    if (!/^[0-9A-F]{8}$/.test(normalized)) {
+      throw new Error(`selected llm.call detail did not reveal an 8-character confirmation code: ${normalized}`);
+    }
+    console.log(normalized);
+  } finally {
+    await browser.close();
+  }
+})().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+"""
+    result = subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            "docker-compose.prebuilt.yml",
+            "-p",
+            "beater-stopwatch",
+            "run",
+            "--rm",
+            "--no-deps",
+            "-e",
+            "BEATER_GATE2_DIAGNOSTIC_QUICKSTART_URL",
+            "dashboard-e2e",
+            "node",
+            "-e",
+            script,
+        ],
+        cwd=clone_dir,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=120,
+    )
+    if result.returncode != 0:
         raise SystemExit(
-            f"diagnostic full-run could not read quickstart dashboard detail from {url}: {err}"
-        ) from err
-
-
-def quickstart_llm_span_id(trace_id: str) -> str:
-    url = f"http://127.0.0.1:8080/v1/traces/demo/{trace_id}"
-    try:
-        with urllib.request.urlopen(url, timeout=10) as response:
-            payload = json.load(response)
-    except Exception as err:
-        raise SystemExit(
-            f"diagnostic full-run could not read quickstart trace detail from {url}: {err}"
-        ) from err
-    for span in payload.get("spans", []):
-        if span.get("kind") != "llm.call":
-            continue
-        span_id = span.get("span_id")
-        if isinstance(span_id, str) and re.fullmatch(r"[0-9a-f]{16}", span_id):
-            return span_id
+            "diagnostic full-run could not read the confirmation code through a "
+            f"browser click in the public dashboard:\n{result.stdout}"
+        )
+    matches = re.findall(r"^[0-9A-F]{8}$", result.stdout, re.MULTILINE)
+    if matches:
+        return matches[-1]
     raise SystemExit(
-        f"diagnostic full-run could not find an llm.call span id in quickstart trace {trace_id}"
+        "diagnostic full-run browser click did not print a confirmation code:\n"
+        f"{result.stdout}"
     )
 
 
@@ -185,6 +218,7 @@ def run_with_manual_checkpoint_confirmation(
     *,
     cwd: Path,
     env: dict[str, str],
+    expected_commit: str,
     timeout_seconds: int = 1800,
 ) -> str:
     process = subprocess.Popen(
@@ -232,7 +266,9 @@ def run_with_manual_checkpoint_confirmation(
                 if not confirmed and marker in output:
                     assert process.stdin is not None
                     try:
-                        confirmation_code = manual_confirmation_code_from_output(output)
+                        confirmation_code = manual_confirmation_code_from_output(
+                            output, cwd=cwd, expected_commit=expected_commit
+                        )
                     except SystemExit:
                         process.kill()
                         raise
@@ -548,6 +584,15 @@ def run_raw_public_preflight(args: argparse.Namespace, expected_commit: str) -> 
         ) from None
 
 
+def prepull_full_run_browser_image(args: argparse.Namespace, expected_commit: str) -> None:
+    if not args.full_run or fixture_full_run_enabled(args):
+        return
+    run(
+        ["docker", "pull", f"ghcr.io/jadenfix/beater/dashboard-e2e:{expected_commit}"],
+        cwd=repo_root(),
+    )
+
+
 OUTSIDE_ENV_NAMES = [
     "BEATER_GATE2_OUTSIDE_RUN_DRY_RUN",
     "BEATER_GATE2_EXPECTED_ORIGIN",
@@ -854,8 +899,8 @@ def run_generated_proof_check(clone_dir: Path, compose_logs_path: Path) -> None:
             "diagnostic verifier path; not outside-person evidence",
             "--llm-observation",
             (
-                "diagnostic entered the derived manual confirmation code; not "
-                "outside-person evidence; browser proof inspected llm.call prompt, "
+                "diagnostic used a browser click to read the manual confirmation code; "
+                "not outside-person evidence; browser proof inspected llm.call prompt, "
                 "completion, model, token breakdown, cost, latency, and confirmation code"
             ),
             "--waterfall-observation",
@@ -885,7 +930,10 @@ def run_generated_proof_check(clone_dir: Path, compose_logs_path: Path) -> None:
 
 
 def run_cloned_full_run(
-    args: argparse.Namespace, clone_dir: Path, clone_started_epoch: int
+    args: argparse.Namespace,
+    clone_dir: Path,
+    clone_started_epoch: int,
+    expected_commit: str,
 ) -> None:
     if not args.full_run:
         return
@@ -894,11 +942,14 @@ def run_cloned_full_run(
     env["BEATER_GATE2_CLONE_STARTED_EPOCH"] = str(clone_started_epoch)
     try:
         print(
-            "Entering the derived manual quickstart confirmation code for maintainer "
-            "diagnostic full-run only; this is not outside-person evidence."
+            "Entering the browser-read manual quickstart confirmation code for "
+            "maintainer diagnostic full-run only; this is not outside-person evidence."
         )
         full_run_output = run_with_manual_checkpoint_confirmation(
-            ["scripts/gate2-outside-run.sh"], cwd=clone_dir, env=env
+            ["scripts/gate2-outside-run.sh"],
+            cwd=clone_dir,
+            env=env,
+            expected_commit=expected_commit,
         )
         compose_logs_path = clone_dir / "docs/demos/gate2-public-handoff-diagnostic-compose.log"
         compose_logs_path.write_text(full_run_output)
@@ -964,6 +1015,7 @@ def main() -> None:
     preflight_full_run_runtime(args)
     run_raw_public_preflight(args, expected_commit)
     run_local_readiness(args)
+    prepull_full_run_browser_image(args, expected_commit)
     checks_clone_name = "beater-checks" if args.full_run else "beater"
     clone_dir, temp_owner, clone_started_epoch = clone_repo(
         args, expected_commit, checks_clone_name
@@ -984,9 +1036,9 @@ def main() -> None:
             )
             temp_owners.append(full_temp_owner)
             reported_clone_dir = full_clone_dir
-            run_cloned_full_run(args, full_clone_dir, full_clone_started_epoch)
+            run_cloned_full_run(args, full_clone_dir, full_clone_started_epoch, expected_commit)
         else:
-            run_cloned_full_run(args, clone_dir, clone_started_epoch)
+            run_cloned_full_run(args, clone_dir, clone_started_epoch, expected_commit)
         print(
             f"Gate 2 public handoff {mode} passed for {expected_commit}: {reported_clone_dir}"
         )

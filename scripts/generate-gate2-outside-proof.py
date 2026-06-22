@@ -17,7 +17,7 @@ OUTSIDE_RUN_ATTESTATION = (
     "clone, and I completed the Gate 2 flow unaided."
 )
 DIAGNOSTIC_ATTESTATION = (
-    "Diagnostic maintainer full-run entered the derived manual confirmation code; "
+    "Diagnostic maintainer full-run used a browser click to read the manual confirmation code; "
     "this is not outside-person evidence and cannot close Gate 2."
 )
 UNRESOLVED_REQUIRED_VALUES = {
@@ -306,12 +306,12 @@ def build_proof(args, stopwatch_path, stopwatch_text):
     if args.diagnostic_report:
         proof_intro = (
             "Maintainer diagnostic report generated from the stopwatch proof listed below. "
-            "This is not outside-person evidence, computes the manual confirmation "
-            "code for automation, and cannot close Gate 2."
+            "This is not outside-person evidence, uses automation to click the browser "
+            "and read the manual confirmation code, and cannot close Gate 2."
         )
         command_note = (
             "The maintainer diagnostic full-run exercised the public wrapper path and "
-            "entered the derived manual quickstart confirmation code. This is not "
+            "used a browser click to read the manual quickstart confirmation code. This is not "
             "outside-person evidence."
         )
         recording_checklist = (
@@ -319,8 +319,8 @@ def build_proof(args, stopwatch_path, stopwatch_text):
             "`docs/demos/`."
         )
         runner_checklist = (
-            "- [x] The diagnostic verifier entered the derived manual quickstart "
-            "confirmation code; not outside-person evidence."
+            "- [x] The diagnostic verifier clicked the browser to read the manual "
+            "quickstart confirmation code; not outside-person evidence."
         )
     else:
         proof_intro = (

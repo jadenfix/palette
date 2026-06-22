@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { createHash } from "node:crypto";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
@@ -43,6 +42,7 @@ import {
   statusLabel,
   timestampMicros
 } from "../lib/api";
+import { Gate2ConfirmationCode, Gate2SpanClickTracker } from "./Gate2Confirmation";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -96,6 +96,7 @@ export default async function DashboardPage({
 
   return (
     <main className="shell">
+      <Gate2SpanClickTracker />
       <header className="command-bar">
         <div className="product-lockup">
           <div className="brand-mark" aria-hidden="true">
@@ -438,6 +439,8 @@ export default async function DashboardPage({
                   data-status={span.status}
                   data-span-id={span.span_id}
                   data-span-seq={span.seq}
+                  data-gate2-confirm-span={span.kind === "llm.call" ? "true" : undefined}
+                  data-trace-id={span.kind === "llm.call" ? span.trace_id : undefined}
                   style={
                     {
                       "--depth": depth,
@@ -549,7 +552,7 @@ function SpanDetail({
   const artifacts = spanArtifactRefs(span);
   const ancestry = spanAncestry(span, spans);
   const ioLabels = spanIoLabels(span.kind);
-  const confirmationCode = spanConfirmationCode(span, query);
+  const showConfirmationSlot = span.kind === "llm.call" && query.selectedSpanId === span.span_id;
   return (
     <div className="detail-stack">
       <div className="span-identity">
@@ -572,9 +575,7 @@ function SpanDetail({
         <span className={`status ${span.status}`}>{statusLabel(span.status)}</span>
       </div>
       <dl
-        className={
-          confirmationCode ? "span-proof-strip with-confirmation" : "span-proof-strip"
-        }
+        className={showConfirmationSlot ? "span-proof-strip with-confirmation" : "span-proof-strip"}
         aria-label="Selected span essentials"
       >
         <div>
@@ -593,11 +594,8 @@ function SpanDetail({
           <dt>Latency</dt>
           <dd>{formatDuration(span.start_time, span.end_time)}</dd>
         </div>
-        {confirmationCode ? (
-          <div className="confirmation-code">
-            <dt>Confirm</dt>
-            <dd>{confirmationCode}</dd>
-          </div>
+        {showConfirmationSlot ? (
+          <Gate2ConfirmationCode traceId={span.trace_id} spanId={span.span_id} />
         ) : null}
       </dl>
       <RedactionControls span={span} query={query} hasRedactedIo={hasRedactedIo} />
@@ -787,17 +785,6 @@ function IoBlock({ label, value }: { label: string; value: SpanIoResponse["input
 function spanIoLabels(kind: string): { input: string; output: string } {
   if (kind === "llm.call") return { input: "Prompt", output: "Completion" };
   return { input: "Input", output: "Output" };
-}
-
-function spanConfirmationCode(span: CanonicalSpan, query: DashboardQuery): string | null {
-  if (span.kind !== "llm.call") return null;
-  if (query.selectedSpanId !== span.span_id) return null;
-  const salt = process.env.BEATER_GATE2_CONFIRMATION_SALT ?? "";
-  return createHash("sha256")
-    .update(`gate2:${salt}:${span.trace_id}:${span.span_id}`)
-    .digest("hex")
-    .slice(0, 8)
-    .toUpperCase();
 }
 
 function JsonPanel({ label, value }: { label: string; value: unknown }) {

@@ -939,9 +939,12 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("run_with_manual_checkpoint_confirmation("));
     assert!(public_handoff.contains("cleanup_cloned_compose"));
     assert!(public_handoff.contains("docker-compose.prebuilt.yml"));
-    assert!(public_handoff.contains("Entering the derived manual quickstart confirmation code"));
-    assert!(public_handoff.contains("quickstart_llm_span_id"));
-    assert!(public_handoff.contains("diagnostic entered the derived manual confirmation code"));
+    assert!(
+        public_handoff.contains("Entering the browser-read manual quickstart confirmation code")
+    );
+    assert!(public_handoff.contains("quickstart_confirmation_code_from_browser"));
+    assert!(public_handoff
+        .contains("diagnostic used a browser click to read the manual confirmation code"));
     assert!(public_handoff.contains("def public_clone_env"));
     assert!(public_handoff.contains("GIT_CONFIG_GLOBAL"));
     assert!(public_handoff.contains("--diagnostic-report"));

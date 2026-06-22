@@ -79,9 +79,12 @@ test("renders the five-line stock OTLP quickstart trace in a browser", async ({ 
   await expect(essentials.locator("div").filter({ hasText: "Latency" })).toContainText(
     /(?:\d+ ms|\d+\.\d+ s)/
   );
+  const expectedConfirmationCode = confirmationCode(selectedTraceId, selectedSpanId);
   await expect(essentials.locator("div").filter({ hasText: "Confirm" })).toContainText(
-    confirmationCode(selectedTraceId, selectedSpanId)
+    expectedConfirmationCode
   );
+  const rawDetailResponse = await page.request.get(page.url());
+  expect(await rawDetailResponse.text()).not.toContain(expectedConfirmationCode);
   await expect(
     detail.getByLabel("Span metrics").locator("div").filter({ hasText: "Latency" })
   ).toContainText(/(?:\d+ ms|\d+\.\d+ s)/);

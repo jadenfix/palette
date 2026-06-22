@@ -205,7 +205,8 @@ function spanRow(waterfall, kind, name) {
 }
 
 async function waitForMetric(detail, label, value) {
-  const row = detail.getByLabel("Span metrics").locator("div").filter({ hasText: label }).first();
+  const groupLabel = label === "Confirm" ? "Selected span essentials" : "Span metrics";
+  const row = detail.getByLabel(groupLabel).locator("div").filter({ hasText: label }).first();
   await row.getByText(value).waitFor();
 }
 

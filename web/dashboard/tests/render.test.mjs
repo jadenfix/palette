@@ -100,11 +100,14 @@ test("dashboard page exposes the trace inspection surface", () => {
   assert.doesNotMatch(page, /advancedFiltersActive/);
   assert.match(page, /data-active=\{advancedFilterTotal > 0 \? "true" : undefined\}/);
   assert.match(page, /aria-label="Selected span essentials"/);
-  assert.match(page, /spanConfirmationCode/);
-  assert.match(page, /BEATER_GATE2_CONFIRMATION_SALT/);
-  assert.match(page, /gate2:\$\{salt\}:\$\{span\.trace_id\}:\$\{span\.span_id\}/);
+  assert.match(page, /Gate2SpanClickTracker/);
+  assert.match(page, /Gate2ConfirmationCode/);
+  assert.match(page, /showConfirmationSlot/);
+  assert.match(page, /data-gate2-confirm-span/);
+  assert.doesNotMatch(page, /spanConfirmationCode/);
+  assert.doesNotMatch(page, /BEATER_GATE2_CONFIRMATION_SALT/);
+  assert.doesNotMatch(page, /createHash/);
   assert.match(page, /"span-proof-strip with-confirmation"/);
-  assert.match(page, />Confirm</);
   assert.match(page, /aria-label="Span metrics"/);
   assert.match(page, /aria-label=\{`\$\{label\} I\/O`\}/);
   assert.match(page, /spanAncestry/);
@@ -642,6 +645,25 @@ test("browser proof covers all canonical span kinds and can record a demo", () =
   assert.match(quickstart, /12 total, 5 prompt, 7 completion/);
   assert.match(quickstart, /Selected span essentials/);
   assert.match(quickstart, /confirmationCode\(selectedTraceId, selectedSpanId\)/);
+  assert.match(quickstart, /rawDetailResponse/);
+  assert.match(quickstart, /not\.toContain\(expectedConfirmationCode\)/);
   assert.match(quickstart, /Span metrics/);
   assert.match(quickstart, /Latency/);
+});
+
+test("gate2 confirmation code is fetched only after a browser span click", () => {
+  const component = readFileSync(join(root, "app/Gate2Confirmation.tsx"), "utf8");
+  assert.match(component, /"use client"/);
+  assert.match(component, /sessionStorage\.setItem\(storageKey\(traceId, spanId\), "clicked"\)/);
+  assert.match(component, /window\.dispatchEvent\(new CustomEvent<ClickDetail>\(CLICK_EVENT/);
+  assert.match(component, /fetch\("\/api\/gate2\/confirm"/);
+  assert.match(component, /x-beater-gate2-browser-click/);
+  assert.match(component, /if \(status === "hidden"\) return null/);
+  assert.match(component, />Confirm</);
+
+  const route = readFileSync(join(root, "app/api/gate2/confirm/route.ts"), "utf8");
+  assert.match(route, /BEATER_GATE2_CONFIRMATION_SALT/);
+  assert.match(route, /gate2:\$\{salt\}:\$\{payload\.traceId\}:\$\{payload\.spanId\}/);
+  assert.match(route, /cache-control/);
+  assert.match(route, /x-beater-gate2-browser-click/);
 });
