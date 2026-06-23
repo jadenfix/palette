@@ -161,7 +161,12 @@ export async function loadDashboardData(query: DashboardQuery): Promise<Dashboar
     };
   }
 
-  const activeTraceId = query.traceId || runs.items[0]?.trace_id;
+  const activeRun = query.traceId
+    ? runs.items.find((run) => run.trace_id === query.traceId) ?? runs.items[0]
+    : runs.items[0];
+  const activeTraceId = query.traceId || activeRun?.trace_id;
+  const traceQuery =
+    activeRun?.project_id && !query.projectId ? { ...query, projectId: activeRun.project_id } : query;
   let trace: TraceView | null = null;
   let selectedSpan: CanonicalSpan | null = null;
   let selectedIo: SpanIoResponse | null = null;
@@ -169,7 +174,10 @@ export async function loadDashboardData(query: DashboardQuery): Promise<Dashboar
 
   if (activeTraceId) {
     try {
-      trace = await fetchJson<TraceView>(`${apiBaseUrl}${tracePath(query, activeTraceId)}`, headers);
+      trace = await fetchJson<TraceView>(
+        `${apiBaseUrl}${tracePath(traceQuery, activeTraceId)}`,
+        dashboardApiHeaders(traceQuery)
+      );
     } catch (traceError) {
       error = errorMessage(traceError);
     }
@@ -191,8 +199,8 @@ export async function loadDashboardData(query: DashboardQuery): Promise<Dashboar
   if (trace && activeSpanId) {
     try {
       selectedSpan = await fetchJson<CanonicalSpan>(
-        `${apiBaseUrl}${spanPath(query, trace.trace_id, activeSpanId)}`,
-        headers
+        `${apiBaseUrl}${spanPath(traceQuery, trace.trace_id, activeSpanId)}`,
+        dashboardApiHeaders(traceQuery)
       );
     } catch (spanError) {
       selectedSpan = selectedSpanFromTrace;
@@ -203,8 +211,8 @@ export async function loadDashboardData(query: DashboardQuery): Promise<Dashboar
   if (trace && selectedSpan) {
     try {
       selectedIo = await fetchJson<SpanIoResponse>(
-        `${apiBaseUrl}${spanIoPath(query, trace.trace_id, selectedSpan.span_id)}`,
-        headers
+        `${apiBaseUrl}${spanIoPath(traceQuery, trace.trace_id, selectedSpan.span_id)}`,
+        dashboardApiHeaders(traceQuery)
       );
     } catch (ioError) {
       error = errorMessage(ioError);

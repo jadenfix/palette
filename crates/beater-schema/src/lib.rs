@@ -262,6 +262,7 @@ pub struct TraceView {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RunSummary {
     pub tenant_id: TenantId,
+    pub project_id: ProjectId,
     pub trace_id: TraceId,
     pub first_span_name: String,
     pub span_count: usize,
@@ -277,6 +278,7 @@ pub struct RunSummary {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SpanSummary {
     pub tenant_id: TenantId,
+    pub project_id: ProjectId,
     pub trace_id: TraceId,
     pub span_id: SpanId,
     pub kind: AgentSpanKind,
@@ -506,6 +508,7 @@ pub fn span_summary(span: CanonicalSpan) -> SpanSummary {
     let release_id = span_release_id(&span);
     SpanSummary {
         tenant_id: span.tenant_id,
+        project_id: span.project_id,
         trace_id: span.trace_id,
         span_id: span.span_id,
         kind: span.kind,
@@ -539,7 +542,10 @@ pub fn span_release_id(span: &CanonicalSpan) -> Option<String> {
 pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary> {
     let mut runs = Vec::<RunSummary>::new();
     for span in &spans {
-        if let Some(run) = runs.iter_mut().find(|run| run.trace_id == span.trace_id) {
+        if let Some(run) = runs
+            .iter_mut()
+            .find(|run| run.project_id == span.project_id && run.trace_id == span.trace_id)
+        {
             run.span_count += 1;
             if span.started_at < run.started_at {
                 run.started_at = span.started_at;
@@ -559,6 +565,7 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
             let ended_at = span.ended_at;
             runs.push(RunSummary {
                 tenant_id: tenant.clone(),
+                project_id: span.project_id.clone(),
                 trace_id: span.trace_id.clone(),
                 first_span_name: span.name.clone(),
                 span_count: 1,
@@ -586,7 +593,7 @@ pub fn filter_run_summaries(
         spans
             .iter()
             .filter(|span| &span.kind == kind)
-            .map(|span| span.trace_id.clone())
+            .map(|span| (span.project_id.clone(), span.trace_id.clone()))
             .collect::<BTreeSet<_>>()
     });
     runs.into_iter()
@@ -641,7 +648,7 @@ pub fn filter_run_summaries(
             None => true,
         })
         .filter(|run| match &kind_trace_ids {
-            Some(trace_ids) => trace_ids.contains(&run.trace_id),
+            Some(trace_ids) => trace_ids.contains(&(run.project_id.clone(), run.trace_id.clone())),
             None => true,
         })
         .collect()
@@ -755,6 +762,8 @@ mod tests {
     #[test]
     fn rollups_use_complete_trace_order_and_filter_after_aggregation() {
         let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let other_project = ProjectId::new("other-project").unwrap_or_else(|err| panic!("{err}"));
         let trace = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
         let other_trace = TraceId::new("other-trace").unwrap_or_else(|err| panic!("{err}"));
         let early = Utc
@@ -772,6 +781,7 @@ mod tests {
         let spans = vec![
             SpanSummary {
                 tenant_id: tenant.clone(),
+                project_id: project.clone(),
                 trace_id: trace.clone(),
                 span_id: SpanId::new("child").unwrap_or_else(|err| panic!("{err}")),
                 kind: AgentSpanKind::AgentStep,
@@ -788,6 +798,7 @@ mod tests {
             },
             SpanSummary {
                 tenant_id: tenant.clone(),
+                project_id: project.clone(),
                 trace_id: trace.clone(),
                 span_id: SpanId::new("root").unwrap_or_else(|err| panic!("{err}")),
                 kind: AgentSpanKind::AgentRun,
@@ -801,6 +812,7 @@ mod tests {
             },
             SpanSummary {
                 tenant_id: tenant.clone(),
+                project_id: project.clone(),
                 trace_id: other_trace.clone(),
                 span_id: SpanId::new("other").unwrap_or_else(|err| panic!("{err}")),
                 kind: AgentSpanKind::LlmCall,
@@ -815,13 +827,30 @@ mod tests {
                 cost: Some(Money::usd_micros(50)),
                 release_id: Some("release-b".to_string()),
             },
+            SpanSummary {
+                tenant_id: tenant.clone(),
+                project_id: other_project.clone(),
+                trace_id: trace.clone(),
+                span_id: SpanId::new("same-trace-other-project")
+                    .unwrap_or_else(|err| panic!("{err}")),
+                kind: AgentSpanKind::LlmCall,
+                name: "same trace other project".to_string(),
+                status: SpanStatus::Ok,
+                started_at: middle,
+                ended_at: Some(middle),
+                model: None,
+                cost: Some(Money::usd_micros(25)),
+                release_id: Some("release-c".to_string()),
+            },
         ];
 
         let runs = roll_up_runs(tenant, spans.clone());
+        assert_eq!(runs.len(), 3);
         let run = runs
             .iter()
-            .find(|candidate| candidate.trace_id == trace)
+            .find(|candidate| candidate.project_id == project && candidate.trace_id == trace)
             .unwrap_or_else(|| panic!("trace run exists"));
+        assert_eq!(run.project_id.as_str(), project.as_str());
         assert_eq!(run.first_span_name, "earliest root");
         assert_eq!(run.span_count, 2);
         assert_eq!(run.status, SpanStatus::Error);
@@ -851,6 +880,10 @@ mod tests {
             },
         );
         assert_eq!(error_agent_step_runs.len(), 1);
+        assert_eq!(
+            error_agent_step_runs[0].project_id.as_str(),
+            project.as_str()
+        );
         assert_eq!(error_agent_step_runs[0].trace_id, trace);
         assert_eq!(error_agent_step_runs[0].span_count, 2);
 
@@ -866,6 +899,7 @@ mod tests {
             },
         );
         assert_eq!(ok_runs.len(), 1);
+        assert_eq!(ok_runs[0].project_id.as_str(), project.as_str());
         assert_eq!(ok_runs[0].trace_id, other_trace);
     }
 }

@@ -80,8 +80,13 @@ export default async function DashboardPage({
   };
   const data = await loadDashboardData(query);
   const spans = data.trace ? orderSpansForWaterfall(data.trace.spans) : [];
+  const selectedTraceProjectId = traceProjectId(data.trace);
   const listedSelectedRun = data.trace
-    ? data.runs.items.find((run) => run.trace_id === data.trace?.trace_id)
+    ? data.runs.items.find(
+        (run) =>
+          run.trace_id === data.trace?.trace_id &&
+          (!selectedTraceProjectId || run.project_id === selectedTraceProjectId)
+      )
     : undefined;
   const selectedRun = listedSelectedRun ?? runSummaryFromTrace(data.trace);
   const selectedTraceOutsideFilters = Boolean(data.trace && selectedRun && !listedSelectedRun);
@@ -345,23 +350,31 @@ export default async function DashboardPage({
               <span>Signals</span>
             </div>
             {runRows.map((run) => {
-              const isSelected = run.trace_id === data.trace?.trace_id;
+              const isSelected =
+                run.trace_id === data.trace?.trace_id &&
+                (!selectedTraceProjectId || run.project_id === selectedTraceProjectId);
               const isOutsideFilters = isSelected && selectedTraceOutsideFilters;
               return (
                 <Link
-                  key={run.trace_id}
+                  key={`${run.project_id}:${run.trace_id}`}
                   className={isSelected ? "run-row active" : "run-row"}
                   aria-current={isSelected ? "location" : undefined}
                   data-status={run.status}
                   data-outside-filters={isOutsideFilters ? "true" : undefined}
-                  href={hrefFor(data.query, { trace: run.trace_id, span: undefined })}
+                  href={hrefFor(data.query, {
+                    project: run.project_id,
+                    trace: run.trace_id,
+                    span: undefined
+                  })}
                 >
                   <span className="run-state" aria-hidden="true" />
                   <span className="run-body">
                     <span className="run-title-line">
                       <span className="run-name">
                         <strong>{run.first_span_name}</strong>
-                        <small>{run.trace_id}</small>
+                        <small>
+                          {run.project_id}/{run.trace_id}
+                        </small>
                       </span>
                       <span className="run-badges">
                         <span className={`status ${run.status}`}>{statusLabel(run.status)}</span>
@@ -877,6 +890,7 @@ function runSummaryFromTrace(trace: TraceView | null): RunSummary | null {
   const endedAt = latestEndedAt(spans);
   return {
     tenant_id: trace.tenant_id,
+    project_id: firstSpan.project_id,
     trace_id: trace.trace_id,
     first_span_name: firstSpan.name,
     span_count: spans.length,
@@ -888,6 +902,10 @@ function runSummaryFromTrace(trace: TraceView | null): RunSummary | null {
     models: uniqueModels(spans),
     release_ids: uniqueReleaseIds(spans)
   };
+}
+
+function traceProjectId(trace: TraceView | null): string | undefined {
+  return trace?.spans[0]?.project_id;
 }
 
 function compareSpansByStart(left: CanonicalSpan, right: CanonicalSpan): number {
@@ -1061,11 +1079,16 @@ function scopeHref(query: DashboardQuery): string {
 
 function hrefFor(
   query: DashboardQuery,
-  next: { trace?: string; span?: string | undefined; unmask?: boolean | undefined }
+  next: {
+    project?: string | undefined;
+    trace?: string;
+    span?: string | undefined;
+    unmask?: boolean | undefined;
+  }
 ): string {
   const params = new URLSearchParams();
   params.set("tenant", query.tenantId);
-  if (query.projectId) params.set("project", query.projectId);
+  if (next.project ?? query.projectId) params.set("project", next.project ?? query.projectId ?? "");
   if (query.environmentId) params.set("environment", query.environmentId);
   if (next.trace ?? query.traceId) params.set("trace", next.trace ?? query.traceId ?? "");
   if (next.span) params.set("span", next.span);

@@ -345,7 +345,10 @@ test("dashboard client uses public beater read endpoints", () => {
   assert.match(api, /params\.set\("reason"/);
   assert.match(api, /\/v1\/spans\//);
   assert.match(api, /\/io/);
-  assert.match(api, /const activeTraceId = query\.traceId \|\| runs\.items\[0\]\?\.trace_id/);
+  assert.match(api, /const activeRun = query\.traceId/);
+  assert.match(api, /activeRun\?\.project_id && !query\.projectId/);
+  assert.match(api, /tracePath\(traceQuery, activeTraceId\)/);
+  assert.match(api, /spanPath\(traceQuery, trace\.trace_id, activeSpanId\)/);
   assert.match(api, /query,\n\s+runs,/);
   assert.doesNotMatch(api, /query: \{ \.\.\.query, traceId: activeTraceId/);
   assert.match(api, /BEATER_API_TOKEN/);
@@ -511,7 +514,7 @@ test("dashboard read URLs send unmask reason only with unmask=true", () => {
 
 test("dashboard loader preserves trace context when span I/O fails", async () => {
   const runs = {
-    items: [{ trace_id: "trace-1", root_name: "run", span_count: 1 }],
+    items: [{ tenant_id: "demo", project_id: "demo", trace_id: "trace-1", first_span_name: "run", span_count: 1 }],
     next_cursor: null
   };
   const span = {
@@ -556,7 +559,7 @@ test("dashboard loader preserves trace context when span I/O fails", async () =>
 
 test("dashboard loader selects the ordered root span when trace spans arrive unsorted", async () => {
   const runs = {
-    items: [{ trace_id: "trace-1", root_name: "run", span_count: 2 }],
+    items: [{ tenant_id: "demo", project_id: "demo", trace_id: "trace-1", first_span_name: "run", span_count: 2 }],
     next_cursor: null
   };
   const child = {
@@ -595,7 +598,7 @@ test("dashboard loader selects the ordered root span when trace spans arrive uns
 
 test("dashboard loader does not select a fallback span for stale span URLs", async () => {
   const runs = {
-    items: [{ trace_id: "trace-1", root_name: "run", span_count: 1 }],
+    items: [{ tenant_id: "demo", project_id: "demo", trace_id: "trace-1", first_span_name: "run", span_count: 1 }],
     next_cursor: null
   };
   const span = {
@@ -640,6 +643,53 @@ test("dashboard loader does not select a fallback span for stale span URLs", asy
   assert.equal(requests.some((href) => href.includes("/v1/spans/")), false);
 });
 
+test("dashboard loader scopes tenant-wide trace details to the selected run project", async () => {
+  const runs = {
+    items: [
+      {
+        tenant_id: "demo",
+        project_id: "project-b",
+        trace_id: "trace-1",
+        first_span_name: "run",
+        span_count: 1
+      }
+    ],
+    next_cursor: null
+  };
+  const span = {
+    ...spanFixture("span-1", null, "2026-01-01T00:00:00Z", 1),
+    project_id: "project-b",
+    trace_id: "trace-1",
+    kind: "llm.call"
+  };
+  const trace = { tenant_id: "demo", trace_id: "trace-1", spans: [span] };
+  const requests = [];
+  const { loadDashboardData } = loadDashboardApiModule({
+    fetch: async (url, init) => {
+      const href = String(url);
+      requests.push({ href, headers: init?.headers ?? {} });
+      if (href.includes("/v1/traces/demo?")) return okJson(runs);
+      if (href.includes("/v1/traces/demo/trace-1")) return okJson(trace);
+      if (href.includes("/v1/spans/demo/trace-1/span-1/io")) {
+        return okJson({ input: { kind: "missing" }, output: { kind: "missing" } });
+      }
+      if (href.includes("/v1/spans/demo/trace-1/span-1")) return okJson(span);
+      throw new Error(`unexpected fetch ${href}`);
+    }
+  });
+
+  const data = await loadDashboardData({ tenantId: "demo" });
+
+  assert.equal(data.selectedSpan?.project_id, "project-b");
+  const detailRequests = requests.filter(({ href }) => href.includes("/v1/traces/demo/trace-1") || href.includes("/v1/spans/demo/trace-1"));
+  assert.equal(detailRequests.length, 3);
+  assert.ok(
+    detailRequests.every(
+      ({ headers }) => headers["x-beater-project-id"] === "project-b"
+    )
+  );
+});
+
 function okJson(value) {
   return {
     ok: true,
@@ -658,6 +708,9 @@ function errorJson(status, statusText, value) {
 
 function spanFixture(spanId, parentSpanId, startTime, seq) {
   return {
+    tenant_id: "demo",
+    project_id: "demo",
+    environment_id: "local",
     trace_id: "trace-1",
     span_id: spanId,
     parent_span_id: parentSpanId,

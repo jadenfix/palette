@@ -975,6 +975,7 @@
         "type": "object",
         "required": [
           "tenant_id",
+          "project_id",
           "trace_id",
           "first_span_name",
           "span_count",
@@ -1006,6 +1007,9 @@
             "items": {
               "$ref": "#/components/schemas/ModelRefDoc"
             }
+          },
+          "project_id": {
+            "type": "string"
           },
           "release_ids": {
             "type": "array",

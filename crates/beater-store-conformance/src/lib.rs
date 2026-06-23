@@ -43,7 +43,7 @@ where
     assert_eq!(trace_view.spans[1].span_id.as_str(), "child");
 
     let raw = store
-        .get_raw_envelope(tenant.clone(), project, idempotency_key)
+        .get_raw_envelope(tenant.clone(), project.clone(), idempotency_key)
         .await
         .unwrap_or_else(|err| panic!("{err}"))
         .unwrap_or_else(|| panic!("raw envelope should exist"));
@@ -82,6 +82,7 @@ where
         .await
         .unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(runs.items.len(), 1);
+    assert_eq!(runs.items[0].project_id.as_str(), project.as_str());
     assert_eq!(runs.items[0].span_count, 2);
 
     let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
@@ -95,6 +96,92 @@ where
         .await
         .unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(write_other_project.accepted_spans, 1);
+
+    let same_trace_runs = store
+        .query_runs(
+            tenant.clone(),
+            RunFilter {
+                trace_id: Some(trace.clone()),
+                ..RunFilter::default()
+            },
+            PageRequest {
+                limit: 10,
+                cursor: None,
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(same_trace_runs.items.len(), 2);
+    assert!(same_trace_runs
+        .items
+        .iter()
+        .any(|run| run.project_id.as_str() == project.as_str() && run.span_count == 2));
+    assert!(same_trace_runs
+        .items
+        .iter()
+        .any(|run| run.project_id.as_str() == other_project.as_str() && run.span_count == 1));
+
+    let project_runs = store
+        .query_runs(
+            tenant.clone(),
+            RunFilter {
+                project_id: Some(project.clone()),
+                trace_id: Some(trace.clone()),
+                ..RunFilter::default()
+            },
+            PageRequest {
+                limit: 10,
+                cursor: None,
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(project_runs.items.len(), 1);
+    assert_eq!(project_runs.items[0].project_id.as_str(), project.as_str());
+    assert_eq!(project_runs.items[0].span_count, 2);
+
+    let other_project_runs = store
+        .query_runs(
+            tenant.clone(),
+            RunFilter {
+                project_id: Some(other_project.clone()),
+                trace_id: Some(trace.clone()),
+                ..RunFilter::default()
+            },
+            PageRequest {
+                limit: 10,
+                cursor: None,
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(other_project_runs.items.len(), 1);
+    assert_eq!(
+        other_project_runs.items[0].project_id.as_str(),
+        other_project.as_str()
+    );
+    assert_eq!(other_project_runs.items[0].span_count, 1);
+
+    let scoped_spans = store
+        .query_spans(
+            tenant.clone(),
+            SpanFilter {
+                project_id: Some(project.clone()),
+                trace_id: Some(trace.clone()),
+                ..SpanFilter::default()
+            },
+            PageRequest {
+                limit: 10,
+                cursor: None,
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(scoped_spans.items.len(), 2);
+    assert!(scoped_spans
+        .items
+        .iter()
+        .all(|span| span.project_id.as_str() == project.as_str()));
 
     let scoped_project = store
         .get_project_trace(tenant.clone(), project, trace.clone())

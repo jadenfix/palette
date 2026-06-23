@@ -157,6 +157,7 @@ export interface components {
             ended_at?: string | null;
             first_span_name: string;
             models: components["schemas"]["ModelRefDoc"][];
+            project_id: string;
             release_ids: string[];
             span_count: number;
             /** Format: date-time */

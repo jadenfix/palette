@@ -65,6 +65,7 @@ pub struct PageRunSummaryDoc {
 #[derive(Clone, Debug, Serialize, ToSchema)]
 pub struct RunSummaryDoc {
     pub tenant_id: String,
+    pub project_id: String,
     pub trace_id: String,
     pub first_span_name: String,
     pub span_count: usize,
