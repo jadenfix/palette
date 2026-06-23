@@ -38,7 +38,8 @@ use beater_human::{
 };
 use beater_ingest::{
     anonymous_auth_context, DeadLetterReplayReport, IngestError, IngestOutcome, IngestQueueStatus,
-    IngestService, NativeIngestRequest, TraceIngestedDrainReport, TraceWriteDrainReport,
+    IngestService, NativeIngestRequest, TraceIngestedDrainReport, TraceIngestedReconcileReport,
+    TraceWriteDrainReport,
 };
 use beater_judge::{
     JudgeBroker, JudgeBrokerError, JudgeBrokerOutcome, JudgeBrokerRequest, JudgeLedgerStore,
@@ -274,6 +275,10 @@ pub fn router(state: ApiState) -> Router {
         .route(
             "/v1/ingest/:tenant_id/:project_id/queue",
             get(get_ingest_queue_status_route),
+        )
+        .route(
+            "/v1/ingest/:tenant_id/:project_id/traces/:trace_id/reconcile",
+            post(reconcile_trace_ingested_route),
         )
         .route(
             "/v1/ingest/:tenant_id/:project_id/dead-letters/:message_id/replay",
@@ -641,6 +646,25 @@ async fn replay_dead_letter_route(
         .replay_dead_letter(&tenant_id, &project_id, &message_id, reset_attempts)
         .await?;
     Ok(Json(report))
+}
+
+async fn reconcile_trace_ingested_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id, trace_id)): Path<(String, String, String)>,
+) -> Result<Json<TraceIngestedReconcileReport>, ApiError> {
+    let tenant_id =
+        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let project_id =
+        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let trace_id = TraceId::new(trace_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
+    Ok(Json(
+        state
+            .ingest
+            .reconcile_trace_ingested(tenant_id, project_id, trace_id)
+            .await?,
+    ))
 }
 
 async fn drain_trace_writes_route(

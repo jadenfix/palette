@@ -26,7 +26,8 @@ use beater_human::{
 };
 use beater_ingest::{
     DeadLetterReplayReport, IngestOutcome, IngestPolicy, IngestQueueStatus, IngestService,
-    NativeIngestRequest, TraceIngestedDrainReport, TraceWriteDrainReport, TRACE_INGESTED_KIND,
+    NativeIngestRequest, TraceIngestedDrainReport, TraceIngestedReconcileReport,
+    TraceWriteDrainReport, TRACE_INGESTED_KIND,
 };
 use beater_judge::{JudgeBrokerService, KeywordJudgeProvider, SqliteJudgeLedger};
 use beater_replay::{plan_replay, ReplayMode};
@@ -1943,6 +1944,210 @@ async fn malformed_trace_ingested_event_returns_error_and_lands_in_dlq() {
     assert!(status.dead_letters[0]
         .reason
         .contains("invalid trace.ingested payload"));
+}
+
+#[tokio::test]
+async fn reconcile_trace_ingested_recovers_direct_write_after_publish_outage_through_api() {
+    let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+    let artifacts = Arc::new(
+        FsArtifactStore::new(tempdir.path().join("artifacts"))
+            .unwrap_or_else(|err| panic!("{err}")),
+    );
+    let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+    let outage_bus = Arc::new(InMemoryBus::new(0));
+    let outage_ingest = IngestService::new(
+        artifacts.clone(),
+        traces.clone(),
+        outage_bus,
+        IngestPolicy::default(),
+    );
+    let outage_app = router(ApiState::new(outage_ingest, traces.clone()));
+    let request = native_request();
+
+    let response = outage_app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/traces/native")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::to_vec(&request).unwrap_or_else(|err| panic!("{err}")),
+                ))
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let error: serde_json::Value =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert!(error["error"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("capacity 0"));
+
+    let stored_trace = traces
+        .get_project_trace(
+            request.scope.tenant_id.clone(),
+            request.scope.project_id.clone(),
+            request.trace_id.clone(),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(stored_trace.spans.len(), 1);
+
+    let healthy_bus = Arc::new(InMemoryBus::new(16));
+    let healthy_ingest = IngestService::new(
+        artifacts,
+        traces.clone(),
+        healthy_bus,
+        IngestPolicy::default(),
+    );
+    let search = Arc::new(TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}")));
+    let app = router(ApiState::with_search(healthy_ingest, traces, search));
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest/tenant/project/traces/trace/reconcile")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let reconcile: TraceIngestedReconcileReport =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(reconcile.trace_id, request.trace_id);
+    assert_eq!(reconcile.span_count, 1);
+    assert_eq!(reconcile.downstream_accepted, 1);
+    assert_eq!(reconcile.downstream_duplicate, 0);
+    assert!(reconcile.downstream_queued);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/ingest/tenant/project/queue")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let status: IngestQueueStatus =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(status.trace_ingested_depth, 1);
+    assert!(status.dead_letters.is_empty());
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest/tenant/project/traces/trace/reconcile")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let duplicate_reconcile: TraceIngestedReconcileReport =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(duplicate_reconcile.downstream_accepted, 0);
+    assert_eq!(duplicate_reconcile.downstream_duplicate, 1);
+    assert!(duplicate_reconcile.downstream_queued);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/ingest/tenant/project/queue")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let status: IngestQueueStatus =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(status.trace_ingested_depth, 1);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/ingest/tenant/project/trace-ingested/drain?limit=10")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let report: TraceIngestedDrainReport =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(report.consumed, 1);
+    assert_eq!(report.completed, 1);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/search/tenant/spans?q=answer&kind=agent.run&status=ok")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let search: SearchResponse =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(search.hits.len(), 1);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/ingest/tenant/project/queue")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let status: IngestQueueStatus =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(status.trace_ingested_depth, 0);
+    assert!(status.dead_letters.is_empty());
 }
 
 #[tokio::test]

@@ -135,7 +135,7 @@ impl IngestService {
             )
             .await
         {
-            Ok(published) => published > 0,
+            Ok(report) => report.queued(),
             Err(_) => {
                 // The trace is already durable; queue a write retry so the worker can
                 // idempotently re-write and publish downstream. If that fallback
@@ -391,6 +391,51 @@ impl IngestService {
             message_id: message_id.to_string(),
             reset_attempts,
             ack,
+        })
+    }
+
+    pub async fn reconcile_trace_ingested(
+        &self,
+        tenant_id: TenantId,
+        project_id: ProjectId,
+        trace_id: TraceId,
+    ) -> Result<TraceIngestedReconcileReport, IngestError> {
+        let trace = self
+            .traces
+            .get_project_trace(tenant_id.clone(), project_id.clone(), trace_id.clone())
+            .await
+            .map_err(IngestError::Store)?;
+        if trace.spans.is_empty() {
+            return Err(IngestError::NotFound(format!(
+                "trace {} not found for tenant={} project={}",
+                trace_id.as_str(),
+                tenant_id.as_str(),
+                project_id.as_str()
+            )));
+        }
+        let queue_key = IdempotencyKey::new(format!(
+            "reconcile:{}:{}:{}",
+            tenant_id.as_str(),
+            project_id.as_str(),
+            trace_id.as_str()
+        ))
+        .map_err(anyhow::Error::from)?;
+        let publish = self
+            .publish_trace_ingested(
+                &tenant_id,
+                &project_id,
+                &queue_key,
+                &BTreeSet::from([trace_id.clone()]),
+            )
+            .await?;
+        Ok(TraceIngestedReconcileReport {
+            tenant_id,
+            project_id,
+            trace_id,
+            span_count: trace.spans.len(),
+            downstream_accepted: publish.accepted,
+            downstream_duplicate: publish.duplicate,
+            downstream_queued: publish.queued(),
         })
     }
 
@@ -667,9 +712,10 @@ impl IngestService {
         project_id: &ProjectId,
         base_key: &IdempotencyKey,
         trace_ids: &BTreeSet<TraceId>,
-    ) -> Result<usize, IngestError> {
-        let mut published = 0;
+    ) -> Result<TraceIngestedPublishReport, IngestError> {
+        let mut report = TraceIngestedPublishReport::default();
         for trace_id in trace_ids {
+            report.requested += 1;
             let queue_payload = serde_json::to_vec(&QueuedTraceWork {
                 tenant_id: tenant_id.clone(),
                 project_id: project_id.clone(),
@@ -695,10 +741,13 @@ impl IngestService {
                 .await
                 .map_err(map_bus_error)?;
             if ack.accepted {
-                published += 1;
+                report.accepted += 1;
+            }
+            if ack.duplicate {
+                report.duplicate += 1;
             }
         }
-        Ok(published)
+        Ok(report)
     }
 
     async fn process_trace_write_message<F, Fut>(
@@ -771,7 +820,7 @@ impl IngestService {
             .await
         {
             Ok(published) => {
-                report.downstream_published += published;
+                report.downstream_published += published.accepted;
                 report
                     .trace_refs
                     .extend(trace_ids.iter().map(|trace_id| QueuedTraceWork {
@@ -1076,6 +1125,17 @@ pub struct DeadLetterReplayReport {
     pub ack: PublishAck,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TraceIngestedReconcileReport {
+    pub tenant_id: TenantId,
+    pub project_id: ProjectId,
+    pub trace_id: TraceId,
+    pub span_count: usize,
+    pub downstream_accepted: usize,
+    pub downstream_duplicate: usize,
+    pub downstream_queued: bool,
+}
+
 #[derive(Clone, Debug)]
 struct PreparedTraceBatch {
     tenant_id: TenantId,
@@ -1083,6 +1143,19 @@ struct PreparedTraceBatch {
     queue_key: IdempotencyKey,
     trace_ids: BTreeSet<TraceId>,
     batch: CanonicalTraceBatch,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+struct TraceIngestedPublishReport {
+    requested: usize,
+    accepted: usize,
+    duplicate: usize,
+}
+
+impl TraceIngestedPublishReport {
+    fn queued(&self) -> bool {
+        self.accepted.saturating_add(self.duplicate) >= self.requested && self.requested > 0
+    }
 }
 
 pub fn anonymous_auth_context() -> AuthContext {
@@ -1238,34 +1311,58 @@ mod tests {
     use chrono::TimeZone;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
-    struct FailOnceTraceIngestedPublishBus {
+    struct FailInitialPublishBus {
         inner: InMemoryBus,
-        remaining_failures: AtomicUsize,
+        trace_ingested_failures: AtomicUsize,
+        trace_write_failures: AtomicUsize,
     }
 
-    impl FailOnceTraceIngestedPublishBus {
-        fn new(capacity: usize) -> Self {
+    impl FailInitialPublishBus {
+        fn fail_trace_ingested_once(capacity: usize) -> Self {
+            Self::new(capacity, 1, 0)
+        }
+
+        fn new(
+            capacity: usize,
+            trace_ingested_failures: usize,
+            trace_write_failures: usize,
+        ) -> Self {
             Self {
                 inner: InMemoryBus::new(capacity),
-                remaining_failures: AtomicUsize::new(1),
+                trace_ingested_failures: AtomicUsize::new(trace_ingested_failures),
+                trace_write_failures: AtomicUsize::new(trace_write_failures),
             }
+        }
+
+        fn fail_publish_if_needed(
+            remaining_failures: &AtomicUsize,
+            reason: &str,
+        ) -> Result<(), BusError> {
+            if remaining_failures.load(Ordering::SeqCst) == 0 {
+                return Ok(());
+            }
+            let _ =
+                remaining_failures.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |remaining| {
+                    remaining.checked_sub(1)
+                });
+            Err(BusError::Storage(reason.to_string()))
         }
     }
 
     #[async_trait]
-    impl DurableBus for FailOnceTraceIngestedPublishBus {
+    impl DurableBus for FailInitialPublishBus {
         async fn publish(&self, message: BusMessage) -> Result<PublishAck, BusError> {
-            if message.kind == TRACE_INGESTED_KIND
-                && self.remaining_failures.load(Ordering::SeqCst) > 0
-            {
-                let _ = self.remaining_failures.fetch_update(
-                    Ordering::SeqCst,
-                    Ordering::SeqCst,
-                    |remaining| remaining.checked_sub(1),
-                );
-                return Err(BusError::Storage(
-                    "simulated downstream publish outage".to_string(),
-                ));
+            if message.kind == TRACE_INGESTED_KIND {
+                Self::fail_publish_if_needed(
+                    &self.trace_ingested_failures,
+                    "simulated trace.ingested publish outage",
+                )?;
+            }
+            if message.kind == TRACE_WRITE_BATCH_KIND {
+                Self::fail_publish_if_needed(
+                    &self.trace_write_failures,
+                    "simulated trace.write_batch publish outage",
+                )?;
             }
             self.inner.publish(message).await
         }
@@ -1618,6 +1715,95 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn reconcile_trace_ingested_recovers_after_direct_publish_and_fallback_fail() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(FailInitialPublishBus::new(16, 1, 1));
+        let service = IngestService::new(
+            artifacts,
+            traces.clone(),
+            bus.clone(),
+            IngestPolicy::default(),
+        );
+        let request = fixture_request();
+
+        let error = service
+            .ingest_native(request.clone())
+            .await
+            .err()
+            .unwrap_or_else(|| panic!("direct ingest should report missing downstream durability"));
+        assert!(error
+            .to_string()
+            .contains("simulated trace.write_batch publish outage"));
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(0));
+        assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(0));
+        let trace = traces
+            .get_project_trace(
+                request.scope.tenant_id.clone(),
+                request.scope.project_id.clone(),
+                request.trace_id.clone(),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(trace.spans.len(), 1);
+
+        let reconcile = service
+            .reconcile_trace_ingested(
+                request.scope.tenant_id.clone(),
+                request.scope.project_id.clone(),
+                request.trace_id.clone(),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(reconcile.span_count, 1);
+        assert_eq!(reconcile.downstream_accepted, 1);
+        assert_eq!(reconcile.downstream_duplicate, 0);
+        assert!(reconcile.downstream_queued);
+        assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(1));
+
+        let duplicate_reconcile = service
+            .reconcile_trace_ingested(
+                request.scope.tenant_id.clone(),
+                request.scope.project_id.clone(),
+                request.trace_id.clone(),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(duplicate_reconcile.downstream_accepted, 0);
+        assert_eq!(duplicate_reconcile.downstream_duplicate, 1);
+        assert!(duplicate_reconcile.downstream_queued);
+        assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(1));
+
+        let downstream = service
+            .drain_trace_ingested(10, |trace_ref| {
+                let traces = traces.clone();
+                async move {
+                    let trace = traces
+                        .get_project_trace(
+                            trace_ref.tenant_id,
+                            trace_ref.project_id,
+                            trace_ref.trace_id,
+                        )
+                        .await
+                        .map_err(|err| err.to_string())?;
+                    if trace.spans.len() != 1 {
+                        return Err(format!("expected one span, got {}", trace.spans.len()));
+                    }
+                    Ok(())
+                }
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(downstream.consumed, 1);
+        assert_eq!(downstream.completed, 1);
+        assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(0));
+    }
+
+    #[tokio::test]
     async fn direct_ingest_falls_back_to_trace_write_after_downstream_publish_failure() {
         let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
         let artifacts = Arc::new(
@@ -1625,7 +1811,7 @@ mod tests {
                 .unwrap_or_else(|err| panic!("{err}")),
         );
         let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
-        let bus = Arc::new(FailOnceTraceIngestedPublishBus::new(16));
+        let bus = Arc::new(FailInitialPublishBus::fail_trace_ingested_once(16));
         let service = IngestService::new(
             artifacts,
             traces.clone(),
@@ -1918,7 +2104,7 @@ mod tests {
                 .unwrap_or_else(|err| panic!("{err}")),
         );
         let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
-        let bus = Arc::new(FailOnceTraceIngestedPublishBus::new(16));
+        let bus = Arc::new(FailInitialPublishBus::fail_trace_ingested_once(16));
         let service = IngestService::new(
             artifacts,
             traces.clone(),
