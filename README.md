@@ -47,7 +47,9 @@ bash -o pipefail -lc 'sha_line="$(git ls-remote --exit-code https://github.com/j
 Run it from a directory that does not already contain `beater/`; reruns should
 start from a new or empty parent directory. If an aborted previous attempt left
 default ports occupied by `beater-stopwatch`, use the cleanup hint printed by
-the preflight before rerunning. The command resolves the public `main` commit,
+the preflight before rerunning. If preflight reports another app on a default
+port, stop or move that app instead of setting alternate Beater ports. The
+command resolves the public `main` commit,
 downloads `scripts/gate2-outside-local-preflight.sh` from that immutable SHA
 into a temp file, and runs it before the stopwatch starts, so missing local
 tooling, remote Docker contexts, and occupied default ports fail before the

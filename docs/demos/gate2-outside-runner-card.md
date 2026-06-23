@@ -17,8 +17,9 @@ Use a machine with:
 Run from an empty parent directory that does not already contain `beater/`.
 Do not set Beater, Docker Compose, or alternate port environment variables.
 If preflight reports stale `beater-stopwatch` containers or occupied default
-ports, run the cleanup hint it prints, then rerun this card from a new or empty
-parent directory.
+ports, follow the hint it prints: clean stale Beater containers, or stop/move
+the reported non-Beater app listening on the port. Do not set alternate Beater
+ports. Then rerun this card from a new or empty parent directory.
 
 ## Timed Command
 

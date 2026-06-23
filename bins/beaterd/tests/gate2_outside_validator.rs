@@ -225,7 +225,9 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(runner_card.contains("# Gate 2 Outside Runner Card"));
     assert!(runner_card.contains("Use this card for the unaided Gate 2 run"));
     assert!(runner_card.contains("`ffprobe` (installed by common `ffmpeg` packages)"));
-    assert!(runner_card.contains("cleanup hint it prints"));
+    assert!(runner_card.contains("clean stale Beater containers"));
+    assert!(runner_card.contains("stop/move\nthe reported non-Beater app"));
+    assert!(runner_card.contains("Do not set alternate Beater\nports"));
     assert!(runner_card.contains(canonical_outside_command()));
     assert!(runner_card.contains("downloads preflight from the resolved public commit SHA"));
     assert!(runner_card.contains("verifies\nthe clone still matches that SHA"));

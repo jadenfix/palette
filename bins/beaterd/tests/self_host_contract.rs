@@ -1471,6 +1471,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme
         .contains("As soon as the first `Open this quickstart trace-list URL first:` URL appears"));
     assert!(readme.contains("cleanup hint printed by"));
+    assert!(readme.contains("stop or move that app instead of setting alternate Beater ports"));
     assert!(readme.contains("seconds remaining in the 5-minute clone-to-click"));
     assert!(readme.contains("not wait for the script to finish"));
 
@@ -1479,7 +1480,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(!runner_card.contains("gate2-outside-local-preflight.sh | bash"));
     assert!(runner_card.contains("BEATER_GATE2_CLONE_STARTED_EPOCH"));
     assert!(runner_card.contains("`ffprobe` (installed by common `ffmpeg` packages)"));
-    assert!(runner_card.contains("cleanup hint it prints"));
+    assert!(runner_card.contains("clean stale Beater containers"));
+    assert!(runner_card.contains("stop/move\nthe reported non-Beater app"));
+    assert!(runner_card.contains("Do not set alternate Beater\nports"));
     assert!(runner_card.contains("Open this quickstart trace-list URL first:"));
     assert!(runner_card.contains("Do not wait for the script to finish"));
     assert!(
