@@ -62,6 +62,29 @@ def require_date_arg(name, value):
     return cleaned
 
 
+def require_observation_arg(name, value, required_fragments):
+    cleaned = require_meaningful_arg(name, value)
+    normalized = cleaned.lower()
+    negated = re.search(
+        r"\b(?:did\s+not|didn't|could\s+not|couldn't|cannot|can't|failed\s+to\s+see|"
+        r"not\s+visible|not\s+shown|not\s+showing|missing|without)\b",
+        normalized,
+    )
+    if negated:
+        raise SystemExit(f"{name} must be a positive observation, not negated evidence")
+    if not re.search(
+        r"\b(?:saw|seen|visible|read|confirmed|verified|opened|clicked|showed|displayed|inspected)\b",
+        normalized,
+    ):
+        raise SystemExit(f"{name} must describe a positive visible observation")
+    missing = [
+        fragment for fragment in required_fragments if fragment.lower() not in normalized
+    ]
+    if missing:
+        raise SystemExit(f"{name} must mention: " + ", ".join(missing))
+    return cleaned
+
+
 def field_value(source_text, name, source_name):
     matches = re.findall(
         r"^- " + re.escape(name) + r":[ \t]*(.*)$", source_text, re.MULTILINE
@@ -281,9 +304,24 @@ def build_proof(args, stopwatch_path, stopwatch_text):
     failure_notes = args.failure_notes or "none"
     runner_notes = args.runner_notes or "No extra runner notes."
     network_notes = require_meaningful_arg("--network-notes", args.network_notes)
-    llm_observation = require_meaningful_arg("--llm-observation", args.llm_observation)
-    waterfall_observation = require_meaningful_arg(
-        "--waterfall-observation", args.waterfall_observation
+    llm_observation = require_observation_arg(
+        "--llm-observation",
+        args.llm_observation,
+        [
+            "llm.call",
+            "prompt",
+            "completion",
+            "model",
+            "token breakdown",
+            "cost",
+            "latency",
+            "confirmation code",
+        ],
+    )
+    waterfall_observation = require_observation_arg(
+        "--waterfall-observation",
+        args.waterfall_observation,
+        ["run", "turn", "step", "tool", "MCP"],
     )
     runner_name = require_meaningful_arg("--runner-name", args.runner_name)
     relationship = require_meaningful_arg("--relationship", args.relationship)

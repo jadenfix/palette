@@ -519,6 +519,53 @@ fn gate2_outside_generator_requires_runner_observations() {
 }
 
 #[test]
+fn gate2_outside_generator_rejects_incomplete_runner_observation() {
+    let fixture = ValidatorFixture::new();
+    let generated = fixture
+        .dir
+        .path()
+        .join("incomplete-observation-generated-proof.md");
+
+    let output = run_generator_with_observations(
+        &fixture.stopwatch_path,
+        &generated,
+        "clicked llm.call and saw prompt, completion, model, cost, latency, and confirmation code",
+        WATERFALL_OBSERVATION,
+    );
+
+    assert_failure(output, "--llm-observation must mention: token breakdown");
+    assert!(
+        !generated.exists(),
+        "generator must not write completed proof with incomplete runner observation"
+    );
+}
+
+#[test]
+fn gate2_outside_generator_rejects_negated_runner_observation() {
+    let fixture = ValidatorFixture::new();
+    let generated = fixture
+        .dir
+        .path()
+        .join("negated-observation-generated-proof.md");
+
+    let output = run_generator_with_observations(
+        &fixture.stopwatch_path,
+        &generated,
+        "clicked llm.call but could not see prompt, completion, model, token breakdown, cost, latency, and confirmation code",
+        WATERFALL_OBSERVATION,
+    );
+
+    assert_failure(
+        output,
+        "--llm-observation must be a positive observation, not negated evidence",
+    );
+    assert!(
+        !generated.exists(),
+        "generator must not write completed proof with negated runner observation"
+    );
+}
+
+#[test]
 fn gate2_outside_generator_requires_terminal_excerpt() {
     let fixture = ValidatorFixture::new();
     let generated = fixture
@@ -4551,6 +4598,38 @@ fn run_generator_without_network_notes(stopwatch_path: &Path, output_path: &Path
 
 fn run_generator_without_observations(stopwatch_path: &Path, output_path: &Path) -> Output {
     run_generator_with_options(stopwatch_path, output_path, true, true, false)
+}
+
+fn run_generator_with_observations(
+    stopwatch_path: &Path,
+    output_path: &Path,
+    llm_observation: &str,
+    waterfall_observation: &str,
+) -> Output {
+    let ffprobe =
+        fake_ffprobe_dir("#!/bin/sh\nprintf 'codec_type=video\\n'\nprintf 'duration=12.50\\n'\n");
+    let mut command = generator_command(
+        stopwatch_path,
+        output_path,
+        "Validator Fixture Runner",
+        "Chromium",
+    );
+    command
+        .arg("--attest-outside-run")
+        .arg("--network-notes")
+        .arg("public docs only")
+        .arg("--llm-observation")
+        .arg(llm_observation)
+        .arg("--waterfall-observation")
+        .arg(waterfall_observation)
+        .arg("--terminal-output-excerpt")
+        .arg(terminal_output_excerpt())
+        .arg("--compose-logs-saved")
+        .arg(compose_log_field_for_stopwatch(stopwatch_path))
+        .env("PATH", path_with_tempdir(&ffprobe));
+    command
+        .output()
+        .unwrap_or_else(|err| panic!("run Gate 2 outside proof generator with observations: {err}"))
 }
 
 fn run_generator_without_fake_ffprobe(stopwatch_path: &Path, output_path: &Path) -> Output {
