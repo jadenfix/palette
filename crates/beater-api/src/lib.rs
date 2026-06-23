@@ -107,6 +107,10 @@ pub struct ApiState {
 
 impl ApiState {
     pub fn new(ingest: IngestService, traces: Arc<dyn TraceStore>) -> Self {
+        Self::base(ingest, traces)
+    }
+
+    fn base(ingest: IngestService, traces: Arc<dyn TraceStore>) -> Self {
         Self {
             ingest,
             traces,
@@ -134,26 +138,7 @@ impl ApiState {
         traces: Arc<dyn TraceStore>,
         search: Arc<dyn SearchIndex>,
     ) -> Self {
-        Self {
-            ingest,
-            traces,
-            metadata: Arc::new(InMemoryMetadataStore::new()),
-            search,
-            archive: None,
-            datasets: None,
-            experiments: None,
-            gates: None,
-            human_reviews: None,
-            calibrations: None,
-            alerts: Arc::new(AlertEngine::new()),
-            auth_mode: AuthMode::Disabled,
-            api_keys: None,
-            provider_secrets: None,
-            judge_broker: None,
-            judge_ledger: None,
-            usage: None,
-            audit: None,
-        }
+        Self::base(ingest, traces).with_search_index(search)
     }
 
     pub fn with_search_and_archive(
@@ -162,26 +147,9 @@ impl ApiState {
         search: Arc<dyn SearchIndex>,
         archive: ParquetTraceArchive,
     ) -> Self {
-        Self {
-            ingest,
-            traces,
-            metadata: Arc::new(InMemoryMetadataStore::new()),
-            search,
-            archive: Some(archive),
-            datasets: None,
-            experiments: None,
-            gates: None,
-            human_reviews: None,
-            calibrations: None,
-            alerts: Arc::new(AlertEngine::new()),
-            auth_mode: AuthMode::Disabled,
-            api_keys: None,
-            provider_secrets: None,
-            judge_broker: None,
-            judge_ledger: None,
-            usage: None,
-            audit: None,
-        }
+        Self::base(ingest, traces)
+            .with_search_index(search)
+            .with_archive(archive)
     }
 
     pub fn with_integrations(
@@ -192,31 +160,36 @@ impl ApiState {
         datasets: Arc<dyn DatasetStore>,
         experiments: Arc<dyn ExperimentStore>,
     ) -> Self {
-        Self {
-            ingest,
-            traces,
-            metadata: Arc::new(InMemoryMetadataStore::new()),
-            search,
-            archive: Some(archive),
-            datasets: Some(datasets),
-            experiments: Some(experiments),
-            gates: None,
-            human_reviews: None,
-            calibrations: None,
-            alerts: Arc::new(AlertEngine::new()),
-            auth_mode: AuthMode::Disabled,
-            api_keys: None,
-            provider_secrets: None,
-            judge_broker: None,
-            judge_ledger: None,
-            usage: None,
-            audit: None,
-        }
+        Self::base(ingest, traces)
+            .with_search_index(search)
+            .with_archive(archive)
+            .with_datasets(datasets)
+            .with_experiments(experiments)
     }
 
     pub fn require_auth(mut self, api_keys: Arc<dyn ApiKeyStore>) -> Self {
         self.auth_mode = AuthMode::Required;
         self.api_keys = Some(api_keys);
+        self
+    }
+
+    pub fn with_search_index(mut self, search: Arc<dyn SearchIndex>) -> Self {
+        self.search = search;
+        self
+    }
+
+    pub fn with_archive(mut self, archive: ParquetTraceArchive) -> Self {
+        self.archive = Some(archive);
+        self
+    }
+
+    pub fn with_datasets(mut self, datasets: Arc<dyn DatasetStore>) -> Self {
+        self.datasets = Some(datasets);
+        self
+    }
+
+    pub fn with_experiments(mut self, experiments: Arc<dyn ExperimentStore>) -> Self {
+        self.experiments = Some(experiments);
         self
     }
 
@@ -2863,6 +2836,84 @@ mod tests {
     use std::collections::BTreeMap;
     use tower::ServiceExt;
 
+    #[test]
+    fn api_state_constructors_share_defaults_and_set_integrations() {
+        let (ingest, traces, _tempdir) = api_state_fixture();
+        let state = ApiState::new(ingest, traces);
+        assert_api_state_optional_defaults(&state);
+
+        let (ingest, traces, _tempdir) = api_state_fixture();
+        let search: Arc<dyn SearchIndex> =
+            Arc::new(TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let state = ApiState::with_search(ingest, traces, search.clone());
+        assert!(Arc::ptr_eq(&state.search, &search));
+        assert_api_state_optional_defaults(&state);
+
+        let (ingest, traces, tempdir) = api_state_fixture();
+        let search: Arc<dyn SearchIndex> =
+            Arc::new(TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let archive = ParquetTraceArchive::new(tempdir.path().join("archive"))
+            .unwrap_or_else(|err| panic!("{err}"));
+        let archive_root = archive.root().to_path_buf();
+        let state = ApiState::with_search_and_archive(ingest, traces, search.clone(), archive);
+        assert!(Arc::ptr_eq(&state.search, &search));
+        assert_eq!(
+            state
+                .archive
+                .as_ref()
+                .unwrap_or_else(|| panic!("archive should be configured"))
+                .root(),
+            archive_root.as_path()
+        );
+        assert_api_state_optional_defaults_except_archive(&state);
+
+        let (ingest, traces, tempdir) = api_state_fixture();
+        let search: Arc<dyn SearchIndex> =
+            Arc::new(TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let archive = ParquetTraceArchive::new(tempdir.path().join("archive"))
+            .unwrap_or_else(|err| panic!("{err}"));
+        let archive_root = archive.root().to_path_buf();
+        let datasets: Arc<dyn DatasetStore> = Arc::new(
+            beater_datasets::SqliteDatasetStore::in_memory().unwrap_or_else(|err| panic!("{err}")),
+        );
+        let experiments: Arc<dyn ExperimentStore> = Arc::new(
+            beater_experiments::SqliteExperimentStore::in_memory()
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let state = ApiState::with_integrations(
+            ingest,
+            traces,
+            search.clone(),
+            archive,
+            datasets.clone(),
+            experiments.clone(),
+        );
+        assert!(Arc::ptr_eq(&state.search, &search));
+        assert_eq!(
+            state
+                .archive
+                .as_ref()
+                .unwrap_or_else(|| panic!("archive should be configured"))
+                .root(),
+            archive_root.as_path()
+        );
+        assert!(Arc::ptr_eq(
+            state
+                .datasets
+                .as_ref()
+                .unwrap_or_else(|| panic!("datasets should be configured")),
+            &datasets
+        ));
+        assert!(Arc::ptr_eq(
+            state
+                .experiments
+                .as_ref()
+                .unwrap_or_else(|| panic!("experiments should be configured")),
+            &experiments
+        ));
+        assert_api_state_common_defaults(&state);
+    }
+
     #[tokio::test]
     async fn openapi_json_documents_dashboard_read_surface() {
         let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
@@ -3054,6 +3105,43 @@ mod tests {
             .unwrap_or_else(|| panic!("raw otlp envelope should be stored"));
         assert_eq!(raw.source, SourceDialect::Otlp);
         assert_eq!(raw.source_schema_version.as_deref(), Some("1.37.0"));
+    }
+
+    fn api_state_fixture() -> (IngestService, Arc<dyn TraceStore>, tempfile::TempDir) {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces: Arc<dyn TraceStore> =
+            Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+        (ingest, traces, tempdir)
+    }
+
+    fn assert_api_state_optional_defaults(state: &ApiState) {
+        assert!(state.archive.is_none());
+        assert_api_state_optional_defaults_except_archive(state);
+    }
+
+    fn assert_api_state_optional_defaults_except_archive(state: &ApiState) {
+        assert!(state.datasets.is_none());
+        assert!(state.experiments.is_none());
+        assert_api_state_common_defaults(state);
+    }
+
+    fn assert_api_state_common_defaults(state: &ApiState) {
+        assert!(state.gates.is_none());
+        assert!(state.human_reviews.is_none());
+        assert!(state.calibrations.is_none());
+        assert!(state.provider_secrets.is_none());
+        assert!(state.judge_broker.is_none());
+        assert!(state.judge_ledger.is_none());
+        assert!(state.usage.is_none());
+        assert!(state.audit.is_none());
+        assert!(!state.auth_required());
+        assert!(state.api_keys.is_none());
     }
 
     fn fixture_request() -> NativeIngestRequest {

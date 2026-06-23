@@ -31,6 +31,10 @@ contracts narrow, shared, and testable.
 - `beater-search::index_project_trace` owns trace-ingested readback plus search
   indexing, so API drain and `beaterd` background workers share the same
   downstream processing path.
+- `ApiState` now has one private base constructor plus explicit opt-in setters
+  for search, archive, dataset, and experiment integrations. The public
+  constructors delegate through that path, and a regression test pins default
+  optional-service behavior.
 
 ## Keep Independent
 
@@ -60,19 +64,33 @@ contracts narrow, shared, and testable.
   idempotency, redaction, and span assembly.
 - Trace-ingested search processing now shares the readback/index helper, but
   higher-level queue draining, retry reporting, and worker hooks still live at
-  their API/runtime boundaries.
+  their API/runtime boundaries. The API drain route and `beaterd` worker still
+  each build the async search-indexing closure.
+- JSON value hashing still repeats `serde_json::to_vec` plus SHA-256 wrapping in
+  dataset, judge, and replay code. `beater_core` owns byte hashing now; a small
+  JSON-hash helper can remove the last drift-prone copies without pulling
+  serialization policy into higher-level crates.
 - OpenAPI doc schemas mirror real API and schema DTOs. Prefer deriving or
   sharing public response DTOs rather than maintaining doc-only copies for
   canonical spans, run summaries, money, artifact refs, and query params.
+- API handlers repeat route id parsing for tenant, project, environment,
+  dataset, version, trace, span, queue, task, annotation, gate, and experiment
+  ids. Introduce typed path structs or small `parse_*_id` helpers at the API
+  boundary before splitting handlers, so auth checks and domain calls receive
+  validated ids consistently.
 - API handlers and CLI fixtures rebuild similar eval, dataset, and experiment
   specs. Keep HTTP request structs local, but centralize conversion into domain
-  specs and reusable path/query parsing helpers.
-- Local runtime wiring is concentrated in large bin files. `LocalStorePaths`,
-  `LocalStackBuilder`, `demo_scope()`, and fixture setup helpers would reduce
-  main-file size while preserving all-in-one operational simplicity.
-- `ApiState` constructors repeat default initialization. Use one private base
-  constructor plus explicit setters for optional services when the next API
-  dependency lands.
+  specs after route-id parsing is shared; otherwise the conversion helpers will
+  still own too much HTTP-specific error mapping.
+- Local runtime wiring is concentrated in large bin files:
+  `bins/beaterd/src/main.rs`, `bins/beaterctl/src/main.rs`, and the full-stack
+  API/Gate 2 fixtures. `LocalStorePaths`, `LocalStackBuilder`, `demo_scope()`,
+  and fixture setup helpers would reduce main-file size while preserving
+  all-in-one operational simplicity.
+- OTLP smoke export fixture assembly is repeated in `beaterctl`, `beaterd`
+  live-smoke tests, and API tests. Move only the stable test-support pieces
+  (`smoke_ids`, metadata values, smoke export construction) into `beater-otlp`;
+  keep endpoint assertions local to each runtime.
 
 ## Next Shared-Logic Targets
 
@@ -91,8 +109,21 @@ contracts narrow, shared, and testable.
   `test_support`; extract shared canonical span assembly and retry accounting.
 - Store helpers: add small shared helpers for span storage identity and trace
   span ordering while leaving SQLite and memory persistence mechanics separate.
+- Trace-ingested search processor: wrap `index_project_trace` in one closure
+  factory or processor type consumed by API drain and `beaterd` workers, while
+  leaving route status-code selection and worker lifecycle local.
+- JSON hash helper: add `beater_core::sha256_json_hash<T: Serialize>()` or an
+  equivalent fallible helper returning `Sha256Hash`, then migrate dataset,
+  judge, and replay hashes with golden parity tests.
 - Eval context: introduce a typed `TraceEvalContext` builder so latency/cost
   evaluators, alerts, datasets, and experiments depend on one trace metric shape.
+- API route parsing: add typed path/query helpers for `TenantId`, `ProjectId`,
+  `EnvironmentId`, `TraceId`, `SpanId`, `DatasetId`, `DatasetVersionId`,
+  `ReviewQueueId`, `ReviewTaskId`, `AnnotationId`, `GateId`, and
+  `ExperimentRunId`, then migrate handlers by route family with auth tests.
+- Eval/spec conversion: move deterministic/judge dataset and experiment request
+  conversion into small API-local builder helpers that return domain specs and
+  preserve 400-level id/hash validation.
 - Evaluator lanes: add `ensure_deterministic` / `ensure_judge` helpers on
   evaluator specs and use them in datasets, experiments, judge broker paths, and
   API route guards.
@@ -106,9 +137,13 @@ contracts narrow, shared, and testable.
 - Dashboard timeline/view helpers: extract pure timeline bounds, axis, run
   summary, artifact formatting, and query helpers before splitting components.
 - Rust store result helpers: evaluate whether repeated `IntoStoreResult`
-  adapter traits should move into a small shared persistence helper. Do this
-  only if the local error boundaries stay explicit and readable.
+  adapter traits should move into `beater-store` or a small persistence helper.
+  Move that trait before attempting timestamp/id decode helpers, so local
+  rusqlite row-shape errors stay explicit and readable.
 - SQLite timestamp decoding: centralize repeated RFC3339 decode/error mapping
   once the store crates settle on a common error helper.
 - CLI/runtime main files: move `beaterctl` command handlers and repeated
   full-stack test setup into focused modules or per-crate test-support helpers.
+- OTLP test support: share smoke export construction from `beater-otlp` test
+  support once the API, CLI, and runtime tests agree on which fields are
+  contractually stable.
