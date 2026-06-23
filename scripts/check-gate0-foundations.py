@@ -354,11 +354,20 @@ def check_schema_owns_rollups_and_mappings() -> None:
             if symbol not in block:
                 fail(f"beater-schema impl {type_name} must own {symbol}")
 
+    store = read("crates/beater-store/src/lib.rs")
+    for symbol in [
+        "pub async fn query_runs_by_materializing_spans",
+        "roll_up_runs",
+        "filter_run_summaries",
+    ]:
+        if symbol not in store:
+            fail(f"beater-store must own materialized run-query fallback via {symbol}")
+
     for path in ["crates/beater-store-memory/src/lib.rs", "crates/beater-store-sql/src/lib.rs"]:
         text = read(path)
-        for symbol in ["roll_up_runs", "filter_run_summaries", "span_summary"]:
+        for symbol in ["query_runs_by_materializing_spans", "span_summary"]:
             if symbol not in text:
-                fail(f"{path} must use schema {symbol}")
+                fail(f"{path} must use shared trace query helper/mapping via {symbol}")
         for forbidden in ["fn roll_up_runs", "fn filter_run_summaries", "fn aggregate_run_status"]:
             if forbidden in text:
                 fail(f"{path} must not define backend-local {forbidden}")

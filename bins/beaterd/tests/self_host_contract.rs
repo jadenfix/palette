@@ -328,6 +328,7 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(gate0_contract.contains("pub fn try_sub"));
     assert!(gate0_contract.contains("CurrencyMismatch"));
     assert!(gate0_contract.contains("beater-schema must own"));
+    assert!(gate0_contract.contains("query_runs_by_materializing_spans"));
     assert!(gate0_contract.contains("rust_block(schema"));
     assert!(gate0_contract.contains("AgentSpanKind::parse(&value)"));
     assert!(gate0_contract.contains("SpanStatus::parse(&value)"));
