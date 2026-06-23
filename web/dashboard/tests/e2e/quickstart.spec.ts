@@ -1,14 +1,10 @@
-import { createHash } from "node:crypto";
 import { expect, test } from "@playwright/test";
+
+import { gate2ConfirmationCode } from "../../lib/gate2-confirmation";
 import { expectTokenBreakdown } from "./token-breakdown";
 
 function confirmationCode(traceId: string, spanId: string): string {
-  const salt = process.env.BEATER_GATE2_CONFIRMATION_SALT ?? "";
-  return createHash("sha256")
-    .update(`gate2:${salt}:${traceId}:${spanId}`)
-    .digest("hex")
-    .slice(0, 8)
-    .toUpperCase();
+  return gate2ConfirmationCode({ traceId, spanId });
 }
 
 test("renders the five-line stock OTLP quickstart trace in a browser", async ({ page }) => {

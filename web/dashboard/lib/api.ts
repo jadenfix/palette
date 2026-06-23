@@ -1,4 +1,5 @@
 import type { components, operations } from "./generated/api-types";
+import { apiSpanIoLabels } from "./span-kinds";
 
 export type Page<T> = {
   items: T[];
@@ -329,8 +330,7 @@ export function spanTokenTotal(span: Pick<CanonicalSpan, "tokens">): number {
 export function spanTokenSummary(span: Pick<CanonicalSpan, "kind" | "tokens">): string {
   if (!span.tokens) return "none";
   const total = spanTokenTotal(span);
-  const inputLabel = span.kind === "llm.call" ? "prompt" : "input";
-  const outputLabel = span.kind === "llm.call" ? "completion" : "output";
+  const { input: inputLabel, output: outputLabel } = apiSpanIoLabels(span.kind);
   const parts = [
     `${total.toLocaleString("en-US")} total`,
     `${span.tokens.input.toLocaleString("en-US")} ${inputLabel}`,

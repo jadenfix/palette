@@ -42,6 +42,13 @@ import {
   statusLabel,
   timestampMicros
 } from "../lib/api";
+import {
+  AGENT_SPAN_KINDS,
+  displaySpanIoLabels,
+  isLlmCallKind,
+  spanKindClass,
+  spanKindMeta
+} from "../lib/span-kinds";
 import { Gate2ConfirmationCode, Gate2SpanClickTracker } from "./Gate2Confirmation";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -224,20 +231,11 @@ export default async function DashboardPage({
               <span>Kind</span>
               <select name="kind" defaultValue={data.query.kind ?? ""}>
                 <option value="">Any</option>
-                <option value="agent.run">agent.run</option>
-                <option value="agent.turn">agent.turn</option>
-                <option value="agent.plan">agent.plan</option>
-                <option value="agent.step">agent.step</option>
-                <option value="llm.call">llm.call</option>
-                <option value="tool.call">tool.call</option>
-                <option value="mcp.request">mcp.request</option>
-                <option value="retrieval.query">retrieval.query</option>
-                <option value="memory.read">memory.read</option>
-                <option value="memory.write">memory.write</option>
-                <option value="guardrail.check">guardrail.check</option>
-                <option value="human.review">human.review</option>
-                <option value="evaluator.run">evaluator.run</option>
-                <option value="replay.run">replay.run</option>
+                {AGENT_SPAN_KINDS.map((kind) => (
+                  <option key={kind} value={kind}>
+                    {kind}
+                  </option>
+                ))}
               </select>
             </label>
             <button className="filter-submit" type="submit">
@@ -424,6 +422,7 @@ export default async function DashboardPage({
               const icon = kindIcon(span.kind);
               const KindGlyph = icon.Icon;
               const timing = spanTimeline(span, spans);
+              const isLlmCall = isLlmCallKind(span.kind);
               return (
                 <Link
                   key={span.span_id}
@@ -439,8 +438,8 @@ export default async function DashboardPage({
                   data-status={span.status}
                   data-span-id={span.span_id}
                   data-span-seq={span.seq}
-                  data-gate2-confirm-span={span.kind === "llm.call" ? "true" : undefined}
-                  data-trace-id={span.kind === "llm.call" ? span.trace_id : undefined}
+                  data-gate2-confirm-span={isLlmCall ? "true" : undefined}
+                  data-trace-id={isLlmCall ? span.trace_id : undefined}
                   style={
                     {
                       "--depth": depth,
@@ -451,7 +450,7 @@ export default async function DashboardPage({
                 >
                   <span className="span-name">
                     <span
-                      className={`kind-icon ${kindClass(span.kind)}`}
+                      className={`kind-icon ${spanKindClass(span.kind)}`}
                       aria-hidden="true"
                       data-icon={icon.key}
                       title={icon.title}
@@ -551,13 +550,13 @@ function SpanDetail({
   const KindGlyph = icon.Icon;
   const artifacts = spanArtifactRefs(span);
   const ancestry = spanAncestry(span, spans);
-  const ioLabels = spanIoLabels(span.kind);
-  const showConfirmationSlot = span.kind === "llm.call" && query.selectedSpanId === span.span_id;
+  const ioLabels = displaySpanIoLabels(span.kind);
+  const showConfirmationSlot = isLlmCallKind(span.kind) && query.selectedSpanId === span.span_id;
   return (
     <div className="detail-stack">
       <div className="span-identity">
         <span
-          className={`kind-icon detail-kind ${kindClass(span.kind)}`}
+          className={`kind-icon detail-kind ${spanKindClass(span.kind)}`}
           aria-hidden="true"
           data-icon={icon.key}
           title={icon.title}
@@ -621,7 +620,7 @@ function SpanDetail({
                 /
               </span>
             ) : null}
-            <span className={`path-node ${kindClass(node.kind)}`}>
+            <span className={`path-node ${spanKindClass(node.kind)}`}>
               <span>{node.kind}</span>
               <strong>{node.name}</strong>
             </span>
@@ -696,8 +695,7 @@ function SpanDetail({
 
 function TokenBreakdown({ span }: { span: Pick<CanonicalSpan, "kind" | "tokens"> }) {
   if (!span.tokens) return null;
-  const inputLabel = span.kind === "llm.call" ? "Prompt" : "Input";
-  const outputLabel = span.kind === "llm.call" ? "Completion" : "Output";
+  const { input: inputLabel, output: outputLabel } = displaySpanIoLabels(span.kind);
   const items = [
     { label: inputLabel, value: span.tokens.input },
     { label: outputLabel, value: span.tokens.output },
@@ -808,11 +806,6 @@ function IoBlock({ label, value }: { label: string; value: SpanIoResponse["input
       <pre>{body}</pre>
     </div>
   );
-}
-
-function spanIoLabels(kind: string): { input: string; output: string } {
-  if (kind === "llm.call") return { input: "Prompt", output: "Completion" };
-  return { input: "Input", output: "Output" };
 }
 
 function JsonPanel({ label, value }: { label: string; value: unknown }) {
@@ -1190,44 +1183,27 @@ function formatAxisDuration(ms: number): string {
   return `${(ms / 1000).toFixed(1)} s`;
 }
 
-function kindClass(kind: string): string {
-  if (kind.startsWith("agent.")) return "agent";
-  if (kind === "llm.call") return "llm";
-  if (kind === "tool.call" || kind === "mcp.request") return "tool";
-  if (kind.startsWith("memory.")) return "memory";
-  if (kind.includes("guardrail")) return "guardrail";
-  if (kind.includes("evaluator")) return "eval";
-  if (kind === "human.review") return "human";
-  if (kind === "replay.run") return "replay";
-  return "other";
-}
-
 type KindIcon = { key: string; Icon: LucideIcon; title: string };
 
+const SPAN_KIND_ICONS: Record<string, LucideIcon> = {
+  "agent-run": Bot,
+  "agent-turn": MessageSquareText,
+  "agent-plan": ClipboardList,
+  "agent-step": ListChecks,
+  llm: BrainCircuit,
+  tool: Wrench,
+  mcp: Network,
+  retrieval: SearchIcon,
+  "memory-read": Database,
+  "memory-write": DatabaseZap,
+  guardrail: ShieldCheck,
+  human: UserCheck,
+  eval: BadgePercent,
+  replay: RotateCcw,
+  other: CircleDot
+};
+
 function kindIcon(kind: string): KindIcon {
-  if (kind === "agent.run") return { key: "agent-run", Icon: Bot, title: "Agent run" };
-  if (kind === "agent.turn") {
-    return { key: "agent-turn", Icon: MessageSquareText, title: "Agent turn" };
-  }
-  if (kind === "agent.plan") return { key: "agent-plan", Icon: ClipboardList, title: "Agent plan" };
-  if (kind === "agent.step") return { key: "agent-step", Icon: ListChecks, title: "Agent step" };
-  if (kind === "llm.call") return { key: "llm", Icon: BrainCircuit, title: "LLM call" };
-  if (kind === "tool.call") return { key: "tool", Icon: Wrench, title: "Tool call" };
-  if (kind === "mcp.request") return { key: "mcp", Icon: Network, title: "MCP request" };
-  if (kind === "retrieval.query") {
-    return { key: "retrieval", Icon: SearchIcon, title: "Retrieval query" };
-  }
-  if (kind === "memory.read") return { key: "memory-read", Icon: Database, title: "Memory read" };
-  if (kind === "memory.write") {
-    return { key: "memory-write", Icon: DatabaseZap, title: "Memory write" };
-  }
-  if (kind === "guardrail.check") {
-    return { key: "guardrail", Icon: ShieldCheck, title: "Guardrail check" };
-  }
-  if (kind === "human.review") return { key: "human", Icon: UserCheck, title: "Human review" };
-  if (kind === "evaluator.run") {
-    return { key: "eval", Icon: BadgePercent, title: "Evaluator run" };
-  }
-  if (kind === "replay.run") return { key: "replay", Icon: RotateCcw, title: "Replay run" };
-  return { key: "other", Icon: CircleDot, title: kind };
+  const meta = spanKindMeta(kind);
+  return { ...meta, Icon: SPAN_KIND_ICONS[meta.key] ?? CircleDot };
 }

@@ -8,8 +8,8 @@ import ts from "typescript";
 
 const root = new URL("..", import.meta.url).pathname;
 
-function loadGate2SessionModule(context = {}) {
-  const source = readFileSync(join(root, "lib/gate2-session.ts"), "utf8");
+function loadTsModule(relativePath, { context = {}, requireMap = {} } = {}) {
+  const source = readFileSync(join(root, relativePath), "utf8");
   const { outputText } = ts.transpileModule(source, {
     compilerOptions: {
       esModuleInterop: true,
@@ -23,65 +23,65 @@ function loadGate2SessionModule(context = {}) {
     {
       exports: module.exports,
       module,
-      ...context
-    },
-    { filename: "lib/gate2-session.ts" }
-  );
-  return module.exports;
-}
-
-function loadDashboardApiModule(context = {}) {
-  const source = readFileSync(join(root, "lib/api.ts"), "utf8");
-  const { outputText } = ts.transpileModule(source, {
-    compilerOptions: {
-      esModuleInterop: true,
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2022
-    }
-  });
-  const module = { exports: {} };
-  vm.runInNewContext(
-    outputText,
-    {
-      exports: module.exports,
-      module,
-      process,
-      URLSearchParams,
-      ...context
-    },
-    { filename: "lib/api.ts" }
-  );
-  return module.exports;
-}
-
-function loadGate2ConfirmRouteModule(context = {}) {
-  const source = readFileSync(join(root, "app/api/gate2/confirm/route.ts"), "utf8");
-  const { outputText } = ts.transpileModule(source, {
-    compilerOptions: {
-      esModuleInterop: true,
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2022
-    }
-  });
-  const module = { exports: {} };
-  vm.runInNewContext(
-    outputText,
-    {
-      exports: module.exports,
-      module,
-      process,
-      Response,
-      URL,
       require(specifier) {
-        if (specifier === "node:crypto") return { createHash };
-        if (specifier === "../../../../lib/gate2-session") return loadGate2SessionModule(context);
-        throw new Error(`unexpected route test import: ${specifier}`);
+        if (Object.hasOwn(requireMap, specifier)) {
+          const value = requireMap[specifier];
+          return typeof value === "function" ? value() : value;
+        }
+        throw new Error(`unexpected test import from ${relativePath}: ${specifier}`);
       },
       ...context
     },
-    { filename: "app/api/gate2/confirm/route.ts" }
+    { filename: relativePath }
   );
   return module.exports;
+}
+
+function loadGate2SessionModule(context = {}) {
+  return loadTsModule("lib/gate2-session.ts", { context });
+}
+
+function loadGate2ClickProofModule(context = {}) {
+  return loadTsModule("lib/gate2-click-proof.ts", { context });
+}
+
+function loadGate2ConfirmationContractModule(context = {}) {
+  return loadTsModule("lib/gate2-confirmation-contract.ts", { context });
+}
+
+function loadGate2ConfirmationModule(context = {}) {
+  return loadTsModule("lib/gate2-confirmation.ts", {
+    context: { process, ...context },
+    requireMap: {
+      "node:crypto": { createHash },
+      "./gate2-confirmation-contract": () => loadGate2ConfirmationContractModule(context)
+    }
+  });
+}
+
+function loadSpanKindsModule(context = {}) {
+  return loadTsModule("lib/span-kinds.ts", { context });
+}
+
+function loadDashboardApiModule(context = {}) {
+  return loadTsModule("lib/api.ts", {
+    context: { process, URLSearchParams, ...context },
+    requireMap: {
+      "./span-kinds": () => loadSpanKindsModule(context)
+    }
+  });
+}
+
+function loadGate2ConfirmRouteModule(context = {}) {
+  return loadTsModule("app/api/gate2/confirm/route.ts", {
+    context: { process, Response, URL, ...context },
+    requireMap: {
+      "node:crypto": { createHash },
+      "../../../../lib/gate2-click-proof": () => loadGate2ClickProofModule(context),
+      "../../../../lib/gate2-confirmation": () => loadGate2ConfirmationModule(context),
+      "../../../../lib/gate2-session": () => loadGate2SessionModule(context)
+    }
+  });
 }
 
 function gate2ConfirmRequest({
@@ -150,6 +150,7 @@ async function responseJson(response) {
 
 test("dashboard page exposes the trace inspection surface", () => {
   const page = readFileSync(join(root, "app/page.tsx"), "utf8");
+  const spanKinds = readFileSync(join(root, "lib/span-kinds.ts"), "utf8");
   assert.match(page, /Agent Trace Debugger/);
   assert.match(page, /Trace filters/);
   assert.match(page, /Agent span waterfall/);
@@ -184,15 +185,18 @@ test("dashboard page exposes the trace inspection surface", () => {
   assert.match(page, /span-track/);
   assert.match(page, /SpanDetail/);
   assert.match(page, /IoBlock/);
-  assert.match(page, /spanIoLabels/);
+  assert.match(page, /displaySpanIoLabels/);
+  assert.match(page, /spanKindClass/);
+  assert.match(page, /isLlmCallKind/);
   assert.match(page, /isRedactedIoValue/);
   assert.match(page, /ioVisibilityLabel/);
   assert.match(page, /Still redacted/);
   assert.match(page, /Unmask requested/);
   assert.match(page, /redacted by policy/);
   assert.doesNotMatch(page, />Unmasked</);
-  assert.match(page, /kind === "llm\.call"/);
-  assert.match(page, /input: "Prompt", output: "Completion"/);
+  assert.match(spanKinds, /LLM_CALL_SPAN_KIND = "llm\.call"/);
+  assert.match(spanKinds, /input: "Prompt", output: "Completion"/);
+  assert.match(spanKinds, /input: "prompt", output: "completion"/);
   assert.match(page, /label=\{ioLabels\.input\}/);
   assert.match(page, /label=\{ioLabels\.output\}/);
   assert.doesNotMatch(page, /Detail sections/);
@@ -241,10 +245,11 @@ test("dashboard page exposes the trace inspection surface", () => {
   assert.doesNotMatch(page, /detail-section attrs/);
   assert.match(page, /outside filters/);
   assert.match(page, /agent\.release_id/);
-  assert.match(page, /human\.review/);
-  assert.match(page, /replay\.run/);
-  assert.match(page, /kind === "human\.review"/);
-  assert.match(page, /kind === "replay\.run"/);
+  assert.match(page, /spanKindMeta/);
+  assert.match(spanKinds, /human\.review/);
+  assert.match(spanKinds, /replay\.run/);
+  assert.match(spanKinds, /key: "human"/);
+  assert.match(spanKinds, /key: "replay"/);
 });
 
 test("dashboard chrome stays dense and tool-like", () => {
@@ -681,28 +686,14 @@ test("generated api client is produced from the checked-in openapi snapshot", ()
 
 test("browser proof covers all canonical span kinds and can record a demo", () => {
   const e2e = readFileSync(join(root, "tests/e2e/dashboard.spec.ts"), "utf8");
+  const spanKinds = loadSpanKindsModule();
   const tokenBreakdown = readFileSync(join(root, "tests/e2e/token-breakdown.ts"), "utf8");
   assert.match(tokenBreakdown, /export async function expectTokenBreakdown/);
   assert.match(tokenBreakdown, /toHaveCount\(expected\.length\)/);
   assert.match(tokenBreakdown, /expect\(actual\)\.toEqual\(expected\)/);
   assert.match(e2e, /import \{ expectTokenBreakdown \} from "\.\/token-breakdown"/);
   assert.doesNotMatch(e2e, /async function expectTokenBreakdown/);
-  for (const kind of [
-    "agent.run",
-    "agent.turn",
-    "agent.plan",
-    "agent.step",
-    "llm.call",
-    "tool.call",
-    "mcp.request",
-    "retrieval.query",
-    "memory.read",
-    "memory.write",
-    "guardrail.check",
-    "human.review",
-    "evaluator.run",
-    "replay.run"
-  ]) {
+  for (const kind of spanKinds.AGENT_SPAN_KINDS) {
     assert.match(e2e, new RegExp(kind.replace(".", "\\.")));
   }
   for (const name of [
@@ -791,6 +782,8 @@ test("gate2 confirmation code is fetched only after a browser span click", () =>
   assert.match(component, /event\.button !== 0/);
   assert.match(component, /event\.detail < 1/);
   assert.match(component, /randomHex\(16\)/);
+  assert.match(component, /GATE2_CONFIRMATION_CODE/);
+  assert.match(component, /isBrowserClickProof/);
   assert.match(component, /sessionStorage\.setItem\(storageKey\(traceId, spanId\), JSON\.stringify\(click\)\)/);
   assert.match(component, /new CustomEvent<ClickDetail>\(CLICK_EVENT/);
   assert.match(component, /fetch\("\/api\/gate2\/confirm"/);
@@ -800,17 +793,25 @@ test("gate2 confirmation code is fetched only after a browser span click", () =>
   assert.match(component, />Confirm</);
 
   const route = readFileSync(join(root, "app/api/gate2/confirm/route.ts"), "utf8");
+  const confirmation = readFileSync(join(root, "lib/gate2-confirmation.ts"), "utf8");
+  const confirmationContract = readFileSync(join(root, "lib/gate2-confirmation-contract.ts"), "utf8");
+  const clickProof = readFileSync(join(root, "lib/gate2-click-proof.ts"), "utf8");
   const session = readFileSync(join(root, "lib/gate2-session.ts"), "utf8");
-  assert.match(route, /BEATER_GATE2_CONFIRMATION_SALT/);
-  assert.match(route, /gate2:\$\{salt\}:\$\{payload\.traceId\}:\$\{payload\.spanId\}/);
+  assert.match(route, /gate2ConfirmationCode/);
+  assert.match(route, /isBrowserClickProof/);
   assert.match(route, /cache-control/);
   assert.match(route, /GATE2_SESSION_COOKIE/);
   assert.match(route, /isGate2SessionId/);
   assert.match(route, /sec-fetch-site/);
   assert.match(route, /USED_NONCES/);
   assert.match(route, /browser click proof expired/);
-  assert.match(route, /record\.button === 0/);
-  assert.match(route, /record\.detail >= 1/);
+  assert.match(clickProof, /record\.button === 0/);
+  assert.match(clickProof, /record\.detail >= 1/);
+  assert.match(clickProof, /GATE2_CLICK_PROOF_NONCE = \/\^\[0-9a-f\]\{32\}\$\//);
+  assert.match(confirmationContract, /GATE2_CONFIRMATION_SALT_ENV = "BEATER_GATE2_CONFIRMATION_SALT"/);
+  assert.match(confirmationContract, /GATE2_CONFIRMATION_HASH_PREFIX = "gate2"/);
+  assert.match(confirmationContract, /GATE2_CONFIRMATION_CODE = \/\^\[0-9A-F\]\{8\}\$\//);
+  assert.match(confirmation, /gate2ConfirmationCode/);
   assert.match(session, /GATE2_SESSION_COOKIE = "beater_gate2_session"/);
   assert.match(session, /GATE2_SESSION_MAX_AGE_SECONDS = 60 \* 60/);
   assert.match(session, /isGate2SessionId/);
@@ -865,11 +866,12 @@ test("gate2 confirmation route rejects non-browser requests and nonce replay", a
     });
 
     const body = gate2ConfirmBody();
-    const expectedCode = createHash("sha256")
-      .update(`gate2:unit-salt:${body.traceId}:${body.spanId}`)
-      .digest("hex")
-      .slice(0, 8)
-      .toUpperCase();
+    const { gate2ConfirmationCode } = loadGate2ConfirmationModule();
+    const expectedCode = gate2ConfirmationCode({
+      salt: "unit-salt",
+      traceId: body.traceId,
+      spanId: body.spanId
+    });
     assert.deepEqual(
       await responseJson(await POST(gate2ConfirmRequest({ body }))),
       {

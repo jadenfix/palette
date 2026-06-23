@@ -2,24 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { isBrowserClickProof, type BrowserClickProof } from "../lib/gate2-click-proof";
+import { GATE2_CONFIRMATION_CODE } from "../lib/gate2-confirmation-contract";
+
 const CLICK_EVENT = "beater:gate2-span-click";
 
 type ClickDetail = {
   traceId: string;
   spanId: string;
   click: BrowserClickProof;
-};
-
-type BrowserClickProof = {
-  nonce: string;
-  capturedAtMs: number;
-  isTrusted: true;
-  button: number;
-  detail: number;
-  clientX: number;
-  clientY: number;
-  screenX: number;
-  screenY: number;
 };
 
 export function Gate2SpanClickTracker() {
@@ -74,7 +65,7 @@ export function Gate2ConfirmationCode({
       });
       if (!response.ok) throw new Error(`confirmation request failed: ${response.status}`);
       const payload = (await response.json()) as { code?: unknown };
-      if (typeof payload.code !== "string" || !/^[0-9A-F]{8}$/.test(payload.code)) {
+      if (typeof payload.code !== "string" || !GATE2_CONFIRMATION_CODE.test(payload.code)) {
         throw new Error("confirmation response did not include an 8-character code");
       }
       setCode(payload.code);
@@ -151,37 +142,9 @@ function readStoredClick(key: string): BrowserClickProof | null {
   try {
     const value = sessionStorage.getItem(key);
     if (!value) return null;
-    const parsed = JSON.parse(value) as Partial<BrowserClickProof>;
-    if (
-      typeof parsed.nonce === "string" &&
-      /^[0-9a-f]{32}$/.test(parsed.nonce) &&
-      typeof parsed.capturedAtMs === "number" &&
-      parsed.isTrusted === true &&
-      parsed.button === 0 &&
-      typeof parsed.detail === "number" &&
-      Number.isInteger(parsed.detail) &&
-      parsed.detail >= 1 &&
-      typeof parsed.clientX === "number" &&
-      Number.isFinite(parsed.clientX) &&
-      typeof parsed.clientY === "number" &&
-      Number.isFinite(parsed.clientY) &&
-      typeof parsed.screenX === "number" &&
-      Number.isFinite(parsed.screenX) &&
-      typeof parsed.screenY === "number" &&
-      Number.isFinite(parsed.screenY)
-    ) {
-      return {
-        nonce: parsed.nonce,
-        capturedAtMs: parsed.capturedAtMs,
-        isTrusted: true,
-        button: parsed.button,
-        detail: parsed.detail,
-        clientX: parsed.clientX,
-        clientY: parsed.clientY,
-        screenX: parsed.screenX,
-        screenY: parsed.screenY
-      };
-    }
+    const parsed = JSON.parse(value) as unknown;
+    if (isBrowserClickProof(parsed)) return parsed;
+    sessionStorage.removeItem(key);
   } catch {
     sessionStorage.removeItem(key);
   }

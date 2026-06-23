@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import type { NextRequest } from "next/server";
 
+import { gate2ConfirmationCode } from "../../../../lib/gate2-confirmation";
+import { isBrowserClickProof, type BrowserClickProof } from "../../../../lib/gate2-click-proof";
 import { GATE2_SESSION_COOKIE, isGate2SessionId } from "../../../../lib/gate2-session";
 
 export const dynamic = "force-dynamic";
@@ -49,12 +51,7 @@ export async function POST(request: NextRequest) {
   }
   USED_NONCES.set(nonceKey, now);
 
-  const salt = process.env.BEATER_GATE2_CONFIRMATION_SALT ?? "";
-  const code = createHash("sha256")
-    .update(`gate2:${salt}:${payload.traceId}:${payload.spanId}`)
-    .digest("hex")
-    .slice(0, 8)
-    .toUpperCase();
+  const code = gate2ConfirmationCode({ traceId: payload.traceId, spanId: payload.spanId });
 
   return Response.json(
     { code },
@@ -69,17 +66,7 @@ export async function POST(request: NextRequest) {
 type ConfirmationRequest = {
   traceId: string;
   spanId: string;
-  click: {
-    nonce: string;
-    capturedAtMs: number;
-    isTrusted: true;
-    button: number;
-    detail: number;
-    clientX: number;
-    clientY: number;
-    screenX: number;
-    screenY: number;
-  };
+  click: BrowserClickProof;
 };
 
 function isConfirmationRequest(value: unknown): value is ConfirmationRequest {
@@ -91,31 +78,8 @@ function isConfirmationRequest(value: unknown): value is ConfirmationRequest {
     /^[0-9a-f]{32}$/.test(record.traceId) &&
     typeof record.spanId === "string" &&
     /^[0-9a-f]{16}$/.test(record.spanId) &&
-    isClickProof(click)
+    isBrowserClickProof(click)
   );
-}
-
-function isClickProof(value: unknown): value is ConfirmationRequest["click"] {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const record = value as Record<string, unknown>;
-  return (
-    typeof record.nonce === "string" &&
-    /^[0-9a-f]{32}$/.test(record.nonce) &&
-    Number.isInteger(record.capturedAtMs) &&
-    record.isTrusted === true &&
-    record.button === 0 &&
-    typeof record.detail === "number" &&
-    Number.isInteger(record.detail) &&
-    record.detail >= 1 &&
-    finiteNumber(record.clientX) &&
-    finiteNumber(record.clientY) &&
-    finiteNumber(record.screenX) &&
-    finiteNumber(record.screenY)
-  );
-}
-
-function finiteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
 }
 
 function allowedOrigins(request: NextRequest): Set<string> {
