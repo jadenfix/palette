@@ -1016,7 +1016,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("do not set"));
     assert!(public_handoff.contains("--registry-fixture"));
     assert!(public_handoff.contains("does not support"));
-    assert!(public_handoff.contains("run([\"docker\", \"info\"]"));
+    assert!(public_handoff.contains("def require_docker_daemon"));
+    assert!(public_handoff.contains("require_docker_daemon()"));
+    assert!(public_handoff.contains("Docker daemon is not reachable"));
     assert!(public_handoff.contains("run([\"docker\", \"compose\", \"version\"]"));
     assert!(public_handoff.contains("shasum or sha256sum"));
     assert!(public_handoff.contains("DOCKER_HOST"));
