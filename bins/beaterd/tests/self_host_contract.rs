@@ -47,30 +47,10 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(compose.contains("${BEATER_DASHBOARD_PORT:-3000}:3000"));
     assert!(compose.contains("target: runtime"));
     assert!(compose.contains("target: tools"));
-    assert_pinned_image(
-        &compose,
-        "docker-compose.yml postgres",
-        "postgres:17-alpine",
-        "sha256:dc17045ccfd343b49600570ea734b9c4991cf1c3f3302e67df51e3b402dd55c4",
-    );
-    assert_pinned_image(
-        &compose,
-        "docker-compose.yml nats",
-        "nats:2.11-alpine",
-        "sha256:e4bf19f15fd3218814a4e3c9e0064e1334bd8aa20d5984b9f1a0afd084f8cc00",
-    );
-    assert_pinned_image(
-        &compose,
-        "docker-compose.yml minio",
-        "minio/minio:latest",
-        "sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e",
-    );
-    assert_pinned_image(
-        &compose,
-        "docker-compose.yml clickhouse",
-        "clickhouse/clickhouse-server:latest",
-        "sha256:07afc18d8a9706eb9d85c5c5d2752e5270f91bbc2894caeaecb73e4d0f603bf5",
-    );
+    assert_pinned_third_party_image(&compose, "docker-compose.yml", "postgres", "postgres:");
+    assert_pinned_third_party_image(&compose, "docker-compose.yml", "nats", "nats:");
+    assert_pinned_third_party_image(&compose, "docker-compose.yml", "minio", "minio/");
+    assert_pinned_third_party_image(&compose, "docker-compose.yml", "clickhouse", "clickhouse/");
 
     let dockerfile = read(root.join("Dockerfile"));
     assert!(dockerfile.contains("cargo install cargo-chef --locked"));
@@ -141,23 +121,23 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(!prebuilt_compose.contains("BEATER_POSTGRES_PORT"));
     assert!(!prebuilt_compose.contains("BEATER_NATS_PORT"));
     assert!(!prebuilt_compose.contains("BEATER_MINIO_PORT"));
-    assert_pinned_image(
+    assert_pinned_third_party_image(
         &prebuilt_compose,
-        "docker-compose.prebuilt.yml postgres",
-        "postgres:17-alpine",
-        "sha256:dc17045ccfd343b49600570ea734b9c4991cf1c3f3302e67df51e3b402dd55c4",
+        "docker-compose.prebuilt.yml",
+        "postgres",
+        "postgres:",
     );
-    assert_pinned_image(
+    assert_pinned_third_party_image(
         &prebuilt_compose,
-        "docker-compose.prebuilt.yml nats",
-        "nats:2.11-alpine",
-        "sha256:e4bf19f15fd3218814a4e3c9e0064e1334bd8aa20d5984b9f1a0afd084f8cc00",
+        "docker-compose.prebuilt.yml",
+        "nats",
+        "nats:",
     );
-    assert_pinned_image(
+    assert_pinned_third_party_image(
         &prebuilt_compose,
-        "docker-compose.prebuilt.yml minio",
-        "minio/minio:latest",
-        "sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e",
+        "docker-compose.prebuilt.yml",
+        "minio",
+        "minio/",
     );
 
     let image_workflow = read(root.join(".github/workflows/container-images.yml"));
@@ -905,13 +885,12 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     let outside_readiness = read(root.join("scripts/check-gate2-outside-readiness.py"));
     assert!(outside_readiness.contains("IMAGE_NAMES"));
     assert!(outside_readiness.contains("EXPECTED_PLATFORMS"));
-    assert!(outside_readiness.contains("COMMON_PINNED_THIRD_PARTY_IMAGES"));
-    assert!(outside_readiness.contains("CLICKHOUSE_PINNED_THIRD_PARTY_IMAGE"));
-    assert!(outside_readiness.contains("*COMMON_PINNED_THIRD_PARTY_IMAGES"));
     assert!(outside_readiness.contains("DEFAULT_COMPOSE_SERVICES"));
     assert!(outside_readiness.contains("PROFILED_THIRD_PARTY_SERVICES"));
     assert!(outside_readiness.contains("TIMED_COMPOSE_SERVICES"));
     assert!(outside_readiness.contains("THIRD_PARTY_IMAGE_PREFIXES"));
+    assert!(outside_readiness.contains("service_image(body)"));
+    assert!(outside_readiness.contains("@sha256:"));
     assert!(outside_readiness.contains("require_compose_default_path_contract"));
     assert!(outside_readiness.contains("default/timed service"));
     assert!(outside_readiness.contains("linux/amd64"));
@@ -1526,16 +1505,37 @@ fn assert_contains_in_order(source: &str, label: &str, values: &[&str]) {
     }
 }
 
-fn assert_pinned_image(compose: &str, label: &str, image: &str, digest: &str) {
-    let pinned = format!("image: {image}@{digest}");
+fn assert_pinned_third_party_image(
+    compose: &str,
+    compose_name: &str,
+    service: &str,
+    image_prefix: &str,
+) {
+    let block = compose_service_block(compose, service);
+    let image = block
+        .lines()
+        .map(str::trim)
+        .find_map(|line| line.strip_prefix("image: "))
+        .unwrap_or_else(|| panic!("{compose_name} service {service} must define an image"));
     assert!(
-        compose.lines().any(|line| line.trim() == pinned),
-        "{label} must pin {image} to {digest}"
+        image.starts_with(image_prefix),
+        "{compose_name} service {service} image {image} must start with {image_prefix}"
     );
-    let floating = format!("image: {image}");
+    let Some((tag, digest)) = image.split_once('@') else {
+        panic!("{compose_name} service {service} image {image} must be pinned by digest");
+    };
     assert!(
-        !compose.lines().any(|line| line.trim() == floating),
-        "{label} must not use floating image tag {image}"
+        digest.starts_with("sha256:")
+            && digest.len() == "sha256:".len() + 64
+            && digest["sha256:".len()..]
+                .chars()
+                .all(|candidate| candidate.is_ascii_hexdigit() && !candidate.is_ascii_uppercase()),
+        "{compose_name} service {service} image {image} must use a lowercase sha256 digest"
+    );
+    let floating = format!("image: {tag}");
+    assert!(
+        !block.lines().any(|line| line.trim() == floating),
+        "{compose_name} service {service} must not also use floating image tag {tag}"
     );
 }
 

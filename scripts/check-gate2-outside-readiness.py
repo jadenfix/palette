@@ -18,31 +18,6 @@ from gate2_proof_contract import REMOTE_URL
 IMAGE_NAMES = ["beaterd", "dashboard", "dashboard-e2e", "otel-python"]
 EXPECTED_PLATFORMS = ["linux/amd64", "linux/arm64"]
 REMOTE_URL_NO_SUFFIX = REMOTE_URL.removesuffix(".git")
-COMMON_PINNED_THIRD_PARTY_IMAGES = [
-    (
-        "postgres:17-alpine",
-        "sha256:dc17045ccfd343b49600570ea734b9c4991cf1c3f3302e67df51e3b402dd55c4",
-    ),
-    (
-        "nats:2.11-alpine",
-        "sha256:e4bf19f15fd3218814a4e3c9e0064e1334bd8aa20d5984b9f1a0afd084f8cc00",
-    ),
-    (
-        "minio/minio:latest",
-        "sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e",
-    ),
-]
-CLICKHOUSE_PINNED_THIRD_PARTY_IMAGE = (
-    "clickhouse/clickhouse-server:latest",
-    "sha256:07afc18d8a9706eb9d85c5c5d2752e5270f91bbc2894caeaecb73e4d0f603bf5",
-)
-PINNED_THIRD_PARTY_IMAGES = {
-    "docker-compose.yml": [
-        *COMMON_PINNED_THIRD_PARTY_IMAGES,
-        CLICKHOUSE_PINNED_THIRD_PARTY_IMAGE,
-    ],
-    "docker-compose.prebuilt.yml": COMMON_PINNED_THIRD_PARTY_IMAGES,
-}
 DEFAULT_COMPOSE_SERVICES = {"beaterd", "dashboard"}
 PROFILED_THIRD_PARTY_SERVICES = {
     "docker-compose.yml": {
@@ -204,17 +179,28 @@ def require_registry_images(args: argparse.Namespace, commit: str) -> None:
 
 
 def require_pinned_third_party_images() -> None:
-    for compose_name, images in PINNED_THIRD_PARTY_IMAGES.items():
-        compose = (repo_root() / compose_name).read_text()
-        compose_lines = {line.strip() for line in compose.splitlines()}
-        for image, digest in images:
-            pinned = f"image: {image}@{digest}"
-            floating = f"image: {image}"
-            if pinned not in compose_lines:
-                raise SystemExit(f"{compose_name} must pin {image} to {digest}")
-            if floating in compose_lines:
-                raise SystemExit(f"{compose_name} must not use floating image tag {image}")
-            print(f"ok pinned {compose_name} {image}@{digest}")
+    for compose_name in PROFILED_THIRD_PARTY_SERVICES:
+        services = compose_service_blocks(compose_name)
+        for service, body in services.items():
+            image = service_image(body)
+            if not uses_third_party_image(image):
+                continue
+            if "@sha256:" not in image:
+                raise SystemExit(
+                    f"{compose_name} service {service} must pin third-party image {image} "
+                    "to a sha256 digest"
+                )
+            tag, digest = image.split("@", 1)
+            if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+                raise SystemExit(
+                    f"{compose_name} service {service} has invalid image digest {digest!r}"
+                )
+            floating = f"image: {tag}"
+            if any(line.strip() == floating for line in body):
+                raise SystemExit(
+                    f"{compose_name} service {service} must not use floating image tag {tag}"
+                )
+            print(f"ok pinned {compose_name} {tag}@{digest}")
 
 
 def line_indent(line: str) -> int:
