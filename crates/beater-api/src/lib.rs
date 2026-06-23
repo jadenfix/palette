@@ -731,9 +731,10 @@ async fn ingest_otlp_http(
         ApiScope::TraceWrite,
     )
     .await?;
-    let export = decode_export_trace_request(&body)?;
+    let export = decode_export_trace_request(&body).map_err(invalid_otlp_export)?;
     let raw_request =
-        export_to_raw_trace_ingest_request(scope.clone(), body.to_vec(), export, auth.context)?;
+        export_to_raw_trace_ingest_request(scope.clone(), body.to_vec(), export, auth.context)
+            .map_err(invalid_otlp_export)?;
     let buffered = ingest_buffered(&params)?;
     let outcome = if buffered {
         state.ingest.buffer_raw_trace_batch(raw_request).await?
@@ -2741,6 +2742,10 @@ fn ingest_buffered(params: &IngestDurabilityQuery) -> Result<bool, ApiError> {
     }
 }
 
+fn invalid_otlp_export(error: impl std::fmt::Display) -> ApiError {
+    ApiError::bad_request(format!("invalid OTLP trace export: {error}"))
+}
+
 impl From<anyhow::Error> for ApiError {
     fn from(error: anyhow::Error) -> Self {
         Self::internal(error.to_string())
@@ -3102,6 +3107,71 @@ mod tests {
             .unwrap_or_else(|| panic!("raw otlp envelope should be stored"));
         assert_eq!(raw.source, SourceDialect::Otlp);
         assert_eq!(raw.source_schema_version.as_deref(), Some("1.37.0"));
+    }
+
+    #[tokio::test]
+    async fn api_rejects_malformed_otlp_http_as_bad_request() {
+        let (ingest, traces, _tempdir) = api_state_fixture();
+        let app = router(ApiState::new(ingest, traces));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/otlp/tenant/project/prod/v1/traces")
+                    .header("content-type", "application/x-protobuf")
+                    .body(Body::from(vec![0xff]))
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let error: serde_json::Value =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(error["status"], serde_json::json!(400));
+        assert!(error["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("invalid OTLP trace export"));
+    }
+
+    #[tokio::test]
+    async fn api_rejects_unusable_otlp_semantics_as_bad_request() {
+        let (ingest, traces, _tempdir) = api_state_fixture();
+        let app = router(ApiState::new(ingest, traces));
+        let mut export = fixture_otlp_export();
+        export.resource_spans[0].scope_spans[0].spans[0]
+            .trace_id
+            .clear();
+        let body = encode_export_trace_request(&export);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/otlp/tenant/project/prod/v1/traces")
+                    .header("content-type", "application/x-protobuf")
+                    .body(Body::from(body))
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let error: serde_json::Value =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(error["status"], serde_json::json!(400));
+        assert!(error["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("invalid OTLP trace export"));
     }
 
     fn api_state_fixture() -> (IngestService, Arc<dyn TraceStore>, tempfile::TempDir) {
