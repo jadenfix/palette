@@ -502,7 +502,16 @@ def require_compose_logs_saved(value: str) -> None:
     )
     if log_path:
         require_committed_clean_path(log_path, "`docker compose` logs saved")
-        read_validated_text(log_path, "`docker compose` logs saved")
+        log_text = read_validated_text(log_path, "`docker compose` logs saved")
+        for snippet, description in [
+            ("# Gate 2 Compose Logs", "compose log header"),
+            ("Compose project: beater-stopwatch", "canonical Compose project"),
+            ("Startup mode: prebuilt-image", "prebuilt startup mode"),
+            ("Command: docker compose", "compose logs command"),
+            ("logs --no-color --timestamps", "timestamped compose logs command"),
+        ]:
+            if snippet not in log_text:
+                fail(f"`docker compose` logs saved must include {description}: {snippet}")
 
 
 def require_default_dashboard_url(name: str, value: str, trace_id: str) -> None:
@@ -1408,7 +1417,8 @@ terminal_transcript = field_value("Outside-run terminal transcript")
 require_terminal_transcript_saved(
     terminal_transcript, quickstart_url, all_kind_url, redaction_url
 )
-require_compose_logs_saved(field_value("`docker compose` logs saved"))
+compose_logs_saved = field_value("`docker compose` logs saved")
+require_compose_logs_saved(compose_logs_saved)
 require_runner_observation(
     "Runner llm.call observation",
     field_value("Runner llm.call observation"),
@@ -1849,6 +1859,11 @@ if stopwatch_text:
         terminal_transcript,
         field_value_from(stopwatch_text, "Terminal transcript artifact", "stopwatch proof"),
     )
+    stopwatch_compose_logs = field_value_from(
+        stopwatch_text, "Compose logs artifact", "stopwatch proof"
+    )
+    if not compose_logs_saved.startswith("https://"):
+        require_equal("compose logs artifact", compose_logs_saved, stopwatch_compose_logs)
 
     stopwatch_image_digests = {
         image.image_name: field_value_from(

@@ -993,21 +993,35 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(public_handoff.contains("public handoff clone is not the expected commit"));
     assert!(public_handoff.contains("scripts/check-gate2-outside-readiness.py"));
     assert!(public_handoff.contains("scripts/gate2-outside-run.sh"));
-    assert!(public_handoff.contains("BEATER_GATE2_OUTSIDE_RUN_DRY_RUN"));
-    assert!(public_handoff.contains("BEATERD_IMAGE"));
-    assert!(public_handoff.contains("BEATER_DASHBOARD_IMAGE"));
-    assert!(public_handoff.contains("BEATER_DASHBOARD_E2E_IMAGE"));
-    assert!(public_handoff.contains("BEATER_OTEL_PYTHON_IMAGE"));
-    assert!(public_handoff.contains("BEATER_GATE2_STOPWATCH_PROOF"));
-    assert!(public_handoff.contains("BEATER_GATE2_RECORD_VIDEO"));
-    assert!(public_handoff.contains("BEATER_GATE2_RECORD_NOTES"));
-    assert!(public_handoff.contains("BEATER_GATE2_COMPOSE_LOGS"));
-    assert!(public_handoff.contains("BEATER_GATE2_TERMINAL_LOG"));
-    assert!(public_handoff.contains("BEATER_GATE2_RUN_ID"));
-    assert!(public_handoff.contains("BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS"));
-    assert!(public_handoff.contains("KEEP_BEATER_COMPOSE"));
-    assert!(public_handoff.contains("\"COMPOSE_FILE\""));
-    assert!(public_handoff.contains("\"COMPOSE_PROFILES\""));
+    assert!(public_handoff.contains("GATE2_OUTSIDE_ENV_NAMES"));
+    assert!(public_handoff.contains("GATE2_OUTSIDE_ENV_PREFIXES"));
+    for env_name in [
+        "BEATER_GATE2_OUTSIDE_RUN_DRY_RUN",
+        "BEATER_GATE2_EXPECTED_ORIGIN",
+        "BEATER_GATE2_OUTSIDE_WRAPPER",
+        "BEATERD_IMAGE",
+        "BEATER_DASHBOARD_IMAGE",
+        "BEATER_DASHBOARD_E2E_IMAGE",
+        "BEATER_OTEL_PYTHON_IMAGE",
+        "BEATER_GATE2_STOPWATCH_PROOF",
+        "BEATER_GATE2_RECORD_VIDEO",
+        "BEATER_GATE2_RECORD_NOTES",
+        "BEATER_GATE2_COMPOSE_LOGS",
+        "BEATER_GATE2_TERMINAL_LOG",
+        "BEATER_GATE2_RUN_ID",
+        "BEATER_GATE2_CONFIRMATION_SALT",
+        "BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS",
+        "KEEP_BEATER_COMPOSE",
+        "COMPOSE_FILE",
+        "COMPOSE_PROJECT_NAME",
+        "COMPOSE_PROFILES",
+    ] {
+        assert!(
+            gate2_proof_contract.contains(&format!("\"{env_name}\"")),
+            "gate2_proof_contract.py must own outside env name {env_name}"
+        );
+    }
+    assert!(gate2_proof_contract.contains("GATE2_OUTSIDE_ENV_PREFIXES = [\"GIT_CONFIG_\"]"));
     let raw_preflight_idx = public_handoff
         .find("run_raw_public_preflight(args, expected_commit)")
         .expect("raw public preflight call in public handoff verifier");
@@ -1018,8 +1032,6 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
         raw_preflight_idx < clone_idx,
         "public handoff verifier must run the raw public preflight before cloning"
     );
-    assert!(public_handoff.contains("COMPOSE_PROJECT_NAME"));
-    assert!(public_handoff.contains("BEATER_GATE2_EXPECTED_ORIGIN"));
     assert!(public_handoff.contains("--registry-fixture"));
     assert!(public_handoff.contains("--skip-local-readiness"));
     assert!(public_handoff.contains("import time"));

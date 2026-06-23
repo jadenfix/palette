@@ -19,6 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gate2_proof_contract import (
     CLONE_VERIFICATION_COMMAND,
     GATE2_FULL_RUN_PORTS,
+    GATE2_OUTSIDE_ENV_NAMES,
+    GATE2_OUTSIDE_ENV_PREFIXES,
     OUTSIDE_RUNNER_COMMAND,
     PUBLIC_SHA_RESOLUTION_COMMAND,
     RAW_PREFLIGHT_PATH,
@@ -598,54 +600,19 @@ def prepull_full_run_browser_image(args: argparse.Namespace, expected_commit: st
     )
 
 
-OUTSIDE_ENV_NAMES = [
-    "BEATER_GATE2_OUTSIDE_RUN_DRY_RUN",
-    "BEATER_GATE2_EXPECTED_ORIGIN",
-    "BEATER_GATE2_OUTSIDE_WRAPPER",
-    "BEATER_GATE2_CLONE_STARTED_EPOCH",
-    "BEATER_DASHBOARD_PORT",
-    "BEATER_HTTP_PORT",
-    "BEATER_OTLP_GRPC_PORT",
-    "BEATER_GATE2_REUSE",
-    "BEATER_GATE2_LOCAL_BUILD",
-    "BEATER_GATE2_PULL_POLICY",
-    "BEATER_GATE2_WRITE_PROOF",
-    "BEATER_GATE2_BROWSER_PROOF",
-    "BEATER_GATE2_RECORD_DEMO",
-    "BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS",
-    "BEATER_GATE2_RUN_ID",
-    "BEATER_GATE2_CONFIRMATION_SALT",
-    "BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS",
-    "BEATERD_IMAGE",
-    "BEATER_DASHBOARD_IMAGE",
-    "BEATER_DASHBOARD_E2E_IMAGE",
-    "BEATER_OTEL_PYTHON_IMAGE",
-    "BEATER_GATE2_STOPWATCH_PROOF",
-    "BEATER_GATE2_RECORD_VIDEO",
-    "BEATER_GATE2_RECORD_NOTES",
-    "BEATER_GATE2_COMPOSE_LOGS",
-    "BEATER_GATE2_TERMINAL_LOG",
-    "KEEP_BEATER_COMPOSE",
-    "COMPOSE_FILE",
-    "COMPOSE_PROJECT_NAME",
-    "COMPOSE_PROFILES",
-    "BEATER_GATE2_FIXTURE_FULL_RUN",
-]
-
-
 def clean_outside_env() -> dict[str, str]:
     env = os.environ.copy()
-    for name in OUTSIDE_ENV_NAMES:
+    for name in GATE2_OUTSIDE_ENV_NAMES:
         env.pop(name, None)
     for name in list(env):
-        if name.startswith("GIT_CONFIG_"):
+        if any(name.startswith(prefix) for prefix in GATE2_OUTSIDE_ENV_PREFIXES):
             env.pop(name, None)
     return env
 
 
 def apply_public_git_env(env: dict[str, str]) -> dict[str, str]:
     for name in list(env):
-        if name.startswith("GIT_CONFIG_"):
+        if any(name.startswith(prefix) for prefix in GATE2_OUTSIDE_ENV_PREFIXES):
             env.pop(name, None)
     env["GIT_CONFIG_GLOBAL"] = os.devnull
     env["GIT_CONFIG_SYSTEM"] = os.devnull
@@ -1034,14 +1001,18 @@ def run_cloned_full_run(
             "Entering the browser-read manual quickstart confirmation code for "
             "maintainer diagnostic full-run only; this is not outside-person evidence."
         )
-        full_run_output = run_with_manual_checkpoint_confirmation(
+        run_with_manual_checkpoint_confirmation(
             ["scripts/gate2-outside-run.sh"],
             cwd=clone_dir,
             env=env,
             expected_commit=expected_commit,
         )
-        compose_logs_path = clone_dir / "docs/demos/gate2-public-handoff-diagnostic-compose.log"
-        compose_logs_path.write_text(full_run_output)
+        compose_logs_path = clone_dir / "docs/demos/gate2-outside-compose.log"
+        if not compose_logs_path.is_file():
+            raise SystemExit(
+                "diagnostic full-run did not leave the wrapper-saved Compose log "
+                f"artifact at {compose_logs_path.relative_to(clone_dir)}"
+            )
         run_generated_proof_check(clone_dir, compose_logs_path)
     finally:
         cleanup_cloned_compose(clone_dir)

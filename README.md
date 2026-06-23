@@ -407,7 +407,9 @@ run/job URL for compose logs such as
 wrapper writes `docs/demos/gate2-outside-compose.log` automatically and
 pre-fills that path with `--compose-logs-saved`; it also writes
 `docs/demos/gate2-outside-terminal.log` and pre-fills
-`--terminal-transcript-saved`.
+`--terminal-transcript-saved`. For local compose-log files, the validator checks
+the stopwatch-written `# Gate 2 Compose Logs` header, `beater-stopwatch`
+project, `prebuilt-image` startup mode, and timestamped compose logs command.
 
 To reprint the ready-to-edit command:
 
@@ -467,7 +469,9 @@ compose image excerpts missing runner images or structured `proof-image` rows,
 non-repo-relative `docs/demos/` artifacts, and non-prebuilt GHCR image digests.
 It rejects ambiguous compose-log notes, missing saved log files, non-GitHub
 Actions log URLs, symlinked log artifacts, and dirty or uncommitted saved log
-artifacts at closure. It requires the outside-run terminal transcript to be a
+artifacts at closure. Local compose-log files must contain the stopwatch-written
+header, canonical project, prebuilt startup mode, and timestamped compose logs
+command. It requires the outside-run terminal transcript to be a
 committed `docs/demos/` file containing the manual checkpoint prompt, dashboard
 URLs, final pass line, and prefilled proof command. It rejects recording notes
 from a different dashboard session. It rejects

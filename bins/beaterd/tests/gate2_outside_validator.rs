@@ -60,6 +60,35 @@ fn canonical_outside_command() -> &'static str {
     })
 }
 
+fn gate2_outside_env_names() -> &'static Vec<String> {
+    static ENV_NAMES: OnceLock<Vec<String>> = OnceLock::new();
+    ENV_NAMES.get_or_init(|| {
+        let output = Command::new("python3")
+            .arg("-c")
+            .arg(
+                "import sys; sys.dont_write_bytecode = True; \
+                 sys.path.insert(0, 'scripts'); \
+                 from gate2_proof_contract import GATE2_OUTSIDE_ENV_NAMES; \
+                 print('\\n'.join(GATE2_OUTSIDE_ENV_NAMES), end='')",
+            )
+            .current_dir(repo_root())
+            .output()
+            .unwrap_or_else(|err| panic!("read canonical Gate 2 outside env names: {err}"));
+        if !output.status.success() {
+            panic!(
+                "read canonical Gate 2 outside env names failed\nstdout:\n{}\nstderr:\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        String::from_utf8(output.stdout)
+            .unwrap_or_else(|err| panic!("canonical Gate 2 outside env names are not UTF-8: {err}"))
+            .lines()
+            .map(str::to_owned)
+            .collect()
+    })
+}
+
 fn terminal_output_excerpt() -> String {
     format!(
         "Gate 2 compose stopwatch passed; Browser recording: passed; \
@@ -67,6 +96,56 @@ fn terminal_output_excerpt() -> String {
          All-kind dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={ALL_KIND_TRACE}; \
          Redaction dashboard: http://127.0.0.1:3000/?tenant=demo&project=demo&environment=local&trace={REDACTION_TRACE}&span={REDACTION_SPAN}"
     )
+}
+
+#[test]
+fn gate2_outside_env_clear_uses_canonical_contract() {
+    let names = gate2_outside_env_names();
+    for required in [
+        "BEATER_GATE2_EXPECTED_ORIGIN",
+        "BEATER_GATE2_OUTSIDE_WRAPPER",
+        "BEATER_GATE2_RUN_ID",
+        "BEATER_GATE2_CONFIRMATION_SALT",
+        "BEATER_GATE2_TERMINAL_LOG",
+    ] {
+        assert!(
+            names.iter().any(|name| name == required),
+            "canonical outside env list must include {required}"
+        );
+    }
+
+    let mut command = Command::new("python3");
+    command.arg("-c").arg(
+        "import os, sys\n\
+             names = sys.argv[1:]\n\
+             leaks = [name for name in names if name in os.environ]\n\
+             leaks.extend(name for name in os.environ if name.startswith('GIT_CONFIG_'))\n\
+             print('\\n'.join(sorted(set(leaks))))\n\
+             raise SystemExit(1 if leaks else 0)",
+    );
+    for name in names {
+        command.arg(name).env(name, "leaked");
+    }
+    command
+        .env("GIT_CONFIG_COUNT", "2")
+        .env("GIT_CONFIG_KEY_0", "url.file:///tmp/fake.insteadOf")
+        .env(
+            "GIT_CONFIG_VALUE_0",
+            "https://github.com/jadenfix/beater.git",
+        );
+
+    clear_outside_env(&mut command);
+    let output = command
+        .output()
+        .unwrap_or_else(|err| panic!("run outside env clear contract fixture: {err}"));
+
+    if !output.status.success() {
+        panic!(
+            "outside env clear leaked contract variables\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
 }
 
 #[test]
@@ -3901,6 +3980,51 @@ fn gate2_outside_validator_rejects_missing_compose_log_artifact() {
 }
 
 #[test]
+fn gate2_outside_validator_rejects_unrelated_compose_log_artifact() {
+    let fixture = ValidatorFixture::new();
+    fs::write(
+        &fixture.compose_log_path,
+        "Gate 2 compose stopwatch passed\nBrowser recording: passed\n",
+    )
+    .unwrap_or_else(|err| panic!("write weak compose log artifact: {err}"));
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "`docker compose` logs saved must include compose log header",
+    );
+}
+
+#[test]
+fn gate2_outside_validator_rejects_compose_log_path_mismatch() {
+    let fixture = ValidatorFixture::new();
+    let alternate_log = fixture
+        .compose_log_path
+        .parent()
+        .expect("compose log path should have parent")
+        .join("alternate-compose.log");
+    fs::write(&alternate_log, compose_log_text())
+        .unwrap_or_else(|err| panic!("write alternate compose log artifact: {err}"));
+    let alternate_field = repo_relative_path(&alternate_log);
+    replace(
+        &fixture.proof_path,
+        &format!(
+            "- `docker compose` logs saved: {}",
+            fixture.compose_log_field
+        ),
+        &format!("- `docker compose` logs saved: {alternate_field}"),
+    );
+
+    let output = run_validator(&fixture.proof_path);
+
+    assert_failure(
+        output,
+        "compose logs artifact mismatch between proof artifacts",
+    );
+}
+
+#[test]
 fn gate2_outside_validator_rejects_missing_terminal_transcript_artifact() {
     let fixture = ValidatorFixture::new();
     replace(
@@ -4489,11 +4613,8 @@ impl ValidatorFixture {
 
         fs::write(&recording_path, recording_bytes())
             .unwrap_or_else(|err| panic!("write {}: {err}", recording_path.display()));
-        fs::write(
-            &compose_log_path,
-            "Gate 2 compose stopwatch passed\nBrowser recording: passed\n",
-        )
-        .unwrap_or_else(|err| panic!("write {}: {err}", compose_log_path.display()));
+        fs::write(&compose_log_path, compose_log_text())
+            .unwrap_or_else(|err| panic!("write {}: {err}", compose_log_path.display()));
         fs::write(&terminal_log_path, terminal_transcript())
             .unwrap_or_else(|err| panic!("write {}: {err}", terminal_log_path.display()));
         let recording_name = recording_path
@@ -4671,6 +4792,17 @@ fn compose_images_excerpt_line() -> String {
     format!(
         "- `docker compose images` excerpt: beater-stopwatch-beaterd-1 ghcr.io/jadenfix/beater/beaterd {commit_sha} | beater-stopwatch-dashboard-1 ghcr.io/jadenfix/beater/dashboard {commit_sha} | beater-stopwatch-dashboard-e2e-run-1 ghcr.io/jadenfix/beater/dashboard-e2e {commit_sha} | beater-stopwatch-otel-python-quickstart-run-1 ghcr.io/jadenfix/beater/otel-python {commit_sha} | proof-image beaterd ghcr.io/jadenfix/beater/beaterd:{commit_sha} {BEATER_IMAGE_DIGEST} | proof-image dashboard ghcr.io/jadenfix/beater/dashboard:{commit_sha} {DASHBOARD_IMAGE_DIGEST} | proof-image dashboard-e2e ghcr.io/jadenfix/beater/dashboard-e2e:{commit_sha} {DASHBOARD_E2E_IMAGE_DIGEST} | proof-image otel-python ghcr.io/jadenfix/beater/otel-python:{commit_sha} {OTEL_PYTHON_IMAGE_DIGEST}\n"
     )
+}
+
+fn compose_log_text() -> &'static str {
+    "# Gate 2 Compose Logs\n\
+Saved at: 2026-06-20T12:00:40Z\n\
+Compose project: beater-stopwatch\n\
+Startup mode: prebuilt-image\n\
+Command: docker compose -f docker-compose.prebuilt.yml -p beater-stopwatch logs --no-color --timestamps\n\
+\n\
+2026-06-20T12:00:01Z beater-stopwatch-beaterd-1 started\n\
+2026-06-20T12:00:02Z beater-stopwatch-dashboard-1 started\n"
 }
 
 fn terminal_transcript() -> String {
@@ -5831,36 +5963,26 @@ service_image_digest "$SERVICE"
 }
 
 fn clear_outside_env(command: &mut Command) {
+    for name in gate2_outside_env_names() {
+        command.env_remove(name);
+    }
     for name in [
-        "BEATER_GATE2_OUTSIDE_RUN_DRY_RUN",
-        "BEATER_GATE2_CLONE_STARTED_EPOCH",
-        "BEATER_DASHBOARD_PORT",
-        "BEATER_HTTP_PORT",
-        "BEATER_OTLP_GRPC_PORT",
-        "BEATER_GATE2_REUSE",
-        "BEATER_GATE2_LOCAL_BUILD",
-        "BEATER_GATE2_PULL_POLICY",
-        "BEATER_GATE2_WRITE_PROOF",
-        "BEATER_GATE2_BROWSER_PROOF",
-        "BEATER_GATE2_RECORD_DEMO",
-        "BEATER_GATE2_POST_SLO_TIMEOUT_SECONDS",
-        "BEATERD_IMAGE",
-        "BEATER_DASHBOARD_IMAGE",
-        "BEATER_DASHBOARD_E2E_IMAGE",
-        "BEATER_OTEL_PYTHON_IMAGE",
-        "BEATER_GATE2_REGISTRY_FIXTURE_UNSAFE_FOR_TESTS",
-        "BEATER_GATE2_STOPWATCH_PROOF",
-        "BEATER_GATE2_RECORD_VIDEO",
-        "BEATER_GATE2_RECORD_NOTES",
-        "BEATER_GATE2_COMPOSE_LOGS",
-        "BEATER_GATE2_TERMINAL_LOG",
-        "KEEP_BEATER_COMPOSE",
-        "COMPOSE_FILE",
-        "COMPOSE_PROJECT_NAME",
-        "COMPOSE_PROFILES",
-        "BEATER_GATE2_FIXTURE_FULL_RUN",
+        "GIT_CONFIG_GLOBAL",
+        "GIT_CONFIG_SYSTEM",
+        "GIT_CONFIG_NOSYSTEM",
+        "GIT_CONFIG_COUNT",
+        "GIT_CONFIG_PARAMETERS",
     ] {
         command.env_remove(name);
+    }
+    for index in 0..128 {
+        command.env_remove(format!("GIT_CONFIG_KEY_{index}"));
+        command.env_remove(format!("GIT_CONFIG_VALUE_{index}"));
+    }
+    for (name, _) in std::env::vars() {
+        if name.starts_with("GIT_CONFIG_") {
+            command.env_remove(name);
+        }
     }
 }
 
@@ -6129,7 +6251,7 @@ fn write_validator_closure_fixture_repo_with_options(
     }
     fs::write(
         artifact_dir.join("gate2-outside-compose.log"),
-        "Gate 2 compose stopwatch passed\nBrowser recording: passed\n",
+        compose_log_text(),
     )
     .unwrap_or_else(|err| panic!("write validator closure compose log: {err}"));
     fs::write(
@@ -6252,8 +6374,18 @@ fi
   echo "dashboard_port=${BEATER_DASHBOARD_PORT:-unset}"
   echo "fixture_full_run=${BEATER_GATE2_FIXTURE_FULL_RUN:-unset}"
   echo "git_config_count=${GIT_CONFIG_COUNT:-unset}"
-} > docs/demos/wrapper-real-env.txt
-cat > docs/demos/gate2-compose-browser-demo.md <<'EOF_NOTES'
+	} > docs/demos/wrapper-real-env.txt
+	cat > docs/demos/gate2-outside-compose.log <<'EOF_COMPOSE_LOG'
+# Gate 2 Compose Logs
+Saved at: 2026-06-20T12:00:40Z
+Compose project: beater-stopwatch
+Startup mode: prebuilt-image
+Command: docker compose -f docker-compose.prebuilt.yml -p beater-stopwatch logs --no-color --timestamps
+
+2026-06-20T12:00:01Z beater-stopwatch-beaterd-1 started
+2026-06-20T12:00:02Z beater-stopwatch-dashboard-1 started
+EOF_COMPOSE_LOG
+	cat > docs/demos/gate2-compose-browser-demo.md <<'EOF_NOTES'
 # Gate 2 Compose Browser Demo
 
 - Artifact: `gate2-compose-browser-demo.webm`

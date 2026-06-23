@@ -141,7 +141,9 @@ run/job URL for compose logs such as
 wrapper writes `docs/demos/gate2-outside-compose.log` automatically and
 pre-fills that path with `--compose-logs-saved`; it also writes
 `docs/demos/gate2-outside-terminal.log` and pre-fills
-`--terminal-transcript-saved`.
+`--terminal-transcript-saved`. For local compose-log files, the validator checks
+the stopwatch-written `# Gate 2 Compose Logs` header, `beater-stopwatch`
+project, `prebuilt-image` startup mode, and timestamped compose logs command.
 
 If you need to reprint the command, run:
 
@@ -255,7 +257,9 @@ Stopwatch, recording, notes, saved outside-run terminal transcript, and saved
 compose-log paths must be repo-relative paths under `docs/demos/` and must not
 resolve through symlinks. Saved compose-log evidence must be a committed/clean
 file at closure, or an immutable GitHub Actions run/job URL under
-`https://github.com/jadenfix/beater/actions/runs/`.
+`https://github.com/jadenfix/beater/actions/runs/`. Local compose-log files must
+contain the stopwatch-written header, canonical project, prebuilt startup mode,
+and timestamped compose logs command.
 
 ## Required Evidence
 
