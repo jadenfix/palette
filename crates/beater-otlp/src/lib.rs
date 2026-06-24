@@ -30,6 +30,16 @@ const TENANT_METADATA_KEY: &str = "x-beater-tenant-id";
 const PROJECT_METADATA_KEY: &str = "x-beater-project-id";
 const ENVIRONMENT_METADATA_KEY: &str = "x-beater-environment-id";
 
+/// Canonical `browser.*` semantic-convention attribute keys emitted by external
+/// instrumentation SDKs (`sdks/python-browser-use`, `sdks/ts-stagehand`) and the
+/// Rust capture layer. Kept in sync with `beater_browser::semconv`; hardcoded
+/// here to avoid a dependency edge into `beater-otlp`.
+const BROWSER_ACTION: &str = "browser.action";
+const BROWSER_REASONING: &str = "browser.reasoning";
+const BROWSER_STEP_STATUS: &str = "browser.step_status";
+/// OTLP span name an SDK uses for the per-step LLM decision span.
+const BROWSER_DECISION_SPAN_NAME: &str = "browser.decision";
+
 pub fn decode_export_trace_request(bytes: &[u8]) -> anyhow::Result<ExportTraceServiceRequest> {
     ExportTraceServiceRequest::decode(bytes).map_err(anyhow::Error::from)
 }
@@ -308,7 +318,8 @@ fn convert_span(
         );
     }
 
-    let status = convert_status(span.status.as_ref());
+    let status =
+        browser_status_override(&attributes).unwrap_or(convert_status(span.status.as_ref()));
     let kind = infer_agent_span_kind(&attributes, &span.name, span.kind);
     if temporal_span_kind(&attributes, &span.name).is_some() {
         attributes
@@ -407,6 +418,12 @@ fn temporal_span_kind(attrs: &CanonicalAttrs, name: &str) -> Option<AgentSpanKin
 }
 
 fn infer_agent_span_kind(attrs: &CanonicalAttrs, name: &str, otel_kind: i32) -> AgentSpanKind {
+    // Browser-step spans emitted by external instrumentation SDKs carry
+    // `browser.*` attributes but their OTLP span name is not necessarily a
+    // canonical kind, so classify them from the browser markers directly.
+    if let Some(kind) = infer_browser_span_kind(attrs, name) {
+        return kind;
+    }
     if let Some(value) = attrs
         .get("openinference.span.kind")
         .or_else(|| attrs.get("beater.span.kind"))
@@ -444,6 +461,41 @@ fn infer_agent_span_kind(attrs: &CanonicalAttrs, name: &str, otel_kind: i32) -> 
         span::SpanKind::Server => AgentSpanKind::AgentRun,
         span::SpanKind::Producer | span::SpanKind::Consumer => AgentSpanKind::AgentStep,
         span::SpanKind::Internal | span::SpanKind::Unspecified => AgentSpanKind::AgentStep,
+    }
+}
+
+/// Classifies a browser-step span from its `browser.*` markers.
+///
+/// - A span carrying `browser.action` is a browser tool invocation
+///   (`ToolCall`), regardless of its OTLP span name.
+/// - A span representing the agent's LLM decision — name `browser.decision`, or
+///   carrying `browser.reasoning` — is an `LlmCall`.
+///
+/// Returns `None` for spans that carry no browser markers, leaving the existing
+/// classification untouched.
+fn infer_browser_span_kind(attrs: &CanonicalAttrs, name: &str) -> Option<AgentSpanKind> {
+    let is_decision = name.eq_ignore_ascii_case(BROWSER_DECISION_SPAN_NAME)
+        || attrs.contains_key(BROWSER_REASONING);
+    if is_decision {
+        return Some(AgentSpanKind::LlmCall);
+    }
+    if attrs.contains_key(BROWSER_ACTION) {
+        return Some(AgentSpanKind::ToolCall);
+    }
+    None
+}
+
+/// Maps `browser.step_status` to a canonical span status, letting the
+/// browser-reported step outcome surface even when the OTLP span status is unset.
+/// Returns `None` when the span carries no `browser.step_status`.
+fn browser_status_override(attrs: &CanonicalAttrs) -> Option<SpanStatus> {
+    let status = attrs.get(BROWSER_STEP_STATUS).and_then(Value::as_str)?;
+    if status.eq_ignore_ascii_case("error") {
+        Some(SpanStatus::Error)
+    } else if status.eq_ignore_ascii_case("ok") {
+        Some(SpanStatus::Ok)
+    } else {
+        None
     }
 }
 
@@ -844,6 +896,130 @@ mod tests {
         );
     }
 
+    #[test]
+    fn normalizes_browser_step_spans_from_external_sdk_attributes() {
+        // A browser-step span emitted by an external instrumentation SDK carries
+        // `browser.*` attributes and a non-canonical OTLP span name. It must
+        // normalize to a `ToolCall` with every `browser.*` attribute preserved
+        // and `browser.step_status == "error"` surfaced as `SpanStatus::Error`.
+        let request = ExportTraceServiceRequest {
+            resource_spans: vec![ResourceSpans {
+                resource: Some(Resource {
+                    attributes: vec![kv("service.name", string_value("browse-agent"))],
+                    dropped_attributes_count: 0,
+                    entity_refs: Vec::new(),
+                }),
+                scope_spans: vec![ScopeSpans {
+                    scope: Some(InstrumentationScope {
+                        name: "browser-use".to_string(),
+                        version: "1.0.0".to_string(),
+                        attributes: Vec::new(),
+                        dropped_attributes_count: 0,
+                    }),
+                    spans: vec![
+                        // Tool span: name is the SDK's own verb, not "tool.call".
+                        Span {
+                            trace_id: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                            span_id: vec![1, 1, 1, 1, 1, 1, 1, 1],
+                            trace_state: String::new(),
+                            parent_span_id: Vec::new(),
+                            flags: 0,
+                            name: "click".to_string(),
+                            kind: span::SpanKind::Internal as i32,
+                            start_time_unix_nano: 1_700_000_000_000_000_000,
+                            end_time_unix_nano: 1_700_000_001_000_000_000,
+                            attributes: vec![
+                                kv("browser.engine", string_value("chromium")),
+                                kv("browser.action", string_value("click")),
+                                kv("browser.selector", string_value("#submit")),
+                                kv("browser.url", string_value("https://example.com")),
+                                kv("browser.title", string_value("Example")),
+                                kv("browser.selector_existed", bool_value(true)),
+                                kv("browser.matched_element", bool_value(false)),
+                                kv("browser.step_seq", int_value(3)),
+                                kv("browser.step_status", string_value("error")),
+                                kv("browser.dom_artifact_id", string_value("art-dom-1")),
+                                kv("browser.screenshot_artifact_id", string_value("art-shot-1")),
+                            ],
+                            dropped_attributes_count: 0,
+                            events: Vec::new(),
+                            dropped_events_count: 0,
+                            links: Vec::new(),
+                            dropped_links_count: 0,
+                            // OTLP span status is unset; the browser status drives it.
+                            status: None,
+                        },
+                        // Decision span: the agent's LLM reasoning for the step.
+                        Span {
+                            trace_id: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                            span_id: vec![2, 2, 2, 2, 2, 2, 2, 2],
+                            trace_state: String::new(),
+                            parent_span_id: Vec::new(),
+                            flags: 0,
+                            name: "browser.decision".to_string(),
+                            kind: span::SpanKind::Internal as i32,
+                            start_time_unix_nano: 1_700_000_000_000_000_000,
+                            end_time_unix_nano: 1_700_000_001_000_000_000,
+                            attributes: vec![
+                                kv(
+                                    "browser.reasoning",
+                                    string_value("the submit button is visible"),
+                                ),
+                                kv("browser.step_status", string_value("ok")),
+                            ],
+                            dropped_attributes_count: 0,
+                            events: Vec::new(),
+                            dropped_events_count: 0,
+                            links: Vec::new(),
+                            dropped_links_count: 0,
+                            status: None,
+                        },
+                    ],
+                    schema_url: String::new(),
+                }],
+                schema_url: String::new(),
+            }],
+        };
+
+        let scope = TenantScope::new(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+        );
+        let native =
+            export_to_native_requests(scope, request).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(native.len(), 2);
+
+        let tool = &native[0];
+        assert_eq!(tool.kind, AgentSpanKind::ToolCall);
+        assert_eq!(tool.status, SpanStatus::Error);
+        assert_eq!(tool.attributes["browser.engine"], json!("chromium"));
+        assert_eq!(tool.attributes["browser.action"], json!("click"));
+        assert_eq!(tool.attributes["browser.selector"], json!("#submit"));
+        assert_eq!(tool.attributes["browser.url"], json!("https://example.com"));
+        assert_eq!(tool.attributes["browser.title"], json!("Example"));
+        assert_eq!(tool.attributes["browser.selector_existed"], json!(true));
+        assert_eq!(tool.attributes["browser.matched_element"], json!(false));
+        assert_eq!(tool.attributes["browser.step_seq"], json!(3));
+        assert_eq!(tool.attributes["browser.step_status"], json!("error"));
+        assert_eq!(
+            tool.attributes["browser.dom_artifact_id"],
+            json!("art-dom-1")
+        );
+        assert_eq!(
+            tool.attributes["browser.screenshot_artifact_id"],
+            json!("art-shot-1")
+        );
+
+        let decision = &native[1];
+        assert_eq!(decision.kind, AgentSpanKind::LlmCall);
+        assert_eq!(decision.status, SpanStatus::Ok);
+        assert_eq!(
+            decision.attributes["browser.reasoning"],
+            json!("the submit button is visible")
+        );
+    }
+
     pub fn fixture_export() -> ExportTraceServiceRequest {
         ExportTraceServiceRequest {
             resource_spans: vec![ResourceSpans {
@@ -916,6 +1092,12 @@ mod tests {
     fn int_value(value: i64) -> AnyValue {
         AnyValue {
             value: Some(any_value::Value::IntValue(value)),
+        }
+    }
+
+    fn bool_value(value: bool) -> AnyValue {
+        AnyValue {
+            value: Some(any_value::Value::BoolValue(value)),
         }
     }
 }
