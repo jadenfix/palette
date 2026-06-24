@@ -36,6 +36,15 @@ fn backend_err(err: CdpError) -> BrowserError {
     BrowserError::Backend(err.to_string())
 }
 
+/// Whether a CDP error message means "the selector did not resolve to a live
+/// DOM node" (a grounding miss) rather than a transport/process failure. Real
+/// Chrome reports an absent selector as the raw protocol error
+/// `-32000: Could not find node with given id`, which is not `CdpError::NotFound`.
+fn is_node_not_found_msg(msg: &str) -> bool {
+    let lowered = msg.to_lowercase();
+    lowered.contains("could not find node") || lowered.contains("no node with given id")
+}
+
 /// Configuration for launching a [`CdpDriver`].
 #[derive(Clone, Debug)]
 pub struct CdpConfig {
@@ -162,11 +171,19 @@ impl CdpDriver {
         Fut: std::future::Future<Output = Result<(), BrowserError>>,
     {
         match self.page.find_element(selector).await {
-            Ok(element) => {
-                op(element).await?;
-                Ok(true)
-            }
+            Ok(element) => match op(element).await {
+                Ok(()) => Ok(true),
+                // A node can vanish between resolve and operation (detached/
+                // re-rendered DOM); that is a grounding miss, not a transport fault.
+                Err(BrowserError::Backend(msg)) if is_node_not_found_msg(&msg) => Ok(false),
+                Err(other) => Err(other),
+            },
+            // chromiumoxide surfaces an absent selector either as the typed
+            // `NotFound` variant or as the raw CDP protocol error
+            // "-32000: Could not find node with given id" — both mean the
+            // selector did not resolve, so they are grounding misses.
             Err(CdpError::NotFound) => Ok(false),
+            Err(other) if is_node_not_found_msg(&other.to_string()) => Ok(false),
             Err(other) => Err(backend_err(other)),
         }
     }
@@ -384,6 +401,20 @@ mod tests {
             BrowserError::Backend(msg) => assert!(!msg.is_empty()),
             other => panic!("expected Backend, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn node_not_found_messages_are_grounding_misses() {
+        // Real Chrome reports an absent selector as this raw protocol error
+        // rather than CdpError::NotFound; it must be treated as a grounding miss.
+        assert!(is_node_not_found_msg(
+            "Error -32000: Could not find node with given id"
+        ));
+        assert!(is_node_not_found_msg("could not find node"));
+        assert!(is_node_not_found_msg("No node with given id"));
+        // Genuine transport failures must NOT be swallowed as grounding misses.
+        assert!(!is_node_not_found_msg("websocket connection closed"));
+        assert!(!is_node_not_found_msg("navigation timeout"));
     }
 
     /// Live conformance against a real browser. Ignored: no Chrome binary in
