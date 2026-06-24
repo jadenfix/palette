@@ -1,0 +1,70 @@
+name: deploy-dashboard
+
+# Deploy the Next.js dashboard (web/dashboard) to Vercel on push to main.
+#
+# Secret-clean: needs three repo secrets — VERCEL_TOKEN, VERCEL_ORG_ID,
+# VERCEL_PROJECT_ID (Settings -> Secrets and variables -> Actions). The job
+# no-ops with a clear message when VERCEL_TOKEN is absent, so forks stay green.
+# All dashboard runtime config (BEATER_API_BASE_URL, BEATER_API_TOKEN /
+# BEATER_API_KEY, BEATER_GATE2_CONFIRMATION_SALT) lives in Vercel's encrypted
+# env, never here. See docs/hosting.md.
+#
+# The dashboard lives in a subdirectory of a Rust workspace, so the Vercel
+# project's Root Directory must be set to `web/dashboard` (this workflow runs
+# the Vercel CLI from that directory).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/dashboard/**"
+      - ".github/workflows/deploy-dashboard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-dashboard
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: vercel deploy (prod)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web/dashboard
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Guard on VERCEL_TOKEN
+        id: guard
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN is not set; skipping deploy (expected on forks)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Checkout
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/checkout@v4
+      - name: Set up Node
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install Vercel CLI
+        if: steps.guard.outputs.skip != 'true'
+        run: npm i -g vercel@latest
+      - name: Pull Vercel project settings
+        if: steps.guard.outputs.skip != 'true'
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Build
+        if: steps.guard.outputs.skip != 'true'
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+      - name: Deploy prebuilt
+        if: steps.guard.outputs.skip != 'true'
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

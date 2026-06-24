@@ -1,0 +1,61 @@
+# Fly.io deployment for the Beater backend (`beaterd`).
+#
+# Open source & secret-clean: there are NO secrets in this file. Configure them
+# once with `fly secrets set ...` (see docs/hosting.md). Vercel hosts only the
+# Next.js dashboard; this app is the long-lived Rust control plane it talks to.
+#
+# App name + primary_region are placeholders — change them to your Fly app.
+
+app = "beater-api"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "Dockerfile"
+  # Build the `tools` stage so `beaterctl` ships in the image. It is used once,
+  # via `fly ssh console`, to bootstrap the first Admin API key when strict auth
+  # is on (the HTTP createApiKey route itself requires an existing Admin key).
+  build-target = "tools"
+
+[env]
+  # Match the Dockerfile's low-latency drain cadence for a responsive demo.
+  BEATER_TRACE_WRITE_DRAIN_INTERVAL_MS = "250"
+  BEATER_TRACE_INGESTED_DRAIN_INTERVAL_MS = "250"
+
+# All durable state (traces/*.sqlite, security.sqlite, Tantivy search index,
+# Parquet archive, artifacts) lives under /data. A persistent volume keeps it
+# across deploys and restarts. Create it once: `fly volumes create beater_data`.
+[mounts]
+  source = "beater_data"
+  destination = "/data"
+
+# Run beaterd with strict auth enabled (auth-gated product). The image
+# ENTRYPOINT is `beaterd`, so this string becomes its argument list.
+[processes]
+  app = "--addr 0.0.0.0:8080 --otlp-grpc-addr 0.0.0.0:4317 --data-dir /data --auth-mode required"
+
+# Public HTTPS surface on 443 -> 8080: the HTTP API, OTLP/HTTP ingest
+# (operationId ingestOtlp), and the MCP endpoint (/mcp) all ride this port.
+# `/health` is unauthenticated, so the Fly health check passes under strict auth.
+#
+# Note: OTLP *gRPC* (:4317) is intentionally NOT exposed publicly. Seed/ingest
+# over HTTPS, or run an exporter from inside the machine via `fly ssh console`.
+# To expose gRPC publicly later, add a second `[[services]]` block for 4317.
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "10s"
+    timeout = "3s"
+    grace_period = "15s"
+    method = "get"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
+  processes = ["app"]
