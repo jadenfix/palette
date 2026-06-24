@@ -67,7 +67,7 @@ fi
 
 # 2c. CDP (pure-Rust Chrome/Edge) — needs a Chrome/Chromium binary.
 CHROME=""
-for c in google-chrome google-chrome-stable chromium chromium-browser \
+for c in chrome google-chrome google-chrome-stable chromium chromium-browser \
          "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"; do
   if have "$c" || [ -x "$c" ]; then CHROME="$c"; break; fi
 done
