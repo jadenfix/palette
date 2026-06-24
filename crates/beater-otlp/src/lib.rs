@@ -318,8 +318,17 @@ fn convert_span(
         );
     }
 
-    let status =
-        browser_status_override(&attributes).unwrap_or(convert_status(span.status.as_ref()));
+    // The explicit OTLP span status is authoritative; the browser step status
+    // only fills an unset status, and a browser-reported error must never be
+    // downgraded by (nor allowed to mask) the transport status.
+    let status = match convert_status(span.status.as_ref()) {
+        SpanStatus::Error => SpanStatus::Error,
+        SpanStatus::Ok if browser_status_override(&attributes) == Some(SpanStatus::Error) => {
+            SpanStatus::Error
+        }
+        SpanStatus::Ok => SpanStatus::Ok,
+        SpanStatus::Unset => browser_status_override(&attributes).unwrap_or(SpanStatus::Unset),
+    };
     let kind = infer_agent_span_kind(&attributes, &span.name, span.kind);
     if temporal_span_kind(&attributes, &span.name).is_some() {
         attributes
@@ -418,12 +427,10 @@ fn temporal_span_kind(attrs: &CanonicalAttrs, name: &str) -> Option<AgentSpanKin
 }
 
 fn infer_agent_span_kind(attrs: &CanonicalAttrs, name: &str, otel_kind: i32) -> AgentSpanKind {
-    // Browser-step spans emitted by external instrumentation SDKs carry
-    // `browser.*` attributes but their OTLP span name is not necessarily a
-    // canonical kind, so classify them from the browser markers directly.
-    if let Some(kind) = infer_browser_span_kind(attrs, name) {
-        return kind;
-    }
+    // An explicit, operator/SDK-declared kind is authoritative and must win
+    // over browser-marker inference — e.g. a browser decision span sets both
+    // `beater.span.kind=llm.call` and `browser.action`, and the declared kind
+    // is correct.
     if let Some(value) = attrs
         .get("openinference.span.kind")
         .or_else(|| attrs.get("beater.span.kind"))
@@ -453,6 +460,12 @@ fn infer_agent_span_kind(attrs: &CanonicalAttrs, name: &str, otel_kind: i32) -> 
             _ => AgentSpanKind::AgentStep,
         };
     }
+    // No explicit kind: browser-step spans from external SDKs carry `browser.*`
+    // markers but a non-canonical OTLP name, so classify them from the markers.
+    if let Some(kind) = infer_browser_span_kind(attrs, name) {
+        return kind;
+    }
+    // Temporal interceptor spans, recognized by `temporal.*` attrs or name prefix.
     if let Some(kind) = temporal_span_kind(attrs, name) {
         return kind;
     }

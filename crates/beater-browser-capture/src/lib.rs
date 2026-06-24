@@ -69,7 +69,11 @@ pub struct BrowserToolProxy<D, A> {
     replay: SqliteReplayStore,
     ctx: CaptureContext,
     engine: beater_browser::BrowserEngine,
+    /// Monotonic span counter — one per emitted `CanonicalSpan`.
     span_seq: u64,
+    /// Monotonic logical step counter — one per `step()` call. Distinct from
+    /// `span_seq` because a step can emit two spans (llm.call + tool.call).
+    step_index: u64,
     replay_seq: u64,
     last_observation: Option<Observation>,
 }
@@ -88,6 +92,7 @@ where
             ctx,
             engine,
             span_seq: 0,
+            step_index: 0,
             replay_seq: 0,
             last_observation: None,
         }
@@ -111,7 +116,8 @@ where
         decision: Option<LlmDecision>,
         action: BrowserAction,
     ) -> Result<RecordedStep, CaptureError> {
-        let step_seq = self.span_seq;
+        let step_seq = self.step_index;
+        self.step_index += 1;
         let observation_before = match self.last_observation.take() {
             Some(observation) => observation,
             None => self.driver.observe().await?,
@@ -419,6 +425,19 @@ mod tests {
         assert_eq!(ok.spans[1].kind, AgentSpanKind::ToolCall);
         assert_eq!(ok.spans[1].status, SpanStatus::Ok);
         assert_eq!(miss.spans[1].status, SpanStatus::Error);
+
+        // Logical step index is contiguous (0, 1, ...) even though each step
+        // emits two spans — step_seq must not advance by span count.
+        assert_eq!(ok.triple.seq, 0);
+        assert_eq!(miss.triple.seq, 1);
+        assert_eq!(
+            ok.spans[1].attributes.get(semconv::STEP_SEQ),
+            Some(&json!(0))
+        );
+        assert_eq!(
+            miss.spans[1].attributes.get(semconv::STEP_SEQ),
+            Some(&json!(1))
+        );
 
         // tool.call span carries browser.* attributes + a screenshot artifact.
         let tool = &ok.spans[1];

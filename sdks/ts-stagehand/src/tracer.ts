@@ -100,8 +100,11 @@ export class BeaterStagehandTracer {
     invoke: () => Promise<T>,
   ): Promise<T> {
     const seq = this.nextSeq();
-    const url = await safeCall(page.url);
-    const title = await safeCall(page.title);
+    // Bind to `page` so the real Playwright `url()`/`title()` methods keep their
+    // receiver — passing the bare method reference calls them with `this`
+    // undefined and they throw (silently swallowed -> url/title always missing).
+    const url = await safeCall(page.url?.bind(page));
+    const title = await safeCall(page.title?.bind(page));
     const selector = selectorFromArgs(args);
 
     const span = this.tracer.startSpan(`browser.${action}`, {
@@ -127,11 +130,15 @@ export class BeaterStagehandTracer {
       const decision = decisionFromResult(result);
       if (decision) {
         this.emitDecision(ctx, action, seq, url, decision);
+        // Only claim grounding when Stagehand actually resolved a selector and
+        // the action did not throw. A decision that carries only reasoning (no
+        // selector) is NOT evidence of grounding, so don't fabricate it — that
+        // would make every such step score a perfect grounding ratio.
         if (decision.selector) {
           span.setAttribute(BrowserAttr.SELECTOR, decision.selector);
+          span.setAttribute(BrowserAttr.SELECTOR_EXISTED, true);
+          span.setAttribute(BrowserAttr.MATCHED_ELEMENT, true);
         }
-        span.setAttribute(BrowserAttr.SELECTOR_EXISTED, true);
-        span.setAttribute(BrowserAttr.MATCHED_ELEMENT, true);
       }
       span.setStatus({ code: SpanStatusCode.OK });
       return result;

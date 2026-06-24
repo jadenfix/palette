@@ -202,8 +202,11 @@ async function handleExtract(cmd) {
 }
 
 async function handleScroll(cmd) {
+  // Absolute scroll position, matching the CDP and WebDriver backends
+  // (window.scrollTo) so an identical BrowserAction::Scroll behaves the same
+  // across backends and replays deterministically.
   await page.evaluate(
-    ([x, y]) => window.scrollBy(x, y),
+    ([x, y]) => window.scrollTo(x, y),
     [cmd.x || 0, cmd.y || 0],
   );
   return {

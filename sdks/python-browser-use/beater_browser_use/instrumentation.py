@@ -135,8 +135,13 @@ class StepRecord:
         if seq is None:
             seq = _infer_seq(history, agent)
 
+        # browser-use carries the per-action success/error on the action RESULT,
+        # not on the action itself, so read both to detect failed steps.
+        result_obj = _first(_call(history, "action_results"))
         action_name, selector = _extract_action(action_obj)
-        status, selector_existed, matched, error = _extract_grounding(action_obj)
+        status, selector_existed, matched, error = _extract_grounding(
+            action_obj, result_obj
+        )
         url = _extract_url(agent, action_obj)
 
         return cls(
@@ -265,14 +270,25 @@ def _extract_action(action_obj: Any) -> Tuple[Optional[str], Optional[str]]:
 
 def _extract_grounding(
     action_obj: Any,
+    result_obj: Any = None,
 ) -> Tuple[str, Optional[bool], Optional[bool], Optional[str]]:
-    """Return ``(status, selector_existed, matched_element, error)``."""
-    error = _coerce_str(_get(action_obj, "error"))
+    """Return ``(status, selector_existed, matched_element, error)``.
+
+    browser-use's ``model_actions()`` does not expose selector resolution, so
+    ``selector_existed``/``matched_element`` are typically ``None`` on the live
+    path. The failure signal comes from the action RESULT (``error`` string or
+    ``success is False``), which we read here so a failed action is not silently
+    reported as ``ok``.
+    """
+    error = _coerce_str(_get(action_obj, "error")) or _coerce_str(
+        _get(result_obj, "error")
+    )
     existed = _get(action_obj, "selector_existed")
     matched = _get(action_obj, "matched_element")
+    success = _get(result_obj, "success")
     if error:
         return STATUS_ERROR, existed, matched, error
-    if existed is False:
+    if existed is False or success is False:
         return STATUS_ERROR, existed, matched, error
     return STATUS_OK, existed, matched, error
 
@@ -521,14 +537,18 @@ def instrument(
     agent: Any,
     endpoint: Optional[str] = None,
     tracer: Optional[BeaterBrowserUseTracer] = None,
+    register_step_callback: bool = False,
     **tracer_kwargs: Any,
 ) -> _Instrumentation:
     """Instrument a ``browser-use`` ``Agent`` instance.
 
-    Builds (or reuses) a :class:`BeaterBrowserUseTracer`, returns the run hooks,
-    and best-effort registers a ``register_new_step_callback`` on the agent so
-    steps are captured even if the caller forgets to pass the hooks to
-    ``run()``.
+    Builds (or reuses) a :class:`BeaterBrowserUseTracer` and returns the run
+    hooks. The intended usage is ``await agent.run(**inst.run_kwargs())``.
+
+    Pass ``register_step_callback=True`` ONLY if you cannot forward the hooks to
+    ``run()`` — it wires ``register_new_step_callback`` as an alternative capture
+    path. Do not combine it with the hooks: both fire once per step, so enabling
+    both records every step twice.
 
     Returns an object exposing ``.tracer``, ``.on_step_start``, ``.on_step_end``
     and ``.run_kwargs()``; it also unpacks as ``(on_step_start, on_step_end)``.
@@ -537,16 +557,18 @@ def instrument(
         tracer = BeaterBrowserUseTracer(endpoint=endpoint, **tracer_kwargs)
     on_step_start, on_step_end = make_hooks(tracer=tracer)
 
+    # Opt-in fallback for callers who cannot pass the hooks to run().
     # browser-use calls register_new_step_callback(browser_state, agent_output,
     # step_number). Wire it defensively without importing browser-use.
-    try:
-        cb = _make_register_callback(tracer, agent)
-        if hasattr(agent, "register_new_step_callback"):
-            agent.register_new_step_callback = cb
-        elif hasattr(agent, "settings"):
-            setattr(agent.settings, "register_new_step_callback", cb)
-    except Exception:  # pragma: no cover - defensive, never break the agent
-        pass
+    if register_step_callback:
+        try:
+            cb = _make_register_callback(tracer, agent)
+            if hasattr(agent, "register_new_step_callback"):
+                agent.register_new_step_callback = cb
+            elif hasattr(agent, "settings"):
+                setattr(agent.settings, "register_new_step_callback", cb)
+        except Exception:  # pragma: no cover - defensive, never break the agent
+            pass
 
     return _Instrumentation(
         tracer=tracer, on_step_start=on_step_start, on_step_end=on_step_end

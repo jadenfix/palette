@@ -236,17 +236,23 @@ pub fn outcome_from_response(
         selector_existed,
         matched_element,
     };
-    let (status, error) = if selector_existed {
-        (StepStatus::Ok, error)
-    } else {
-        let described = error.unwrap_or_else(|| {
-            grounding
-                .selector
-                .as_deref()
-                .map(|s| format!("selector not found: {s}"))
-                .unwrap_or_else(|| "selector not found".to_string())
-        });
-        (StepStatus::Error, Some(described))
+    let (status, error) = match (selector_existed, error) {
+        // Selector resolved and the action ran cleanly.
+        (true, None) => (StepStatus::Ok, None),
+        // Selector resolved but the action itself failed (e.g. click
+        // intercepted, fill on a disabled input) — a failed step, not a success.
+        (true, Some(err)) => (StepStatus::Error, Some(err)),
+        // Selector did not resolve — a grounding miss.
+        (false, err) => {
+            let described = err.unwrap_or_else(|| {
+                grounding
+                    .selector
+                    .as_deref()
+                    .map(|s| format!("selector not found: {s}"))
+                    .unwrap_or_else(|| "selector not found".to_string())
+            });
+            (StepStatus::Error, Some(described))
+        }
     };
     StepOutcome {
         status,
