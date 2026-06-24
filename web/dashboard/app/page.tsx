@@ -930,7 +930,7 @@ function latestEndedAt(spans: CanonicalSpan[]): string | null {
   return latest?.value ?? null;
 }
 
-function aggregateRunStatus(spans: CanonicalSpan[]): string {
+function aggregateRunStatus(spans: CanonicalSpan[]): RunSummary["status"] {
   if (spans.some((span) => span.status === "error")) return "error";
   if (spans.some((span) => span.status === "ok")) return "ok";
   return "unset";

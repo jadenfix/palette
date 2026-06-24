@@ -1,10 +1,10 @@
 import type { components, operations } from "./generated/api-types";
 import { apiSpanIoLabels } from "./span-kinds";
 
-type TraceListOperation = operations["openapi_list_traces"];
-type TraceOperation = operations["openapi_get_trace"];
-type SpanOperation = operations["openapi_get_span"];
-type SpanIoOperation = operations["openapi_get_span_io"];
+type TraceListOperation = operations["listTraces"];
+type TraceOperation = operations["getTrace"];
+type SpanOperation = operations["getSpan"];
+type SpanIoOperation = operations["getSpanIo"];
 type TraceListQuery = NonNullable<TraceListOperation["parameters"]["query"]>;
 type TraceListPathParams = TraceListOperation["parameters"]["path"];
 type TracePathParams = TraceOperation["parameters"]["path"];
@@ -12,12 +12,12 @@ type TraceReadQuery = NonNullable<TraceOperation["parameters"]["query"]>;
 type SpanPathParams = SpanOperation["parameters"]["path"];
 type SpanIoPathParams = SpanIoOperation["parameters"]["path"];
 
-export type RunSummary = components["schemas"]["RunSummaryDoc"];
-export type RunSummaryPage = components["schemas"]["PageRunSummaryDoc"];
-export type Money = components["schemas"]["MoneyDoc"];
-export type CanonicalSpan = components["schemas"]["CanonicalSpanDoc"];
-export type TraceView = components["schemas"]["TraceViewDoc"];
-export type SpanIoResponse = components["schemas"]["SpanIoResponseDoc"];
+export type RunSummary = components["schemas"]["RunSummary"];
+export type RunSummaryPage = components["schemas"]["Page_RunSummary"];
+export type Money = components["schemas"]["Money"];
+export type CanonicalSpan = components["schemas"]["CanonicalSpan"];
+export type TraceView = components["schemas"]["TraceView"];
+export type SpanIoResponse = components["schemas"]["SpanIoResponse"];
 export type SpanIoValue = SpanIoResponse["input"];
 
 export type DashboardQuery = {
