@@ -6,6 +6,20 @@ license.workspace = true
 
 [dependencies]
 beater-browser = { path = "../beater-browser" }
+beater-core = { path = "../beater-core" }
+beater-schema = { path = "../beater-schema" }
+beater-store = { path = "../beater-store" }
+beater-replay = { path = "../beater-replay" }
+async-trait.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+beater-store-obj = { path = "../beater-store-obj" }
+tokio.workspace = true
+tempfile.workspace = true
 
 [lints]
 workspace = true

@@ -694,7 +694,19 @@ dependencies = [
 name = "beater-browser-capture"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "beater-browser",
+ "beater-core",
+ "beater-replay",
+ "beater-schema",
+ "beater-store",
+ "beater-store-obj",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]
