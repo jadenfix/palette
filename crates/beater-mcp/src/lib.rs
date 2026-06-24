@@ -33,10 +33,17 @@ use axum::Router;
 use beater_api::{router as api_router, ApiState};
 use http::{HeaderMap, Method, Request, StatusCode};
 use serde_json::{json, Map, Value};
+use std::sync::OnceLock;
 use tower::ServiceExt;
 
-/// MCP protocol version advertised in `initialize`.
-const PROTOCOL_VERSION: &str = "2024-11-05";
+/// Latest MCP protocol version this server implements. Advertised by default and
+/// returned from `initialize` unless the client requests an older supported one.
+const PROTOCOL_VERSION: &str = "2025-06-18";
+
+/// Protocol revisions we can speak, newest first. `initialize` echoes back the
+/// client's requested version when it is one of these, else falls back to
+/// [`PROTOCOL_VERSION`] — standard MCP version negotiation.
+const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26", "2024-11-05"];
 
 /// Maximum response body size we will buffer from a dispatched handler.
 const MAX_BODY_BYTES: usize = 32 * 1024 * 1024;
@@ -52,6 +59,9 @@ struct ToolSpec {
     path_template: String,
     /// JSON Schema describing the tool's input arguments.
     input_schema: Value,
+    /// JSON Schema for the tool's structured result, derived from the operation's
+    /// lowest 2xx `application/json` response. `None` when there is no JSON body.
+    output_schema: Option<Value>,
     /// Human-readable description (summary/description from the spec).
     description: String,
     /// Names of path parameters, in template order.
@@ -62,17 +72,26 @@ struct ToolSpec {
     has_body: bool,
 }
 
+/// Process-wide tool catalog. The OpenAPI document is fixed for the lifetime of
+/// the process, so the (non-trivial) build — serialize + walk the whole spec — is
+/// done once and the result shared by `tools/list` and every `tools/call`.
+fn tools() -> &'static [ToolSpec] {
+    static TOOLS: OnceLock<Vec<ToolSpec>> = OnceLock::new();
+    TOOLS.get_or_init(build_tools)
+}
+
 /// Build the full MCP tool catalog from the live OpenAPI document.
 ///
 /// This walks the serialized spec as JSON so it is robust to the exact utoipa
 /// type shapes and naturally preserves `$ref`s; the resolved component schemas
-/// are bundled under `$defs` in each tool's `inputSchema` so body refs resolve.
+/// are bundled under `components` in each tool's input/output schema so refs
+/// resolve.
 fn build_tools() -> Vec<ToolSpec> {
     let spec = beater_api::openapi::openapi();
     // Serialize once; treat the spec as plain JSON from here on.
     let doc: Value = serde_json::to_value(&spec).unwrap_or(Value::Null);
 
-    // Component schemas, used to bundle `$defs` for body references.
+    // Component schemas, bundled into input/output schemas so their refs resolve.
     let component_schemas = doc
         .get("components")
         .and_then(|c| c.get("schemas"))
@@ -109,12 +128,14 @@ fn build_tools() -> Vec<ToolSpec> {
 
             let (input_schema, path_params, query_params, has_body) =
                 build_input_schema(op, component_schemas.as_ref());
+            let output_schema = build_output_schema(op, component_schemas.as_ref());
 
             tools.push(ToolSpec {
                 name: operation_id.to_string(),
                 method: method.to_ascii_uppercase(),
                 path_template: path.clone(),
                 input_schema,
+                output_schema,
                 description,
                 path_params,
                 query_params,
@@ -216,27 +237,121 @@ fn build_input_schema(
     if !required.is_empty() {
         schema.insert("required".to_string(), Value::Array(required));
     }
-    // Bundle component schemas so any `$ref: #/components/schemas/X` inside the
-    // body schema resolves. We expose them under both the OpenAPI pointer space
-    // (via `components`) and JSON Schema `$defs` for maximum client compat.
+    // Bundle component schemas so any `$ref` inside the body schema resolves.
     if has_body {
-        if let Some(schemas) = component_schemas {
-            schema.insert(
-                "components".to_string(),
-                json!({ "schemas": schemas.clone() }),
-            );
-        }
+        bundle_component_schemas(&mut schema, component_schemas);
     }
 
     (Value::Object(schema), path_params, query_params, has_body)
 }
 
-/// Serialize a tool to its MCP `tools/list` JSON shape.
+/// Build the `outputSchema` for one operation from its lowest 2xx
+/// `application/json` response schema, bundling the component schemas so any
+/// `$ref` resolves from the schema root.
+///
+/// Returns `None` unless the success body is **object-rooted**: MCP constrains
+/// `outputSchema` (and the `structuredContent` it describes) to a JSON object,
+/// so array- or scalar-rooted results (e.g. `Vec<T>` list endpoints) advertise
+/// no output schema rather than an invalid one a strict client could reject.
+fn build_output_schema(
+    op: &Map<String, Value>,
+    component_schemas: Option<&Value>,
+) -> Option<Value> {
+    let responses = op.get("responses")?.as_object()?;
+    // Sort so the numerically smallest 2xx status wins (e.g. `200` over `201`),
+    // giving one canonical success shape even if several are declared.
+    let mut codes: Vec<&String> = responses.keys().filter(|c| c.starts_with('2')).collect();
+    codes.sort();
+    for code in codes {
+        let Some(schema) = responses
+            .get(code)
+            .and_then(|r| r.get("content"))
+            .and_then(|c| c.get("application/json"))
+            .and_then(|j| j.get("schema"))
+        else {
+            continue;
+        };
+        if !resolves_to_object(schema, component_schemas) {
+            return None;
+        }
+        let mut out = schema.clone();
+        // A 2xx schema is often a bare `{ "$ref": "#/components/schemas/X" }`;
+        // bundle the schemas as a sibling so the ref resolves from this root.
+        if let Some(obj) = out.as_object_mut() {
+            bundle_component_schemas(obj, component_schemas);
+        }
+        return Some(out);
+    }
+    None
+}
+
+/// Whether a schema is object-rooted, resolving one level of `$ref` against the
+/// component schemas. Inline schemas are judged by their declared `type`; a
+/// `$ref` is resolved and judged by its target's `type`/`properties`. Anything
+/// indeterminate is treated as non-object (conservative: omit over mis-advertise).
+fn resolves_to_object(schema: &Value, component_schemas: Option<&Value>) -> bool {
+    if let Some(ty) = schema.get("type").and_then(Value::as_str) {
+        return ty == "object";
+    }
+    if let Some(reference) = schema.get("$ref").and_then(Value::as_str) {
+        let name = reference.rsplit('/').next().unwrap_or_default();
+        if let Some(target) = component_schemas.and_then(|s| s.get(name)) {
+            return match target.get("type").and_then(Value::as_str) {
+                Some(ty) => ty == "object",
+                None => target.get("properties").is_some(),
+            };
+        }
+    }
+    false
+}
+
+/// Bundle the resolved component schemas into a schema root so any `$ref`
+/// resolves. The spec's refs use the OpenAPI pointer space
+/// (`#/components/schemas/...`), so that is the single location we expose;
+/// JSON Schema 2020-12 permits these sibling keywords alongside a root `$ref`.
+fn bundle_component_schemas(target: &mut Map<String, Value>, component_schemas: Option<&Value>) {
+    if let Some(schemas) = component_schemas {
+        target.insert(
+            "components".to_string(),
+            json!({ "schemas": schemas.clone() }),
+        );
+    }
+}
+
+/// Serialize a tool to its MCP `tools/list` JSON shape: name, description,
+/// input/output schemas, and method-derived behavioural annotations.
 fn tool_to_json(tool: &ToolSpec) -> Value {
+    let mut obj = Map::new();
+    obj.insert("name".to_string(), Value::String(tool.name.clone()));
+    obj.insert(
+        "description".to_string(),
+        Value::String(tool.description.clone()),
+    );
+    obj.insert("inputSchema".to_string(), tool.input_schema.clone());
+    if let Some(output) = &tool.output_schema {
+        obj.insert("outputSchema".to_string(), output.clone());
+    }
+    obj.insert(
+        "annotations".to_string(),
+        annotations_for(&tool.method, &tool.description),
+    );
+    Value::Object(obj)
+}
+
+/// Behavioural hints derived purely from the HTTP method, per the MCP tool
+/// annotations contract: `GET` is read-only; `PUT`/`DELETE` are idempotent and
+/// may overwrite/remove state, so they are flagged destructive; `POST` is a
+/// non-idempotent, non-destructive write. These are advisory hints clients use
+/// to gate or batch calls — they are not a security boundary.
+fn annotations_for(method: &str, title: &str) -> Value {
+    let read_only = method == "GET";
+    let idempotent = matches!(method, "GET" | "PUT" | "DELETE");
+    let destructive = matches!(method, "PUT" | "DELETE");
     json!({
-        "name": tool.name,
-        "description": tool.description,
-        "inputSchema": tool.input_schema,
+        "title": title,
+        "readOnlyHint": read_only,
+        "destructiveHint": destructive,
+        "idempotentHint": idempotent,
     })
 }
 
@@ -340,11 +455,20 @@ async fn dispatch_rpc(state: &ApiState, headers: &HeaderMap, request: &Value) ->
     let params = request.get("params").cloned().unwrap_or(Value::Null);
 
     let result = match method {
-        "initialize" => Ok(json!({
-            "protocolVersion": PROTOCOL_VERSION,
-            "serverInfo": server_info(),
-            "capabilities": capabilities(),
-        })),
+        "initialize" => {
+            // Negotiate: echo the client's requested version when we support it,
+            // otherwise advertise our latest.
+            let version = params
+                .get("protocolVersion")
+                .and_then(Value::as_str)
+                .filter(|v| SUPPORTED_PROTOCOL_VERSIONS.contains(v))
+                .unwrap_or(PROTOCOL_VERSION);
+            Ok(json!({
+                "protocolVersion": version,
+                "serverInfo": server_info(),
+                "capabilities": capabilities(),
+            }))
+        }
         "notifications/initialized" | "initialized" => {
             // Lifecycle notification: acknowledge, no result.
             return if is_notification {
@@ -355,8 +479,8 @@ async fn dispatch_rpc(state: &ApiState, headers: &HeaderMap, request: &Value) ->
         }
         "ping" => Ok(json!({})),
         "tools/list" => {
-            let tools: Vec<Value> = build_tools().iter().map(tool_to_json).collect();
-            Ok(json!({ "tools": tools }))
+            let list: Vec<Value> = tools().iter().map(tool_to_json).collect();
+            Ok(json!({ "tools": list }))
         }
         "tools/call" => call_tool(state, headers, &params).await,
         other => Err((METHOD_NOT_FOUND, format!("unknown method: {other}"))),
@@ -393,8 +517,7 @@ async fn call_tool(
         .cloned()
         .ok_or((INVALID_PARAMS, "arguments must be an object".to_string()))?;
 
-    let tools = build_tools();
-    let tool = tools
+    let tool = tools()
         .iter()
         .find(|t| t.name == name)
         .ok_or((INVALID_PARAMS, format!("unknown tool: {name}")))?;
@@ -480,7 +603,10 @@ async fn call_tool(
         "content".to_string(),
         json!([{ "type": "text", "text": text }]),
     );
-    if !structured.is_null() {
+    // MCP requires `structuredContent` to be a JSON object; array/scalar bodies
+    // (e.g. list endpoints) are conveyed via the text content only. The full
+    // body is always present in `content` regardless.
+    if structured.is_object() {
         result.insert("structuredContent".to_string(), structured);
     }
     result.insert("isError".to_string(), Value::Bool(is_error));
@@ -525,5 +651,203 @@ fn urlencode(input: &str) -> String {
 /// The set of MCP tool names exposed, for tests and introspection. This is the
 /// authoritative "what does the MCP surface cover" answer, derived from the spec.
 pub fn tool_names() -> Vec<String> {
-    build_tools().into_iter().map(|t| t.name).collect()
+    tools().iter().map(|t| t.name.clone()).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    // Test code uses unwrap/expect freely on known-good fixtures.
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
+    use super::*;
+
+    /// Method-derived annotations follow HTTP semantics for every method,
+    /// including `PUT`/`DELETE` (which the spec does not currently use, so they
+    /// are only exercised here).
+    #[test]
+    fn annotations_track_http_method_semantics() {
+        let cases = [
+            // (method, read_only, destructive, idempotent)
+            ("GET", true, false, true),
+            ("POST", false, false, false),
+            ("PUT", false, true, true),
+            ("DELETE", false, true, true),
+        ];
+        for (method, read_only, destructive, idempotent) in cases {
+            let a = annotations_for(method, "do a thing");
+            assert_eq!(a["title"], "do a thing", "{method}: title carried through");
+            assert_eq!(a["readOnlyHint"], read_only, "{method}: readOnlyHint");
+            assert_eq!(
+                a["destructiveHint"], destructive,
+                "{method}: destructiveHint"
+            );
+            assert_eq!(a["idempotentHint"], idempotent, "{method}: idempotentHint");
+        }
+    }
+
+    /// A read-only method is never also flagged destructive (the two hints must
+    /// not contradict for any method we emit).
+    #[test]
+    fn read_only_is_never_destructive() {
+        for method in ["GET", "POST", "PUT", "DELETE"] {
+            let a = annotations_for(method, "t");
+            if a["readOnlyHint"] == Value::Bool(true) {
+                assert_eq!(a["destructiveHint"], Value::Bool(false), "{method}");
+            }
+        }
+    }
+
+    /// `bundle_component_schemas` exposes the resolved schemas under the OpenAPI
+    /// pointer space the spec's refs use, and nothing else. Without component
+    /// schemas it is a no-op.
+    #[test]
+    fn bundle_exposes_components_only() {
+        let schemas = json!({ "Foo": { "type": "object" } });
+        let mut target = Map::new();
+        bundle_component_schemas(&mut target, Some(&schemas));
+        assert_eq!(target["components"]["schemas"]["Foo"]["type"], "object");
+        // No dead `$defs` duplicate — the spec's refs never point there.
+        assert!(target.get("$defs").is_none(), "no redundant $defs key");
+
+        let mut empty = Map::new();
+        bundle_component_schemas(&mut empty, None);
+        assert!(empty.is_empty(), "no schemas -> no keys added");
+    }
+
+    /// The catalog is built once and the cached slice is identical across calls.
+    #[test]
+    fn tools_catalog_is_cached_and_stable() {
+        let first = tools();
+        let second = tools();
+        assert!(
+            std::ptr::eq(first, second),
+            "tools() must return the same cached slice"
+        );
+        assert_eq!(first.len(), second.len());
+    }
+
+    /// `resolves_to_object` resolves inline types and one level of `$ref`, and is
+    /// conservative (false) for arrays, scalars, and danging refs.
+    #[test]
+    fn resolves_to_object_handles_inline_and_refs() {
+        let comps = json!({
+            "Obj": { "type": "object" },
+            "Bag": { "properties": { "a": {} } }, // object by shape, no explicit type
+            "List": { "type": "array" },
+        });
+        let c = Some(&comps);
+        assert!(resolves_to_object(&json!({ "type": "object" }), c));
+        assert!(!resolves_to_object(&json!({ "type": "array" }), c));
+        assert!(resolves_to_object(
+            &json!({ "$ref": "#/components/schemas/Obj" }),
+            c
+        ));
+        assert!(resolves_to_object(
+            &json!({ "$ref": "#/components/schemas/Bag" }),
+            c
+        ));
+        assert!(!resolves_to_object(
+            &json!({ "$ref": "#/components/schemas/List" }),
+            c
+        ));
+        assert!(!resolves_to_object(
+            &json!({ "$ref": "#/components/schemas/Missing" }),
+            c
+        ));
+    }
+
+    /// `build_output_schema`: lowest 2xx wins, only object-rooted bodies are
+    /// emitted (with components bundled), and absent/array/scalar bodies → None.
+    #[test]
+    fn build_output_schema_selects_and_filters() {
+        let comps = json!({ "A": { "type": "object" }, "B": { "type": "object" } });
+        let json_resp = |r: Value| json!({ "content": { "application/json": { "schema": r } } });
+
+        // Two 2xx codes declared -> the lower (200) wins.
+        let multi = json!({
+            "responses": {
+                "201": json_resp(json!({ "$ref": "#/components/schemas/B" })),
+                "200": json_resp(json!({ "$ref": "#/components/schemas/A" })),
+            }
+        });
+        let out = build_output_schema(multi.as_object().unwrap(), Some(&comps))
+            .expect("object-rooted 200 is emitted");
+        assert_eq!(out["$ref"], "#/components/schemas/A", "lowest 2xx wins");
+        assert_eq!(
+            out["components"]["schemas"]["A"]["type"], "object",
+            "components bundled so the ref resolves"
+        );
+
+        // Array-rooted success body -> no output schema.
+        let array = json!({ "responses": { "200": json_resp(json!({ "type": "array" })) } });
+        assert!(build_output_schema(array.as_object().unwrap(), Some(&comps)).is_none());
+
+        // No application/json success body -> None.
+        let empty = json!({ "responses": { "204": { "description": "no content" } } });
+        assert!(build_output_schema(empty.as_object().unwrap(), Some(&comps)).is_none());
+    }
+
+    /// `tool_to_json` omits `outputSchema` entirely when the tool has none, and
+    /// includes it (plus annotations) when present.
+    #[test]
+    fn tool_to_json_omits_absent_output_schema() {
+        let mut tool = ToolSpec {
+            name: "x".into(),
+            method: "POST".into(),
+            path_template: "/v1/x".into(),
+            input_schema: json!({ "type": "object" }),
+            output_schema: None,
+            description: "x".into(),
+            path_params: vec![],
+            query_params: vec![],
+            has_body: false,
+        };
+        let without = tool_to_json(&tool);
+        assert!(without.get("outputSchema").is_none(), "omitted when None");
+        assert!(
+            without["annotations"].is_object(),
+            "annotations always present"
+        );
+
+        tool.output_schema = Some(json!({ "type": "object" }));
+        let with = tool_to_json(&tool);
+        assert_eq!(with["outputSchema"]["type"], "object");
+    }
+
+    /// Every emitted output schema is object-rooted; the known array-returning
+    /// list operations advertise none. Guards the MCP object-only invariant.
+    #[test]
+    fn output_schemas_are_object_rooted_or_absent() {
+        let array_ops = [
+            "listAuditEvents",
+            "listJudgeLedger",
+            "listProviderSecrets",
+            "listReviewTasks",
+        ];
+        for tool in tools() {
+            match &tool.output_schema {
+                None => assert!(
+                    array_ops.contains(&tool.name.as_str()),
+                    "{} unexpectedly has no output schema",
+                    tool.name
+                ),
+                Some(schema) => {
+                    // Resolve the root type against the bundled components.
+                    let comps = schema.get("components").and_then(|c| c.get("schemas"));
+                    assert!(
+                        resolves_to_object(schema, comps),
+                        "{}: emitted output schema must be object-rooted",
+                        tool.name
+                    );
+                }
+            }
+        }
+        // And the array ops are definitely omitted.
+        for name in array_ops {
+            let tool = tools().iter().find(|t| t.name == name).unwrap();
+            assert!(
+                tool.output_schema.is_none(),
+                "{name} returns an array and must not advertise an output schema"
+            );
+        }
+    }
 }
