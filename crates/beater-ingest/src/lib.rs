@@ -810,11 +810,17 @@ impl IngestService {
         project_id: ProjectId,
         trace_id: TraceId,
     ) -> Result<TraceCompletionState, IngestError> {
-        let trace = self
+        let trace = match self
             .traces
             .get_project_trace(tenant_id, project_id, trace_id)
             .await
-            .map_err(IngestError::Store)?;
+        {
+            Ok(trace) => trace,
+            // A trace with no stored spans yet is `Open`, per the contract above —
+            // it has simply not started converging. Other store errors propagate.
+            Err(StoreError::NotFound(_)) => return Ok(TraceCompletionState::Open),
+            Err(err) => return Err(IngestError::Store(err)),
+        };
         Ok(assemble_trace_completion(
             &trace.spans,
             self.clock.now(),
@@ -3332,6 +3338,89 @@ mod tests {
             redaction_class: RedactionClass::Sensitive,
             idempotency_key: None,
             auth_context: None,
+        }
+    }
+
+    /// R4.7: a trace the store has never seen reports `NotFound`. The completion
+    /// contract promises `Open` (the trace simply has not started converging), so
+    /// `assess_trace_completion` must map that error into a state, not surface it.
+    #[tokio::test]
+    async fn assess_trace_completion_maps_not_found_to_open() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(NotFoundTraceStore);
+        let bus = Arc::new(InMemoryBus::new(16));
+        let service = IngestService::new(artifacts, traces, bus, IngestPolicy::default());
+
+        let state = service
+            .assess_trace_completion(
+                TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+                TraceId::new("missing").unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("expected Open, got error: {err}"));
+        assert_eq!(state, TraceCompletionState::Open);
+    }
+
+    /// Trace store that reports every trace as `NotFound` — exercises the
+    /// completion contract's "no stored spans yet -> Open" mapping.
+    struct NotFoundTraceStore;
+
+    #[async_trait::async_trait]
+    impl TraceStore for NotFoundTraceStore {
+        async fn write_batch(
+            &self,
+            _batch: CanonicalTraceBatch,
+        ) -> beater_store::StoreResult<WriteAck> {
+            Err(StoreError::NotFound("trace".to_string()))
+        }
+
+        async fn get_trace(
+            &self,
+            _tenant: TenantId,
+            _trace: TraceId,
+        ) -> beater_store::StoreResult<TraceView> {
+            Err(StoreError::NotFound("trace".to_string()))
+        }
+
+        async fn get_project_trace(
+            &self,
+            _tenant: TenantId,
+            _project: ProjectId,
+            _trace: TraceId,
+        ) -> beater_store::StoreResult<TraceView> {
+            Err(StoreError::NotFound("trace".to_string()))
+        }
+
+        async fn get_raw_envelope(
+            &self,
+            _tenant: TenantId,
+            _project: ProjectId,
+            _idempotency_key: IdempotencyKey,
+        ) -> beater_store::StoreResult<Option<RawEnvelope>> {
+            Err(StoreError::NotFound("trace".to_string()))
+        }
+
+        async fn query_runs(
+            &self,
+            _tenant: TenantId,
+            _filter: RunFilter,
+            _page: PageRequest,
+        ) -> beater_store::StoreResult<Page<RunSummary>> {
+            Err(StoreError::NotFound("trace".to_string()))
+        }
+
+        async fn query_spans(
+            &self,
+            _tenant: TenantId,
+            _filter: SpanFilter,
+            _page: PageRequest,
+        ) -> beater_store::StoreResult<Page<SpanSummary>> {
+            Err(StoreError::NotFound("trace".to_string()))
         }
     }
 

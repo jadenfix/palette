@@ -325,6 +325,16 @@ pub enum TailBufferOutcome {
         decision: SamplingDecision,
         sampled_spans: usize,
     },
+    /// The current span was buffered, but accepting it pushed the open-trace count
+    /// over the in-memory cap, so the *oldest* still-open trace was force-flushed
+    /// through [`decide_trace_sampling`] and evicted to reclaim memory. Carries the
+    /// running buffered span count for the current trace and the forced decision
+    /// (with span count) for the evicted one.
+    Evicted {
+        buffered_spans: usize,
+        evicted_decision: SamplingDecision,
+        evicted_spans: usize,
+    },
 }
 
 /// Tail-sampling buffer: accumulates the spans of in-flight traces and holds the
@@ -342,16 +352,41 @@ pub enum TailBufferOutcome {
 /// any order, and completion is driven by the caller's
 /// `beater_ingest::trace_completion_state` evaluation rather than by wall-clock
 /// timers inside the buffer.
-#[derive(Debug, Default)]
+/// ponytail: the open-trace ceiling is `DEFAULT_MAX_OPEN_TRACES` traces held
+/// purely in process memory. A trace whose completion never flips terminal would
+/// otherwise be buffered forever (memory leak); at the cap we force-flush the
+/// oldest open trace instead of growing without bound. The upgrade path is durable
+/// (spill-to-disk / external) buffering, which would raise or remove this ceiling.
+const DEFAULT_MAX_OPEN_TRACES: usize = 100_000;
+
+#[derive(Debug)]
 pub struct TailBuffer {
     policy: OnlineSamplingPolicy,
     by_trace: BTreeMap<TraceId, BufferedTrace>,
+    /// In-memory ceiling on concurrently open traces. See `ponytail` note above.
+    max_open_traces: usize,
+    /// Monotonic counter stamped on each newly opened trace so the *oldest* open
+    /// trace can be identified for forced eviction at the cap.
+    next_insert_seq: u64,
+}
+
+impl Default for TailBuffer {
+    fn default() -> Self {
+        Self {
+            policy: OnlineSamplingPolicy::default(),
+            by_trace: BTreeMap::new(),
+            max_open_traces: DEFAULT_MAX_OPEN_TRACES,
+            next_insert_seq: 0,
+        }
+    }
 }
 
 #[derive(Debug)]
 struct BufferedTrace {
     tenant_id: TenantId,
     spans: Vec<CanonicalSpan>,
+    /// Order in which this trace was first opened; used to evict the oldest.
+    insert_seq: u64,
 }
 
 /// Terminal completion states that flush the tail buffer. `Open` keeps the trace
@@ -365,7 +400,17 @@ impl TailBuffer {
         Self {
             policy,
             by_trace: BTreeMap::new(),
+            max_open_traces: DEFAULT_MAX_OPEN_TRACES,
+            next_insert_seq: 0,
         }
+    }
+
+    /// Override the in-memory open-trace ceiling (see the `ponytail` note on
+    /// [`DEFAULT_MAX_OPEN_TRACES`]). A cap of zero is clamped to one so at least
+    /// the current trace can be held. Intended for tests and tuned deployments.
+    pub fn with_max_open_traces(mut self, max_open_traces: usize) -> Self {
+        self.max_open_traces = max_open_traces.max(1);
+        self
     }
 
     /// Number of traces currently held open (not yet sampled).
@@ -383,44 +428,85 @@ impl TailBuffer {
 
     /// Accumulate `span` and, if `completion` is terminal, flush the buffered
     /// trace through [`decide_trace_sampling`]. Spans are held until completion,
-    /// so a non-terminal `completion` always yields [`TailBufferOutcome::Buffered`].
+    /// so a non-terminal `completion` normally yields [`TailBufferOutcome::Buffered`].
+    ///
+    /// If accepting a *new* trace pushes the open-trace count over the in-memory
+    /// cap (see the `ponytail` note on [`DEFAULT_MAX_OPEN_TRACES`]), the oldest open
+    /// trace is force-flushed and evicted, yielding [`TailBufferOutcome::Evicted`].
     pub fn offer(
         &mut self,
         span: CanonicalSpan,
         completion: &beater_schema::TraceCompletionState,
     ) -> TailBufferOutcome {
         let trace_id = span.trace_id.clone();
-        let entry = self
-            .by_trace
-            .entry(trace_id.clone())
-            .or_insert_with(|| BufferedTrace {
+        let next_seq = self.next_insert_seq;
+        let mut opened_new = false;
+        let entry = self.by_trace.entry(trace_id.clone()).or_insert_with(|| {
+            opened_new = true;
+            BufferedTrace {
                 tenant_id: span.tenant_id.clone(),
                 spans: Vec::new(),
-            });
+                insert_seq: next_seq,
+            }
+        });
+        if opened_new {
+            self.next_insert_seq += 1;
+        }
         entry.spans.push(span);
 
-        if !completion_is_terminal(completion) {
-            return TailBufferOutcome::Buffered {
-                buffered_spans: entry.spans.len(),
-            };
+        if completion_is_terminal(completion) {
+            // Terminal: evict and run the whole-trace sampling decision exactly once.
+            return self
+                .flush_trace(&trace_id)
+                .map(|(decision, sampled_spans)| TailBufferOutcome::Sampled {
+                    decision,
+                    sampled_spans,
+                })
+                .unwrap_or_else(|| unreachable!("trace was just inserted"));
         }
 
-        // Terminal: evict and run the whole-trace sampling decision exactly once.
-        let buffered = self
-            .by_trace
-            .remove(&trace_id)
-            .unwrap_or_else(|| unreachable!("trace was just inserted"));
+        let buffered_spans = self.buffered_spans(&trace_id);
+
+        // Bounded guard: only a freshly opened trace can grow the open set, so the
+        // cap is only ever breached here. Force-flush the oldest open trace so a
+        // never-completing trace cannot leak memory forever.
+        if opened_new && self.by_trace.len() > self.max_open_traces {
+            if let Some((evicted_decision, evicted_spans)) = self.evict_oldest(&trace_id) {
+                return TailBufferOutcome::Evicted {
+                    buffered_spans,
+                    evicted_decision,
+                    evicted_spans,
+                };
+            }
+        }
+
+        TailBufferOutcome::Buffered { buffered_spans }
+    }
+
+    /// Remove `trace_id` and run the whole-trace sampling decision over its
+    /// buffered spans. Returns `None` if no such trace is buffered.
+    fn flush_trace(&mut self, trace_id: &TraceId) -> Option<(SamplingDecision, usize)> {
+        let buffered = self.by_trace.remove(trace_id)?;
         let sampled_spans = buffered.spans.len();
         let trace = TraceView {
             tenant_id: buffered.tenant_id,
-            trace_id,
+            trace_id: trace_id.clone(),
             spans: buffered.spans,
         };
         let decision = decide_trace_sampling(&trace, &self.policy);
-        TailBufferOutcome::Sampled {
-            decision,
-            sampled_spans,
-        }
+        Some((decision, sampled_spans))
+    }
+
+    /// Force-flush the oldest open trace other than `keep` (the just-opened trace),
+    /// reclaiming its memory. Returns the forced decision and its span count.
+    fn evict_oldest(&mut self, keep: &TraceId) -> Option<(SamplingDecision, usize)> {
+        let oldest = self
+            .by_trace
+            .iter()
+            .filter(|(id, _)| *id != keep)
+            .min_by_key(|(_, trace)| trace.insert_seq)
+            .map(|(id, _)| id.clone())?;
+        self.flush_trace(&oldest)
     }
 }
 
@@ -802,5 +888,72 @@ mod tests {
             buffer.buffered_spans(&TraceId::new("trace-b").unwrap_or_else(|err| panic!("{err}"))),
             1
         );
+    }
+
+    /// ponytail guard: a trace whose completion never flips terminal would buffer
+    /// forever. At the in-memory cap, opening one more trace force-flushes the
+    /// *oldest* open trace and evicts it, so the open set stays bounded.
+    #[test]
+    fn tail_buffer_evicts_oldest_open_trace_at_the_cap() {
+        use beater_schema::TraceCompletionState;
+
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let policy = OnlineSamplingPolicy {
+            sample_rate_per_mille: 0,
+            keep_errors: true,
+            slow_ms_threshold: None,
+            high_cost_micros_threshold: None,
+        };
+        // Cap of 2 open traces. None of these ever report a terminal completion,
+        // so without the guard they would accumulate without bound.
+        let mut buffer = TailBuffer::new(policy).with_max_open_traces(2);
+        let trace_a = TraceId::new("trace-a").unwrap_or_else(|err| panic!("{err}"));
+        let trace_b = TraceId::new("trace-b").unwrap_or_else(|err| panic!("{err}"));
+        let trace_c = TraceId::new("trace-c").unwrap_or_else(|err| panic!("{err}"));
+
+        // trace-a (oldest) then trace-b: both within the cap, both buffered.
+        assert_eq!(
+            buffer.offer(
+                fixture_span(&tenant, "trace-a", "a1", SpanStatus::Ok, 1, 0),
+                &TraceCompletionState::Open,
+            ),
+            TailBufferOutcome::Buffered { buffered_spans: 1 }
+        );
+        assert_eq!(
+            buffer.offer(
+                fixture_span(&tenant, "trace-b", "b1", SpanStatus::Ok, 1, 0),
+                &TraceCompletionState::Open,
+            ),
+            TailBufferOutcome::Buffered { buffered_spans: 1 }
+        );
+        assert_eq!(buffer.open_traces(), 2);
+
+        // trace-c opens past the cap: the oldest open trace (trace-a) is force-
+        // flushed and evicted. trace-c itself is buffered.
+        let outcome = buffer.offer(
+            fixture_span(&tenant, "trace-c", "c1", SpanStatus::Ok, 1, 0),
+            &TraceCompletionState::Open,
+        );
+        match outcome {
+            TailBufferOutcome::Evicted {
+                buffered_spans,
+                evicted_decision,
+                evicted_spans,
+            } => {
+                assert_eq!(buffered_spans, 1, "trace-c span is held");
+                assert_eq!(evicted_spans, 1, "trace-a's single span was flushed");
+                // Routine rate 0 with no error/slow/cost signal -> dropped on flush.
+                assert!(!evicted_decision.selected);
+                assert_eq!(evicted_decision.reason, SamplingReason::RoutineDropped);
+            }
+            other => panic!("expected Evicted at the cap, got {other:?}"),
+        }
+
+        // Open set stayed bounded at the cap; the oldest (trace-a) was evicted while
+        // the newer trace-b and trace-c remain.
+        assert_eq!(buffer.open_traces(), 2);
+        assert_eq!(buffer.buffered_spans(&trace_a), 0);
+        assert_eq!(buffer.buffered_spans(&trace_b), 1);
+        assert_eq!(buffer.buffered_spans(&trace_c), 1);
     }
 }
