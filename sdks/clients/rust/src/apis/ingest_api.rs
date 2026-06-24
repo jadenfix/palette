@@ -67,6 +67,23 @@ pub struct GetIngestQueueStatusParams {
     pub x_beater_environment_id: Option<String>
 }
 
+/// struct for passing parameters to the method [`import_source`]
+#[derive(Clone, Debug)]
+pub struct ImportSourceParams {
+    /// tenant_id
+    pub tenant_id: String,
+    /// project_id
+    pub project_id: String,
+    /// environment_id
+    pub environment_id: String,
+    pub import_source_http_request: models::ImportSourceHttpRequest,
+    pub durability: Option<String>,
+    /// Bearer API token for strict auth
+    pub authorization: Option<String>,
+    /// API key alternative for strict auth
+    pub x_beater_api_key: Option<String>
+}
+
 /// struct for passing parameters to the method [`ingest_native`]
 #[derive(Clone, Debug)]
 pub struct IngestNativeParams {
@@ -171,6 +188,18 @@ pub enum GetIngestQueueStatusError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`import_source`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ImportSourceError {
+    Status400(models::ErrorResponse),
+    Status401(models::ErrorResponse),
+    Status403(models::ErrorResponse),
+    Status413(models::ErrorResponse),
+    Status429(models::ErrorResponse),
     UnknownValue(serde_json::Value),
 }
 
@@ -331,6 +360,40 @@ pub async fn get_ingest_queue_status(configuration: &configuration::Configuratio
     } else {
         let content = resp.text().await?;
         let entity: Option<GetIngestQueueStatusError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn import_source(configuration: &configuration::Configuration, params: ImportSourceParams) -> Result<models::IngestOutcome, Error<ImportSourceError>> {
+
+    let uri_str = format!("{}/v1/import/{tenant_id}/{project_id}/{environment_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), environment_id=crate::apis::urlencode(params.environment_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+
+    if let Some(ref param_value) = params.durability {
+        req_builder = req_builder.query(&[("durability", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(param_value) = params.authorization {
+        req_builder = req_builder.header("authorization", param_value.to_string());
+    }
+    if let Some(param_value) = params.x_beater_api_key {
+        req_builder = req_builder.header("x-beater-api-key", param_value.to_string());
+    }
+    req_builder = req_builder.json(&params.import_source_http_request);
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        serde_json::from_str(&content).map_err(Error::from)
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<ImportSourceError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

@@ -42,7 +42,9 @@ fn unwrap<T, E: std::fmt::Display>(result: Result<T, E>) -> T {
 /// want the strongest possible "route exists and runs" assertion).
 fn build_app() -> (Router, tempfile::TempDir) {
     let tempdir = unwrap(tempfile::tempdir());
-    let artifacts = Arc::new(unwrap(FsArtifactStore::new(tempdir.path().join("artifacts"))));
+    let artifacts = Arc::new(unwrap(FsArtifactStore::new(
+        tempdir.path().join("artifacts"),
+    )));
     let traces = Arc::new(unwrap(SqliteTraceStore::in_memory()));
     let search = Arc::new(unwrap(TantivySearchIndex::in_memory()));
     let archive = unwrap(ParquetTraceArchive::new(tempdir.path().join("archive")));
@@ -54,9 +56,9 @@ fn build_app() -> (Router, tempfile::TempDir) {
     let usage = Arc::new(unwrap(SqliteUsageLedger::in_memory()));
     let audit = Arc::new(unwrap(SqliteAuditStore::in_memory()));
     let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
-    let provider_secrets = Arc::new(unwrap(EncryptedSqliteProviderSecretStore::in_memory(unwrap(
-        SecretKeyring::generated_for_tests(),
-    ))));
+    let provider_secrets = Arc::new(unwrap(EncryptedSqliteProviderSecretStore::in_memory(
+        unwrap(SecretKeyring::generated_for_tests()),
+    )));
     let judge_ledger = Arc::new(unwrap(SqliteJudgeLedger::in_memory()));
     let judge_broker = Arc::new(JudgeBrokerService::new(
         provider_secrets.clone(),

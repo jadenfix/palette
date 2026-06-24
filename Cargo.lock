@@ -1087,6 +1087,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-temporal"
+version = "0.1.0"
+dependencies = [
+ "beater-core",
+ "beater-ingest",
+ "beater-schema",
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "beater-usage"
 version = "0.1.0"
 dependencies = [
@@ -1175,6 +1188,7 @@ dependencies = [
  "beater-store",
  "beater-store-obj",
  "beater-store-sql",
+ "beater-temporal",
  "beater-usage",
  "clap",
  "opentelemetry-proto",

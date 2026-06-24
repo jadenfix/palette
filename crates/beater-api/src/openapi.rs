@@ -18,6 +18,7 @@ use utoipa::OpenApi;
         crate::health,
         crate::ingest_native,
         crate::ingest_otlp_http,
+        crate::import_source_route,
         crate::create_api_key_route,
         crate::revoke_api_key_route,
         crate::list_provider_secrets_route,

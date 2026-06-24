@@ -7,6 +7,7 @@ Method | HTTP request | Description
 [**IngestAPI_drainTraceIngested**](IngestAPI.md#IngestAPI_drainTraceIngested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
 [**IngestAPI_drainTraceWrites**](IngestAPI.md#IngestAPI_drainTraceWrites) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
 [**IngestAPI_getIngestQueueStatus**](IngestAPI.md#IngestAPI_getIngestQueueStatus) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue | 
+[**IngestAPI_importSource**](IngestAPI.md#IngestAPI_importSource) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
 [**IngestAPI_ingestNative**](IngestAPI.md#IngestAPI_ingestNative) | **POST** /v1/traces/native | 
 [**IngestAPI_ingestOtlp**](IngestAPI.md#IngestAPI_ingestOtlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces | 
 [**IngestAPI_reconcileTrace**](IngestAPI.md#IngestAPI_reconcileTrace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile | 
@@ -107,6 +108,39 @@ No authorization required
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **IngestAPI_importSource**
+```c
+ingest_outcome_t* IngestAPI_importSource(apiClient_t *apiClient, char *tenant_id, char *project_id, char *environment_id, import_source_http_request_t *import_source_http_request, char *durability, char *authorization, char *x_beater_api_key);
+```
+
+### Parameters
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**apiClient** | **apiClient_t \*** | context containing the client configuration |
+**tenant_id** | **char \*** | tenant_id | 
+**project_id** | **char \*** | project_id | 
+**environment_id** | **char \*** | environment_id | 
+**import_source_http_request** | **[import_source_http_request_t](import_source_http_request.md) \*** |  | 
+**durability** | **char \*** |  | [optional] 
+**authorization** | **char \*** | Bearer API token for strict auth | [optional] 
+**x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional] 
+
+### Return type
+
+[ingest_outcome_t](ingest_outcome.md) *
+
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

@@ -75,6 +75,7 @@ docs/GateRunReport.md
 docs/GatesApi.md
 docs/HealthApi.md
 docs/HealthResponse.md
+docs/ImportSourceHttpRequest.md
 docs/InconclusivePolicy.md
 docs/IngestApi.md
 docs/IngestOutcome.md
@@ -239,6 +240,7 @@ src/main/java/ai/beater/client/model/GateDefinition.java
 src/main/java/ai/beater/client/model/GatePolicy.java
 src/main/java/ai/beater/client/model/GateRunReport.java
 src/main/java/ai/beater/client/model/HealthResponse.java
+src/main/java/ai/beater/client/model/ImportSourceHttpRequest.java
 src/main/java/ai/beater/client/model/InconclusivePolicy.java
 src/main/java/ai/beater/client/model/IngestOutcome.java
 src/main/java/ai/beater/client/model/IngestQueueStatus.java
@@ -375,6 +377,7 @@ src/test/java/ai/beater/client/model/GateDefinitionTest.java
 src/test/java/ai/beater/client/model/GatePolicyTest.java
 src/test/java/ai/beater/client/model/GateRunReportTest.java
 src/test/java/ai/beater/client/model/HealthResponseTest.java
+src/test/java/ai/beater/client/model/ImportSourceHttpRequestTest.java
 src/test/java/ai/beater/client/model/InconclusivePolicyTest.java
 src/test/java/ai/beater/client/model/IngestOutcomeTest.java
 src/test/java/ai/beater/client/model/IngestQueueStatusTest.java

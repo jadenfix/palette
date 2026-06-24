@@ -25,6 +25,7 @@ TRAIT_SCAN_CRATES = [
     "crates/beater-search",
     "crates/beater-secrets",
     "crates/beater-store",
+    "crates/beater-temporal",
     "crates/beater-usage",
 ]
 
@@ -388,6 +389,46 @@ def check_schema_owns_rollups_and_mappings() -> None:
             fail(f"beater-api must delegate span filter parsing to schema via {symbol}")
 
 
+def check_temporal_contract() -> None:
+    """Anti-drift guard for the Temporal integration.
+
+    The Temporal history converter must stay pinned to a declared schema, classify
+    every pinned event type explicitly (the only wildcard maps to the counted
+    ``Unknown`` branch), keep its exhaustiveness test wired, and ship golden fixtures.
+    Any divergence here is a hard build failure rather than silent data loss.
+    """
+    crate = REPO / "crates/beater-temporal"
+    lib = crate / "src/lib.rs"
+    if not lib.exists():
+        fail("beater-temporal crate is missing src/lib.rs")
+    text = lib.read_text(encoding="utf-8")
+
+    required_symbols = [
+        "TEMPORAL_HISTORY_CONTRACT",
+        "KNOWN_EVENT_TYPES",
+        "fn classify(",
+        "every_known_event_type_is_classified",
+    ]
+    missing = [symbol for symbol in required_symbols if symbol not in text]
+    if missing:
+        fail(
+            "beater-temporal must keep its anti-drift contract; missing: "
+            + ", ".join(missing)
+        )
+
+    # The classify() fallback must route unknown events to the counted Unknown branch,
+    # never silently absorb them into a mapped class.
+    if "_ => Unknown" not in text:
+        fail(
+            "beater-temporal classify() must end with `_ => Unknown` so new Temporal "
+            "event types are counted as unmapped, not silently dropped"
+        )
+
+    fixtures = crate / "tests/fixtures"
+    if not fixtures.is_dir() or not any(fixtures.iterdir()):
+        fail("beater-temporal must ship golden Temporal history fixtures under tests/fixtures")
+
+
 def main() -> None:
     check_store_crate_has_no_sqlite_dependency()
     check_trace_store_conformance_runs_on_two_backends()
@@ -395,6 +436,7 @@ def main() -> None:
     check_no_anyhow_in_public_traits()
     check_core_schema_clock_boundary()
     check_schema_owns_rollups_and_mappings()
+    check_temporal_contract()
     print("Gate 0 foundation contract passed.")
 
 

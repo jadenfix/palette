@@ -93,6 +93,7 @@ docs/GateRunReport.md
 docs/GatesAPI.md
 docs/HealthAPI.md
 docs/HealthResponse.md
+docs/ImportSourceHttpRequest.md
 docs/InconclusivePolicy.md
 docs/IngestAPI.md
 docs/IngestOutcome.md
@@ -222,6 +223,7 @@ model_gate_definition.go
 model_gate_policy.go
 model_gate_run_report.go
 model_health_response.go
+model_import_source_http_request.go
 model_inconclusive_policy.go
 model_ingest_outcome.go
 model_ingest_queue_status.go

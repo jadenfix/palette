@@ -24,6 +24,7 @@
 
 #include "beater-client/model/DeadLetterReplayReport.h"
 #include "beater-client/model/ErrorResponse.h"
+#include "beater-client/model/ImportSourceHttpRequest.h"
 #include "beater-client/model/IngestOutcome.h"
 #include "beater-client/model/IngestQueueStatus.h"
 #include "beater-client/model/NativeIngestRequest.h"
@@ -114,6 +115,28 @@ public:
         boost::optional<utility::string_t> xBeaterApiKey,
         boost::optional<utility::string_t> xBeaterProjectId,
         boost::optional<utility::string_t> xBeaterEnvironmentId
+    ) const;
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <remarks>
+    /// 
+    /// </remarks>
+    /// <param name="tenantId">tenant_id</param>
+    /// <param name="projectId">project_id</param>
+    /// <param name="environmentId">environment_id</param>
+    /// <param name="importSourceHttpRequest"></param>
+    /// <param name="durability"> (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
+    /// <param name="authorization">Bearer API token for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
+    /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
+    pplx::task<std::shared_ptr<IngestOutcome>> importSource(
+        utility::string_t tenantId,
+        utility::string_t projectId,
+        utility::string_t environmentId,
+        std::shared_ptr<ImportSourceHttpRequest> importSourceHttpRequest,
+        boost::optional<utility::string_t> durability,
+        boost::optional<utility::string_t> authorization,
+        boost::optional<utility::string_t> xBeaterApiKey
     ) const;
     /// <summary>
     /// 

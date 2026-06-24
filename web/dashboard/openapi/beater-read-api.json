@@ -2352,6 +2352,147 @@
         }
       }
     },
+    "/v1/import/{tenant_id}/{project_id}/{environment_id}": {
+      "post": {
+        "tags": [
+          "ingest"
+        ],
+        "operationId": "importSource",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "description": "tenant_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "description": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment_id",
+            "in": "path",
+            "description": "environment_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "durability",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer API token for strict auth",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-api-key",
+            "in": "header",
+            "description": "API key alternative for strict auth",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportSourceHttpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Normalize an imported source document into canonical spans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, scope, or unknown source",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Credentials lack the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload or attribute cardinality too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-project quota exceeded or backpressure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay": {
       "post": {
         "tags": [
@@ -7926,6 +8067,22 @@
       },
       "IdempotencyKey": {
         "type": "string"
+      },
+      "ImportSourceHttpRequest": {
+        "type": "object",
+        "description": "Request body for the unified import endpoint. The `source` field selects a\nregistered [`beater_ingest::SourceImporter`] (e.g. `temporal_history`, `native`);\n`payload` is that source's document (Temporal `History` JSON, a native span list,\n…). Everything flows through the same downstream ingest pipeline as OTLP — there are\nno source-specific routes.",
+        "required": [
+          "source"
+        ],
+        "properties": {
+          "payload": {
+            "description": "The source-specific document to normalize."
+          },
+          "source": {
+            "type": "string",
+            "description": "Registered importer key, e.g. `temporal_history` or `native`."
+          }
+        }
       },
       "InconclusivePolicy": {
         "type": "string",

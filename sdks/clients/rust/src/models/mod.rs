@@ -116,6 +116,8 @@ pub mod gate_run_report;
 pub use self::gate_run_report::GateRunReport;
 pub mod health_response;
 pub use self::health_response::HealthResponse;
+pub mod import_source_http_request;
+pub use self::import_source_http_request::ImportSourceHttpRequest;
 pub mod inconclusive_policy;
 pub use self::inconclusive_policy::InconclusivePolicy;
 pub mod ingest_outcome;

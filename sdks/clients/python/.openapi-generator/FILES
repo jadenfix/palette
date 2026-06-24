@@ -89,6 +89,7 @@ beater_client/models/gate_definition.py
 beater_client/models/gate_policy.py
 beater_client/models/gate_run_report.py
 beater_client/models/health_response.py
+beater_client/models/import_source_http_request.py
 beater_client/models/inconclusive_policy.py
 beater_client/models/ingest_outcome.py
 beater_client/models/ingest_queue_status.py
@@ -218,6 +219,7 @@ docs/GateRunReport.md
 docs/GatesApi.md
 docs/HealthApi.md
 docs/HealthResponse.md
+docs/ImportSourceHttpRequest.md
 docs/InconclusivePolicy.md
 docs/IngestApi.md
 docs/IngestOutcome.md
@@ -361,6 +363,7 @@ test/test_gate_run_report.py
 test/test_gates_api.py
 test/test_health_api.py
 test/test_health_response.py
+test/test_import_source_http_request.py
 test/test_inconclusive_policy.py
 test/test_ingest_api.py
 test/test_ingest_outcome.py

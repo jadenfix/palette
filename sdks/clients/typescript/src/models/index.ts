@@ -59,6 +59,7 @@ export * from './GateDefinition';
 export * from './GatePolicy';
 export * from './GateRunReport';
 export * from './HealthResponse';
+export * from './ImportSourceHttpRequest';
 export * from './InconclusivePolicy';
 export * from './IngestOutcome';
 export * from './IngestQueueStatus';

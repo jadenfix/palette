@@ -46,7 +46,9 @@ fn unwrap<T, E: std::fmt::Display>(result: Result<T, E>) -> T {
 /// `beater-api/tests/openapi_coverage.rs`).
 fn build_state() -> (ApiState, tempfile::TempDir) {
     let tempdir = unwrap(tempfile::tempdir());
-    let artifacts = Arc::new(unwrap(FsArtifactStore::new(tempdir.path().join("artifacts"))));
+    let artifacts = Arc::new(unwrap(FsArtifactStore::new(
+        tempdir.path().join("artifacts"),
+    )));
     let traces = Arc::new(unwrap(SqliteTraceStore::in_memory()));
     let search = Arc::new(unwrap(TantivySearchIndex::in_memory()));
     let archive = unwrap(ParquetTraceArchive::new(tempdir.path().join("archive")));
@@ -57,9 +59,9 @@ fn build_state() -> (ApiState, tempfile::TempDir) {
     let calibrations = Arc::new(unwrap(SqliteCalibrationStore::in_memory()));
     let usage = Arc::new(unwrap(SqliteUsageLedger::in_memory()));
     let audit = Arc::new(unwrap(SqliteAuditStore::in_memory()));
-    let provider_secrets = Arc::new(unwrap(EncryptedSqliteProviderSecretStore::in_memory(unwrap(
-        SecretKeyring::generated_for_tests(),
-    ))));
+    let provider_secrets = Arc::new(unwrap(EncryptedSqliteProviderSecretStore::in_memory(
+        unwrap(SecretKeyring::generated_for_tests()),
+    )));
     let judge_ledger = Arc::new(unwrap(SqliteJudgeLedger::in_memory()));
     let judge_broker = Arc::new(JudgeBrokerService::new(
         provider_secrets.clone(),
@@ -139,8 +141,8 @@ fn tool_set_equals_spec_v1_operations() {
         tools, spec,
         "MCP tool set must equal the set of /v1 operationIds in the spec"
     );
-    // Sanity: the spec covers 40 /v1 operations.
-    assert_eq!(tools.len(), 40, "expected 40 tools, got {}", tools.len());
+    // Sanity: the spec covers 41 /v1 operations.
+    assert_eq!(tools.len(), 41, "expected 41 tools, got {}", tools.len());
 }
 
 #[tokio::test]
@@ -170,10 +172,8 @@ async fn initialize_and_tools_list_over_mcp_route() {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    let tools = listed["result"]["tools"]
-        .as_array()
-        .expect("tools array");
-    assert_eq!(tools.len(), 40);
+    let tools = listed["result"]["tools"].as_array().expect("tools array");
+    assert_eq!(tools.len(), 41);
     // Each tool has the required MCP shape.
     for tool in tools {
         assert!(tool["name"].is_string());

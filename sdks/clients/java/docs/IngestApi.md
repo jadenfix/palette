@@ -10,6 +10,8 @@ All URIs are relative to *http://localhost*
 | [**drainTraceWritesWithHttpInfo**](IngestApi.md#drainTraceWritesWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |  |
 | [**getIngestQueueStatus**](IngestApi.md#getIngestQueueStatus) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |  |
 | [**getIngestQueueStatusWithHttpInfo**](IngestApi.md#getIngestQueueStatusWithHttpInfo) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |  |
+| [**importSource**](IngestApi.md#importSource) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |  |
+| [**importSourceWithHttpInfo**](IngestApi.md#importSourceWithHttpInfo) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |  |
 | [**ingestNative**](IngestApi.md#ingestNative) | **POST** /v1/traces/native |  |
 | [**ingestNativeWithHttpInfo**](IngestApi.md#ingestNativeWithHttpInfo) | **POST** /v1/traces/native |  |
 | [**ingestOtlp**](IngestApi.md#ingestOtlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |  |
@@ -499,6 +501,170 @@ No authorization required
 | **400** | Invalid request, scope, or filter |  -  |
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
+
+
+## importSource
+
+> IngestOutcome importSource(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey)
+
+
+
+### Example
+
+```java
+// Import classes:
+import ai.beater.client.ApiClient;
+import ai.beater.client.ApiException;
+import ai.beater.client.Configuration;
+import ai.beater.client.models.*;
+import ai.beater.client.api.IngestApi;
+
+public class Example {
+    public static void main(String[] args) {
+        ApiClient defaultClient = Configuration.getDefaultApiClient();
+        defaultClient.setBasePath("http://localhost");
+
+        IngestApi apiInstance = new IngestApi(defaultClient);
+        String tenantId = "tenantId_example"; // String | tenant_id
+        String projectId = "projectId_example"; // String | project_id
+        String environmentId = "environmentId_example"; // String | environment_id
+        ImportSourceHttpRequest importSourceHttpRequest = new ImportSourceHttpRequest(); // ImportSourceHttpRequest | 
+        String durability = "durability_example"; // String | 
+        String authorization = "authorization_example"; // String | Bearer API token for strict auth
+        String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
+        try {
+            IngestOutcome result = apiInstance.importSource(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
+            System.out.println(result);
+        } catch (ApiException e) {
+            System.err.println("Exception when calling IngestApi#importSource");
+            System.err.println("Status code: " + e.getCode());
+            System.err.println("Reason: " + e.getResponseBody());
+            System.err.println("Response headers: " + e.getResponseHeaders());
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **tenantId** | **String**| tenant_id | |
+| **projectId** | **String**| project_id | |
+| **environmentId** | **String**| environment_id | |
+| **importSourceHttpRequest** | [**ImportSourceHttpRequest**](ImportSourceHttpRequest.md)|  | |
+| **durability** | **String**|  | [optional] |
+| **authorization** | **String**| Bearer API token for strict auth | [optional] |
+| **xBeaterApiKey** | **String**| API key alternative for strict auth | [optional] |
+
+### Return type
+
+[**IngestOutcome**](IngestOutcome.md)
+
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Normalize an imported source document into canonical spans |  -  |
+| **400** | Invalid request, scope, or unknown source |  -  |
+| **401** | Missing or invalid credentials |  -  |
+| **403** | Credentials lack the required scope |  -  |
+| **413** | Payload or attribute cardinality too large |  -  |
+| **429** | Per-project quota exceeded or backpressure |  -  |
+
+## importSourceWithHttpInfo
+
+> ApiResponse<IngestOutcome> importSource importSourceWithHttpInfo(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey)
+
+
+
+### Example
+
+```java
+// Import classes:
+import ai.beater.client.ApiClient;
+import ai.beater.client.ApiException;
+import ai.beater.client.ApiResponse;
+import ai.beater.client.Configuration;
+import ai.beater.client.models.*;
+import ai.beater.client.api.IngestApi;
+
+public class Example {
+    public static void main(String[] args) {
+        ApiClient defaultClient = Configuration.getDefaultApiClient();
+        defaultClient.setBasePath("http://localhost");
+
+        IngestApi apiInstance = new IngestApi(defaultClient);
+        String tenantId = "tenantId_example"; // String | tenant_id
+        String projectId = "projectId_example"; // String | project_id
+        String environmentId = "environmentId_example"; // String | environment_id
+        ImportSourceHttpRequest importSourceHttpRequest = new ImportSourceHttpRequest(); // ImportSourceHttpRequest | 
+        String durability = "durability_example"; // String | 
+        String authorization = "authorization_example"; // String | Bearer API token for strict auth
+        String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
+        try {
+            ApiResponse<IngestOutcome> response = apiInstance.importSourceWithHttpInfo(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
+            System.out.println("Status code: " + response.getStatusCode());
+            System.out.println("Response headers: " + response.getHeaders());
+            System.out.println("Response body: " + response.getData());
+        } catch (ApiException e) {
+            System.err.println("Exception when calling IngestApi#importSource");
+            System.err.println("Status code: " + e.getCode());
+            System.err.println("Response headers: " + e.getResponseHeaders());
+            System.err.println("Reason: " + e.getResponseBody());
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **tenantId** | **String**| tenant_id | |
+| **projectId** | **String**| project_id | |
+| **environmentId** | **String**| environment_id | |
+| **importSourceHttpRequest** | [**ImportSourceHttpRequest**](ImportSourceHttpRequest.md)|  | |
+| **durability** | **String**|  | [optional] |
+| **authorization** | **String**| Bearer API token for strict auth | [optional] |
+| **xBeaterApiKey** | **String**| API key alternative for strict auth | [optional] |
+
+### Return type
+
+ApiResponse<[**IngestOutcome**](IngestOutcome.md)>
+
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Normalize an imported source document into canonical spans |  -  |
+| **400** | Invalid request, scope, or unknown source |  -  |
+| **401** | Missing or invalid credentials |  -  |
+| **403** | Credentials lack the required scope |  -  |
+| **413** | Payload or attribute cardinality too large |  -  |
+| **429** | Per-project quota exceeded or backpressure |  -  |
 
 
 ## ingestNative

@@ -7,6 +7,7 @@ Method | HTTP request | Description
 [**drain_trace_ingested**](IngestApi.md#drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
 [**drain_trace_writes**](IngestApi.md#drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
 [**get_ingest_queue_status**](IngestApi.md#get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue | 
+[**import_source**](IngestApi.md#import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
 [**ingest_native**](IngestApi.md#ingest_native) | **POST** /v1/traces/native | 
 [**ingest_otlp**](IngestApi.md#ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces | 
 [**reconcile_trace**](IngestApi.md#reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile | 
@@ -110,6 +111,40 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## import_source
+
+> models::IngestOutcome import_source(tenant_id, project_id, environment_id, import_source_http_request, durability, authorization, x_beater_api_key)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**tenant_id** | **String** | tenant_id | [required] |
+**project_id** | **String** | project_id | [required] |
+**environment_id** | **String** | environment_id | [required] |
+**import_source_http_request** | [**ImportSourceHttpRequest**](ImportSourceHttpRequest.md) |  | [required] |
+**durability** | Option<**String**> |  |  |
+**authorization** | Option<**String**> | Bearer API token for strict auth |  |
+**x_beater_api_key** | Option<**String**> | API key alternative for strict auth |  |
+
+### Return type
+
+[**models::IngestOutcome**](IngestOutcome.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

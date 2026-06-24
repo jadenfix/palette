@@ -7,6 +7,7 @@ Method | HTTP request | Description
 [**DrainTraceIngested**](IngestAPI.md#DrainTraceIngested) | **Post** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
 [**DrainTraceWrites**](IngestAPI.md#DrainTraceWrites) | **Post** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
 [**GetIngestQueueStatus**](IngestAPI.md#GetIngestQueueStatus) | **Get** /v1/ingest/{tenant_id}/{project_id}/queue | 
+[**ImportSource**](IngestAPI.md#ImportSource) | **Post** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
 [**IngestNative**](IngestAPI.md#IngestNative) | **Post** /v1/traces/native | 
 [**IngestOtlp**](IngestAPI.md#IngestOtlp) | **Post** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces | 
 [**ReconcileTrace**](IngestAPI.md#ReconcileTrace) | **Post** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile | 
@@ -248,6 +249,88 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## ImportSource
+
+> IngestOutcome ImportSource(ctx, tenantId, projectId, environmentId).ImportSourceHttpRequest(importSourceHttpRequest).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).Execute()
+
+
+
+### Example
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID/beaterclient"
+)
+
+func main() {
+	tenantId := "tenantId_example" // string | tenant_id
+	projectId := "projectId_example" // string | project_id
+	environmentId := "environmentId_example" // string | environment_id
+	importSourceHttpRequest := *openapiclient.NewImportSourceHttpRequest("Source_example") // ImportSourceHttpRequest | 
+	durability := "durability_example" // string |  (optional)
+	authorization := "authorization_example" // string | Bearer API token for strict auth (optional)
+	xBeaterApiKey := "xBeaterApiKey_example" // string | API key alternative for strict auth (optional)
+
+	configuration := openapiclient.NewConfiguration()
+	apiClient := openapiclient.NewAPIClient(configuration)
+	resp, r, err := apiClient.IngestAPI.ImportSource(context.Background(), tenantId, projectId, environmentId).ImportSourceHttpRequest(importSourceHttpRequest).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).Execute()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.ImportSource``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+	}
+	// response from `ImportSource`: IngestOutcome
+	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.ImportSource`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**tenantId** | **string** | tenant_id | 
+**projectId** | **string** | project_id | 
+**environmentId** | **string** | environment_id | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiImportSourceRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+
+
+
+ **importSourceHttpRequest** | [**ImportSourceHttpRequest**](ImportSourceHttpRequest.md) |  | 
+ **durability** | **string** |  | 
+ **authorization** | **string** | Bearer API token for strict auth | 
+ **xBeaterApiKey** | **string** | API key alternative for strict auth | 
+
+### Return type
+
+[**IngestOutcome**](IngestOutcome.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)

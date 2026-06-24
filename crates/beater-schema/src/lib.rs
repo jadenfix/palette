@@ -24,6 +24,8 @@ pub enum SourceDialect {
     PhoenixImport,
     LangSmithImport,
     LangfuseImport,
+    Temporal,
+    TemporalHistoryImport,
 }
 
 impl SourceDialect {
@@ -38,6 +40,8 @@ impl SourceDialect {
             Self::PhoenixImport => "phoenix_import",
             Self::LangSmithImport => "langsmith_import",
             Self::LangfuseImport => "langfuse_import",
+            Self::Temporal => "temporal",
+            Self::TemporalHistoryImport => "temporal_history_import",
         }
     }
 }
@@ -278,16 +282,19 @@ pub mod conventions {
             let json = conventions_json();
             let parsed: serde_json::Value = serde_json::from_str(&json)
                 .unwrap_or_else(|err| panic!("conventions_json must be valid JSON: {err}"));
-            assert_eq!(
-                parsed["span_kinds"].as_array().map(Vec::len),
-                Some(11)
-            );
+            assert_eq!(parsed["span_kinds"].as_array().map(Vec::len), Some(11));
             assert_eq!(
                 parsed["attributes"]["SPAN_KIND"].as_str(),
                 Some("openinference.span.kind")
             );
-            assert_eq!(parsed["defaults"]["BASE_URL"].as_str(), Some("http://127.0.0.1:8080"));
-            assert_eq!(parsed["env"]["TENANT_ID"].as_str(), Some("BEATER_TENANT_ID"));
+            assert_eq!(
+                parsed["defaults"]["BASE_URL"].as_str(),
+                Some("http://127.0.0.1:8080")
+            );
+            assert_eq!(
+                parsed["env"]["TENANT_ID"].as_str(),
+                Some("BEATER_TENANT_ID")
+            );
         }
     }
 }
@@ -321,7 +328,9 @@ impl utoipa::PartialSchema for AgentSpanKind {
             .schema_type(utoipa::openapi::schema::SchemaType::new(
                 utoipa::openapi::schema::Type::String,
             ))
-            .description(Some("Canonical agent span kind such as agent.run or llm.call"))
+            .description(Some(
+                "Canonical agent span kind such as agent.run or llm.call",
+            ))
             .examples([serde_json::json!("llm.call")])
             .into()
     }

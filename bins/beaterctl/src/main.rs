@@ -2065,9 +2065,7 @@ struct ResolvedOperation {
 }
 
 /// The HTTP methods utoipa/OpenAPI can attach to a path item.
-const HTTP_METHODS: [&str; 7] = [
-    "get", "put", "post", "delete", "options", "head", "patch",
-];
+const HTTP_METHODS: [&str; 7] = ["get", "put", "post", "delete", "options", "head", "patch"];
 
 /// Find the operation with the given `operationId` in the OpenAPI document.
 ///
@@ -2144,9 +2142,7 @@ fn fill_path_template(
     if let Some(start) = path.find('{') {
         if let Some(end) = path[start..].find('}') {
             let missing = &path[start + 1..start + end];
-            anyhow::bail!(
-                "missing --param `{missing}` for path parameter in `{path_template}`"
-            );
+            anyhow::bail!("missing --param `{missing}` for path parameter in `{path_template}`");
         }
     }
 
@@ -2199,8 +2195,8 @@ async fn run_api_call(
     params: &[String],
     body: Option<String>,
 ) -> anyhow::Result<()> {
-    let spec = serde_json::to_value(beater_api::openapi::openapi())
-        .context("serialize OpenAPI spec")?;
+    let spec =
+        serde_json::to_value(beater_api::openapi::openapi()).context("serialize OpenAPI spec")?;
     let op = resolve_operation(&spec, operation_id)?;
     let parsed = parse_params(params)?;
     let (path, query) = fill_path_template(&op.path_template, &parsed)?;

@@ -19,6 +19,7 @@ import ai.beater.client.Pair;
 
 import ai.beater.client.model.DeadLetterReplayReport;
 import ai.beater.client.model.ErrorResponse;
+import ai.beater.client.model.ImportSourceHttpRequest;
 import ai.beater.client.model.IngestOutcome;
 import ai.beater.client.model.IngestQueueStatus;
 import ai.beater.client.model.NativeIngestRequest;
@@ -447,6 +448,143 @@ public class IngestApi {
     localVarRequestBuilder.header("Accept", "application/json");
 
     localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+
+  /**
+   * 
+   * 
+   * @param tenantId tenant_id (required)
+   * @param projectId project_id (required)
+   * @param environmentId environment_id (required)
+   * @param importSourceHttpRequest  (required)
+   * @param durability  (optional)
+   * @param authorization Bearer API token for strict auth (optional)
+   * @param xBeaterApiKey API key alternative for strict auth (optional)
+   * @return IngestOutcome
+   * @throws ApiException if fails to make API call
+   */
+  public IngestOutcome importSource(String tenantId, String projectId, String environmentId, ImportSourceHttpRequest importSourceHttpRequest, String durability, String authorization, String xBeaterApiKey) throws ApiException {
+    ApiResponse<IngestOutcome> localVarResponse = importSourceWithHttpInfo(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * 
+   * 
+   * @param tenantId tenant_id (required)
+   * @param projectId project_id (required)
+   * @param environmentId environment_id (required)
+   * @param importSourceHttpRequest  (required)
+   * @param durability  (optional)
+   * @param authorization Bearer API token for strict auth (optional)
+   * @param xBeaterApiKey API key alternative for strict auth (optional)
+   * @return ApiResponse&lt;IngestOutcome&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<IngestOutcome> importSourceWithHttpInfo(String tenantId, String projectId, String environmentId, ImportSourceHttpRequest importSourceHttpRequest, String durability, String authorization, String xBeaterApiKey) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = importSourceRequestBuilder(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("importSource", localVarResponse);
+        }
+        if (localVarResponse.body() == null) {
+          return new ApiResponse<IngestOutcome>(
+              localVarResponse.statusCode(),
+              localVarResponse.headers().map(),
+              null
+          );
+        }
+
+        String responseBody = new String(localVarResponse.body().readAllBytes());
+        localVarResponse.body().close();
+
+        return new ApiResponse<IngestOutcome>(
+            localVarResponse.statusCode(),
+            localVarResponse.headers().map(),
+            responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<IngestOutcome>() {})
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder importSourceRequestBuilder(String tenantId, String projectId, String environmentId, ImportSourceHttpRequest importSourceHttpRequest, String durability, String authorization, String xBeaterApiKey) throws ApiException {
+    // verify the required parameter 'tenantId' is set
+    if (tenantId == null) {
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling importSource");
+    }
+    // verify the required parameter 'projectId' is set
+    if (projectId == null) {
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling importSource");
+    }
+    // verify the required parameter 'environmentId' is set
+    if (environmentId == null) {
+      throw new ApiException(400, "Missing the required parameter 'environmentId' when calling importSource");
+    }
+    // verify the required parameter 'importSourceHttpRequest' is set
+    if (importSourceHttpRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'importSourceHttpRequest' when calling importSource");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/v1/import/{tenant_id}/{project_id}/{environment_id}"
+        .replace("{tenant_id}", ApiClient.urlEncode(tenantId.toString()))
+        .replace("{project_id}", ApiClient.urlEncode(projectId.toString()))
+        .replace("{environment_id}", ApiClient.urlEncode(environmentId.toString()));
+
+    List<Pair> localVarQueryParams = new ArrayList<>();
+    StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
+    String localVarQueryParameterBaseName;
+    localVarQueryParameterBaseName = "durability";
+    localVarQueryParams.addAll(ApiClient.parameterToPairs("durability", durability));
+
+    if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
+      StringJoiner queryJoiner = new StringJoiner("&");
+      localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
+      if (localVarQueryStringJoiner.length() != 0) {
+        queryJoiner.add(localVarQueryStringJoiner.toString());
+      }
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
+    } else {
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    }
+
+    if (authorization != null) {
+      localVarRequestBuilder.header("authorization", authorization.toString());
+    }
+    if (xBeaterApiKey != null) {
+      localVarRequestBuilder.header("x-beater-api-key", xBeaterApiKey.toString());
+    }
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(importSourceHttpRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
     if (memberVarReadTimeout != null) {
       localVarRequestBuilder.timeout(memberVarReadTimeout);
     }

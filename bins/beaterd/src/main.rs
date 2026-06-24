@@ -230,7 +230,10 @@ async fn main() -> anyhow::Result<()> {
         ..IngestPolicy::default()
     };
     let ingest = IngestService::new(artifacts, traces.clone(), bus, ingest_policy)
-        .with_quota_limiter(quota_limiter);
+        .with_quota_limiter(quota_limiter)
+        .with_importer(std::sync::Arc::new(
+            beater_temporal::TemporalHistoryImporter,
+        ));
     if args.trace_write_drain_interval_ms > 0 {
         let trace_write_hooks = TraceWriteWorkerHooks {
             lease_marker_path: args.test_trace_write_lease_marker.clone(),

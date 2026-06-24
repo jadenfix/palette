@@ -29,7 +29,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["alerts_evaluate"];
+        post: operations["evaluateAlert"];
         delete?: never;
         options?: never;
         head?: never;
@@ -45,7 +45,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["apiKeys_create"];
+        post: operations["createApiKey"];
         delete?: never;
         options?: never;
         head?: never;
@@ -61,7 +61,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["apiKeys_revoke"];
+        post: operations["revokeApiKey"];
         delete?: never;
         options?: never;
         head?: never;
@@ -75,7 +75,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["archive_querySpans"];
+        get: operations["queryArchiveSpans"];
         put?: never;
         post?: never;
         delete?: never;
@@ -93,7 +93,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["archive_archiveTrace"];
+        post: operations["archiveTrace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -107,7 +107,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["audit_listEvents"];
+        get: operations["listAuditEvents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -125,7 +125,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["calibrations_run"];
+        post: operations["runCalibration"];
         delete?: never;
         options?: never;
         head?: never;
@@ -141,7 +141,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["datasets_create"];
+        post: operations["createDataset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -157,7 +157,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["datasets_promoteCaseFromTrace"];
+        post: operations["promoteDatasetCaseFromTrace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -173,7 +173,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["datasets_createVersion"];
+        post: operations["createDatasetVersion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -189,7 +189,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["evals_runDeterministic"];
+        post: operations["runDeterministicEval"];
         delete?: never;
         options?: never;
         head?: never;
@@ -205,7 +205,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["evals_runJudge"];
+        post: operations["runJudgeEval"];
         delete?: never;
         options?: never;
         head?: never;
@@ -221,7 +221,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["experiments_runDeterministic"];
+        post: operations["runDeterministicExperiment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -237,7 +237,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["experiments_runJudge"];
+        post: operations["runJudgeExperiment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -253,7 +253,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["gates_create"];
+        post: operations["createGate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -269,7 +269,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["gates_run"];
+        post: operations["runGate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/{tenant_id}/{project_id}/{environment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["importSource"];
         delete?: never;
         options?: never;
         head?: never;
@@ -285,7 +301,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["ingest_replayDeadLetter"];
+        post: operations["replayDeadLetter"];
         delete?: never;
         options?: never;
         head?: never;
@@ -299,7 +315,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["ingest_getQueueStatus"];
+        get: operations["getIngestQueueStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -317,7 +333,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["ingest_drainTraceIngested"];
+        post: operations["drainTraceIngested"];
         delete?: never;
         options?: never;
         head?: never;
@@ -333,7 +349,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["ingest_drainTraceWrites"];
+        post: operations["drainTraceWrites"];
         delete?: never;
         options?: never;
         head?: never;
@@ -349,7 +365,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["ingest_reconcileTrace"];
+        post: operations["reconcileTrace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -365,7 +381,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["judge_evaluate"];
+        post: operations["evaluateJudge"];
         delete?: never;
         options?: never;
         head?: never;
@@ -379,7 +395,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["judge_listLedger"];
+        get: operations["listJudgeLedger"];
         put?: never;
         post?: never;
         delete?: never;
@@ -397,7 +413,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["online_decideSampling"];
+        post: operations["decideOnlineSampling"];
         delete?: never;
         options?: never;
         head?: never;
@@ -413,7 +429,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["ingest_otlp"];
+        post: operations["ingestOtlp"];
         delete?: never;
         options?: never;
         head?: never;
@@ -427,9 +443,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["providerSecrets_list"];
+        get: operations["listProviderSecrets"];
         put?: never;
-        post: operations["providerSecrets_create"];
+        post: operations["createProviderSecret"];
         delete?: never;
         options?: never;
         head?: never;
@@ -445,7 +461,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["providerSecrets_revoke"];
+        post: operations["revokeProviderSecret"];
         delete?: never;
         options?: never;
         head?: never;
@@ -461,7 +477,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["reviews_createQueue"];
+        post: operations["createReviewQueue"];
         delete?: never;
         options?: never;
         head?: never;
@@ -475,7 +491,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["reviews_listTasks"];
+        get: operations["listReviewTasks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -493,7 +509,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["reviews_enqueueTaskFromTrace"];
+        post: operations["enqueueReviewTaskFromTrace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -509,7 +525,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["reviews_submitAnnotation"];
+        post: operations["submitReviewAnnotation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -525,7 +541,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["reviews_promoteAnnotation"];
+        post: operations["promoteReviewAnnotation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -539,7 +555,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["search_spans"];
+        get: operations["searchSpans"];
         put?: never;
         post?: never;
         delete?: never;
@@ -555,7 +571,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["spans_get"];
+        get: operations["getSpan"];
         put?: never;
         post?: never;
         delete?: never;
@@ -571,7 +587,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["spans_getIo"];
+        get: operations["getSpanIo"];
         put?: never;
         post?: never;
         delete?: never;
@@ -589,7 +605,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["ingest_native"];
+        post: operations["ingestNative"];
         delete?: never;
         options?: never;
         head?: never;
@@ -603,7 +619,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["traces_list"];
+        get: operations["listTraces"];
         put?: never;
         post?: never;
         delete?: never;
@@ -619,7 +635,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["traces_get"];
+        get: operations["getTrace"];
         put?: never;
         post?: never;
         delete?: never;
@@ -635,7 +651,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["usage_getSummary"];
+        get: operations["getUsageSummary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1056,25 +1072,31 @@ export interface components {
             reference?: unknown;
             trace?: unknown;
         };
-        EvaluatorKind: "exact_match" | {
-            regex_match: {
-                pattern: string;
-            };
-        } | "json_object" | {
-            cost_budget: {
-                /** Format: int64 */
-                max_micros: number;
-            };
+        EvaluatorKind: {
+            /** @enum {string} */
+            type: "exact_match";
         } | {
-            latency_budget_ms: {
-                /** Format: int64 */
-                max_ms: number;
-            };
+            pattern: string;
+            /** @enum {string} */
+            type: "regex_match";
         } | {
-            llm_judge: {
-                model: string;
-                rubric: string;
-            };
+            /** @enum {string} */
+            type: "json_object";
+        } | {
+            /** Format: int64 */
+            max_micros: number;
+            /** @enum {string} */
+            type: "cost_budget";
+        } | {
+            /** Format: int64 */
+            max_ms: number;
+            /** @enum {string} */
+            type: "latency_budget_ms";
+        } | {
+            model: string;
+            rubric: string;
+            /** @enum {string} */
+            type: "llm_judge";
         };
         /** @enum {string} */
         EvaluatorLane: "deterministic_wasi" | "judge_broker" | "human" | "hybrid";
@@ -1169,6 +1191,19 @@ export interface components {
             ok: boolean;
         };
         IdempotencyKey: string;
+        /**
+         * @description Request body for the unified import endpoint. The `source` field selects a
+         *     registered [`beater_ingest::SourceImporter`] (e.g. `temporal_history`, `native`);
+         *     `payload` is that source's document (Temporal `History` JSON, a native span list,
+         *     …). Everything flows through the same downstream ingest pipeline as OTLP — there are
+         *     no source-specific routes.
+         */
+        ImportSourceHttpRequest: {
+            /** @description The source-specific document to normalize. */
+            payload?: unknown;
+            /** @description Registered importer key, e.g. `temporal_history` or `native`. */
+            source: string;
+        };
         /** @enum {string} */
         InconclusivePolicy: "pass" | "fail";
         IngestOutcome: {
@@ -1620,7 +1655,7 @@ export interface operations {
             };
         };
     };
-    alerts_evaluate: {
+    evaluateAlert: {
         parameters: {
             query?: never;
             header?: {
@@ -1687,7 +1722,7 @@ export interface operations {
             };
         };
     };
-    apiKeys_create: {
+    createApiKey: {
         parameters: {
             query?: never;
             header?: {
@@ -1754,7 +1789,7 @@ export interface operations {
             };
         };
     };
-    apiKeys_revoke: {
+    revokeApiKey: {
         parameters: {
             query?: never;
             header?: {
@@ -1828,7 +1863,7 @@ export interface operations {
             };
         };
     };
-    archive_querySpans: {
+    queryArchiveSpans: {
         parameters: {
             query?: {
                 environment_id?: string;
@@ -1896,7 +1931,7 @@ export interface operations {
             };
         };
     };
-    archive_archiveTrace: {
+    archiveTrace: {
         parameters: {
             query?: never;
             header?: {
@@ -1968,7 +2003,7 @@ export interface operations {
             };
         };
     };
-    audit_listEvents: {
+    listAuditEvents: {
         parameters: {
             query?: never;
             header?: {
@@ -2029,7 +2064,7 @@ export interface operations {
             };
         };
     };
-    calibrations_run: {
+    runCalibration: {
         parameters: {
             query?: never;
             header?: {
@@ -2107,7 +2142,7 @@ export interface operations {
             };
         };
     };
-    datasets_create: {
+    createDataset: {
         parameters: {
             query?: never;
             header?: {
@@ -2172,7 +2207,7 @@ export interface operations {
             };
         };
     };
-    datasets_promoteCaseFromTrace: {
+    promoteDatasetCaseFromTrace: {
         parameters: {
             query?: never;
             header?: {
@@ -2248,7 +2283,7 @@ export interface operations {
             };
         };
     };
-    datasets_createVersion: {
+    createDatasetVersion: {
         parameters: {
             query?: never;
             header?: {
@@ -2324,7 +2359,7 @@ export interface operations {
             };
         };
     };
-    evals_runDeterministic: {
+    runDeterministicEval: {
         parameters: {
             query?: never;
             header?: {
@@ -2402,7 +2437,7 @@ export interface operations {
             };
         };
     };
-    evals_runJudge: {
+    runJudgeEval: {
         parameters: {
             query?: never;
             header?: {
@@ -2480,7 +2515,7 @@ export interface operations {
             };
         };
     };
-    experiments_runDeterministic: {
+    runDeterministicExperiment: {
         parameters: {
             query?: never;
             header?: {
@@ -2558,7 +2593,7 @@ export interface operations {
             };
         };
     };
-    experiments_runJudge: {
+    runJudgeExperiment: {
         parameters: {
             query?: never;
             header?: {
@@ -2636,7 +2671,7 @@ export interface operations {
             };
         };
     };
-    gates_create: {
+    createGate: {
         parameters: {
             query?: never;
             header?: {
@@ -2701,7 +2736,7 @@ export interface operations {
             };
         };
     };
-    gates_run: {
+    runGate: {
         parameters: {
             query?: never;
             header?: {
@@ -2777,7 +2812,90 @@ export interface operations {
             };
         };
     };
-    ingest_replayDeadLetter: {
+    importSource: {
+        parameters: {
+            query?: {
+                durability?: string;
+            };
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description environment_id */
+                environment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportSourceHttpRequest"];
+            };
+        };
+        responses: {
+            /** @description Normalize an imported source document into canonical spans */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestOutcome"];
+                };
+            };
+            /** @description Invalid request, scope, or unknown source */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Payload or attribute cardinality too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Per-project quota exceeded or backpressure */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    replayDeadLetter: {
         parameters: {
             query?: {
                 reset_attempts?: boolean;
@@ -2851,7 +2969,7 @@ export interface operations {
             };
         };
     };
-    ingest_getQueueStatus: {
+    getIngestQueueStatus: {
         parameters: {
             query?: never;
             header?: {
@@ -2912,7 +3030,7 @@ export interface operations {
             };
         };
     };
-    ingest_drainTraceIngested: {
+    drainTraceIngested: {
         parameters: {
             query?: {
                 limit?: number;
@@ -2973,9 +3091,18 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Drained with dead-letters */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraceIngestedDrainReport"];
+                };
+            };
         };
     };
-    ingest_drainTraceWrites: {
+    drainTraceWrites: {
         parameters: {
             query?: {
                 limit?: number;
@@ -3036,9 +3163,18 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Drained with dead-letters */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraceWriteDrainReport"];
+                };
+            };
         };
     };
-    ingest_reconcileTrace: {
+    reconcileTrace: {
         parameters: {
             query?: never;
             header?: {
@@ -3110,7 +3246,7 @@ export interface operations {
             };
         };
     };
-    judge_evaluate: {
+    evaluateJudge: {
         parameters: {
             query?: never;
             header?: {
@@ -3175,7 +3311,7 @@ export interface operations {
             };
         };
     };
-    judge_listLedger: {
+    listJudgeLedger: {
         parameters: {
             query?: never;
             header?: {
@@ -3236,7 +3372,7 @@ export interface operations {
             };
         };
     };
-    online_decideSampling: {
+    decideOnlineSampling: {
         parameters: {
             query?: never;
             header?: {
@@ -3303,7 +3439,7 @@ export interface operations {
             };
         };
     };
-    ingest_otlp: {
+    ingestOtlp: {
         parameters: {
             query?: {
                 durability?: string;
@@ -3366,9 +3502,27 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Payload or attribute cardinality too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Per-project quota exceeded or backpressure */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
-    providerSecrets_list: {
+    listProviderSecrets: {
         parameters: {
             query?: never;
             header?: {
@@ -3429,7 +3583,7 @@ export interface operations {
             };
         };
     };
-    providerSecrets_create: {
+    createProviderSecret: {
         parameters: {
             query?: never;
             header?: {
@@ -3494,7 +3648,7 @@ export interface operations {
             };
         };
     };
-    providerSecrets_revoke: {
+    revokeProviderSecret: {
         parameters: {
             query?: never;
             header?: {
@@ -3566,7 +3720,7 @@ export interface operations {
             };
         };
     };
-    reviews_createQueue: {
+    createReviewQueue: {
         parameters: {
             query?: never;
             header?: {
@@ -3631,7 +3785,7 @@ export interface operations {
             };
         };
     };
-    reviews_listTasks: {
+    listReviewTasks: {
         parameters: {
             query?: {
                 state?: components["schemas"]["ReviewTaskState"];
@@ -3705,7 +3859,7 @@ export interface operations {
             };
         };
     };
-    reviews_enqueueTaskFromTrace: {
+    enqueueReviewTaskFromTrace: {
         parameters: {
             query?: never;
             header?: {
@@ -3781,7 +3935,7 @@ export interface operations {
             };
         };
     };
-    reviews_submitAnnotation: {
+    submitReviewAnnotation: {
         parameters: {
             query?: never;
             header?: {
@@ -3859,7 +4013,7 @@ export interface operations {
             };
         };
     };
-    reviews_promoteAnnotation: {
+    promoteReviewAnnotation: {
         parameters: {
             query?: never;
             header?: {
@@ -3939,7 +4093,7 @@ export interface operations {
             };
         };
     };
-    search_spans: {
+    searchSpans: {
         parameters: {
             query?: {
                 q?: string;
@@ -4009,7 +4163,7 @@ export interface operations {
             };
         };
     };
-    spans_get: {
+    getSpan: {
         parameters: {
             query?: {
                 unmask?: boolean;
@@ -4084,7 +4238,7 @@ export interface operations {
             };
         };
     };
-    spans_getIo: {
+    getSpanIo: {
         parameters: {
             query?: {
                 unmask?: boolean;
@@ -4159,7 +4313,7 @@ export interface operations {
             };
         };
     };
-    ingest_native: {
+    ingestNative: {
         parameters: {
             query?: {
                 durability?: string;
@@ -4219,9 +4373,27 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Payload or attribute cardinality too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Per-project quota exceeded or backpressure */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
-    traces_list: {
+    listTraces: {
         parameters: {
             query?: {
                 project_id?: string;
@@ -4296,7 +4468,7 @@ export interface operations {
             };
         };
     };
-    traces_get: {
+    getTrace: {
         parameters: {
             query?: {
                 unmask?: boolean;
@@ -4369,7 +4541,7 @@ export interface operations {
             };
         };
     };
-    usage_getSummary: {
+    getUsageSummary: {
         parameters: {
             query?: never;
             header?: {

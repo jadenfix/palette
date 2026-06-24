@@ -1709,6 +1709,104 @@ paths:
           description: Resource not found
       tags:
       - gates
+  /v1/import/{tenant_id}/{project_id}/{environment_id}:
+    post:
+      operationId: importSource
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: environment_id
+        explode: false
+        in: path
+        name: environment_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: durability
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportSourceHttpRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestOutcome'
+          description: Normalize an imported source document into canonical spans
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or unknown source"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "413":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Payload or attribute cardinality too large
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Per-project quota exceeded or backpressure
+      tags:
+      - ingest
   /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay:
     post:
       operationId: replayDeadLetter
@@ -6148,6 +6246,23 @@ components:
       - ok
     IdempotencyKey:
       type: string
+    ImportSourceHttpRequest:
+      description: |-
+        Request body for the unified import endpoint. The `source` field selects a
+        registered [`beater_ingest::SourceImporter`] (e.g. `temporal_history`, `native`);
+        `payload` is that source's document (Temporal `History` JSON, a native span list,
+        …). Everything flows through the same downstream ingest pipeline as OTLP — there are
+        no source-specific routes.
+      example:
+        payload: ""
+        source: source
+      properties:
+        payload: {}
+        source:
+          description: "Registered importer key, e.g. `temporal_history` or `native`."
+          type: string
+      required:
+      - source
     InconclusivePolicy:
       enum:
       - pass

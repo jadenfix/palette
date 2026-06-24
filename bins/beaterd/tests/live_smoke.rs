@@ -78,6 +78,77 @@ async fn beaterd_accepts_otlp_http_and_grpc_and_makes_traces_queryable() -> anyh
     Ok(())
 }
 
+const TEMPORAL_HISTORY_FIXTURE: &str =
+    include_str!("../../../crates/beater-temporal/tests/fixtures/order_workflow_history.json");
+
+#[tokio::test]
+async fn beaterd_imports_temporal_history_into_queryable_trace() -> anyhow::Result<()> {
+    let _guard = live_smoke_guard().await;
+    let tempdir = tempfile::tempdir()?;
+    let addrs = free_addrs(2)?;
+    let http_addr = addrs[0];
+    let grpc_addr = addrs[1];
+    let _server = BeaterdChild::spawn(tempdir.path(), http_addr, grpc_addr)?;
+    let http_url = format!("http://{http_addr}");
+    wait_for_health(&http_url).await?;
+
+    // Language-agnostic import: POST a raw Temporal GetWorkflowExecutionHistory document
+    // to the unified import endpoint with the `temporal_history` source selector.
+    let history: serde_json::Value = serde_json::from_str(TEMPORAL_HISTORY_FIXTURE)?;
+    let body = serde_json::json!({ "source": "temporal_history", "payload": history });
+    reqwest::Client::new()
+        .post(format!("{http_url}/v1/import/demo/demo/local"))
+        .json(&body)
+        .send()
+        .await?
+        .error_for_status()?;
+
+    // The workflow run id becomes the trace id; the history reconstructs a span tree.
+    let trace = wait_for_trace(&http_url, "11111111-1111-1111-1111-111111111111").await?;
+    // workflow root + activity + timer + child workflow + signal.
+    assert_eq!(span_count(&trace), 5);
+
+    let spans = trace
+        .get("spans")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| anyhow::anyhow!("trace has no spans array"))?;
+    let find = |name: &str| {
+        spans
+            .iter()
+            .find(|span| span.get("name").and_then(serde_json::Value::as_str) == Some(name))
+    };
+    let kind_of = |span: &serde_json::Value| {
+        span.get("kind")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default()
+            .to_string()
+    };
+
+    let root =
+        find("OrderWorkflow").ok_or_else(|| anyhow::anyhow!("missing workflow root span"))?;
+    assert_eq!(kind_of(root), "agent.run");
+    assert_eq!(
+        root.get("parent_span_id")
+            .and_then(serde_json::Value::as_str),
+        None
+    );
+
+    let activity = find("ValidateOrder").ok_or_else(|| anyhow::anyhow!("missing activity span"))?;
+    assert_eq!(kind_of(activity), "tool.call");
+    assert_eq!(
+        activity
+            .get("parent_span_id")
+            .and_then(serde_json::Value::as_str),
+        root.get("span_id").and_then(serde_json::Value::as_str)
+    );
+
+    let child = find("FulfillmentWorkflow")
+        .ok_or_else(|| anyhow::anyhow!("missing child workflow span"))?;
+    assert_eq!(kind_of(child), "agent.run");
+
+    Ok(())
+}
+
 #[tokio::test]
 async fn beaterd_quota_is_shared_across_two_replicas_and_resets_on_window() -> anyhow::Result<()> {
     let _guard = live_smoke_guard().await;

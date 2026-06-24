@@ -248,7 +248,7 @@ impl ApiState {
 /// spec; the `openapi_coverage` integration test enforces this both ways.
 ///
 /// Update this when adding or removing a `/v1` route in [`router`].
-pub const V1_ROUTE_COUNT: usize = 40;
+pub const V1_ROUTE_COUNT: usize = 41;
 
 /// See [`V1_ROUTE_COUNT`].
 pub fn v1_route_count() -> usize {
@@ -389,6 +389,10 @@ pub fn router(state: ApiState) -> Router {
         .route(
             "/v1/otlp/:tenant_id/:project_id/:environment_id/v1/traces",
             post(ingest_otlp_http),
+        )
+        .route(
+            "/v1/import/:tenant_id/:project_id/:environment_id",
+            post(import_source_route),
         )
         .route("/v1/traces/:tenant_id/:trace_id", get(get_trace))
         .with_state(state)
@@ -1081,6 +1085,85 @@ async fn ingest_otlp_http(
         duplicate_spans: outcome.ack.duplicate_spans,
         downstream_queued: outcome.downstream_queued,
     }))
+}
+
+/// Request body for the unified import endpoint. The `source` field selects a
+/// registered [`beater_ingest::SourceImporter`] (e.g. `temporal_history`, `native`);
+/// `payload` is that source's document (Temporal `History` JSON, a native span list,
+/// …). Everything flows through the same downstream ingest pipeline as OTLP — there are
+/// no source-specific routes.
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+struct ImportSourceHttpRequest {
+    /// Registered importer key, e.g. `temporal_history` or `native`.
+    source: String,
+    /// The source-specific document to normalize.
+    #[serde(default)]
+    payload: serde_json::Value,
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/import/{tenant_id}/{project_id}/{environment_id}",
+    tag = "ingest",
+    operation_id = "importSource",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("environment_id" = String, Path, description = "environment_id"),
+        IngestDurabilityQuery,
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+    ),
+    request_body = ImportSourceHttpRequest,
+    responses(
+        (status = 200, description = "Normalize an imported source document into canonical spans", body = IngestOutcome),
+        (status = 400, description = "Invalid request, scope, or unknown source", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 413, description = "Payload or attribute cardinality too large", body = ErrorResponse),
+        (status = 429, description = "Per-project quota exceeded or backpressure", body = ErrorResponse),
+    )
+)]
+async fn import_source_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id, environment_id)): Path<(String, String, String)>,
+    Query(params): Query<IngestDurabilityQuery>,
+    Json(request): Json<ImportSourceHttpRequest>,
+) -> Result<Json<IngestOutcome>, ApiError> {
+    let scope = TenantScope::new(
+        TenantId::new(tenant_id)?,
+        ProjectId::new(project_id)?,
+        EnvironmentId::new(environment_id)?,
+    );
+    let auth = authorize(
+        &state,
+        &headers,
+        &scope.tenant_id,
+        &scope.project_id,
+        &scope.environment_id,
+        ApiScope::TraceWrite,
+    )
+    .await?;
+    // The stored raw envelope is the canonical-JSON re-serialization of `payload`,
+    // not the verbatim request bytes. That's intentional here: it normalizes
+    // formatting for the idempotency hash and is lossless for the source documents we
+    // import (Temporal history uses small integer ids + base64 payloads). Switch to
+    // capturing the raw body if byte-exact archival ever becomes a requirement.
+    let raw_bytes = serde_json::to_vec(&request.payload)
+        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let buffered = ingest_buffered(&params)?;
+    let outcome = state
+        .ingest
+        .import_source(
+            &request.source,
+            scope,
+            raw_bytes,
+            Some(auth.context),
+            buffered,
+        )
+        .await?;
+    Ok(Json(outcome))
 }
 
 #[utoipa::path(
@@ -2890,8 +2973,12 @@ enum SpanIoValue {
         #[schema(value_type = serde_json::Value)]
         value: serde_json::Value,
     },
-    Artifact { artifact_ref: ArtifactRef },
-    Redacted { reason: String },
+    Artifact {
+        artifact_ref: ArtifactRef,
+    },
+    Redacted {
+        reason: String,
+    },
     Missing,
 }
 
@@ -3522,6 +3609,7 @@ impl From<IngestError> for ApiError {
                 Self::with_status(StatusCode::PAYLOAD_TOO_LARGE, error.to_string())
             }
             IngestError::NotFound(_) => Self::with_status(StatusCode::NOT_FOUND, error.to_string()),
+            IngestError::Import(_) => Self::bad_request(error.to_string()),
             IngestError::Store(error) => error.into(),
             IngestError::Other(error) => Self::internal(error.to_string()),
         }

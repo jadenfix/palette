@@ -44,6 +44,12 @@ class TestIngestApi(unittest.TestCase):
         """
         pass
 
+    def test_import_source(self) -> None:
+        """Test case for import_source
+
+        """
+        pass
+
     def test_ingest_native(self) -> None:
         """Test case for ingest_native
 

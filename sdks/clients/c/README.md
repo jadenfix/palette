@@ -85,6 +85,7 @@ Category | Method | HTTP request | Description
 *IngestAPI* | [**IngestAPI_drainTraceIngested**](docs/IngestAPI.md#IngestAPI_drainTraceIngested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
 *IngestAPI* | [**IngestAPI_drainTraceWrites**](docs/IngestAPI.md#IngestAPI_drainTraceWrites) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
 *IngestAPI* | [**IngestAPI_getIngestQueueStatus**](docs/IngestAPI.md#IngestAPI_getIngestQueueStatus) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue | 
+*IngestAPI* | [**IngestAPI_importSource**](docs/IngestAPI.md#IngestAPI_importSource) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
 *IngestAPI* | [**IngestAPI_ingestNative**](docs/IngestAPI.md#IngestAPI_ingestNative) | **POST** /v1/traces/native | 
 *IngestAPI* | [**IngestAPI_ingestOtlp**](docs/IngestAPI.md#IngestAPI_ingestOtlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces | 
 *IngestAPI* | [**IngestAPI_reconcileTrace**](docs/IngestAPI.md#IngestAPI_reconcileTrace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile | 
@@ -169,6 +170,7 @@ Category | Method | HTTP request | Description
  - [gate_policy_t](docs/gate_policy.md)
  - [gate_run_report_t](docs/gate_run_report.md)
  - [health_response_t](docs/health_response.md)
+ - [import_source_http_request_t](docs/import_source_http_request.md)
  - [inconclusive_policy_t](docs/inconclusive_policy.md)
  - [ingest_outcome_t](docs/ingest_outcome.md)
  - [ingest_queue_status_t](docs/ingest_queue_status.md)

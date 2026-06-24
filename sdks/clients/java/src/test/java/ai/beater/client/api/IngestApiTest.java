@@ -16,6 +16,7 @@ package ai.beater.client.api;
 import ai.beater.client.ApiException;
 import ai.beater.client.model.DeadLetterReplayReport;
 import ai.beater.client.model.ErrorResponse;
+import ai.beater.client.model.ImportSourceHttpRequest;
 import ai.beater.client.model.IngestOutcome;
 import ai.beater.client.model.IngestQueueStatus;
 import ai.beater.client.model.NativeIngestRequest;
@@ -106,6 +107,29 @@ public class IngestApiTest {
         String xBeaterEnvironmentId = null;
         IngestQueueStatus response = 
         api.getIngestQueueStatus(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void importSourceTest() throws ApiException {
+        String tenantId = null;
+        String projectId = null;
+        String environmentId = null;
+        ImportSourceHttpRequest importSourceHttpRequest = null;
+        String durability = null;
+        String authorization = null;
+        String xBeaterApiKey = null;
+        IngestOutcome response = 
+        api.importSource(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
         
         // TODO: test validations
     }

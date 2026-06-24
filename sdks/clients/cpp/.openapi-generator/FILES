@@ -92,6 +92,7 @@ include/beater-client/model/GateDefinition.h
 include/beater-client/model/GatePolicy.h
 include/beater-client/model/GateRunReport.h
 include/beater-client/model/HealthResponse.h
+include/beater-client/model/ImportSourceHttpRequest.h
 include/beater-client/model/InconclusivePolicy.h
 include/beater-client/model/IngestOutcome.h
 include/beater-client/model/IngestQueueStatus.h
@@ -237,6 +238,7 @@ src/model/GateDefinition.cpp
 src/model/GatePolicy.cpp
 src/model/GateRunReport.cpp
 src/model/HealthResponse.cpp
+src/model/ImportSourceHttpRequest.cpp
 src/model/InconclusivePolicy.cpp
 src/model/IngestOutcome.cpp
 src/model/IngestQueueStatus.cpp

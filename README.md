@@ -86,6 +86,8 @@ This repo now contains the first tested Rust vertical slice:
 - `beaterctl smoke --http-url ...` remote mode for live `beaterd` OTLP HTTP/gRPC smoke checks with measured query lag
 - OTLP/HTTP protobuf trace ingest endpoint with raw protobuf preservation
 - OTLP/gRPC TraceService ingest mounted by `beaterd` alongside axum
+- unified, source-agnostic `/v1/import` ingest endpoint (pluggable `SourceImporter`s: native span lists or Temporal workflow history) — see [examples/temporal](examples/temporal/README.md)
+- Temporal integration: live capture via Temporal's OpenTelemetry interceptor (any SDK language, zero Beater client code) plus pinned, drift-guarded history import (`beater-temporal`)
 - Tantivy-backed structured and full-text span search
 - Parquet/DataFusion cold trace archive export/query
 - canonical schema and agent span taxonomy

@@ -119,6 +119,7 @@ docs/gate_definition.md
 docs/gate_policy.md
 docs/gate_run_report.md
 docs/health_response.md
+docs/import_source_http_request.md
 docs/inconclusive_policy.md
 docs/ingest_outcome.md
 docs/ingest_queue_status.md
@@ -304,6 +305,8 @@ model/gate_run_report.c
 model/gate_run_report.h
 model/health_response.c
 model/health_response.h
+model/import_source_http_request.c
+model/import_source_http_request.h
 model/inconclusive_policy.c
 model/inconclusive_policy.h
 model/ingest_outcome.c
@@ -486,6 +489,7 @@ unit-test/test_gate_definition.c
 unit-test/test_gate_policy.c
 unit-test/test_gate_run_report.c
 unit-test/test_health_response.c
+unit-test/test_import_source_http_request.c
 unit-test/test_inconclusive_policy.c
 unit-test/test_ingest_outcome.c
 unit-test/test_ingest_queue_status.c

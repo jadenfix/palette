@@ -107,6 +107,7 @@ set(SRCS
     model/gate_policy.c
     model/gate_run_report.c
     model/health_response.c
+    model/import_source_http_request.c
     model/inconclusive_policy.c
     model/ingest_outcome.c
     model/ingest_queue_status.c
@@ -254,6 +255,7 @@ set(HDRS
     model/gate_policy.h
     model/gate_run_report.h
     model/health_response.h
+    model/import_source_http_request.h
     model/inconclusive_policy.h
     model/ingest_outcome.h
     model/ingest_queue_status.h

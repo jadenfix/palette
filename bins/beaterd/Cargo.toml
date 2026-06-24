@@ -25,6 +25,7 @@ beater-otlp = { path = "../../crates/beater-otlp" }
 beater-search = { path = "../../crates/beater-search" }
 beater-secrets = { path = "../../crates/beater-secrets" }
 beater-schema = { path = "../../crates/beater-schema" }
+beater-temporal = { path = "../../crates/beater-temporal" }
 beater-store = { path = "../../crates/beater-store" }
 beater-store-obj = { path = "../../crates/beater-store-obj" }
 beater-store-sql = { path = "../../crates/beater-store-sql" }

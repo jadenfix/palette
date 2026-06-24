@@ -10,6 +10,7 @@ members = [
   "crates/beater-bus",
   "crates/beater-ingest",
   "crates/beater-otlp",
+  "crates/beater-temporal",
   "crates/beater-eval",
   "crates/beater-replay",
   "crates/beater-security",

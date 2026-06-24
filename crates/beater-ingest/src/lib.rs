@@ -42,9 +42,84 @@ pub enum IngestError {
     #[error("ingest resource not found: {0}")]
     NotFound(String),
     #[error(transparent)]
+    Import(#[from] ImportError),
+    #[error(transparent)]
     Store(#[from] StoreError),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
+}
+
+/// Error raised by a [`SourceImporter`] when it cannot normalize a payload.
+#[derive(Debug, thiserror::Error)]
+pub enum ImportError {
+    #[error("source '{source_name}' rejected payload: {message}")]
+    Invalid {
+        source_name: String,
+        message: String,
+    },
+}
+
+/// Pluggable normalization seam: maps a source-specific payload into a
+/// [`RawTraceIngestRequest`], which then flows through the *same* downstream ingest
+/// pipeline as every other source (OTLP, native). Implementations are pure and must
+/// not perform IO. Register them with [`IngestService::with_importer`] and dispatch
+/// by `source` via [`IngestService::import_source`].
+pub trait SourceImporter: Send + Sync {
+    /// The wire identifier selected by the unified import endpoint (e.g. `"temporal_history"`).
+    fn source(&self) -> &'static str;
+
+    /// Normalize raw bytes into a ready-to-ingest request.
+    fn normalize(
+        &self,
+        scope: &TenantScope,
+        raw_bytes: &[u8],
+        auth: Option<AuthContext>,
+    ) -> Result<RawTraceIngestRequest, ImportError>;
+}
+
+/// Built-in importer for native canonical span drafts: accepts a JSON body of the
+/// shape `{ "spans": [CanonicalSpanDraft, ...] }`. Registered on every
+/// [`IngestService`] so the unified import endpoint serves the native case with no
+/// external crate.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct NativeSpansImporter;
+
+#[derive(Deserialize)]
+struct NativeSpansPayload {
+    #[serde(default)]
+    spans: Vec<CanonicalSpanDraft>,
+}
+
+impl SourceImporter for NativeSpansImporter {
+    fn source(&self) -> &'static str {
+        "native"
+    }
+
+    fn normalize(
+        &self,
+        scope: &TenantScope,
+        raw_bytes: &[u8],
+        auth: Option<AuthContext>,
+    ) -> Result<RawTraceIngestRequest, ImportError> {
+        let payload: NativeSpansPayload =
+            serde_json::from_slice(raw_bytes).map_err(|err| ImportError::Invalid {
+                source_name: "native".to_string(),
+                message: err.to_string(),
+            })?;
+        Ok(RawTraceIngestRequest {
+            scope: scope.clone(),
+            source: SourceDialect::Native,
+            source_schema_url: Some("beater://native/v1".to_string()),
+            source_schema_version: Some("1".to_string()),
+            normalizer_version: "beater-native-import-v1".to_string(),
+            mime_type: "application/json".to_string(),
+            redaction_class: RedactionClass::Internal,
+            raw_bytes: raw_bytes.to_vec(),
+            raw_idempotency_key: None,
+            auth_context: auth,
+            spans: payload.spans,
+        })
+    }
 }
 
 #[derive(Clone)]
@@ -55,6 +130,7 @@ pub struct IngestService {
     policy: IngestPolicy,
     quota_limiter: Arc<dyn QuotaLimiter>,
     clock: Arc<dyn Clock>,
+    importers: Arc<BTreeMap<&'static str, Arc<dyn SourceImporter>>>,
 }
 
 impl IngestService {
@@ -64,6 +140,9 @@ impl IngestService {
         bus: Arc<dyn DurableBus>,
         policy: IngestPolicy,
     ) -> Self {
+        let mut importers: BTreeMap<&'static str, Arc<dyn SourceImporter>> = BTreeMap::new();
+        let native = NativeSpansImporter;
+        importers.insert(native.source(), Arc::new(native));
         Self {
             artifacts,
             traces,
@@ -71,6 +150,7 @@ impl IngestService {
             policy,
             quota_limiter: Arc::new(InMemoryQuotaLimiter::new()),
             clock: Arc::new(SystemClock),
+            importers: Arc::new(importers),
         }
     }
 
@@ -82,6 +162,49 @@ impl IngestService {
     pub fn with_clock(mut self, clock: Arc<dyn Clock>) -> Self {
         self.clock = clock;
         self
+    }
+
+    /// Register a [`SourceImporter`], keyed by its `source()` identifier. Replaces any
+    /// existing importer with the same key.
+    pub fn with_importer(mut self, importer: Arc<dyn SourceImporter>) -> Self {
+        let mut importers = (*self.importers).clone();
+        importers.insert(importer.source(), importer);
+        self.importers = Arc::new(importers);
+        self
+    }
+
+    /// Source identifiers currently registered (sorted), for diagnostics/discovery.
+    pub fn registered_import_sources(&self) -> Vec<&'static str> {
+        self.importers.keys().copied().collect()
+    }
+
+    /// Normalize a payload from the named `source` and ingest it through the shared
+    /// pipeline. `buffered` selects durable buffering vs synchronous write, matching
+    /// the OTLP and native ingest paths.
+    pub async fn import_source(
+        &self,
+        source: &str,
+        scope: TenantScope,
+        raw_bytes: Vec<u8>,
+        auth: Option<AuthContext>,
+        buffered: bool,
+    ) -> Result<IngestOutcome, IngestError> {
+        let importer = self.importers.get(source).ok_or_else(|| {
+            IngestError::NotFound(format!(
+                "no importer registered for source '{source}'; registered: [{}]",
+                self.importers
+                    .keys()
+                    .copied()
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))
+        })?;
+        let request = importer.normalize(&scope, &raw_bytes, auth)?;
+        if buffered {
+            self.buffer_raw_trace_batch(request).await
+        } else {
+            self.ingest_raw_trace_batch(request).await
+        }
     }
 
     pub async fn ingest_native(
@@ -1032,7 +1155,9 @@ pub struct CanonicalSpanDraft {
     pub attributes: CanonicalAttrs,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, utoipa::ToSchema)]
+#[derive(
+    Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, utoipa::ToSchema,
+)]
 pub struct QueuedTraceWork {
     pub tenant_id: TenantId,
     pub project_id: ProjectId,

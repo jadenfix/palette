@@ -630,6 +630,213 @@ end:
 }
 
 ingest_outcome_t*
+IngestAPI_importSource(apiClient_t *apiClient, char *tenant_id, char *project_id, char *environment_id, import_source_http_request_t *import_source_http_request, char *durability, char *authorization, char *x_beater_api_key)
+{
+    list_t    *localVarQueryParameters = list_createList();
+    list_t    *localVarHeaderParameters = list_createList();
+    list_t    *localVarFormParameters = NULL;
+    list_t *localVarHeaderType = list_createList();
+    list_t *localVarContentType = list_createList();
+    char      *localVarBodyParameters = NULL;
+    size_t     localVarBodyLength = 0;
+
+    // clear the error code from the previous api call
+    apiClient->response_code = 0;
+
+    // create the path
+    char *localVarPath = strdup("/v1/import/{tenant_id}/{project_id}/{environment_id}");
+
+    if(!tenant_id)
+        goto end;
+    if(!project_id)
+        goto end;
+    if(!environment_id)
+        goto end;
+
+
+    // Path Params
+    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(environment_id)+3 + sizeof("{ tenant_id }") - 1;
+    if(tenant_id == NULL) {
+        goto end;
+    }
+    char* localVarToReplace_tenant_id = malloc(sizeOfPathParams_tenant_id);
+    sprintf(localVarToReplace_tenant_id, "{%s}", "tenant_id");
+
+    localVarPath = strReplace(localVarPath, localVarToReplace_tenant_id, tenant_id);
+
+    // Path Params
+    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(environment_id)+3 + sizeof("{ project_id }") - 1;
+    if(project_id == NULL) {
+        goto end;
+    }
+    char* localVarToReplace_project_id = malloc(sizeOfPathParams_project_id);
+    sprintf(localVarToReplace_project_id, "{%s}", "project_id");
+
+    localVarPath = strReplace(localVarPath, localVarToReplace_project_id, project_id);
+
+    // Path Params
+    long sizeOfPathParams_environment_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(environment_id)+3 + sizeof("{ environment_id }") - 1;
+    if(environment_id == NULL) {
+        goto end;
+    }
+    char* localVarToReplace_environment_id = malloc(sizeOfPathParams_environment_id);
+    sprintf(localVarToReplace_environment_id, "{%s}", "environment_id");
+
+    localVarPath = strReplace(localVarPath, localVarToReplace_environment_id, environment_id);
+
+
+
+    // header parameters
+    char *keyHeader_authorization = NULL;
+    char * valueHeader_authorization = 0;
+    keyValuePair_t *keyPairHeader_authorization = 0;
+    if (authorization) {
+        keyHeader_authorization = strdup("authorization");
+        valueHeader_authorization = strdup((authorization));
+        keyPairHeader_authorization = keyValuePair_create(keyHeader_authorization, valueHeader_authorization);
+        list_addElement(localVarHeaderParameters,keyPairHeader_authorization);
+    }
+
+
+    // header parameters
+    char *keyHeader_x_beater_api_key = NULL;
+    char * valueHeader_x_beater_api_key = 0;
+    keyValuePair_t *keyPairHeader_x_beater_api_key = 0;
+    if (x_beater_api_key) {
+        keyHeader_x_beater_api_key = strdup("x-beater-api-key");
+        valueHeader_x_beater_api_key = strdup((x_beater_api_key));
+        keyPairHeader_x_beater_api_key = keyValuePair_create(keyHeader_x_beater_api_key, valueHeader_x_beater_api_key);
+        list_addElement(localVarHeaderParameters,keyPairHeader_x_beater_api_key);
+    }
+
+
+    // query parameters
+    char *keyQuery_durability = NULL;
+    char * valueQuery_durability = NULL;
+    keyValuePair_t *keyPairQuery_durability = 0;
+    if (durability)
+    {
+        keyQuery_durability = strdup("durability");
+        valueQuery_durability = strdup((durability));
+        keyPairQuery_durability = keyValuePair_create(keyQuery_durability, valueQuery_durability);
+        list_addElement(localVarQueryParameters,keyPairQuery_durability);
+    }
+
+    // Body Param
+    cJSON *localVarSingleItemJSON_import_source_http_request = NULL;
+    if (import_source_http_request != NULL)
+    {
+        //not string, not binary
+        localVarSingleItemJSON_import_source_http_request = import_source_http_request_convertToJSON(import_source_http_request);
+        localVarBodyParameters = cJSON_Print(localVarSingleItemJSON_import_source_http_request);
+        localVarBodyLength = strlen(localVarBodyParameters);
+    }
+    list_addElement(localVarHeaderType,"application/json"); //produces
+    list_addElement(localVarContentType,"application/json"); //consumes
+    apiClient_invoke(apiClient,
+                    localVarPath,
+                    localVarQueryParameters,
+                    localVarHeaderParameters,
+                    localVarFormParameters,
+                    localVarHeaderType,
+                    localVarContentType,
+                    localVarBodyParameters,
+                    localVarBodyLength,
+                    "POST");
+
+    // uncomment below to debug the error response
+    //if (apiClient->response_code == 200) {
+    //    printf("%s\n","Normalize an imported source document into canonical spans");
+    //}
+    // uncomment below to debug the error response
+    //if (apiClient->response_code == 400) {
+    //    printf("%s\n","Invalid request, scope, or unknown source");
+    //}
+    // uncomment below to debug the error response
+    //if (apiClient->response_code == 401) {
+    //    printf("%s\n","Missing or invalid credentials");
+    //}
+    // uncomment below to debug the error response
+    //if (apiClient->response_code == 403) {
+    //    printf("%s\n","Credentials lack the required scope");
+    //}
+    // uncomment below to debug the error response
+    //if (apiClient->response_code == 413) {
+    //    printf("%s\n","Payload or attribute cardinality too large");
+    //}
+    // uncomment below to debug the error response
+    //if (apiClient->response_code == 429) {
+    //    printf("%s\n","Per-project quota exceeded or backpressure");
+    //}
+    //nonprimitive not container
+    ingest_outcome_t *elementToReturn = NULL;
+    if(apiClient->response_code >= 200 && apiClient->response_code < 300) {
+        cJSON *IngestAPIlocalVarJSON = cJSON_Parse(apiClient->dataReceived);
+        elementToReturn = ingest_outcome_parseFromJSON(IngestAPIlocalVarJSON);
+        cJSON_Delete(IngestAPIlocalVarJSON);
+        if(elementToReturn == NULL) {
+            // return 0;
+        }
+    }
+
+    //return type
+    if (apiClient->dataReceived) {
+        free(apiClient->dataReceived);
+        apiClient->dataReceived = NULL;
+        apiClient->dataReceivedLen = 0;
+    }
+    list_freeList(localVarQueryParameters);
+    list_freeList(localVarHeaderParameters);
+    
+    list_freeList(localVarHeaderType);
+    list_freeList(localVarContentType);
+    free(localVarPath);
+    free(localVarToReplace_tenant_id);
+    free(localVarToReplace_project_id);
+    free(localVarToReplace_environment_id);
+    if (keyHeader_authorization) {
+        free(keyHeader_authorization);
+        keyHeader_authorization = NULL;
+    }
+    if (valueHeader_authorization) {
+        free(valueHeader_authorization);
+        valueHeader_authorization = NULL;
+    }
+    free(keyPairHeader_authorization);
+    if (keyHeader_x_beater_api_key) {
+        free(keyHeader_x_beater_api_key);
+        keyHeader_x_beater_api_key = NULL;
+    }
+    if (valueHeader_x_beater_api_key) {
+        free(valueHeader_x_beater_api_key);
+        valueHeader_x_beater_api_key = NULL;
+    }
+    free(keyPairHeader_x_beater_api_key);
+    if (localVarSingleItemJSON_import_source_http_request) {
+        cJSON_Delete(localVarSingleItemJSON_import_source_http_request);
+        localVarSingleItemJSON_import_source_http_request = NULL;
+    }
+    free(localVarBodyParameters);
+    if(keyQuery_durability){
+        free(keyQuery_durability);
+        keyQuery_durability = NULL;
+    }
+    if(valueQuery_durability){
+        free(valueQuery_durability);
+        valueQuery_durability = NULL;
+    }
+    if(keyPairQuery_durability){
+        keyValuePair_free(keyPairQuery_durability);
+        keyPairQuery_durability = NULL;
+    }
+    return elementToReturn;
+end:
+    free(localVarPath);
+    return NULL;
+
+}
+
+ingest_outcome_t*
 IngestAPI_ingestNative(apiClient_t *apiClient, native_ingest_request_t *native_ingest_request, char *durability, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = list_createList();

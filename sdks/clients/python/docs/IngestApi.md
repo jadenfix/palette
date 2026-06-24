@@ -7,6 +7,7 @@ Method | HTTP request | Description
 [**drain_trace_ingested**](IngestApi.md#drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
 [**drain_trace_writes**](IngestApi.md#drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
 [**get_ingest_queue_status**](IngestApi.md#get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue | 
+[**import_source**](IngestApi.md#import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
 [**ingest_native**](IngestApi.md#ingest_native) | **POST** /v1/traces/native | 
 [**ingest_otlp**](IngestApi.md#ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces | 
 [**reconcile_trace**](IngestApi.md#reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile | 
@@ -250,6 +251,89 @@ No authorization required
 **400** | Invalid request, scope, or filter |  -  |
 **401** | Missing or invalid credentials |  -  |
 **403** | Credentials lack the required scope |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **import_source**
+> IngestOutcome import_source(tenant_id, project_id, environment_id, import_source_http_request, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key)
+
+
+
+### Example
+
+
+```python
+import beater_client
+from beater_client.models.import_source_http_request import ImportSourceHttpRequest
+from beater_client.models.ingest_outcome import IngestOutcome
+from beater_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to http://localhost
+# See configuration.py for a list of all supported configuration parameters.
+configuration = beater_client.Configuration(
+    host = "http://localhost"
+)
+
+
+# Enter a context with an instance of the API client
+with beater_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = beater_client.IngestApi(api_client)
+    tenant_id = 'tenant_id_example' # str | tenant_id
+    project_id = 'project_id_example' # str | project_id
+    environment_id = 'environment_id_example' # str | environment_id
+    import_source_http_request = beater_client.ImportSourceHttpRequest() # ImportSourceHttpRequest | 
+    durability = 'durability_example' # str |  (optional)
+    authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
+    x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
+
+    try:
+        api_response = api_instance.import_source(tenant_id, project_id, environment_id, import_source_http_request, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key)
+        print("The response of IngestApi->import_source:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling IngestApi->import_source: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tenant_id** | **str**| tenant_id | 
+ **project_id** | **str**| project_id | 
+ **environment_id** | **str**| environment_id | 
+ **import_source_http_request** | [**ImportSourceHttpRequest**](ImportSourceHttpRequest.md)|  | 
+ **durability** | **str**|  | [optional] 
+ **authorization** | **str**| Bearer API token for strict auth | [optional] 
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
+
+### Return type
+
+[**IngestOutcome**](IngestOutcome.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Normalize an imported source document into canonical spans |  -  |
+**400** | Invalid request, scope, or unknown source |  -  |
+**401** | Missing or invalid credentials |  -  |
+**403** | Credentials lack the required scope |  -  |
+**413** | Payload or attribute cardinality too large |  -  |
+**429** | Per-project quota exceeded or backpressure |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

@@ -171,6 +171,7 @@ fn status_from_ingest_error(error: IngestError) -> Status {
             Status::invalid_argument(error.to_string())
         }
         IngestError::NotFound(_) => Status::not_found(error.to_string()),
+        IngestError::Import(_) => Status::invalid_argument(error.to_string()),
         IngestError::Store(_) => Status::unavailable(error.to_string()),
         IngestError::Other(_) => Status::internal(error.to_string()),
     }
@@ -308,7 +309,12 @@ fn convert_span(
     }
 
     let status = convert_status(span.status.as_ref());
-    let kind = infer_agent_span_kind(&attributes, span.kind);
+    let kind = infer_agent_span_kind(&attributes, &span.name, span.kind);
+    if temporal_span_kind(&attributes, &span.name).is_some() {
+        attributes
+            .entry("beater.framework".to_string())
+            .or_insert_with(|| Value::String("temporal".to_string()));
+    }
     let model = extract_model(&attributes);
     let cost = extract_cost(&attributes);
     let tokens = extract_tokens(&attributes);
@@ -373,7 +379,34 @@ fn convert_status(status: Option<&opentelemetry_proto::tonic::trace::v1::Status>
     }
 }
 
-fn infer_agent_span_kind(attrs: &CanonicalAttrs, otel_kind: i32) -> AgentSpanKind {
+/// Recognize spans emitted by Temporal's built-in OpenTelemetry tracing interceptor
+/// (any SDK language). Temporal encodes the unit of work both in `temporal.*`
+/// attributes and in the span name prefix (`RunWorkflow:`, `StartActivity:`, …), so we
+/// check attributes first and fall back to the name. Returns `None` for non-Temporal
+/// spans so normal inference proceeds.
+fn temporal_span_kind(attrs: &CanonicalAttrs, name: &str) -> Option<AgentSpanKind> {
+    let has = |key: &str| attrs.contains_key(key);
+    if has("temporal.workflow.type") || has("temporalWorkflowType") {
+        return Some(AgentSpanKind::AgentRun);
+    }
+    if has("temporal.activity.type") || has("temporalActivityType") {
+        return Some(AgentSpanKind::ToolCall);
+    }
+    // Temporal interceptor span names are always the `Verb:Type` form (e.g.
+    // `RunWorkflow:OrderWorkflow`). Require the colon so a non-Temporal span merely
+    // named "StartActivity" is not misclassified.
+    let prefix = name.split_once(':').map(|(prefix, _)| prefix)?;
+    match prefix {
+        "RunWorkflow" | "StartWorkflow" | "StartChildWorkflow" | "RunChildWorkflow" => {
+            Some(AgentSpanKind::AgentRun)
+        }
+        "StartActivity" | "RunActivity" => Some(AgentSpanKind::ToolCall),
+        "HandleSignal" | "HandleQuery" | "HandleUpdate" => Some(AgentSpanKind::AgentStep),
+        _ => None,
+    }
+}
+
+fn infer_agent_span_kind(attrs: &CanonicalAttrs, name: &str, otel_kind: i32) -> AgentSpanKind {
     if let Some(value) = attrs
         .get("openinference.span.kind")
         .or_else(|| attrs.get("beater.span.kind"))
@@ -402,6 +435,9 @@ fn infer_agent_span_kind(attrs: &CanonicalAttrs, otel_kind: i32) -> AgentSpanKin
             "replay" | "replay.run" => AgentSpanKind::ReplayRun,
             _ => AgentSpanKind::AgentStep,
         };
+    }
+    if let Some(kind) = temporal_span_kind(attrs, name) {
+        return kind;
     }
     match span::SpanKind::try_from(otel_kind).unwrap_or(span::SpanKind::Internal) {
         span::SpanKind::Client => AgentSpanKind::ToolCall,
@@ -671,8 +707,8 @@ mod tests {
                 "openinference.span.kind".to_string(),
                 Value::String(wire.to_string()),
             );
-            // otel_kind is irrelevant when the attribute is present.
-            let kind = infer_agent_span_kind(&attrs, span::SpanKind::Unspecified as i32);
+            // otel_kind and name are irrelevant when the attribute is present.
+            let kind = infer_agent_span_kind(&attrs, "", span::SpanKind::Unspecified as i32);
             assert_eq!(
                 kind.as_str(),
                 wire,
@@ -770,11 +806,42 @@ mod tests {
                 Value::String(value.to_string()),
             )]);
             assert_eq!(
-                infer_agent_span_kind(&attrs, span::SpanKind::Internal as i32),
+                infer_agent_span_kind(&attrs, "", span::SpanKind::Internal as i32),
                 expected,
                 "{value} should map to {expected:?}"
             );
         }
+    }
+
+    #[test]
+    fn infers_temporal_span_kinds() {
+        // Attribute-based recognition.
+        let workflow_attrs = BTreeMap::from([(
+            "temporal.workflow.type".to_string(),
+            Value::String("OrderWorkflow".to_string()),
+        )]);
+        assert_eq!(
+            infer_agent_span_kind(&workflow_attrs, "RunWorkflow:OrderWorkflow", 0),
+            AgentSpanKind::AgentRun
+        );
+        let activity_attrs = BTreeMap::from([(
+            "temporal.activity.type".to_string(),
+            Value::String("ChargeCard".to_string()),
+        )]);
+        assert_eq!(
+            infer_agent_span_kind(&activity_attrs, "RunActivity:ChargeCard", 0),
+            AgentSpanKind::ToolCall
+        );
+        // Name-prefix recognition (stock interceptor sets no temporal.* attributes).
+        let empty = BTreeMap::new();
+        assert_eq!(
+            infer_agent_span_kind(&empty, "StartActivity:ChargeCard", 0),
+            AgentSpanKind::ToolCall
+        );
+        assert_eq!(
+            infer_agent_span_kind(&empty, "StartChildWorkflow:Sub", 0),
+            AgentSpanKind::AgentRun
+        );
     }
 
     pub fn fixture_export() -> ExportTraceServiceRequest {

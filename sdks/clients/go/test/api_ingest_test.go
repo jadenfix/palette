@@ -67,6 +67,22 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 
 	})
 
+	t.Run("Test IngestAPIService ImportSource", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var tenantId string
+		var projectId string
+		var environmentId string
+
+		resp, httpRes, err := apiClient.IngestAPI.ImportSource(context.Background(), tenantId, projectId, environmentId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test IngestAPIService IngestNative", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test

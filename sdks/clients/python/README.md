@@ -111,6 +111,7 @@ Class | Method | HTTP request | Description
 *IngestApi* | [**drain_trace_ingested**](docs/IngestApi.md#drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
 *IngestApi* | [**drain_trace_writes**](docs/IngestApi.md#drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
 *IngestApi* | [**get_ingest_queue_status**](docs/IngestApi.md#get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue | 
+*IngestApi* | [**import_source**](docs/IngestApi.md#import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
 *IngestApi* | [**ingest_native**](docs/IngestApi.md#ingest_native) | **POST** /v1/traces/native | 
 *IngestApi* | [**ingest_otlp**](docs/IngestApi.md#ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces | 
 *IngestApi* | [**reconcile_trace**](docs/IngestApi.md#reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile | 
@@ -195,6 +196,7 @@ Class | Method | HTTP request | Description
  - [GatePolicy](docs/GatePolicy.md)
  - [GateRunReport](docs/GateRunReport.md)
  - [HealthResponse](docs/HealthResponse.md)
+ - [ImportSourceHttpRequest](docs/ImportSourceHttpRequest.md)
  - [InconclusivePolicy](docs/InconclusivePolicy.md)
  - [IngestOutcome](docs/IngestOutcome.md)
  - [IngestQueueStatus](docs/IngestQueueStatus.md)

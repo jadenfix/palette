@@ -154,6 +154,8 @@ Class | Method | HTTP request | Description
 *IngestApi* | [**drainTraceWritesWithHttpInfo**](docs/IngestApi.md#drainTraceWritesWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
 *IngestApi* | [**getIngestQueueStatus**](docs/IngestApi.md#getIngestQueueStatus) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue | 
 *IngestApi* | [**getIngestQueueStatusWithHttpInfo**](docs/IngestApi.md#getIngestQueueStatusWithHttpInfo) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue | 
+*IngestApi* | [**importSource**](docs/IngestApi.md#importSource) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
+*IngestApi* | [**importSourceWithHttpInfo**](docs/IngestApi.md#importSourceWithHttpInfo) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
 *IngestApi* | [**ingestNative**](docs/IngestApi.md#ingestNative) | **POST** /v1/traces/native | 
 *IngestApi* | [**ingestNativeWithHttpInfo**](docs/IngestApi.md#ingestNativeWithHttpInfo) | **POST** /v1/traces/native | 
 *IngestApi* | [**ingestOtlp**](docs/IngestApi.md#ingestOtlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces | 
@@ -259,6 +261,7 @@ Class | Method | HTTP request | Description
  - [GatePolicy](docs/GatePolicy.md)
  - [GateRunReport](docs/GateRunReport.md)
  - [HealthResponse](docs/HealthResponse.md)
+ - [ImportSourceHttpRequest](docs/ImportSourceHttpRequest.md)
  - [InconclusivePolicy](docs/InconclusivePolicy.md)
  - [IngestOutcome](docs/IngestOutcome.md)
  - [IngestQueueStatus](docs/IngestQueueStatus.md)

@@ -228,12 +228,7 @@ fn build_input_schema(
         }
     }
 
-    (
-        Value::Object(schema),
-        path_params,
-        query_params,
-        has_body,
-    )
+    (Value::Object(schema), path_params, query_params, has_body)
 }
 
 /// Serialize a tool to its MCP `tools/list` JSON shape.
@@ -299,15 +294,15 @@ fn capabilities() -> Value {
 }
 
 /// `POST /mcp` — the JSON-RPC 2.0 entry point.
-async fn handle_mcp(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    body: Body,
-) -> Response {
+async fn handle_mcp(State(state): State<ApiState>, headers: HeaderMap, body: Body) -> Response {
     let bytes = match to_bytes(body, MAX_BODY_BYTES).await {
         Ok(b) => b,
         Err(_) => {
-            return json_response(rpc_error(Value::Null, PARSE_ERROR, "failed to read request body"))
+            return json_response(rpc_error(
+                Value::Null,
+                PARSE_ERROR,
+                "failed to read request body",
+            ))
         }
     };
     let request: Value = match serde_json::from_slice(&bytes) {
@@ -352,7 +347,11 @@ async fn dispatch_rpc(state: &ApiState, headers: &HeaderMap, request: &Value) ->
         })),
         "notifications/initialized" | "initialized" => {
             // Lifecycle notification: acknowledge, no result.
-            return if is_notification { None } else { Some(rpc_result(id, json!({}))) };
+            return if is_notification {
+                None
+            } else {
+                Some(rpc_result(id, json!({})))
+            };
         }
         "ping" => Ok(json!({})),
         "tools/list" => {

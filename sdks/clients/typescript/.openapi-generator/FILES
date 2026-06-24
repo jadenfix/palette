@@ -83,6 +83,7 @@ src/models/GateDefinition.ts
 src/models/GatePolicy.ts
 src/models/GateRunReport.ts
 src/models/HealthResponse.ts
+src/models/ImportSourceHttpRequest.ts
 src/models/InconclusivePolicy.ts
 src/models/IngestOutcome.ts
 src/models/IngestQueueStatus.ts

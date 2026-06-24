@@ -17,6 +17,7 @@ import * as runtime from '../runtime';
 import type {
   DeadLetterReplayReport,
   ErrorResponse,
+  ImportSourceHttpRequest,
   IngestOutcome,
   IngestQueueStatus,
   NativeIngestRequest,
@@ -30,6 +31,8 @@ import {
     DeadLetterReplayReportToJSON,
     ErrorResponseFromJSON,
     ErrorResponseToJSON,
+    ImportSourceHttpRequestFromJSON,
+    ImportSourceHttpRequestToJSON,
     IngestOutcomeFromJSON,
     IngestOutcomeToJSON,
     IngestQueueStatusFromJSON,
@@ -73,6 +76,16 @@ export interface GetIngestQueueStatusRequest {
     xBeaterApiKey?: string | null;
     xBeaterProjectId?: string | null;
     xBeaterEnvironmentId?: string | null;
+}
+
+export interface ImportSourceRequest {
+    tenantId: string;
+    projectId: string;
+    environmentId: string;
+    importSourceHttpRequest: ImportSourceHttpRequest;
+    durability?: string;
+    authorization?: string | null;
+    xBeaterApiKey?: string | null;
 }
 
 export interface IngestNativeRequest {
@@ -288,6 +301,73 @@ export class IngestApi extends runtime.BaseAPI {
      */
     async getIngestQueueStatus(requestParameters: GetIngestQueueStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IngestQueueStatus> {
         const response = await this.getIngestQueueStatusRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async importSourceRaw(requestParameters: ImportSourceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IngestOutcome>> {
+        if (requestParameters['tenantId'] == null) {
+            throw new runtime.RequiredError(
+                'tenantId',
+                'Required parameter "tenantId" was null or undefined when calling importSource().'
+            );
+        }
+
+        if (requestParameters['projectId'] == null) {
+            throw new runtime.RequiredError(
+                'projectId',
+                'Required parameter "projectId" was null or undefined when calling importSource().'
+            );
+        }
+
+        if (requestParameters['environmentId'] == null) {
+            throw new runtime.RequiredError(
+                'environmentId',
+                'Required parameter "environmentId" was null or undefined when calling importSource().'
+            );
+        }
+
+        if (requestParameters['importSourceHttpRequest'] == null) {
+            throw new runtime.RequiredError(
+                'importSourceHttpRequest',
+                'Required parameter "importSourceHttpRequest" was null or undefined when calling importSource().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['durability'] != null) {
+            queryParameters['durability'] = requestParameters['durability'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (requestParameters['authorization'] != null) {
+            headerParameters['authorization'] = String(requestParameters['authorization']);
+        }
+
+        if (requestParameters['xBeaterApiKey'] != null) {
+            headerParameters['x-beater-api-key'] = String(requestParameters['xBeaterApiKey']);
+        }
+
+        const response = await this.request({
+            path: `/v1/import/{tenant_id}/{project_id}/{environment_id}`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))).replace(`{${"environment_id"}}`, encodeURIComponent(String(requestParameters['environmentId']))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ImportSourceHttpRequestToJSON(requestParameters['importSourceHttpRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => IngestOutcomeFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async importSource(requestParameters: ImportSourceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IngestOutcome> {
+        const response = await this.importSourceRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

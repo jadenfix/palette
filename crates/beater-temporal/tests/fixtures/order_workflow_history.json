@@ -1,0 +1,118 @@
+{
+  "events": [
+    {
+      "eventId": "1",
+      "eventTime": "2026-06-23T12:00:00Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_EXECUTION_STARTED",
+      "workflowExecutionStartedEventAttributes": {
+        "workflowType": { "name": "OrderWorkflow" },
+        "taskQueue": { "name": "orders" },
+        "originalExecutionRunId": "11111111-1111-1111-1111-111111111111",
+        "firstExecutionRunId": "11111111-1111-1111-1111-111111111111",
+        "input": { "payloads": [{ "metadata": { "encoding": "anNvbi9wbGFpbg==" }, "data": "eyJvcmRlcklkIjogIkEtMTAwIn0=" }] }
+      }
+    },
+    {
+      "eventId": "2",
+      "eventTime": "2026-06-23T12:00:00Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_SCHEDULED",
+      "workflowTaskScheduledEventAttributes": { "taskQueue": { "name": "orders" } }
+    },
+    {
+      "eventId": "3",
+      "eventTime": "2026-06-23T12:00:00Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_STARTED",
+      "workflowTaskStartedEventAttributes": { "scheduledEventId": "2" }
+    },
+    {
+      "eventId": "4",
+      "eventTime": "2026-06-23T12:00:00Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_TASK_COMPLETED",
+      "workflowTaskCompletedEventAttributes": { "scheduledEventId": "2", "startedEventId": "3" }
+    },
+    {
+      "eventId": "5",
+      "eventTime": "2026-06-23T12:00:01Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_SCHEDULED",
+      "activityTaskScheduledEventAttributes": {
+        "activityId": "1",
+        "activityType": { "name": "ValidateOrder" },
+        "taskQueue": { "name": "orders" },
+        "input": { "payloads": [{ "data": "eyJvcmRlcklkIjogIkEtMTAwIn0=" }] }
+      }
+    },
+    {
+      "eventId": "6",
+      "eventTime": "2026-06-23T12:00:02Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_STARTED",
+      "activityTaskStartedEventAttributes": { "scheduledEventId": "5", "attempt": 1 }
+    },
+    {
+      "eventId": "7",
+      "eventTime": "2026-06-23T12:00:03Z",
+      "eventType": "EVENT_TYPE_ACTIVITY_TASK_COMPLETED",
+      "activityTaskCompletedEventAttributes": {
+        "scheduledEventId": "5",
+        "startedEventId": "6",
+        "result": { "payloads": [{ "data": "eyJ2YWxpZCI6IHRydWV9" }] }
+      }
+    },
+    {
+      "eventId": "8",
+      "eventTime": "2026-06-23T12:00:04Z",
+      "eventType": "EVENT_TYPE_TIMER_STARTED",
+      "timerStartedEventAttributes": { "timerId": "settle-delay", "startToFireTimeout": "30s" }
+    },
+    {
+      "eventId": "9",
+      "eventTime": "2026-06-23T12:00:34Z",
+      "eventType": "EVENT_TYPE_TIMER_FIRED",
+      "timerFiredEventAttributes": { "timerId": "settle-delay", "startedEventId": "8" }
+    },
+    {
+      "eventId": "10",
+      "eventTime": "2026-06-23T12:00:35Z",
+      "eventType": "EVENT_TYPE_START_CHILD_WORKFLOW_EXECUTION_INITIATED",
+      "startChildWorkflowExecutionInitiatedEventAttributes": {
+        "workflowType": { "name": "FulfillmentWorkflow" },
+        "taskQueue": { "name": "fulfillment" },
+        "input": { "payloads": [{ "data": "eyJvcmRlcklkIjogIkEtMTAwIn0=" }] }
+      }
+    },
+    {
+      "eventId": "11",
+      "eventTime": "2026-06-23T12:00:36Z",
+      "eventType": "EVENT_TYPE_CHILD_WORKFLOW_EXECUTION_STARTED",
+      "childWorkflowExecutionStartedEventAttributes": {
+        "initiatedEventId": "10",
+        "workflowExecution": { "workflowId": "fulfill-A-100", "runId": "22222222-2222-2222-2222-222222222222" }
+      }
+    },
+    {
+      "eventId": "12",
+      "eventTime": "2026-06-23T12:00:40Z",
+      "eventType": "EVENT_TYPE_CHILD_WORKFLOW_EXECUTION_COMPLETED",
+      "childWorkflowExecutionCompletedEventAttributes": {
+        "initiatedEventId": "10",
+        "result": { "payloads": [{ "data": "eyJzaGlwcGVkIjogdHJ1ZX0=" }] }
+      }
+    },
+    {
+      "eventId": "13",
+      "eventTime": "2026-06-23T12:00:41Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_EXECUTION_SIGNALED",
+      "workflowExecutionSignaledEventAttributes": {
+        "signalName": "addNote",
+        "input": { "payloads": [{ "data": "eyJub3RlIjogImd1cnUifQ==" }] }
+      }
+    },
+    {
+      "eventId": "14",
+      "eventTime": "2026-06-23T12:00:42Z",
+      "eventType": "EVENT_TYPE_WORKFLOW_EXECUTION_COMPLETED",
+      "workflowExecutionCompletedEventAttributes": {
+        "result": { "payloads": [{ "data": "eyJzdGF0dXMiOiAiZG9uZSJ9" }] }
+      }
+    }
+  ]
+}

@@ -108,6 +108,7 @@ from beater_client.models.gate_definition import GateDefinition
 from beater_client.models.gate_policy import GatePolicy
 from beater_client.models.gate_run_report import GateRunReport
 from beater_client.models.health_response import HealthResponse
+from beater_client.models.import_source_http_request import ImportSourceHttpRequest
 from beater_client.models.inconclusive_policy import InconclusivePolicy
 from beater_client.models.ingest_outcome import IngestOutcome
 from beater_client.models.ingest_queue_status import IngestQueueStatus

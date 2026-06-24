@@ -42,7 +42,11 @@ for lang in "${LANGS[@]}"; do
   echo "==> Generating $lang -> $out"
   rm -rf "$out"
   mkdir -p "$out"
+  # Run the generator as the host user so output isn't root-owned/read-only on Linux
+  # CI runners (where the daemon runs as root); otherwise the patch step below cannot
+  # write its temp files. No-op on Docker Desktop, which already maps to the host user.
   docker run --rm \
+    --user "$(id -u):$(id -g)" \
     -v "$root:/local" \
     "$GENERATOR_IMAGE" generate \
     -i "/local/$SPEC" \
