@@ -9,7 +9,7 @@
 //!    HTTP request (same args + auth), proving tools reuse the real handlers.
 //! 3. **Smoke**: `initialize` and `tools/list` work over the `/mcp` route.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use axum::body::{to_bytes, Body};
@@ -108,6 +108,48 @@ fn spec_v1_operation_ids() -> BTreeSet<String> {
         }
     }
     ids
+}
+
+/// Map of `/v1` operationId -> upper-case HTTP method, from the spec.
+fn spec_op_methods() -> BTreeMap<String, String> {
+    let spec = beater_api::openapi::openapi();
+    let doc: Value = serde_json::to_value(&spec).expect("serialize spec");
+    let mut map = BTreeMap::new();
+    let paths = doc
+        .get("paths")
+        .and_then(Value::as_object)
+        .expect("paths object");
+    for (path, item) in paths {
+        if !path.starts_with("/v1") {
+            continue;
+        }
+        let item = item.as_object().expect("path item object");
+        for method in ["get", "post", "put", "delete", "patch"] {
+            if let Some(op) = item.get(method) {
+                let id = op
+                    .get("operationId")
+                    .and_then(Value::as_str)
+                    .expect("operationId present");
+                map.insert(id.to_string(), method.to_ascii_uppercase());
+            }
+        }
+    }
+    map
+}
+
+/// Fetch the `tools/list` array over the `/mcp` route.
+async fn list_tools(app: &Router) -> Vec<Value> {
+    let (status, listed) = mcp_call(
+        app,
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {} }),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    listed["result"]["tools"]
+        .as_array()
+        .expect("tools array")
+        .clone()
 }
 
 /// POST a JSON-RPC body to `/mcp` and return (status, parsed JSON).
@@ -310,4 +352,251 @@ async fn mcp_reachable_in_merged_app() {
     );
     let health_resp = unwrap(app.oneshot(health).await);
     assert_eq!(health_resp.status(), StatusCode::OK);
+}
+
+/// Every listed tool advertises an `outputSchema` object and method-derived
+/// `annotations` whose hints match the underlying HTTP verb.
+#[tokio::test]
+async fn tools_list_exposes_output_schema_and_annotations() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+    let tools = list_tools(&app).await;
+    let methods = spec_op_methods();
+    assert_eq!(tools.len(), 41);
+
+    // The four list endpoints return top-level JSON arrays, which MCP forbids as
+    // structured output, so they advertise no outputSchema.
+    let array_ops = [
+        "listAuditEvents",
+        "listJudgeLedger",
+        "listProviderSecrets",
+        "listReviewTasks",
+    ];
+
+    for tool in &tools {
+        let name = tool["name"].as_str().expect("tool name");
+
+        // outputSchema is present for object-returning ops and object-rooted
+        // (never array — a strict client would reject that); omitted for the
+        // known array-returning ops.
+        match tool.get("outputSchema") {
+            None => assert!(
+                array_ops.contains(&name),
+                "{name}: only array-returning ops may omit outputSchema"
+            ),
+            Some(output) => {
+                assert!(output.is_object(), "{name}: outputSchema must be an object");
+                let root_type = output["type"].as_str();
+                assert_ne!(
+                    root_type,
+                    Some("array"),
+                    "{name}: outputSchema is array-rooted"
+                );
+                // Object-rooted directly, or a $ref resolved against bundled components.
+                if root_type != Some("object") {
+                    let referenced = output["$ref"]
+                        .as_str()
+                        .unwrap_or_else(|| panic!("{name}: output is neither object nor $ref"));
+                    let comp = referenced.rsplit('/').next().expect("ref name");
+                    assert!(
+                        output["components"]["schemas"][comp].is_object(),
+                        "{name}: ref {referenced} resolves under components/schemas"
+                    );
+                }
+            }
+        }
+
+        // annotations carry all three method-derived hints + a title.
+        let ann = &tool["annotations"];
+        assert_eq!(
+            ann["title"], tool["description"],
+            "{name}: annotation title"
+        );
+        let method = methods.get(name).expect("tool maps to a spec method");
+        let expect_read_only = method == "GET";
+        let expect_idempotent = matches!(method.as_str(), "GET" | "PUT" | "DELETE");
+        let expect_destructive = matches!(method.as_str(), "PUT" | "DELETE");
+        assert_eq!(
+            ann["readOnlyHint"], expect_read_only,
+            "{name} ({method}): readOnlyHint"
+        );
+        assert_eq!(
+            ann["idempotentHint"], expect_idempotent,
+            "{name} ({method}): idempotentHint"
+        );
+        assert_eq!(
+            ann["destructiveHint"], expect_destructive,
+            "{name} ({method}): destructiveHint"
+        );
+    }
+}
+
+/// A GET tool is read-only and non-destructive; a POST tool is neither
+/// read-only nor (by method) destructive. Pin representative operations so a
+/// regression in the mapping is caught by name.
+#[tokio::test]
+async fn representative_tools_have_correct_safety_hints() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+    let tools = list_tools(&app).await;
+    let by_name = |n: &str| {
+        tools
+            .iter()
+            .find(|t| t["name"] == n)
+            .unwrap_or_else(|| panic!("{n} present"))
+            .clone()
+    };
+
+    // GET: read-only.
+    let listing = by_name("listTraces");
+    assert_eq!(listing["annotations"]["readOnlyHint"], true);
+    assert_eq!(listing["annotations"]["destructiveHint"], false);
+    assert_eq!(listing["annotations"]["idempotentHint"], true);
+
+    // POST: a write, not read-only.
+    let create = by_name("createDataset");
+    assert_eq!(create["annotations"]["readOnlyHint"], false);
+    assert_eq!(create["annotations"]["idempotentHint"], false);
+}
+
+/// The `outputSchema` for an operation returning a component type resolves its
+/// `$ref` against the bundled component schemas.
+#[tokio::test]
+async fn output_schema_resolves_component_refs() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+    let tools = list_tools(&app).await;
+    let create = tools
+        .iter()
+        .find(|t| t["name"] == "createDataset")
+        .expect("createDataset present");
+    let output = &create["outputSchema"];
+
+    // The success body is `{ "$ref": "#/components/schemas/Dataset" }`; the ref
+    // target must be present under the bundled OpenAPI pointer space, and the
+    // target must itself be an object (so the advertised output is object-rooted).
+    let referenced = output["$ref"].as_str().expect("output is a $ref");
+    let type_name = referenced
+        .rsplit('/')
+        .next()
+        .expect("ref has a component name");
+    let target = &output["components"]["schemas"][type_name];
+    assert!(
+        target.is_object(),
+        "ref {referenced} resolves under components/schemas"
+    );
+    assert_eq!(target["type"], "object", "resolved output type is object");
+}
+
+/// `initialize` negotiates the protocol version: a supported version requested
+/// by the client is echoed back; an unsupported one falls back to the latest.
+#[tokio::test]
+async fn initialize_negotiates_protocol_version() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+
+    // Client requests an older but supported revision -> echoed back.
+    let (_s, older) = mcp_call(
+        &app,
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize",
+                "params": { "protocolVersion": "2024-11-05" } }),
+        None,
+    )
+    .await;
+    assert_eq!(older["result"]["protocolVersion"], "2024-11-05");
+
+    // Unsupported version -> server advertises its latest.
+    let (_s, unknown) = mcp_call(
+        &app,
+        json!({ "jsonrpc": "2.0", "id": 2, "method": "initialize",
+                "params": { "protocolVersion": "1999-01-01" } }),
+        None,
+    )
+    .await;
+    assert_eq!(unknown["result"]["protocolVersion"], "2025-06-18");
+
+    // No version requested -> latest.
+    let (_s, none) = mcp_call(
+        &app,
+        json!({ "jsonrpc": "2.0", "id": 3, "method": "initialize", "params": {} }),
+        None,
+    )
+    .await;
+    assert_eq!(none["result"]["protocolVersion"], "2025-06-18");
+
+    // `params` omitted entirely (bare initialize) -> latest, no panic.
+    let (status, bare) = mcp_call(
+        &app,
+        json!({ "jsonrpc": "2.0", "id": 4, "method": "initialize" }),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(bare["result"]["protocolVersion"], "2025-06-18");
+}
+
+/// `GET /mcp` is a static capability probe advertising the latest protocol
+/// version and server info.
+#[tokio::test]
+async fn get_mcp_probe_advertises_latest_version() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+    let request = unwrap(
+        Request::builder()
+            .method("GET")
+            .uri("/mcp")
+            .body(Body::empty()),
+    );
+    let response = unwrap(app.oneshot(request).await);
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = unwrap(to_bytes(response.into_body(), 1024 * 1024).await);
+    let json: Value = unwrap(serde_json::from_slice(&bytes));
+    assert_eq!(json["protocolVersion"], "2025-06-18");
+    assert_eq!(json["serverInfo"]["name"], "beater-mcp");
+    assert!(json["capabilities"]["tools"].is_object());
+}
+
+/// A list endpoint that returns a top-level JSON array surfaces its body via the
+/// text `content` but omits `structuredContent` (which MCP requires be an object).
+#[tokio::test]
+async fn array_result_omits_structured_content() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+
+    let (status, rpc) = mcp_call(
+        &app,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 11,
+            "method": "tools/call",
+            "params": {
+                "name": "listProviderSecrets",
+                "arguments": { "tenant_id": "tenant-1", "project_id": "proj-1" }
+            }
+        }),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let result = &rpc["result"];
+    assert_eq!(result["isError"], false, "list call should succeed: {rpc}");
+    // Body is a JSON array -> no structuredContent, but the text content carries it.
+    assert!(
+        result.get("structuredContent").is_none(),
+        "array result must not set structuredContent: {rpc}"
+    );
+    let text = result["content"][0]["text"].as_str().expect("text content");
+    let parsed: Value = serde_json::from_str(text).expect("content is JSON");
+    assert!(parsed.is_array(), "the underlying body is a JSON array");
+}
+
+/// `tools/list` is deterministic and stable across repeated calls (the catalog
+/// is cached and the output ordering fixed).
+#[tokio::test]
+async fn tools_list_is_stable_across_calls() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+    let first = list_tools(&app).await;
+    let second = list_tools(&app).await;
+    assert_eq!(first, second, "tools/list must be byte-stable across calls");
 }
