@@ -26,12 +26,37 @@ impl FsArtifactStore {
         let relative = uri
             .strip_prefix(prefix)
             .ok_or_else(|| StoreError::Integrity(format!("unsupported artifact uri: {uri}")))?;
-        if relative.split('/').any(|segment| segment == "..") {
+        self.resolve_within_root(relative)
+    }
+
+    /// Join `relative` onto the store root and confine the result to that root.
+    ///
+    /// Without this, a `..` segment, an absolute path (`/etc/passwd` — note that
+    /// `PathBuf::join` *discards* the root when the joined component is
+    /// absolute), or a tenant/project id containing path separators could read
+    /// or write outside the artifact store. We reject `.`/`..`/empty segments
+    /// and then verify, component-wise, that the joined path still starts with
+    /// the root.
+    fn resolve_within_root(&self, relative: &str) -> StoreResult<PathBuf> {
+        if relative.is_empty() {
+            return Err(StoreError::Integrity("empty artifact path".to_string()));
+        }
+        for segment in relative.split('/') {
+            if segment == ".." || segment == "." || segment.is_empty() {
+                return Err(StoreError::Integrity(format!(
+                    "artifact path cannot contain '.', '..' or empty segments: {relative}"
+                )));
+            }
+        }
+        let path = self.root.join(relative);
+        // `starts_with` is component-based (not a lexical string prefix), so it
+        // also catches absolute `relative` values that made `join` drop the root.
+        if !path.starts_with(self.root.as_ref()) {
             return Err(StoreError::Integrity(format!(
-                "artifact uri cannot contain '..': {uri}"
+                "artifact path escapes the store root: {relative}"
             )));
         }
-        Ok(self.root.join(relative))
+        Ok(path)
     }
 }
 
@@ -55,7 +80,9 @@ impl ArtifactStore for FsArtifactStore {
             project_id.as_str(),
             artifact_id.as_str()
         );
-        let path = self.root.join(&relative);
+        // Confine the write to the store root even if a tenant/project id slips
+        // through with path separators or traversal segments.
+        let path = self.resolve_within_root(&relative)?;
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(StoreError::backend)?;
         }
@@ -144,5 +171,51 @@ mod tests {
             }
             other => panic!("expected StoreError::Integrity for corrupt artifact, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn path_for_uri_rejects_traversal_and_absolute_paths() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let store = FsArtifactStore::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
+
+        // Absolute path: `join` would otherwise discard the root and read /etc/passwd.
+        assert!(store.path_for_uri("artifact:///etc/passwd").is_err());
+        // Classic `..` traversal.
+        assert!(store.path_for_uri("artifact://../../etc/passwd").is_err());
+        assert!(store
+            .path_for_uri("artifact://tenant/../../../etc/passwd")
+            .is_err());
+        // `.` segments and empty paths.
+        assert!(store.path_for_uri("artifact://./secret").is_err());
+        assert!(store.path_for_uri("artifact://").is_err());
+        // A normal id triple still resolves inside the root.
+        let ok = store
+            .path_for_uri("artifact://tenant/project/abc")
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(ok.starts_with(tempdir.path()));
+    }
+
+    #[tokio::test]
+    async fn put_bytes_rejects_tenant_id_with_path_separators() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let store = FsArtifactStore::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
+        // Ids are not guaranteed to be path-safe (the JSON ingest path can carry
+        // unvalidated values), so the store must reject a traversal attempt.
+        let tenant = TenantId::new("../../tmp").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+
+        let result = store
+            .put_bytes(
+                &tenant,
+                &project,
+                "application/json",
+                RedactionClass::Sensitive,
+                br#"{"ok":true}"#,
+            )
+            .await;
+        assert!(
+            matches!(result, Err(StoreError::Integrity(_))),
+            "expected traversal tenant id to be rejected, got {result:?}"
+        );
     }
 }
