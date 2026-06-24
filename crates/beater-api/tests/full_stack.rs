@@ -1009,19 +1009,33 @@ async fn api_ingest_store_eval_gate_and_replay_are_integrated() {
     .unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(score.score, 1.0);
 
+    // Deterministic-scorer authored as a WASI Component Model component (the
+    // evaluator runtime no longer accepts bare core modules): exports
+    // `score(case-json: string) -> s32`, returning 10000 bp on non-empty input.
     let wasm = wat::parse_str(
         r#"
-        (module
-          (memory (export "memory") 1)
-          (func (export "score") (param $ptr i32) (param $len i32) (result i32)
-            local.get $len
-            i32.const 0
-            i32.gt_s
-            if (result i32)
-              i32.const 10000
-            else
+        (component
+          (core module $m
+            (memory (export "memory") 1)
+            (func (export "score") (param $ptr i32) (param $len i32) (result i32)
+              local.get $len
               i32.const 0
-            end))
+              i32.gt_s
+              if (result i32)
+                i32.const 10000
+              else
+                i32.const 0
+              end)
+            (func (export "cabi_realloc")
+              (param i32 i32 i32 i32) (result i32)
+              i32.const 0))
+          (core instance $i (instantiate $m))
+          (func $score (param "case-json" string) (result s32)
+            (canon lift
+              (core func $i "score")
+              (memory $i "memory")
+              (realloc (func $i "cabi_realloc"))))
+          (export "score" (func $score)))
         "#,
     )
     .unwrap_or_else(|err| panic!("{err}"));
