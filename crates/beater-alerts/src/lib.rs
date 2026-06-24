@@ -307,6 +307,123 @@ fn trace_latency_ms(spans: &[CanonicalSpan]) -> Option<u64> {
     Some(millis.max(0) as u64)
 }
 
+/// Outcome of feeding a span into the [`TailBuffer`].
+///
+/// Spans for an incomplete trace are *held* (`Buffered`) and never sampled; the
+/// online sampling decision is deferred until the trace's
+/// [`beater_schema::TraceCompletionState`] flips to a terminal value, at which
+/// point the buffered spans are flushed through [`decide_trace_sampling`] exactly
+/// once (`Sampled`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TailBufferOutcome {
+    /// The span was accumulated; the trace is not yet complete so no sampling
+    /// decision has been made. Carries the running buffered span count.
+    Buffered { buffered_spans: usize },
+    /// The trace reached completion on this span; the accumulated trace was run
+    /// through [`decide_trace_sampling`] and is now evicted from the buffer.
+    Sampled {
+        decision: SamplingDecision,
+        sampled_spans: usize,
+    },
+}
+
+/// Tail-sampling buffer: accumulates the spans of in-flight traces and holds the
+/// online sampling decision until the trace is observed to be complete.
+///
+/// A streaming sampler that decided per span would have to keep or drop a trace
+/// before its error/latency/cost are known. The tail buffer instead retains every
+/// span keyed by `trace_id` and only invokes [`decide_trace_sampling`] once the
+/// caller reports a terminal [`beater_schema::TraceCompletionState`] (e.g.
+/// `RootEnded`, `Complete`, `IdleComplete`, `LateWindowClosed`). That guarantees
+/// the policy observes the *whole* trace — including late-arriving error/slow/
+/// costly spans.
+///
+/// The buffer is purely in-process and ordering-agnostic: spans may be offered in
+/// any order, and completion is driven by the caller's
+/// `beater_ingest::trace_completion_state` evaluation rather than by wall-clock
+/// timers inside the buffer.
+#[derive(Debug, Default)]
+pub struct TailBuffer {
+    policy: OnlineSamplingPolicy,
+    by_trace: BTreeMap<TraceId, BufferedTrace>,
+}
+
+#[derive(Debug)]
+struct BufferedTrace {
+    tenant_id: TenantId,
+    spans: Vec<CanonicalSpan>,
+}
+
+/// Terminal completion states that flush the tail buffer. `Open` keeps the trace
+/// buffered; everything else is treated as "the trace is done, decide now".
+fn completion_is_terminal(state: &beater_schema::TraceCompletionState) -> bool {
+    !matches!(state, beater_schema::TraceCompletionState::Open)
+}
+
+impl TailBuffer {
+    pub fn new(policy: OnlineSamplingPolicy) -> Self {
+        Self {
+            policy,
+            by_trace: BTreeMap::new(),
+        }
+    }
+
+    /// Number of traces currently held open (not yet sampled).
+    pub fn open_traces(&self) -> usize {
+        self.by_trace.len()
+    }
+
+    /// Spans currently buffered for `trace_id` (zero once flushed).
+    pub fn buffered_spans(&self, trace_id: &TraceId) -> usize {
+        self.by_trace
+            .get(trace_id)
+            .map(|trace| trace.spans.len())
+            .unwrap_or(0)
+    }
+
+    /// Accumulate `span` and, if `completion` is terminal, flush the buffered
+    /// trace through [`decide_trace_sampling`]. Spans are held until completion,
+    /// so a non-terminal `completion` always yields [`TailBufferOutcome::Buffered`].
+    pub fn offer(
+        &mut self,
+        span: CanonicalSpan,
+        completion: &beater_schema::TraceCompletionState,
+    ) -> TailBufferOutcome {
+        let trace_id = span.trace_id.clone();
+        let entry = self
+            .by_trace
+            .entry(trace_id.clone())
+            .or_insert_with(|| BufferedTrace {
+                tenant_id: span.tenant_id.clone(),
+                spans: Vec::new(),
+            });
+        entry.spans.push(span);
+
+        if !completion_is_terminal(completion) {
+            return TailBufferOutcome::Buffered {
+                buffered_spans: entry.spans.len(),
+            };
+        }
+
+        // Terminal: evict and run the whole-trace sampling decision exactly once.
+        let buffered = self
+            .by_trace
+            .remove(&trace_id)
+            .unwrap_or_else(|| unreachable!("trace was just inserted"));
+        let sampled_spans = buffered.spans.len();
+        let trace = TraceView {
+            tenant_id: buffered.tenant_id,
+            trace_id,
+            spans: buffered.spans,
+        };
+        let decision = decide_trace_sampling(&trace, &self.policy);
+        TailBufferOutcome::Sampled {
+            decision,
+            sampled_spans,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -537,5 +654,153 @@ mod tests {
                 },
             }],
         }
+    }
+
+    fn fixture_span(
+        tenant: &TenantId,
+        trace_id: &str,
+        span_id: &str,
+        status: SpanStatus,
+        latency_ms: i64,
+        cost_micros: i64,
+    ) -> CanonicalSpan {
+        let started = Utc::now();
+        CanonicalSpan {
+            schema_version: CANONICAL_SCHEMA_VERSION,
+            normalizer_version: "test".to_string(),
+            tenant_id: tenant.clone(),
+            project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            environment_id: beater_core::EnvironmentId::new("prod")
+                .unwrap_or_else(|err| panic!("{err}")),
+            trace_id: TraceId::new(trace_id).unwrap_or_else(|err| panic!("{err}")),
+            span_id: beater_core::SpanId::new(span_id).unwrap_or_else(|err| panic!("{err}")),
+            parent_span_id: None,
+            seq: 1,
+            kind: AgentSpanKind::AgentRun,
+            name: "run".to_string(),
+            status,
+            start_time: started,
+            end_time: Some(started + Duration::milliseconds(latency_ms)),
+            model: None,
+            cost: Some(Money::usd_micros(cost_micros)),
+            tokens: Some(TokenCounts::default()),
+            input_ref: None,
+            output_ref: None,
+            attributes: BTreeMap::new(),
+            unmapped_attrs: serde_json::json!({}),
+            raw_ref: ArtifactRef {
+                artifact_id: beater_core::ArtifactId::new("raw")
+                    .unwrap_or_else(|err| panic!("{err}")),
+                uri: "artifact://tenant/project/raw".to_string(),
+                sha256: beater_core::Sha256Hash::new("ab".repeat(32))
+                    .unwrap_or_else(|err| panic!("{err}")),
+                size_bytes: 2,
+                mime_type: "application/json".to_string(),
+                redaction_class: RedactionClass::Internal,
+            },
+        }
+    }
+
+    #[test]
+    fn tail_buffer_holds_spans_until_completion_then_samples_whole_trace() {
+        use beater_schema::TraceCompletionState;
+
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        // Sample nothing routinely + keep errors: the keep decision can only come
+        // from the *late* error span, proving the whole trace is observed at tail.
+        let policy = OnlineSamplingPolicy {
+            sample_rate_per_mille: 0,
+            keep_errors: true,
+            slow_ms_threshold: None,
+            high_cost_micros_threshold: None,
+        };
+        let mut buffer = TailBuffer::new(policy);
+        let trace_id = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
+
+        // First (healthy) span arrives while the trace is still Open: it must be
+        // held, never sampled.
+        let held = buffer.offer(
+            fixture_span(&tenant, "trace", "span-1", SpanStatus::Ok, 10, 0),
+            &TraceCompletionState::Open,
+        );
+        assert_eq!(held, TailBufferOutcome::Buffered { buffered_spans: 1 });
+        assert_eq!(buffer.open_traces(), 1);
+        assert_eq!(buffer.buffered_spans(&trace_id), 1);
+
+        // A second, still-Open span: still buffered, still no decision.
+        let still_held = buffer.offer(
+            fixture_span(&tenant, "trace", "span-2", SpanStatus::Ok, 10, 0),
+            &TraceCompletionState::Open,
+        );
+        assert_eq!(
+            still_held,
+            TailBufferOutcome::Buffered { buffered_spans: 2 }
+        );
+
+        // The root ends and carries the error: now the trace is complete and the
+        // accumulated three spans are sampled together as ErrorTrace.
+        let outcome = buffer.offer(
+            fixture_span(&tenant, "trace", "root", SpanStatus::Error, 10, 0),
+            &TraceCompletionState::RootEnded,
+        );
+        match outcome {
+            TailBufferOutcome::Sampled {
+                decision,
+                sampled_spans,
+            } => {
+                assert_eq!(sampled_spans, 3);
+                assert!(decision.selected);
+                assert_eq!(decision.reason, SamplingReason::ErrorTrace);
+            }
+            other => panic!("expected Sampled at completion, got {other:?}"),
+        }
+        // Trace evicted after sampling.
+        assert_eq!(buffer.open_traces(), 0);
+        assert_eq!(buffer.buffered_spans(&trace_id), 0);
+    }
+
+    #[test]
+    fn tail_buffer_keeps_traces_independent_and_drops_uninteresting_completed_trace() {
+        use beater_schema::TraceCompletionState;
+
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let policy = OnlineSamplingPolicy {
+            sample_rate_per_mille: 0,
+            keep_errors: true,
+            slow_ms_threshold: None,
+            high_cost_micros_threshold: None,
+        };
+        let mut buffer = TailBuffer::new(policy);
+
+        // Two interleaved traces buffer independently.
+        buffer.offer(
+            fixture_span(&tenant, "trace-a", "a1", SpanStatus::Ok, 1, 0),
+            &TraceCompletionState::Open,
+        );
+        buffer.offer(
+            fixture_span(&tenant, "trace-b", "b1", SpanStatus::Ok, 1, 0),
+            &TraceCompletionState::Open,
+        );
+        assert_eq!(buffer.open_traces(), 2);
+
+        // trace-a completes with no error/slow/cost signal and routine rate 0:
+        // it is sampled (decided) but RoutineDropped.
+        let outcome = buffer.offer(
+            fixture_span(&tenant, "trace-a", "a2", SpanStatus::Ok, 1, 0),
+            &TraceCompletionState::LateWindowClosed,
+        );
+        match outcome {
+            TailBufferOutcome::Sampled { decision, .. } => {
+                assert!(!decision.selected);
+                assert_eq!(decision.reason, SamplingReason::RoutineDropped);
+            }
+            other => panic!("expected Sampled, got {other:?}"),
+        }
+        // trace-b is untouched and still open.
+        assert_eq!(buffer.open_traces(), 1);
+        assert_eq!(
+            buffer.buffered_spans(&TraceId::new("trace-b").unwrap_or_else(|err| panic!("{err}"))),
+            1
+        );
     }
 }

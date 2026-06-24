@@ -211,9 +211,24 @@ impl IngestService {
         &self,
         request: NativeIngestRequest,
     ) -> Result<IngestOutcome, IngestError> {
+        Ok(self.ingest_native_assembled(request).await?.outcome)
+    }
+
+    /// Like [`Self::ingest_native`] but also returns the per-trace
+    /// [`TraceCompletionState`] derived during assembly, so tail-sampling /
+    /// trace-completion consumers can act on completion without re-reading.
+    pub async fn ingest_native_assembled(
+        &self,
+        request: NativeIngestRequest,
+    ) -> Result<AssembledIngest, IngestError> {
         self.enforce_quota_events(&request.scope, 1).await?;
         let prepared = self.prepare_native_batch(request).await?;
-        self.write_batch_and_queue_downstream(prepared).await
+        let trace_completion = prepared.trace_completion.clone();
+        let outcome = self.write_batch_and_queue_downstream(prepared).await?;
+        Ok(AssembledIngest {
+            outcome,
+            trace_completion,
+        })
     }
 
     pub async fn buffer_native(
@@ -233,11 +248,25 @@ impl IngestService {
         &self,
         request: RawTraceIngestRequest,
     ) -> Result<IngestOutcome, IngestError> {
+        Ok(self.ingest_raw_trace_batch_assembled(request).await?.outcome)
+    }
+
+    /// Like [`Self::ingest_raw_trace_batch`] but also returns the per-trace
+    /// [`TraceCompletionState`] derived during assembly.
+    pub async fn ingest_raw_trace_batch_assembled(
+        &self,
+        request: RawTraceIngestRequest,
+    ) -> Result<AssembledIngest, IngestError> {
         let event_count = request.spans.len() as u64;
         self.enforce_quota_events(&request.scope, event_count)
             .await?;
         let prepared = self.prepare_raw_batch(request).await?;
-        self.write_batch_and_queue_downstream(prepared).await
+        let trace_completion = prepared.trace_completion.clone();
+        let outcome = self.write_batch_and_queue_downstream(prepared).await?;
+        Ok(AssembledIngest {
+            outcome,
+            trace_completion,
+        })
     }
 
     async fn write_batch_and_queue_downstream(
@@ -664,12 +693,15 @@ impl IngestService {
             raw_ref,
         };
         let trace_ids = BTreeSet::from([span.trace_id.clone()]);
+        let batch = CanonicalTraceBatch::one(raw, span);
+        let trace_completion = self.assemble_batch_completion(&batch);
         Ok(PreparedTraceBatch {
             tenant_id: request.scope.tenant_id,
             project_id: request.scope.project_id,
             queue_key: idempotency_key,
             trace_ids,
-            batch: CanonicalTraceBatch::one(raw, span),
+            batch,
+            trace_completion,
         })
     }
 
@@ -788,16 +820,67 @@ impl IngestService {
             spans.push(span);
         }
 
+        let batch = CanonicalTraceBatch {
+            raw_envelopes: vec![raw],
+            spans,
+        };
+        let trace_completion = self.assemble_batch_completion(&batch);
         Ok(PreparedTraceBatch {
             tenant_id: scope.tenant_id,
             project_id: scope.project_id,
             queue_key: raw_idempotency_key,
             trace_ids,
-            batch: CanonicalTraceBatch {
-                raw_envelopes: vec![raw],
-                spans,
-            },
+            batch,
+            trace_completion,
         })
+    }
+
+    /// Group the batch's spans by trace and derive each trace's
+    /// [`TraceCompletionState`] from the assembled span set, using the ingest
+    /// clock as `now`. This is the wiring point that runs trace-completion
+    /// assessment inside the normal ingest assembly path.
+    fn assemble_batch_completion(
+        &self,
+        batch: &CanonicalTraceBatch,
+    ) -> BTreeMap<TraceId, TraceCompletionState> {
+        let now = self.clock.now();
+        let config = self.policy.trace_completion;
+        let mut by_trace: BTreeMap<TraceId, Vec<CanonicalSpan>> = BTreeMap::new();
+        for span in &batch.spans {
+            by_trace
+                .entry(span.trace_id.clone())
+                .or_default()
+                .push(span.clone());
+        }
+        by_trace
+            .into_iter()
+            .map(|(trace_id, spans)| {
+                let state = assemble_trace_completion(&spans, now, config);
+                (trace_id, state)
+            })
+            .collect()
+    }
+
+    /// Assess the completion state of a stored trace by re-assembling every span
+    /// currently persisted for it. Re-running this as late/out-of-order spans land
+    /// reflects the trace converging toward completion. Returns `Open` for a trace
+    /// with no spans yet.
+    pub async fn assess_trace_completion(
+        &self,
+        tenant_id: TenantId,
+        project_id: ProjectId,
+        trace_id: TraceId,
+    ) -> Result<TraceCompletionState, IngestError> {
+        let trace = self
+            .traces
+            .get_project_trace(tenant_id, project_id, trace_id)
+            .await
+            .map_err(IngestError::Store)?;
+        Ok(assemble_trace_completion(
+            &trace.spans,
+            self.clock.now(),
+            self.policy.trace_completion,
+        ))
     }
 
     async fn publish_trace_write(
@@ -1088,6 +1171,8 @@ pub struct IngestPolicy {
     pub per_project_event_quota: Option<u64>,
     pub quota_window_seconds: i64,
     pub trace_write_max_attempts: u32,
+    /// Tunables for deriving per-trace [`TraceCompletionState`] during assembly.
+    pub trace_completion: TraceCompletionConfig,
 }
 
 impl Default for IngestPolicy {
@@ -1101,6 +1186,7 @@ impl Default for IngestPolicy {
             per_project_event_quota: None,
             quota_window_seconds: 60,
             trace_write_max_attempts: 3,
+            trace_completion: TraceCompletionConfig::default(),
         }
     }
 }
@@ -1185,6 +1271,15 @@ pub struct QueuedTraceWrite {
 pub struct IngestOutcome {
     pub ack: WriteAck,
     pub downstream_queued: bool,
+}
+
+/// An [`IngestOutcome`] paired with the per-trace [`TraceCompletionState`] derived
+/// during the assembly path. Non-contract: surfaced only through the
+/// `*_assembled` ingest methods for trace-completion / tail-sampling consumers.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AssembledIngest {
+    pub outcome: IngestOutcome,
+    pub trace_completion: BTreeMap<TraceId, TraceCompletionState>,
 }
 
 /// A drain report that tallies the outcome of a retry-or-dead-letter decision.
@@ -1277,6 +1372,10 @@ struct PreparedTraceBatch {
     queue_key: IdempotencyKey,
     trace_ids: BTreeSet<TraceId>,
     batch: CanonicalTraceBatch,
+    /// Completion state per trace, derived from the assembled span set at
+    /// preparation time via [`assemble_trace_completion`]. Used by tail-sampling /
+    /// trace-completion consumers; not part of the durable write payload.
+    trace_completion: BTreeMap<TraceId, TraceCompletionState>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -1455,6 +1554,89 @@ pub fn trace_completion_state(input: TraceCompletionInput) -> TraceCompletionSta
         return TraceCompletionState::LateWindowClosed;
     }
     TraceCompletionState::Open
+}
+
+/// Tunables for deriving a [`TraceCompletionState`] from the *currently assembled*
+/// spans of a single trace. Distinct from a wall-clock timer: assembly evaluates
+/// completion from the span set itself plus the ingest clock, so out-of-order and
+/// late-arriving spans are handled by re-evaluation as the set grows.
+#[derive(Clone, Copy, Debug)]
+pub struct TraceCompletionConfig {
+    /// Idle gap after the last observed span end before an open trace is treated
+    /// as idle-complete.
+    pub idle_timeout: Duration,
+    /// How long after the root span ends the trace stays open for late children
+    /// (out-of-order / clock-skewed arrivals). Once this window elapses the trace
+    /// is [`TraceCompletionState::Complete`]; before it elapses an ended root is
+    /// reported as [`TraceCompletionState::RootEnded`].
+    pub late_window: Duration,
+}
+
+impl Default for TraceCompletionConfig {
+    fn default() -> Self {
+        Self {
+            idle_timeout: Duration::seconds(60),
+            late_window: Duration::seconds(10),
+        }
+    }
+}
+
+/// Derive the completion state of an assembled trace from its spans.
+///
+/// Ordering-agnostic and clock-skew tolerant: the root is identified structurally
+/// (no `parent_span_id`, falling back to the lexicographically smallest span id so
+/// a trace with a not-yet-arrived root never spuriously completes), open children
+/// are counted by missing `end_time`, and the idle gap is measured from the latest
+/// span end against `now`. `now` is taken from the ingest clock, and negative gaps
+/// (a span whose end is in the future relative to `now` due to clock skew) are
+/// clamped so skew cannot force premature completion.
+pub fn assemble_trace_completion(
+    spans: &[CanonicalSpan],
+    now: Timestamp,
+    config: TraceCompletionConfig,
+) -> TraceCompletionState {
+    if spans.is_empty() {
+        return TraceCompletionState::Open;
+    }
+
+    // Identify the root: a parentless span, else the smallest span id (stable
+    // under reordering). Treat the root as ended only when it has an end_time.
+    let root = spans
+        .iter()
+        .filter(|span| span.parent_span_id.is_none())
+        .min_by(|a, b| a.span_id.as_str().cmp(b.span_id.as_str()));
+    let root_span_ended = root.is_some_and(|span| span.end_time.is_some());
+
+    let open_child_spans = spans
+        .iter()
+        .filter(|span| span.parent_span_id.is_some() && span.end_time.is_none())
+        .count();
+
+    // Latest end across all spans; clamp future-dated ends to `now` so a
+    // clock-skewed span cannot produce a negative idle gap.
+    let latest_end = spans.iter().filter_map(|span| span.end_time).max();
+    let idle_for = latest_end
+        .map(|end| {
+            let gap = now.signed_duration_since(end);
+            if gap < Duration::zero() {
+                Duration::zero()
+            } else {
+                gap
+            }
+        })
+        .unwrap_or_else(Duration::zero);
+
+    // The late window closes once enough idle time has elapsed since the last
+    // observed end for late/out-of-order children to be considered drained.
+    let late_window_closed = latest_end.is_some_and(|_| idle_for >= config.late_window);
+
+    trace_completion_state(TraceCompletionInput {
+        root_span_ended,
+        open_child_spans,
+        idle_for,
+        idle_timeout: config.idle_timeout,
+        late_window_closed,
+    })
 }
 
 pub async fn smoke_trace(service: &IngestService) -> Result<IngestOutcome, IngestError> {
@@ -2825,6 +3007,166 @@ mod tests {
         assert!(matches!(error, IngestError::Backpressure { capacity: 0 }));
     }
 
+    /// R4.5: the cardinality cap rejects a span carrying more attributes than the
+    /// policy's `max_attributes` with a typed `TooManyAttributes` error (the 422
+    /// semantics) before anything is written.
+    #[tokio::test]
+    async fn ingest_rejects_attribute_cardinality_over_cap() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let service = IngestService::new(
+            artifacts,
+            traces.clone(),
+            bus.clone(),
+            IngestPolicy {
+                max_attributes: 2,
+                ..IngestPolicy::default()
+            },
+        );
+        let mut request = fixture_request();
+        request.attributes = BTreeMap::from([
+            ("a".to_string(), json!(1)),
+            ("b".to_string(), json!(2)),
+            ("c".to_string(), json!(3)),
+        ]);
+
+        let error = service
+            .ingest_native(request.clone())
+            .await
+            .err()
+            .unwrap_or_else(|| panic!("over-cap attributes should be rejected"));
+        assert!(matches!(
+            error,
+            IngestError::TooManyAttributes {
+                count: 3,
+                limit: 2
+            }
+        ));
+        // Nothing was written and nothing queued: the cap fires before assembly.
+        assert_eq!(bus.depth().await, Ok(0));
+        let trace = traces
+            .get_trace(request.scope.tenant_id, request.trace_id)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(trace.spans.len(), 0);
+    }
+
+    /// R4.5: an allow-list keeps only listed attribute keys and records the rest
+    /// under `dropped_attributes`, while a denied key is dropped even if it would
+    /// otherwise be allowed.
+    #[tokio::test]
+    async fn ingest_allow_list_drops_unlisted_and_denied_attributes() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let service = IngestService::new(
+            artifacts,
+            traces.clone(),
+            bus,
+            IngestPolicy {
+                allowed_attributes: Some(BTreeSet::from([
+                    "keep".to_string(),
+                    "secret".to_string(),
+                ])),
+                denied_attributes: BTreeSet::from(["secret".to_string()]),
+                ..IngestPolicy::default()
+            },
+        );
+        let mut request = fixture_request();
+        request.attributes = BTreeMap::from([
+            ("keep".to_string(), json!("yes")),
+            ("drop_me".to_string(), json!("unlisted")),
+            ("secret".to_string(), json!("denied")),
+        ]);
+
+        service
+            .ingest_native(request.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let trace = traces
+            .get_trace(request.scope.tenant_id, request.trace_id)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let span = &trace.spans[0];
+        assert_eq!(span.attributes.get("keep"), Some(&json!("yes")));
+        assert!(!span.attributes.contains_key("drop_me"));
+        // Deny wins over allow.
+        assert!(!span.attributes.contains_key("secret"));
+        let dropped = &span.unmapped_attrs["dropped_attributes"];
+        assert_eq!(dropped["drop_me"], json!("unlisted"));
+        assert_eq!(dropped["secret"], json!("denied"));
+        assert!(dropped.get("keep").is_none());
+    }
+
+    /// R4.1: the in-process queue-depth gauge (`DurableBus::depth_for_kind`, NOT
+    /// the R13 metrics layer) reflects buffered backlog growing per buffered
+    /// ingest and shrinking as the write lane drains.
+    ///
+    /// NOTE (R13 load test): a full sustained-throughput load test that asserts
+    /// the queue-depth gauge stays bounded under backpressure belongs to the R13
+    /// metrics/observability layer (a separate track) and is intentionally out of
+    /// scope here; this in-process assertion documents the gauge contract that the
+    /// load test will drive.
+    #[tokio::test]
+    async fn queue_depth_gauge_tracks_buffered_backlog_in_process() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let service = IngestService::new(
+            artifacts,
+            traces.clone(),
+            bus.clone(),
+            IngestPolicy::default(),
+        );
+
+        // Gauge starts empty.
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(0));
+
+        // Each buffered ingest enqueues one trace.write_batch -> gauge climbs.
+        service
+            .buffer_native(fixture_request_with_span("span-1"))
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(1));
+        let status_one = service
+            .queue_status(
+                TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(status_one.trace_write_depth, 1);
+
+        service
+            .buffer_native(fixture_request_with_span("span-2"))
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(2));
+
+        // Draining the write lane moves work downstream: write gauge falls to 0,
+        // the ingested gauge rises (one downstream message per buffered write).
+        let report = service
+            .drain_trace_writes(10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(report.consumed, 2);
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(0));
+        assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(2));
+    }
+
     #[test]
     fn trace_completion_is_state_machine() {
         assert_eq!(
@@ -2847,6 +3189,189 @@ mod tests {
             }),
             TraceCompletionState::IdleComplete
         );
+    }
+
+    /// R4.7: an out-of-order, late-arriving distributed trace. The root span
+    /// arrives last (children first), proving assembly is ordering-agnostic, and
+    /// the ended root with no open children inside the late window is `RootEnded`.
+    #[test]
+    fn assemble_completion_out_of_order_root_last_is_root_ended() {
+        let now = base_time();
+        // Child spans arrive first (out of order), both closed.
+        let spans = vec![
+            completion_span("trace", "child-b", Some("root"), now, Some(now + ms(20))),
+            completion_span("trace", "child-a", Some("root"), now, Some(now + ms(10))),
+            // Root arrives last, ended just now -> within the late window.
+            completion_span("trace", "root", None, now, Some(now + ms(30))),
+        ];
+        // now == latest end => idle_for 0, below the 10s late window.
+        let state = assemble_trace_completion(
+            &spans,
+            now + ms(30),
+            TraceCompletionConfig::default(),
+        );
+        assert_eq!(state, TraceCompletionState::RootEnded);
+    }
+
+    /// R4.7: a late-arriving child keeps the trace open even after the root ended,
+    /// until the late window closes; once it closes with the root ended and no
+    /// open children, the trace is `Complete`.
+    #[test]
+    fn assemble_completion_late_window_closes_to_complete() {
+        let now = base_time();
+        let root_end = now + ms(30);
+        let spans = vec![
+            completion_span("trace", "root", None, now, Some(root_end)),
+            completion_span("trace", "child", Some("root"), now, Some(now + ms(20))),
+        ];
+        // Evaluate well past the late window with all children closed -> Complete.
+        let state = assemble_trace_completion(
+            &spans,
+            root_end + Duration::seconds(30),
+            TraceCompletionConfig::default(),
+        );
+        assert_eq!(state, TraceCompletionState::Complete);
+    }
+
+    /// R4.7: a root that has NOT ended yet, but whose only child closed long ago,
+    /// crosses the late window with the open-child count still nonzero because the
+    /// root itself is open -> `LateWindowClosed` (not Complete, not RootEnded).
+    #[test]
+    fn assemble_completion_open_root_after_late_window_is_late_window_closed() {
+        let now = base_time();
+        // Root present but still open (no end_time); one closed child.
+        let spans = vec![
+            completion_span("trace", "root", None, now, None),
+            completion_span("trace", "child", Some("root"), now, Some(now + ms(20))),
+        ];
+        // Past the late window but before the idle timeout (60s): the open root
+        // is not a child, so open_child_spans == 0 and idle >= late_window but
+        // < idle_timeout, and root not ended -> LateWindowClosed.
+        let state = assemble_trace_completion(
+            &spans,
+            now + Duration::seconds(15),
+            TraceCompletionConfig::default(),
+        );
+        assert_eq!(state, TraceCompletionState::LateWindowClosed);
+    }
+
+    /// R4.7: clock skew where a span's end_time is in the *future* relative to the
+    /// ingest clock must not produce a negative idle gap nor spuriously complete.
+    #[test]
+    fn assemble_completion_clamps_clock_skewed_future_end() {
+        let now = base_time();
+        // The only child ends 5 minutes in the "future" vs now (clock skew).
+        let spans = vec![
+            completion_span("trace", "root", None, now, None),
+            completion_span(
+                "trace",
+                "child",
+                Some("root"),
+                now,
+                Some(now + Duration::minutes(5)),
+            ),
+        ];
+        // idle_for is clamped to zero, so the late window has NOT closed and the
+        // open child keeps the trace Open despite the skew.
+        let state = assemble_trace_completion(&spans, now, TraceCompletionConfig::default());
+        assert_eq!(state, TraceCompletionState::Open);
+    }
+
+    /// R4.7: trace_completion is wired into the assembly path — a native ingest
+    /// reports the derived completion state for the trace it just assembled.
+    #[tokio::test]
+    async fn native_ingest_assembles_trace_completion_state() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let now = base_time();
+        let service = IngestService::new(artifacts, traces, bus, IngestPolicy::default())
+            .with_clock(Arc::new(FixedClock::new(now + Duration::seconds(30))));
+        // A parentless span with an end_time -> the assembled root has ended.
+        let mut request = fixture_request();
+        request.parent_span_id = None;
+        request.start_time = Some(now);
+        request.end_time = Some(now + ms(10));
+
+        let assembled = service
+            .ingest_native_assembled(request.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(assembled.outcome.ack.accepted_spans, 1);
+        let state = assembled
+            .trace_completion
+            .get(&request.trace_id)
+            .unwrap_or_else(|| panic!("expected completion state for ingested trace"));
+        // 30s after the only (root) span ended: past the 10s late window, root
+        // ended, no open children -> Complete.
+        assert_eq!(state, &TraceCompletionState::Complete);
+
+        // The stored-trace re-assessment path agrees.
+        let reassessed = service
+            .assess_trace_completion(
+                request.scope.tenant_id.clone(),
+                request.scope.project_id.clone(),
+                request.trace_id.clone(),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(reassessed, TraceCompletionState::Complete);
+    }
+
+    fn base_time() -> Timestamp {
+        Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0)
+            .single()
+            .unwrap_or_else(|| panic!("valid timestamp"))
+    }
+
+    fn ms(millis: i64) -> Duration {
+        Duration::milliseconds(millis)
+    }
+
+    fn completion_span(
+        trace_id: &str,
+        span_id: &str,
+        parent_span_id: Option<&str>,
+        start_time: Timestamp,
+        end_time: Option<Timestamp>,
+    ) -> CanonicalSpan {
+        CanonicalSpan {
+            schema_version: CANONICAL_SCHEMA_VERSION,
+            normalizer_version: "test".to_string(),
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            environment_id: EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            trace_id: TraceId::new(trace_id).unwrap_or_else(|err| panic!("{err}")),
+            span_id: SpanId::new(span_id).unwrap_or_else(|err| panic!("{err}")),
+            parent_span_id: parent_span_id
+                .map(|id| SpanId::new(id).unwrap_or_else(|err| panic!("{err}"))),
+            seq: 1,
+            kind: AgentSpanKind::AgentRun,
+            name: "span".to_string(),
+            status: SpanStatus::Ok,
+            start_time,
+            end_time,
+            model: None,
+            cost: None,
+            tokens: None,
+            input_ref: None,
+            output_ref: None,
+            attributes: BTreeMap::new(),
+            unmapped_attrs: json!({}),
+            raw_ref: ArtifactRef {
+                artifact_id: beater_core::ArtifactId::new("raw")
+                    .unwrap_or_else(|err| panic!("{err}")),
+                uri: "artifact://tenant/project/raw".to_string(),
+                sha256: Sha256Hash::new("ab".repeat(32)).unwrap_or_else(|err| panic!("{err}")),
+                size_bytes: 2,
+                mime_type: "application/json".to_string(),
+                redaction_class: RedactionClass::Internal,
+            },
+        }
     }
 
     fn fixture_request() -> NativeIngestRequest {
