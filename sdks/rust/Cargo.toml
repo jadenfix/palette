@@ -23,8 +23,38 @@ opentelemetry-otlp = { version = "0.32", default-features = false, features = [
 [dev-dependencies]
 # In-memory span exporter for offline tests (mirrors Python's InMemorySpanExporter).
 opentelemetry_sdk = { version = "0.32", features = ["trace", "testing"] }
-tokio = { version = "1", features = ["macros", "rt"] }
+# `rt-multi-thread` for the `#[tokio::main]` adoption examples in examples/rust/.
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
+# Only the deps the example bodies actually use (axum/reqwest); the `tracing` and
+# `tonic` headers in those files are illustrative, so they need no extra deps.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+axum = "0.7"
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
 
 [[example]]
 name = "quickstart"
 path = "examples/quickstart.rs"
+
+# Repo-level adoption fixtures under examples/rust/ — registered here so CI
+# `cargo build --examples` compiles them against the live SDK API (they were
+# outside the workspace and could silently rot).
+[[example]]
+name = "tracing_app"
+path = "../../examples/rust/tracing_app.rs"
+
+[[example]]
+name = "mcp_app"
+path = "../../examples/rust/mcp_app.rs"
+
+[[example]]
+name = "reqwest_app"
+path = "../../examples/rust/reqwest_app.rs"
+
+[[example]]
+name = "axum_app"
+path = "../../examples/rust/axum_app.rs"
+
+[[example]]
+name = "tonic_app"
+path = "../../examples/rust/tonic_app.rs"

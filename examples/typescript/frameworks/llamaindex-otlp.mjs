@@ -8,6 +8,10 @@
 // with or without LlamaIndex's own instrumentation. Swap the stub `query()` for
 // a real `index.asQueryEngine().query(...)` once you have an index.
 //
+// This uses the OTLP/HTTP-protobuf exporter, so it targets beaterd's HTTP API
+// (:8080) at the tenant-scoped OTLP path, NOT the OTLP/gRPC port (:4317). The
+// scope is carried in the URL path, so no x-beater-* headers are needed.
+//
 // Run a local beaterd (`docker compose up`) and then:
 //
 //   npm install llamaindex @opentelemetry/api @opentelemetry/sdk-trace-node \
@@ -19,17 +23,16 @@ import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
 
-const endpoint =
-  process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://127.0.0.1:4317";
-const headers = {
-  "x-beater-tenant-id": process.env.BEATER_TENANT_ID ?? "demo",
-  "x-beater-project-id": process.env.BEATER_PROJECT_ID ?? "demo",
-  "x-beater-environment-id": process.env.BEATER_ENVIRONMENT_ID ?? "local",
-};
+const apiBase =
+  process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://127.0.0.1:8080";
+const tenant = process.env.BEATER_TENANT_ID ?? "demo";
+const project = process.env.BEATER_PROJECT_ID ?? "demo";
+const environment = process.env.BEATER_ENVIRONMENT_ID ?? "local";
+const url = `${apiBase}/v1/otlp/${tenant}/${project}/${environment}/v1/traces`;
 
 const provider = new NodeTracerProvider();
 provider.addSpanProcessor(
-  new BatchSpanProcessor(new OTLPTraceExporter({ url: `${endpoint}/v1/traces`, headers })),
+  new BatchSpanProcessor(new OTLPTraceExporter({ url })),
 );
 provider.register();
 const tracer = trace.getTracer("beater.example.llamaindex");

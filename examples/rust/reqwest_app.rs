@@ -21,7 +21,7 @@ use beater::{span_kind, BeaterConfig};
 async fn call_llm(prompt: &str) -> String {
     // Bracket the outbound async call in an llm.call span via `observe_async`.
     beater::observe_async("call_model", span_kind::LLM_CALL, async move {
-        beater::set_input(prompt);
+        beater::set_input(prompt.to_string());
         let client = reqwest::Client::new();
         let response = client
             .post("https://api.example-llm.test/v1/chat")

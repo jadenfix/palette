@@ -49,6 +49,14 @@ jobs:
             --exclude beater-browser-webdriver
       - name: Test beaterd's non-gate target
         run: cargo test -p beaterd --test sqlite_migrations
+      # The examples/rust/ adoption fixtures live outside the workspace (they
+      # depend on the standalone `beater` SDK under sdks/), so the workspace
+      # build above never sees them. The SDK crate registers them as [[example]]
+      # targets; compile them here so they can't silently rot against SDK-API
+      # changes.
+      - name: Compile the examples/rust/ adoption fixtures
+        working-directory: sdks/rust
+        run: cargo build --examples
 
   backend-lint:
     name: backend lint

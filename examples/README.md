@@ -6,8 +6,12 @@ done. The ergonomic SDKs (`sdks/rust`, `sdks/python`, `sdks/typescript`) add
 convenience on top of the same standard.
 
 Start a local server first: `docker compose up beaterd dashboard` (or
-`cargo run -p beaterd`). All examples default to `http://127.0.0.1:4317` and the
-`demo/demo/local` tenant/project/environment.
+`cargo run -p beaterd`). All examples default to the `demo/demo/local`
+tenant/project/environment. The OTLP/gRPC examples (the Python apps) target
+`http://127.0.0.1:4317`; the OTLP/HTTP-protobuf examples (the TypeScript apps)
+target the HTTP API at `http://127.0.0.1:8080` on the tenant-scoped
+`/v1/otlp/<tenant>/<project>/<environment>/v1/traces` path. beaterd does not
+expose a separate 4318 collector port — HTTP/proto OTLP rides the 8080 API.
 
 ## Zero-SDK instrumentation fixtures (R11.2)
 
@@ -45,6 +49,8 @@ First-class Rust adoption via the `beater` SDK (`sdks/rust`):
 | `rust/mcp_app.rs` | MCP tool calls (`mcp.request` spans) |
 
 The Rust SDK also ships a runnable `cargo run --example quickstart` under
-`sdks/rust/examples/`. The files in `examples/rust/` are illustrative app
-templates: copy one into a binary crate that depends on `beater = { path = ... }`
-and run it against a local `beaterd`.
+`sdks/rust/examples/`. The files in `examples/rust/` are app templates: copy one
+into a binary crate that depends on `beater = { path = ... }` and run it against
+a local `beaterd`. They are registered as `[[example]]` targets of the `beater`
+SDK crate, so `cargo build --examples` (in `sdks/rust/`) compiles them in CI and
+they cannot silently drift from the SDK API.
