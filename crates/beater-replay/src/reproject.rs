@@ -1,24 +1,33 @@
-//! Re-normalization / reprojection of stored canonical spans over their
-//! preserved [`RawEnvelope`]s.
+//! Schema-v2 **reclassification** of stored canonical spans.
 //!
-//! The ingest contract preserves every raw payload (`RawEnvelope.body_ref`) so
-//! that a *newer* normalizer revision can re-derive canonical spans from the
-//! original bytes rather than from a previous (lossy) projection. This module
-//! introduces a second canonical schema version, [`CANONICAL_SCHEMA_VERSION_V2`],
-//! and a pure migration from v1 spans to v2 spans driven by the raw envelope's
-//! recorded source. It is deliberately self-contained and side-effect free so it
-//! can be golden-tested against a frozen fixture and run as a batch backfill.
+//! IMPORTANT — scope of this module: this is *not* a re-normalization from the
+//! original raw bytes. It does **not** read `RawEnvelope.body_ref`,
+//! `RawEnvelope.source`, or any raw payload to re-derive spans. It operates
+//! purely on an existing [`CanonicalSpan`]'s `attributes` bag, reclassifying
+//! each key as canonical or non-canonical, and is therefore a lossless, in-place
+//! migration of the v1 projection — not a fresh projection from source. The
+//! preserved raw payload that *would* enable a true re-normalization from bytes
+//! is intentionally out of scope here.
+//!
+//! This module introduces a second canonical schema version,
+//! [`CANONICAL_SCHEMA_VERSION_V2`], and a pure migration from v1 spans to v2
+//! spans. It is deliberately self-contained and side-effect free so it can be
+//! golden-tested against a frozen fixture and run as a batch backfill.
+//!
+//! The supplied [`RawEnvelope`] is used solely as an ownership check: it lets
+//! [`reproject_span`] refuse to migrate a span across an envelope boundary
+//! (mismatched tenant/project/environment). Its raw bytes are never read.
 //!
 //! ## What v2 changes (the reason a migration exists)
 //!
 //! v1 carried the *entire* attribute bag on `CanonicalSpan.attributes`, including
 //! attributes that fail canonical mapping (see ingest `canonical_mapping`). v2
-//! tightens the canonical projection: `attributes` retains only canonical keys,
-//! and any non-canonical attribute is relocated into
-//! `unmapped_attrs.unmapped` (merging with whatever the original normalizer
-//! already recorded there). This is the migration something downstream can rely
-//! on: after reprojection, `attributes` is a clean canonical view while the raw
-//! artifact + `unmapped_attrs` remain the lossless record.
+//! reclassifies that bag: `attributes` retains only canonical keys, and any
+//! non-canonical attribute is relocated into `unmapped_attrs.unmapped` (merging
+//! with whatever the original normalizer already recorded there). After
+//! reprojection, `attributes` is a clean canonical view while the raw artifact +
+//! `unmapped_attrs` remain the lossless record. No new keys are derived from the
+//! raw payload; v2 only re-partitions keys that already exist on the v1 span.
 
 use beater_schema::{CanonicalSpan, RawEnvelope};
 use serde_json::{Map, Value};
@@ -46,35 +55,44 @@ pub struct ReprojectedSpan {
     pub relocated_keys: Vec<String>,
 }
 
+/// Recognized namespace prefixes whose attributes the canonical model
+/// understands. Must stay identical to ingest's
+/// `beater_ingest::canonical_mapping::CANONICAL_PREFIXES` (the duplication is
+/// asserted by [`tests::canonical_prefixes_match_ingest`]).
+pub const CANONICAL_PREFIXES: &[&str] = &[
+    "llm.",
+    "gen_ai.",
+    "browser.",
+    "resource.",
+    "otel.",
+    "beater.",
+    "agent.",
+    "openinference.",
+    "w3c.",
+    "temporal.",
+];
+
+/// Exact keys without a recognized prefix that are still canonical. Must stay
+/// identical to ingest's `beater_ingest::canonical_mapping::CANONICAL_EXACT_KEYS`
+/// (asserted by [`tests::canonical_exact_keys_match_ingest`]).
+pub const CANONICAL_EXACT_KEYS: &[&str] = &[
+    "input.value",
+    "output.value",
+    "model",
+    "model_name",
+    "provider",
+    "cost_micros",
+    "currency",
+    "input_tokens",
+    "output_tokens",
+    "reasoning_tokens",
+    "cache_read_tokens",
+];
+
 /// Classify whether an attribute key maps to the canonical model. Mirrors the
 /// ingest-side `canonical_mapping` rules so reprojection and first-pass ingest
 /// agree on what "canonical" means.
 fn maps_to_canonical(key: &str) -> bool {
-    const CANONICAL_PREFIXES: &[&str] = &[
-        "llm.",
-        "gen_ai.",
-        "browser.",
-        "resource.",
-        "otel.",
-        "beater.",
-        "agent.",
-        "openinference.",
-        "w3c.",
-        "temporal.",
-    ];
-    const CANONICAL_EXACT_KEYS: &[&str] = &[
-        "input.value",
-        "output.value",
-        "model",
-        "model_name",
-        "provider",
-        "cost_micros",
-        "currency",
-        "input_tokens",
-        "output_tokens",
-        "reasoning_tokens",
-        "cache_read_tokens",
-    ];
     if CANONICAL_EXACT_KEYS.contains(&key) {
         return true;
     }
@@ -83,13 +101,16 @@ fn maps_to_canonical(key: &str) -> bool {
         .any(|prefix| key.starts_with(prefix))
 }
 
-/// Reproject a single canonical span to schema v2, relocating non-canonical
-/// attributes into `unmapped_attrs.unmapped`. Pure and idempotent: a span
+/// Reproject a single canonical span to schema v2 by **reclassifying** its
+/// existing `attributes` bag: canonical keys stay on `attributes`, non-canonical
+/// keys are relocated into `unmapped_attrs.unmapped`. Pure and idempotent: a span
 /// already at v2 is returned unchanged with `migrated == false`.
 ///
-/// `raw` is the preserved envelope the span was projected from; the function
-/// asserts the span belongs to it (same tenant/project/environment) and refuses
-/// to reproject across an envelope boundary.
+/// This does not read `raw`'s bytes and does not re-derive any attribute from
+/// source. `raw` is the preserved envelope the span was projected from, used only
+/// as an ownership check: the function asserts the span belongs to it (same
+/// tenant/project/environment) and refuses to reproject across an envelope
+/// boundary.
 pub fn reproject_span(
     raw: &RawEnvelope,
     span: &CanonicalSpan,
@@ -279,6 +300,53 @@ mod tests {
             reproject_span(&raw, &v1),
             Err(ReprojectError::EnvelopeBoundary)
         );
+    }
+
+    /// The canonical-classification tables here are duplicated verbatim from
+    /// ingest (`beater_ingest::canonical_mapping`) with no shared dependency.
+    /// These two tests pin that duplication: if either crate's set drifts, the
+    /// reprojection and first-pass ingest would disagree on what is "canonical",
+    /// so this fails loudly until they are reconciled (or hoisted into a shared
+    /// crate). Kept as an equality assertion per the review's lower-risk option.
+    #[test]
+    fn canonical_prefixes_match_ingest() {
+        use beater_ingest::canonical_mapping;
+        assert_eq!(
+            CANONICAL_PREFIXES, canonical_mapping::CANONICAL_PREFIXES,
+            "replay and ingest CANONICAL_PREFIXES must stay identical"
+        );
+    }
+
+    #[test]
+    fn canonical_exact_keys_match_ingest() {
+        use beater_ingest::canonical_mapping;
+        assert_eq!(
+            CANONICAL_EXACT_KEYS, canonical_mapping::CANONICAL_EXACT_KEYS,
+            "replay and ingest CANONICAL_EXACT_KEYS must stay identical"
+        );
+    }
+
+    /// Belt-and-suspenders: classification agrees key-by-key across a mix of
+    /// canonical and non-canonical keys, so the two `maps_to_canonical`
+    /// implementations can't disagree on behavior even if the tables matched.
+    #[test]
+    fn maps_to_canonical_agrees_with_ingest() {
+        use beater_ingest::canonical_mapping;
+        for key in [
+            "llm.model_name",
+            "openinference.span.kind",
+            "model",
+            "cost_micros",
+            "vendor.custom_signal",
+            "user.session",
+            "random.key",
+        ] {
+            assert_eq!(
+                maps_to_canonical(key),
+                canonical_mapping::maps_to_canonical(key),
+                "classification of {key:?} must match ingest"
+            );
+        }
     }
 
     #[test]

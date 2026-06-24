@@ -153,9 +153,15 @@ pub struct DeterministicScorerRun {
 }
 
 impl DeterministicScorerRun {
+    /// Tolerance for reconciling the component and native scores. Scores are
+    /// basis-point integers divided by 10_000, so equal verdicts can still differ
+    /// by a few ULPs after the float division; `f64::EPSILON` is too tight to
+    /// absorb that, so we compare within `1e-9`.
+    const SCORE_AGREEMENT_TOLERANCE: f64 = 1e-9;
+
     /// Whether the component and native scorers agree on the numeric score.
     pub fn scores_agree(&self) -> bool {
-        (self.component.score - self.native.score).abs() < f64::EPSILON
+        (self.component.score - self.native.score).abs() < Self::SCORE_AGREEMENT_TOLERANCE
     }
 }
 
@@ -315,45 +321,54 @@ mod tests {
 
     #[test]
     fn sandbox_rejects_components_that_import_host_functions() {
-        // A component whose core module imports a WASI host function cannot be
-        // instantiated against the empty linker.
-        let wat = r#"
+        // A real, well-formed component that *exports* the deterministic-scorer
+        // `score` function but ALSO declares a component-level host import
+        // (`host:env/clock.now`). It lowers that host function into its core
+        // module and instantiates against it, so the component genuinely depends
+        // on a capability the host would have to supply. The empty `Linker` the
+        // sandbox uses supplies nothing, so instantiation must fail — and we
+        // assert specifically on the `HostImportDenied` variant.
+        //
+        // This WAT validates and assembles (`wat::parse_str` returns `Ok`); the
+        // failure happens at `DeterministicScorer::instantiate` time, not at
+        // parse time, which is the property the old test never actually exercised.
+        const HOST_IMPORTING_COMPONENT_WAT: &str = r#"
             (component
+              (import "host:env/clock" (instance $clock
+                (export "now" (func (result s32)))))
+              (alias export $clock "now" (func $now))
+              (core func $now_lower (canon lower (func $now)))
               (core module $m
-                (import "wasi_snapshot_preview1" "fd_write"
-                  (func $fd_write (param i32 i32 i32 i32) (result i32)))
+                (import "host" "now" (func $now (result i32)))
                 (memory (export "memory") 1)
-                (func (export "score") (param i32 i32) (result i32)
-                  i32.const 10000)
-                (func (export "cabi_realloc") (param i32 i32 i32 i32) (result i32)
+                (func (export "score") (param $ptr i32) (param $len i32) (result i32)
+                  ;; Force a dependency on the host import so it can't be elided.
+                  call $now)
+                (func (export "cabi_realloc")
+                  (param i32 i32 i32 i32) (result i32)
                   i32.const 0))
               (core instance $i (instantiate $m
-                (with "wasi_snapshot_preview1" (instance
-                  (export "fd_write" (func $unbound))))))
+                (with "host" (instance (export "now" (func $now_lower))))))
               (func $score (param "case-json" string) (result s32)
-                (canon lift (core func $i "score")
-                  (memory $i "memory") (realloc (func $i "cabi_realloc"))))
+                (canon lift
+                  (core func $i "score")
+                  (memory $i "memory")
+                  (realloc (func $i "cabi_realloc"))))
               (export "score" (func $score)))
         "#;
-        // If the import wiring above does not even validate, that itself proves a
-        // host-importing component is unusable in the sandbox.
-        match wat::parse_str(wat) {
-            Ok(component) => {
-                let runtime = WasmEvaluatorRuntime::default();
-                let result = runtime.evaluate_bytes(&component, br#"{}"#);
-                assert!(
-                    matches!(
-                        result,
-                        Err(SandboxError::HostImportDenied(_)) | Err(SandboxError::Execution(_))
-                    ),
-                    "expected host import to be denied, got {result:?}"
-                );
-            }
-            Err(_) => {
-                // A host-importing component cannot be assembled without binding
-                // the import to a host — which the sandbox never provides.
-            }
-        }
+
+        // The component must genuinely assemble; if it doesn't, the test is
+        // meaningless (the old version passed vacuously on a parse error).
+        let component_bytes = wat::parse_str(HOST_IMPORTING_COMPONENT_WAT)
+            .unwrap_or_else(|err| panic!("host-importing component must assemble: {err}"));
+
+        let runtime = WasmEvaluatorRuntime::default();
+        let result = runtime.evaluate_bytes(&component_bytes, br#"{}"#);
+        assert!(
+            matches!(result, Err(SandboxError::HostImportDenied(_))),
+            "instantiating a host-importing component against the empty linker \
+             must be denied as HostImportDenied, got {result:?}"
+        );
     }
 
     #[test]

@@ -1037,6 +1037,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "beater-core",
+ "beater-ingest",
  "beater-schema",
  "beater-store",
  "chrono",

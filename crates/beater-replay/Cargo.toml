@@ -18,6 +18,7 @@ thiserror.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
+beater-ingest = { path = "../beater-ingest" }
 tempfile.workspace = true
 tokio.workspace = true
 
