@@ -680,6 +680,52 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-browser"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
+name = "beater-browser-capture"
+version = "0.1.0"
+dependencies = [
+ "beater-browser",
+]
+
+[[package]]
+name = "beater-browser-cdp"
+version = "0.1.0"
+dependencies = [
+ "beater-browser",
+]
+
+[[package]]
+name = "beater-browser-harness"
+version = "0.1.0"
+dependencies = [
+ "beater-browser",
+]
+
+[[package]]
+name = "beater-browser-playwright"
+version = "0.1.0"
+dependencies = [
+ "beater-browser",
+]
+
+[[package]]
+name = "beater-browser-webdriver"
+version = "0.1.0"
+dependencies = [
+ "beater-browser",
+]
+
+[[package]]
 name = "beater-bus"
 version = "0.1.0"
 dependencies = [
