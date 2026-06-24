@@ -1172,10 +1172,12 @@ mod tests {
         assert_eq!(consumed, vec![message.clone()]);
         install_abort_trigger(&bus, "fail_retry_insert", "queue_messages");
 
-        let error = bus
+        let Err(error) = bus
             .retry_or_dlq(message.clone(), "transient failure".to_string())
             .await
-            .unwrap_err();
+        else {
+            panic!("retry_or_dlq should fail when the queue insert is aborted");
+        };
         assert!(
             matches!(error, BusError::Storage(message) if message.contains("forced queue_messages insert failure"))
         );
@@ -1215,10 +1217,12 @@ mod tests {
         assert_eq!(consumed, vec![message.clone()]);
         install_abort_trigger(&bus, "fail_dlq_insert", "dead_letters");
 
-        let error = bus
+        let Err(error) = bus
             .retry_or_dlq(message.clone(), "poison failure".to_string())
             .await
-            .unwrap_err();
+        else {
+            panic!("retry_or_dlq should fail when the dead-letter insert is aborted");
+        };
         assert!(
             matches!(error, BusError::Storage(message) if message.contains("forced dead_letters insert failure"))
         );

@@ -1,4 +1,9 @@
-name: dashboard-ui
+name: gate2-browser-proof
+
+# Gate 2 live browser proof (formerly the `live-browser-proof` job in
+# dashboard-ui.yml): runs scripts/gate2-proof.sh in a Playwright container to
+# exercise the real, end-to-end self-host browser proof. Kept separate from the
+# frontend tests/lint, which now live in frontend.yml.
 
 on:
   pull_request:
@@ -14,45 +19,9 @@ env:
   CARGO_HTTP_MULTIPLEXING: "false"
 
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/dashboard/package-lock.json
-
-      - name: Install Rust
-        run: rustup toolchain install stable --profile minimal
-
-      - name: Use stable Rust
-        run: rustup default stable
-
-      - name: Install dashboard dependencies
-        working-directory: web/dashboard
-        run: npm ci
-
-      - name: Check generated dashboard API client
-        run: scripts/check-openapi-drift.sh
-
-      - name: Test dashboard render and read client
-        working-directory: web/dashboard
-        run: npm test
-
-      - name: Build dashboard
-        working-directory: web/dashboard
-        run: npm run build
-
   live-browser-proof:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    needs: verify
     container:
       image: mcr.microsoft.com/playwright:v1.57.0-noble
     steps:

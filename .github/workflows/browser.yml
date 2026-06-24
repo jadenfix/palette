@@ -1,16 +1,12 @@
-name: browser-e2e
+name: browser
 
-# End-to-end checks for the browser-agent observability feature.
-#
-# Two jobs:
-#   browser-tests  — deterministic gate: every browser crate's unit/integration
-#                    tests, including the full capture -> evaluate -> gate loop.
-#                    No browser required; this is the required check.
-#   browser-live   — best-effort real-browser + SDK e2e via scripts/browser-e2e.sh
-#                    (real Chrome for the CDP backend, Playwright for its backend,
-#                    browser-use Python + Stagehand TS SDK span mapping). Native
-#                    Safari (safaridriver) is macOS/interactive-only and is
-#                    skipped here.
+# The browser-agent feature, split into deterministic tests and live e2e.
+#   browser-tests: the beater-browser-* crates' unit/integration tests
+#                  (driver trait + conformance, capture, harness loop) — no
+#                  browser required. Owned here, so `backend-tests` excludes them.
+#   e2e-tests:     real Chrome (CDP) + Playwright conformance + the browser-use
+#                  (Python) and Stagehand (TS) SDK span mapping, via
+#                  scripts/browser-e2e.sh.
 
 on:
   pull_request:
@@ -24,66 +20,50 @@ permissions:
 env:
   CARGO_NET_RETRY: "10"
   CARGO_HTTP_MULTIPLEXING: "false"
+  RUST_BACKTRACE: "1"
 
 jobs:
   browser-tests:
-    name: browser crates (deterministic)
+    name: browser tests
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    env:
-      RUST_BACKTRACE: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
       - name: Install Rust
-        run: rustup toolchain install stable --profile minimal
-
-      - name: Use stable Rust
-        run: rustup default stable
-
-      - name: Browser crate tests + full-loop harness
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: Test the browser crates
         run: |
           cargo test \
             -p beater-browser \
             -p beater-browser-capture \
-            -p beater-eval \
-            -p beater-otlp \
-            -p beater-browser-playwright \
-            -p beater-browser-webdriver \
             -p beater-browser-cdp \
-            -p beater-browser-harness
+            -p beater-browser-harness \
+            -p beater-browser-playwright \
+            -p beater-browser-webdriver
 
-  browser-live:
-    name: real browser + SDK e2e
+  e2e-tests:
+    name: e2e tests
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    env:
-      RUST_BACKTRACE: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal && rustup default stable
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install Chrome (CDP backend)
         uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: stable
-
       - name: Install browser-use SDK test deps
         run: python -m pip install --upgrade pip opentelemetry-sdk opentelemetry-exporter-otlp pytest
-
-      - name: Run browser e2e harness
+      - name: Run live browser + SDK e2e
         run: bash scripts/browser-e2e.sh

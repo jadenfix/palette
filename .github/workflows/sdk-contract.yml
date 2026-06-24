@@ -1,57 +1,43 @@
 name: sdk-contract
 
-# Zero-drift gate: a handler change that isn't regenerated into the spec + every
-# SDK client cannot merge, and breaking contract changes are flagged.
+# Zero-drift gate (one combined check): a handler change that isn't regenerated
+# into the spec + every SDK client cannot merge, and breaking contract changes
+# are flagged. The route-coverage test (`beater-api --test openapi_coverage`)
+# and the semconv normalizer guard (`beater-otlp`) run under the `backend`
+# workflow's `cargo test --workspace`, so they are not re-run here.
+
 on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  contract-coverage:
+  contract:
+    name: contract in sync (semconv + 7 SDKs + additive-only)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
-      - name: OpenAPI route-coverage test (spec == served routes)
-        run: cargo test -p beater-api --test openapi_coverage
 
-  semconv-drift:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Semantic conventions single-source guard (schema -> normalizer)
-        run: cargo test -p beater-otlp
-      - name: Regenerate conventions.json and fail on drift
+      - name: Semantic conventions in sync across all SDKs
         run: |
           cargo xtask regen-semconv
           git diff --exit-code -- sdks/semconv/conventions.json
-      - name: Every SDK semconv matches the single source
-        run: python3 scripts/check-semconv-drift.py
+          python3 scripts/check-semconv-drift.py
 
-  sdk-drift:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Regenerate spec + all 7 SDK clients and fail on drift
+      - name: Spec + all 7 SDK clients in sync
         run: scripts/regen-sdks.sh --check
 
-  breaking-change:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Generate current spec
-        run: cargo run -q -p beater-api --example dump_openapi > /tmp/new-spec.json
-      - name: Get base spec
-        run: git show "origin/${{ github.base_ref || 'main' }}:sdks/openapi/beater-api.json" > /tmp/base-spec.json || echo '{}' > /tmp/base-spec.json
-      - name: oasdiff breaking-change check (additive-only policy)
+      - name: Additive-only contract policy (oasdiff)
         run: |
+          cargo run -q -p beater-api --example dump_openapi > /tmp/new-spec.json
+          git show "origin/${{ github.base_ref || 'main' }}:sdks/openapi/beater-api.json" \
+            > /tmp/base-spec.json || echo '{}' > /tmp/base-spec.json
           docker run --rm -v /tmp:/specs tufin/oasdiff breaking \
             /specs/base-spec.json /specs/new-spec.json --fail-on ERR

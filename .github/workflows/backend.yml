@@ -1,0 +1,67 @@
+name: backend
+
+# The Rust workspace, split into tests and lint.
+#
+# `backend-tests` runs every crate's unit/integration tests EXCEPT:
+#   - beaterd (its targets are the gate1/gate2 hard-stop proofs; the one non-gate
+#     target, sqlite_migrations, is run explicitly), and
+#   - the beater-browser-* crates (owned by the `browser` workflow's
+#     `browser-tests` job),
+# so nothing is run twice.
+#
+# `backend-lint` owns rustfmt + clippy for the whole workspace (clippy enforces
+# the deny-lints: no unwrap/expect, forbid unsafe). beaterd is excluded from
+# clippy because its gate-test files carry pre-existing expect() debt.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_NET_RETRY: "10"
+  CARGO_HTTP_MULTIPLEXING: "false"
+  RUST_BACKTRACE: "1"
+
+jobs:
+  backend-tests:
+    name: backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: Test the workspace (excluding beaterd gates + browser crates)
+        run: |
+          cargo test --workspace \
+            --exclude beaterd \
+            --exclude beater-browser \
+            --exclude beater-browser-capture \
+            --exclude beater-browser-cdp \
+            --exclude beater-browser-harness \
+            --exclude beater-browser-playwright \
+            --exclude beater-browser-webdriver
+      - name: Test beaterd's non-gate target
+        run: cargo test -p beaterd --test sqlite_migrations
+
+  backend-lint:
+    name: backend lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install Rust (clippy + rustfmt)
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy --component rustfmt
+          rustup default stable
+      - name: rustfmt
+        run: cargo fmt --all -- --check
+      - name: clippy (enforces workspace deny-lints)
+        run: cargo clippy --workspace --all-targets --exclude beaterd
