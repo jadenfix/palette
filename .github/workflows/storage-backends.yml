@@ -1,0 +1,42 @@
+name: storage-backends
+
+# Real (non-#[ignore]d) coverage for the scale TraceStore backends.
+#
+# The Pg/ClickHouse conformance tests in `beater-store-sql` are gated behind
+# `#[ignore]` so a Docker-less `cargo test` still passes locally. They boot
+# throwaway `postgres:16-alpine` / `clickhouse/clickhouse-server:24-alpine`
+# containers themselves via the `testcontainers` crate (which talks directly to
+# the Docker daemon), so we do NOT declare GitHub `services:` containers here —
+# testcontainers would not use them and would still need the daemon. The
+# `ubuntu-latest` runner already ships a running Docker daemon, which is all the
+# tests require. This job runs them with `--ignored` so R2.1 (PgTraceStore) and
+# R3.3 (ClickHouseTraceStore) get genuinely executing CI coverage.
+on:
+  pull_request:
+    paths:
+      - "crates/beater-store-sql/**"
+      - "crates/beater-store-conformance/**"
+      - "crates/beater-store/**"
+      - "crates/beater-schema/**"
+      - "migrations/postgres/**"
+      - "migrations/clickhouse/**"
+      - ".github/workflows/storage-backends.yml"
+  push:
+    branches: [main]
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Confirm Docker daemon is available (testcontainers requirement)
+        run: docker info
+      # Pre-pull the images the tests boot so a slow registry pull does not
+      # count against the testcontainers startup wait.
+      - name: Pre-pull backend images
+        run: |
+          docker pull postgres:16-alpine
+          docker pull clickhouse/clickhouse-server:24-alpine
+      - name: Run Pg + ClickHouse TraceStore conformance (Docker-gated, --ignored)
+        run: cargo test -p beater-store-sql -- --ignored

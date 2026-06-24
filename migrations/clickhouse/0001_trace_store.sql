@@ -50,46 +50,16 @@ ORDER BY (tenant_id, project_id, environment_id, trace_id, start_time, span_id, 
 TTL toDateTime(start_time) + INTERVAL 90 DAY
 SETTINGS index_granularity = 8192;
 
-CREATE TABLE IF NOT EXISTS beater.trace_runs
-(
-  tenant_id String,
-  project_id String,
-  environment_id String,
-  trace_id String,
-  first_span_name String,
-  span_count UInt64,
-  status LowCardinality(String),
-  started_at DateTime64(6, 'UTC'),
-  ended_at Nullable(DateTime64(6, 'UTC')),
-  duration_ms Nullable(Int64),
-  total_cost_currency LowCardinality(Nullable(String)),
-  total_cost_micros Nullable(Int64),
-  models Array(Tuple(provider String, name String)),
-  release_ids Array(String)
-)
-ENGINE = ReplacingMergeTree
-PARTITION BY toYYYYMM(started_at)
-ORDER BY (tenant_id, project_id, environment_id, started_at, trace_id)
-TTL toDateTime(started_at) + INTERVAL 90 DAY
-SETTINGS index_granularity = 8192;
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS beater.trace_runs_mv
-TO beater.trace_runs
-AS
-SELECT
-  tenant_id,
-  project_id,
-  environment_id,
-  trace_id,
-  any(name) AS first_span_name,
-  count() AS span_count,
-  if(countIf(status = 'error') > 0, 'error', if(countIf(status = 'ok') > 0, 'ok', 'unset')) AS status,
-  min(start_time) AS started_at,
-  max(end_time) AS ended_at,
-  dateDiff('millisecond', min(start_time), max(end_time)) AS duration_ms,
-  any(cost_currency) AS total_cost_currency,
-  sum(cost_micros) AS total_cost_micros,
-  groupUniqArray((coalesce(model_provider, ''), coalesce(model_name, ''))) AS models,
-  groupUniqArray(coalesce(release_id, '')) AS release_ids
-FROM beater.spans
-GROUP BY tenant_id, project_id, environment_id, trace_id;
+-- Run summaries are intentionally NOT precomputed into a table or materialized
+-- view. ClickHouseTraceStore::query_runs materializes run summaries from the
+-- canonical `span_json` column at query time (via the shared
+-- `query_runs_by_materializing_spans` helper), keeping behavior byte-identical to
+-- the SQLite reference store.
+--
+-- A `beater.trace_runs` table + `beater.trace_runs_mv` materialized view
+-- previously lived here, but the store's write path never populates the per-span
+-- columns they aggregated over (cost_currency, cost_micros, model_provider,
+-- model_name, release_id, duration_ms) — those are kept only inside `span_json` —
+-- so the view could only ever emit wrong/empty aggregates and nothing read from
+-- it. They were removed. Do not reintroduce a run-summary table without a write
+-- path that fills those span columns AND a read path that queries the table.

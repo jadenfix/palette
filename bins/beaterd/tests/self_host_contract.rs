@@ -472,7 +472,13 @@ fn migrations_cover_trace_store_and_queue_contracts() {
     assert!(clickhouse.contains("CREATE TABLE IF NOT EXISTS beater.raw_envelopes"));
     assert!(clickhouse.contains("CREATE TABLE IF NOT EXISTS beater.spans"));
     assert!(clickhouse.contains("ORDER BY (tenant_id, project_id, environment_id, trace_id"));
-    assert!(clickhouse.contains("CREATE MATERIALIZED VIEW IF NOT EXISTS beater.trace_runs_mv"));
+    // Run summaries are materialized from `span_json` at query time, so the
+    // migration must NOT (re)introduce a precomputed run-summary table or
+    // materialized view whose aggregate columns the write path never populates.
+    // (Match on the DDL keywords, not bare names, so the explanatory SQL comment
+    // that mentions the removed objects does not trip these guards.)
+    assert!(!clickhouse.contains("CREATE TABLE IF NOT EXISTS beater.trace_runs"));
+    assert!(!clickhouse.contains("CREATE MATERIALIZED VIEW"));
 }
 
 #[test]

@@ -127,51 +127,92 @@ impl ClickHouseTraceStore {
 
     /// Returns the set of existing `(tenant, project, idempotency_key)` raw keys
     /// among the candidates so duplicate inserts can be filtered out.
+    ///
+    /// Batched into a single `SELECT ... WHERE (tenant, project, key) IN (...)`
+    /// round-trip rather than one query per candidate. Only the matching keys are
+    /// returned (`SELECT DISTINCT` of the tuple), so the response is bounded by
+    /// the number of genuine duplicates.
     async fn existing_raw_keys(
         &self,
         candidates: &[(String, String, String)],
     ) -> StoreResult<BTreeSet<(String, String, String)>> {
+        if candidates.is_empty() {
+            return Ok(BTreeSet::new());
+        }
+        let tuples = candidates
+            .iter()
+            .map(|(tenant, project, key)| {
+                format!(
+                    "('{}','{}','{}')",
+                    escape(tenant),
+                    escape(project),
+                    escape(key)
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let sql = format!(
+            "SELECT DISTINCT tenant_id, project_id, idempotency_key FROM beater.raw_envelopes WHERE (tenant_id, project_id, idempotency_key) IN ({tuples}) FORMAT JSONEachRow"
+        );
+        let body = self.query_raw(&sql).await?;
         let mut found = BTreeSet::new();
-        for (tenant, project, key) in candidates {
-            let sql = format!(
-                "SELECT count() FROM beater.raw_envelopes WHERE tenant_id = '{}' AND project_id = '{}' AND idempotency_key = '{}' FORMAT TabSeparated",
-                escape(tenant),
-                escape(project),
-                escape(key)
-            );
-            if Self::parse_count(&self.query_raw(&sql).await?)? > 0 {
-                found.insert((tenant.clone(), project.clone(), key.clone()));
-            }
+        for line in body.lines().filter(|line| !line.trim().is_empty()) {
+            let row: serde_json::Value = serde_json::from_str(line).map_err(StoreError::backend)?;
+            found.insert((
+                json_str(&row, "tenant_id")?,
+                json_str(&row, "project_id")?,
+                json_str(&row, "idempotency_key")?,
+            ));
         }
         Ok(found)
     }
 
     /// Returns the set of existing span primary keys among the candidates.
+    ///
+    /// Batched into a single `SELECT ... WHERE (...) IN (...)` round-trip rather
+    /// than one query per candidate.
     async fn existing_span_keys(
         &self,
         candidates: &[SpanKey],
     ) -> StoreResult<BTreeSet<SpanKey>> {
+        if candidates.is_empty() {
+            return Ok(BTreeSet::new());
+        }
+        let tuples = candidates
+            .iter()
+            .map(|key| {
+                format!(
+                    "('{}','{}','{}','{}',{})",
+                    escape(&key.tenant),
+                    escape(&key.project),
+                    escape(&key.trace),
+                    escape(&key.span),
+                    key.seq
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let sql = format!(
+            "SELECT DISTINCT tenant_id, project_id, trace_id, span_id, seq FROM beater.spans WHERE (tenant_id, project_id, trace_id, span_id, seq) IN ({tuples}) FORMAT JSONEachRow"
+        );
+        let body = self.query_raw(&sql).await?;
         let mut found = BTreeSet::new();
-        for key in candidates {
-            let sql = format!(
-                "SELECT count() FROM beater.spans WHERE tenant_id = '{}' AND project_id = '{}' AND trace_id = '{}' AND span_id = '{}' AND seq = {} FORMAT TabSeparated",
-                escape(&key.tenant),
-                escape(&key.project),
-                escape(&key.trace),
-                escape(&key.span),
-                key.seq
-            );
-            if Self::parse_count(&self.query_raw(&sql).await?)? > 0 {
-                found.insert(key.clone());
-            }
+        for line in body.lines().filter(|line| !line.trim().is_empty()) {
+            let row: serde_json::Value = serde_json::from_str(line).map_err(StoreError::backend)?;
+            // `seq` is a UInt64 column; ClickHouse JSONEachRow renders large
+            // unsigned ints as quoted strings, so accept either representation.
+            let seq = row.get("seq").and_then(json_u64).ok_or_else(|| {
+                StoreError::Backend("missing or invalid seq column".to_string())
+            })?;
+            found.insert(SpanKey {
+                tenant: json_str(&row, "tenant_id")?,
+                project: json_str(&row, "project_id")?,
+                trace: json_str(&row, "trace_id")?,
+                span: json_str(&row, "span_id")?,
+                seq,
+            });
         }
         Ok(found)
-    }
-
-    fn parse_count(body: &str) -> StoreResult<u64> {
-        body.trim()
-            .parse::<u64>()
-            .map_err(|err| StoreError::Backend(format!("clickhouse count parse error: {err}")))
     }
 
     async fn span_json_query(&self, sql: &str) -> StoreResult<Vec<CanonicalSpan>> {
@@ -449,6 +490,22 @@ fn split_sql_statements(sql: &str) -> Vec<String> {
         statements.push(tail);
     }
     statements
+}
+
+/// Extracts a required string column from a ClickHouse `JSONEachRow` object.
+fn json_str(row: &serde_json::Value, column: &str) -> StoreResult<String> {
+    row.get(column)
+        .and_then(|value| value.as_str())
+        .map(|value| value.to_string())
+        .ok_or_else(|| StoreError::Backend(format!("missing {column} column")))
+}
+
+/// Reads a `UInt64` column from a ClickHouse `JSONEachRow` value, accepting both
+/// the numeric and the quoted-string renderings ClickHouse may emit.
+fn json_u64(value: &serde_json::Value) -> Option<u64> {
+    value
+        .as_u64()
+        .or_else(|| value.as_str().and_then(|text| text.parse::<u64>().ok()))
 }
 
 /// Escapes a string for inclusion in a single-quoted ClickHouse SQL literal.
