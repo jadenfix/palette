@@ -211,24 +211,9 @@ impl IngestService {
         &self,
         request: NativeIngestRequest,
     ) -> Result<IngestOutcome, IngestError> {
-        Ok(self.ingest_native_assembled(request).await?.outcome)
-    }
-
-    /// Like [`Self::ingest_native`] but also returns the per-trace
-    /// [`TraceCompletionState`] derived during assembly, so tail-sampling /
-    /// trace-completion consumers can act on completion without re-reading.
-    pub async fn ingest_native_assembled(
-        &self,
-        request: NativeIngestRequest,
-    ) -> Result<AssembledIngest, IngestError> {
         self.enforce_quota_events(&request.scope, 1).await?;
         let prepared = self.prepare_native_batch(request).await?;
-        let trace_completion = prepared.trace_completion.clone();
-        let outcome = self.write_batch_and_queue_downstream(prepared).await?;
-        Ok(AssembledIngest {
-            outcome,
-            trace_completion,
-        })
+        self.write_batch_and_queue_downstream(prepared).await
     }
 
     pub async fn buffer_native(
@@ -248,25 +233,11 @@ impl IngestService {
         &self,
         request: RawTraceIngestRequest,
     ) -> Result<IngestOutcome, IngestError> {
-        Ok(self.ingest_raw_trace_batch_assembled(request).await?.outcome)
-    }
-
-    /// Like [`Self::ingest_raw_trace_batch`] but also returns the per-trace
-    /// [`TraceCompletionState`] derived during assembly.
-    pub async fn ingest_raw_trace_batch_assembled(
-        &self,
-        request: RawTraceIngestRequest,
-    ) -> Result<AssembledIngest, IngestError> {
         let event_count = request.spans.len() as u64;
         self.enforce_quota_events(&request.scope, event_count)
             .await?;
         let prepared = self.prepare_raw_batch(request).await?;
-        let trace_completion = prepared.trace_completion.clone();
-        let outcome = self.write_batch_and_queue_downstream(prepared).await?;
-        Ok(AssembledIngest {
-            outcome,
-            trace_completion,
-        })
+        self.write_batch_and_queue_downstream(prepared).await
     }
 
     async fn write_batch_and_queue_downstream(
@@ -693,15 +664,12 @@ impl IngestService {
             raw_ref,
         };
         let trace_ids = BTreeSet::from([span.trace_id.clone()]);
-        let batch = CanonicalTraceBatch::one(raw, span);
-        let trace_completion = self.assemble_batch_completion(&batch);
         Ok(PreparedTraceBatch {
             tenant_id: request.scope.tenant_id,
             project_id: request.scope.project_id,
             queue_key: idempotency_key,
             trace_ids,
-            batch,
-            trace_completion,
+            batch: CanonicalTraceBatch::one(raw, span),
         })
     }
 
@@ -820,45 +788,16 @@ impl IngestService {
             spans.push(span);
         }
 
-        let batch = CanonicalTraceBatch {
-            raw_envelopes: vec![raw],
-            spans,
-        };
-        let trace_completion = self.assemble_batch_completion(&batch);
         Ok(PreparedTraceBatch {
             tenant_id: scope.tenant_id,
             project_id: scope.project_id,
             queue_key: raw_idempotency_key,
             trace_ids,
-            batch,
-            trace_completion,
+            batch: CanonicalTraceBatch {
+                raw_envelopes: vec![raw],
+                spans,
+            },
         })
-    }
-
-    /// Group the batch's spans by trace and derive each trace's
-    /// [`TraceCompletionState`] from the assembled span set, using the ingest
-    /// clock as `now`. This is the wiring point that runs trace-completion
-    /// assessment inside the normal ingest assembly path.
-    fn assemble_batch_completion(
-        &self,
-        batch: &CanonicalTraceBatch,
-    ) -> BTreeMap<TraceId, TraceCompletionState> {
-        let now = self.clock.now();
-        let config = self.policy.trace_completion;
-        let mut by_trace: BTreeMap<TraceId, Vec<CanonicalSpan>> = BTreeMap::new();
-        for span in &batch.spans {
-            by_trace
-                .entry(span.trace_id.clone())
-                .or_default()
-                .push(span.clone());
-        }
-        by_trace
-            .into_iter()
-            .map(|(trace_id, spans)| {
-                let state = assemble_trace_completion(&spans, now, config);
-                (trace_id, state)
-            })
-            .collect()
     }
 
     /// Assess the completion state of a stored trace by re-assembling every span
@@ -1273,15 +1212,6 @@ pub struct IngestOutcome {
     pub downstream_queued: bool,
 }
 
-/// An [`IngestOutcome`] paired with the per-trace [`TraceCompletionState`] derived
-/// during the assembly path. Non-contract: surfaced only through the
-/// `*_assembled` ingest methods for trace-completion / tail-sampling consumers.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AssembledIngest {
-    pub outcome: IngestOutcome,
-    pub trace_completion: BTreeMap<TraceId, TraceCompletionState>,
-}
-
 /// A drain report that tallies the outcome of a retry-or-dead-letter decision.
 trait DrainReport {
     fn note_outcome(&mut self, dead_lettered: bool);
@@ -1372,10 +1302,6 @@ struct PreparedTraceBatch {
     queue_key: IdempotencyKey,
     trace_ids: BTreeSet<TraceId>,
     batch: CanonicalTraceBatch,
-    /// Completion state per trace, derived from the assembled span set at
-    /// preparation time via [`assemble_trace_completion`]. Used by tail-sampling /
-    /// trace-completion consumers; not part of the durable write payload.
-    trace_completion: BTreeMap<TraceId, TraceCompletionState>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -3277,8 +3203,8 @@ mod tests {
         assert_eq!(state, TraceCompletionState::Open);
     }
 
-    /// R4.7: trace_completion is wired into the assembly path — a native ingest
-    /// reports the derived completion state for the trace it just assembled.
+    /// R4.7: trace completion is derived from the stored span set — after a
+    /// native ingest, re-assessing the persisted trace reports its state.
     #[tokio::test]
     async fn native_ingest_assembles_trace_completion_state() {
         let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
@@ -3297,20 +3223,14 @@ mod tests {
         request.start_time = Some(now);
         request.end_time = Some(now + ms(10));
 
-        let assembled = service
-            .ingest_native_assembled(request.clone())
+        let outcome = service
+            .ingest_native(request.clone())
             .await
             .unwrap_or_else(|err| panic!("{err}"));
-        assert_eq!(assembled.outcome.ack.accepted_spans, 1);
-        let state = assembled
-            .trace_completion
-            .get(&request.trace_id)
-            .unwrap_or_else(|| panic!("expected completion state for ingested trace"));
+        assert_eq!(outcome.ack.accepted_spans, 1);
+
         // 30s after the only (root) span ended: past the 10s late window, root
         // ended, no open children -> Complete.
-        assert_eq!(state, &TraceCompletionState::Complete);
-
-        // The stored-trace re-assessment path agrees.
         let reassessed = service
             .assess_trace_completion(
                 request.scope.tenant_id.clone(),
