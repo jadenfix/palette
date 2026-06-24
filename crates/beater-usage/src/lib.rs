@@ -4,7 +4,7 @@ use beater_core::{Money, ProjectId, TenantId, Timestamp, UsageRecordId};
 use beater_datasets::DatasetEvalReport;
 use beater_experiments::{CaseExperimentScore, ExperimentRunReport};
 use beater_judge::JudgeBrokerOutcome;
-use beater_store::{StoreError, StoreResult};
+use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -103,16 +103,6 @@ pub trait UsageLedgerStore: Send + Sync {
         tenant_id: TenantId,
         project_id: ProjectId,
     ) -> StoreResult<UsageSummary>;
-}
-
-trait IntoStoreResult<T> {
-    fn into_store(self) -> StoreResult<T>;
-}
-
-impl<T> IntoStoreResult<T> for anyhow::Result<T> {
-    fn into_store(self) -> StoreResult<T> {
-        self.map_err(StoreError::backend)
-    }
 }
 
 #[derive(Clone)]

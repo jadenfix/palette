@@ -1,8 +1,7 @@
 use beater_core::{
-    AgentReleaseId, ApiKeyId, ArtifactId, Clock, DatasetCaseId, DatasetId, DatasetVersionId,
-    EnvironmentId, EvalResultId, EvaluatorId, EvaluatorVersionId, ExperimentId, GateId,
-    IdempotencyKey, Money, Page, PageRequest, ProjectId, PromptId, PromptVersionId, RunId,
-    Sha256Hash, SpanId, TenantId, TenantScope, Timestamp, TokenCounts, TraceId, WebhookEndpointId,
+    AgentReleaseId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetVersionId, EnvironmentId,
+    EvalResultId, EvaluatorVersionId, IdempotencyKey, Money, ProjectId, PromptVersionId,
+    Sha256Hash, SpanId, TenantId, TenantScope, Timestamp, TokenCounts, TraceId,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
@@ -246,12 +245,6 @@ pub struct WriteAck {
     pub duplicate_spans: usize,
 }
 
-impl WriteAck {
-    pub fn total_accepted(&self) -> usize {
-        self.accepted_raw + self.accepted_spans
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TraceView {
     pub tenant_id: TenantId,
@@ -328,17 +321,6 @@ pub enum EvaluatorLane {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct EvaluatorVersion {
-    pub evaluator_id: EvaluatorId,
-    pub version_id: EvaluatorVersionId,
-    pub lane: EvaluatorLane,
-    pub name: String,
-    pub code_hash: Option<Sha256Hash>,
-    pub wasm_hash: Option<Sha256Hash>,
-    pub rubric_version: Option<String>,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EvalReproducibility {
     pub dataset_version_id: DatasetVersionId,
     pub dataset_case_id: DatasetCaseId,
@@ -399,55 +381,6 @@ pub struct ReplayCassette {
     pub missing_required_kinds: Vec<String>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DatasetVersion {
-    pub dataset_id: DatasetId,
-    pub version_id: DatasetVersionId,
-    pub created_at: Timestamp,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Experiment {
-    pub experiment_id: ExperimentId,
-    pub dataset_version_id: DatasetVersionId,
-    pub baseline_release_id: AgentReleaseId,
-    pub candidate_release_id: AgentReleaseId,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Gate {
-    pub gate_id: GateId,
-    pub min_sample_size: usize,
-    pub max_regression: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PromptVersion {
-    pub prompt_id: PromptId,
-    pub version_id: PromptVersionId,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct WebhookEndpoint {
-    pub webhook_endpoint_id: WebhookEndpointId,
-    pub signing_key_ref: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Run {
-    pub run_id: RunId,
-    pub trace_id: TraceId,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Artifact {
-    pub artifact_ref: ArtifactRef,
-}
-
-pub type RunPage = Page<RunSummary>;
-pub type SpanPage = Page<SpanSummary>;
-pub type QueryPageRequest = PageRequest;
-
 pub fn make_idempotency_key(
     scope: &TenantScope,
     trace_id: &TraceId,
@@ -464,10 +397,6 @@ pub fn make_idempotency_key(
         seq,
         payload_hash.as_str()
     ))
-}
-
-pub fn now(clock: &(impl Clock + ?Sized)) -> Timestamp {
-    clock.now()
 }
 
 pub fn span_matches(span: &CanonicalSpan, filter: &SpanFilter) -> bool {

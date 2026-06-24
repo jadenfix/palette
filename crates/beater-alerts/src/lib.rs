@@ -5,7 +5,7 @@ use beater_security::sign_webhook;
 use chrono::Duration;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -157,7 +157,6 @@ pub struct AlertEngine {
 #[derive(Clone, Debug, Default)]
 struct AlertState {
     last_emitted_by_group: BTreeMap<String, Timestamp>,
-    deliveries: Vec<WebhookDelivery>,
 }
 
 impl AlertEngine {
@@ -215,20 +214,11 @@ impl AlertEngine {
             body,
         };
         state.last_emitted_by_group.insert(group_key, input.now);
-        state.deliveries.push(delivery.clone());
         Ok(AlertDecision {
             emitted: true,
             suppressed_reason: None,
             delivery: Some(delivery),
         })
-    }
-
-    pub fn deliveries(&self) -> anyhow::Result<Vec<WebhookDelivery>> {
-        let state = self
-            .state
-            .lock()
-            .map_err(|err| anyhow!("alert engine mutex poisoned: {err}"))?;
-        Ok(state.deliveries.clone())
     }
 }
 
@@ -289,44 +279,20 @@ fn trace_latency_ms(spans: &[CanonicalSpan]) -> Option<u64> {
     Some(millis.max(0) as u64)
 }
 
-pub fn required_link_keys(delivery: &WebhookDelivery) -> BTreeSet<&'static str> {
-    let links = &delivery.body["links"];
-    let mut present = BTreeSet::new();
-    if links
-        .get("trace_url")
-        .and_then(|value| value.as_str())
-        .is_some()
-    {
-        present.insert("trace_url");
-    }
-    if links
-        .get("cluster_url")
-        .and_then(|value| value.as_str())
-        .is_some()
-    {
-        present.insert("cluster_url");
-    }
-    if links
-        .get("dataset_url")
-        .and_then(|value| value.as_str())
-        .is_some()
-    {
-        present.insert("dataset_url");
-    }
-    if links
-        .get("gate_url")
-        .and_then(|value| value.as_str())
-        .is_some()
-    {
-        present.insert("gate_url");
-    }
-    present
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use beater_core::{Money, TokenCounts};
+    use std::collections::BTreeSet;
+
+    fn required_link_keys(delivery: &WebhookDelivery) -> BTreeSet<&'static str> {
+        let links = &delivery.body["links"];
+        ["trace_url", "cluster_url", "dataset_url", "gate_url"]
+            .into_iter()
+            .filter(|key| links.get(key).and_then(|value| value.as_str()).is_some())
+            .collect()
+    }
+
     use beater_schema::{AgentSpanKind, ArtifactRef, RedactionClass, CANONICAL_SCHEMA_VERSION};
     use chrono::Utc;
 

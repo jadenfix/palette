@@ -6,7 +6,7 @@ use beater_core::{
 };
 use beater_datasets::{DatasetEvalReport, DatasetVersionSnapshot};
 use beater_schema::EvalResult;
-use beater_store::{StoreError, StoreResult};
+use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -95,16 +95,6 @@ pub trait CalibrationStore: Send + Sync {
         dataset_version_id: DatasetVersionId,
         evaluator_version_id: Option<EvaluatorVersionId>,
     ) -> StoreResult<Option<CalibrationReport>>;
-}
-
-trait IntoStoreResult<T> {
-    fn into_store(self) -> StoreResult<T>;
-}
-
-impl<T> IntoStoreResult<T> for anyhow::Result<T> {
-    fn into_store(self) -> StoreResult<T> {
-        self.map_err(StoreError::backend)
-    }
 }
 
 #[derive(Clone)]

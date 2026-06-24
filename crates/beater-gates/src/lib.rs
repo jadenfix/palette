@@ -6,7 +6,7 @@ use beater_core::{
 };
 use beater_eval::{ExperimentComparison, GateDecision, GatePolicy};
 use beater_experiments::{ExperimentRunReport, ExperimentStore};
-use beater_store::{StoreError, StoreResult};
+use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -83,16 +83,6 @@ pub trait GateStore: Send + Sync {
         project_id: ProjectId,
         gate_id: GateId,
     ) -> StoreResult<Option<GateRunReport>>;
-}
-
-trait IntoStoreResult<T> {
-    fn into_store(self) -> StoreResult<T>;
-}
-
-impl<T> IntoStoreResult<T> for anyhow::Result<T> {
-    fn into_store(self) -> StoreResult<T> {
-        self.map_err(StoreError::backend)
-    }
 }
 
 #[derive(Clone)]
@@ -258,7 +248,7 @@ impl GateStore for SqliteGateStore {
                     report.gate_run_id.as_str(),
                     report.gate_id.as_str(),
                     report.experiment_run_id.as_str(),
-                    gate_decision_name(&report.experiment_decision),
+                    report.experiment_decision.name(),
                     if report.passed { 1_i64 } else { 0_i64 },
                     report.created_at.to_rfc3339(),
                     report_json,
@@ -433,14 +423,6 @@ fn inconclusive_policy_name(policy: &InconclusivePolicy) -> &'static str {
     match policy {
         InconclusivePolicy::Pass => "pass",
         InconclusivePolicy::Fail => "fail",
-    }
-}
-
-fn gate_decision_name(decision: &GateDecision) -> &'static str {
-    match decision {
-        GateDecision::Pass => "pass",
-        GateDecision::FailRegression => "fail_regression",
-        GateDecision::Inconclusive => "inconclusive",
     }
 }
 

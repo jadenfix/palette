@@ -376,33 +376,12 @@ fn build_query_sql(query: &ArchiveQuery) -> String {
     )
 }
 
-fn archive_columns() -> Vec<&'static str> {
-    vec![
-        "tenant_id",
-        "project_id",
-        "environment_id",
-        "trace_id",
-        "span_id",
-        "parent_span_id",
-        "seq",
-        "kind",
-        "status",
-        "name",
-        "start_time",
-        "end_time",
-        "model_provider",
-        "model_name",
-        "cost_amount_micros",
-        "cost_currency",
-        "input_tokens",
-        "output_tokens",
-        "reasoning_tokens",
-        "attributes_json",
-        "unmapped_json",
-        "input_uri",
-        "output_uri",
-        "raw_uri",
-    ]
+fn archive_columns() -> Vec<String> {
+    archive_schema()
+        .fields()
+        .iter()
+        .map(|field| field.name().clone())
+        .collect()
 }
 
 fn rows_from_batches(batches: &[RecordBatch]) -> anyhow::Result<Vec<ArchivedSpanRow>> {

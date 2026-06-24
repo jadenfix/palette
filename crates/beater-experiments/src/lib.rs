@@ -11,7 +11,7 @@ use beater_eval::{
 };
 use beater_judge::{JudgeBroker, JudgeBrokerOutcome, JudgeBrokerRequest};
 use beater_schema::EvaluatorLane;
-use beater_store::{StoreError, StoreResult};
+use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -222,16 +222,6 @@ impl AgentAdapter for ReferenceAgentAdapter {
     }
 }
 
-trait IntoStoreResult<T> {
-    fn into_store(self) -> StoreResult<T>;
-}
-
-impl<T> IntoStoreResult<T> for anyhow::Result<T> {
-    fn into_store(self) -> StoreResult<T> {
-        self.map_err(StoreError::backend)
-    }
-}
-
 #[derive(Clone)]
 pub struct SqliteExperimentStore {
     connection: Arc<Mutex<Connection>>,
@@ -323,7 +313,7 @@ impl ExperimentStore for SqliteExperimentStore {
                     report.baseline_release_id.as_str(),
                     report.candidate_release_id.as_str(),
                     report.evaluator_version_id.as_str(),
-                    decision_name(&report.decision),
+                    report.decision.name(),
                     report.created_at.to_rfc3339(),
                     report_json,
                 ],
@@ -435,14 +425,14 @@ pub fn run_deterministic_experiment(
         let baseline = baseline_outputs
             .get(case.case_id.as_str())
             .cloned()
-            .unwrap_or_else(|| OutputValue {
+            .unwrap_or_else(|| AgentRunOutput {
                 output: case.output.clone(),
                 trace: Some(case.trace.clone()),
             });
         let candidate = candidate_outputs
             .get(case.case_id.as_str())
             .cloned()
-            .unwrap_or_else(|| OutputValue {
+            .unwrap_or_else(|| AgentRunOutput {
                 output: case.output.clone(),
                 trace: Some(case.trace.clone()),
             });
@@ -522,14 +512,14 @@ where
         let baseline = baseline_outputs
             .get(case.case_id.as_str())
             .cloned()
-            .unwrap_or_else(|| OutputValue {
+            .unwrap_or_else(|| AgentRunOutput {
                 output: case.output.clone(),
                 trace: Some(case.trace.clone()),
             });
         let candidate = candidate_outputs
             .get(case.case_id.as_str())
             .cloned()
-            .unwrap_or_else(|| OutputValue {
+            .unwrap_or_else(|| AgentRunOutput {
                 output: case.output.clone(),
                 trace: Some(case.trace.clone()),
             });
@@ -668,18 +658,14 @@ where
     )
 }
 
-#[derive(Clone)]
-struct OutputValue {
-    output: Value,
-    trace: Option<Value>,
-}
-
-fn output_map(overrides: Vec<CaseOutputOverride>) -> anyhow::Result<BTreeMap<String, OutputValue>> {
+fn output_map(
+    overrides: Vec<CaseOutputOverride>,
+) -> anyhow::Result<BTreeMap<String, AgentRunOutput>> {
     let mut map = BTreeMap::new();
     for override_value in overrides {
         let previous = map.insert(
             override_value.case_id.as_str().to_string(),
-            OutputValue {
+            AgentRunOutput {
                 output: override_value.output,
                 trace: override_value.trace,
             },
@@ -698,7 +684,7 @@ fn score_output(
     snapshot: &DatasetVersionSnapshot,
     evaluator: &EvaluatorSpec,
     case: &beater_datasets::DatasetCase,
-    output: &OutputValue,
+    output: &AgentRunOutput,
 ) -> anyhow::Result<ScoreResult> {
     if case.tenant_id.as_str() != snapshot.tenant_id.as_str()
         || case.project_id.as_str() != snapshot.project_id.as_str()
@@ -723,7 +709,7 @@ async fn score_output_with_judge<B>(
     evaluator: &EvaluatorSpec,
     provider_secret_id: &ProviderSecretId,
     case: &beater_datasets::DatasetCase,
-    output: &OutputValue,
+    output: &AgentRunOutput,
     judge_broker: &B,
 ) -> anyhow::Result<JudgeBrokerOutcome>
 where
@@ -750,14 +736,6 @@ where
         })
         .await
         .map_err(|err| anyhow!(err))
-}
-
-fn decision_name(decision: &GateDecision) -> &'static str {
-    match decision {
-        GateDecision::Pass => "pass",
-        GateDecision::FailRegression => "fail_regression",
-        GateDecision::Inconclusive => "inconclusive",
-    }
 }
 
 #[cfg(test)]

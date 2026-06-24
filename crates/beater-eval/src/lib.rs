@@ -152,14 +152,8 @@ impl EvaluatorKind {
     }
 
     pub fn catalog_entry(&self) -> &'static EvaluatorCatalogEntry {
-        match self {
-            Self::ExactMatch => &EVALUATOR_CATALOG[0],
-            Self::RegexMatch { .. } => &EVALUATOR_CATALOG[1],
-            Self::JsonObject => &EVALUATOR_CATALOG[2],
-            Self::CostBudget { .. } => &EVALUATOR_CATALOG[3],
-            Self::LatencyBudgetMs { .. } => &EVALUATOR_CATALOG[4],
-            Self::LlmJudge { .. } => &EVALUATOR_CATALOG[5],
-        }
+        let id = self.catalog_id();
+        evaluator_catalog_entry(id).unwrap_or_else(|| unreachable!("missing catalog entry: {id}"))
     }
 
     pub fn expected_lane(&self) -> EvaluatorLane {
@@ -269,6 +263,17 @@ pub enum GateDecision {
     Pass,
     FailRegression,
     Inconclusive,
+}
+
+impl GateDecision {
+    /// Stable snake_case name used in persisted reports.
+    pub fn name(&self) -> &'static str {
+        match self {
+            GateDecision::Pass => "pass",
+            GateDecision::FailRegression => "fail_regression",
+            GateDecision::Inconclusive => "inconclusive",
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

@@ -287,7 +287,7 @@ impl IngestService {
                 Ok(queued) => queued,
                 Err(err) => {
                     report.invalid_messages += 1;
-                    self.retry_or_dlq_trace_ingested_counted(
+                    self.retry_or_dlq_counted(
                         message,
                         format!("invalid trace.ingested payload: {err}"),
                         will_dead_letter,
@@ -303,13 +303,8 @@ impl IngestService {
                     "trace.ingested scope mismatch: message={}/{} payload={}/{}",
                     message.tenant_id, message.project_id, queued.tenant_id, queued.project_id
                 );
-                self.retry_or_dlq_trace_ingested_counted(
-                    message,
-                    reason,
-                    will_dead_letter,
-                    &mut report,
-                )
-                .await?;
+                self.retry_or_dlq_counted(message, reason, will_dead_letter, &mut report)
+                    .await?;
                 continue;
             }
 
@@ -321,13 +316,8 @@ impl IngestService {
                 }
                 Err(reason) => {
                     report.failed_work += 1;
-                    self.retry_or_dlq_trace_ingested_counted(
-                        message,
-                        reason,
-                        will_dead_letter,
-                        &mut report,
-                    )
-                    .await?;
+                    self.retry_or_dlq_counted(message, reason, will_dead_letter, &mut report)
+                        .await?;
                 }
             }
         }
@@ -845,41 +835,18 @@ impl IngestService {
         }
     }
 
-    async fn retry_or_dlq_counted(
+    async fn retry_or_dlq_counted<R: DrainReport>(
         &self,
         message: BusMessage,
         reason: String,
         will_dead_letter: bool,
-        report: &mut TraceWriteDrainReport,
+        report: &mut R,
     ) -> Result<(), IngestError> {
         self.bus
             .retry_or_dlq(message, reason)
             .await
             .map_err(map_bus_error)?;
-        if will_dead_letter {
-            report.dead_lettered += 1;
-        } else {
-            report.retried += 1;
-        }
-        Ok(())
-    }
-
-    async fn retry_or_dlq_trace_ingested_counted(
-        &self,
-        message: BusMessage,
-        reason: String,
-        will_dead_letter: bool,
-        report: &mut TraceIngestedDrainReport,
-    ) -> Result<(), IngestError> {
-        self.bus
-            .retry_or_dlq(message, reason)
-            .await
-            .map_err(map_bus_error)?;
-        if will_dead_letter {
-            report.dead_lettered += 1;
-        } else {
-            report.retried += 1;
-        }
+        report.note_outcome(will_dead_letter);
         Ok(())
     }
 
@@ -1076,6 +1043,31 @@ pub struct QueuedTraceWrite {
 pub struct IngestOutcome {
     pub ack: WriteAck,
     pub downstream_queued: bool,
+}
+
+/// A drain report that tallies the outcome of a retry-or-dead-letter decision.
+trait DrainReport {
+    fn note_outcome(&mut self, dead_lettered: bool);
+}
+
+impl DrainReport for TraceWriteDrainReport {
+    fn note_outcome(&mut self, dead_lettered: bool) {
+        if dead_lettered {
+            self.dead_lettered += 1;
+        } else {
+            self.retried += 1;
+        }
+    }
+}
+
+impl DrainReport for TraceIngestedDrainReport {
+    fn note_outcome(&mut self, dead_lettered: bool) {
+        if dead_lettered {
+            self.dead_lettered += 1;
+        } else {
+            self.retried += 1;
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

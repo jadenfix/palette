@@ -974,6 +974,7 @@ dependencies = [
 name = "beater-store"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "beater-core",
  "beater-schema",

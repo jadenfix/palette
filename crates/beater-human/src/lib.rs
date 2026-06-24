@@ -6,7 +6,7 @@ use beater_core::{
 };
 use beater_datasets::{promote_trace_span_to_case, DatasetCase};
 use beater_schema::TraceView;
-use beater_store::{StoreError, StoreResult};
+use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -159,16 +159,6 @@ pub trait HumanReviewStore: Send + Sync {
         queue_id: ReviewQueueId,
         task_id: ReviewTaskId,
     ) -> StoreResult<Vec<ReviewAnnotation>>;
-}
-
-trait IntoStoreResult<T> {
-    fn into_store(self) -> StoreResult<T>;
-}
-
-impl<T> IntoStoreResult<T> for anyhow::Result<T> {
-    fn into_store(self) -> StoreResult<T> {
-        self.map_err(StoreError::backend)
-    }
 }
 
 #[derive(Clone)]
@@ -414,66 +404,39 @@ impl HumanReviewStore for SqliteHumanReviewStore {
         state: Option<ReviewTaskState>,
     ) -> StoreResult<Vec<ReviewTask>> {
         let connection = self.lock().into_store()?;
+        let state_filter = state.as_ref().map(task_state_name);
+        let mut statement = connection
+            .prepare(
+                r#"
+                SELECT task_json
+                FROM review_tasks
+                WHERE tenant_id = ?1 AND project_id = ?2 AND queue_id = ?3
+                  AND (?4 IS NULL OR state = ?4)
+                ORDER BY priority DESC, created_at ASC, task_id ASC
+                "#,
+            )
+            .context("prepare review task list")
+            .into_store()?;
+        let rows = statement
+            .query_map(
+                params![
+                    tenant_id.as_str(),
+                    project_id.as_str(),
+                    queue_id.as_str(),
+                    state_filter
+                ],
+                |row| row.get::<_, String>(0),
+            )
+            .context("query review tasks")
+            .into_store()?;
         let mut tasks = Vec::new();
-        if let Some(state) = state {
-            let mut statement = connection
-                .prepare(
-                    r#"
-                    SELECT task_json
-                    FROM review_tasks
-                    WHERE tenant_id = ?1 AND project_id = ?2 AND queue_id = ?3 AND state = ?4
-                    ORDER BY priority DESC, created_at ASC, task_id ASC
-                    "#,
-                )
-                .context("prepare filtered review task list")
-                .into_store()?;
-            let rows = statement
-                .query_map(
-                    params![
-                        tenant_id.as_str(),
-                        project_id.as_str(),
-                        queue_id.as_str(),
-                        task_state_name(&state)
-                    ],
-                    |row| row.get::<_, String>(0),
-                )
-                .context("query filtered review tasks")
-                .into_store()?;
-            for row in rows {
-                let task_json = row.context("read review task row").into_store()?;
-                tasks.push(
-                    serde_json::from_str(&task_json)
-                        .context("decode review task")
-                        .into_store()?,
-                );
-            }
-        } else {
-            let mut statement = connection
-                .prepare(
-                    r#"
-                    SELECT task_json
-                    FROM review_tasks
-                    WHERE tenant_id = ?1 AND project_id = ?2 AND queue_id = ?3
-                    ORDER BY priority DESC, created_at ASC, task_id ASC
-                    "#,
-                )
-                .context("prepare review task list")
-                .into_store()?;
-            let rows = statement
-                .query_map(
-                    params![tenant_id.as_str(), project_id.as_str(), queue_id.as_str()],
-                    |row| row.get::<_, String>(0),
-                )
-                .context("query review tasks")
-                .into_store()?;
-            for row in rows {
-                let task_json = row.context("read review task row").into_store()?;
-                tasks.push(
-                    serde_json::from_str(&task_json)
-                        .context("decode review task")
-                        .into_store()?,
-                );
-            }
+        for row in rows {
+            let task_json = row.context("read review task row").into_store()?;
+            tasks.push(
+                serde_json::from_str(&task_json)
+                    .context("decode review task")
+                    .into_store()?,
+            );
         }
         Ok(tasks)
     }

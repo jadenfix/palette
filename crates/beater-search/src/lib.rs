@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use beater_core::{ProjectId, SpanId, TenantId, TraceId};
 use beater_schema::CanonicalSpan;
-use beater_store::{StoreError, StoreResult, TraceStore};
+use beater_store::{IntoStoreResult, StoreError, StoreResult, TraceStore};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::path::Path;
@@ -86,16 +86,6 @@ fn context_store_error(error: StoreError, context: String) -> StoreError {
         }
         StoreError::Integrity(message) => StoreError::Integrity(format!("{context}: {message}")),
         StoreError::Backend(message) => StoreError::Backend(format!("{context}: {message}")),
-    }
-}
-
-trait IntoStoreResult<T> {
-    fn into_store(self) -> StoreResult<T>;
-}
-
-impl<T> IntoStoreResult<T> for anyhow::Result<T> {
-    fn into_store(self) -> StoreResult<T> {
-        self.map_err(StoreError::backend)
     }
 }
 

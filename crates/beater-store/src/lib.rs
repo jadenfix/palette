@@ -35,6 +35,17 @@ impl StoreError {
     }
 }
 
+/// Maps a fallible `anyhow` result into a [`StoreResult`] backend error.
+pub trait IntoStoreResult<T> {
+    fn into_store(self) -> StoreResult<T>;
+}
+
+impl<T> IntoStoreResult<T> for anyhow::Result<T> {
+    fn into_store(self) -> StoreResult<T> {
+        self.map_err(StoreError::backend)
+    }
+}
+
 #[async_trait]
 pub trait ArtifactStore: Send + Sync {
     async fn put_bytes(

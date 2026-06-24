@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use beater_core::{ApiKeyId, AuditEventId, EnvironmentId, ProjectId, TenantId, Timestamp, TraceId};
-use beater_store::{StoreError, StoreResult};
+use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -92,16 +92,6 @@ pub trait AuditStore: Send + Sync {
         tenant_id: TenantId,
         project_id: ProjectId,
     ) -> StoreResult<Vec<AuditEvent>>;
-}
-
-trait IntoStoreResult<T> {
-    fn into_store(self) -> StoreResult<T>;
-}
-
-impl<T> IntoStoreResult<T> for anyhow::Result<T> {
-    fn into_store(self) -> StoreResult<T> {
-        self.map_err(StoreError::backend)
-    }
 }
 
 #[derive(Clone)]

@@ -8,7 +8,7 @@ use beater_core::{
 use beater_eval::{evaluate_deterministic, EvaluationCase, EvaluatorSpec, ScoreResult};
 use beater_judge::{JudgeBroker, JudgeBrokerOutcome, JudgeBrokerRequest};
 use beater_schema::{CanonicalSpan, EvalReproducibility, EvalResult, TraceView};
-use beater_store::{StoreError, StoreResult};
+use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -622,16 +622,6 @@ pub fn promote_trace_span_to_case(
         input_artifact_hashes: artifact_hashes(span),
         created_at: Utc::now(),
     })
-}
-
-trait IntoStoreResult<T> {
-    fn into_store(self) -> StoreResult<T>;
-}
-
-impl<T> IntoStoreResult<T> for anyhow::Result<T> {
-    fn into_store(self) -> StoreResult<T> {
-        self.map_err(StoreError::backend)
-    }
 }
 
 pub fn evaluate_dataset_version(

@@ -45,8 +45,7 @@ use beater_judge::{
 };
 use beater_otlp::{encode_export_trace_request, export_to_raw_trace_ingest_request};
 use beater_replay::{
-    execute_replay, ReplayEvent, ReplayEventKind, ReplayScenario, ReplayStep, ReplayStore,
-    SqliteReplayStore,
+    execute_replay, ReplayEvent, ReplayEventKind, ReplayScenario, ReplayStep, SqliteReplayStore,
 };
 use beater_schema::{
     AgentSpanKind, CanonicalTraceBatch, EvaluatorLane, RawEnvelope, RedactionClass, RunFilter,

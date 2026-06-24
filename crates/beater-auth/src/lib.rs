@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use beater_core::{ApiKeyId, EnvironmentId, ProjectId, TenantId, Timestamp};
 use beater_security::{create_api_key, ApiKeyRecord, ApiScope, CreatedApiKey};
-use beater_store::{StoreError, StoreResult};
+use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -51,16 +51,6 @@ pub trait ApiKeyStore: Send + Sync {
     ) -> StoreResult<Option<RevokedApiKey>>;
 
     async fn touch_last_used(&self, api_key_id: ApiKeyId, used_at: Timestamp) -> StoreResult<()>;
-}
-
-trait IntoStoreResult<T> {
-    fn into_store(self) -> StoreResult<T>;
-}
-
-impl<T> IntoStoreResult<T> for anyhow::Result<T> {
-    fn into_store(self) -> StoreResult<T> {
-        self.map_err(StoreError::backend)
-    }
 }
 
 #[derive(Clone)]

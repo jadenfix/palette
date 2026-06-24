@@ -422,12 +422,9 @@ async fn create_api_key_route(
         .api_keys
         .clone()
         .ok_or_else(|| ApiError::not_implemented("api key store is not configured".to_string()))?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let environment_id =
-        EnvironmentId::new(environment_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let environment_id = EnvironmentId::new(environment_id)?;
     authorize(
         &state,
         &headers,
@@ -463,12 +460,9 @@ async fn revoke_api_key_route(
         .api_keys
         .clone()
         .ok_or_else(|| ApiError::not_implemented("api key store is not configured".to_string()))?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let environment_id =
-        EnvironmentId::new(environment_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let environment_id = EnvironmentId::new(environment_id)?;
     authorize(
         &state,
         &headers,
@@ -478,8 +472,7 @@ async fn revoke_api_key_route(
         ApiScope::Admin,
     )
     .await?;
-    let api_key_id =
-        ApiKeyId::new(api_key_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let api_key_id = ApiKeyId::new(api_key_id)?;
     let revoked = api_keys
         .revoke_key(api_key_id.clone(), Utc::now())
         .await?
@@ -494,10 +487,8 @@ async fn create_provider_secret_route(
     Json(request): Json<CreateProviderSecretHttpRequest>,
 ) -> Result<Json<ProviderSecretMetadata>, ApiError> {
     let provider_secrets = provider_secret_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let metadata = provider_secrets
         .put_secret(PutProviderSecretRequest {
@@ -517,10 +508,8 @@ async fn list_provider_secrets_route(
     Path((tenant_id, project_id)): Path<(String, String)>,
 ) -> Result<Json<Vec<ProviderSecretMetadata>>, ApiError> {
     let provider_secrets = provider_secret_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let secrets = provider_secrets
         .list_secret_metadata(tenant_id, project_id)
@@ -534,12 +523,9 @@ async fn revoke_provider_secret_route(
     Path((tenant_id, project_id, provider_secret_id)): Path<(String, String, String)>,
 ) -> Result<Json<RevokedProviderSecret>, ApiError> {
     let provider_secrets = provider_secret_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let provider_secret_id = ProviderSecretId::new(provider_secret_id)
-        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let provider_secret_id = ProviderSecretId::new(provider_secret_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let revoked = provider_secrets
         .revoke_secret(
@@ -565,10 +551,8 @@ async fn run_judge_eval_route(
     Json(request): Json<RunJudgeEvalHttpRequest>,
 ) -> Result<Json<JudgeBrokerOutcome>, ApiError> {
     let judge_broker = judge_broker(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
     let outcome = judge_broker
         .evaluate(JudgeBrokerRequest {
@@ -590,10 +574,8 @@ async fn get_usage_summary_route(
     Path((tenant_id, project_id)): Path<(String, String)>,
 ) -> Result<Json<UsageSummary>, ApiError> {
     let usage = usage_ledger(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let summary = usage.summarize_usage(tenant_id, project_id).await?;
     Ok(Json(summary))
@@ -605,10 +587,8 @@ async fn list_judge_ledger_route(
     Path((tenant_id, project_id)): Path<(String, String)>,
 ) -> Result<Json<Vec<beater_judge::JudgeAuditRecord>>, ApiError> {
     let judge_ledger = judge_ledger(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
     let records = judge_ledger.list_records(tenant_id, project_id).await?;
     Ok(Json(records))
@@ -619,10 +599,8 @@ async fn get_ingest_queue_status_route(
     headers: HeaderMap,
     Path((tenant_id, project_id)): Path<(String, String)>,
 ) -> Result<Json<IngestQueueStatus>, ApiError> {
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     Ok(Json(
         state.ingest.queue_status(tenant_id, project_id).await?,
@@ -635,10 +613,8 @@ async fn replay_dead_letter_route(
     Path((tenant_id, project_id, message_id)): Path<(String, String, String)>,
     Query(params): Query<ReplayDeadLetterQuery>,
 ) -> Result<Json<DeadLetterReplayReport>, ApiError> {
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let reset_attempts = params.reset_attempts.unwrap_or(true);
     let report = state
@@ -653,11 +629,9 @@ async fn reconcile_trace_ingested_route(
     headers: HeaderMap,
     Path((tenant_id, project_id, trace_id)): Path<(String, String, String)>,
 ) -> Result<Json<TraceIngestedReconcileReport>, ApiError> {
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let trace_id = TraceId::new(trace_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let trace_id = TraceId::new(trace_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     Ok(Json(
         state
@@ -673,17 +647,15 @@ async fn drain_trace_writes_route(
     Path((tenant_id, project_id)): Path<(String, String)>,
     Query(params): Query<DrainTraceWritesQuery>,
 ) -> Result<(StatusCode, Json<TraceWriteDrainReport>), ApiError> {
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let limit = params.limit.unwrap_or(100).min(1000);
     let report = state
         .ingest
         .drain_trace_writes_for(&tenant_id, &project_id, limit)
         .await?;
-    Ok((trace_write_drain_status(&report), Json(report)))
+    Ok((drain_status(report.dead_lettered), Json(report)))
 }
 
 async fn drain_trace_ingested_route(
@@ -692,10 +664,8 @@ async fn drain_trace_ingested_route(
     Path((tenant_id, project_id)): Path<(String, String)>,
     Query(params): Query<DrainTraceWritesQuery>,
 ) -> Result<(StatusCode, Json<TraceIngestedDrainReport>), ApiError> {
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let limit = params.limit.unwrap_or(100).min(1000);
     let search_processor =
@@ -715,19 +685,11 @@ async fn drain_trace_ingested_route(
             }
         })
         .await?;
-    Ok((trace_ingested_drain_status(&report), Json(report)))
+    Ok((drain_status(report.dead_lettered), Json(report)))
 }
 
-fn trace_write_drain_status(report: &TraceWriteDrainReport) -> StatusCode {
-    if report.dead_lettered > 0 {
-        StatusCode::UNPROCESSABLE_ENTITY
-    } else {
-        StatusCode::OK
-    }
-}
-
-fn trace_ingested_drain_status(report: &TraceIngestedDrainReport) -> StatusCode {
-    if report.dead_lettered > 0 {
+fn drain_status(dead_lettered: usize) -> StatusCode {
+    if dead_lettered > 0 {
         StatusCode::UNPROCESSABLE_ENTITY
     } else {
         StatusCode::OK
@@ -742,9 +704,9 @@ async fn ingest_otlp_http(
     body: Bytes,
 ) -> Result<Json<OtlpIngestOutcome>, ApiError> {
     let scope = TenantScope::new(
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?,
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?,
-        EnvironmentId::new(environment_id).map_err(|err| ApiError::bad_request(err.to_string()))?,
+        TenantId::new(tenant_id)?,
+        ProjectId::new(project_id)?,
+        EnvironmentId::new(environment_id)?,
     );
     let auth = authorize(
         &state,
@@ -780,20 +742,13 @@ async fn search_spans(
     Path(tenant_id): Path<String>,
     axum::extract::Query(params): axum::extract::Query<SearchQueryParams>,
 ) -> Result<Json<SearchResponse>, ApiError> {
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id = params
-        .project_id
-        .clone()
-        .map(ProjectId::new)
-        .transpose()
-        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = params.project_id.clone().map(ProjectId::new).transpose()?;
     let environment_id = params
         .environment_id
         .clone()
         .map(EnvironmentId::new)
-        .transpose()
-        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+        .transpose()?;
     authorize_query_scope(
         &state,
         &headers,
@@ -808,16 +763,8 @@ async fn search_spans(
         text: params.q.unwrap_or_default(),
         project_id,
         environment_id: params.environment_id,
-        trace_id: params
-            .trace_id
-            .map(TraceId::new)
-            .transpose()
-            .map_err(|err| ApiError::bad_request(err.to_string()))?,
-        span_id: params
-            .span_id
-            .map(beater_core::SpanId::new)
-            .transpose()
-            .map_err(|err| ApiError::bad_request(err.to_string()))?,
+        trace_id: params.trace_id.map(TraceId::new).transpose()?,
+        span_id: params.span_id.map(beater_core::SpanId::new).transpose()?,
         kind: params.kind,
         status: params.status,
         model: params.model,
@@ -833,18 +780,9 @@ async fn list_traces(
     Path(tenant_id): Path<String>,
     axum::extract::Query(params): axum::extract::Query<ListTracesQuery>,
 ) -> Result<Json<Page<RunSummary>>, ApiError> {
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id = params
-        .project_id
-        .map(ProjectId::new)
-        .transpose()
-        .map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let environment_id = params
-        .environment_id
-        .map(EnvironmentId::new)
-        .transpose()
-        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = params.project_id.map(ProjectId::new).transpose()?;
+    let environment_id = params.environment_id.map(EnvironmentId::new).transpose()?;
     let auth = authorize_query_scope(
         &state,
         &headers,
@@ -857,11 +795,7 @@ async fn list_traces(
     let filter = RunFilter {
         project_id: auth.project_id.or(project_id),
         environment_id: auth.environment_id.or(environment_id),
-        trace_id: params
-            .trace_id
-            .map(TraceId::new)
-            .transpose()
-            .map_err(|err| ApiError::bad_request(err.to_string()))?,
+        trace_id: params.trace_id.map(TraceId::new).transpose()?,
         kind: params.kind.map(parse_span_kind).transpose()?,
         status: params.status.map(parse_span_status).transpose()?,
         started_after: parse_optional_timestamp(params.started_after, "started_after")?,
@@ -888,9 +822,8 @@ async fn get_trace(
     Path((tenant_id, trace_id)): Path<(String, String)>,
     Query(params): Query<TraceReadQuery>,
 ) -> Result<Json<TraceView>, ApiError> {
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let trace_id = TraceId::new(trace_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let trace_id = TraceId::new(trace_id)?;
     let auth = authorize_tenant_route(&state, &headers, &tenant_id, ApiScope::TraceRead).await?;
     let trace = load_trace_for_auth_scope(&state, tenant_id, trace_id, &auth).await?;
     ensure_trace_auth_scope(&trace, &auth)?;
@@ -934,10 +867,8 @@ async fn list_audit_events_route(
     Path((tenant_id, project_id)): Path<(String, String)>,
 ) -> Result<Json<Vec<AuditEvent>>, ApiError> {
     let audit = audit_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let events = audit.list_events(tenant_id, project_id).await?;
     Ok(Json(events))
@@ -952,11 +883,9 @@ async fn archive_trace(
         .archive
         .clone()
         .ok_or_else(|| ApiError::not_implemented("archive tier is not configured".to_string()))?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let trace_id = TraceId::new(trace_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let trace_id = TraceId::new(trace_id)?;
     let auth = authorize_project_route(
         &state,
         &headers,
@@ -994,10 +923,8 @@ async fn query_archive_spans(
         .archive
         .clone()
         .ok_or_else(|| ApiError::not_implemented("archive tier is not configured".to_string()))?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     let auth = authorize_project_route(
         &state,
         &headers,
@@ -1006,11 +933,7 @@ async fn query_archive_spans(
         ApiScope::TraceRead,
     )
     .await?;
-    let requested_environment_id = params
-        .environment_id
-        .map(EnvironmentId::new)
-        .transpose()
-        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let requested_environment_id = params.environment_id.map(EnvironmentId::new).transpose()?;
     let environment_id = match (&auth.environment_id, requested_environment_id) {
         (Some(auth_environment_id), Some(requested_environment_id)) => {
             if auth_environment_id.as_str() != requested_environment_id.as_str() {
@@ -1028,16 +951,8 @@ async fn query_archive_spans(
         tenant_id: tenant_id.clone(),
         project_id: Some(project_id.clone()),
         environment_id,
-        trace_id: params
-            .trace_id
-            .map(TraceId::new)
-            .transpose()
-            .map_err(|err| ApiError::bad_request(err.to_string()))?,
-        span_id: params
-            .span_id
-            .map(SpanId::new)
-            .transpose()
-            .map_err(|err| ApiError::bad_request(err.to_string()))?,
+        trace_id: params.trace_id.map(TraceId::new).transpose()?,
+        span_id: params.span_id.map(SpanId::new).transpose()?,
         kind: params.kind.map(parse_span_kind).transpose()?,
         status: params.status.map(parse_span_status).transpose()?,
         limit: params.limit,
@@ -1055,10 +970,8 @@ async fn create_dataset(
     Json(request): Json<CreateDatasetRequest>,
 ) -> Result<Json<Dataset>, ApiError> {
     let datasets = dataset_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(
         &state,
         &headers,
@@ -1080,12 +993,9 @@ async fn promote_dataset_case(
     Json(request): Json<PromoteTraceCaseRequest>,
 ) -> Result<Json<beater_datasets::DatasetCase>, ApiError> {
     let datasets = dataset_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let dataset_id =
-        DatasetId::new(dataset_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let dataset_id = DatasetId::new(dataset_id)?;
     let auth = authorize_project_route(
         &state,
         &headers,
@@ -1094,13 +1004,8 @@ async fn promote_dataset_case(
         ApiScope::DatasetWrite,
     )
     .await?;
-    let trace_id =
-        TraceId::new(request.trace_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let span_id = request
-        .span_id
-        .map(SpanId::new)
-        .transpose()
-        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let trace_id = TraceId::new(request.trace_id)?;
+    let span_id = request.span_id.map(SpanId::new).transpose()?;
     let trace = state
         .traces
         .get_project_trace(tenant_id.clone(), project_id.clone(), trace_id)
@@ -1126,12 +1031,9 @@ async fn create_dataset_version(
     Json(request): Json<CreateDatasetVersionRequest>,
 ) -> Result<Json<DatasetVersionSnapshot>, ApiError> {
     let datasets = dataset_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let dataset_id =
-        DatasetId::new(dataset_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let dataset_id = DatasetId::new(dataset_id)?;
     authorize_project_route(
         &state,
         &headers,
@@ -1147,8 +1049,7 @@ async fn create_dataset_version(
                 .map(DatasetCaseId::new)
                 .collect::<Result<Vec<_>, _>>()
         })
-        .transpose()
-        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+        .transpose()?;
     let version = datasets
         .create_version(tenant_id, project_id, dataset_id, case_ids)
         .await?;
@@ -1162,14 +1063,10 @@ async fn run_deterministic_dataset_eval(
     Json(request): Json<RunDeterministicEvalRequest>,
 ) -> Result<Json<DatasetEvalReport>, ApiError> {
     let datasets = dataset_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let dataset_id =
-        DatasetId::new(dataset_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let version_id =
-        DatasetVersionId::new(version_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let dataset_id = DatasetId::new(dataset_id)?;
+    let version_id = DatasetVersionId::new(version_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
     let snapshot = datasets
         .get_version(
@@ -1187,25 +1084,14 @@ async fn run_deterministic_dataset_eval(
                 lane: beater_schema::EvaluatorLane::DeterministicWasi,
                 kind: request.kind,
             },
-            evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
-            agent_release_id: AgentReleaseId::new(request.agent_release_id)
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+            evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
+            agent_release_id: AgentReleaseId::new(request.agent_release_id)?,
             prompt_version_id: request
                 .prompt_version_id
                 .map(PromptVersionId::new)
-                .transpose()
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
-            code_hash: request
-                .code_hash
-                .map(Sha256Hash::new)
-                .transpose()
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
-            wasm_hash: request
-                .wasm_hash
-                .map(Sha256Hash::new)
-                .transpose()
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+                .transpose()?,
+            code_hash: request.code_hash.map(Sha256Hash::new).transpose()?,
+            wasm_hash: request.wasm_hash.map(Sha256Hash::new).transpose()?,
         },
     )?;
     let report = datasets.write_eval_report(report).await?;
@@ -1220,14 +1106,10 @@ async fn run_judge_dataset_eval(
 ) -> Result<Json<DatasetEvalReport>, ApiError> {
     let datasets = dataset_store(&state)?;
     let judge_broker = judge_broker(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let dataset_id =
-        DatasetId::new(dataset_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let version_id =
-        DatasetVersionId::new(version_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let dataset_id = DatasetId::new(dataset_id)?;
+    let version_id = DatasetVersionId::new(version_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
     let snapshot = datasets
         .get_version(
@@ -1246,20 +1128,13 @@ async fn run_judge_dataset_eval(
                     lane: beater_schema::EvaluatorLane::JudgeBroker,
                     kind: request.kind,
                 },
-                evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)
-                    .map_err(|err| ApiError::bad_request(err.to_string()))?,
-                agent_release_id: AgentReleaseId::new(request.agent_release_id)
-                    .map_err(|err| ApiError::bad_request(err.to_string()))?,
+                evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
+                agent_release_id: AgentReleaseId::new(request.agent_release_id)?,
                 prompt_version_id: request
                     .prompt_version_id
                     .map(PromptVersionId::new)
-                    .transpose()
-                    .map_err(|err| ApiError::bad_request(err.to_string()))?,
-                code_hash: request
-                    .code_hash
-                    .map(Sha256Hash::new)
-                    .transpose()
-                    .map_err(|err| ApiError::bad_request(err.to_string()))?,
+                    .transpose()?,
+                code_hash: request.code_hash.map(Sha256Hash::new).transpose()?,
                 wasm_hash: None,
             },
             provider_secret_id: request.provider_secret_id,
@@ -1281,14 +1156,10 @@ async fn run_calibration_route(
 ) -> Result<Json<CalibrationReport>, ApiError> {
     let datasets = dataset_store(&state)?;
     let calibrations = calibration_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let dataset_id =
-        DatasetId::new(dataset_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let version_id =
-        DatasetVersionId::new(version_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let dataset_id = DatasetId::new(dataset_id)?;
+    let version_id = DatasetVersionId::new(version_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
     let snapshot = datasets
         .get_version(
@@ -1301,8 +1172,7 @@ async fn run_calibration_route(
     let requested_evaluator = request
         .evaluator_version_id
         .map(EvaluatorVersionId::new)
-        .transpose()
-        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+        .transpose()?;
     let eval_report = if let Some(eval_report_id) = request.eval_report_id {
         let report = datasets
             .get_eval_report(tenant_id.clone(), project_id.clone(), eval_report_id)
@@ -1347,14 +1217,10 @@ async fn run_deterministic_experiment_route(
 ) -> Result<Json<ExperimentRunReport>, ApiError> {
     let datasets = dataset_store(&state)?;
     let experiments = experiment_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let dataset_id =
-        DatasetId::new(dataset_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let version_id =
-        DatasetVersionId::new(version_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let dataset_id = DatasetId::new(dataset_id)?;
+    let version_id = DatasetVersionId::new(version_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
     let snapshot = datasets
         .get_version(
@@ -1367,17 +1233,14 @@ async fn run_deterministic_experiment_route(
     let report = run_deterministic_experiment(
         &snapshot,
         ExperimentRunSpec {
-            baseline_release_id: AgentReleaseId::new(request.baseline_release_id)
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
-            candidate_release_id: AgentReleaseId::new(request.candidate_release_id)
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+            baseline_release_id: AgentReleaseId::new(request.baseline_release_id)?,
+            candidate_release_id: AgentReleaseId::new(request.candidate_release_id)?,
             evaluator: EvaluatorSpec {
                 id: request.evaluator_id,
                 lane: beater_schema::EvaluatorLane::DeterministicWasi,
                 kind: request.kind,
             },
-            evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+            evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
             gate_policy: request.gate_policy.unwrap_or_default(),
             baseline_outputs: parse_case_outputs(request.baseline_outputs)?,
             candidate_outputs: parse_case_outputs(request.candidate_outputs)?,
@@ -1396,14 +1259,10 @@ async fn run_judge_experiment_route(
     let datasets = dataset_store(&state)?;
     let experiments = experiment_store(&state)?;
     let judge_broker = judge_broker(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let dataset_id =
-        DatasetId::new(dataset_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let version_id =
-        DatasetVersionId::new(version_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let dataset_id = DatasetId::new(dataset_id)?;
+    let version_id = DatasetVersionId::new(version_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
     let snapshot = datasets
         .get_version(
@@ -1417,17 +1276,14 @@ async fn run_judge_experiment_route(
         &snapshot,
         JudgeExperimentRunSpec {
             experiment: ExperimentRunSpec {
-                baseline_release_id: AgentReleaseId::new(request.baseline_release_id)
-                    .map_err(|err| ApiError::bad_request(err.to_string()))?,
-                candidate_release_id: AgentReleaseId::new(request.candidate_release_id)
-                    .map_err(|err| ApiError::bad_request(err.to_string()))?,
+                baseline_release_id: AgentReleaseId::new(request.baseline_release_id)?,
+                candidate_release_id: AgentReleaseId::new(request.candidate_release_id)?,
                 evaluator: EvaluatorSpec {
                     id: request.evaluator_id,
                     lane: beater_schema::EvaluatorLane::JudgeBroker,
                     kind: request.kind,
                 },
-                evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)
-                    .map_err(|err| ApiError::bad_request(err.to_string()))?,
+                evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
                 gate_policy: request.gate_policy.unwrap_or_default(),
                 baseline_outputs: parse_case_outputs(request.baseline_outputs)?,
                 candidate_outputs: parse_case_outputs(request.candidate_outputs)?,
@@ -1450,28 +1306,20 @@ async fn create_gate_route(
     Json(request): Json<CreateGateRequest>,
 ) -> Result<Json<GateDefinition>, ApiError> {
     let gates = gate_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
     let gate = gates
         .put_gate(GateDefinition {
             tenant_id,
             project_id,
-            gate_id: GateId::new(request.gate_id)
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+            gate_id: GateId::new(request.gate_id)?,
             name: request.name,
-            dataset_id: request
-                .dataset_id
-                .map(DatasetId::new)
-                .transpose()
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+            dataset_id: request.dataset_id.map(DatasetId::new).transpose()?,
             evaluator_version_id: request
                 .evaluator_version_id
                 .map(EvaluatorVersionId::new)
-                .transpose()
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+                .transpose()?,
             inconclusive_policy: request.inconclusive_policy.unwrap_or_default(),
             created_at: Utc::now(),
         })
@@ -1487,22 +1335,19 @@ async fn run_gate_route(
 ) -> Result<Json<GateRunReport>, ApiError> {
     let gates = gate_store(&state)?;
     let experiments = experiment_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
     let report = run_gate(
         gates.as_ref(),
         experiments.as_ref(),
         tenant_id,
         project_id,
-        GateId::new(gate_id).map_err(|err| ApiError::bad_request(err.to_string()))?,
+        GateId::new(gate_id)?,
         request
             .experiment_run_id
             .map(ExperimentRunId::new)
-            .transpose()
-            .map_err(|err| ApiError::bad_request(err.to_string()))?,
+            .transpose()?,
     )
     .await?;
     Ok(Json(report))
@@ -1515,10 +1360,8 @@ async fn create_review_queue_route(
     Json(request): Json<CreateReviewQueueHttpRequest>,
 ) -> Result<Json<ReviewQueue>, ApiError> {
     let reviews = human_review_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(
         &state,
         &headers,
@@ -1531,11 +1374,7 @@ async fn create_review_queue_route(
         .create_queue(CreateReviewQueueStoreRequest {
             tenant_id,
             project_id,
-            queue_id: request
-                .queue_id
-                .map(ReviewQueueId::new)
-                .transpose()
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+            queue_id: request.queue_id.map(ReviewQueueId::new).transpose()?,
             name: request.name,
             annotation_schema: request.annotation_schema,
         })
@@ -1550,10 +1389,8 @@ async fn list_review_tasks_route(
     Query(query): Query<ListReviewTasksQuery>,
 ) -> Result<Json<Vec<ReviewTask>>, ApiError> {
     let reviews = human_review_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(
         &state,
         &headers,
@@ -1566,7 +1403,7 @@ async fn list_review_tasks_route(
         .list_tasks(
             tenant_id,
             project_id,
-            ReviewQueueId::new(queue_id).map_err(|err| ApiError::bad_request(err.to_string()))?,
+            ReviewQueueId::new(queue_id)?,
             query.state,
         )
         .await?;
@@ -1580,10 +1417,8 @@ async fn enqueue_review_task_from_trace_route(
     Json(request): Json<EnqueueReviewTaskFromTraceHttpRequest>,
 ) -> Result<Json<ReviewTask>, ApiError> {
     let reviews = human_review_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     let auth = authorize_project_route(
         &state,
         &headers,
@@ -1592,13 +1427,8 @@ async fn enqueue_review_task_from_trace_route(
         ApiScope::DatasetWrite,
     )
     .await?;
-    let trace_id =
-        TraceId::new(request.trace_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let span_id = request
-        .span_id
-        .map(SpanId::new)
-        .transpose()
-        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let trace_id = TraceId::new(request.trace_id)?;
+    let span_id = request.span_id.map(SpanId::new).transpose()?;
     let trace = state
         .traces
         .get_project_trace(tenant_id.clone(), project_id.clone(), trace_id.clone())
@@ -1612,25 +1442,15 @@ async fn enqueue_review_task_from_trace_route(
         .enqueue_task(EnqueueReviewTaskRequest {
             tenant_id,
             project_id,
-            queue_id: ReviewQueueId::new(queue_id)
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
-            task_id: request
-                .task_id
-                .map(ReviewTaskId::new)
-                .transpose()
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+            queue_id: ReviewQueueId::new(queue_id)?,
+            task_id: request.task_id.map(ReviewTaskId::new).transpose()?,
             trace_id,
             span_id,
-            dataset_id: request
-                .dataset_id
-                .map(DatasetId::new)
-                .transpose()
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+            dataset_id: request.dataset_id.map(DatasetId::new).transpose()?,
             dataset_case_id: request
                 .dataset_case_id
                 .map(DatasetCaseId::new)
-                .transpose()
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+                .transpose()?,
             priority: request.priority.unwrap_or_default(),
         })
         .await?;
@@ -1644,10 +1464,8 @@ async fn submit_review_annotation_route(
     Json(request): Json<SubmitReviewAnnotationHttpRequest>,
 ) -> Result<Json<ReviewAnnotation>, ApiError> {
     let reviews = human_review_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     authorize_project_route(
         &state,
         &headers,
@@ -1660,15 +1478,9 @@ async fn submit_review_annotation_route(
         .submit_annotation(SubmitAnnotationRequest {
             tenant_id,
             project_id,
-            queue_id: ReviewQueueId::new(queue_id)
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
-            task_id: ReviewTaskId::new(task_id)
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
-            annotation_id: request
-                .annotation_id
-                .map(AnnotationId::new)
-                .transpose()
-                .map_err(|err| ApiError::bad_request(err.to_string()))?,
+            queue_id: ReviewQueueId::new(queue_id)?,
+            task_id: ReviewTaskId::new(task_id)?,
+            annotation_id: request.annotation_id.map(AnnotationId::new).transpose()?,
             reviewer_id: request.reviewer_id,
             verdict: request.verdict,
             payload: request.payload,
@@ -1691,10 +1503,8 @@ async fn promote_review_annotation_route(
 ) -> Result<Json<beater_datasets::DatasetCase>, ApiError> {
     let reviews = human_review_store(&state)?;
     let datasets = dataset_store(&state)?;
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
     let auth = authorize_project_route(
         &state,
         &headers,
@@ -1703,12 +1513,9 @@ async fn promote_review_annotation_route(
         ApiScope::DatasetWrite,
     )
     .await?;
-    let queue_id =
-        ReviewQueueId::new(queue_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let task_id =
-        ReviewTaskId::new(task_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let annotation_id =
-        AnnotationId::new(annotation_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let queue_id = ReviewQueueId::new(queue_id)?;
+    let task_id = ReviewTaskId::new(task_id)?;
+    let annotation_id = AnnotationId::new(annotation_id)?;
     let task = reviews
         .get_task(
             tenant_id.clone(),
@@ -1732,8 +1539,7 @@ async fn promote_review_annotation_route(
         .await?;
     ensure_trace_project(&trace, &project_id)?;
     ensure_trace_auth_scope(&trace, &auth)?;
-    let dataset_id =
-        DatasetId::new(request.dataset_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let dataset_id = DatasetId::new(request.dataset_id)?;
     let case = promote_review_annotation_to_dataset_case(
         tenant_id,
         project_id,
@@ -1753,11 +1559,9 @@ async fn decide_online_sampling(
     Path((tenant_id, project_id, trace_id)): Path<(String, String, String)>,
     Json(policy): Json<OnlineSamplingPolicy>,
 ) -> Result<Json<SamplingDecision>, ApiError> {
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let project_id =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let trace_id = TraceId::new(trace_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let trace_id = TraceId::new(trace_id)?;
     let auth = authorize_project_route(
         &state,
         &headers,
@@ -1781,12 +1585,9 @@ async fn evaluate_alert(
     Path((tenant_id, project_id, trace_id)): Path<(String, String, String)>,
     Json(request): Json<EvaluateAlertRequest>,
 ) -> Result<Json<AlertDecision>, ApiError> {
-    let path_tenant =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let path_project =
-        ProjectId::new(project_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let path_trace =
-        TraceId::new(trace_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let path_tenant = TenantId::new(tenant_id)?;
+    let path_project = ProjectId::new(project_id)?;
+    let path_trace = TraceId::new(trace_id)?;
     let auth = authorize_project_route(
         &state,
         &headers,
@@ -1816,72 +1617,51 @@ async fn evaluate_alert(
     Ok(Json(decision))
 }
 
-fn dataset_store(state: &ApiState) -> Result<Arc<dyn DatasetStore>, ApiError> {
-    state
-        .datasets
+/// Returns the configured store, or a 501 `not_implemented` error naming it.
+fn require<T: ?Sized>(value: &Option<Arc<T>>, what: &str) -> Result<Arc<T>, ApiError> {
+    value
         .clone()
-        .ok_or_else(|| ApiError::not_implemented("dataset store is not configured".to_string()))
+        .ok_or_else(|| ApiError::not_implemented(format!("{what} is not configured")))
+}
+
+fn dataset_store(state: &ApiState) -> Result<Arc<dyn DatasetStore>, ApiError> {
+    require(&state.datasets, "dataset store")
 }
 
 fn provider_secret_store(state: &ApiState) -> Result<Arc<dyn ProviderSecretStore>, ApiError> {
-    state.provider_secrets.clone().ok_or_else(|| {
-        ApiError::not_implemented("provider secret store is not configured".to_string())
-    })
+    require(&state.provider_secrets, "provider secret store")
 }
 
 fn judge_broker(state: &ApiState) -> Result<Arc<dyn JudgeBroker>, ApiError> {
-    state
-        .judge_broker
-        .clone()
-        .ok_or_else(|| ApiError::not_implemented("judge broker is not configured".to_string()))
+    require(&state.judge_broker, "judge broker")
 }
 
 fn judge_ledger(state: &ApiState) -> Result<Arc<dyn JudgeLedgerStore>, ApiError> {
-    state
-        .judge_ledger
-        .clone()
-        .ok_or_else(|| ApiError::not_implemented("judge ledger is not configured".to_string()))
+    require(&state.judge_ledger, "judge ledger")
 }
 
 fn experiment_store(state: &ApiState) -> Result<Arc<dyn ExperimentStore>, ApiError> {
-    state
-        .experiments
-        .clone()
-        .ok_or_else(|| ApiError::not_implemented("experiment store is not configured".to_string()))
+    require(&state.experiments, "experiment store")
 }
 
 fn gate_store(state: &ApiState) -> Result<Arc<dyn GateStore>, ApiError> {
-    state
-        .gates
-        .clone()
-        .ok_or_else(|| ApiError::not_implemented("gate store is not configured".to_string()))
+    require(&state.gates, "gate store")
 }
 
 fn human_review_store(state: &ApiState) -> Result<Arc<dyn HumanReviewStore>, ApiError> {
-    state.human_reviews.clone().ok_or_else(|| {
-        ApiError::not_implemented("human review store is not configured".to_string())
-    })
+    require(&state.human_reviews, "human review store")
 }
 
 fn calibration_store(state: &ApiState) -> Result<Arc<dyn CalibrationStore>, ApiError> {
-    state
-        .calibrations
-        .clone()
-        .ok_or_else(|| ApiError::not_implemented("calibration store is not configured".to_string()))
+    require(&state.calibrations, "calibration store")
 }
 
 fn usage_ledger(state: &ApiState) -> Result<Arc<dyn UsageLedgerStore>, ApiError> {
-    state
-        .usage
-        .clone()
-        .ok_or_else(|| ApiError::not_implemented("usage ledger is not configured".to_string()))
+    require(&state.usage, "usage ledger")
 }
 
 fn audit_store(state: &ApiState) -> Result<Arc<dyn AuditStore>, ApiError> {
-    state
-        .audit
-        .clone()
-        .ok_or_else(|| ApiError::not_implemented("audit store is not configured".to_string()))
+    require(&state.audit, "audit store")
 }
 
 async fn record_usage_if_configured(
@@ -1901,8 +1681,7 @@ fn parse_case_outputs(
         .into_iter()
         .map(|output| {
             Ok(CaseOutputOverride {
-                case_id: DatasetCaseId::new(output.case_id)
-                    .map_err(|err| ApiError::bad_request(err.to_string()))?,
+                case_id: DatasetCaseId::new(output.case_id)?,
                 output: output.output,
                 trace: output.trace,
             })
@@ -2354,7 +2133,7 @@ fn environment_id_from_header(headers: &HeaderMap) -> Result<EnvironmentId, ApiE
                 "strict auth requires {ENVIRONMENT_ID_HEADER} header"
             ))
         })?;
-    EnvironmentId::new(value.to_string()).map_err(|err| ApiError::bad_request(err.to_string()))
+    Ok(EnvironmentId::new(value.to_string())?)
 }
 
 fn project_id_from_header(headers: &HeaderMap) -> Result<ProjectId, ApiError> {
@@ -2364,7 +2143,7 @@ fn project_id_from_header(headers: &HeaderMap) -> Result<ProjectId, ApiError> {
         .ok_or_else(|| {
             ApiError::bad_request(format!("strict auth requires {PROJECT_ID_HEADER} header"))
         })?;
-    ProjectId::new(value.to_string()).map_err(|err| ApiError::bad_request(err.to_string()))
+    Ok(ProjectId::new(value.to_string())?)
 }
 
 fn ensure_trace_project(trace: &TraceView, project_id: &ProjectId) -> Result<(), ApiError> {
@@ -2458,10 +2237,9 @@ async fn load_span_for_route(
     span_id: String,
     params: TraceReadQuery,
 ) -> Result<CanonicalSpan, ApiError> {
-    let tenant_id =
-        TenantId::new(tenant_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let trace_id = TraceId::new(trace_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
-    let span_id = SpanId::new(span_id).map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let trace_id = TraceId::new(trace_id)?;
+    let span_id = SpanId::new(span_id)?;
     let auth = authorize_tenant_route(&state, &headers, &tenant_id, ApiScope::TraceRead).await?;
     let trace =
         load_trace_for_auth_scope(&state, tenant_id.clone(), trace_id.clone(), &auth).await?;
@@ -2773,6 +2551,12 @@ fn invalid_otlp_export(error: impl std::fmt::Display) -> ApiError {
 impl From<anyhow::Error> for ApiError {
     fn from(error: anyhow::Error) -> Self {
         Self::internal(error.to_string())
+    }
+}
+
+impl From<beater_core::IdError> for ApiError {
+    fn from(error: beater_core::IdError) -> Self {
+        Self::bad_request(error.to_string())
     }
 }
 

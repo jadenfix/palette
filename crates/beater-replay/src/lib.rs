@@ -1,8 +1,7 @@
 use anyhow::{anyhow, Context};
-use async_trait::async_trait;
 use beater_core::{sha256_json_hash, ProjectId, Sha256Hash, SpanId, TenantId, Timestamp, TraceId};
 use beater_schema::{CanonicalSpan, ReplayCassette, SpanStatus};
-use beater_store::{StoreError, StoreResult};
+use beater_store::{IntoStoreResult, StoreResult};
 use chrono::Utc;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -94,40 +93,6 @@ impl ReplayEvent {
     }
 }
 
-#[async_trait]
-pub trait ReplayStore: Send + Sync {
-    async fn put_event(&self, event: ReplayEvent) -> StoreResult<ReplayEvent>;
-
-    async fn list_events(
-        &self,
-        tenant_id: TenantId,
-        project_id: ProjectId,
-        trace_id: TraceId,
-    ) -> StoreResult<Vec<ReplayEvent>>;
-
-    async fn cassette(
-        &self,
-        tenant_id: TenantId,
-        project_id: ProjectId,
-        trace_id: TraceId,
-    ) -> StoreResult<ReplayCassette> {
-        let events = self
-            .list_events(tenant_id.clone(), project_id, trace_id.clone())
-            .await?;
-        Ok(cassette_from_events(tenant_id, trace_id, &events))
-    }
-}
-
-trait IntoStoreResult<T> {
-    fn into_store(self) -> StoreResult<T>;
-}
-
-impl<T> IntoStoreResult<T> for anyhow::Result<T> {
-    fn into_store(self) -> StoreResult<T> {
-        self.map_err(StoreError::backend)
-    }
-}
-
 #[derive(Clone)]
 pub struct SqliteReplayStore {
     connection: Arc<Mutex<Connection>>,
@@ -192,11 +157,20 @@ impl SqliteReplayStore {
             .lock()
             .map_err(|err| anyhow!("replay sqlite connection mutex poisoned: {err}"))
     }
-}
 
-#[async_trait]
-impl ReplayStore for SqliteReplayStore {
-    async fn put_event(&self, event: ReplayEvent) -> StoreResult<ReplayEvent> {
+    pub async fn cassette(
+        &self,
+        tenant_id: TenantId,
+        project_id: ProjectId,
+        trace_id: TraceId,
+    ) -> StoreResult<ReplayCassette> {
+        let events = self
+            .list_events(tenant_id.clone(), project_id, trace_id.clone())
+            .await?;
+        Ok(cassette_from_events(tenant_id, trace_id, &events))
+    }
+
+    pub async fn put_event(&self, event: ReplayEvent) -> StoreResult<ReplayEvent> {
         let event_json = serde_json::to_string(&event)
             .context("serialize replay event")
             .into_store()?;
@@ -226,7 +200,7 @@ impl ReplayStore for SqliteReplayStore {
         Ok(event)
     }
 
-    async fn list_events(
+    pub async fn list_events(
         &self,
         tenant_id: TenantId,
         project_id: ProjectId,

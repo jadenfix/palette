@@ -163,7 +163,7 @@ pub struct SqliteQuotaLimiter {
 impl SqliteQuotaLimiter {
     pub fn in_memory() -> StoreResult<Self> {
         let connection = Connection::open_in_memory().map_err(StoreError::backend)?;
-        configure_quota_connection(&connection)?;
+        configure_sqlite_connection(&connection)?;
         let limiter = Self {
             connection: Arc::new(Mutex::new(connection)),
             clock: Arc::new(SystemClock),
@@ -178,7 +178,7 @@ impl SqliteQuotaLimiter {
             fs::create_dir_all(parent).map_err(StoreError::backend)?;
         }
         let connection = Connection::open(path).map_err(StoreError::backend)?;
-        configure_quota_connection(&connection)?;
+        configure_sqlite_connection(&connection)?;
         let limiter = Self {
             connection: Arc::new(Mutex::new(connection)),
             clock: Arc::new(SystemClock),
@@ -292,10 +292,6 @@ impl QuotaLimiter for SqliteQuotaLimiter {
             reset_at: request.reset_at,
         })
     }
-}
-
-fn configure_quota_connection(connection: &Connection) -> StoreResult<()> {
-    configure_sqlite_connection(connection)
 }
 
 fn configure_sqlite_connection(connection: &Connection) -> StoreResult<()> {
@@ -921,7 +917,7 @@ fn decode_role_binding(row: &rusqlite::Row<'_>) -> rusqlite::Result<RoleBinding>
         .transpose()?;
     let permissions_json: String = row.get(4)?;
     let permissions = serde_json::from_str::<BTreeSet<String>>(&permissions_json)
-        .map_err(|err| conversion_error(4, permissions_json.len(), err))?;
+        .map_err(|err| conversion_error(4, err))?;
     Ok(RoleBinding {
         tenant_id: id_from_row(row, 0)?,
         project_id,
@@ -945,21 +941,17 @@ where
     T: TryFrom<String>,
     T::Error: std::error::Error + Send + Sync + 'static,
 {
-    let len = value.len();
-    value
-        .try_into()
-        .map_err(|err| conversion_error(index, len, err))
+    value.try_into().map_err(|err| conversion_error(index, err))
 }
 
 fn parse_timestamp(value: String) -> rusqlite::Result<Timestamp> {
     DateTime::parse_from_rfc3339(&value)
         .map(|time| time.with_timezone(&chrono::Utc))
-        .map_err(|err| conversion_error(0, value.len(), err))
+        .map_err(|err| conversion_error(0, err))
 }
 
 fn conversion_error(
     index: usize,
-    _len: usize,
     err: impl std::error::Error + Send + Sync + 'static,
 ) -> rusqlite::Error {
     rusqlite::Error::FromSqlConversionFailure(index, rusqlite::types::Type::Text, Box::new(err))
