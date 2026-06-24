@@ -6,6 +6,15 @@ license.workspace = true
 
 [dependencies]
 beater-browser = { path = "../beater-browser" }
+async-trait.workspace = true
+tokio = { workspace = true, features = ["process", "io-util"] }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+futures.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["process", "io-util", "net", "rt-multi-thread", "macros"] }
 
 [lints]
 workspace = true

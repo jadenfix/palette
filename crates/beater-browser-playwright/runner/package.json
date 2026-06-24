@@ -1,0 +1,21 @@
+{
+  "name": "beater-browser-playwright-runner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node Playwright runner bridging the beater-browser-playwright Rust BrowserDriver to Chromium/Chrome/Edge/Firefox/WebKit over a versioned JSON line protocol on stdin/stdout.",
+  "license": "Apache-2.0",
+  "type": "commonjs",
+  "main": "runner.js",
+  "bin": {
+    "beater-playwright-runner": "runner.js"
+  },
+  "scripts": {
+    "postinstall": "playwright install --with-deps chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
