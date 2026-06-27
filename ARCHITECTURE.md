@@ -3713,4 +3713,317 @@ directly to §18 (a milestone ships only when its rows are green), §19 (the
 Bar-for-Done questions), §20/§21 (the phase items each row maps to), and §22 (the
 test/gate that verifies each row).
 
+## 25. Front-End / Dashboard (optional, Vercel-hosted)
+
+The dashboard's beat name is **Soundstage** — front-of-house: the one stage where
+the whole performance (every box from §4) is *seen* and *directed*. It is the
+visual surface of the platform; the §3.3 dashboard artifact (`web/dashboard`,
+Next.js) is Soundstage's crate-side crosswalk. This section is a deep, concrete
+plan; per the §4 honesty convention every claim is marked **[built]**,
+**[partial]**, **[planned]**, or **[needs read-API]** (blocked on a §20.2 backend
+endpoint). It is consistent with §1.8 (no-cloud), §2 (editions), §3.2 (Vercel),
+§13 (UI requirements), §20.2/§20.4 (read-APIs + product-UI plan), §22 (the
+`frontend`/`gate2-browser-proof` gates), §23 (perf), and §24 (the Definition-of-Done
+ledger, which this section *adds rows to* in §25.10).
+
+### 25.0 Positioning — OPTIONAL and headless-first (non-negotiable)
+
+**Soundstage is an accelerator, never the gate.** The platform is **fully usable
+with no dashboard at all** — via the stable `/v1` API, the 7 generated SDKs (§3.3),
+the MCP server (§21), and the `beaterctl` CLI. This is a direct consequence of the
+§1.8 *no-cloud* principle and the §13 contract that the core loop is API-first: a
+self-hoster who never starts the Next.js process loses *zero* core capability
+(ingest, query, datasets, deterministic + judge evals, gates, replay, MCP). The
+§0 core loop and the §15 DX SLO (time-to-first-*scored-failure*) are reachable
+end-to-end through the CLI + MCP + a coding agent (§21.5b) without ever opening a
+browser. The §19 "can I self-host without calling your cloud?" answer stays **yes**
+with the dashboard absent.
+
+What Soundstage *adds* is **speed and legibility** for the human in the loop:
+seeing a trace waterfall, reading a judge's rationale, watching an experiment's
+confidence interval cross a gate, annotating a failure — the things a human does
+faster with pixels than with curl. It is the §2 "Trace viewer and span tree"
+edition row (Required in both editions) *plus* the §20.4 product surface.
+
+**Hosting (two honest paths):**
+
+- **Hosted — Vercel.** Per §3.2 and §1 #7, Vercel runs the dashboard (and
+  stateless control-plane API routes); the long-running stateful workers run in
+  hosted cells, never on Vercel. Deploy is the **`deploy-dashboard`** CD workflow
+  (§22.5, `.github/workflows/deploy-dashboard.yml`) — Vercel prod on push to `main`
+  touching `web/dashboard/**`, **preview-per-PR** otherwise. **[built]** (the
+  workflow is secret-clean: it no-ops on forks without `VERCEL_TOKEN`).
+- **OSS self-host — static/SSR build, no cloud.** The same Next.js app builds into
+  the compose `dashboard` service on `:3000` (§3.1, §3.3 artifact row, **[built]**)
+  and points at the local `beaterd`. No Beater Cloud call is required to run it
+  (§1.8). Server components hit the local API; nothing reaches out to Vercel.
+
+### 25.1 Design quality bar (explicit and load-bearing)
+
+The bar is the **simple, modern, content-first** quality of the best AI-platform
+consoles — **OpenAI's platform, Anthropic's Console, Google DeepMind, xAI**:
+restrained surfaces, the data is the hero, the chrome disappears. This bar is
+**load-bearing**, not decoration: an eval/observability tool whose own UI is noisy
+fails its own thesis (you cannot read a confidence interval through clutter). The
+positive principles:
+
+- **Near-monochrome base, exactly ONE accent.** A neutral grayscale canvas
+  (dark-first, light as a first-class peer) with a single restrained "beat" accent
+  used *only* for the primary action, the live/selected state, and the one number
+  that matters on a screen. Color carries **meaning** (pass/fail/inconclusive,
+  the §10.3 gate verdicts), never mood.
+- **Generous whitespace + a strict spacing scale.** A single spacing scale
+  (§25.2); nothing is placed off-grid. Density is *earned* (the trace waterfall and
+  span table are dense by necessity); everywhere else breathes.
+- **Precise typography.** A tight type scale (§25.2), tabular/monospaced numerals
+  for every metric, latency, cost, p-value, and CI so columns align and digits
+  don't jitter between renders.
+- **Subtle, purposeful motion.** Motion communicates state change (a span
+  streaming in, a gate flipping to *pass*), 120–200 ms, respects
+  `prefers-reduced-motion`. No decorative animation.
+- **Fast and keyboard-first.** Command palette (⌘K) to jump to any trace/route;
+  keyboard labeling in the review queue (§25.5 Review); j/k navigation in dense
+  tables. Ties §23: first paint is a server component, interaction is instant,
+  long lists are virtualized.
+- **Dark-first + light, WCAG AA, responsive.** Both themes ship; contrast meets
+  AA (the accent and every status color are AA on both canvases); layouts reflow
+  from wide analyst monitors to a laptop. Accessibility is a ship requirement, not
+  a polish pass.
+- **Progressive disclosure.** The §0 trace→eval→fix loop is the **obvious**
+  default; depth (raw attributes, judge chain-of-thought, per-criterion rubric
+  scores, OOD-probe detail) is **one click away**, never on screen by default.
+  Empty/loading/error states are designed first-class (§25.3), so a new, empty
+  project still looks intentional.
+
+**Explicit anti-patterns — banned on sight (so it never looks "AI-coded"):**
+
+- **Gradient soup** — multi-stop gradients, glassmorphism, glow. The base is flat
+  and neutral; the one accent is solid.
+- **Emoji-as-UI** — emoji as icons, status, or buttons. Icons are a single
+  line-icon set (today `lucide-react`, §25.2), used sparingly.
+- **Cluttered dashboards** — wall-of-widgets, redundant KPIs, decorative charts.
+  Every element answers a §19 question or is cut.
+- **Heavy decoration** — drop shadows everywhere, borders on everything, busy
+  backgrounds. Elevation is a 2–3 step token scale used only to separate layers.
+- **Inconsistent spacing / off-scale type** — anything not on the §25.2 tokens.
+- **Generic template look** — stock admin-template sidebars, default component-kit
+  theming, the "bootstrap dashboard" silhouette. Soundstage is themed (§25.2), not
+  un-themed.
+
+### 25.2 Design system (Vercel-themed, tokenized) — **[planned]** layered on **[built]** app
+
+The shell exists and renders; the *system* below is the planned upgrade. **Honest
+current state:** `web/dashboard` is a **[built]** Next.js (App Router) app on
+**hand-authored CSS** (`app/globals.css`) with `lucide-react` icons — it already
+honors much of §25.1 (near-monochrome, dark-first, restrained). It does **not** yet
+use Geist, Tailwind, or shadcn primitives; adopting the tokenized system below is
+**[planned]** and additive (it replaces ad-hoc CSS with tokens, it does not rewrite
+the routes).
+
+- **Typeface — Geist + Geist Mono** (Vercel's family), loaded via `next/font` (no
+  network webfont, no layout shift). Mono is mandatory for all numerals/metrics
+  (§25.1). **[planned]** (today: system stack).
+- **Primitives — shadcn/ui on Tailwind**, Geist-themed. shadcn is *copied-in,
+  owned* components (not a black-box kit), which is exactly the §25.1 "themed, not
+  template" requirement and keeps the bundle small. **[planned]**.
+- **Tokens — one source for color / space / radius / type / elevation.** As
+  CSS variables + the Tailwind theme:
+  - *Color:* a neutral 50→950 gray ramp (the canvas), semantic
+    `pass`/`fail`/`inconclusive`/`warn` (mapped to the §10.3 gate verdicts), and
+    **one** `--accent` (the beat). Dark + light token sets; every pair AA.
+  - *Space:* a single scale `2 / 4 / 8 / 12 / 16 / 24 / 32 / 48` (px) — nothing
+    off-scale.
+  - *Radius:* `sm / md / lg` (e.g. 4 / 6 / 10).
+  - *Type:* `xs / sm / base / lg / xl / 2xl` with fixed line-heights; one display
+    size for page titles, body for everything else; **mono for data**.
+  - *Elevation:* a 0/1/2 step scale (flat → card → popover); no free-form shadows.
+- **Component set — small and disciplined.** App shell (org/project/env switcher +
+  left nav + ⌘K palette); data table (sortable, keyboard-nav, virtualized,
+  §23.5/§25.6); the **trace waterfall** (the signature component); stat card with
+  CI bar; the **gate badge** (pass / fail / **inconclusive**, never "pass" when
+  underpowered — §1 #11); JSON/code viewer with redaction affordance; chat/message
+  bubble (role + tool-call rendering, §20.3 #1.2); media tile (image/audio,
+  §20.3 #1.3); diff view; annotation panel; empty/error/loading states. That is the
+  whole kit — anything not in it is justified per-screen, not added by reflex.
+
+### 25.3 Tech & architecture
+
+- **Next.js App Router + TypeScript + React** — **[built]** (Next 16 / React 19 in
+  `web/dashboard`).
+- **The GENERATED OpenAPI client is the ONLY data contract.** The front-end never
+  hand-writes API types: `web/dashboard/lib/generated/api-types.ts` is generated by
+  `openapi-typescript` from the committed read-API spec
+  (`web/dashboard/openapi/beater-read-api.json`), and `web/dashboard/lib/api.ts`
+  derives **every** request/response type from it
+  (`import type { components, operations }`). This makes the UI map **1:1** to the
+  back-end and folds it into the §1 #2 / §22.5 single-source contract discipline:
+  the **`frontend`** CI gate runs `scripts/check-openapi-drift.sh` so a UI change
+  cannot silently diverge from the served spec, and `xtask regen-spec` also
+  regenerates this typed client (per the recent contract-sync work). **[built].**
+  New product screens are blocked precisely on the §20.2/§20.4 read-APIs that don't
+  exist yet (marked **[needs read-API]** in §25.4) — the front-end cannot fabricate
+  a type the contract doesn't define.
+- **Data fetching — server-first, then SWR/TanStack Query for the client.** First
+  paint is a React **server component** hitting the local/edge API (the §23 fast
+  first-paint story; today's trace page is fully server-rendered, **[built]**).
+  Interactive views (live tail, filters, annotation) become **client components**
+  using **SWR or TanStack Query** for caching/revalidation. **[partial]** (server
+  components built; client-side query layer is §20.4 #2.9, **[planned]**).
+- **Live data — SSE / streamable-HTTP.** Live trace tail, streamed `simulate`/eval
+  progress, and streamed gate runs use **SSE / streamable-HTTP** — the same
+  job-handle + stream pattern §23.2 defines for the MCP and §23.5 for long reads
+  (dispatch returns a handle immediately; progress streams). **[planned]**
+  (§20.4 #2.9).
+- **Loading / error / empty states are first-class** per §25.1 — every route ships
+  all three (skeletons, a real error with a retry, an intentional empty state).
+- **Auth — OAuth 2.1 session + org/project/env switcher.** Login/session run
+  against the **`beater-oauth-server`** authorization server (+ `beater-oauth`,
+  `beater-accounts`) — the same RFC 9728→8414→7591→authorize/token chain the
+  coding-agent connect uses (§21.5b). **[partial]:** email/password login,
+  session, and API-key management exist today (`app/login`, `app/settings/api-keys`
+  against the accounts/OAuth crates); the in-app **org/project/env switcher** binds
+  to §20.7 #5.1 CRUD and is **[needs read-API]**. The trace page already threads
+  `tenant/project/environment` through every query as the de-facto scope today.
+
+### 25.4 Information architecture & routes
+
+Each route lists **purpose · key interactions · read-API it consumes · status**.
+Routes map onto the §13 UI requirements and the §20.4 product-UI plan; "needs
+read-API" names the §20.2/§20.4/§20.7 item that unblocks it.
+
+| Route | Purpose | Key interactions | Read-API | Status |
+| --- | --- | --- | --- | --- |
+| `/` **Traces** | the §0 core surface: trace table → span waterfall | filters (status/time/model/release/cost/latency, §13); waterfall with depth; span detail; **multimodal + chat/tool-call I/O**; **redaction unmask w/ reason** | `listTraces`/`getTrace`/`getSpan`/`getSpanIo` (in `lib/api.ts`) | **[built]** (table+waterfall+redaction live; chat/tool-call/multimodal rendering needs §20.3 #1.2/#1.3) |
+| `/search` **Crate Dig** | full-text + predicate search over spans | attribute-predicate query bar; BM25 results (§13); **saved views** | `/v1/search/:tenant/spans` (§20.4 #2.8) | **[needs read-API]** (filter form built; full-text UI planned) |
+| `/sessions` **Sessions** | multi-turn conversation/thread grouping | session list → turns → traces; user/thread filters | `/v1/sessions` (§20.3 #1.1) | **[needs read-API]** |
+| `/datasets` **Encore** | browse datasets / versions / cases | version picker; case table; **promote-from-query**; CSV/JSONL import | `GET /v1/datasets…` (§20.4 #2.1), promote (§20.4 #2.1b) | **[needs read-API]** (create-only POST today) |
+| `/experiments/[id]` **Beatboxing** | A/B candidate-vs-baseline | per-case score table; baseline-vs-candidate **deltas with `ci_low/ci_high`**; **gate badge** (pass/fail/**inconclusive**); trace deep-links; per-slice segments | `ExperimentRunReport`; `GET /v1/experiments/:tenant/:project` (§20.4 #2.3, §20.5 #3.5) | **[needs read-API]** |
+| `/evals/[id]` **Backbeat drilldown** | per-case eval result detail | per-case pass/fail; **judge rationale** (+ per-criterion rubric, §20.5 #3.2); calibration (Brier/ECE/reliability, §20.5 #3.7); WASI scorer output | `GET /v1/datasets/.../eval-reports/{id}` (§20.4 #2.2/#2.4) | **[needs read-API]** |
+| `/analytics` **Tempo/Heartbeat view** | cost/latency/token trends | timeseries **p50/p95/p99**; cost/token trends; **model/release breakdown**; **`sampling_weight`-weighted by default**, unweighted only when *labeled biased* (§13, §1 #9) | `GET /v1/metrics/:tenant` (§20.4 #2.7) | **[needs read-API]** (single-run summary strip today) |
+| `/prompts` **Mixdown** | versioned prompt registry + playground | version list; **run** in playground; **diff** versions; prompt-from-trace; link to eval | `/v1/prompts` CRUD + `runPrompt` (§20.6 #4.7) | **[needs read-API]** |
+| `/review` **Setlist** | human review / annotation queues | task inbox; inline `AnnotationPanel` on span detail; **keyboard labeling**; `submitReviewAnnotation` | `beater-human` read + `submitReviewAnnotation` (§20.4 #2.5) | **[planned]** (backend built; UI not; no new read-API needed) |
+| `/diff` **Rewind diff** | failed-vs-passed trace diff | side-by-side span alignment by name/kind/seq; per-span deltas | `GET /v1/traces/:tenant/:a/diff/:b` (§20.4 #2.6) | **[needs read-API]** |
+| `/studio` **Agent Studio** | the §6 agent topology canvas | **topo-sorted nodes L→R**; JSON-schema-backed node config; **recursive-loop viz**; the **§19 counterfactual what-if view** (fork point + {X,Y,Z} candidate outcomes from §11 Rewind + §21 `simulate`) | §11 forked-replay + §21 `simulate` results; agent model (§6) | **[planned]** (depends on §11 forked-replay search + §21 simulate, both planned) |
+| `/evolution` **Beatboxing RSI** | agent-evolution / RSI episodes | propose→simulate→accept timeline; **§21.4 guardrail-signal views** (held-out gap, **OOD-probe** result, smoothness/sensitivity, EvalStop), per-episode reward + CI; the OOD-reject verdict | §21 RSI tool results + §21.4 guardrail signals | **[planned]** (entire §21 is planned) |
+| `/settings/*` **Settings** | orgs/projects/API keys/OAuth/billing | org/project/env CRUD; **API keys** (built); members/roles; billing/usage | §20.7 #5.1 (orgs/projects), #5.2 (RBAC), #5.8 (billing); accounts/oauth | **[partial]** (`/settings`, `/settings/api-keys` built; orgs/RBAC/billing need read-API) |
+| `/docs` **front-of-house docs** | in-app API/MCP reference | renders the committed OpenAPI snapshot (Scalar) → cannot drift (§22.5); MCP + quickstart guides | the committed `beater-api.json` (§3.3 docs row) | **[built]** (`/docs`, `/docs/mcp`, `/docs/quickstarts`) |
+| `/connect` **coding-agent connect** | the §21.5b Claude-Code / Codex / ChatGPT connect screen | shows `claude mcp add …` + Codex MCP config; triggers the OAuth browser flow; verifies `tools/list` | `beater-oauth-server` connect chain (§21.5b) | **[partial]** (OAuth server + `/mcp` built; the connect *screen* + e2e verify planned) |
+
+### 25.5 The core loop on screen (progressive disclosure)
+
+The §0 **trace → eval → fix** loop is the spine of the IA and the default a new
+user lands in:
+
+1. **Trace** (`/`) — see what the agent did; open the failing span. **[built].**
+2. **Promote → eval** — promote the failure into a dataset (`/datasets`,
+   single-case **[built]** via POST; **bulk promote-from-query** is §20.4 #2.1b,
+   **[needs read-API]**) and run evals; read the **judge rationale** and
+   **calibration** in `/evals/[id]` (**[needs read-API]**).
+3. **Fix → gate** — run a candidate in `/experiments/[id]`, watch the **CI** and
+   the **gate badge**; the badge shows **inconclusive** (never "pass") when
+   underpowered (§1 #11, §10.3). The **counterfactual what-if** ("would X have
+   fixed it, and does it generalize?", §19) lives in `/studio`, answered by §11
+   Rewind + §21 `simulate` against the **held-out Test split + OOD probe** (§21.4) —
+   so the UI shows *"X fixes it and generalizes,"* never *"X patches this trace."*
+
+Depth is one click away at every step (raw attributes, judge CoT, per-criterion
+rubric, OOD-probe detail) — never on screen by default (§25.1).
+
+### 25.6 Real-time & performance (ties §23)
+
+- **SSE live-tail + streamed runs.** `/` live-tails new traces over SSE; `/studio`
+  and `/experiments` stream `simulate`/eval/gate progress over streamable-HTTP —
+  the §23.2 dispatch-returns-a-handle-then-streams pattern; the UI never blocks on
+  a long job. **[planned]** (§20.4 #2.9).
+- **Virtualized dense lists.** The trace table and span waterfall **virtualize**
+  long lists (§23.5 keyset pagination on the read side; row virtualization on the
+  render side) so a 10k-span trace scrolls at 60 fps. **[planned]** (§20.4 #2.9).
+- **Weighted-by-default analytics.** `/analytics` shows `sampling_weight`-weighted
+  (Horvitz-Thompson) aggregates by default and labels any unweighted view *biased*
+  (§1 #9, §13, §23.5) — the UI must not silently render a biased average.
+- **Fast first paint.** Server components render the first screen; the client
+  hydrates interactivity (§25.3, §23). The keyboard surface (⌘K, j/k, review
+  labeling) keeps the analyst off the mouse.
+
+### 25.7 Deploy, OSS self-host & edge/SSR strategy
+
+- **Vercel (hosted).** `deploy-dashboard` (§22.5 CD) deploys prod on `main`; **every
+  PR gets a Vercel preview** so a UI change is reviewed against a live URL before
+  merge. Per §3.2/§1 #7 Vercel hosts **only** the dashboard + stateless
+  control-plane/edge API routes; stateful ingest/eval/replay workers stay in hosted
+  cells. **[built]** (workflow), forks no-op without `VERCEL_TOKEN`.
+- **OSS self-host.** The same app is the compose `dashboard` service on `:3000`
+  (§3.1) — a **static/SSR build with no cloud call** (§1.8). Self-hosters can run
+  the prod build behind any reverse proxy; nothing depends on Vercel at runtime.
+  **[built].**
+- **Edge / SSR strategy.** Read-mostly shells (trace list, analytics first paint)
+  render as **server components**, cacheable at the edge; **mutations and live data**
+  (annotation, live-tail, simulate) are **dynamic / client** against the API. The
+  rule: the edge serves the *shape* fast, the origin serves the *truth* live.
+
+### 25.8 End-to-end testing (ties §22)
+
+- The dashboard's CI gate is **`frontend`** (§22.5): build/lint/typecheck **against
+  the generated OpenAPI client** + `check-openapi-drift.sh` so the UI can't diverge
+  from the served spec. **[built].**
+- **`gate2-browser-proof`** (§22.5) is the recorded **Playwright** demo over the
+  dashboard — the §22.3 row "§20.4 #2.x read APIs + UI → Playwright e2e" and the
+  README "Clean Clone To Browser" path (`gate2-proof-contract`). The
+  quickstart/browser e2e (`tests/e2e`, `playwright.config.ts`) is **[built]** for
+  the trace path; per-screen e2e for the §25.4 product routes lands with each route
+  (**[planned]**).
+- **Definition of Done — UI rows (added to §24).** The §24 ledger gains explicit UI
+  rows whose binary criterion is *the human can do it in the browser*:
+  - **"A new user completes trace → eval → fix entirely in the UI"** — Done iff a
+    fresh user, in Soundstage only, opens a failing trace, promotes it to a dataset,
+    runs an eval and reads the judge rationale, runs a candidate experiment, and
+    sees the gate badge — verified by a Playwright e2e (`gate2-browser-proof`).
+    **Status: planned** (the trace step is built; promote/eval/experiment UI is
+    §20.4, planned). Maps to §24.1 "Datasets read-API + UI" and "Evals browseable."
+  - **"Annotate a failure in the review queue in the UI"** — Done iff a reviewer
+    labels a case via `/review` keyboard labeling posting `submitReviewAnnotation`,
+    Playwright-verified. **Status: planned** (§20.4 #2.5; backend built).
+  - **"Read weighted cost/latency trends in the UI"** — Done iff `/analytics`
+    renders `sampling_weight`-weighted p50/p95/p99 + cost trends, Playwright-verified.
+    **Status: needs read-API** (§20.4 #2.7).
+
+### 25.9 Build plan (phased, screens first; each item names its blocking API)
+
+Soundstage's phasing rides the §20.4 read-API sequence — a screen cannot ship
+before the read-API it maps to (§25.3). Honest status per phase:
+
+| Phase | Screens | Blocking API / dependency | Status |
+| --- | --- | --- | --- |
+| **S0 — shell & design system** | App shell, org/project/env switcher, ⌘K palette, theme + tokens, Geist/Tailwind/shadcn adoption | none (front-end-only); switcher needs §20.7 #5.1 | shell **[built]**; tokenized design system **[planned]**; switcher **[needs read-API]** |
+| **S1 — Traces (the spine)** | `/` table + waterfall + redaction; chat/tool-call + multimodal I/O | §20.3 #1.2/#1.3 for rich I/O | table/waterfall/redaction **[built]**; rich I/O **[needs read-API]** |
+| **S2 — Datasets & Evals** | `/datasets`, `/evals/[id]` (judge rationale, calibration) | §20.4 #2.1/#2.1b/#2.2/#2.4 | **[needs read-API]** |
+| **S3 — Experiments & gates** | `/experiments/[id]` (CIs + gate badge + segments) | §20.4 #2.3, §20.5 #3.5 (and trustworthy stats need `beater-stats`, §20.5 #3.4) | **[needs read-API]** |
+| **S4 — Search, Sessions, Analytics, Diff** | `/search`, `/sessions`, `/analytics`, `/diff` | §20.4 #2.6/#2.7/#2.8, §20.3 #1.1 | **[needs read-API]** |
+| **S5 — Review, Prompts** | `/review` (annotation), `/prompts` (registry + playground) | `/review`: none (backend built, §20.4 #2.5); `/prompts`: §20.6 #4.7 | `/review` **[planned]**; `/prompts` **[needs read-API]** |
+| **S6 — Live & perf** | SSE live-tail, streamed simulate/eval, virtualization | §20.4 #2.9 | **[planned]** |
+| **S7 — Studio & Evolution** | `/studio` (topology + counterfactual what-if), `/evolution` (RSI + §21.4 guardrail views), `/connect` | §11 forked-replay + §21/§21.4 (all planned) | **[planned]** |
+| **S8 — Hosted control-plane UI** | orgs/RBAC/billing in `/settings/*` | §20.7 #5.1/#5.2/#5.8 | **[needs read-API]** |
+
+The discipline: **screens are designed and the shell/design-system built first**
+(S0–S1, the parts that don't need new back-end), then each product screen lands the
+moment its §20.2/§20.4 read-API does — never a hand-faked screen ahead of its
+contract (§25.3).
+
+### 25.10 Consistency check (this section vs the rest of the doc)
+
+- **Optional / headless-first** is explicit (§25.0) and consistent with §1.8 and
+  the §2 editions table (trace UI Required, but the *platform* runs headless).
+- **Vercel** matches §3.2 and §1 #7 (dashboard + stateless routes only; stateful
+  work in cells) and the §22.5 `deploy-dashboard` CD workflow.
+- **Generated-client-only data contract** (§25.3) is the §1 #2 / §22.5
+  single-source discipline applied to the front-end; the **`frontend`** gate
+  enforces it.
+- **Read-API dependencies** (§25.4/§25.9) map 1:1 onto §20.2/§20.4/§20.6/§20.7
+  items; **virtualization/live-tail/weighted aggregates** tie §23; **e2e + the new
+  UI DoD rows** tie §22 and extend §24.
+- **Honest markers** ([built]/[partial]/[planned]/[needs read-API]) and the
+  **beat-boxes naming** (§4) are preserved throughout: the dashboard is
+  **Soundstage**, and each screen carries its beat-box (Encore, Backbeat,
+  Beatboxing, Setlist, Mixdown, Rewind, Crate Dig, Tempo/Heartbeat) crosswalk.
+
 
