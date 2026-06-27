@@ -22,6 +22,23 @@ jobs:
     # is available; macos-26 is the arm64 image.
     runs-on: macos-26
     timeout-minutes: 60
+    # NON-BLOCKING (hosted-runner hard limitation): Apple `container` builds and
+    # runs Linux containers inside a lightweight VM via Apple's
+    # Virtualization.framework. GitHub's hosted arm64 macOS runners are
+    # themselves VMs and Apple's framework does not support nested
+    # virtualization on arm64, so `container build`/`run` abort with
+    # `VZErrorDomain Code=2 "Virtualization is not available on this hardware."`
+    # The earlier steps now pass — the GitHub API 403 is fixed and
+    # `container system start --enable-kernel-install` starts the system and
+    # installs the kernel non-interactively — but the actual image build/run
+    # cannot execute on a hosted runner. We therefore keep the job for its
+    # diagnostic value without letting the VM limitation red the PR.
+    # TODO: move to a self-hosted bare-metal Apple-silicon runner (or a hosted
+    # runner once GitHub exposes nested virtualization on arm64) and drop
+    # continue-on-error. Refs:
+    #   https://github.com/actions/runner-images/issues/12933
+    #   https://github.com/apple/container/issues/1254
+    continue-on-error: true
     # Authenticate the api.github.com call below so it is billed against this
     # repo's token bucket rather than the shared unauthenticated pool (which is
     # IP-rate-limited and returns 403 on busy runners).
