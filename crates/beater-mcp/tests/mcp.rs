@@ -178,10 +178,15 @@ fn tool_set_equals_spec_v1_operations() {
     let tools: BTreeSet<String> = beater_mcp::tool_names().into_iter().collect();
     let spec = spec_v1_operation_ids();
 
-    // Every operation is exposed, and there are no phantom tools.
+    // Every operation is exposed, and there are no phantom tools. The synthetic
+    // `help` tool is deliberately NOT part of the spec-coverage answer.
     assert_eq!(
         tools, spec,
         "MCP tool set must equal the set of /v1 operationIds in the spec"
+    );
+    assert!(
+        !tools.contains("help"),
+        "the synthetic help tool must not appear in spec-coverage tool_names()"
     );
     // Sanity: the spec covers 41 /v1 operations.
     assert_eq!(tools.len(), 41, "expected 41 tools, got {}", tools.len());
@@ -215,7 +220,8 @@ async fn initialize_and_tools_list_over_mcp_route() {
     .await;
     assert_eq!(status, StatusCode::OK);
     let tools = listed["result"]["tools"].as_array().expect("tools array");
-    assert_eq!(tools.len(), 41);
+    // 41 spec-derived tools + the synthetic `help` meta tool.
+    assert_eq!(tools.len(), 42);
     // Each tool has the required MCP shape.
     for tool in tools {
         assert!(tool["name"].is_string());
@@ -362,7 +368,8 @@ async fn tools_list_exposes_output_schema_and_annotations() {
     let app = beater_mcp::router(state);
     let tools = list_tools(&app).await;
     let methods = spec_op_methods();
-    assert_eq!(tools.len(), 41);
+    // 41 spec-derived tools + the synthetic `help` meta tool.
+    assert_eq!(tools.len(), 42);
 
     // The four list endpoints return top-level JSON arrays, which MCP forbids as
     // structured output, so they advertise no outputSchema.
@@ -375,6 +382,10 @@ async fn tools_list_exposes_output_schema_and_annotations() {
 
     for tool in &tools {
         let name = tool["name"].as_str().expect("tool name");
+        // `help` is the synthetic meta tool — not a spec op; covered separately.
+        if name == "help" {
+            continue;
+        }
 
         // outputSchema is present for object-returning ops and object-rooted
         // (never array — a strict client would reject that); omitted for the
@@ -599,4 +610,138 @@ async fn tools_list_is_stable_across_calls() {
     let first = list_tools(&app).await;
     let second = list_tools(&app).await;
     assert_eq!(first, second, "tools/list must be byte-stable across calls");
+}
+
+/// The synthetic `help` tool is listed (read-only, well-formed) and is the only
+/// non-spec tool in `tools/list`.
+#[tokio::test]
+async fn help_tool_is_listed_and_read_only() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+    let tools = list_tools(&app).await;
+    let spec_ops = spec_op_methods();
+
+    // Exactly one tool is non-spec, and it is `help`.
+    let non_spec: Vec<&str> = tools
+        .iter()
+        .map(|t| t["name"].as_str().expect("name"))
+        .filter(|n| !spec_ops.contains_key(*n))
+        .collect();
+    assert_eq!(non_spec, ["help"], "help is the only synthetic tool");
+
+    let help = tools
+        .iter()
+        .find(|t| t["name"] == "help")
+        .expect("help present");
+    assert_eq!(help["inputSchema"]["type"], "object");
+    assert!(help["inputSchema"]["properties"]["query"].is_object());
+    assert!(help["inputSchema"]["properties"]["tool"].is_object());
+    assert_eq!(help["outputSchema"]["type"], "object");
+    assert_eq!(help["annotations"]["readOnlyHint"], true);
+    assert_eq!(help["annotations"]["destructiveHint"], false);
+}
+
+/// `help` with no arguments returns an overview of every spec tool, as object
+/// structured content, without dispatching to the API.
+#[tokio::test]
+async fn help_overview_lists_every_spec_tool() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+
+    let (status, rpc) = mcp_call(
+        &app,
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                "params": { "name": "help", "arguments": {} } }),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let result = &rpc["result"];
+    assert_eq!(result["isError"], false, "help must not error: {rpc}");
+    let structured = &result["structuredContent"];
+    assert!(structured.is_object(), "structuredContent is an object");
+    assert_eq!(structured["server"]["name"], "beater-mcp");
+    assert_eq!(
+        structured["toolCount"], 41,
+        "overview covers all 41 spec tools"
+    );
+    let listed = structured["tools"].as_array().expect("tools array");
+    assert_eq!(listed.len(), 41);
+    // Each entry is a compact {name, method, description} summary.
+    for entry in listed {
+        assert!(entry["name"].is_string());
+        assert!(entry["method"].is_string());
+        assert!(entry["description"].is_string());
+    }
+}
+
+/// `help` with a `query` filters the catalog case-insensitively over name and
+/// description.
+#[tokio::test]
+async fn help_query_filters_catalog() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+
+    let (_status, rpc) = mcp_call(
+        &app,
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                "params": { "name": "help", "arguments": { "query": "DATASET" } } }),
+        None,
+    )
+    .await;
+    let structured = &rpc["result"]["structuredContent"];
+    let listed = structured["tools"].as_array().expect("tools array");
+    assert!(!listed.is_empty(), "expected some dataset tools");
+    assert!(listed.len() < 41, "query must narrow the catalog");
+    assert_eq!(structured["toolCount"], listed.len());
+    // Every match contains the (lower-cased) query in its name or description.
+    for entry in listed {
+        let name = entry["name"].as_str().unwrap().to_ascii_lowercase();
+        let desc = entry["description"].as_str().unwrap().to_ascii_lowercase();
+        assert!(
+            name.contains("dataset") || desc.contains("dataset"),
+            "unexpected match: {entry}"
+        );
+    }
+    // A representative dataset op is present.
+    assert!(listed.iter().any(|t| t["name"] == "createDataset"));
+}
+
+/// `help` with a `tool` returns that operation's full descriptor; an unknown
+/// operationId is a JSON-RPC error.
+#[tokio::test]
+async fn help_describes_one_tool_and_rejects_unknown() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+
+    let (_status, rpc) = mcp_call(
+        &app,
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                "params": { "name": "help", "arguments": { "tool": "listTraces" } } }),
+        None,
+    )
+    .await;
+    let tool = &rpc["result"]["structuredContent"]["tool"];
+    assert_eq!(tool["name"], "listTraces");
+    assert_eq!(tool["method"], "GET");
+    assert_eq!(tool["path"], "/v1/traces/{tenant_id}");
+    assert_eq!(tool["inputSchema"]["type"], "object");
+    assert!(
+        tool["outputSchema"].is_object(),
+        "listTraces has an output schema"
+    );
+    assert_eq!(tool["annotations"]["readOnlyHint"], true);
+
+    // Unknown operationId -> JSON-RPC error.
+    let (_status, err) = mcp_call(
+        &app,
+        json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                "params": { "name": "help", "arguments": { "tool": "nope" } } }),
+        None,
+    )
+    .await;
+    assert!(
+        err["error"].is_object(),
+        "unknown tool query is an error: {err}"
+    );
 }

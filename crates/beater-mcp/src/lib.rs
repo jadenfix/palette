@@ -355,6 +355,117 @@ fn annotations_for(method: &str, title: &str) -> Value {
     })
 }
 
+/// Name of the one synthetic, non-spec meta tool. Every other tool maps 1:1 to a
+/// `/v1` operation derived from the spec; `help` is the deliberate exception — a
+/// local discovery aid that never dispatches to the API. It is therefore added at
+/// the `tools/list`/`tools/call` layer and is intentionally absent from
+/// [`tool_names`]/[`tools`], which remain the authoritative spec-coverage answer.
+const HELP_TOOL_NAME: &str = "help";
+
+/// The `tools/list` entry for the synthetic [`HELP_TOOL_NAME`] tool.
+fn help_tool_json() -> Value {
+    json!({
+        "name": HELP_TOOL_NAME,
+        "description": "Discover Beater MCP tools. Call with no arguments for an \
+            overview of every tool, `query` to filter by keyword, or `tool` to get \
+            one operation's full input/output schema and annotations. Resolved \
+            locally — this makes no API call.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Case-insensitive keyword to filter tools by name or description."
+                },
+                "tool": {
+                    "type": "string",
+                    "description": "An operationId to describe in full (method, path, schemas, annotations)."
+                }
+            }
+        },
+        "outputSchema": {
+            "type": "object",
+            "properties": {
+                "server": { "type": "object" },
+                "protocolVersion": { "type": "string" },
+                "toolCount": { "type": "integer" },
+                "tools": { "type": "array" },
+                "tool": { "type": "object" }
+            }
+        },
+        // Pure read of static, in-process data: read-only and idempotent.
+        "annotations": annotations_for("GET", "Discover Beater MCP tools"),
+    })
+}
+
+/// Compact one-line view of a tool for catalog/overview listings.
+fn tool_summary(tool: &ToolSpec) -> Value {
+    json!({
+        "name": tool.name,
+        "method": tool.method,
+        "description": tool.description,
+    })
+}
+
+/// Full descriptor of one tool: its `tools/list` shape plus the underlying HTTP
+/// method and path template.
+fn describe_tool(tool: &ToolSpec) -> Value {
+    let mut value = tool_to_json(tool);
+    if let Some(obj) = value.as_object_mut() {
+        obj.insert("method".to_string(), Value::String(tool.method.clone()));
+        obj.insert(
+            "path".to_string(),
+            Value::String(tool.path_template.clone()),
+        );
+    }
+    value
+}
+
+/// Handle a `tools/call` for the synthetic `help` tool. Read-only and local: it
+/// never dispatches to the API. With `tool` it returns that operation's full
+/// descriptor; with `query` it returns matching tools; otherwise an overview of
+/// the whole catalog. The structured result is always a JSON object.
+fn handle_help(arguments: &Map<String, Value>) -> Result<Value, (i64, String)> {
+    let structured = if let Some(name) = arguments.get("tool").and_then(Value::as_str) {
+        let tool = tools()
+            .iter()
+            .find(|t| t.name == name)
+            .ok_or((INVALID_PARAMS, format!("unknown tool: {name}")))?;
+        json!({ "tool": describe_tool(tool) })
+    } else {
+        let query = arguments
+            .get("query")
+            .and_then(Value::as_str)
+            .map(str::to_ascii_lowercase);
+        let matches: Vec<Value> = tools()
+            .iter()
+            .filter(|t| match &query {
+                Some(q) => {
+                    t.name.to_ascii_lowercase().contains(q)
+                        || t.description.to_ascii_lowercase().contains(q)
+                }
+                None => true,
+            })
+            .map(tool_summary)
+            .collect();
+        json!({
+            "server": server_info(),
+            "protocolVersion": PROTOCOL_VERSION,
+            "toolCount": matches.len(),
+            "tools": matches,
+        })
+    };
+
+    // Mirror the `tools/call` result shape (text + structured), minus the HTTP
+    // `_meta` since no request was dispatched.
+    let text = serde_json::to_string_pretty(&structured).unwrap_or_else(|_| structured.to_string());
+    Ok(json!({
+        "content": [{ "type": "text", "text": text }],
+        "structuredContent": structured,
+        "isError": false,
+    }))
+}
+
 /// Build a [`Router`] that serves the MCP endpoint at `POST /mcp` (and `GET`
 /// for capability probing), backed by the supplied [`ApiState`].
 ///
@@ -479,7 +590,9 @@ async fn dispatch_rpc(state: &ApiState, headers: &HeaderMap, request: &Value) ->
         }
         "ping" => Ok(json!({})),
         "tools/list" => {
-            let list: Vec<Value> = tools().iter().map(tool_to_json).collect();
+            let mut list: Vec<Value> = tools().iter().map(tool_to_json).collect();
+            // Append the one synthetic meta tool after the spec-derived tools.
+            list.push(help_tool_json());
             Ok(json!({ "tools": list }))
         }
         "tools/call" => call_tool(state, headers, &params).await,
@@ -516,6 +629,11 @@ async fn call_tool(
         .as_object()
         .cloned()
         .ok_or((INVALID_PARAMS, "arguments must be an object".to_string()))?;
+
+    // The synthetic `help` tool is served locally and never hits the API.
+    if name == HELP_TOOL_NAME {
+        return handle_help(&arguments);
+    }
 
     let tool = tools()
         .iter()
@@ -849,5 +967,61 @@ mod tests {
                 "{name} returns an array and must not advertise an output schema"
             );
         }
+    }
+
+    /// The synthetic `help` tool advertises read-only/idempotent annotations and
+    /// the documented input/output schema shape.
+    #[test]
+    fn help_tool_json_is_well_formed() {
+        let help = help_tool_json();
+        assert_eq!(help["name"], HELP_TOOL_NAME);
+        assert_eq!(help["inputSchema"]["type"], "object");
+        assert!(help["inputSchema"]["properties"]["query"].is_object());
+        assert!(help["inputSchema"]["properties"]["tool"].is_object());
+        assert_eq!(help["outputSchema"]["type"], "object");
+        assert_eq!(help["annotations"]["readOnlyHint"], true);
+        assert_eq!(help["annotations"]["idempotentHint"], true);
+        assert_eq!(help["annotations"]["destructiveHint"], false);
+    }
+
+    /// `handle_help` resolves locally to object structured content: overview,
+    /// keyword filter, and single-tool description; unknown ops are an error.
+    #[test]
+    fn handle_help_modes() {
+        let total = tools().len();
+
+        // Overview (no args).
+        let overview = handle_help(&Map::new()).unwrap();
+        let s = &overview["structuredContent"];
+        assert!(s.is_object());
+        assert_eq!(overview["isError"], false);
+        assert_eq!(s["toolCount"], total);
+        assert_eq!(s["tools"].as_array().unwrap().len(), total);
+
+        // Query filter narrows the set and matches name/description.
+        let mut args = Map::new();
+        args.insert("query".to_string(), json!("trace"));
+        let filtered = handle_help(&args).unwrap();
+        let matched = filtered["structuredContent"]["tools"].as_array().unwrap();
+        assert!(!matched.is_empty() && matched.len() < total);
+        for entry in matched {
+            let n = entry["name"].as_str().unwrap().to_ascii_lowercase();
+            let d = entry["description"].as_str().unwrap().to_ascii_lowercase();
+            assert!(n.contains("trace") || d.contains("trace"));
+        }
+
+        // Describe one tool.
+        let mut one = Map::new();
+        one.insert("tool".to_string(), json!("listTraces"));
+        let described = handle_help(&one).unwrap();
+        let t = &described["structuredContent"]["tool"];
+        assert_eq!(t["name"], "listTraces");
+        assert_eq!(t["method"], "GET");
+        assert!(t["path"].as_str().unwrap().starts_with("/v1/"));
+
+        // Unknown op -> error.
+        let mut bad = Map::new();
+        bad.insert("tool".to_string(), json!("does-not-exist"));
+        assert!(handle_help(&bad).is_err());
     }
 }
