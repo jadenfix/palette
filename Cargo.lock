@@ -1034,6 +1034,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-oauth"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "async-trait",
+ "base64 0.22.1",
+ "beater-core",
+ "beater-store",
+ "chrono",
+ "rand_core 0.6.4",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "subtle",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "beater-otlp"
 version = "0.1.0"
 dependencies = [
