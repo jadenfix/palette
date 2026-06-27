@@ -2151,11 +2151,23 @@ Braintrust, and spreadsheet workflows and answer:
 - Can I reproduce it?
 - Can I test the fix?
 - Did the fix regress anything?
+- **If I had added X (a tool, an instruction, a retrieval step) to my agent,
+  would this failure still have happened?**
+- **What about if I added Y instead — and which of {X, Y, Z} actually fixes it?**
+- **Does that fix generalize, or does it just patch this one trace?**
 - Can I block deploys on that?
 - Can I monitor it in production?
 - Can I self-host without calling your cloud?
 
 If any answer is no, that area is not shipped.
+
+The three **counterfactual** questions are answered by §11 Rewind (forked replay +
+earliest-outcome-flipping-span attribution: fork the failed trace, inject the
+candidate change at the fork point, re-score) and §21 Beatboxing `simulate` (which
+runs the counterfactuals for {X, Y, Z} and compares outcomes). Critically, a
+counterfactual fix is accepted only when it wins on the **held-out Test split and
+an auto-generated OOD probe** via the §21.4 anti-overfitting guardrail — so the
+honest answer is *"X fixes it and generalizes,"* never *"X patches this trace."*
 
 ## 20. Planned: Execution to Parity-Grade GA
 
