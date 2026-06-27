@@ -2,6 +2,7 @@ mod metrics;
 mod metrics_http;
 
 use anyhow::Context;
+use beater_accounts::SqliteAccountStore;
 use beater_api::{router, ApiState};
 use beater_archive::ParquetTraceArchive;
 use beater_audit::SqliteAuditStore;
@@ -21,6 +22,8 @@ use beater_judge::{
     HttpRoutingJudgeProvider, JudgeBrokerService, JudgeProvider, KeywordJudgeProvider,
     SqliteJudgeLedger,
 };
+use beater_oauth::SqliteOAuthStore;
+use beater_oauth_server::OAuthServerState;
 use beater_otlp::{OtlpGrpcTraceService, TraceServiceServer};
 use beater_schema::{
     ArtifactRef, AuthContext, CanonicalTraceBatch, RawEnvelope, RedactionClass, RunFilter,
@@ -61,6 +64,14 @@ struct Args {
     default_project_id: String,
     #[arg(long, default_value = "local")]
     default_environment_id: String,
+    /// Absolute public issuer URL for the OAuth endpoints + metadata documents
+    /// (e.g. https://api.example.com). Falls back to http://<addr> when unset.
+    #[arg(long, env = "BEATER_ISSUER_URL")]
+    issuer_url: Option<String>,
+    /// Dashboard login page; an unauthenticated /oauth/authorize redirects here
+    /// with ?return_to=<authorize-url>.
+    #[arg(long, env = "BEATER_LOGIN_URL")]
+    login_url: Option<String>,
     #[arg(long, default_value = ".beater")]
     data_dir: PathBuf,
     #[arg(long, default_value_t = 1024)]
@@ -335,6 +346,31 @@ async fn main() -> anyhow::Result<()> {
     // by matched route template + method for bounded cardinality). The
     // Prometheus `/metrics` route (NOT part of the typed `/v1` contract) is
     // merged in alongside the API and MCP routers.
+    // OAuth 2.1 authorization-server HTTP surface (root-level /oauth/* +
+    // /.well-known/*), merged in like the MCP router. It owns its own state
+    // (OAuth + accounts stores) and is NOT part of the typed /v1 contract. The
+    // stores' `open()` runs their own migrations, so they are not added to the
+    // beaterd sqlite migration list above.
+    let oauth_store = Arc::new(SqliteOAuthStore::open(args.data_dir.join("oauth.sqlite"))?);
+    let account_store = Arc::new(SqliteAccountStore::open(
+        args.data_dir.join("accounts.sqlite"),
+    )?);
+    let issuer = args
+        .issuer_url
+        .clone()
+        .unwrap_or_else(|| format!("http://{}", args.addr));
+    let oauth_state = OAuthServerState {
+        oauth: oauth_store,
+        accounts: account_store,
+        issuer,
+        login_url: args.login_url.clone(),
+        scopes_supported: vec![
+            "trace:read".to_string(),
+            "trace:write".to_string(),
+            "mcp:invoke".to_string(),
+        ],
+    };
+
     let latency_metrics = metrics.clone();
     let app = router(state.clone())
         .merge(beater_mcp::router(state))
@@ -342,7 +378,8 @@ async fn main() -> anyhow::Result<()> {
             let latency_metrics = latency_metrics.clone();
             async move { metrics_http::track_query_latency(latency_metrics, req, next).await }
         }))
-        .merge(metrics_http::router(metrics.clone()));
+        .merge(metrics_http::router(metrics.clone()))
+        .merge(beater_oauth_server::router(oauth_state));
     let listener = tokio::net::TcpListener::bind(args.addr)
         .await
         .with_context(|| format!("bind {}", args.addr))?;

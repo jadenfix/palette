@@ -1056,6 +1056,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-oauth-server"
+version = "0.1.0"
+dependencies = [
+ "axum 0.7.9",
+ "base64 0.22.1",
+ "beater-accounts",
+ "beater-core",
+ "beater-oauth",
+ "chrono",
+ "http 1.4.2",
+ "percent-encoding",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tokio",
+ "tower",
+]
+
+[[package]]
 name = "beater-otlp"
 version = "0.1.0"
 dependencies = [
@@ -1327,6 +1346,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum 0.7.9",
+ "beater-accounts",
  "beater-api",
  "beater-archive",
  "beater-audit",
@@ -1341,6 +1361,8 @@ dependencies = [
  "beater-ingest",
  "beater-judge",
  "beater-mcp",
+ "beater-oauth",
+ "beater-oauth-server",
  "beater-otlp",
  "beater-replay",
  "beater-schema",

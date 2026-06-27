@@ -8,10 +8,13 @@ license.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
 axum.workspace = true
+beater-accounts = { path = "../../crates/beater-accounts" }
 beater-api = { path = "../../crates/beater-api" }
 beater-archive = { path = "../../crates/beater-archive" }
 beater-audit = { path = "../../crates/beater-audit" }
 beater-auth = { path = "../../crates/beater-auth" }
+beater-oauth = { path = "../../crates/beater-oauth" }
+beater-oauth-server = { path = "../../crates/beater-oauth-server" }
 beater-bus = { path = "../../crates/beater-bus" }
 beater-calibration = { path = "../../crates/beater-calibration" }
 beater-datasets = { path = "../../crates/beater-datasets" }
