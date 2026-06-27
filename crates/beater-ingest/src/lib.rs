@@ -2243,8 +2243,7 @@ mod tests {
         );
         let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
         let bus = Arc::new(InMemoryBus::new(16));
-        let service =
-            IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+        let service = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
         let mut request = fixture_request();
         request.attributes = BTreeMap::from([
             ("llm.model_name".to_string(), json!("gpt-test")),
@@ -2974,10 +2973,7 @@ mod tests {
             .unwrap_or_else(|| panic!("over-cap attributes should be rejected"));
         assert!(matches!(
             error,
-            IngestError::TooManyAttributes {
-                count: 3,
-                limit: 2
-            }
+            IngestError::TooManyAttributes { count: 3, limit: 2 }
         ));
         // Nothing was written and nothing queued: the cap fires before assembly.
         assert_eq!(bus.depth().await, Ok(0));
@@ -3137,11 +3133,8 @@ mod tests {
             completion_span("trace", "root", None, now, Some(now + ms(30))),
         ];
         // now == latest end => idle_for 0, below the 10s late window.
-        let state = assemble_trace_completion(
-            &spans,
-            now + ms(30),
-            TraceCompletionConfig::default(),
-        );
+        let state =
+            assemble_trace_completion(&spans, now + ms(30), TraceCompletionConfig::default());
         assert_eq!(state, TraceCompletionState::RootEnded);
     }
 

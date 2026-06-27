@@ -181,7 +181,9 @@ pub fn reproject_envelope(
 /// Errors raised by reprojection.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum ReprojectError {
-    #[error("span does not belong to the supplied raw envelope (tenant/project/environment mismatch)")]
+    #[error(
+        "span does not belong to the supplied raw envelope (tenant/project/environment mismatch)"
+    )]
     EnvelopeBoundary,
 }
 
@@ -259,7 +261,10 @@ mod tests {
 
         // Canonical keys survive on `attributes`; non-canonical keys are gone.
         assert!(result.span.attributes.contains_key("llm.model_name"));
-        assert!(result.span.attributes.contains_key("openinference.span.kind"));
+        assert!(result
+            .span
+            .attributes
+            .contains_key("openinference.span.kind"));
         assert!(!result.span.attributes.contains_key("vendor.custom_signal"));
         assert!(!result.span.attributes.contains_key("user.session"));
 
@@ -312,7 +317,8 @@ mod tests {
     fn canonical_prefixes_match_ingest() {
         use beater_ingest::canonical_mapping;
         assert_eq!(
-            CANONICAL_PREFIXES, canonical_mapping::CANONICAL_PREFIXES,
+            CANONICAL_PREFIXES,
+            canonical_mapping::CANONICAL_PREFIXES,
             "replay and ingest CANONICAL_PREFIXES must stay identical"
         );
     }
@@ -321,7 +327,8 @@ mod tests {
     fn canonical_exact_keys_match_ingest() {
         use beater_ingest::canonical_mapping;
         assert_eq!(
-            CANONICAL_EXACT_KEYS, canonical_mapping::CANONICAL_EXACT_KEYS,
+            CANONICAL_EXACT_KEYS,
+            canonical_mapping::CANONICAL_EXACT_KEYS,
             "replay and ingest CANONICAL_EXACT_KEYS must stay identical"
         );
     }
@@ -356,8 +363,7 @@ mod tests {
         let mut second = v1.clone();
         second.span_id = SpanId::new("span-2").unwrap_or_else(|err| panic!("{err}"));
         second.seq = 2;
-        let results = reproject_envelope(&raw, &[v1, second])
-            .unwrap_or_else(|err| panic!("{err}"));
+        let results = reproject_envelope(&raw, &[v1, second]).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(results.len(), 2);
         assert!(results.iter().all(|r| r.migrated));
         assert!(results

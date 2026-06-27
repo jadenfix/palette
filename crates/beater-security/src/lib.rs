@@ -333,18 +333,18 @@ mod tests {
 
         // Stable across retries: same delivery id + body -> identical key, so a
         // receiver can dedupe at-least-once retries.
-        let first =
-            webhook_idempotency_key(secret, "delivery-1", body).unwrap_or_else(|err| panic!("{err}"));
-        let retry =
-            webhook_idempotency_key(secret, "delivery-1", body).unwrap_or_else(|err| panic!("{err}"));
+        let first = webhook_idempotency_key(secret, "delivery-1", body)
+            .unwrap_or_else(|err| panic!("{err}"));
+        let retry = webhook_idempotency_key(secret, "delivery-1", body)
+            .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(first, retry);
         assert!(first.starts_with("bt_whk_"));
         // The opaque key must not leak the raw body bytes.
         assert!(!first.contains("trace.alert"));
 
         // A different delivery id yields a different key even with an identical body.
-        let other_delivery =
-            webhook_idempotency_key(secret, "delivery-2", body).unwrap_or_else(|err| panic!("{err}"));
+        let other_delivery = webhook_idempotency_key(secret, "delivery-2", body)
+            .unwrap_or_else(|err| panic!("{err}"));
         assert_ne!(first, other_delivery);
 
         // A different body for the same delivery id also diverges.
@@ -353,8 +353,8 @@ mod tests {
         assert_ne!(first, other_body);
 
         // A different signing secret produces a different key (forgery resistance).
-        let other_secret =
-            webhook_idempotency_key(b"different-secret", "delivery-1", body).unwrap_or_else(|err| panic!("{err}"));
+        let other_secret = webhook_idempotency_key(b"different-secret", "delivery-1", body)
+            .unwrap_or_else(|err| panic!("{err}"));
         assert_ne!(first, other_secret);
 
         assert_eq!(WEBHOOK_IDEMPOTENCY_KEY_HEADER, "beater-idempotency-key");

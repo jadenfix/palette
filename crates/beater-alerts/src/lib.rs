@@ -214,19 +214,13 @@ impl AlertEngine {
         // the same window) recompute the identical id, so the receiver can dedupe;
         // a later firing of the same group (next window) gets a distinct id.
         let delivery_id = delivery_identity(policy, &group_key, input.now);
-        let idempotency_key = webhook_idempotency_key(
-            policy.signing_secret.as_bytes(),
-            &delivery_id,
-            &body_bytes,
-        )?;
+        let idempotency_key =
+            webhook_idempotency_key(policy.signing_secret.as_bytes(), &delivery_id, &body_bytes)?;
         let mut headers = BTreeMap::new();
         headers.insert("content-type".to_string(), "application/json".to_string());
         headers.insert("beater-signature".to_string(), signature.header_value());
         headers.insert("beater-alert-policy".to_string(), policy.policy_id.clone());
-        headers.insert(
-            WEBHOOK_IDEMPOTENCY_KEY_HEADER.to_string(),
-            idempotency_key,
-        );
+        headers.insert(WEBHOOK_IDEMPOTENCY_KEY_HEADER.to_string(), idempotency_key);
         let delivery = WebhookDelivery {
             endpoint_url: policy.endpoint_url.clone(),
             headers,

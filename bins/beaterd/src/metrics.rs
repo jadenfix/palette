@@ -49,10 +49,7 @@ const MAX_LABEL_VALUE_LEN: usize = 64;
 type Labels = BTreeMap<&'static str, String>;
 
 fn labels(pairs: &[(&'static str, &str)]) -> Labels {
-    pairs
-        .iter()
-        .map(|(k, v)| (*k, safe_label(v)))
-        .collect()
+    pairs.iter().map(|(k, v)| (*k, safe_label(v))).collect()
 }
 
 /// Clamp a label value to a cardinality-safe, escaped form.
@@ -297,9 +294,7 @@ impl MetricsRegistry {
             "beater_ingest_to_queryable_lag_seconds",
             Family {
                 help: "Seconds from ingest acceptance to a trace becoming queryable.",
-                kind: FamilyKind::Histogram(HistogramFamily::new(
-                    DEFAULT_SECONDS_BUCKETS.to_vec(),
-                )),
+                kind: FamilyKind::Histogram(HistogramFamily::new(DEFAULT_SECONDS_BUCKETS.to_vec())),
             },
         );
         // R13.5 — query latency (drives p95 in the scraper / recording rules).
@@ -307,9 +302,7 @@ impl MetricsRegistry {
             "beater_http_request_duration_seconds",
             Family {
                 help: "HTTP request latency in seconds by route and method.",
-                kind: FamilyKind::Histogram(HistogramFamily::new(
-                    DEFAULT_SECONDS_BUCKETS.to_vec(),
-                )),
+                kind: FamilyKind::Histogram(HistogramFamily::new(DEFAULT_SECONDS_BUCKETS.to_vec())),
             },
         );
 
@@ -383,8 +376,7 @@ impl MetricsRegistry {
                             render_labels(&labels),
                             fmt_f64(sum)
                         );
-                        let _ =
-                            writeln!(out, "{}_count{} {}", name, render_labels(&labels), count);
+                        let _ = writeln!(out, "{}_count{} {}", name, render_labels(&labels), count);
                     }
                 }
             }
@@ -493,7 +485,10 @@ impl Metrics {
 
     /// Record seconds elapsed from ingest acceptance to queryability.
     pub fn observe_ingest_lag(&self, seconds: f64) {
-        if let Some(h) = self.registry.histogram("beater_ingest_to_queryable_lag_seconds") {
+        if let Some(h) = self
+            .registry
+            .histogram("beater_ingest_to_queryable_lag_seconds")
+        {
             h.observe(Labels::new(), seconds.max(0.0));
         }
     }
@@ -526,7 +521,10 @@ impl Metrics {
 
     /// Observe an HTTP request latency (seconds) labelled by route + method.
     pub fn observe_query_latency(&self, route: &str, method: &str, seconds: f64) {
-        if let Some(h) = self.registry.histogram("beater_http_request_duration_seconds") {
+        if let Some(h) = self
+            .registry
+            .histogram("beater_http_request_duration_seconds")
+        {
             h.observe(
                 labels(&[("route", route), ("method", method)]),
                 seconds.max(0.0),
@@ -624,10 +622,7 @@ pub fn init_observability() -> Metrics {
         log_event(
             "info",
             "self-observability metrics initialized",
-            &[
-                ("component", "beaterd"),
-                ("exposition", "prometheus"),
-            ],
+            &[("component", "beaterd"), ("exposition", "prometheus")],
         );
     });
     handle
@@ -733,9 +728,8 @@ mod tests {
         m.record_normalizer_failure("temporal", "v1.2");
         m.record_normalizer_failure("temporal", "v1.2");
         let out = m.render();
-        assert!(out.contains(
-            "beater_normalizer_failures_total{dialect=\"temporal\",version=\"v1.2\"} 2"
-        ));
+        assert!(out
+            .contains("beater_normalizer_failures_total{dialect=\"temporal\",version=\"v1.2\"} 2"));
     }
 
     #[test]
@@ -775,6 +769,8 @@ mod tests {
         let b = init_observability();
         // Both share the same global registry, so writes are visible across handles.
         a.record_write(OpResult::Success, 1);
-        assert!(b.render().contains("beater_trace_writes_total{result=\"success\"}"));
+        assert!(b
+            .render()
+            .contains("beater_trace_writes_total{result=\"success\"}"));
     }
 }

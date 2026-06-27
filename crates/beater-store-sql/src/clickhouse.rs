@@ -171,10 +171,7 @@ impl ClickHouseTraceStore {
     ///
     /// Batched into a single `SELECT ... WHERE (...) IN (...)` round-trip rather
     /// than one query per candidate.
-    async fn existing_span_keys(
-        &self,
-        candidates: &[SpanKey],
-    ) -> StoreResult<BTreeSet<SpanKey>> {
+    async fn existing_span_keys(&self, candidates: &[SpanKey]) -> StoreResult<BTreeSet<SpanKey>> {
         if candidates.is_empty() {
             return Ok(BTreeSet::new());
         }
@@ -201,9 +198,10 @@ impl ClickHouseTraceStore {
             let row: serde_json::Value = serde_json::from_str(line).map_err(StoreError::backend)?;
             // `seq` is a UInt64 column; ClickHouse JSONEachRow renders large
             // unsigned ints as quoted strings, so accept either representation.
-            let seq = row.get("seq").and_then(json_u64).ok_or_else(|| {
-                StoreError::Backend("missing or invalid seq column".to_string())
-            })?;
+            let seq = row
+                .get("seq")
+                .and_then(json_u64)
+                .ok_or_else(|| StoreError::Backend("missing or invalid seq column".to_string()))?;
             found.insert(SpanKey {
                 tenant: json_str(&row, "tenant_id")?,
                 project: json_str(&row, "project_id")?,
@@ -220,8 +218,7 @@ impl ClickHouseTraceStore {
         let mut spans = Vec::new();
         for line in body.lines().filter(|line| !line.trim().is_empty()) {
             // Each row is a single JSON object: {"span_json": "<escaped json>"}.
-            let row: serde_json::Value =
-                serde_json::from_str(line).map_err(StoreError::backend)?;
+            let row: serde_json::Value = serde_json::from_str(line).map_err(StoreError::backend)?;
             let inner = row
                 .get("span_json")
                 .and_then(|value| value.as_str())
@@ -315,8 +312,11 @@ impl TraceStore for ClickHouseTraceStore {
             accepted_raw += 1;
         }
         if !raw_rows.is_empty() {
-            self.insert("INSERT INTO beater.raw_envelopes FORMAT JSONEachRow", raw_rows)
-                .await?;
+            self.insert(
+                "INSERT INTO beater.raw_envelopes FORMAT JSONEachRow",
+                raw_rows,
+            )
+            .await?;
         }
 
         let span_candidates: Vec<SpanKey> = batch
@@ -441,7 +441,10 @@ impl TraceStore for ClickHouseTraceStore {
             predicates.push(format!("project_id = '{}'", escape(project.as_str())));
         }
         if let Some(environment) = &filter.environment_id {
-            predicates.push(format!("environment_id = '{}'", escape(environment.as_str())));
+            predicates.push(format!(
+                "environment_id = '{}'",
+                escape(environment.as_str())
+            ));
         }
         if let Some(trace) = &filter.trace_id {
             predicates.push(format!("trace_id = '{}'", escape(trace.as_str())));

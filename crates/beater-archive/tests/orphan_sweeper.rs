@@ -55,7 +55,12 @@ async fn sweeps_orphaned_artifacts_against_live_spans() {
     let sweeper = OrphanedArtifactSweeper::new(artifacts.clone());
     let candidates = vec![raw_ref.clone(), output_ref.clone(), orphan_ref.clone()];
     let report = sweeper
-        .sweep(&trace_store, tenant.clone(), Some(project.clone()), &candidates)
+        .sweep(
+            &trace_store,
+            tenant.clone(),
+            Some(project.clone()),
+            &candidates,
+        )
         .await
         .unwrap_or_else(|err| panic!("{err}"));
 
@@ -86,7 +91,10 @@ async fn sweeps_orphaned_artifacts_against_live_spans() {
         .await
         .unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(second.retained, 2);
-    assert_eq!(second.deleted, 1, "delete of a missing object is a no-op success");
+    assert_eq!(
+        second.deleted, 1,
+        "delete of a missing object is a no-op success"
+    );
 }
 
 async fn put(
@@ -96,7 +104,13 @@ async fn put(
     bytes: &[u8],
 ) -> ArtifactRef {
     store
-        .put_bytes(tenant, project, "application/json", RedactionClass::Internal, bytes)
+        .put_bytes(
+            tenant,
+            project,
+            "application/json",
+            RedactionClass::Internal,
+            bytes,
+        )
         .await
         .unwrap_or_else(|err| panic!("{err}"))
 }

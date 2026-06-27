@@ -835,7 +835,9 @@ fn json_to_any_value(value: &Value) -> AnyValue {
             if let Some(int) = number.as_i64() {
                 Some(any_value::Value::IntValue(int))
             } else {
-                Some(any_value::Value::DoubleValue(number.as_f64().unwrap_or(0.0)))
+                Some(any_value::Value::DoubleValue(
+                    number.as_f64().unwrap_or(0.0),
+                ))
             }
         }
         Value::String(text) => Some(any_value::Value::StringValue(text.clone())),
@@ -968,8 +970,8 @@ mod tests {
             original.project_id.clone(),
             original.environment_id.clone(),
         );
-        let reimported = export_to_native_requests(scope, export)
-            .unwrap_or_else(|err| panic!("{err}"));
+        let reimported =
+            export_to_native_requests(scope, export).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(reimported.len(), 1);
         let reimported = &reimported[0];
 

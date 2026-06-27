@@ -9,8 +9,7 @@ use std::path::PathBuf;
 
 fn read(rel: &str) -> String {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    std::fs::read_to_string(root.join(rel))
-        .unwrap_or_else(|err| panic!("read {rel}: {err}"))
+    std::fs::read_to_string(root.join(rel)).unwrap_or_else(|err| panic!("read {rel}: {err}"))
 }
 
 /// A thin role binary must declare an explicit `[[bin]]` block gated behind the
@@ -22,10 +21,7 @@ fn assert_thin_bin_is_feature_gated(manifest: &str, name: &str) {
         .unwrap_or_else(|| panic!("Cargo.toml must declare a [[bin]] for {name}"));
     // The block continues until the next [[ or [ section header.
     let rest = &manifest[start..];
-    let end = rest[1..]
-        .find("\n[")
-        .map(|i| i + 1)
-        .unwrap_or(rest.len());
+    let end = rest[1..].find("\n[").map(|i| i + 1).unwrap_or(rest.len());
     let block = &rest[..end];
     assert!(
         block.contains("required-features = [\"thin-bins\"]"),

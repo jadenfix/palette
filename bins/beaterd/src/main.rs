@@ -151,7 +151,9 @@ async fn main() -> anyhow::Result<()> {
     // to disabled and beaterd makes no outbound telemetry call.
     let telemetry = beater_core::SelfHostTelemetryConfig::new(args.self_host_telemetry);
     match telemetry.endpoint() {
-        Some(endpoint) => eprintln!("self-host telemetry enabled (opt-in); reporting to {endpoint}"),
+        Some(endpoint) => {
+            eprintln!("self-host telemetry enabled (opt-in); reporting to {endpoint}")
+        }
         None => eprintln!("self-host telemetry disabled (opt-out default); no outbound reporting"),
     }
     let trace_db_path = args.data_dir.join("traces.sqlite");
@@ -402,14 +404,9 @@ fn spawn_trace_write_worker(
                 }
             };
             // R13.3 — write success rate: count successful and failed writes.
-            let succeeded = report
-                .written_spans
-                .saturating_add(report.written_raw) as u64;
+            let succeeded = report.written_spans.saturating_add(report.written_raw) as u64;
             metrics.record_write(metrics::OpResult::Success, succeeded);
-            metrics.record_write(
-                metrics::OpResult::Failure,
-                report.failed_writes as u64,
-            );
+            metrics.record_write(metrics::OpResult::Failure, report.failed_writes as u64);
             // R13.6 — dead-letter queue depth for the trace.write lane. Workers
             // own DEPTH only; the *_oldest_age_seconds gauge is owned solely by
             // the queue-stats sampler so the two writers never race (see
@@ -613,7 +610,8 @@ fn spawn_queue_stats_sampler(
             let now = chrono::Utc::now();
             // DLQ-derived eval-lane lag (oldest ingested enqueue age). The same
             // value feeds the R13.4 eval-queue age gauge and the R13.8 lane lag.
-            let eval_lane_lag = lane_oldest_enqueue_seconds(&dead_letters, TRACE_INGESTED_KIND, now);
+            let eval_lane_lag =
+                lane_oldest_enqueue_seconds(&dead_letters, TRACE_INGESTED_KIND, now);
 
             metrics.set_eval_queue(eval_queue_depth, eval_lane_lag);
             // Sampler owns BOTH the per-lane DLQ depth (global) and the per-lane
@@ -863,11 +861,7 @@ impl<S> MeteredArtifactStore<S> {
         Self { inner, metrics }
     }
 
-    fn record<T>(
-        &self,
-        op: metrics::ObjectStoreOp,
-        result: &StoreResult<T>,
-    ) {
+    fn record<T>(&self, op: metrics::ObjectStoreOp, result: &StoreResult<T>) {
         let outcome = if result.is_ok() {
             metrics::OpResult::Success
         } else {

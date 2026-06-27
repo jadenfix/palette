@@ -262,10 +262,7 @@ mod tests {
             )
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(score.score, 1.0);
-        assert_eq!(
-            score.evidence["runtime"],
-            json!("wasmtime-component-model")
-        );
+        assert_eq!(score.evidence["runtime"], json!("wasmtime-component-model"));
         assert_eq!(
             score.evidence["world"],
             json!("beater:scorer/deterministic-scorer")

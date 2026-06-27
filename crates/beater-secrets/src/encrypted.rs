@@ -384,7 +384,10 @@ impl EncryptedSqliteProviderSecretStore {
         Ok(stale.len())
     }
 
-    fn load_rows_not_under_key(&self, active_key_id: &str) -> anyhow::Result<Vec<EncryptedSecretRow>> {
+    fn load_rows_not_under_key(
+        &self,
+        active_key_id: &str,
+    ) -> anyhow::Result<Vec<EncryptedSecretRow>> {
         let connection = self.lock()?;
         let mut statement = connection
             .prepare(
@@ -731,9 +734,11 @@ mod tests {
         // Write a secret under the old (v1) key.
         let old_key = SecretEncryptionKey::new("secrets-v1", [3_u8; KEY_BYTES])
             .unwrap_or_else(|err| panic!("{err}"));
-        let store =
-            EncryptedSqliteProviderSecretStore::open(&db_path, SecretKeyring::single(old_key.clone()))
-                .unwrap_or_else(|err| panic!("{err}"));
+        let store = EncryptedSqliteProviderSecretStore::open(
+            &db_path,
+            SecretKeyring::single(old_key.clone()),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
         let metadata = store
             .put_secret(PutProviderSecretRequest {
                 tenant_id: tenant_id.clone(),
@@ -755,11 +760,15 @@ mod tests {
         let store = EncryptedSqliteProviderSecretStore::open(&db_path, rotating_keyring)
             .unwrap_or_else(|err| panic!("{err}"));
 
-        let rewrapped = store.rotate_to_active_key().unwrap_or_else(|err| panic!("{err}"));
+        let rewrapped = store
+            .rotate_to_active_key()
+            .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(rewrapped, 1, "the single stale row should be re-wrapped");
         // Re-running is a no-op once everything is under the active key.
         assert_eq!(
-            store.rotate_to_active_key().unwrap_or_else(|err| panic!("{err}")),
+            store
+                .rotate_to_active_key()
+                .unwrap_or_else(|err| panic!("{err}")),
             0
         );
 
@@ -778,11 +787,9 @@ mod tests {
 
         // The new active key alone (no old key) can now read the row — proving the
         // stored ciphertext is genuinely wrapped under v2, not still under v1.
-        let new_only = EncryptedSqliteProviderSecretStore::open(
-            &db_path,
-            SecretKeyring::single(new_key),
-        )
-        .unwrap_or_else(|err| panic!("{err}"));
+        let new_only =
+            EncryptedSqliteProviderSecretStore::open(&db_path, SecretKeyring::single(new_key))
+                .unwrap_or_else(|err| panic!("{err}"));
         let loaded = new_only
             .get_secret(tenant_id, project_id, metadata.provider_secret_id)
             .await

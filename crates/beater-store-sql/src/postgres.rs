@@ -270,7 +270,8 @@ impl TraceStore for PgTraceStore {
         let mut spans = Vec::with_capacity(rows.len());
         for row in rows {
             let json: serde_json::Value = row.get(0);
-            let span = serde_json::from_value::<CanonicalSpan>(json).map_err(StoreError::backend)?;
+            let span =
+                serde_json::from_value::<CanonicalSpan>(json).map_err(StoreError::backend)?;
             spans.push(span_summary(span));
         }
 

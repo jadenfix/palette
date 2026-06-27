@@ -104,6 +104,8 @@ macro_rules! id_type {
 
 id_type!(TenantId);
 id_type!(OrganizationId);
+id_type!(UserId);
+id_type!(SessionId);
 id_type!(ProjectId);
 id_type!(EnvironmentId);
 id_type!(AgentId);

@@ -279,7 +279,10 @@ impl Baggage {
 
     /// Extract baggage from any carrier; an absent header yields empty baggage.
     pub fn extract<C: Carrier + ?Sized>(carrier: &C) -> Self {
-        carrier.get(BAGGAGE_HEADER).map(Self::parse).unwrap_or_default()
+        carrier
+            .get(BAGGAGE_HEADER)
+            .map(Self::parse)
+            .unwrap_or_default()
     }
 
     pub fn get(&self, key: &str) -> Option<&str> {
@@ -479,7 +482,10 @@ mod tests {
     #[test]
     fn baggage_redacts_dotted_sensitive_segments_and_handles_empty() {
         let baggage = Baggage::parse("x-tenant.api_key=sk-leak,release=v1");
-        assert_eq!(baggage.get("x-tenant.api_key"), Some(REDACTED_BAGGAGE_VALUE));
+        assert_eq!(
+            baggage.get("x-tenant.api_key"),
+            Some(REDACTED_BAGGAGE_VALUE)
+        );
         assert_eq!(baggage.release(), Some("v1"));
 
         let empty = Baggage::extract(&BTreeMap::<String, String>::new());

@@ -129,7 +129,9 @@ fn compose_service_block<'a>(compose: &'a str, service: &str) -> &'a str {
             let line_start = idx + nl + 1;
             if line_start < rest.len()
                 && rest[line_start..].starts_with("  ")
-                && bytes.get(line_start + 2).is_some_and(|c| c.is_ascii_alphabetic())
+                && bytes
+                    .get(line_start + 2)
+                    .is_some_and(|c| c.is_ascii_alphabetic())
             {
                 return &rest[..line_start];
             }

@@ -826,7 +826,7 @@ mod tests {
             normalizer_version: "beater-otlp-v1".to_string(),
             trace_schema_version: 1,
             input_artifact_hashes: vec![
-                Sha256Hash::new("input-hash-a").unwrap_or_else(|err| panic!("{err}")),
+                Sha256Hash::new("input-hash-a").unwrap_or_else(|err| panic!("{err}"))
             ],
         }
     }
@@ -1032,7 +1032,10 @@ mod tests {
             std::iter::empty(),
             ["input-hash-a".to_string()],
         );
-        assert_eq!(detect_non_reproducible_reason(&manifest, &environment), None);
+        assert_eq!(
+            detect_non_reproducible_reason(&manifest, &environment),
+            None
+        );
     }
 
     #[test]
