@@ -375,24 +375,71 @@ pub struct CanonicalSpan {
     pub schema_version: u32,
     pub normalizer_version: String,
     pub tenant_id: TenantId,
+    pub project_id: ProjectId,
+    pub environment_id: EnvironmentId,
     pub trace_id: TraceId,
     pub span_id: SpanId,
     pub parent_span_id: Option<SpanId>,
+    // Cross-span relationships (causal/follows-from, e.g. a tool result feeding a
+    // later llm.call, or an agent.run linked to its replay.run). See SpanLink below.
+    pub links: Vec<SpanLink>,
     pub seq: u64,
     pub kind: AgentSpanKind,
+    pub name: String,
     pub status: SpanStatus,
+    // Agent-native grouping (Phase 1, §20.3 #1.1). Populated from session.id /
+    // thread.id / user.id + OpenInference session attrs; the conversation/thread
+    // cluster id used by §6.3 dim #2/#12 and §10.3 #1 clustered standard errors.
+    pub session_id: Option<SessionId>,
+    pub thread_id: Option<ThreadId>,
+    pub user_id: Option<UserId>,
     pub start_time: Timestamp,
     pub end_time: Option<Timestamp>,
     pub model: Option<ModelRef>,
     pub cost: Option<Money>,
     pub tokens: Option<TokenCounts>,
+    // Structured role/message/tool-call I/O (Phase 1, §20.3 #1.2). The flat
+    // input_ref/output_ref artifacts remain for raw bodies; `messages` is the
+    // canonical typed projection read by message-aware evals and the UI.
+    pub messages: Option<CanonicalMessages>,
     pub input_ref: Option<ArtifactRef>,
     pub output_ref: Option<ArtifactRef>,
     pub attributes: CanonicalAttrs,
     pub unmapped_attrs: serde_json::Value,
     pub raw_ref: ArtifactRef,
 }
+
+/// A typed edge between two spans (within or across traces). `links` on
+/// CanonicalSpan is a required field — pre-1.0 we add it directly to the canonical
+/// type and update every construction site rather than bolting it on as an
+/// optional compat shim. An empty `Vec` means "no links", which is the common case.
+pub struct SpanLink {
+    pub trace_id: TraceId,
+    pub span_id: SpanId,
+    pub kind: SpanLinkKind,   // follows_from | caused_by | replays | derived_from
+    pub attributes: CanonicalAttrs,
+}
+
+/// Structured message I/O (the typed projection of §20.3 #1.2). Defined here so
+/// every reference in §6.3 (dimensions), §10 (evals), and §13 (UI) resolves to one
+/// type. Multimodal parts (§20.3 #1.3) ride inside `MessageContent`.
+pub struct CanonicalMessages {
+    pub input: Vec<CanonicalMessage>,
+    pub output: Vec<CanonicalMessage>,
+}
+
+pub struct CanonicalMessage {
+    pub role: MessageRole,                 // system | user | assistant | tool
+    pub content: Vec<MessageContent>,      // text, or a MediaArtifact part (image|audio|file, §20.3 #1.3)
+    pub tool_calls: Vec<CanonicalToolCall>,// { name, arguments, result_ref } per parsed tool call
+}
 ```
+
+Leaf types: `SessionId`/`ThreadId`/`UserId` are `beater-core` ID newtypes
+(like the other typed IDs); `MessageRole`, `SpanLinkKind`, and `MessageContent`
+are the inline-enumerated enums shown above; `CanonicalToolCall` and the
+`MediaArtifact` content part are the structured forms produced by the Phase 1
+normalizer (§20.3 #1.2/#1.3).
 
 Idempotency key:
 
@@ -403,14 +450,30 @@ tenant_id + project_id + trace_id + span_id + seq + payload_hash
 Late spans are accepted. Out-of-order writes are normal. Trace completeness is a
 state machine, not a boolean.
 
+**Pre-1.0 schema-evolution stance.** Beater is not deployed anywhere yet, so the
+canonical and API schemas evolve *freely*: a change bumps `schema_version`
+(`CANONICAL_SCHEMA_VERSION` / `RAW_SCHEMA_VERSION` in `beater-schema`) and
+re-normalizes stored raw envelopes into the new canonical version (`xtask
+renormalize`, §20.2 #0.6). **No wire/SDK backward-compatibility is promised before
+1.0.** When a canonical type needs a new field we add it to the type directly and
+update every construction site — we do *not* accrete `#[serde(default)]` /
+optional-for-compat shims to avoid a workspace edit; the canonical model is kept
+clean. This is *only* about the normalized/canonical/API schemas. The
+**immutable-RAW-envelope guarantee (§1 principle 3) is untouched**: raw bodies,
+source schema URL/version, payload hash, and normalizer version are preserved
+forever, which is precisely what makes free re-normalization safe — the lossless
+source is never destroyed. The single-source-of-truth contract regen
+(spec → 7 SDKs → MCP → CLI → docs, `CLAUDE.md`) still runs on every contract change;
+dropping wire compat does **not** drop the regen discipline.
+
 ## 6. The Agent Model (the object under evaluation)
 
 Everything else in this document — ingest, storage, evals, replay, statistics,
 the RSI loop (§21) — exists to **measure and improve one thing: an agent.** This
 section formalizes that agent from first principles as a statistical object, so a
 developer iterating on an agent and the RSI loop both have a precise target. It is
-additive to §5: the agent is *projected onto* the canonical entities and spans of
-§5; it is not a new storage schema.
+a measurement view over §5, not a second storage schema: the agent is *projected
+onto* the canonical entities and spans of §5.
 
 ### 6.1 An agent is a policy; a run is a sampled trajectory
 
@@ -439,7 +502,11 @@ the RSI loop can change:
        memory_config, model_params )
 ```
 
-These are exactly the typed change kinds of §21.1's `propose_change`.
+These map one-to-one onto the agent-mutating variants of §21.1's `ChangeKind`
+(`SystemPrompt`, `CustomerPrompt`, `Code`, `ToolAdd`/`ToolRemove` for `tool_set`,
+`MemoryConfig`, `ModelParams`). `ChangeKind::DataLabel` is the one variant that is
+*not* a lever of `π` — it challenges a dataset label (dim #16, §6.3), never the
+agent itself.
 
 ### 6.2 RSI as constrained optimization over π
 
@@ -1305,7 +1372,10 @@ The realistic team is:
 
 The hard parts are not CRUD:
 
-- schema evolution without breaking old traces
+- schema evolution: re-normalizing stored raw envelopes into each new canonical
+  `schema_version` correctly and at scale (pre-1.0 we change canonical types freely
+  and re-project from immutable raw — §5.3; the hard part is the re-normalization
+  pass, not preserving a frozen wire format)
 - multi-tenant privacy and artifact security
 - accurate standards translation
 - ingest survivability during storage outages and traffic spikes
@@ -1398,7 +1468,7 @@ describes the *current measured gap* and the *specific work* to close it, at the
 crate/type/endpoint level.
 
 Every contract-touching item (new or changed `/v1` route, request/response type,
-or span kind/attribute) MUST follow the §0/`CLAUDE.md` regen workflow
+or span kind/attribute) MUST follow the `CLAUDE.md` contract regen workflow
 (`cargo xtask regen-spec` → `scripts/regen-sdks.sh` → `cargo xtask regen-semconv`
 → `scripts/check-contract-sync.sh`). Those items are tagged **[contract]** below.
 
@@ -1629,10 +1699,23 @@ is a metered self-improvement action (see §21.6). Core tools:
 - `index_agent` — discover the agent's code, config, system/UI/customer prompts,
   policy, tools, and runtime (localhost, API logs, browser) and build a map from
   symptom → corresponding code/prompt/data.
-- `propose_change` — given a goal + traces + evals, propose a typed change:
-  `{prompt | system_prompt | customer_prompt | code | tool_add | tool_remove |
-  data_label | memory_config}`, with rationale and the exact file/symbol/span it
-  targets. Returns a plan, never a silent edit.
+- `propose_change` — given a goal + traces + evals, propose a typed change. The
+  change set is one enum, `ChangeKind`, used by `propose_change`, `apply_change`,
+  and `track_evolution`:
+
+  ```text
+  ChangeKind =
+    | SystemPrompt | CustomerPrompt        // the prompt levers of π (§6.1)
+    | Code                                  // agent code
+    | ToolAdd | ToolRemove                  // the tool_set lever of π (§6.1)
+    | MemoryConfig                          // the memory lever of π (§6.1)
+    | ModelParams                           // the model-params lever of π (§6.1)
+    | DataLabel                             // NOT a π lever — challenges a dataset
+                                            //   label (dim #16, see challenge_labels)
+  ```
+
+  Each proposal carries a rationale and the exact file/symbol/span it targets.
+  Returns a plan, never a silent edit.
 - `simulate` — run N candidate iterations through Beater's harness (§12) with
   judge + simulation loops; report the score gradient (LLM-judge + deterministic)
   and whether a change is promising before it touches the repo.
