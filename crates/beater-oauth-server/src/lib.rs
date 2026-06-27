@@ -27,11 +27,15 @@ use axum::{Json, Router};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
 use beater_accounts::{default_session_ttl, AccountError, AccountStore, OrgMembership, OrgRole};
-use beater_core::{EnvironmentId, OrganizationId, ProjectId, TenantId, TenantScope, UserId};
+use beater_auth::{ApiKeyStore, CreateApiKeyRequest};
+use beater_core::{
+    ApiKeyId, EnvironmentId, OrganizationId, ProjectId, TenantId, TenantScope, UserId,
+};
 use beater_oauth::{
     AuthorizationGrant, ClientAuthMethod, ClientRegistration, GrantType, IssuedTokens, OAuthError,
     OAuthStore,
 };
+use beater_security::ApiScope;
 use chrono::Utc;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::{Deserialize, Serialize};
@@ -53,6 +57,10 @@ pub struct OAuthServerState {
     pub login_url: Option<String>,
     /// Scopes advertised in metadata.
     pub scopes_supported: Vec<String>,
+    /// API-key store, used by the session-authorized `/auth/api-keys` endpoints
+    /// so a logged-in user can mint/revoke keys for their own tenant. `None`
+    /// when the backend runs without strict auth (no key store).
+    pub api_keys: Option<Arc<dyn ApiKeyStore>>,
 }
 
 impl OAuthServerState {
@@ -81,7 +89,141 @@ pub fn router(state: OAuthServerState) -> Router {
         .route("/auth/login", post(auth_login))
         .route("/auth/logout", post(auth_logout))
         .route("/auth/me", get(auth_me))
+        // Session-authorized API-key management for the logged-in user's tenant.
+        .route("/auth/api-keys", post(auth_create_api_key))
+        .route("/auth/api-keys/revoke", post(auth_revoke_api_key))
         .with_state(state)
+}
+
+// ---- session-authorized API keys ----
+
+#[derive(Debug, Deserialize)]
+struct CreateApiKeyBody {
+    /// Scope names (`trace_read`, `trace_write`, `dataset_write`, `eval_run`,
+    /// `pii_unmask`, `admin`).
+    scopes: Vec<String>,
+    #[serde(default)]
+    project_id: Option<String>,
+    #[serde(default)]
+    environment_id: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct CreateApiKeyResult {
+    api_key_id: String,
+    /// The plaintext key (`bt_...`), shown exactly once.
+    secret: String,
+    tenant_id: String,
+    project_id: String,
+    environment_id: String,
+    scopes: Vec<String>,
+}
+
+fn parse_api_scope(value: &str) -> Option<ApiScope> {
+    match value {
+        "trace_write" => Some(ApiScope::TraceWrite),
+        "trace_read" => Some(ApiScope::TraceRead),
+        "dataset_write" => Some(ApiScope::DatasetWrite),
+        "eval_run" => Some(ApiScope::EvalRun),
+        "pii_unmask" => Some(ApiScope::PiiUnmask),
+        "admin" => Some(ApiScope::Admin),
+        _ => None,
+    }
+}
+
+async fn auth_create_api_key(
+    State(state): State<OAuthServerState>,
+    headers: HeaderMap,
+    Json(body): Json<CreateApiKeyBody>,
+) -> Response {
+    let Some(user_id) = session_user(&state, &headers).await else {
+        return oauth_error(StatusCode::UNAUTHORIZED, "not_authenticated", None);
+    };
+    let Some(api_keys) = state.api_keys.as_ref() else {
+        return oauth_error(StatusCode::NOT_IMPLEMENTED, "api_keys_unavailable", None);
+    };
+    if body.scopes.is_empty() {
+        return oauth_error(
+            StatusCode::BAD_REQUEST,
+            "invalid_request",
+            Some("at least one scope is required"),
+        );
+    }
+    let mut scopes = BTreeSet::new();
+    for raw in &body.scopes {
+        match parse_api_scope(raw) {
+            Some(scope) => {
+                scopes.insert(scope);
+            }
+            None => {
+                return oauth_error(StatusCode::BAD_REQUEST, "invalid_scope", Some(raw));
+            }
+        }
+    }
+    // The key is scoped to the user's personal tenant (== user id). Project /
+    // environment default to "default" when omitted.
+    let project = body.project_id.unwrap_or_else(|| "default".to_string());
+    let environment = body.environment_id.unwrap_or_else(|| "default".to_string());
+    let (Ok(tenant_id), Ok(project_id), Ok(environment_id)) = (
+        TenantId::new(user_id.as_str().to_string()),
+        ProjectId::new(project.clone()),
+        EnvironmentId::new(environment.clone()),
+    ) else {
+        return oauth_error(StatusCode::BAD_REQUEST, "invalid_request", None);
+    };
+    let scope_names: Vec<String> = scopes.iter().map(|s| s.as_str().to_string()).collect();
+    match api_keys
+        .create_key(CreateApiKeyRequest {
+            tenant_id: tenant_id.clone(),
+            project_id: project_id.clone(),
+            environment_id: environment_id.clone(),
+            scopes,
+        })
+        .await
+    {
+        Ok(created) => Json(CreateApiKeyResult {
+            api_key_id: created.record.api_key_id.as_str().to_string(),
+            secret: created.secret,
+            tenant_id: tenant_id.as_str().to_string(),
+            project_id: project_id.as_str().to_string(),
+            environment_id: environment_id.as_str().to_string(),
+            scopes: scope_names,
+        })
+        .into_response(),
+        Err(_) => oauth_error(StatusCode::INTERNAL_SERVER_ERROR, "server_error", None),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct RevokeApiKeyBody {
+    api_key_id: String,
+}
+
+async fn auth_revoke_api_key(
+    State(state): State<OAuthServerState>,
+    headers: HeaderMap,
+    Json(body): Json<RevokeApiKeyBody>,
+) -> Response {
+    let Some(user_id) = session_user(&state, &headers).await else {
+        return oauth_error(StatusCode::UNAUTHORIZED, "not_authenticated", None);
+    };
+    let Some(api_keys) = state.api_keys.as_ref() else {
+        return oauth_error(StatusCode::NOT_IMPLEMENTED, "api_keys_unavailable", None);
+    };
+    let Ok(api_key_id) = ApiKeyId::new(body.api_key_id) else {
+        return oauth_error(StatusCode::BAD_REQUEST, "invalid_request", None);
+    };
+    // Only let a user revoke keys in their OWN tenant.
+    match api_keys.get_key(api_key_id.clone()).await {
+        Ok(Some(record)) if record.tenant_id.as_str() == user_id.as_str() => {}
+        Ok(Some(_)) => return oauth_error(StatusCode::FORBIDDEN, "forbidden", None),
+        Ok(None) => return oauth_error(StatusCode::NOT_FOUND, "not_found", None),
+        Err(_) => return oauth_error(StatusCode::INTERNAL_SERVER_ERROR, "server_error", None),
+    }
+    match api_keys.revoke_key(api_key_id, Utc::now()).await {
+        Ok(_) => StatusCode::NO_CONTENT.into_response(),
+        Err(_) => oauth_error(StatusCode::INTERNAL_SERVER_ERROR, "server_error", None),
+    }
 }
 
 // ---- account auth (dashboard login/session) ----
@@ -759,6 +901,7 @@ mod tests {
             issuer: "https://api.example.test".to_string(),
             login_url: Some("https://app.example.test/login".to_string()),
             scopes_supported: vec!["traces:read".to_string(), "mcp:invoke".to_string()],
+            api_keys: Some(Arc::new(ok(beater_auth::SqliteApiKeyStore::in_memory()))),
         }
     }
 
@@ -895,6 +1038,68 @@ mod tests {
             )
             .await);
         assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn session_user_mints_and_revokes_api_key_for_own_tenant() {
+        let app = router(test_state());
+        // Register to get a session cookie.
+        let resp = post_json(
+            &app,
+            "/auth/register",
+            json!({"email": "dev@example.test", "password": "supersecret"}),
+            None,
+        )
+        .await;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let token = cookie_token(&resp);
+        let body = body_json(resp).await;
+        let user_id = body["user_id"].as_str().unwrap_or("").to_string();
+        let cookie = format!("{SESSION_COOKIE}={token}");
+
+        // Mint a key for the user's own tenant.
+        let resp = post_json(
+            &app,
+            "/auth/api-keys",
+            json!({"scopes": ["trace_read", "trace_write"]}),
+            Some(&cookie),
+        )
+        .await;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let key = body_json(resp).await;
+        assert!(key["secret"].as_str().unwrap_or("").starts_with("bt_"));
+        assert_eq!(key["tenant_id"], user_id); // scoped to the user's tenant
+        let api_key_id = key["api_key_id"].as_str().unwrap_or("").to_string();
+
+        // Unauthenticated mint -> 401.
+        let resp = post_json(
+            &app,
+            "/auth/api-keys",
+            json!({"scopes": ["trace_read"]}),
+            None,
+        )
+        .await;
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+
+        // Invalid scope -> 400.
+        let resp = post_json(
+            &app,
+            "/auth/api-keys",
+            json!({"scopes": ["wat"]}),
+            Some(&cookie),
+        )
+        .await;
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+        // Revoke own key -> 204.
+        let resp = post_json(
+            &app,
+            "/auth/api-keys/revoke",
+            json!({"api_key_id": api_key_id}),
+            Some(&cookie),
+        )
+        .await;
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
     }
 
     #[tokio::test]

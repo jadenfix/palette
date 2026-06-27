@@ -335,8 +335,15 @@ async fn main() -> anyhow::Result<()> {
             .with_usage(usage)
             .with_audit(audit)
             .with_judge(provider_secrets, judge_broker, judge_ledger);
-    if matches!(args.auth_mode, AuthModeArg::Required) {
-        let api_keys = Arc::new(SqliteApiKeyStore::open(security_db_path)?);
+    // Build the API-key store once (strict auth only) and share it between the
+    // `/v1` auth path and the session-authorized `/auth/api-keys` endpoints.
+    let api_key_store: Option<Arc<dyn beater_auth::ApiKeyStore>> =
+        if matches!(args.auth_mode, AuthModeArg::Required) {
+            Some(Arc::new(SqliteApiKeyStore::open(security_db_path)?))
+        } else {
+            None
+        };
+    if let Some(api_keys) = api_key_store.clone() {
         state = state.require_auth(api_keys);
     }
     // Serve the MCP endpoint (`/mcp`) alongside the HTTP API, sharing the same
@@ -373,6 +380,7 @@ async fn main() -> anyhow::Result<()> {
             "trace:write".to_string(),
             "mcp:invoke".to_string(),
         ],
+        api_keys: api_key_store,
     };
 
     let latency_metrics = metrics.clone();
