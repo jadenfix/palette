@@ -216,6 +216,19 @@ impl ClickHouseTraceStore {
             "SELECT DISTINCT tenant_id, project_id, trace_id, span_id, seq FROM beater.spans WHERE (tenant_id, project_id, trace_id, span_id, toString(seq)) IN ({tuples}) FORMAT JSONEachRow"
         );
         let body = self.query_raw(&sql).await?;
+        // TEMP DIAGNOSTIC: surface what ClickHouse actually has vs what the IN
+        // matched, so the CI conformance log shows whether this is a
+        // persistence/visibility problem or an IN-comparison problem.
+        if body.lines().filter(|l| !l.trim().is_empty()).count() == 0 {
+            let all = self
+                .query_raw(
+                    "SELECT tenant_id, project_id, trace_id, span_id, seq, toTypeName(seq) AS seq_type FROM beater.spans FORMAT JSONEachRow",
+                )
+                .await?;
+            return Err(StoreError::Backend(format!(
+                "DIAG span IN returned 0. candidates={candidates:?} sql=[{sql}] all_spans=[{all}]"
+            )));
+        }
         let mut found = BTreeSet::new();
         for line in body.lines().filter(|line| !line.trim().is_empty()) {
             let row: serde_json::Value = serde_json::from_str(line).map_err(StoreError::backend)?;
@@ -277,7 +290,7 @@ impl ClickHouseTraceStore {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct SpanKey {
     tenant: String,
     project: String,
