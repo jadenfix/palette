@@ -640,6 +640,7 @@ dependencies = [
  "beater-human",
  "beater-ingest",
  "beater-judge",
+ "beater-oauth",
  "beater-otlp",
  "beater-replay",
  "beater-sandbox",

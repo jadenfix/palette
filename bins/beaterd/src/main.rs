@@ -359,6 +359,10 @@ async fn main() -> anyhow::Result<()> {
         .issuer_url
         .clone()
         .unwrap_or_else(|| format!("http://{}", args.addr));
+    let oauth_metadata_url = format!("{issuer}/.well-known/oauth-protected-resource");
+    // Let the HTTP API + MCP accept OAuth access tokens (not just API keys),
+    // sharing the same OAuth store the authorization server writes to.
+    state = state.with_oauth(oauth_store.clone(), Some(oauth_metadata_url));
     let oauth_state = OAuthServerState {
         oauth: oauth_store,
         accounts: account_store,

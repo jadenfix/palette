@@ -27,7 +27,7 @@ use axum::{Json, Router};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
 use beater_accounts::AccountStore;
-use beater_core::UserId;
+use beater_core::{EnvironmentId, OrganizationId, ProjectId, TenantId, TenantScope, UserId};
 use beater_oauth::{
     AuthorizationGrant, ClientAuthMethod, ClientRegistration, GrantType, IssuedTokens, OAuthError,
     OAuthStore,
@@ -207,6 +207,11 @@ struct AuthorizeParams {
     code_challenge: String,
     #[serde(default)]
     code_challenge_method: Option<String>,
+    /// Tenant/project/environment the user is authorizing the token for. The
+    /// user must be a member of the tenant's organization.
+    tenant_id: String,
+    project_id: String,
+    environment_id: String,
 }
 
 async fn authorize(
@@ -286,6 +291,44 @@ async fn authorize(
         }
     };
 
+    // The user picks the tenant/project/environment to authorize for. Validate
+    // the ids and enforce that the user is a MEMBER of the tenant's org — this
+    // is the privilege-escalation guard: a logged-in user cannot mint a token
+    // for a tenant they don't belong to.
+    let (Ok(tenant_id), Ok(project_id), Ok(environment_id)) = (
+        TenantId::new(params.tenant_id.clone()),
+        ProjectId::new(params.project_id.clone()),
+        EnvironmentId::new(params.environment_id.clone()),
+    ) else {
+        return redirect_error(
+            &params.redirect_uri,
+            "invalid_request",
+            params.state.as_deref(),
+        );
+    };
+    let org_id = match OrganizationId::new(params.tenant_id.clone()) {
+        Ok(org) => org,
+        Err(_) => {
+            return redirect_error(
+                &params.redirect_uri,
+                "invalid_request",
+                params.state.as_deref(),
+            )
+        }
+    };
+    match state.accounts.get_membership(&org_id, &user_id).await {
+        Ok(Some(_membership)) => {}
+        Ok(None) => {
+            return redirect_error(
+                &params.redirect_uri,
+                "access_denied",
+                params.state.as_deref(),
+            )
+        }
+        Err(_) => return oauth_error(StatusCode::INTERNAL_SERVER_ERROR, "server_error", None),
+    }
+    let tenant_scope = TenantScope::new(tenant_id, project_id, environment_id);
+
     // Default the scope to the client's full registered set when omitted.
     let requested = parse_scope(params.scope.as_deref());
     let scope = if requested.is_empty() {
@@ -299,6 +342,7 @@ async fn authorize(
         user_id,
         redirect_uri: params.redirect_uri.clone(),
         scope,
+        tenant_scope,
         code_challenge: params.code_challenge.clone(),
     };
     match state
@@ -522,10 +566,9 @@ fn oauth_error_from(err: OAuthError) -> Response {
 }
 
 fn redirect_error(redirect_uri: &str, error: &str, state: Option<&str>) -> Response {
-    let mut url = format!(
-        "{redirect_uri}?error={}",
-        utf8_percent_encode(error, NON_ALPHANUMERIC)
-    );
+    // `error` is always a controlled OAuth error-code constant (safe token), so
+    // it is written verbatim; only the client-supplied `state` is encoded.
+    let mut url = format!("{redirect_uri}?error={error}");
     if let Some(s) = state {
         url.push_str(&format!(
             "&state={}",
@@ -646,7 +689,7 @@ mod tests {
         let client_id = registered.client.client_id.as_str().to_string();
         let app = router(state);
         let uri = format!(
-            "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={}&code_challenge={}&code_challenge_method=S256",
+            "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={}&tenant_id=demo&project_id=demo&environment_id=local&code_challenge={}&code_challenge_method=S256",
             utf8_percent_encode("https://app.example.test/cb", NON_ALPHANUMERIC),
             challenge()
         );
@@ -672,6 +715,62 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn authorize_denies_non_member_of_tenant() {
+        let state = test_state();
+        let now = Utc::now();
+        // Logged-in user, but NO membership in the "demo" org/tenant.
+        let user = ok(state
+            .accounts
+            .register("outsider@example.test", "pw", now)
+            .await);
+        let session = ok(state
+            .accounts
+            .start_session(user.user_id.clone(), default_session_ttl(), now)
+            .await);
+        let registered = ok(state
+            .oauth
+            .register_client(
+                ClientRegistration {
+                    client_name: "mcp".to_string(),
+                    redirect_uris: vec!["https://app.example.test/cb".to_string()],
+                    grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
+                    scopes: BTreeSet::from(["traces:read".to_string()]),
+                    token_endpoint_auth_method: ClientAuthMethod::None,
+                },
+                now,
+            )
+            .await);
+        let client_id = registered.client.client_id.as_str().to_string();
+        let app = router(state);
+        let uri = format!(
+            "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={}&tenant_id=demo&project_id=demo&environment_id=local&code_challenge={}&code_challenge_method=S256",
+            utf8_percent_encode("https://app.example.test/cb", NON_ALPHANUMERIC),
+            challenge()
+        );
+        let resp = ok(app
+            .oneshot(
+                Request::builder()
+                    .uri(uri)
+                    .header(
+                        http::header::COOKIE,
+                        format!("{SESSION_COOKIE}={}", session.token),
+                    )
+                    .body(Body::empty())
+                    .unwrap_or_else(|e| panic!("{e}")),
+            )
+            .await);
+        // Redirected back to the client with error=access_denied (no code).
+        assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+        let loc = resp
+            .headers()
+            .get(LOCATION)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        assert!(loc.contains("error=access_denied"), "got {loc}");
+        assert!(!loc.contains("code="), "must not issue a code: {loc}");
+    }
+
+    #[tokio::test]
     async fn full_authorize_then_token_flow() {
         let state = test_state();
         // A logged-in user + session.
@@ -680,6 +779,16 @@ mod tests {
         let session = ok(state
             .accounts
             .start_session(user.user_id.clone(), default_session_ttl(), now)
+            .await);
+        // The user must be a member of the tenant's org to authorize for it.
+        ok(state
+            .accounts
+            .put_membership(beater_accounts::OrgMembership {
+                organization_id: ok(OrganizationId::new("demo")),
+                user_id: user.user_id.clone(),
+                role: beater_accounts::OrgRole::Member,
+                created_at: now,
+            })
             .await);
         // A public client.
         let registered = ok(state
@@ -703,7 +812,7 @@ mod tests {
 
         // GET /oauth/authorize with the session cookie -> 303 to redirect_uri?code=...
         let uri = format!(
-            "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={}&scope=traces%3Aread&state=xyz&code_challenge={}&code_challenge_method=S256",
+            "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={}&scope=traces%3Aread&state=xyz&tenant_id=demo&project_id=demo&environment_id=local&code_challenge={}&code_challenge_method=S256",
             utf8_percent_encode("https://app.example.test/cb", NON_ALPHANUMERIC),
             challenge()
         );

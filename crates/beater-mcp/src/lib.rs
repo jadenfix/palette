@@ -525,11 +525,25 @@ async fn handle_mcp(State(state): State<ApiState>, headers: HeaderMap, body: Bod
     // Note: JSON-RPC batching is not used by current MCP clients; handle a
     // single request object.
     let response = dispatch_rpc(&state, &headers, &request).await;
-    match response {
+    let mut resp = match response {
         Some(resp) => json_response(resp),
         // Notification (no id) — respond 202 with empty body.
         None => StatusCode::ACCEPTED.into_response(),
+    };
+    // MCP OAuth discovery (RFC 9728): when the caller presented no credentials
+    // and the server advertises OAuth, point it at the protected-resource
+    // metadata via a `WWW-Authenticate` challenge so it can start the flow.
+    if let Some(url) = state.oauth_metadata_url() {
+        let has_creds = headers.contains_key(http::header::AUTHORIZATION)
+            || headers.contains_key("x-beater-api-key");
+        if !has_creds {
+            if let Ok(value) = format!("Bearer resource_metadata=\"{url}\"").parse() {
+                resp.headers_mut()
+                    .insert(http::header::WWW_AUTHENTICATE, value);
+            }
+        }
     }
+    resp
 }
 
 fn json_response(value: Value) -> Response {

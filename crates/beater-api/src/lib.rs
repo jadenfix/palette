@@ -44,6 +44,7 @@ use beater_ingest::{
 use beater_judge::{
     JudgeBroker, JudgeBrokerError, JudgeBrokerOutcome, JudgeBrokerRequest, JudgeLedgerStore,
 };
+use beater_oauth::OAuthStore;
 use beater_otlp::{decode_export_trace_request, export_to_raw_trace_ingest_request};
 use beater_schema::{
     AgentSpanKind, ArtifactRef, AuthContext, CanonicalSpan, RedactionClass, RunFilter, RunSummary,
@@ -105,6 +106,13 @@ pub struct ApiState {
     judge_ledger: Option<Arc<dyn JudgeLedgerStore>>,
     usage: Option<Arc<dyn UsageLedgerStore>>,
     audit: Option<Arc<dyn AuditStore>>,
+    /// OAuth 2.1 authorization-server store. When set, `authorize()` also
+    /// accepts OAuth access tokens (`bao_...`) as bearer credentials, mapping
+    /// the token's tenant scope + OAuth scopes onto the request.
+    oauth: Option<Arc<dyn OAuthStore>>,
+    /// URL of the OAuth protected-resource metadata document, surfaced in the
+    /// `WWW-Authenticate` challenge on 401 (RFC 9728 / MCP auth discovery).
+    oauth_metadata_url: Option<String>,
 }
 
 impl ApiState {
@@ -132,7 +140,24 @@ impl ApiState {
             judge_ledger: None,
             usage: None,
             audit: None,
+            oauth: None,
+            oauth_metadata_url: None,
         }
+    }
+
+    /// Wire an OAuth authorization-server store so `authorize()` accepts OAuth
+    /// access tokens in addition to API keys. `metadata_url` is advertised in
+    /// the `WWW-Authenticate` challenge on auth failures.
+    pub fn with_oauth(mut self, oauth: Arc<dyn OAuthStore>, metadata_url: Option<String>) -> Self {
+        self.oauth = Some(oauth);
+        self.oauth_metadata_url = metadata_url;
+        self
+    }
+
+    /// The OAuth protected-resource metadata URL, if configured (for the MCP
+    /// resource server's `WWW-Authenticate` discovery header).
+    pub fn oauth_metadata_url(&self) -> Option<&str> {
+        self.oauth_metadata_url.as_deref()
     }
 
     pub fn with_search(
@@ -3093,11 +3118,27 @@ async fn authorize(
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
     }
+    let secret = presented_api_key(headers)?;
+    // OAuth access tokens (`bao_...`) are accepted when an OAuth store is wired.
+    // This is the bridge that lets MCP/HTTP callers authenticate with an OAuth
+    // token instead of a raw API key.
+    if secret.starts_with("bao_") {
+        if let Some(oauth) = state.oauth.as_ref() {
+            return authorize_oauth(
+                oauth.as_ref(),
+                secret,
+                tenant_id,
+                project_id,
+                environment_id,
+                required_scope,
+            )
+            .await;
+        }
+    }
     let api_keys = state
         .api_keys
         .as_ref()
         .ok_or_else(|| ApiError::internal("api key store is not configured".to_string()))?;
-    let secret = presented_api_key(headers)?;
     let api_key_id = api_key_id_from_secret(secret).map_err(auth_failure)?;
     let record = api_keys
         .get_key(api_key_id.clone())
@@ -3126,6 +3167,48 @@ async fn authorize(
         },
         project_id: Some(record.project_id),
         environment_id: Some(record.environment_id),
+    })
+}
+
+/// Authorize via an OAuth 2.1 access token (`bao_...`). Validates the token,
+/// checks it is bound to the requested tenant/project/environment, and maps the
+/// OAuth scopes (which use the same names as [`ApiScope::as_str`]) onto the
+/// required scope. `admin` satisfies any scope.
+async fn authorize_oauth(
+    oauth: &dyn OAuthStore,
+    secret: &str,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+    environment_id: &EnvironmentId,
+    required_scope: ApiScope,
+) -> Result<AuthDecision, ApiError> {
+    let claims = oauth
+        .validate_access_token(secret, Utc::now())
+        .await
+        .map_err(|_| ApiError::unauthorized("invalid or expired access token".to_string()))?;
+    if &claims.tenant_scope.tenant_id != tenant_id
+        || &claims.tenant_scope.project_id != project_id
+        || &claims.tenant_scope.environment_id != environment_id
+    {
+        return Err(ApiError::forbidden(
+            "access token is not scoped to this tenant/project/environment".to_string(),
+        ));
+    }
+    let has_scope = claims.scope.contains(required_scope.as_str())
+        || claims.scope.contains(ApiScope::Admin.as_str());
+    if !has_scope {
+        return Err(ApiError::forbidden(format!(
+            "access token is missing scope {}",
+            required_scope.as_str()
+        )));
+    }
+    Ok(AuthDecision {
+        context: AuthContext {
+            api_key_id: None,
+            scopes: claims.scope,
+        },
+        project_id: Some(claims.tenant_scope.project_id),
+        environment_id: Some(claims.tenant_scope.environment_id),
     })
 }
 
@@ -3669,6 +3752,81 @@ mod tests {
     use serde_json::json;
     use std::collections::BTreeMap;
     use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn oauth_access_token_authorizes_only_for_its_tenant_and_scope() {
+        use beater_core::{OAuthClientId, TokenFamilyId, UserId};
+        use beater_oauth::{OAuthStore, SqliteOAuthStore};
+        use std::collections::BTreeSet;
+
+        let store = SqliteOAuthStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let now = Utc::now();
+        let tenant = TenantId::new("acme").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("proj").unwrap_or_else(|err| panic!("{err}"));
+        let environment = EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}"));
+        let issued = store
+            .issue_token_pair(
+                OAuthClientId::new("client").unwrap_or_else(|err| panic!("{err}")),
+                UserId::new("user").unwrap_or_else(|err| panic!("{err}")),
+                BTreeSet::from(["trace:read".to_string()]),
+                TenantScope::new(tenant.clone(), project.clone(), environment.clone()),
+                TokenFamilyId::new("fam").unwrap_or_else(|err| panic!("{err}")),
+                now,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
+
+        // Correct tenant + scope -> authorized; identity is OAuth (no api_key_id).
+        let decision = authorize_oauth(
+            &store,
+            &issued.access_token,
+            &tenant,
+            &project,
+            &environment,
+            ApiScope::TraceRead,
+        )
+        .await
+        .unwrap_or_else(|err| panic!("expected authorized: {err:?}"));
+        assert!(decision.context.api_key_id.is_none());
+        assert!(decision.context.scopes.contains("trace:read"));
+
+        // Wrong tenant -> forbidden (token is bound to its tenant scope).
+        let other = TenantId::new("evil").unwrap_or_else(|err| panic!("{err}"));
+        assert!(authorize_oauth(
+            &store,
+            &issued.access_token,
+            &other,
+            &project,
+            &environment,
+            ApiScope::TraceRead,
+        )
+        .await
+        .is_err());
+
+        // Missing scope -> forbidden.
+        assert!(authorize_oauth(
+            &store,
+            &issued.access_token,
+            &tenant,
+            &project,
+            &environment,
+            ApiScope::TraceWrite,
+        )
+        .await
+        .is_err());
+
+        // Garbage token -> rejected.
+        assert!(authorize_oauth(
+            &store,
+            "bao_nope_nope",
+            &tenant,
+            &project,
+            &environment,
+            ApiScope::TraceRead,
+        )
+        .await
+        .is_err());
+    }
 
     #[test]
     fn api_state_constructors_share_defaults_and_set_integrations() {

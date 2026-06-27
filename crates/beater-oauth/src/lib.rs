@@ -23,7 +23,8 @@ use argon2::Argon2;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use beater_core::{
-    AccessTokenId, AuthCodeId, OAuthClientId, RefreshTokenId, Timestamp, TokenFamilyId, UserId,
+    AccessTokenId, AuthCodeId, OAuthClientId, RefreshTokenId, TenantScope, Timestamp,
+    TokenFamilyId, UserId,
 };
 use beater_store::StoreError;
 use chrono::{DateTime, Duration, Utc};
@@ -192,6 +193,9 @@ pub struct AuthorizationCode {
     pub user_id: UserId,
     pub redirect_uri: String,
     pub scope: BTreeSet<String>,
+    /// Tenant/project/environment this authorization is bound to (chosen at
+    /// `/authorize`). Tokens minted from this code inherit it.
+    pub tenant_scope: TenantScope,
     pub code_challenge: String,
     #[serde(skip_serializing, default)]
     pub secret_hash: String,
@@ -208,6 +212,8 @@ pub struct AuthorizationGrant {
     pub user_id: UserId,
     pub redirect_uri: String,
     pub scope: BTreeSet<String>,
+    /// The tenant/project/environment the user selected at `/authorize`.
+    pub tenant_scope: TenantScope,
     pub code_challenge: String,
 }
 
@@ -218,6 +224,8 @@ pub struct AccessToken {
     pub client_id: OAuthClientId,
     pub user_id: UserId,
     pub scope: BTreeSet<String>,
+    /// Tenant/project/environment the token is authorized for.
+    pub tenant_scope: TenantScope,
     /// Lineage shared with the refresh token that minted it, so a detected
     /// refresh-token reuse can revoke the whole family.
     pub family_id: TokenFamilyId,
@@ -234,6 +242,8 @@ pub struct RefreshToken {
     pub client_id: OAuthClientId,
     pub user_id: UserId,
     pub scope: BTreeSet<String>,
+    /// Tenant/project/environment the token is authorized for.
+    pub tenant_scope: TenantScope,
     /// Rotation lineage. All tokens minted from the same original authorization
     /// share a family; reuse of a rotated (revoked) refresh token revokes it.
     pub family_id: TokenFamilyId,
@@ -250,6 +260,9 @@ pub struct AccessTokenClaims {
     pub client_id: OAuthClientId,
     pub user_id: UserId,
     pub scope: BTreeSet<String>,
+    /// Tenant/project/environment the token is authorized for — a resource
+    /// server MUST check this against the resource it is protecting.
+    pub tenant_scope: TenantScope,
     pub expires_at: Timestamp,
 }
 
@@ -481,6 +494,7 @@ pub trait OAuthStore: Send + Sync {
             user_id: grant.user_id,
             redirect_uri: grant.redirect_uri,
             scope: grant.scope,
+            tenant_scope: grant.tenant_scope,
             code_challenge: grant.code_challenge,
             secret_hash,
             expires_at: now + authorization_code_ttl(),
@@ -538,6 +552,7 @@ pub trait OAuthStore: Send + Sync {
             record.client_id,
             record.user_id,
             record.scope,
+            record.tenant_scope,
             family_id,
             now,
         )
@@ -568,6 +583,7 @@ pub trait OAuthStore: Send + Sync {
             client_id: record.client_id,
             user_id: record.user_id,
             scope: record.scope,
+            tenant_scope: record.tenant_scope,
             expires_at: record.expires_at,
         })
     }
@@ -607,24 +623,27 @@ pub trait OAuthStore: Send + Sync {
             return Err(OAuthError::InvalidGrant);
         }
         // Rotate: burn the presented token before issuing the replacement, and
-        // carry the family forward.
+        // carry the family + tenant scope forward.
         self.revoke_refresh_token(&token_id).await?;
         self.issue_token_pair(
             record.client_id,
             record.user_id,
             record.scope,
+            record.tenant_scope,
             record.family_id,
             now,
         )
         .await
     }
 
-    /// Mint + persist a fresh access + refresh token pair within `family_id`.
+    /// Mint + persist a fresh access + refresh token pair within `family_id`,
+    /// bound to `tenant_scope`.
     async fn issue_token_pair(
         &self,
         client_id: OAuthClientId,
         user_id: UserId,
         scope: BTreeSet<String>,
+        tenant_scope: TenantScope,
         family_id: TokenFamilyId,
         now: Timestamp,
     ) -> Result<IssuedTokens> {
@@ -636,6 +655,7 @@ pub trait OAuthStore: Send + Sync {
             client_id: client_id.clone(),
             user_id: user_id.clone(),
             scope: scope.clone(),
+            tenant_scope: tenant_scope.clone(),
             family_id: family_id.clone(),
             secret_hash: access_hash,
             expires_at: access_expires,
@@ -650,6 +670,7 @@ pub trait OAuthStore: Send + Sync {
             client_id,
             user_id,
             scope: scope.clone(),
+            tenant_scope,
             family_id,
             secret_hash: refresh_hash,
             expires_at: now + refresh_token_ttl(),
@@ -718,6 +739,7 @@ impl SqliteOAuthStore {
                 user_id TEXT NOT NULL,
                 redirect_uri TEXT NOT NULL,
                 scope TEXT NOT NULL,
+                tenant_scope TEXT NOT NULL,
                 code_challenge TEXT NOT NULL,
                 secret_hash TEXT NOT NULL,
                 expires_at TEXT NOT NULL,
@@ -729,6 +751,7 @@ impl SqliteOAuthStore {
                 client_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
                 scope TEXT NOT NULL,
+                tenant_scope TEXT NOT NULL,
                 family_id TEXT NOT NULL,
                 secret_hash TEXT NOT NULL,
                 expires_at TEXT NOT NULL,
@@ -741,6 +764,7 @@ impl SqliteOAuthStore {
                 client_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
                 scope TEXT NOT NULL,
+                tenant_scope TEXT NOT NULL,
                 family_id TEXT NOT NULL,
                 secret_hash TEXT NOT NULL,
                 expires_at TEXT NOT NULL,
@@ -823,9 +847,9 @@ impl OAuthStore for SqliteOAuthStore {
             .execute(
                 r#"
                 INSERT INTO oauth_codes
-                  (code_id, client_id, user_id, redirect_uri, scope, code_challenge,
+                  (code_id, client_id, user_id, redirect_uri, scope, tenant_scope, code_challenge,
                    secret_hash, expires_at, consumed)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
                 "#,
                 params![
                     code.code_id.as_str(),
@@ -833,6 +857,7 @@ impl OAuthStore for SqliteOAuthStore {
                     code.user_id.as_str(),
                     code.redirect_uri,
                     encode_set(&code.scope)?,
+                    encode_set(&code.tenant_scope)?,
                     code.code_challenge,
                     code.secret_hash,
                     code.expires_at.to_rfc3339(),
@@ -847,8 +872,8 @@ impl OAuthStore for SqliteOAuthStore {
         let connection = self.lock()?;
         connection
             .query_row(
-                "SELECT code_id, client_id, user_id, redirect_uri, scope, code_challenge, \
-                 secret_hash, expires_at, consumed FROM oauth_codes WHERE code_id = ?1",
+                "SELECT code_id, client_id, user_id, redirect_uri, scope, tenant_scope, \
+                 code_challenge, secret_hash, expires_at, consumed FROM oauth_codes WHERE code_id = ?1",
                 params![code_id.as_str()],
                 decode_code,
             )
@@ -874,14 +899,16 @@ impl OAuthStore for SqliteOAuthStore {
             .execute(
                 r#"
                 INSERT INTO oauth_access_tokens
-                  (token_id, client_id, user_id, scope, family_id, secret_hash, expires_at, revoked)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                  (token_id, client_id, user_id, scope, tenant_scope, family_id, secret_hash,
+                   expires_at, revoked)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
                 "#,
                 params![
                     token.token_id.as_str(),
                     token.client_id.as_str(),
                     token.user_id.as_str(),
                     encode_set(&token.scope)?,
+                    encode_set(&token.tenant_scope)?,
                     token.family_id.as_str(),
                     token.secret_hash,
                     token.expires_at.to_rfc3339(),
@@ -896,8 +923,8 @@ impl OAuthStore for SqliteOAuthStore {
         let connection = self.lock()?;
         connection
             .query_row(
-                "SELECT token_id, client_id, user_id, scope, family_id, secret_hash, expires_at, \
-                 revoked FROM oauth_access_tokens WHERE token_id = ?1",
+                "SELECT token_id, client_id, user_id, scope, tenant_scope, family_id, secret_hash, \
+                 expires_at, revoked FROM oauth_access_tokens WHERE token_id = ?1",
                 params![token_id.as_str()],
                 decode_access_token,
             )
@@ -923,14 +950,16 @@ impl OAuthStore for SqliteOAuthStore {
             .execute(
                 r#"
                 INSERT INTO oauth_refresh_tokens
-                  (token_id, client_id, user_id, scope, family_id, secret_hash, expires_at, revoked)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                  (token_id, client_id, user_id, scope, tenant_scope, family_id, secret_hash,
+                   expires_at, revoked)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
                 "#,
                 params![
                     token.token_id.as_str(),
                     token.client_id.as_str(),
                     token.user_id.as_str(),
                     encode_set(&token.scope)?,
+                    encode_set(&token.tenant_scope)?,
                     token.family_id.as_str(),
                     token.secret_hash,
                     token.expires_at.to_rfc3339(),
@@ -945,8 +974,8 @@ impl OAuthStore for SqliteOAuthStore {
         let connection = self.lock()?;
         connection
             .query_row(
-                "SELECT token_id, client_id, user_id, scope, family_id, secret_hash, expires_at, \
-                 revoked FROM oauth_refresh_tokens WHERE token_id = ?1",
+                "SELECT token_id, client_id, user_id, scope, tenant_scope, family_id, secret_hash, \
+                 expires_at, revoked FROM oauth_refresh_tokens WHERE token_id = ?1",
                 params![token_id.as_str()],
                 decode_refresh_token,
             )
@@ -1014,10 +1043,11 @@ fn decode_code(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Authorization
     let user_id = row.get::<_, String>(2)?;
     let redirect_uri = row.get::<_, String>(3)?;
     let scope = row.get::<_, String>(4)?;
-    let code_challenge = row.get::<_, String>(5)?;
-    let secret_hash = row.get::<_, String>(6)?;
-    let expires_at = row.get::<_, String>(7)?;
-    let consumed = row.get::<_, i64>(8)? != 0;
+    let tenant_scope = row.get::<_, String>(5)?;
+    let code_challenge = row.get::<_, String>(6)?;
+    let secret_hash = row.get::<_, String>(7)?;
+    let expires_at = row.get::<_, String>(8)?;
+    let consumed = row.get::<_, i64>(9)? != 0;
     Ok((|| {
         Ok(AuthorizationCode {
             code_id: AuthCodeId::new(code_id)
@@ -1028,6 +1058,7 @@ fn decode_code(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Authorization
                 .map_err(|err| backend(format!("decode code user id: {err}")))?,
             redirect_uri,
             scope: decode_set(&scope)?,
+            tenant_scope: decode_set(&tenant_scope)?,
             code_challenge,
             secret_hash,
             expires_at: parse_time(expires_at)?,
@@ -1041,10 +1072,11 @@ fn decode_access_token(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Acces
     let client_id = row.get::<_, String>(1)?;
     let user_id = row.get::<_, String>(2)?;
     let scope = row.get::<_, String>(3)?;
-    let family_id = row.get::<_, String>(4)?;
-    let secret_hash = row.get::<_, String>(5)?;
-    let expires_at = row.get::<_, String>(6)?;
-    let revoked = row.get::<_, i64>(7)? != 0;
+    let tenant_scope = row.get::<_, String>(4)?;
+    let family_id = row.get::<_, String>(5)?;
+    let secret_hash = row.get::<_, String>(6)?;
+    let expires_at = row.get::<_, String>(7)?;
+    let revoked = row.get::<_, i64>(8)? != 0;
     Ok((|| {
         Ok(AccessToken {
             token_id: AccessTokenId::new(token_id)
@@ -1054,6 +1086,7 @@ fn decode_access_token(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Acces
             user_id: UserId::new(user_id)
                 .map_err(|err| backend(format!("decode access user id: {err}")))?,
             scope: decode_set(&scope)?,
+            tenant_scope: decode_set(&tenant_scope)?,
             family_id: TokenFamilyId::new(family_id)
                 .map_err(|err| backend(format!("decode access family id: {err}")))?,
             secret_hash,
@@ -1068,10 +1101,11 @@ fn decode_refresh_token(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Refr
     let client_id = row.get::<_, String>(1)?;
     let user_id = row.get::<_, String>(2)?;
     let scope = row.get::<_, String>(3)?;
-    let family_id = row.get::<_, String>(4)?;
-    let secret_hash = row.get::<_, String>(5)?;
-    let expires_at = row.get::<_, String>(6)?;
-    let revoked = row.get::<_, i64>(7)? != 0;
+    let tenant_scope = row.get::<_, String>(4)?;
+    let family_id = row.get::<_, String>(5)?;
+    let secret_hash = row.get::<_, String>(6)?;
+    let expires_at = row.get::<_, String>(7)?;
+    let revoked = row.get::<_, i64>(8)? != 0;
     Ok((|| {
         Ok(RefreshToken {
             token_id: RefreshTokenId::new(token_id)
@@ -1081,6 +1115,7 @@ fn decode_refresh_token(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Refr
             user_id: UserId::new(user_id)
                 .map_err(|err| backend(format!("decode refresh user id: {err}")))?,
             scope: decode_set(&scope)?,
+            tenant_scope: decode_set(&tenant_scope)?,
             family_id: TokenFamilyId::new(family_id)
                 .map_err(|err| backend(format!("decode refresh family id: {err}")))?,
             secret_hash,
@@ -1100,6 +1135,14 @@ mod tests {
 
     fn store() -> SqliteOAuthStore {
         ok(SqliteOAuthStore::in_memory())
+    }
+
+    fn test_tenant_scope() -> TenantScope {
+        TenantScope::new(
+            ok(beater_core::TenantId::new("demo")),
+            ok(beater_core::ProjectId::new("demo")),
+            ok(beater_core::EnvironmentId::new("local")),
+        )
     }
 
     // RFC 7636 Appendix B fixture verifier (43 chars, unreserved set).
@@ -1131,6 +1174,7 @@ mod tests {
                     user_id: ok(UserId::new("user-1")),
                     redirect_uri: "https://app.example.com/cb".to_string(),
                     scope: BTreeSet::from(["traces:read".to_string()]),
+                    tenant_scope: test_tenant_scope(),
                     code_challenge: challenge.to_string(),
                 },
                 now,
@@ -1178,6 +1222,8 @@ mod tests {
         let claims = ok(store.validate_access_token(&tokens.access_token, now).await);
         assert_eq!(claims.user_id.as_str(), "user-1");
         assert!(claims.scope.contains("traces:read"));
+        // The tenant scope chosen at authorize-time rides through to the token.
+        assert_eq!(claims.tenant_scope, test_tenant_scope());
     }
 
     #[tokio::test]
@@ -1448,6 +1494,7 @@ mod tests {
                         user_id: ok(UserId::new("user-1")),
                         redirect_uri: "https://app.example.com/cb".to_string(),
                         scope: BTreeSet::from(["admin:everything".to_string()]),
+                        tenant_scope: test_tenant_scope(),
                         code_challenge: challenge_for(VERIFIER),
                     },
                     now,
