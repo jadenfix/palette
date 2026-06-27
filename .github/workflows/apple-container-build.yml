@@ -47,7 +47,13 @@ jobs:
           container --version
 
       - name: Start container system
-        run: container system start
+        # On a fresh runner no default kernel is configured, so `container
+        # system start` prompts "Install the recommended default kernel ...?
+        # [Y/n]" and, with no TTY/stdin on the GitHub runner, aborts with
+        # "failed to read user input". `--enable-kernel-install` answers that
+        # prompt non-interactively (the documented default for `system start`
+        # is "prompt user"; this flag forces the install path instead).
+        run: container system start --enable-kernel-install
 
       - name: Build beaterd image on Apple container
         run: BEATER_CONTAINER_RUNTIME=container scripts/build-image.sh beaterd:ci

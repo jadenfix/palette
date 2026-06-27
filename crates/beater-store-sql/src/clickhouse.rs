@@ -187,11 +187,21 @@ impl ClickHouseTraceStore {
         // `existing_raw_keys`: a single-candidate batch otherwise produces a
         // single-tuple `IN` set whose redundant parentheses collapse, defeating
         // the composite-key match and the in-app duplicate detection.
+        //
+        // The `seq` element must be cast to `UInt64` to match the column type
+        // exactly. A bare integer literal (e.g. `2`) is inferred by ClickHouse
+        // as the smallest fitting type (`UInt8`), so the literal tuple's 5th
+        // element is `UInt8` while the left-hand `(... , seq)` tuple's 5th
+        // element is `UInt64`. ClickHouse tuple `IN` requires element-wise type
+        // equality between the two tuples; the `UInt8`-vs-`UInt64` mismatch
+        // makes the composite key never match, so the just-inserted spans are
+        // not detected as duplicates and `duplicate_spans` stays 0. Wrapping the
+        // literal in `toUInt64(...)` aligns both sides on `UInt64`.
         let tuples = candidates
             .iter()
             .map(|key| {
                 format!(
-                    "tuple('{}','{}','{}','{}',{})",
+                    "tuple('{}','{}','{}','{}',toUInt64({}))",
                     escape(&key.tenant),
                     escape(&key.project),
                     escape(&key.trace),
