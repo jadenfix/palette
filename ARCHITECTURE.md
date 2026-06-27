@@ -956,6 +956,21 @@ Input dialects:
 - Native Beater `/v1` JSON ingest.
 - Future imports from Phoenix, LangSmith, Langfuse, and Braintrust exports.
 
+**The normalizer algorithm (dialect → canonical projection).** Each dialect is a
+**deterministic projection**, not parsing-by-guess: a static **mapping table** keyed
+by `(dialect, source_span_kind)` → canonical span kind (§5.2), plus an
+**attribute-rename map** `source_attr → canonical_attr`, plus typed **unit/timestamp
+coercions** (epoch-ns vs RFC3339; tokens/cost field names; ms vs s). The pipeline per
+span is: (1) detect the dialect (explicit `?source=` or signature attributes); (2)
+look up the span-kind mapping (unknown kinds map to `agent.step` with the raw kind
+preserved as an attribute, never dropped); (3) apply the attribute-rename map and
+coerce units/timestamps; (4) emit the canonical span tagged with the **pinned
+normalizer version** (§10.2). The mapping is **table-driven** so adding/auditing a
+dialect is data, and every projection is re-derivable from the immutable raw envelope
+(§1 #3). The hard-coded normalizers (OTLP/OpenInference/GenAI/Vercel-AI) are
+hand-written tables on this same shape; the declarative MAPPING importer below is the
+same table supplied as config instead of code.
+
 Config-driven mapping importer (`SourceImporter` boundary). The hand-written
 normalizers above (OTLP/OpenInference/GenAI/Vercel-AI) cover the standard dialects,
 but a long tail of custom and *older* framework shapes will never get a bespoke Rust
@@ -1125,7 +1140,18 @@ receive OTLP/native request
 Required survivability behavior:
 
 - Backpressure with bounded queues.
-- At-least-once delivery reconciled by idempotency keys.
+- **At-least-once delivery reconciled by idempotency keys (the dedup algorithm).**
+  Each ingest unit carries an **idempotency key** = a stable content hash of its
+  identity — `blake3(tenant_id ‖ trace_id ‖ span_id ‖ canonical-payload-hash)`,
+  or a client-supplied `Idempotency-Key` when present. Dedup is an
+  **existence-check-then-insert**: the write path does an atomic
+  insert-if-absent on that key (a `UNIQUE` constraint / `INSERT … ON CONFLICT DO
+  NOTHING` in SQL backends, the natural primary key in ClickHouse's
+  versioned-replacing model, §8.3); a key already present is acknowledged as a
+  no-op, never written twice. Because the key is a deterministic content hash, a
+  retried or fanned-out delivery (at-least-once bus, §8.4) collapses to **exactly
+  once** in storage without coordination. This is what makes "no silent drops" and
+  "at-least-once" coexist: redelivery is safe and observable.
 - Dead-letter queue for invalid, unauthenticated, unnormalizable, or repeatedly
   unwritable events.
 - Poison-message isolation so one bad tenant payload cannot stall a shard.
@@ -1134,8 +1160,17 @@ Required survivability behavior:
 - Payload size caps. Oversized prompts/completions truncate to artifact refs.
 - Per-attribute cardinality budgets.
 - Attribute allow/deny lists at project and environment scope.
-- Tail-based sampling that keeps all errors, slow traces, high-cost traces, and
-  traces selected by policy while sampling routine traffic.
+- **Tail-based sampling — the decision algorithm.** Decision is made once the
+  trace is buffered to completion (so the whole trace is visible), in priority
+  order: **keep with probability 1** if the trace has any error span, exceeds the
+  latency threshold, exceeds the cost threshold, or matches a policy keep-rule;
+  **otherwise keep routine traffic with probability `p`** by a *deterministic stable
+  hash* — `keep ⇔ (xxhash64(trace_id) mod 2⁶⁴) / 2⁶⁴ < p`. Hashing the immutable
+  `trace_id` (rather than drawing a fresh random number) makes the decision
+  **deterministic, stateless, and consistent across shards/retries**: the same trace
+  always gets the same keep verdict, so retried or fanned-out ingest never
+  double-counts and the kept set is reproducible. `p` is the per-project
+  routine-sampling rate.
 - **Inverse-probability sampling weights on the keep path (honesty invariant §1
   #9).** Every kept span records `sampling_weight = 1/keep_probability`: 1.0 for a
   span kept with certainty (errors/slow/high-cost/policy keeps), and `1/p` for a
@@ -1145,7 +1180,13 @@ Required survivability behavior:
   decision and `p` are known at sampling time, so the weight is recorded then;
   downstream aggregates (§13, `beater-store`) are **weighted by default** and an
   unweighted path must be explicitly labeled biased. This is a correctness fix, not
-  an analytics nicety.
+  an analytics nicety. The estimator is **Horvitz-Thompson**: a population total is
+  `T̂ = Σ_{kept i} wᵢ·yᵢ` (`wᵢ = 1/pᵢ`) and a population mean is
+  `μ̂ = (Σ wᵢ·yᵢ)/(Σ wᵢ)`; under independent keep decisions its variance is
+  `Var(T̂) = Σ_i (1−pᵢ)/pᵢ² · yᵢ²`, which `beater-stats` reports as the weighted
+  standard error and which the weighted bootstrap (§10.3 #2, resampling in
+  proportion to `wᵢ`) recovers without the closed form. This is the §10.3 "sampling
+  weights flow into the estimators" path.
 - Trace completion semantics based on root-span end, idle timeout, and late-span
   window.
 - Clock-skew correction and out-of-order handling across distributed agents.
@@ -1266,11 +1307,21 @@ judge-human agreement — reported quadratic-weighted kappa falling from **0.73 
 In Beater this calibration **lives in the judge broker** (alongside the existing
 `beater-calibration` agreement/kappa reporting), is fit from a **human reference-
 label set**, and is pinned into `EvalResult` reproducibility metadata so a score's
-calibration provenance is auditable. Open questions to resolve before treating
-calibration as load-bearing in production gates: **recalibration cadence** (how
-often `F_model`/`F_human` must be re-fit as the judge model or rubric drifts) and
-the **minimum label count** for a stable `F_human` — both are currently
-undetermined and should be measured, not guessed.
+calibration provenance is auditable.
+
+**Procedure + parameters.** `F_model` and `F_human` are **empirical CDFs** over the
+calibration set; `g` is their composition, evaluated by linear interpolation between
+the empirical quantiles (monotone non-decreasing by construction). Suggested
+operating points, to be confirmed by Beater's own measurement (below): a **minimum
+of ~200 paired human reference labels** for a stable `F_human` (the empirical
+quantiles are too coarse below that — fall back to the raw judge score and flag
+"uncalibrated"), and **recalibration cadence is event-driven** — re-fit on any
+§10.3 trigger (model deprecation, provider/judge drift, rubric change) and otherwise
+whenever judge-vs-human kappa on a fixed canary set (A9) drops past a configured
+threshold, rather than on a fixed schedule. These two numbers (min label count,
+cadence) remain **open questions to confirm empirically before treating calibration
+as load-bearing in a production gate** — they should be measured against Beater's own
+reference set, not hard-coded from a preprint.
 
 **Ensemble policy — small calibrated panels, NOT large ones.** A small calibrated
 panel of ~3 diverse *smaller* judges (the "Panel of LLM evaluators", PoLL) can
@@ -1387,10 +1438,19 @@ small N.**
   Bernoulli trials. *Invalid when:* trials are clustered (combine with #1) or N is
   effectively tiny — report the interval but flag low power (#5).
 - **Bounded / continuous metrics** (judge scores in [0,1], latency, cost):
-  **bootstrap percentile interval** (resample cases, or resample clusters for
-  clustered data). *Assumption:* the sample is representative of the population of
-  cases. *Invalid when:* N is so small the empirical distribution is degenerate —
-  fall back to reporting raw spread and refusing a significance claim.
+  **bootstrap interval** (resample cases, or resample whole clusters for clustered
+  data, §10.3 #1). *Defaults:* `n_resamples = 10_000` (the standard
+  bias-stable default; fewer than ~2_000 makes the tail quantiles noisy) over a
+  **seeded** RNG so a reported interval is reproducible. The default is the
+  **percentile** interval; for skewed metrics (cost, latency) `beater-stats` uses
+  the **BCa (bias-corrected and accelerated)** interval, which adjusts the
+  percentile endpoints by a **bias correction** `z₀ = Φ^{-1}(fraction of bootstrap
+  replicates below the observed estimate)` and an **acceleration** `a` estimated by
+  jackknife skewness `a = (Σ (θ̄−θ₍ᵢ₎)³) / (6·(Σ (θ̄−θ₍ᵢ₎)²)^{3/2})`; BCa restores
+  ~nominal coverage on skewed/biased statistics where the plain percentile interval
+  is shifted. *Assumption:* the sample is representative of the population of cases.
+  *Invalid when:* N is so small the empirical distribution is degenerate — fall back
+  to reporting raw spread and refusing a significance claim.
 - Naive CLT/normal intervals are used **only** when N is large and the metric is
   unbounded and roughly symmetric; otherwise they are disallowed.
 
@@ -1442,6 +1502,56 @@ why this is tractable for Beater's metrics. This ties directly to §13 alert
 baselines, §20.5 online statistics, and the §20.6 online-eval worker: alert
 conditions on a live score stream are evaluated against a confidence sequence, not
 a fixed-N test.
+
+**7. The exact formulas `beater-stats` implements.** So the layer is buildable
+without a second reference, the named methods above are pinned to their standard
+forms (`statrs` supplies the CDFs/quantiles `Φ`, `Φ^{-1}`, `t`, `χ²`):
+
+- **Wilson score interval** for a proportion `p̂ = k/n` at level `z = Φ^{-1}(1−α/2)`:
+
+  ```text
+  center = (p̂ + z²/2n) / (1 + z²/n)
+  half   = ( z/(1 + z²/n) ) · sqrt( p̂(1−p̂)/n + z²/4n² )
+  CI     = center ± half
+  ```
+
+  (vs the deleted Wald `p̂ ± z·sqrt(p̂(1−p̂)/n)`, which under-covers at small `n`
+  or `p̂` near 0/1 — exactly Beater's regime).
+- **Paired *t*-test** on the `n` differences `dᵢ`: `t = d̄ / (s_d/√n)` with `n−1`
+  df, `s_d` the sample SD of the differences; two-sided `p = 2·(1 − F_t(|t|; n−1))`.
+- **McNemar exact** on the discordant pairs `(b, c)` of a paired-binary 2×2 (b =
+  pass→fail, c = fail→pass): exact two-sided binomial p-value of `b` under
+  `Binomial(b+c, ½)` (preferred over the `χ²=(b−c)²/(b+c)` approximation when
+  `b+c` is small).
+- **Wilcoxon signed-rank**: rank `|dᵢ|`, `W = Σ rank(dᵢ)·sign(dᵢ)`; for small `n`
+  the exact null distribution, otherwise the normal approximation
+  `z = W / sqrt( n(n+1)(2n+1)/6 )`.
+- **Holm-Bonferroni (FWER) — step-down.** Sort the `m` p-values ascending
+  `p₍₁₎ ≤ … ≤ p₍ₘ₎`; reject `p₍ᵢ₎` while `p₍ᵢ₎ ≤ α/(m−i+1)`, and **stop at the
+  first failure** (all subsequent stay non-rejected). Uniformly more powerful than
+  the crude `α/m` division the old code used.
+- **Benjamini-Hochberg (FDR) — step-up.** Same sorted p-values; find the
+  **largest** `i` with `p₍ᵢ₎ ≤ (i/m)·α`, reject all `p₍₁₎…p₍ᵢ₎`. Controls the
+  expected false-discovery proportion at `α` for the exploratory multi-slice case.
+- **Power / MDE.** For a two-sample proportion test at `α`, power
+  `1−β`, the required per-arm `n` for effect `δ` (`= p₁−p₀`, pooled SD `σ`) is the
+  textbook
+  `n = ( (z_{1−α/2} + z_{1−β})·σ / δ )²`; `power.rs` exposes
+  `required_sample_size(δ, α, 1−β)` (invert for `n`) and `achieved_power(n, δ, α)`
+  (solve for `1−β`). A gate refuses *pass* when `achieved_power < target` (A6).
+- **Anytime-valid: mSPRT / confidence sequence (the e-process).** For a stream of
+  bounded scores testing `H₀: μ = μ₀`, `beater-stats` maintains a non-negative
+  **e-process** `Eₜ` (an e-value that is a martingale under `H₀`, so
+  `E[Eₜ] ≤ 1`). The **mixture-SPRT** form mixes the simple-vs-simple likelihood
+  ratio over a prior on the alternative (a Normal mixture for sub-Gaussian scores),
+  giving `Eₜ = ∫ Λₜ(θ) dπ(θ)`; **Ville's inequality** guarantees
+  `P(∃t : Eₜ ≥ 1/α) ≤ α` — so rejecting the first time `Eₜ ≥ 1/α` is valid **no
+  matter how often the stream is peeked.** The dual **confidence sequence** is the
+  set `{μ : Eₜ(μ) < 1/α}`, a running interval valid at every `t` simultaneously.
+  The betting-style alternative replaces `Λₜ` with a capital process
+  `Eₜ = Πₛ (1 + λₛ·(Xₛ − μ₀))` over predictable bets `λₛ ∈ [−1/(1−μ₀), 1/μ₀]`
+  (well-defined because scores are bounded in [0,1], A8). Both are wider than the
+  fixed-horizon CI at the same `α` — the accepted price of unlimited peeking.
 
 **Carried-over requirements** (unchanged in intent, now with a home in
 `beater-stats` and the §10.1.1 calibration):
@@ -1497,6 +1607,39 @@ the §20.5 catalog-breadth work; the rest exist in `EVALUATOR_CATALOG` today.
 | **Trajectory / process-reward** | a process score over the span sequence (plan→step→tool→…) | progress is jointly modeled across steps, *not* independent per-step scores (AgentPRM-style promise+progress) | scoring steps independently double-counts shared context and misattributes credit | per-step scores aggregated with clustered SE (§10.3 #1, cluster = trajectory) | WASI for structural checks; **judge** for quality |
 | **Rubric LLM judge** | weighted per-criterion score from a locked rubric + CoT | the §10.1.1 debiasing protocol holds (calibration, position-swap, small panel) | calibration stale; rubric unlocked mid-episode; large uncalibrated panel | distributional calibration (§10.1.1) → bootstrap CI; FWER across criteria (§10.3 #4) | **judge** |
 
+Exact algorithm per scorer (the surface forms behind the table):
+
+- **Exact match** — compare after a fixed normalization pipeline (Unicode NFC,
+  trim, optional case-fold and whitespace-collapse, all flags pinned in the eval);
+  score `1` iff equal.
+- **Fuzzy match** — the **normalized Levenshtein ratio**
+  `ratio = 1 − lev(a,b)/max(|a|,|b|)` ∈ [0,1] (or Jaro-Winkler where prefix
+  matching matters), via `strsim`; score `1` iff `ratio ≥ min_ratio` (default
+  `0.9`). The threshold collapses to a binary scored by Wilson; the raw ratio is
+  kept for a bootstrap CI when reported continuously.
+- **Numeric tolerance** — parse both to `f64`; score `1` iff
+  `|out − exp| ≤ abs_tol` **or** `|out − exp| ≤ rel_tol·|exp|` (default
+  `abs_tol = 0`, `rel_tol = 1e-6`); both bounds let "within ε" and "within X%"
+  coexist.
+- **JSON-schema** — validate against a draft-2020-12 JSON Schema (vs the weaker
+  current "parses as an object" check); score `1` iff valid.
+- **Embedding similarity** — cosine `sim = (u·v)/(‖u‖‖v‖)` ∈ [−1,1] between
+  embeddings of output and expected from a **pinned** embedding model; score `1`
+  iff `sim ≥ min_cosine` (a model-specific threshold, **recalibrated on model
+  change** — there is no universal cutoff). Judge lane (needs a provider).
+- **SQL-result match** — execute candidate SQL against a fixed **seeded** DB and
+  compare result sets as **multisets** (order-insensitive unless the query has an
+  explicit `ORDER BY`, in which case order is compared); score `1` iff equal.
+- **Execution-based tool correctness** — replay/execute the tool call against the
+  seeded environment and check the **effect/result**, never the serialized call
+  shape (a syntactically valid call can be wrong, a differently-shaped call can be
+  right). Per-call binary → Wilson, then per-trajectory clustered (§10.3 #1).
+- **Trajectory / process-reward** — an **AgentPRM-style promise+progress** joint
+  score over the span sequence: each step is scored for *progress* (did it advance
+  the goal) and *promise* (is the path still on track), combined across the
+  trajectory rather than averaging independent per-step scores; aggregated with
+  trajectory-clustered SE [arXiv:2511.08325; arXiv:2507.21504].
+
 Two cross-cutting rules:
 
 - **Tool-call correctness is execution-based, never AST/syntactic.** A scorer that
@@ -1542,8 +1685,14 @@ scoring it with proper rules is mostly plumbing, not new modeling.
 - **Brier score** — mean squared error between the stated probability and the 0/1
   outcome; a strictly proper scoring rule, so it is minimized only by honest
   probabilities. Reported with a §10.3 bootstrap CI.
-- **Expected Calibration Error (ECE)** — binned gap between confidence and observed
-  accuracy; the headline "is it calibrated" number.
+- **Expected Calibration Error (ECE)** — the binned gap between confidence and
+  observed accuracy; the headline "is it calibrated" number. *Binning:* the standard
+  **M = 10 equal-width bins** over [0,1] (`B_m = (\,(m-1)/10,\ m/10\,]`); with
+  `acc(B_m)` the empirical accuracy and `conf(B_m)` the mean confidence in bin `m`,
+  `ECE = Σ_m (|B_m|/n)·|acc(B_m) − conf(B_m)|`. Equal-width is the default; an
+  equal-mass (adaptive) binning is the alternative when confidences pile up in a few
+  bins, and `beater-stats` reports which was used so the number is comparable
+  across runs.
 - **Reliability curve** — the per-bin confidence-vs-accuracy plot the dashboard
   renders, the visual form of ECE.
 - **Cohen's kappa becomes a secondary signal.** The existing `beater-calibration`
@@ -1553,12 +1702,40 @@ scoring it with proper rules is mostly plumbing, not new modeling.
   probabilities nor yields a recalibration map.
 
 **Persisted recalibration map.** From the reliability data `beater-calibration`
-fits and **persists** a monotone recalibration map (isotonic regression / Platt
-scaling) `c(p) → p'` that corrects systematically over- or under-confident
-signals. The map is versioned and pinned into `EvalResult` reproducibility metadata
-(like the §10.1.1 judge calibration) so a corrected probability's provenance is
-auditable, and it is re-fit on the same recalibration triggers as §10.1.1 (model
-deprecation, provider/judge drift, rubric change, kappa/ECE degradation). The RSI
+fits and **persists** a monotone recalibration map `c(p) → p'` that corrects
+systematically over- or under-confident signals. The map is versioned and pinned
+into `EvalResult` reproducibility metadata (like the §10.1.1 judge calibration) so a
+corrected probability's provenance is auditable, and it is re-fit on the same
+recalibration triggers as §10.1.1 (model deprecation, provider/judge drift, rubric
+change, kappa/ECE degradation).
+
+**Which map to fit — a concrete selection rule** (the three are standard,
+named methods, chosen by reference-label budget and the shape of the miscalibration):
+
+- **Platt scaling** — fit a 1-D logistic `p' = σ(a·logit(p) + b)` by maximum
+  likelihood on `(p, outcome)` pairs (2 parameters). *Use when* labels are scarce
+  (roughly **n < 1000**) or the reliability curve is a smooth monotone sigmoid;
+  its 2-parameter form is low-variance and will not overfit a small set, but it
+  *cannot* correct a non-sigmoidal distortion.
+- **Isotonic regression** — fit the best non-decreasing step function minimizing
+  squared error via the **Pool-Adjacent-Violators Algorithm (PAVA)**, `O(n)` after
+  an `O(n log n)` sort. *Use when* labels are plentiful (roughly **n ≥ 1000**) and
+  the miscalibration is non-monotone-in-shape but order-preserving; it is
+  non-parametric and strictly more flexible than Platt but overfits and produces
+  ragged steps on small `n`. This is the default for the abundant-label case.
+- **Wasserstein quantile-matching** `g(z) = F_human^{-1}(F_model(z))` (§10.1.1) —
+  used for the *judge-vs-human distribution* problem, **not** the
+  probability-vs-outcome problem. It matches a whole *score distribution* to a human
+  reference rather than mapping a confidence to an empirical accuracy, so it is the
+  right tool for §10.1.1 (judge broker) and the wrong tool here; the two coexist
+  (§10.5 intro).
+
+**Default selection:** Platt below ~1000 reference labels, isotonic at or above it;
+both require a **minimum of ~50 labeled outcomes** to fit at all (below that the map
+abstains and `c(p)=p` is used, flagged "uncalibrated"). **Cadence:** re-fit on every
+§10.1.1 trigger and otherwise on a **rolling window** when ECE on a fixed canary set
+(A9) degrades past a configured threshold — i.e. event-driven, not a fixed calendar.
+The RSI
 loop's self-calibration dimension (§6.3 #7) reads ECE/Brier on the held-out Test
 split; a change that improves task success while *degrading* calibration is visible
 as a regression on this axis rather than hidden inside a single score.
@@ -1617,7 +1794,20 @@ return the EARLIEST fork point whose correction flips the outcome
 
 This is a counterfactual definition — the root cause is the *earliest* span whose
 correction is *sufficient* to flip the outcome — so it survives the cases the
-heuristic fails on (no errored span; misleading early low score). Attribution
+heuristic fails on (no errored span; misleading early low score).
+
+**Complexity + the bisection optimization.** The naive scan tries each of the `n`
+candidate fork points earliest-first and stops at the first flip: worst case `O(n)`
+forked replays, each costing one prefix-replay + resume + re-score. When the outcome
+is **monotone in the fork point** — correcting an *earlier* span never *un*-flips a
+later success (the common case for a single propagating fault) — the earliest
+flipping span is found by **binary search (bisection) over the span order in
+`O(log n)` replays**: replay-and-score at the midpoint, recurse left if it flips,
+right if it does not. `beater-stats` is not involved; this is a deterministic search.
+Monotonicity is an assumption, not a guarantee, so bisection is the fast path and the
+linear earliest-first scan is the **fallback** whenever the cheap monotonicity check
+fails (e.g. interacting faults), preserving correctness at `O(n)`. The search is also
+bounded by a fork budget. Attribution
 confidence is reported with its replay guarantee level: a flip found under
 `deterministic_replay` (all cassettes present, hashes match) is high-confidence; a
 flip found under `forked_replay`/`simulation` is labeled as such (§1 #6). The
@@ -1703,8 +1893,14 @@ Search:
 - structured filters by status, time, trace ID, span kind, model, tool, cost,
   latency, token counts, environment, agent release, evaluator, and tags
 - full-text search over inputs, outputs, errors, tool names, and selected attrs
-  through Tantivy or equivalent
-- natural-language search is later; fast structured search is v1
+  through Tantivy (Crate Dig), ranked by **Okapi BM25** — Tantivy's default
+  scorer — with the standard parameters `k₁ = 1.2` (term-frequency saturation) and
+  `b = 0.75` (document-length normalization), tenant-scoped at query time. The
+  score of document `D` for query terms `qᵢ` is
+  `Σᵢ IDF(qᵢ)·( f(qᵢ,D)·(k₁+1) ) / ( f(qᵢ,D) + k₁·(1 − b + b·|D|/avgdl) )`. The
+  index stores only what §8.3 permits (refs/redaction-aware fields), never
+  unredacted payloads it should not hold.
+- natural-language search is later; fast structured BM25 search is v1
 
 Alerting:
 
@@ -2148,6 +2344,16 @@ New crates introduced by this plan (all under the §4 workspace conventions):
 - `beater-identity` — OIDC/SAML/SCIM (Phase 5).
 - `beater-billing` — plans/subscriptions/Stripe metered sync (Phase 5).
 
+**The beat-boxes rename (pre-1.0 follow-up, cross-cutting).** §4 establishes the
+beat-themed names now; the **physical directory rename** of each `beater-*` crate to
+its beat name is deferred to a pre-1.0 follow-up because crate-path renames touch the
+contract and semconv sources (§4 references this task here as "§20.9"). It is a
+single regenerated change that must pass Metronome's drift gates (§22.5): rename the
+crate dirs + `Cargo.toml` members, then `cargo xtask regen-spec` + `regen-sdks.sh` +
+`regen-semconv` and `scripts/check-contract-sync.sh` green in the same commit. Until
+then, reach for a component by its `beater-*` path and reason about it by its beat
+name.
+
 Sequencing rationale (each phase unblocks the next):
 
 ```text
@@ -2328,6 +2534,21 @@ goal + params + few examples
   -> track_evolution -> repeat (stop on §6.2 convergence/budget)
 ```
 
+**The optimization strategy, named concretely.** This is **reflective proposal
+selection with sequential, CI-gated acceptance** — *not* gradient descent and *not*
+(yet) population search. Each round the proposer reflects on the indexed agent +
+classified failures (§21.1) to emit a small set of typed candidate changes; because
+the objective is the multi-dimensional §6.3 vector, candidates are ranked by
+**Pareto-style dominance** on the typed reward (§21.2) — a candidate that improves
+some dimensions without regressing any guardrail dimension dominates, and ties are
+broken toward the higher-trust **verifier_gain** over the noisier **judge_gain**.
+The single best non-dominated candidate is then put to the **sequential acceptance
+gate**: simulate on Train/Dev for a typed-reward CI, then evaluate on the **untouched
+Test split**, accepting iff the Test CI clears §10.3's significance *and* power bar
+with no safety regression (the §6.2 accept/reject rule). Rejected candidates inform
+the next reflection round; the loop is single-candidate-sequential, with full
+population/evolutionary search deferred (§21.5c).
+
 This is **sequential evaluation gated on a real confidence interval over the frozen
 Test split** — propose/simulate read Train (Dev for tuning), acceptance reads the
 untouched Test split (§5.4, §6.4), and a *pass* requires a real `beater-stats`
@@ -2335,6 +2556,8 @@ p-value at adequate power (§10.3), never a raw mean delta. Deterministic evals 
 trusted where state is known-correct; the judge component is position-bias-cancelled
 and CI'd. Anti-overfit, the frozen evaluator (§6.2), and policy-awareness gate every
 accepted change.
+
+### 21.x Anti-Overfitting & Generalization Guardrail — [research-backed spec pending: smoothness/over-optimization detection + auto-generated OOD probes]
 
 ### 21.4 Integrations & Code-Awareness
 
@@ -2773,5 +2996,110 @@ satisfied exactly when their §22.1/§22.3 rows are green:
 A milestone is "shipped" only when every row it depends on has a green
 verification command **and** the CI gate that guards it is passing — which is the
 same standard CONTRIBUTING.md enforces on every PR.
+
+### 22.5 Metronome — the combined CI/CD pipeline
+
+**Metronome** is the single combined CI/CD pipeline that keeps every beat-box on
+tempo: it is the union of the GitHub Actions workflows under
+`.github/workflows/` plus the local `scripts/check-*` drift gates, governed by one
+rule — **a change that is not regenerated, tested, and drift-free cannot merge, and
+only a green `main` deploys.** It has two halves: **CI** (the merge gates below,
+run on every PR and on `main`) and **CD** (the deploy/release workflows, triggered
+only by a push to `main` or a `v*` tag *after* the CI gates are green). The gate
+set here is the same one §22.1/§22.3 map every component and plan item to, the same
+verify-commands as §22.2, and is consistent with the README/CONTRIBUTING gate list
+— there is one source of truth for "what must pass," not three.
+
+#### CI — required merge gates
+
+These **block merge**. Each maps to a workflow in `.github/workflows/` and a local
+equivalent a developer runs before pushing (§22.2). A PR is mergeable only when all
+required gates are green.
+
+| Gate (workflow) | What it enforces | Local equivalent |
+| --- | --- | --- |
+| **`backend`** | `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets -D warnings` (the workspace denies `unwrap`/`expect`, incl. tests); `cargo test --workspace`; the `sqlite_migrations` test (schema/migration drift, below) | `cargo fmt`, `cargo clippy …`, `cargo test --workspace` |
+| **`sdk-contract`** | the **whole contract chain has zero drift**: spec == served routes, spec == all **7** generated SDK clients (`regen-sdks.sh --check`), API-shape audit, semconv == all **5** semconv-carrying SDKs, and the additive-only `oasdiff` breaking-change check; MCP tools and the CLI resolve operations from the spec at runtime so they stay in sync automatically (drift coverage detailed below) | `scripts/check-contract-sync.sh` |
+| **`storage-backends`** | the `beater-store-conformance` trait suite runs against every backend (in-memory, SQLite today; Postgres/ClickHouse as wired, §20.2 #0.1), incl. tenant-isolation (A20) and the `#[ignore]`d container-backed store tests | `cargo test -p beater-store-conformance --workspace`; `cargo test -p beater-store-sql -- --ignored` |
+| **`frontend`** | dashboard build/lint/typecheck against the **generated** OpenAPI client, plus `check-openapi-drift.sh` so a UI change cannot silently diverge from the served spec | `scripts/check-openapi-drift.sh` |
+| **`browser`** | the `beater-browser*` family (Liveset) builds and its driver/capture tests pass | `cargo test` over the browser crates |
+| **`gate1-live-smoke`** | a live `beaterd` ingest → query round-trip (`beaterd --test live_smoke`); the zero-code-bootstrap and `quickstart` acceptance live here (§22.3) | `cargo run -p beaterctl -- smoke …` |
+| **`gate2-proof-contract`** | the clean-clone-to-browser proof contract: `fmt`, `check-openapi-drift.sh`, the gate-0 foundations check, and the self-host/outside-validator tests that back the README "Clean Clone To Browser" path | `scripts/gate2-proof.sh` |
+| **`gate2-browser-proof`** | the recorded browser demo proof (Playwright over the dashboard) | `scripts/browser-e2e.sh` |
+
+The required set above is exactly the standard CONTRIBUTING.md applies to every PR;
+admin review + squash-merge is the human gate layered on top, never a way around a
+red required gate.
+
+#### CI — advisory gates (informational, do not block merge)
+
+- **Benchmarks / load (`beater-bench`, `xtask loadgen`) [planned].** Scale/p95 SLO
+  evidence (§16, §20.2 #0.3). Advisory until the `[planned]` bench fixtures exist;
+  a regression here is surfaced, not merge-blocking, because perf numbers are noisy
+  on shared CI runners. Promote to required once a stable bench baseline lands.
+- **`apple-container-build` / `container-images`.** Image builds for distribution;
+  a build break is reported but does not block a source-only PR. On `main` these
+  feed CD (below).
+
+#### Explicit DRIFT coverage (the anti-silent-drift guarantee)
+
+Metronome's defining job is that **no generated artifact can fall out of sync with
+its single source without a gate going red.** The three drift surfaces of §1 #2:
+
+1. **Contract drift — `spec → 7 SDKs → MCP → CLI → docs`** (the `sdk-contract`
+   gate / `scripts/check-contract-sync.sh`, §22.2). The Rust `#[utoipa::path]`
+   handlers in `beater-api` (Mixing Board) generate `sdks/openapi/beater-api.json`
+   via `cargo xtask regen-spec`; that spec then generates the 7 clients
+   (`scripts/regen-sdks.sh`). `check-contract-sync.sh` proves, in one command:
+   spec == served routes (`openapi_coverage`), spec == all 7 regenerated clients
+   (`regen-sdks.sh --check`), the API-shape audit, and an additive-only `oasdiff`
+   breaking check. **MCP tools and the `beater api` CLI are not separately
+   regenerated** — they resolve operations from the spec *at runtime*, so a spec
+   change propagates to both automatically and a coverage test asserts the MCP
+   `tools/list` covers every `/v1` operation (§22.1 MCP row). Docs that name a
+   contract artifact ride the same gate.
+2. **Semantic-convention drift — `beater-schema (Beatmap) → conventions.json → 5
+   SDKs`** (`cargo xtask regen-semconv` + `scripts/check-semconv-drift.py`, part of
+   `check-contract-sync.sh` step 4/4). Span kinds, attribute keys, defaults, and
+   env-var names have one source — the `conventions` module of `beater-schema` —
+   regenerated into `sdks/semconv/conventions.json`; the drift check parses the
+   values actually assigned in each SDK's semconv file and fails if any of the 5
+   carrying SDKs has drifted from the source.
+3. **Schema / migration drift** (the `sqlite_migrations` test in the `backend`
+   gate). Migrations are the source of the persisted schema; the migration test
+   asserts the runtime schema matches the migration set and that migrations apply
+   cleanly (and, per §20.2 #0.6, a per-backend migration-checksum test extends this
+   to Postgres/ClickHouse as those backends are wired). `xtask renormalize`
+   reprojects the immutable raw envelopes (§1 #3) when the normalizer or canonical
+   schema changes, so a schema change is always re-derivable rather than a
+   destructive migration.
+
+If any source changes without its generated artifact being regenerated and
+committed, the matching gate is red and the PR is unmergeable — drift cannot merge
+silently. This is the same guarantee the §4 naming note relies on: the **physical
+beat-boxes crate rename is a pre-1.0 follow-up** (§20.9) precisely because renaming
+crate paths touches the contract/semconv sources and must pass Metronome's drift
+gates in one regenerated change.
+
+#### CD — deploy & release (green-`main`-only)
+
+CD is the second half of the same pipeline; it never runs on a red tree.
+
+- **`deploy-backend`** — on push to `main` touching `crates/**`/`bins/**`/Dockerfile/
+  `fly.toml`, deploys `beaterd` (Fly.io; runtime secrets live in `fly secrets`, the
+  workflow holds only `FLY_API_TOKEN`). Forks without the token skip the deploy
+  rather than fail.
+- **`deploy-dashboard`** — on push to `main` touching `web/dashboard/**`, deploys
+  the Next.js dashboard.
+- **`container-images`** — on push to `main`, builds and publishes the GHCR images
+  used by the clean-machine compose path.
+- **`release`** — on a `v*` tag (or manual `workflow_dispatch`), re-runs the
+  contract verification (`verify-contract`) and cuts the tagged release artifacts.
+
+Because every deploy workflow is `main`/tag-triggered and `main` only advances
+through the required CI gates above, **CD inherits CI's guarantees**: nothing
+deploys that has not passed the full required gate set, including zero contract /
+semconv / migration drift. That closure — sources → generated artifacts → gates →
+`main` → deploy — is what "Metronome keeps every box on tempo" means concretely.
 
 
