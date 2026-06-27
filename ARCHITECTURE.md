@@ -5,6 +5,8 @@ It is designed to be credible as an OSS project, viable as a hosted API product,
 agent-native enough to compete with Arize Phoenix, Braintrust, LangSmith, Langfuse,
 and Judgment-style agent debugging systems.
 
+## 0. Core Loop
+
 The core product loop is the definition of "shipped":
 
 ```text
@@ -496,7 +498,7 @@ beater/
     *.rs                  # [planned] Vercel Rust Function entrypoints where needed
   web/
     dashboard/            # Next.js dashboard consuming generated OpenAPI client
-  migrations/             # SQLite migrations today; Postgres/ClickHouse migrations [planned] (§20.2 #0.6)
+  migrations/             # SQLite migrations today; Postgres/ClickHouse migration SQL exist; backend-agnostic runtime migrator that runs them [planned] (§20.2 #0.6)
   docker-compose.yml
 ```
 
@@ -2008,6 +2010,34 @@ No lock-in:
 - import existing datasets/traces
 - keep raw source attributes for migration and round-trip use
 
+### 15.1 Documentation (a first-class, enforced ship requirement)
+
+Docs are **part of the product**, not an afterthought: the DX SLO above
+(time-to-first-scored-failure) is unreachable if a new developer can't follow the
+docs to get there. The following docs **MUST exist to ship**, and their existence is
+**enforced** by the §24 "Docs complete" Definition-of-Done row and the §22
+docs-walkthrough check:
+
+- **Quickstart tutorial** — zero-code OTLP bootstrap (§15) to first scored failure,
+  step by step.
+- **"Beater in Claude Code & Codex" setup guide** — the §21.5b OAuth connect flow
+  and the concrete `claude mcp add` / Codex MCP-config setup.
+- **Per-language SDK guides** — one per shipped client (the 7 generated SDKs).
+- **Framework-integration guides** — LangChain / LangGraph, Temporal, browser-use,
+  OpenInference/OpenLLMetry exporters (§21.5).
+- **API & MCP-tool reference** — the `/v1` API reference and the MCP-tool reference,
+  **generated from the contract** (`sdks/openapi/beater-api.json`), never hand-written.
+- **Self-host + ops runbooks** — install/upgrade, backup/restore, SLO dashboards,
+  incident response.
+- **Docs-site build/publish/versioning** — how the docs site is built, published,
+  and **versioned per release** (so docs track the API the reader is on).
+
+**Status today (honest).** Built: `README.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+`GOVERNANCE.md`, and the `docs/` directory (`local-dev`, `hosting`,
+`offline-self-host`, `api-stability-policy`, `feature-matrix`). Planned: the
+**user-facing guides** above (quickstart, Claude-Code/Codex, SDK & framework guides,
+generated API/MCP reference) and the **published, versioned docs site**.
+
 ## 16. Self-Observability SLOs
 
 Beater dogfoods itself. Hosted cannot launch without dashboards and alerts for:
@@ -2323,7 +2353,7 @@ Goal: everything required before hosted multi-tenant GA can be sold (see §14, �
 | 5.8 | Billing / usage ledger | idempotent ledger exists; no plans/invoicing | meters for ingest/storage/eval/judge; per-org rollups; `beater-billing` (plan/subscription + Stripe metered sync) linked to `QuotaLimiter` | L | contract |
 | 5.9 | Backups + restore drills | none | hosted on Postgres+object store with PITR; `beaterctl backup`/`restore` for self-host; CI restore-drill job with documented RPO/RTO | L | evidence |
 | 5.10 | SLO dashboards + dogfooding | Prometheus facade exists | Grafana dashboard JSON + Prometheus alert rules under `ops/`; self-trace OTLP exporter so `beaterd` traces into a Beater project; load test producing the §16 numbers | M | evidence |
-| 5.11 | Governance / SOC2 controls | LICENSE + GOVERNANCE only | `SECURITY.md` (coordinated disclosure); `docs/compliance/` SOC2 control matrix, access-review runbook, incident-response plan, subprocessor list, DPA template | M | evidence |
+| 5.11 | Governance / SOC2 controls | LICENSE + GOVERNANCE + CONTRIBUTING + **`SECURITY.md` (coordinated disclosure) — DONE/built**, lands with this doc change | `docs/compliance/` SOC2 control matrix, access-review runbook, incident-response plan, subprocessor list, DPA template (`SECURITY.md` already done) | M | evidence |
 | 5.12 | KMS-backed BYOK + at-rest rotation for blobs | ChaCha20 envelope for secrets only | KMS `Keyring` (AWS/GCP CMK wrap) behind `SecretKeyring`; extend envelope encryption to trace I/O blobs + PII fields; concurrency-safe rotation across stores | XL | design |
 
 Acceptance: a non-owner is denied a mutating route by enforced RBAC; SSO login
@@ -2669,9 +2699,8 @@ arXiv:2603.13285]. Two complementary measures:
 - **Flatness** — perturb the changed prompt/config with small semantics-preserving
   edits (whitespace, reordering of independent instructions, synonym swaps) and
   measure score dispersion. The conceptual framing is "prefer flat minima in
-  prompt-space" (SAM-for-prompts); **NOTE the specific SAM-prompt source
-  (arXiv:2509.24130) was WITHDRAWN**, so it is used **only for conceptual framing**
-  and the numbers are **[directional]**.
+  prompt-space" (SAM-for-prompts); the framing is retained as a heuristic only,
+  with no quantitative claim attached.[^sam-prompt]
 - **Metamorphic-relation stability** — define a metamorphic relation `MR`:
   *paraphrase-in ⇒ equivalent-out*. For paraphrased inputs `x' ≈ x`, the change
   must produce equivalent outputs (equal for deterministic scorers; within-CI for
@@ -2789,6 +2818,11 @@ This guardrail is **[planned]**, like the rest of §21; its acceptance test is t
 §24 ledger row "the §21 guardrail REJECTS an overfit change on a held-out OOD probe"
 and the §22.3 RSI rows.
 
+[^sam-prompt]: The specific SAM-for-prompts source (arXiv:2509.24130) was
+  *withdrawn; retained for framing only* — do not propagate it as valid evidence.
+  The flatness heuristic stands on its own as an engineering choice; any numbers
+  here are **[directional]**.
+
 ### 21.5 Integrations & Code-Awareness
 
 - **Runtime introspection:** aware of where localhost runs; can open the browser,
@@ -2799,6 +2833,92 @@ and the §22.3 RSI rows.
 - **Integration depths:** (1) suggest-only, (2) wire a node (Studio, deferred —
   §21.6b), (3) change actual repo code — chosen per change. Depth (3) is gated by
   the bounded-autonomy policy (§21.6) and a held-out Test win.
+
+### 21.5b Beater in your coding agent (Claude Code & Codex)
+
+The hosted `beater-mcp` is meant to be attached **inside the coding agent the
+developer already uses** — Claude Code, Codex, or any MCP-capable client. The agent
+then drives the §21.1 improvement tools (`index_agent`, `propose_change`,
+`simulate`, `apply_change`, `challenge_labels`) and the rest of the Backbeat stack
+directly, without leaving its editor.
+
+**Connect flow (OAuth 2.1, standards-only).** The hosted `/mcp` endpoint is an
+**OAuth 2.1 resource server**; no Beater-specific auth dance. A coding agent
+discovers and authenticates over the standard chain (each step a real endpoint on
+`main`, in `crates/beater-oauth-server`):
+
+1. `GET /.well-known/oauth-protected-resource` — RFC 9728 protected-resource
+   metadata; points at the authorization server. **[built]**
+2. `GET /.well-known/oauth-authorization-server` — RFC 8414 AS metadata
+   (authorize/token/registration URLs). **[built]**
+3. `POST /oauth/register` — RFC 7591 dynamic client registration; the agent
+   registers itself, no pre-shared client id. **[built]**
+4. `GET /oauth/authorize` — authorization endpoint; opens the **dashboard login**
+   in a browser and returns an auth code to the agent's redirect URI. **[built]**
+5. `POST /oauth/token` — token endpoint (`authorization_code` + `refresh_token`
+   grants) → access token. **[built]**
+6. Authenticated **streamable-HTTP** `/mcp` calls — the agent now invokes Beater's
+   MCP tools with the bearer token. The `/mcp` endpoint is `POST/GET /mcp` over
+   axum (`crates/beater-mcp`) and is **[built]**; the full streamable-HTTP
+   transport semantics and the **end-to-end Claude-Code / Codex OAuth connect
+   verification are partial/planned**.
+
+ChatGPT custom connectors use this same standard flow (RFC 9728 → 8414 → 7591 →
+authorize/token), so the same hosted MCP works there unchanged.
+
+**Setup — Claude Code.** Add the hosted MCP as a remote HTTP server; this triggers
+the OAuth browser flow on first use:
+
+```bash
+claude mcp add --transport http beater <beater-mcp-url>/mcp
+# first tool call opens the dashboard login, completes the OAuth chain above,
+# then Beater's tools are available inside Claude Code.
+```
+
+**Setup — Codex.** Add Beater as an MCP server in Codex's MCP configuration using
+its remote-MCP support, pointing at the same `<beater-mcp-url>/mcp`. Codex performs
+the identical RFC 9728 → 8414 → 7591 → authorize/token discovery and then calls
+`/mcp` with the bearer token. (Config-file shape follows Codex's MCP server schema;
+the URL + HTTP transport are the only Beater-specific values.)
+
+**Local `stdio` transport is the alternate path and is `[planned]`.** Today the
+server speaks HTTP only (`POST/GET /mcp`); a `stdio` transport for a fully local,
+no-network coding-agent attach is on the roadmap, not built.
+
+**Value prop — quant-by-default.** Attaching this one MCP gives the coding agent the
+**entire quantitative stack**, so its self-improvement is *statistically gated and
+generalization-checked, not heuristic / vibes*:
+
+- **Backbeat real statistics** — every score carries a confidence interval, with
+  **Holm-Bonferroni + Benjamini-Hochberg** multiplicity control and
+  **anytime-valid** sequential testing (`beater-stats`, §10.3, §21.2). A "win" is a
+  powered, multiplicity-corrected win, not a single point estimate.
+- **The §21.4 anti-overfitting guardrail** — held-out **Test** split + **auto-OOD
+  probes** + **EvalStop** early-stop, so a change that games the proxy is caught
+  before it ships (§21.4).
+- **Calibration** — Brier / ECE / reliability curves and judge-vs-human agreement
+  (`beater-calibration`, §10.5, §6.3 #7) so the readings are trustworthy.
+- **The §6 16-dimension Agent Model** — success, trajectory, tool-call correctness,
+  faithfulness, safety, cost, latency, generalization, … (§6.3) — the agent is
+  scored along all 16 axes, and any single axis can veto.
+- **§21 `simulate`** — propose→simulate→accept episodes that read **Train/Dev** and
+  gate acceptance on the **untouched Test** split (§21.1, §21.3).
+
+The net effect: the coding agent stops guessing whether its own change helped and
+instead gets a real, held-out, multiplicity-corrected verdict.
+
+**Solo-dev path.** This is designed so a *generalist* can drive it. The default
+onboarding is **zero-code OTLP bootstrap** (§1 #13, §15) with sane defaults;
+`beaterctl quickstart` (§20.8 #6.4) boots compose, provisions a tenant/key, and
+prints the exporter snippet + dashboard URL; and the MCP does the heavy lifting
+(stats, splits, guardrail) so the developer doesn't have to hand-roll any of it. The
+**DX SLO is time-to-first-scored-failure** (§15) — not just a trace, a *scored
+failing case* — and the Claude-Code / Codex attach is the fastest route to it.
+
+> **Built-vs-planned (honest).** The **OAuth 2.1 server** and the **`/mcp` HTTP
+> endpoint** are **[built]** (`crates/beater-oauth-server`, `crates/beater-mcp` on
+> `main`). The **streamable-HTTP transport**, the **end-to-end Claude-Code / Codex
+> OAuth connect verification**, and the **`stdio`** transport are **partial/planned**.
 
 ### 21.6 Bounded-autonomy policy
 
@@ -3149,6 +3269,16 @@ unauthorized mutating call returns 401/403; a cross-tenant read returns empty/40
 *Tests:* the `/metrics` Prometheus facade exposes ingest success, ingest→queryable
 lag, DLQ age, query p95; a load run produces the §16 numbers.
 *Verify:* `[built]` `curl -fsS http://127.0.0.1:8080/metrics | head`.
+
+**Documentation walkthrough (§15.1).**
+*Tests:* a **docs-walkthrough** check — a developer (or CI persona) with no prior
+context follows *only* the published docs (quickstart + the §21.5b Claude-Code/Codex
+MCP setup + SDK/framework guides + generated API/MCP reference) and reaches **first
+scored failure** within the §15 DX SLO; the generated `/v1` + MCP-tool reference is
+asserted in sync with `sdks/openapi/beater-api.json` (the `sdk-contract` discipline).
+*Verify:* `[planned]` a scripted docs-walkthrough (fresh container, docs-only
+instructions) ending in a scored failing case visible in the dashboard; ties to the
+§24.3 "Docs complete" row.
 
 ### 22.2 One-command local verification (the developer smoke loop)
 
@@ -3520,7 +3650,7 @@ above):
 ## 24. Definition of Done — Completion Ledger
 
 This is the **binary, auditable** checklist that defines "complete." It exists
-because §16/R16 demands it: a passing test counts **only if it covers the full
+because §16/R16 (R16, the completion-audit rule in REQUIREMENTS.md) demands it: a passing test counts **only if it covers the full
 scope of the capability** — *"intent does not count; partial does not count;
 plausible-looking docs do not count."* Each row is **Done iff** its concrete
 binary criterion holds **and** is **Verified** by an exact §22 test / Metronome CI
@@ -3571,7 +3701,8 @@ to §18 milestones, §19 Bar-for-Done, §20/§21 phase items, and §22 tests.
 | Capability | Binary done-criterion | Verified-by | Status |
 | --- | --- | --- | --- |
 | beater-bench SLO gates green | criterion + loadgen meet §16 SLOs and gate regressions | §22.5 advisory bench gate → required; Tech Rider (`beater-bench` [planned], §23.10) | planned |
-| Governance docs present | `LICENSE`, `GOVERNANCE.md`, `SECURITY.md`, `CONTRIBUTING.md` exist | §22.3 §20.7 #5.11 repo-presence check; `SECURITY.md` exists `[built]` | partial (LICENSE/CONTRIBUTING/SECURITY built; GOVERNANCE to confirm) |
+| Governance docs present | `LICENSE`, `GOVERNANCE.md`, `SECURITY.md`, `CONTRIBUTING.md` exist | §22.3 §20.7 #5.11 repo-presence check; `SECURITY.md` exists `[built]` | built (LICENSE + CONTRIBUTING + SECURITY + GOVERNANCE present); compliance docs `[planned]` |
+| Docs complete | quickstart + Claude-Code/Codex MCP setup + SDK & framework guides + API/MCP-tool reference exist and are verified by a new dev reaching first-scored-failure following **only** the docs (§15.1, §21.5b) | §22 docs-walkthrough check (a new dev hits first-scored-failure from docs alone) | partial (README/CONTRIBUTING/SECURITY/GOVERNANCE + `docs/` exist; user-facing guides + docs site `[planned]`) |
 | §19 Bar-for-Done all "yes" with evidence | every §19 question answerable **yes** with a green §22 verification | §22.4 traceability (milestone ⇒ §22 rows); §19 | planned (several answers still "no", §20.1) |
 
 **The project is shipped iff every row above is Done+Verified.** The unchecked
