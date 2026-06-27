@@ -190,6 +190,33 @@ Primary source links:
 - https://vercel.com/docs/queues
 - https://vercel.com/docs/queues/poll-mode
 
+### 3.3 Deployment & Distribution (server, docs, 7 SDKs, MCP, CLI)
+
+Beater is not one artifact — it is a server, a documentation site, seven
+generated SDK clients plus a native Rust SDK, an MCP server, and a CLI. Each is
+built, versioned, published, and deployed differently, but they all derive from
+the same contract (the `CLAUDE.md` single-source-of-truth rule), so they cannot
+drift. What is **[built]** today vs **[planned]** is marked.
+
+| Artifact | Built from | Published as | Versioning | Deployed / consumed | Status |
+| --- | --- | --- | --- | --- | --- |
+| **`beaterd` server** (+ `beaterctl`) | Rust workspace, multi-stage `cargo-chef` Dockerfile | multi-arch GHCR image (`container-images` workflow); also a raw binary | git SHA tag per build; semver tag at release | OSS: `docker compose up`. Hosted: Rust cells (§3.2). | [built] |
+| **Dashboard** | `web/dashboard` (Next.js) consuming the generated TS client | GHCR image (`container-images`); Vercel deploy for hosted | git SHA / release tag | OSS: compose service on `:3000`. Hosted: Vercel (§3.2). | [built] |
+| **Docs site** | renders the committed `sdks/openapi/beater-api.json` | static site / hosted docs | tracks the spec version | published from `main`; the committed spec is the source so docs never drift | [planned site; spec is built] |
+| **7 generated SDK clients** (`sdks/clients/*`: py, ts, go, java, c, cpp, …) | OpenAPI spec via `scripts/regen-sdks.sh` (+ reproducible C/C++ patches) | committed in-repo; published to each language registry (PyPI / npm / pkg.go.dev / Maven, etc.) by `scripts/publish-sdk.sh` | spec/contract version; per-language package version | `pip`/`npm`/`go get`/Maven by users; `sdk-contract` CI blocks any drift from the spec | clients [built]; registry publish [planned] |
+| **Native Rust SDK** (`sdks/rust`) | hand-written, `tracing`/OTel layers; **excluded** from the cargo workspace | crates.io package | semver | `cargo add beater` (accelerator, not the adoption gate, §1 #2, §15) | [built in-repo; crates.io publish planned] |
+| **MCP server** (`beater-mcp`) | every `/v1` operation resolved from the spec at runtime, + composite recipes + RSI tools (§21) | served by `beaterd` at `POST /mcp` | tracks the spec (operations resolved at runtime → auto-in-sync) | **stdio** for local clients (Claude Code/Cursor/Codex) and **streamable-HTTP + OAuth 2.1** for hosted (§21). streamable-HTTP is [built]; **stdio is the one [planned] transport gap (§21).** | streamable-HTTP [built]; stdio [planned] |
+| **CLI** (`beaterctl`) | resolves `/v1` operations from the spec at runtime (`beater api`), plus local fixtures/smoke | the server image, and a standalone binary | tracks server/spec | `cargo run -p beaterctl` or the released binary; used in CI smoke + local dev | [built] |
+
+The discipline that keeps these consistent is one workflow (`CLAUDE.md`,
+`CONTRIBUTING.md`): a `/v1` change runs `cargo xtask regen-spec` →
+`scripts/regen-sdks.sh` → `cargo xtask regen-semconv`, and
+`scripts/check-contract-sync.sh` (mirrored by the `sdk-contract` CI gate) blocks
+any drift across the spec, all 7 clients, semconv, MCP, CLI, and docs. Because
+the MCP and CLI resolve operations from the committed spec at runtime, they
+update automatically; the docs render the committed spec, so they update too. The
+per-artifact "how to verify it's deployed/in-sync" commands are in §22.
+
 ## 4. Rust Workspace
 
 The operational split is logical first, physical later.
@@ -741,7 +768,9 @@ from wishful thinking. For each, how Beater checks or relaxes it:
 The payoff: a developer can read off *exactly* which dimension regressed, with a
 real interval and a stated assumption, and the RSI loop (§21) has a precise,
 overfit-resistant objective `J(π)` to optimize against rather than a single fragile
-score.
+score. These four assumptions, plus every other quantitative assumption in this
+document, are gathered with their checks and enforcing tests in the consolidated
+table at §21.9 (rows A1, A9, A10, A12).
 
 ## 7. Standards and Normalization
 
@@ -1265,6 +1294,11 @@ reported interval is an honest estimate of the *population* rate, not the
 tail-sampled *kept* rate. Offline dataset evals run on balanced cases where every
 weight is 1.0, so this only changes production/online aggregates — but where it
 applies, an unweighted number is simply wrong.
+
+Every assumption named in this subsection (clustering, interval validity, test
+selection, nominal=actual alpha, multiplicity, power, no-peeking, weighting) is
+gathered with its check and the §22 test that enforces it in the consolidated
+assumptions table at §21.9 (rows A1–A8, A19).
 
 ### 10.4 Grading Algorithms & Assumptions
 
@@ -2276,3 +2310,296 @@ enforced directly through `QuotaLimiter` without the commercial layer.
 
 This loop depends on Phases 0–4 of §20 (scale, data model, read APIs, evals/stats,
 online evals) being far enough along that traces and evals are real inputs to it.
+
+### 21.9 Assumptions & how they are validated (consolidated)
+
+Every quantitative claim in this document rests on assumptions. They are stated
+in context (§6.5, §10.3, §10.4, §10.5, §11), but a reader should be able to see
+**all of them in one place**, paired with **how each is checked or relaxed** and
+**the §22 test that enforces it** — so there is no dangling or implicit
+assumption anywhere in the platform. If an assumption cannot be satisfied for a
+given comparison, the affected estimator/gate **refuses to decide** (returns
+*inconclusive* / "no single-span root cause" / "biased, unweighted") rather than
+emitting a wrong number.
+
+| # | Assumption | Where it lives | How it is checked | How it is relaxed when violated | §22 test that enforces it |
+| --- | --- | --- | --- | --- | --- |
+| A1 | **Cases are i.i.d.** (independent observations) | §6.5, §10.3 #1 | declare a cluster id per case; detect multi-turn/shared-template groups | **clustered standard errors** (§10.3 #1); coarsen clusters if clusters are themselves correlated | `beater-stats` unit: clustered SE on a correlated fixture is wider than naive SE; gate refuses if no cluster id where one is required |
+| A2 | **CLT/normal interval is valid** (large N, unbounded, symmetric) | §10.3 #2 | metric type + N check before choosing an interval | use **Wilson** (binary) / **bootstrap** (bounded/continuous); CLT only when its preconditions hold | unit: Wald/normal path is *deleted*; a property test asserts Wilson/bootstrap coverage ≈ nominal at small N |
+| A3 | **Significance test matches the metric** (normality / pairing / symmetry) | §10.3 #3 | test-selection records which satisfied assumption justified the choice | auto-select McNemar/Wilcoxon/bootstrap when t-test normality fails | unit: each branch of the §10.3 #3 table selected on its matching fixture; mismatched fixture falls back to bootstrap |
+| A4 | **Nominal alpha = actual alpha** (the gate's stated error rate is its true rate) | §1 #9/#11, §10.3 | the hardcoded-z path is deleted; real p-values from `beater-stats` | n/a — this is an invariant, not a relaxable assumption; gate is wrong if violated | conformance: simulate many null comparisons, assert empirical false-positive rate ≈ alpha (calibration test) |
+| A5 | **Multiplicity is controlled** across metrics/slices | §10.3 #4, §6.3 | count comparisons in an experiment; apply Holm-Bonferroni (FWER) or BH (FDR) | switch FWER↔FDR by goal; never raw alpha division | unit: 16-dimension multi-metric fixture (§6.3) shows corrected vs uncorrected false-win rate |
+| A6 | **The comparison is adequately powered** | §10.3 #5 | `achieved_power(n,effect,alpha)` before any *pass* | return **inconclusive**, never *pass*, when underpowered; `required_sample_size` tells the user how many more cases | gate test: an underpowered fixture returns `inconclusive`; CI green never means "too few cases" |
+| A7 | **Fixed-horizon test is being read once** (no peeking) | §10.3 #6, §13 | online/continuous path flagged distinct from offline | use **anytime-valid mSPRT / confidence sequences** on any continuously-peeked stream | online test: a continuously-peeked stream using a fixed-N test inflates FP ≫ alpha; confidence-sequence path holds coverage |
+| A8 | **Observations are bounded / sub-Gaussian** (needed for A7) | §10.3 #6 | 0–1 eval scores satisfy this automatically | restrict anytime-valid claims to bounded metrics; refuse on unbounded heavy-tailed signals | unit: confidence-sequence validity asserted on 0–1 scores |
+| A9 | **Stationarity** — agent/judge/providers stable over the window | §6.5, §10.1.1 | re-run a fixed canary set over time; watch kappa/score/ECE drift | recalibration triggers on model deprecation/provider drift; freeze evaluator within an episode (§6.2) | integration: canary drift detector fires a recalibration trigger on injected drift |
+| A10 | **Judge calibration is valid** (judge reads right) | §6.5, §10.1.1, dim #5 | periodic judge-vs-human agreement (Cohen's kappa) + Wasserstein calibration | re-fit `F_human`/`F_model`; demote/abstain dimensions if reference set is stale/tiny | calibration test: kappa/agreement report persisted; stale reference set flags affected dimensions |
+| A11 | **Probability signals are calibrated** (0.8 means ~80%) | §10.5, dim #7 | Brier + ECE + reliability curve on held-out Test | persisted isotonic/Platt **recalibration map** `c(p)→p'`, versioned into `EvalResult` | unit: ECE improves after applying the recalibration map on a miscalibrated fixture |
+| A12 | **Dataset is representative** of the deployment distribution | §6.5, dim #15 | generalization-gap monitoring (dim #15); online vs offline score comparison (§20.6) | power/MDE planning refuses tiny/biased sets; flag if holdout−train gap CI excludes 0 | integration: offline estimate vs production score-distribution divergence raises a representativeness flag |
+| A13 | **Held-out Test is uncontaminated** (no leakage into prompts/few-shot/memory) | §5.4, §6.4, §6.2 | seeded-hash Train/Dev/Test split; near-dup overlap detection train↔test; min-sample gate | rotate/refresh holdout if compromised; acceptance reads Test only | conformance: contamination guard rejects a near-dup leaked into Test; gate accepts only on untouched Test |
+| A14 | **Evaluator is frozen during an optimization episode** | §6.2, §6.4, §21.3 | pin judge model, rubric (locked JSON), scorers, and split for the episode | n/a — invariant; a moved ruler invalidates the episode | RSI test: mutating the rubric mid-episode aborts the episode rather than scoring against a moved ruler |
+| A15 | **Determinism = caching, not `temperature=0`** | §1 #9, §11 | request-hash judge cache + provider/tool/clock/seed cassettes; hashes must match | label `forked_replay`/`simulation` honestly when cassettes are absent/mismatched | replay test: deterministic_replay requires hash match; missing cassette downgrades the mode label |
+| A16 | **Tool correctness is execution-based, not syntactic** | §10.4, dim #3 | score the tool call by *executing/replaying* it against a seeded env, check the effect | refuse a syntactic-only score; require a seeded/replayable tool environment | unit: a syntactically valid but semantically wrong call scores 0; a differently-shaped correct call scores 1 |
+| A17 | **Trajectory quality is jointly modeled** (not a mean of independent steps) | §10.4, dim #2 | process-reward scorer over the span sequence; trajectory = cluster (A1) | aggregate with trajectory-clustered SE; never average independent per-step scores | unit: per-step independent scoring vs joint scoring diverge on a shared-context fixture; clustered SE used |
+| A18 | **Root cause = earliest outcome-flipping span**, not first error | §11 | counterfactual forked-replay search, earliest-first, bounded by a fork budget | return "no single-span root cause" when no single correction flips the outcome | replay test: a trace that fails with no errored span still yields the causal fork point; first-error heuristic would miss it |
+| A19 | **Aggregates over production traffic are unbiased** | §1 #9, §9, §10.3 | carry `sampling_weight = 1/keep_probability`; Horvitz-Thompson weighted estimates | label any unweighted production view **biased**; offline balanced datasets use weight 1.0 | unit: weighted vs unweighted aggregate diverge on a tail-sampled fixture; weighted matches the population rate |
+| A20 | **Tenant isolation holds** (no cross-tenant read/write) | §14, §20.7 #5.4 | app-enforced `WHERE tenant_id=?` today; Postgres RLS on `SET app.tenant_id` (hosted) | n/a — invariant; a crossover is a security bug (SECURITY.md scope) | conformance: cross-tenant read/write fails (store-conformance today, at the DB under RLS for hosted) |
+
+The payoff: every number the platform ships traces back to a row here, and every
+row names the test in §22 that fails if the assumption is silently broken.
+
+## 22. Testing, Verification & Acceptance
+
+This section is the actionable test plan. It is written so a developer can (a)
+know **what tests to write** for each major component, (b) run a **"how to verify
+it's running" check** at any moment, and (c) see **every §20/§21 plan item mapped
+to its acceptance test plus a verification command and the CI gate that enforces
+it.** Commands assume `beaterd` on `:8080` (API) / `:4317`/`:4318` (OTLP) and the
+dashboard on `:3000`, matching §3.1. `[built]` commands run against `origin/main`
+today; `[planned]` commands are the acceptance check for an unbuilt item and are
+marked.
+
+### 22.0 The five test layers
+
+| Layer | Purpose | Tooling |
+| --- | --- | --- |
+| **unit** | one function/estimator/scorer in isolation | `cargo test` / `cargo nextest`, `proptest`, `insta` snapshots |
+| **integration** | one crate boundary wired to a real store/bus | `cargo test` with `testcontainers`, SQLite temp dirs |
+| **conformance** | the *same* suite run against every backend impl | `beater-store-conformance` (trait suite) |
+| **e2e** | live `beaterd`: ingest → query → eval → gate → UI | `beaterctl` fixtures, `gate1-live-smoke`, `gate2-*`, Playwright |
+| **load / bench** | throughput + p95 SLO evidence | `beater-bench` (criterion), `xtask loadgen` **[planned]** |
+
+A change without the right layer is incomplete: a scale claim needs load, an
+estimator needs unit + a calibration test, a contract change needs the
+`sdk-contract` gate, a UI change needs Playwright.
+
+### 22.1 Per-component test plan + "how to verify it's running"
+
+For each component: the concrete tests to write, then a runnable verification.
+
+**Ingest (`beater-ingest`, `beater-otlp`, `beater-temporal`).**
+*Tests:* unit — OTLP/OpenInference/GenAI → canonical normalizer golden fixtures
+(both dialects); raw-envelope immutability + payload-hash; idempotent duplicate
+ingest; quota 429 with retry/reset headers; tail-sampling stamps
+`sampling_weight = 1/keep_probability` (A19). integration — buffered trace-write
+survives worker kill/restart, DLQs on store outage, replays to a
+readable/searchable trace; no-silent-drop accounting across error/DLQ/recovery.
+e2e — OTLP HTTP **and** gRPC trace becomes queryable and searchable.
+*Verify it's running:* `[built]`
+
+```bash
+curl -fsS http://127.0.0.1:8080/health
+cargo run -q -p beaterctl -- smoke --http-url http://127.0.0.1:8080            # OTLP round-trip + query lag
+cargo run -q -p beaterctl -- ingest-outage-fixture --data-dir /tmp/beater-io  # no silent drop
+```
+
+**Store (`beater-store*`).**
+*Tests:* the `beater-store-conformance` suite is the contract — run it against
+in-memory, SQLite, and (as wired, §20.2 #0.1) Postgres/ClickHouse: org/project/
+environment/RBAC boundaries, shared fixed-window quotas, trace write/read,
+**cross-tenant read/write fails (A20)**. integration — keyset pagination +
+pushdown (§20.2 #0.2). load — `beater-bench` write/query p95 on 1M/10M-span
+fixtures (§20.2 #0.3).
+*Verify:* `[built]` `cargo test -p beater-store-conformance --workspace` (the
+`storage-backends` CI gate runs this); `[planned]`
+`cargo run -p beaterd -- --trace-store clickhouse` boots and serves.
+
+**Evals / judge (`beater-eval`, `beater-judge`, `beater-sandbox`, `beater-scorers`).**
+*Tests:* unit — each §10.4 scorer on a passing + a failing fixture, **plus its
+invalid-when case** (e.g. execution-based tool correctness scores a
+syntactically-valid-but-wrong call 0, A16; trajectory joint vs independent
+diverge, A17); WASI sandbox denies network/host imports, enforces fuel/memory/
+epoch limits. integration — judge broker preflight budget reservation,
+request-hash cache hit (determinism = caching, A15), SQLite audit ledger,
+idempotent usage metering. e2e — deterministic + judge-backed dataset eval.
+*Verify:* `[built]`
+
+```bash
+cargo run -q -p beaterctl -- judge-fixture --data-dir /tmp/beater-judge          # encrypted BYOK + cached judge + ledger
+cargo run -q -p beaterctl -- judge-dataset-fixture --data-dir /tmp/beater-jds    # judge eval over a dataset version
+```
+
+**Statistics (`beater-stats`, §10.3).**
+*Tests:* the assumption table A2–A8 each map to a unit/conformance test —
+Wilson/bootstrap coverage at small N (A2); test selection per §10.3 #3 (A3);
+**the calibration test: many null comparisons ⇒ empirical false-positive rate ≈
+alpha (A4)**; Holm-Bonferroni/BH false-win control (A5); underpowered ⇒
+`inconclusive` not `pass` (A6); confidence-sequence validity under continuous
+peeking (A7/A8). A regression test asserts the deleted hardcoded-z path and
+`StatisticalTest::PairedNormalApproximation` do **not** exist.
+*Verify:* `[planned]` `cargo test -p beater-stats` (alpha-calibration +
+power-refusal tests); until then the gate uses the deleted-and-wrong path and
+must not be trusted (§10.3).
+
+**Experiments + gates (`beater-experiments`, `beater-gates`).**
+*Tests:* integration — baseline-vs-candidate per-case scores; gate report
+snapshots policy/comparison/decision; gate **fails** on a real confidence-bound
+regression and returns **inconclusive** when underpowered (A6); accepts only on
+the frozen Test split (A13/A14). e2e — judge-backed candidate-vs-baseline gate.
+*Verify:* `[built]`
+
+```bash
+cargo run -q -p beaterctl -- judge-experiment-fixture --data-dir /tmp/beater-jx  # judge-backed gate
+cargo run -q -p beaterctl -- gate-run-fixture --data-dir /tmp/beater-gate        # CI gate passes on no-regression
+! cargo run -q -p beaterctl -- gate-run --data-dir /tmp/beater-gate \
+    --tenant-id demo --project-id demo --gate-id main                            # gate BLOCKS a regression (non-zero exit)
+```
+
+**Calibration (`beater-calibration`, §10.5).**
+*Tests:* unit — judge-vs-human agreement + Cohen's kappa (A10); Brier/ECE +
+reliability curve; **ECE improves after applying the persisted isotonic/Platt
+recalibration map (A11)**; the map is versioned into `EvalResult` repro metadata.
+*Verify:* `[built]`
+`cargo run -q -p beaterctl -- calibration-fixture --data-dir /tmp/beater-cal`
+(kappa/agreement today; Brier/ECE/map is §20.5 #3.7 `[planned]`).
+
+**Replay & attribution (`beater-replay`, §11).**
+*Tests:* unit — `deterministic_replay` requires cassette hash match, missing/
+mismatched cassette downgrades the mode label honestly (A15); **forked-replay
+search finds the earliest outcome-flipping span even when no span errored, and
+returns "no single-span root cause" when no single correction flips it (A18)**.
+*Verify:* `[built]`
+`cargo run -q -p beaterctl -- replay-fixture --data-dir /tmp/beater-replay`
+(persisted-cassette replay with no live calls; real forked-replay search is §11
+`[planned]`).
+
+**MCP (`beater-mcp`).**
+*Tests:* unit — `tools/list` is deterministic and covers every `/v1` operation +
+composite recipes; `tools/call` routes to the right handler; the synthetic help
+tool. integration — streamable-HTTP `/mcp` behind OAuth 2.1; **stdio transport
+(the §21 gap)**. conformance — MCP tool set stays in sync with the spec (the
+`sdk-contract` discipline).
+*Verify:* `[built]` streamable-HTTP:
+
+```bash
+curl -fsS -X POST http://127.0.0.1:8080/mcp \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | head
+```
+
+`[planned]` stdio: `beaterd mcp --stdio` then a `tools/list` JSON-RPC frame on
+stdin returns the same tool set.
+
+**SDKs (7 generated clients + native Rust, §3.3).**
+*Tests:* the `sdk-contract` gate — spec ↔ served routes, spec ↔ each of the 7
+clients, semconv ↔ 5 SDKs, `oasdiff` breaking-change check. live conformance —
+each client round-trips a real call against `beaterd`.
+*Verify:* `[built]`
+
+```bash
+scripts/check-contract-sync.sh        # zero drift across spec/clients/semconv/MCP/CLI/docs
+scripts/check-openapi-drift.sh        # spec ↔ served routes only
+scripts/e2e-clients-live.sh           # live SDK conformance (needs Docker + toolchains)
+```
+
+**Agent-model dimensions (§6.3).**
+*Tests:* each of the 16 dimensions ships with a fixture exercising its estimator
++ CI + its stated assumption — e.g. dim #2 trajectory uses trajectory-clustered
+SE (A17); dim #3 is execution-based (A16); dim #7 reads ECE/Brier on Test (A11);
+dim #15 flags a generalization gap whose CI excludes 0 (A12); improving multiple
+dimensions at once triggers FWER/FDR control (A5).
+*Verify:* `[planned]` `cargo test -p beater-eval dimensions::` exercising the
+§6.3 estimator vector against a seeded multi-dimension fixture.
+
+**RSI loop (`beater-mcp` improvement tools, §21).**
+*Tests:* integration — plan→approve→execute with **repo writes off by default**;
+`propose_change` returns a typed plan never a silent edit; `simulate` reads
+Train/Dev and returns a typed reward + CI, never decides acceptance; **acceptance
+reads the untouched Test split and requires a real `beater-stats` p-value at
+power (A6/A13)**; mutating the evaluator mid-episode aborts the episode (A14);
+spend/confidence bounds enforced by `QuotaLimiter` (§21.5).
+*Verify:* `[planned]` an MCP `gate_candidate` recipe over a small seeded agent
+returns `pass`/`inconclusive`/`fail` with the interval, and `apply_change`
+refuses to write the repo without a held-out Test win.
+
+**Hosted control plane (§20.7).**
+*Tests:* conformance — cross-tenant query fails at the DB under Postgres RLS
+(A20); enforced RBAC denies a non-owner a mutating route; SSO login JIT-provisions
+a user; crypto-shred makes a tenant unreadable across hot/cold/artifact stores;
+restore drill meets documented RPO/RTO; audit is hash-chained tamper-evident.
+*Verify:* `[planned]` `cargo run -p beaterd -- --auth-mode required` then an
+unauthorized mutating call returns 401/403; a cross-tenant read returns empty/403.
+
+**Self-observability (§16).**
+*Tests:* the `/metrics` Prometheus facade exposes ingest success, ingest→queryable
+lag, DLQ age, query p95; a load run produces the §16 numbers.
+*Verify:* `[built]` `curl -fsS http://127.0.0.1:8080/metrics | head`.
+
+### 22.2 One-command local verification (the developer smoke loop)
+
+The fast "is everything healthy" sequence, all `[built]`:
+
+```bash
+cargo fmt --all
+cargo clippy --workspace --all-targets -- -D warnings    # unwrap/expect denied
+cargo test --workspace                                    # or: cargo nextest run --workspace
+cargo run -q -p beaterctl -- smoke --data-dir /tmp/beater-smoke
+cargo run -q -p beaterctl -- judge-fixture --data-dir /tmp/beater-judge
+cargo run -q -p beaterctl -- gate-run-fixture --data-dir /tmp/beater-gate
+scripts/check-contract-sync.sh
+```
+
+The containerized self-host equivalent: `scripts/smoke-compose.sh`. The
+clean-clone-to-browser proof: see the README "Clean Clone To Browser" path
+(enforced by `gate2-proof-contract`).
+
+### 22.3 Plan item → acceptance test → verification command → CI gate
+
+Every §20/§21 item maps to a concrete acceptance test and a verification command.
+The CI gate is the workflow that blocks merge if the item regresses.
+
+| Item | Acceptance test | Verification command | CI gate |
+| --- | --- | --- | --- |
+| §20.2 #0.1 columnar store wired | `beaterd --trace-store clickhouse` boots + serves; non-ignored compose integration test | `cargo run -p beaterd -- --trace-store clickhouse && curl /health` `[planned]` | `storage-backends` |
+| §20.2 #0.2 pagination/pushdown | keyset cursor + `LIMIT` pushed to SQL; `query_runs` is a backend `GROUP BY` | conformance test asserts no in-memory full-scan `[planned]` | `storage-backends` |
+| §20.2 #0.3 query p95 SLOs | criterion bench on 1M/10M-span fixtures meets §16 p95 in CI | `cargo bench -p beater-bench` `[planned]` | `backend` (bench gate) |
+| §20.2 #0.4 retention/TTL | sweeper demotes-then-deletes expired hot rows | retention integration test `[planned]` | `backend` |
+| §20.2 #0.5 cold archival | partitioned Parquet to object store; DataFusion read path | archive round-trip test `[planned]` | `backend` |
+| §20.2 #0.6 backend-agnostic migrations | `Migrator` runs on ClickHouse/Postgres; `xtask renormalize` reprojects raw | migration checksum test per backend `[planned]` | `storage-backends` |
+| §20.3 #1.1 sessions **[contract]** | multi-turn trace groups by session in the API | `curl /v1/sessions` + normalizer golden test `[planned]` | `sdk-contract` |
+| §20.3 #1.2 structured message I/O **[contract]** | OpenInference/`gen_ai` messages parse into `CanonicalMessages` | golden fixture both dialects `[planned]` | `sdk-contract` |
+| §20.3 #1.3 multimodal **[contract]** | a vision LLM call renders its image | media-artifact parse + render test `[planned]` | `sdk-contract` / `frontend` |
+| §20.3 #1.6 sampling weights **[contract]** | weighted aggregate matches population rate (A19) | unit: weighted vs unweighted diverge on tail-sampled fixture `[planned]` | `sdk-contract` / `backend` |
+| §20.3 #1.7 Train/Dev/Test split **[contract]** | seeded split + contamination guard rejects a near-dup in Test (A13) | dataset split + contamination unit test `[planned]` | `sdk-contract` |
+| §20.3 #1.8 mapping importer **[contract]** | a foreign dialect projects to canonical with no code | `/v1/import` mapping fixture `[planned]` | `sdk-contract` |
+| §20.4 #2.x read APIs + UI | browse datasets, open an experiment with per-case CIs + gate badge, annotate, diff, analytics | Playwright e2e over the dashboard `[planned]` | `frontend` |
+| §20.4 #2.1b bulk promote **[contract]** | `promote-from-query` materializes failures as cases with seeded split | `curl /v1/datasets/:id/promote-from-query` `[planned]` | `sdk-contract` |
+| §20.5 #3.1 scorer breadth **[contract]** | new scorers pass on valid + invalid-when fixtures (§10.4) | per-scorer unit tests `[planned]` | `sdk-contract` / `backend` |
+| §20.5 #3.3 custom scorer registry **[contract]** | an uploaded WASM scorer runs sandboxed with memory/epoch limits | `/v1/scorers` upload + sandbox limit test `[planned]` | `sdk-contract` |
+| §20.5 #3.4 real statistics | delta with method-appropriate CI + real p-value, FWER-corrected, refuses underpowered (A2–A6) | `cargo test -p beater-stats` (alpha-calibration) `[planned]` | `backend` |
+| §20.5 #3.6 CI integration | `pytest`/`beater eval` fails CI on regression | the pytest plugin / `beater eval` subcommand `[planned]` | `sdk-contract` |
+| §20.5 #3.7 proper-scoring calibration **[contract]** | Brier/ECE + recalibration map improves ECE (A11) | `calibration-fixture` extended `[planned]`; today `[built]` runs kappa | `backend` |
+| §20.6 #4.1 online evals score | sampled production traces scored on a schedule, weighted (A19) | `curl /v1/online/.../scores` timeseries `[planned]` | `backend` |
+| §20.6 #4.3/#4.4 delivery + Slack | alert actually delivered (HMAC webhook / Slack Block Kit) | delivery-history endpoint + signed-payload test `[planned]`; today `[built]` `alert-fixture` computes a signed webhook | `backend` |
+| §20.6 #4.5 anytime-valid alerting | alert decided against an mSPRT confidence sequence, not fixed-N (A7) | continuous-peek FP test `[planned]` | `backend` |
+| §20.6 #4.7 prompt management **[contract]** | create/version/diff/run a prompt; resolve `prompt_version_id` at eval | `/v1/prompts` CRUD + playground `[planned]` | `sdk-contract` |
+| §20.7 #5.2 enforced RBAC **[contract]** | a non-owner is denied a mutating route by `authorize()` (A20) | unauthorized mutate returns 403 `[planned]` | `sdk-contract` |
+| §20.7 #5.4 tenant isolation at DB | cross-tenant read fails under Postgres RLS (A20) | store-conformance cross-tenant test `[built]` (app-layer) → DB-layer `[planned]` | `storage-backends` |
+| §20.7 #5.5 crypto-shred **[contract]** | a shredded tenant is unreadable across hot/cold/artifact | deletion + unreadable-after assertion `[planned]` | `sdk-contract` |
+| §20.7 #5.9 backups/restore | restore drill meets documented RPO/RTO | CI restore-drill job `[planned]` | `backend` |
+| §20.7 #5.11 governance/SECURITY | `SECURITY.md` + compliance docs present | repo presence check; **`SECURITY.md` now exists `[built]`** | `backend` |
+| §20.8 #6.2 zero-code bootstrap | env-var-only app produces traces with no code (§1 #13) | the README zero-code OTLP snippet `[built]` (manual); env-var distro `[planned]` | `gate1-live-smoke` |
+| §20.8 #6.4 `beaterctl quickstart` | timed e2e shows a *scored failing case* under the §15 SLO | `beaterctl quickstart` `[planned]` | `gate1-live-smoke` |
+| §21 MCP stdio transport | `tools/list` over stdio returns the full tool set | `beaterd mcp --stdio` `[planned]`; streamable-HTTP `/mcp` `[built]` | `sdk-contract` |
+| §21.1 RSI tools | propose→simulate(Train)→accept(Test) only on a stat-sig held-out win (A13/A14) | `gate_candidate` MCP recipe `[planned]` | `backend` |
+| §21.8 RSI MVP acceptance | indexes a small agent, proposes a generalizable change, verifies a Test win, applies via Claude Code with approval | end-to-end MCP episode `[planned]` | `backend` |
+
+### 22.4 Acceptance-to-milestone traceability
+
+The §18 milestone acceptance bullets and the §19 "Bar for Done" questions are
+satisfied exactly when their §22.1/§22.3 rows are green:
+
+- **v0 Substrate** → ingest + store + `beaterctl smoke` rows (§22.1) all `[built]`.
+- **v1 OSS Observability & Offline Evals** → evals/judge, experiments+gates,
+  calibration, and the read-API/UI rows; the offline path is `[built]` through the
+  gate fixtures, the product UI is §20.4 `[planned]`.
+- **v2 Agent-Native Debugging** → replay/attribution, sessions/messages, online
+  evals + alert delivery, MCP rows.
+- **v3 Hosted GA** → the entire hosted control-plane block (§20.7) plus
+  self-observability load evidence (§16).
+
+A milestone is "shipped" only when every row it depends on has a green
+verification command **and** the CI gate that guards it is passing — which is the
+same standard CONTRIBUTING.md enforces on every PR.
+
+

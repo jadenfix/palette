@@ -1,16 +1,88 @@
 # Beater
 
-Beater is a Rust-first open-source agent observability, replay, and eval platform.
-The target is an OSS self-hostable debugger/evals harness plus a hosted API
-product that can compete with Arize Phoenix, Braintrust, LangSmith, Langfuse, and
-Judgment-style systems.
+Beater is a Rust-first **open-source agent observability, replay, evaluation, and
+recursive-improvement platform**. It instruments AI agents, debugs why they fail,
+turns failures into datasets, runs statistically honest evals, gates CI on
+regressions, and monitors agents in production — competing with Arize Phoenix,
+Braintrust, LangSmith, Langfuse, and Judgment-style systems.
 
-The core loop:
+It ships in two editions (see [ARCHITECTURE.md §2](ARCHITECTURE.md#2-editions)):
+
+- **OSS self-host** (Apache-2.0 core) — one `beaterd` Rust binary you run
+  yourself via Docker Compose. Ingest, canonical schema, trace UI, datasets,
+  deterministic + judge evals, the WASI scorer sandbox, replay cassettes, the CI
+  gate, import/export, and the MCP/SDK/CLI surface. **No cloud dependency** — the
+  OSS edition never calls Beater Cloud.
+- **Hosted** — managed multi-region cells, billing/quotas, SSO/SAML, enterprise
+  audit, a managed judge fleet, and high-scale eval/replay pools.
+
+The core product loop — the definition of "shipped":
 
 ```text
 instrument agent -> inspect trace -> promote failure to dataset -> run evals
 -> compare candidate -> gate CI -> monitor production
 ```
+
+The single source of truth is the contract: `sdks/openapi/beater-api.json` (from
+the Rust handlers in `crates/beater-api`) generates **the HTTP API, the 7 SDK
+clients, the MCP tools, the CLI, and the docs** — plus
+`sdks/semconv/conventions.json` for span kinds/attributes. Nothing is
+hand-edited; a contract change that is not regenerated everywhere cannot merge.
+
+## Quickstart
+
+**Self-host with Docker Compose** (the supported OSS path):
+
+```bash
+git clone https://github.com/jadenfix/beater.git && cd beater
+docker compose up           # boots beaterd (API+OTLP+jobs) and the dashboard
+```
+
+The dashboard opens at `http://127.0.0.1:3000`; the API is on `:8080` and OTLP
+ingest on `:4317` (gRPC) / `:4318` (HTTP).
+
+**Smoke an OTLP round-trip** with the CLI:
+
+```bash
+cargo run -q -p beaterctl -- smoke --data-dir /tmp/beater-smoke
+# remote, against a running server, reports trace_query_lag_ms:
+cargo run -q -p beaterctl -- smoke --http-url http://127.0.0.1:8080
+```
+
+**Zero-code OTLP onboarding** (the default, no Beater SDK, no code edits) — point
+any standards-based OpenTelemetry / OpenInference / OpenLLMetry exporter at the
+local OTLP port:
+
+```bash
+python3 -m venv /tmp/beater-otel
+/tmp/beater-otel/bin/pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc
+OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317 \
+  /tmp/beater-otel/bin/python examples/python/five_line_otel.py
+```
+
+Then open the trace in the dashboard. For the full per-component verification
+matrix (`/health`, `/metrics`, MCP `tools/list`, an eval→experiment→gate dry
+run, and the CI gate that enforces each), see
+[ARCHITECTURE.md §22](ARCHITECTURE.md#22-testing-verification--acceptance).
+
+## Contributing
+
+Beater is built in the open and we welcome contributions. The rules are short and
+enforced:
+
+- **All code changes go through a Pull Request.** Every PR description must state:
+  **(1) WHAT it is, (2) WHY we have it, (3) HOW you tested it.** "It compiles" is
+  not a test.
+- **CI/CD must be green before a PR is merged.** The required gates are `backend`,
+  `sdk-contract`, `storage-backends`, `browser`, `frontend`, `gate1-live-smoke`,
+  `gate2-proof-contract`, and `container-images`. The **single-source-of-truth
+  contract** (spec → 7 SDKs → MCP → CLI → docs, plus semconv) must show **zero
+  drift** — verify locally with `scripts/check-contract-sync.sh`.
+
+Full details, local dev setup, and the contract-regen workflow are in
+[CONTRIBUTING.md](CONTRIBUTING.md). Architecture and the build-ready plan are in
+[ARCHITECTURE.md](ARCHITECTURE.md). Report vulnerabilities privately per
+[SECURITY.md](SECURITY.md); project governance is in [GOVERNANCE.md](GOVERNANCE.md).
 
 ## Canonical Docs
 

@@ -1,5 +1,85 @@
 # Contributing to Beater
 
+Beater is an open-source (Apache-2.0 core) Rust agent observability, replay, and
+eval platform with a hosted edition. Contributions are welcome — from a typo fix
+to a new evaluator, a storage backend, or an SDK improvement. Please read
+[ARCHITECTURE.md](ARCHITECTURE.md) first; it is the build-ready plan, and
+[ARCHITECTURE.md §22](ARCHITECTURE.md#22-testing-verification--acceptance) tells
+you exactly which tests and verification commands a given change needs.
+
+## How every change ships: the Pull Request
+
+**All code changes go through a Pull Request — no direct pushes to `main`.**
+
+**Every PR description must state, explicitly:**
+
+1. **WHAT it is** — the change in one or two sentences.
+2. **WHY we have it** — the problem it solves or the capability it adds (link the
+   relevant ARCHITECTURE.md section or the issue).
+3. **HOW you tested it** — the exact commands you ran and what you observed
+   (unit/integration tests, a `beaterctl` fixture, a live smoke, a UI click-through).
+   "It compiles" is not a test.
+
+PRs that do not answer all three are sent back. Keep PRs focused; a reviewer
+should be able to hold the whole change in their head.
+
+## CI/CD must be green before a PR is merged
+
+A PR cannot merge until **every** required CI gate passes. The gates (under
+`.github/workflows/`) are:
+
+| Workflow | What it guards |
+| --- | --- |
+| `backend` | `cargo fmt`, `cargo clippy -D warnings` (unwrap/expect denied), `cargo test --workspace` |
+| `sdk-contract` | spec ↔ served routes, spec ↔ all 7 SDK clients, semconv ↔ SDKs, `oasdiff` breaking-change check — **single-source-of-truth contract must show zero drift** |
+| `storage-backends` | trait-conformance suite across SQLite / in-memory (and the wired columnar backends as they land) |
+| `browser` | browser-agent observability crates and the Playwright/CDP/WebDriver harness |
+| `frontend` | `web/dashboard` build, lint, and generated-OpenAPI-client checks |
+| `gate1-live-smoke` | live `beaterd` OTLP HTTP/gRPC round-trip becomes queryable/searchable |
+| `gate2-proof-contract` | the clean-clone-to-browser proof template and proof-artifact fixtures |
+| `container-images` | multi-arch GHCR image build/publish for `beaterd`, dashboard, and demo runners |
+
+The **single-source-of-truth contract** — `sdks/openapi/beater-api.json` →
+7 SDK clients → MCP tools → CLI → docs (and `sdks/semconv/conventions.json` for
+span kinds/attributes) — must regenerate to **zero drift**. Run the full local
+check before you push:
+
+```bash
+scripts/check-contract-sync.sh
+```
+
+If you cannot get CI green, mark the PR a draft and say what is failing. Do not
+ask a maintainer to override a red gate.
+
+## Local development setup
+
+```bash
+# 1. Rust toolchain (stable) + the test/bench tooling
+rustup toolchain install stable
+cargo install cargo-nextest
+
+# 2. Build & run the test suite
+cargo build --workspace
+cargo test --workspace            # or: cargo nextest run --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo fmt --all
+
+# 3. Run the all-in-one server locally
+cargo run -q -p beaterd -- --data-dir /tmp/beaterd
+
+# 4. Smoke an OTLP round-trip (see ARCHITECTURE.md §22 for the full matrix)
+cargo run -q -p beaterctl -- smoke --data-dir /tmp/beater-smoke
+
+# 5. Full self-host stack via Docker Compose
+docker compose up
+```
+
+Docker is required for `scripts/regen-sdks.sh`, the live SDK conformance suite,
+and the compose-based gates. See
+[ARCHITECTURE.md §22](ARCHITECTURE.md#22-testing-verification--acceptance) for
+the per-component test plan and the "how to verify it's running" commands, and
+[SECURITY.md](SECURITY.md) for how to report a vulnerability.
+
 ## The one rule: the OpenAPI contract is the single source of truth
 
 The HTTP API, the 7 SDK clients, the MCP tools, the CLI, and the docs are **all
