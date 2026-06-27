@@ -15,6 +15,7 @@ members = [
   "crates/beater-replay",
   "crates/beater-security",
   "crates/beater-auth",
+  "crates/beater-accounts",
   "crates/beater-secrets",
   "crates/beater-judge",
   "crates/beater-sandbox",
