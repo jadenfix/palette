@@ -655,6 +655,7 @@ dependencies = [
  "chrono",
  "http 1.4.2",
  "opentelemetry-proto",
+ "percent-encoding",
  "serde",
  "serde_json",
  "tempfile",

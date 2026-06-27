@@ -30,7 +30,7 @@ use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::Router;
-use beater_api::{router as api_router, ApiState};
+use beater_api::{openapi::urlencode, router as api_router, ApiState};
 use http::{HeaderMap, Method, Request, StatusCode};
 use serde_json::{json, Map, Value};
 use std::sync::OnceLock;
@@ -628,24 +628,6 @@ fn value_to_path_segment(value: &Value) -> Option<String> {
         Value::Bool(b) => Some(b.to_string()),
         _ => None,
     }
-}
-
-/// Minimal percent-encoding for path/query segments (RFC 3986 unreserved set
-/// passes through; everything else is `%XX`-encoded). Kept dependency-free.
-fn urlencode(input: &str) -> String {
-    let mut out = String::with_capacity(input.len());
-    for byte in input.bytes() {
-        match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                out.push(byte as char);
-            }
-            _ => {
-                out.push('%');
-                out.push_str(&format!("{byte:02X}"));
-            }
-        }
-    }
-    out
 }
 
 /// The set of MCP tool names exposed, for tests and introspection. This is the

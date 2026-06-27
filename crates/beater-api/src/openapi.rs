@@ -5,6 +5,7 @@
 //! annotations placed on the real handler functions in `lib.rs`, and every schema
 //! is derived from the real request/response types (no hand-maintained mirrors).
 
+use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use utoipa::OpenApi;
 
 #[derive(OpenApi)]
@@ -94,4 +95,34 @@ pub fn openapi() -> utoipa::openapi::OpenApi {
 
 pub fn openapi_json_pretty() -> Result<String, serde_json::Error> {
     openapi().to_pretty_json()
+}
+
+/// Percent-encode a value for safe interpolation into a request path segment or
+/// query-string parameter, escaping everything outside the RFC 3986 *unreserved*
+/// set (`ALPHA / DIGIT / "-" / "_" / "." / "~"`).
+///
+/// Shared by the MCP server and CLI, which both turn a resolved spec operation
+/// into a live API request by filling its path template and query string.
+pub fn urlencode(value: &str) -> String {
+    // RFC 3986 unreserved == NON_ALPHANUMERIC minus the four unreserved marks.
+    const UNRESERVED: &AsciiSet = &NON_ALPHANUMERIC
+        .remove(b'-')
+        .remove(b'_')
+        .remove(b'.')
+        .remove(b'~');
+    utf8_percent_encode(value, UNRESERVED).to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::urlencode;
+
+    #[test]
+    fn passes_unreserved_and_escapes_the_rest() {
+        // Unreserved set is left untouched.
+        assert_eq!(urlencode("aZ09-_.~"), "aZ09-_.~");
+        // Reserved/space/unicode are percent-escaped with uppercase hex.
+        assert_eq!(urlencode("a b/c?d#e"), "a%20b%2Fc%3Fd%23e");
+        assert_eq!(urlencode("café"), "caf%C3%A9");
+    }
 }

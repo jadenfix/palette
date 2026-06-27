@@ -3,6 +3,7 @@ use beater_alerts::{
     decide_trace_sampling, AlertEngine, AlertInput, AlertLinks, AlertPolicy, AlertSeverity,
     OnlineSamplingPolicy,
 };
+use beater_api::openapi::urlencode;
 use beater_audit::{
     pii_unmask_event, AuditOutcome, AuditStore, PiiUnmaskAuditInput, SqliteAuditStore,
 };
@@ -2223,20 +2224,6 @@ fn fill_path_template(
     }
 
     Ok((path, leftover))
-}
-
-/// Percent-encode a value for safe inclusion in a URL path or query.
-fn urlencode(value: &str) -> String {
-    let mut out = String::with_capacity(value.len());
-    for byte in value.bytes() {
-        match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                out.push(byte as char);
-            }
-            _ => out.push_str(&format!("%{byte:02X}")),
-        }
-    }
-    out
 }
 
 /// Build the full request URL from base, filled path, and query params.
