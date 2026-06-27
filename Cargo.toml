@@ -16,6 +16,7 @@ members = [
   "crates/beater-security",
   "crates/beater-auth",
   "crates/beater-accounts",
+  "crates/beater-oauth",
   "crates/beater-secrets",
   "crates/beater-judge",
   "crates/beater-sandbox",
