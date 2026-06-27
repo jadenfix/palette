@@ -188,20 +188,21 @@ impl ClickHouseTraceStore {
         // single-tuple `IN` set whose redundant parentheses collapse, defeating
         // the composite-key match and the in-app duplicate detection.
         //
-        // The `seq` element must be cast to `UInt64` to match the column type
-        // exactly. A bare integer literal (e.g. `2`) is inferred by ClickHouse
-        // as the smallest fitting type (`UInt8`), so the literal tuple's 5th
-        // element is `UInt8` while the left-hand `(... , seq)` tuple's 5th
-        // element is `UInt64`. ClickHouse tuple `IN` requires element-wise type
-        // equality between the two tuples; the `UInt8`-vs-`UInt64` mismatch
-        // makes the composite key never match, so the just-inserted spans are
-        // not detected as duplicates and `duplicate_spans` stays 0. Wrapping the
-        // literal in `toUInt64(...)` aligns both sides on `UInt64`.
+        // Compare `seq` as a String on BOTH sides instead of as a UInt64. The
+        // raw-envelope dedup (an all-String tuple) matches correctly, but the
+        // 5-element span tuple mixing four Strings with a UInt64 `seq` does not:
+        // ClickHouse's element-wise tuple `IN` is sensitive to the numeric type
+        // of the literal `seq` vs the UInt64 column (a bare literal infers as a
+        // narrower type, and even `toUInt64(...)` left the just-inserted span
+        // keys unmatched, so `duplicate_spans` stayed 0). Casting the column
+        // with `toString(seq)` and quoting the literal makes the entire tuple
+        // all-String — identical in shape to the proven raw path — so the
+        // composite key matches reliably regardless of numeric type inference.
         let tuples = candidates
             .iter()
             .map(|key| {
                 format!(
-                    "tuple('{}','{}','{}','{}',toUInt64({}))",
+                    "tuple('{}','{}','{}','{}','{}')",
                     escape(&key.tenant),
                     escape(&key.project),
                     escape(&key.trace),
@@ -212,7 +213,7 @@ impl ClickHouseTraceStore {
             .collect::<Vec<_>>()
             .join(",");
         let sql = format!(
-            "SELECT DISTINCT tenant_id, project_id, trace_id, span_id, seq FROM beater.spans WHERE (tenant_id, project_id, trace_id, span_id, seq) IN ({tuples}) FORMAT JSONEachRow"
+            "SELECT DISTINCT tenant_id, project_id, trace_id, span_id, seq FROM beater.spans WHERE (tenant_id, project_id, trace_id, span_id, toString(seq)) IN ({tuples}) FORMAT JSONEachRow"
         );
         let body = self.query_raw(&sql).await?;
         let mut found = BTreeSet::new();
