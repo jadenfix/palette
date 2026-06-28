@@ -706,8 +706,6 @@ mod tests {
                 decision: beater_eval::GateDecision::Pass,
                 test: beater_eval::StatisticalTest::PairedT,
                 adjusted_alpha: 0.05,
-                mde: None,
-                required_n: None,
             },
             decision: beater_eval::GateDecision::Pass,
             gate_policy: beater_eval::GatePolicy::default(),
