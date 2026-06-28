@@ -877,11 +877,10 @@ mod tests {
                 ..SearchRequest::default_for_tenant(tenant)
             })
             .await;
-        assert!(
-            result.is_err(),
-            "expected error for oversized query, got: {result:?}"
-        );
-        let err_msg = result.unwrap_err().to_string();
+        let Err(err) = result else {
+            panic!("expected error for oversized query, got ok");
+        };
+        let err_msg = err.to_string();
         assert!(
             err_msg.contains("too long"),
             "error should mention 'too long', got: {err_msg}"
