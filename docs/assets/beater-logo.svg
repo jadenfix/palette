@@ -1,0 +1,40 @@
+<svg width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc" xmlns="http://www.w3.org/2000/svg">
+  <title id="title">Beater logo</title>
+  <desc id="desc">A compact square neon mark evoking a sideways rotary eggbeater.</desc>
+  <defs>
+    <linearGradient id="frame" x1="32" y1="32" x2="224" y2="224" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#52f7ff"/>
+      <stop offset="0.52" stop-color="#7c6dff"/>
+      <stop offset="1" stop-color="#3dffb5"/>
+    </linearGradient>
+    <linearGradient id="wire" x1="72" y1="54" x2="216" y2="196" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3dffb5"/>
+      <stop offset="0.5" stop-color="#52f7ff"/>
+      <stop offset="1" stop-color="#9b7cff"/>
+    </linearGradient>
+    <filter id="glow" x="-24" y="-24" width="304" height="304" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.24 0 0 0 0 0.93 0 0 0 0 1 0 0 0 0.45 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="256" height="256" rx="44" fill="#071018"/>
+  <rect x="24" y="24" width="208" height="208" rx="30" fill="#0b1520" stroke="url(#frame)" stroke-width="7"/>
+  <path d="M45 64H89M45 192H89M64 45V89M64 167V211M167 45V74M192 167V211" stroke="#15313e" stroke-width="6" stroke-linecap="square"/>
+
+  <g filter="url(#glow)" stroke-linecap="square" stroke-linejoin="round">
+    <path d="M45 128H82" stroke="#52f7ff" stroke-width="11"/>
+    <rect x="35" y="112" width="32" height="32" rx="4" fill="#101f2a" stroke="#52f7ff" stroke-width="6"/>
+    <rect x="75" y="116" width="23" height="24" rx="3" fill="#101f2a" stroke="#3dffb5" stroke-width="5"/>
+    <path d="M94 128H211" stroke="#dff9ff" stroke-width="7"/>
+    <path d="M105 128C119 74 164 66 189 96C205 116 205 140 189 160C164 190 119 182 105 128Z" fill="none" stroke="url(#wire)" stroke-width="8"/>
+    <path d="M128 128C140 88 176 84 199 108C212 122 212 134 199 148C176 172 140 168 128 128Z" fill="none" stroke="url(#wire)" stroke-width="8"/>
+    <path d="M111 96L196 160M111 160L196 96" stroke="#52f7ff" stroke-width="5" opacity="0.78"/>
+    <circle cx="98" cy="128" r="8" fill="#3dffb5"/>
+    <circle cx="211" cy="128" r="9" fill="#9b7cff"/>
+  </g>
+</svg>
