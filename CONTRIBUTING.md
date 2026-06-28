@@ -50,6 +50,24 @@ way goes in its own PR.
   CI gate must be green first** (see below). A maintainer will not override a red
   gate to merge.
 
+### Merge queue / required-up-to-date
+
+`main` uses a **merge queue** (or "require branches to be up to date" as a
+fallback) to prevent semantic merge conflicts — the class of breakage where two
+individually-green PRs produce a compile error when combined (e.g. two PRs each
+adding struct fields at different positions, producing `E0062`/`E0063` once
+both land).
+
+In practice this means:
+- When you click Merge (or "Add to merge queue"), GitHub retests your branch
+  against the current tip of `main` before it actually merges.
+- If something that was green on your branch is now red against `main`, you
+  must rebase (`git fetch origin main && git rebase origin/main`) and push again.
+
+See [docs/engineering/merge-queue-policy.md](docs/engineering/merge-queue-policy.md)
+for the full rationale, the list of required status checks, and the admin steps
+to enable or update the configuration.
+
 ### Keep rules and docs in sync
 
 **If a change is crucial, update the rules and docs in the *same* PR.** A crucial
@@ -73,7 +91,7 @@ A PR cannot merge until **every** required CI gate passes. The gates (under
 
 | Workflow | What it guards |
 | --- | --- |
-| `backend` | `cargo fmt`, `cargo clippy -D warnings` (unwrap/expect denied), `cargo test --workspace` |
+| `backend` | `cargo build --workspace` (full compile, all crates), `cargo fmt`, `cargo clippy -D warnings` (unwrap/expect denied), `cargo test --workspace` |
 | `sdk-contract` | spec ↔ served routes, spec ↔ all 7 SDK clients, semconv ↔ SDKs, `oasdiff` breaking-change check — **single-source-of-truth contract must show zero drift** |
 | `storage-backends` | trait-conformance suite across SQLite / in-memory (and the wired columnar backends as they land) |
 | `browser` | browser-agent observability crates and the Playwright/CDP/WebDriver harness |

@@ -44,6 +44,16 @@ jobs:
         uses: actions/checkout@v7
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal && rustup default stable
+      # Build the WHOLE workspace first (no --exclude) so that any crate that is
+      # excluded from `cargo test` below still has its struct fields / API surface
+      # checked for compile errors.  This is the primary code-level defence against
+      # the class of semantic merge conflict documented in #343: two independently-
+      # green PRs that each add a field to the same struct at different positions
+      # produce E0062/E0063 in the combined tree even though git reports no
+      # conflict markers.  `cargo test --exclude beaterd` would miss this because
+      # beaterd (where the E0063 fixtures live) is excluded from test compilation.
+      - name: Compile the full workspace (catches E0062/E0063 in excluded crates)
+        run: cargo build --workspace
       - name: Test the workspace (excluding beaterd gates + browser crates)
         run: |
           cargo test --workspace \
