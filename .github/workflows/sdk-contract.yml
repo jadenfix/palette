@@ -34,6 +34,9 @@ jobs:
         with:
           toolchain: stable
 
+      - name: API stability policy matches contract gates
+        run: python3 scripts/check-api-stability-policy.py
+
       - name: Semantic conventions in sync across all SDKs
         run: |
           cargo xtask regen-semconv

@@ -14,6 +14,15 @@ generated from the Rust handlers in `crates/beater-api`). The drift gate
 `.github/workflows/sdk-contract.yml` block any change that is not regenerated
 across the spec, all 7 SDK clients, the MCP tools, and the docs.
 
+## Pre-1.0 caveat
+
+Beater has not declared 1.0 yet. Until that milestone, canonical and API
+schemas may evolve freely and **no wire/SDK backward-compatibility is promised
+before 1.0**. That caveat does not relax the contract discipline: every `/v1`
+handler change still regenerates the OpenAPI spec, generated SDK clients,
+semantic conventions, MCP/CLI/docs contract surfaces, and then runs
+`scripts/check-contract-sync.sh` plus the `sdk-contract` CI gate before merge.
+
 ## Stability guarantee for `/v1`
 
 While the API is at `/v1`:
