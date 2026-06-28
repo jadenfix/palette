@@ -81,9 +81,9 @@ fn default_compose_does_not_mandate_thin_bins_or_external_services() {
     let repo_root = root
         .parent()
         .and_then(|p| p.parent())
-        .expect("repo root is two levels above bins/beaterd");
+        .unwrap_or_else(|| panic!("repo root is two levels above bins/beaterd"));
     let compose = std::fs::read_to_string(repo_root.join("docker-compose.yml"))
-        .expect("read docker-compose.yml");
+        .unwrap_or_else(|err| panic!("read docker-compose.yml: {err}"));
     for thin in ["beater-ingestd", "beater-queryd"] {
         assert!(
             !compose.contains(thin),
