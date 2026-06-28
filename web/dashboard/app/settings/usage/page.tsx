@@ -46,7 +46,15 @@ export default async function UsagePage() {
   const project = "default";
   const { summary, error } = await fetchUsageSummary(account.tenant_id, project);
   const totals = summary ? Object.entries(summary.totals) : [];
-  const maxQty = totals.reduce((max, [, t]) => Math.max(max, t.quantity), 0);
+  // Only compare magnitudes within the same unit — a span count and a byte count
+  // share no scale, so a single bar across both would mislead. Metrics that are
+  // the only one of their unit get no bar (nothing meaningful to compare against).
+  const maxByUnit = new Map<string, number>();
+  const countByUnit = new Map<string, number>();
+  for (const [, t] of totals) {
+    maxByUnit.set(t.unit, Math.max(maxByUnit.get(t.unit) ?? 0, t.quantity));
+    countByUnit.set(t.unit, (countByUnit.get(t.unit) ?? 0) + 1);
+  }
 
   return (
     <main className="settings">
@@ -73,10 +81,10 @@ export default async function UsagePage() {
             <p>
               {error
                 ? "Couldn't reach the usage endpoint. Start beaterd and send a trace to see numbers here."
-                : "Send your first trace and metrics will appear here within seconds."}
+                : "Create an API key, point your agent at beaterd, and metrics land here within seconds."}
             </p>
-            <Link href="/docs/quickstarts" className="btn btn-primary" style={{ marginTop: 6 }}>
-              View quickstart
+            <Link href="/settings/api-keys" className="btn btn-primary" style={{ marginTop: 6 }}>
+              Create an API key
             </Link>
           </div>
         </div>
@@ -101,12 +109,14 @@ export default async function UsagePage() {
             <div className="panel-head">
               <div className="panel-titles">
                 <h2>By metric</h2>
-                <p>Relative volume across recorded usage metrics.</p>
+                <p>Recorded this period. Bars compare volume within each unit.</p>
               </div>
             </div>
             <div className="panel-body">
               {totals.map(([key, total]) => {
-                const pct = maxQty > 0 ? Math.max(2, Math.round((total.quantity / maxQty) * 100)) : 0;
+                const unitMax = maxByUnit.get(total.unit) ?? 0;
+                const comparable = (countByUnit.get(total.unit) ?? 0) > 1 && unitMax > 0;
+                const pct = comparable ? Math.max(2, Math.round((total.quantity / unitMax) * 100)) : 0;
                 return (
                   <div className="meter-row" key={key}>
                     <div className="meter-head">
@@ -116,13 +126,15 @@ export default async function UsagePage() {
                         <small>{total.unit}</small>
                       </span>
                     </div>
-                    <div
-                      className="meter-track"
-                      role="img"
-                      aria-label={`${humanizeMetric(key)}: ${total.quantity} ${total.unit}`}
-                    >
-                      <div className="meter-fill" style={{ width: `${pct}%` }} />
-                    </div>
+                    {comparable ? (
+                      <div
+                        className="meter-track"
+                        role="img"
+                        aria-label={`${humanizeMetric(key)}: ${total.quantity} ${total.unit}`}
+                      >
+                        <div className="meter-fill" style={{ width: `${pct}%` }} />
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}

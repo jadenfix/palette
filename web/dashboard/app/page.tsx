@@ -50,6 +50,8 @@ import {
   spanKindMeta
 } from "../lib/span-kinds";
 import { Gate2ConfirmationCode, Gate2SpanClickTracker } from "./Gate2Confirmation";
+import { getSession } from "../lib/auth";
+import { AccountMenu } from "./components/AccountMenu";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -79,6 +81,7 @@ export default async function DashboardPage({
     unmaskReason: value(params.reason)
   };
   const data = await loadDashboardData(query);
+  const account = await getSession();
   const spans = data.trace ? orderSpansForWaterfall(data.trace.spans) : [];
   const selectedTraceProjectId = traceProjectId(data.trace);
   const listedSelectedRun = data.trace
@@ -148,6 +151,13 @@ export default async function DashboardPage({
             <RotateCcw aria-hidden="true" />
             <span>Refresh</span>
           </Link>
+          {account ? (
+            <AccountMenu account={account} />
+          ) : (
+            <Link href="/login" className="btn btn-primary btn-sm">
+              Sign in
+            </Link>
+          )}
         </div>
       </header>
 

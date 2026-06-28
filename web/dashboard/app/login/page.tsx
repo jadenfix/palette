@@ -14,7 +14,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { BrandLockup } from "../components/BeaterMark";
+import { BrandLockup, BrandVitals } from "../components/BeaterMark";
 
 type Mode = "login" | "register";
 
@@ -79,12 +79,20 @@ export default function LoginPage() {
       <aside className="auth-brand">
         <BrandLockup size={30} />
         <div className="auth-pitch">
-          <h2>Observability, replay, and eval for AI agents.</h2>
+          <h2>See every heartbeat of your agents.</h2>
           <p>
-            The local-first platform for understanding, replaying, and improving
-            agent behavior — one Rust binary, one contract, one loop.
+            Trace, replay, and grade every agent run — local-first, in one Rust
+            binary. The whole loop, on your machine.
           </p>
-          <div className="loop" style={{ marginTop: 28 }}>
+          <div className="vitals">
+            <div className="vitals-top">
+              <span className="vitals-dot" aria-hidden="true" />
+              agent vitals
+              <span className="vitals-state">live</span>
+            </div>
+            <BrandVitals />
+          </div>
+          <div className="loop" style={{ marginTop: 22 }}>
             {LOOP.map(({ icon: Icon, label }) => (
               <div className="loop-step" key={label}>
                 <span className="loop-dot" aria-hidden="true">

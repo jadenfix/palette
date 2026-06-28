@@ -12,6 +12,33 @@
   --radius-md: 9px;
   --radius-lg: 14px;
   --radius-pill: 999px;
+  /* Weights — bold (700) is reserved for true emphasis, not every label.
+     Labels/nav/tags sit at 600 so the values they describe can outrank them. */
+  --w-medium: 500;
+  --w-semi: 600;
+  --w-bold: 700;
+  --w-black: 800;
+  /* ---- Color rationale ----------------------------------------------------
+     Beater watches the vitals of running agents, so the palette borrows from
+     the instruments that watch vitals: cyan-teal phosphor on a deep, cool
+     near-black — the look of an oscilloscope or a patient monitor.
+       • Teal (brand) sits between blue (trust, stability) and green (health,
+         "go"). It reads as calm precision and signal clarity — diagnostics,
+         not alarm — which is exactly the job. Deep teal (var(--accent), from
+         globals) carries steady UI accents; the brighter "signal" cyan below
+         is reserved for things that are alive (the pulse), so motion and glow
+         always mean "running".
+       • Neutrals stay cool and quiet (globals) so colour only appears where it
+         carries meaning.
+       • Error red is kept muted on purpose: a debugger surfaces failures
+         constantly, so they must register without shouting.
+     ------------------------------------------------------------------------ */
+  --signal: #2fd4c4;          /* live pulse / heartbeat — the "alive" cyan */
+  --signal-bright: #5ef0e2;
+  --scope-0: #07100f;         /* deepest scope black, cool teal undertone */
+  --scope-1: #0b1722;         /* deep blue-teal (trust + depth) */
+  --scope-2: #0a201c;         /* teal shadow */
+  --scope-blue: #16306e;      /* cool indigo accent for gradient depth */
   --ink-900: #0c0f12;
   --accent-line: color-mix(in srgb, var(--accent) 34%, var(--line));
   --danger: var(--red);
@@ -167,7 +194,7 @@
   color: var(--ink-soft);
   display: flex;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--w-semi);
   gap: 8px;
   justify-content: space-between;
   text-transform: none;
@@ -178,15 +205,22 @@
 }
 
 .field-label .opt {
-  color: var(--faint);
+  /* Carries live info (e.g. a selected count) — keep it legible (AA), not faint. */
+  color: var(--muted);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--w-semi);
 }
 
 .field input,
 .field select,
 .input-affix input {
   height: 38px;
+}
+
+/* Inputs share the button radius (6px) so adjacent controls rhyme. */
+.field input,
+.field select {
+  border-radius: var(--radius-sm);
 }
 
 .field-hint {
@@ -199,7 +233,7 @@
   align-items: center;
   background: #fff;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-sm);
   display: flex;
   min-width: 0;
   overflow: hidden;
@@ -263,7 +297,7 @@
   cursor: pointer;
   font: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--w-semi);
   height: 28px;
   padding: 0 14px;
   transition:
@@ -320,10 +354,13 @@
   width: 16px;
 }
 
+/* globals.css applies `label span { text-transform: uppercase }` for the trace
+   console; these cards live in a <label>, so opt out explicitly. */
 .option-card .option-name {
   color: var(--ink);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--w-semi);
+  text-transform: none;
 }
 
 .option-card .option-name code {
@@ -336,6 +373,7 @@
   font-size: 11px;
   grid-column: 2;
   line-height: 1.4;
+  text-transform: none;
 }
 
 /* ---- Tags / chips / status ------------------------------------------------ */
@@ -347,7 +385,7 @@
   color: var(--ink-soft);
   display: inline-flex;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--w-semi);
   gap: 5px;
   line-height: 1;
   padding: 4px 9px;
@@ -595,7 +633,7 @@
   display: inline-flex;
   font: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--w-semi);
   gap: 8px;
   height: 36px;
   padding: 0 10px 0 5px;
@@ -884,8 +922,9 @@
   color: var(--muted);
   display: flex;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--w-semi);
   gap: 7px;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -934,7 +973,7 @@
 .meter-head .meter-name {
   color: var(--ink);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--w-semi);
 }
 
 .meter-head .meter-value {
@@ -1058,9 +1097,10 @@
 
 .auth-brand {
   background:
-    radial-gradient(130% 120% at 12% 8%, color-mix(in srgb, var(--accent) 30%, #11151a) 0%, transparent 55%),
-    linear-gradient(155deg, #11151a 0%, #0c0f12 60%, #0a1f1c 140%);
-  background-color: var(--ink-900);
+    radial-gradient(125% 115% at 8% 4%, color-mix(in srgb, var(--signal) 24%, transparent) 0%, transparent 50%),
+    radial-gradient(120% 120% at 100% 100%, color-mix(in srgb, var(--scope-blue) 55%, transparent) 0%, transparent 58%),
+    linear-gradient(155deg, var(--scope-1) 0%, var(--scope-0) 58%, var(--scope-2) 140%);
+  background-color: var(--scope-0);
   color: #e7edf3;
   display: flex;
   flex-direction: column;
@@ -1073,12 +1113,91 @@
 
 .auth-brand::after {
   background:
-    radial-gradient(60% 50% at 85% 90%, color-mix(in srgb, var(--accent) 40%, transparent), transparent 70%);
+    radial-gradient(55% 45% at 88% 12%, color-mix(in srgb, var(--signal) 26%, transparent), transparent 70%);
   content: "";
   inset: 0;
-  opacity: 0.5;
+  opacity: 0.3;
   pointer-events: none;
   position: absolute;
+}
+
+/* Signature: an agent-vitals monitor. The product watches the heartbeat of a
+   running agent, so the brand panel literally shows one — a live EKG sweep. */
+.vitals {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent),
+    #0a0d10;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, #1b2026);
+  border-radius: var(--radius-md);
+  margin-top: 22px;
+  overflow: hidden;
+  padding: 11px 14px 4px;
+}
+
+.vitals-top {
+  align-items: center;
+  color: #7fb9b1;
+  display: flex;
+  font-size: 11px;
+  font-weight: var(--w-semi);
+  gap: 8px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.vitals-top .vitals-state {
+  color: #8be9dc;
+  margin-left: auto;
+}
+
+.vitals-dot {
+  animation: vitals-blink 2.6s ease-in-out infinite;
+  background: var(--signal);
+  border-radius: 50%;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--signal) 80%, transparent);
+  flex: 0 0 7px;
+  height: 7px;
+  width: 7px;
+}
+
+.ekg {
+  display: block;
+  height: 58px;
+  width: 100%;
+}
+
+.ekg-base {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 32%, transparent);
+  stroke-width: 1.5;
+}
+
+.ekg-scan {
+  animation: ekg-scan 2.6s linear infinite;
+  fill: none;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--signal) 85%, transparent));
+  stroke: var(--signal-bright);
+  stroke-dasharray: 6 94;
+  stroke-dashoffset: 100;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+@keyframes ekg-scan {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes vitals-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .auth-brand > * {
@@ -1109,9 +1228,26 @@
   max-width: 40ch;
 }
 
+/* The five steps are one closed loop, so they're threaded by a single line —
+   the structure encodes the product, it isn't decoration. */
 .loop {
   display: grid;
   gap: 2px;
+  position: relative;
+}
+
+.loop::before {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 60%, transparent),
+    color-mix(in srgb, var(--accent) 16%, transparent)
+  );
+  bottom: 19px;
+  content: "";
+  left: 11px;
+  position: absolute;
+  top: 19px;
+  width: 2px;
 }
 
 .loop-step {
@@ -1126,7 +1262,7 @@
 
 .loop-step .loop-dot {
   align-items: center;
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 20%, var(--ink-900));
   border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   border-radius: 50%;
   color: #8be9dc;
@@ -1134,7 +1270,9 @@
   flex: 0 0 24px;
   height: 24px;
   justify-content: center;
+  position: relative;
   width: 24px;
+  z-index: 1;
 }
 
 .loop-step .loop-dot svg {
@@ -1213,5 +1351,22 @@
 
   .key-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Quality floor: honour reduced-motion. The EKG holds a single static beat,
+   transitions collapse — nothing moves for anyone who asked it not to. */
+@media (prefers-reduced-motion: reduce) {
+  .ekg-scan,
+  .vitals-dot,
+  .meter-fill {
+    animation: none;
+    transition: none;
+  }
+
+  .ekg-scan {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    opacity: 0.85;
   }
 }

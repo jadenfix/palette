@@ -35,3 +35,28 @@ export function BrandLockup({ size = 28 }: { size?: number }) {
     </span>
   );
 }
+
+/**
+ * Live agent-vitals readout — the brand panel's signature element. One EKG
+ * complex (P-QRS-T) repeated across the strip, with a bright pulse that sweeps
+ * left-to-right like a patient monitor. `pathLength={100}` normalises the dash
+ * so the sweep is resolution-independent; `vector-effect` keeps the stroke even
+ * under the non-uniform horizontal stretch. Decorative, so aria-hidden.
+ */
+export function BrandVitals() {
+  // One 150-unit P-QRS-T complex, repeated four times across the 600-wide field.
+  const complex = "h46 l5 -6 l5 6 h24 l6 22 l7 -46 l7 40 l6 -16 h44";
+  const d = `M0 40 ${complex} ${complex} ${complex} ${complex}`;
+  return (
+    <svg
+      className="ekg"
+      viewBox="0 0 600 80"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path className="ekg-base" d={d} pathLength={100} vectorEffect="non-scaling-stroke" />
+      <path className="ekg-scan" d={d} pathLength={100} vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
