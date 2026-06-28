@@ -48,6 +48,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use tonic::transport::Server;
 
+const DEFAULT_ARTIFACT_MAX_BYTES: u64 = 16 * 1024 * 1024;
+
 #[derive(Debug, Parser)]
 #[command(
     name = "beaterd",
@@ -76,6 +78,13 @@ struct Args {
     login_url: Option<String>,
     #[arg(long, default_value = ".beater")]
     data_dir: PathBuf,
+    /// Maximum bytes accepted for one filesystem artifact write.
+    #[arg(
+        long,
+        env = "BEATER_ARTIFACT_MAX_BYTES",
+        default_value_t = DEFAULT_ARTIFACT_MAX_BYTES
+    )]
+    artifact_max_bytes: u64,
     #[arg(long, default_value_t = 1024)]
     bus_capacity: usize,
     #[arg(long, value_enum, default_value_t = BusBackendArg::Sqlite)]
@@ -220,10 +229,13 @@ async fn main() -> anyhow::Result<()> {
     migrate_local_sqlite_stores(&sqlite_store_paths)?;
 
     // R13.9 — wrap the object store so every read/write outcome is counted.
-    let artifacts = Arc::new(MeteredArtifactStore::new(
-        FsArtifactStore::new(args.data_dir.join("artifacts"))?,
+    // §23.7 — enforce the artifact write-size cap by default in the runtime,
+    // rather than leaving the FsArtifactStore cap as an unwired opt-in.
+    let artifacts = Arc::new(build_local_artifact_store(
+        &args.data_dir,
+        args.artifact_max_bytes,
         metrics.clone(),
-    ));
+    )?);
     let sqlite_traces = Arc::new(SqliteTraceStore::open(trace_db_path)?);
     let traces: Arc<dyn TraceStore> = if let Some(url) = args.test_http_trace_store_url.clone() {
         Arc::new(HttpTraceStore::new(url))
@@ -943,6 +955,17 @@ impl<S> MeteredArtifactStore<S> {
     }
 }
 
+fn build_local_artifact_store(
+    data_dir: &Path,
+    max_bytes: u64,
+    metrics: metrics::Metrics,
+) -> StoreResult<MeteredArtifactStore<FsArtifactStore>> {
+    Ok(MeteredArtifactStore::new(
+        FsArtifactStore::new(data_dir.join("artifacts"))?.with_max_bytes(max_bytes),
+        metrics,
+    ))
+}
+
 #[async_trait::async_trait]
 impl<S: ArtifactStore> ArtifactStore for MeteredArtifactStore<S> {
     async fn put_bytes(
@@ -1010,6 +1033,50 @@ impl<I: SourceImporter> SourceImporter for MeteredImporter<I> {
                 .record_normalizer_failure(self.inner.source(), self.version);
         }
         result
+    }
+}
+
+#[cfg(test)]
+mod artifact_cap_tests {
+    use super::*;
+
+    #[test]
+    fn artifact_max_bytes_has_a_runtime_default_and_cli_override() {
+        let default_args = Args::try_parse_from(["beaterd"])
+            .unwrap_or_else(|err| panic!("parse default args: {err}"));
+        assert_eq!(default_args.artifact_max_bytes, DEFAULT_ARTIFACT_MAX_BYTES);
+
+        let override_args = Args::try_parse_from(["beaterd", "--artifact-max-bytes", "4096"])
+            .unwrap_or_else(|err| panic!("parse override args: {err}"));
+        assert_eq!(override_args.artifact_max_bytes, 4096);
+    }
+
+    #[tokio::test]
+    async fn local_artifact_store_builder_enforces_configured_size_cap() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let store = build_local_artifact_store(tempdir.path(), 4, metrics::Metrics::default())
+            .unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+
+        let result = store
+            .put_bytes(
+                &tenant,
+                &project,
+                "text/plain",
+                RedactionClass::Sensitive,
+                b"12345",
+            )
+            .await;
+
+        match result {
+            Err(StoreError::LimitExceeded(message)) => {
+                assert!(message.contains("artifact too large: 5 > 4 bytes"));
+            }
+            other => {
+                panic!("expected StoreError::LimitExceeded for oversized artifact, got {other:?}")
+            }
+        }
     }
 }
 

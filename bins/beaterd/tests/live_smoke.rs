@@ -730,6 +730,7 @@ fn sidecar_store_error(error: StoreError) -> (StatusCode, String) {
         StoreError::NotFound(_) => StatusCode::NOT_FOUND,
         StoreError::Conflict(_) => StatusCode::CONFLICT,
         StoreError::Backpressure(_) => StatusCode::SERVICE_UNAVAILABLE,
+        StoreError::LimitExceeded(_) => StatusCode::PAYLOAD_TOO_LARGE,
         StoreError::Integrity(_) => StatusCode::UNPROCESSABLE_ENTITY,
         StoreError::Backend(_) => StatusCode::INTERNAL_SERVER_ERROR,
     };

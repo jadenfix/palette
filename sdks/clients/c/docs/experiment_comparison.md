@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **ci_low** | **double** |  | 
 **decision** | **gate_decision_t \*** |  | 
 **delta** | **double** |  | 
+**p_value** | **double** | Real two-sided p-value from &#x60;test&#x60;. The previous normal-approximation path reported no p-value at all. | 
 **sample_size** | **int** |  | 
 **test** | **statistical_test_t \*** |  | 
 

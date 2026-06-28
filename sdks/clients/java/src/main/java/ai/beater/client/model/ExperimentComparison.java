@@ -42,6 +42,7 @@ import ai.beater.client.ApiClient;
   ExperimentComparison.JSON_PROPERTY_CI_LOW,
   ExperimentComparison.JSON_PROPERTY_DECISION,
   ExperimentComparison.JSON_PROPERTY_DELTA,
+  ExperimentComparison.JSON_PROPERTY_P_VALUE,
   ExperimentComparison.JSON_PROPERTY_SAMPLE_SIZE,
   ExperimentComparison.JSON_PROPERTY_TEST
 })
@@ -74,6 +75,10 @@ public class ExperimentComparison {
   public static final String JSON_PROPERTY_DELTA = "delta";
   @javax.annotation.Nonnull
   private Double delta;
+
+  public static final String JSON_PROPERTY_P_VALUE = "p_value";
+  @javax.annotation.Nonnull
+  private Double pValue;
 
   public static final String JSON_PROPERTY_SAMPLE_SIZE = "sample_size";
   @javax.annotation.Nonnull
@@ -254,6 +259,30 @@ public class ExperimentComparison {
   }
 
 
+  public ExperimentComparison pValue(@javax.annotation.Nonnull Double pValue) {
+    this.pValue = pValue;
+    return this;
+  }
+
+  /**
+   * Real two-sided p-value from &#x60;test&#x60;. The previous normal-approximation path reported no p-value at all.
+   * @return pValue
+   */
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_P_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public Double getpValue() {
+    return pValue;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_P_VALUE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setpValue(@javax.annotation.Nonnull Double pValue) {
+    this.pValue = pValue;
+  }
+
+
   public ExperimentComparison sampleSize(@javax.annotation.Nonnull Integer sampleSize) {
     this.sampleSize = sampleSize;
     return this;
@@ -322,13 +351,14 @@ public class ExperimentComparison {
         Objects.equals(this.ciLow, experimentComparison.ciLow) &&
         Objects.equals(this.decision, experimentComparison.decision) &&
         Objects.equals(this.delta, experimentComparison.delta) &&
+        Objects.equals(this.pValue, experimentComparison.pValue) &&
         Objects.equals(this.sampleSize, experimentComparison.sampleSize) &&
         Objects.equals(this.test, experimentComparison.test);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(adjustedAlpha, baselineMean, candidateMean, ciHigh, ciLow, decision, delta, sampleSize, test);
+    return Objects.hash(adjustedAlpha, baselineMean, candidateMean, ciHigh, ciLow, decision, delta, pValue, sampleSize, test);
   }
 
   @Override
@@ -342,6 +372,7 @@ public class ExperimentComparison {
     sb.append("    ciLow: ").append(toIndentedString(ciLow)).append("\n");
     sb.append("    decision: ").append(toIndentedString(decision)).append("\n");
     sb.append("    delta: ").append(toIndentedString(delta)).append("\n");
+    sb.append("    pValue: ").append(toIndentedString(pValue)).append("\n");
     sb.append("    sampleSize: ").append(toIndentedString(sampleSize)).append("\n");
     sb.append("    test: ").append(toIndentedString(test)).append("\n");
     sb.append("}");
@@ -424,6 +455,11 @@ public class ExperimentComparison {
     // add `delta` to the URL query string
     if (getDelta() != null) {
       joiner.add(String.format("%sdelta%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getDelta()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `p_value` to the URL query string
+    if (getpValue() != null) {
+      joiner.add(String.format("%sp_value%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getpValue()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `sample_size` to the URL query string

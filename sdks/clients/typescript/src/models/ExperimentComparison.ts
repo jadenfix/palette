@@ -77,6 +77,13 @@ export interface ExperimentComparison {
      */
     delta: number;
     /**
+     * Real two-sided p-value from `test`. The previous normal-approximation path
+     * reported no p-value at all.
+     * @type {number}
+     * @memberof ExperimentComparison
+     */
+    pValue: number;
+    /**
      * 
      * @type {number}
      * @memberof ExperimentComparison
@@ -103,6 +110,7 @@ export function instanceOfExperimentComparison(value: object): value is Experime
     if (!('ciLow' in value) || value['ciLow'] === undefined) return false;
     if (!('decision' in value) || value['decision'] === undefined) return false;
     if (!('delta' in value) || value['delta'] === undefined) return false;
+    if (!('pValue' in value) || value['pValue'] === undefined) return false;
     if (!('sampleSize' in value) || value['sampleSize'] === undefined) return false;
     if (!('test' in value) || value['test'] === undefined) return false;
     return true;
@@ -125,6 +133,7 @@ export function ExperimentComparisonFromJSONTyped(json: any, ignoreDiscriminator
         'ciLow': json['ci_low'],
         'decision': GateDecisionFromJSON(json['decision']),
         'delta': json['delta'],
+        'pValue': json['p_value'],
         'sampleSize': json['sample_size'],
         'test': StatisticalTestFromJSON(json['test']),
     };
@@ -148,6 +157,7 @@ export function ExperimentComparisonToJSONTyped(value?: ExperimentComparison | n
         'ci_low': value['ciLow'],
         'decision': GateDecisionToJSON(value['decision']),
         'delta': value['delta'],
+        'p_value': value['pValue'],
         'sample_size': value['sampleSize'],
         'test': StatisticalTestToJSON(value['test']),
     };

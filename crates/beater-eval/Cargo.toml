@@ -8,6 +8,7 @@ license.workspace = true
 utoipa = { workspace = true }
 beater-core = { path = "../beater-core" }
 beater-schema = { path = "../beater-schema" }
+beater-stats = { path = "../beater-stats" }
 regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true

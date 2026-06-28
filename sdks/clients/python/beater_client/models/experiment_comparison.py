@@ -36,9 +36,10 @@ class ExperimentComparison(BaseModel):
     ci_low: Union[StrictFloat, StrictInt]
     decision: GateDecision
     delta: Union[StrictFloat, StrictInt]
+    p_value: Union[StrictFloat, StrictInt] = Field(description="Real two-sided p-value from `test`. The previous normal-approximation path reported no p-value at all.")
     sample_size: Annotated[int, Field(strict=True, ge=0)]
     test: StatisticalTest
-    __properties: ClassVar[List[str]] = ["adjusted_alpha", "baseline_mean", "candidate_mean", "ci_high", "ci_low", "decision", "delta", "sample_size", "test"]
+    __properties: ClassVar[List[str]] = ["adjusted_alpha", "baseline_mean", "candidate_mean", "ci_high", "ci_low", "decision", "delta", "p_value", "sample_size", "test"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -98,6 +99,7 @@ class ExperimentComparison(BaseModel):
             "ci_low": obj.get("ci_low"),
             "decision": obj.get("decision"),
             "delta": obj.get("delta"),
+            "p_value": obj.get("p_value"),
             "sample_size": obj.get("sample_size"),
             "test": obj.get("test")
         })

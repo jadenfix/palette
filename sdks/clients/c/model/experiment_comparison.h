@@ -28,6 +28,7 @@ typedef struct experiment_comparison_t {
     double ci_low; //numeric
     beater_api_gate_decision__e decision; //referenced enum
     double delta; //numeric
+    double p_value; //numeric
     int sample_size; //numeric
     beater_api_statistical_test__e test; //referenced enum
 
@@ -42,6 +43,7 @@ __attribute__((deprecated)) experiment_comparison_t *experiment_comparison_creat
     double ci_low,
     beater_api_gate_decision__e decision,
     double delta,
+    double p_value,
     int sample_size,
     beater_api_statistical_test__e test
 );

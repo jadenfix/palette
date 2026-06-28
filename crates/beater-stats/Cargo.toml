@@ -4,11 +4,16 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Pure-math statistics primitives for Beater agent evals (Wilson CI, two-proportion z-test, bootstrap CI)."
+description = "Pure-math statistics primitives for Beater agent evals (Wilson CI, two-proportion z-test, bootstrap CI, paired-t, exact McNemar)."
 
-# No external runtime dependencies: all math is self-contained so the crate
-# can be imported without pulling in any async/network stack.  See §10.3 #2
-# and §6.3 in ARCHITECTURE.md for the statistical contracts implemented here.
+# The only runtime dependency is `thiserror` for the error enum; all math
+# (normal/Student-t quantiles, incomplete beta, exact binomial tail, bootstrap)
+# is self-contained so the crate pulls in no async/network or heavyweight
+# numerics stack.  See §6.3 and §10.3 in ARCHITECTURE.md for the statistical
+# contracts implemented here.
+
+[dependencies]
+thiserror = { workspace = true }
 
 [lints]
 workspace = true

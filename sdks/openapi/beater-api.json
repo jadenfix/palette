@@ -7855,6 +7855,7 @@
           "delta",
           "ci_low",
           "ci_high",
+          "p_value",
           "decision",
           "test",
           "adjusted_alpha"
@@ -7886,6 +7887,11 @@
           "delta": {
             "type": "number",
             "format": "double"
+          },
+          "p_value": {
+            "type": "number",
+            "format": "double",
+            "description": "Real two-sided p-value from `test`. The previous normal-approximation path\nreported no p-value at all."
           },
           "sample_size": {
             "type": "integer",
@@ -9587,8 +9593,10 @@
       },
       "StatisticalTest": {
         "type": "string",
+        "description": "The statistical test that produced an [`ExperimentComparison`]. These mirror\n`beater_stats::TestKind`; the gate records which method was actually used so a\nreader can tell a t-test result from an exact McNemar one. The old single\n`PairedNormalApproximation` (a hard-coded-z normal approximation with no\np-value) is gone — see `beater-stats`.",
         "enum": [
-          "paired_normal_approximation"
+          "paired_t",
+          "mcnemar_exact"
         ]
       },
       "SubmitReviewAnnotationHttpRequest": {

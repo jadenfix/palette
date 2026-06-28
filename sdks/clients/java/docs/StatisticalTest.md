@@ -5,7 +5,9 @@
 ## Enum
 
 
-* `PAIRED_NORMAL_APPROXIMATION` (value: `"paired_normal_approximation"`)
+* `PAIRED_T` (value: `"paired_t"`)
+
+* `MCNEMAR_EXACT` (value: `"mcnemar_exact"`)
 
 
 

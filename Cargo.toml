@@ -12,6 +12,7 @@ members = [
   "crates/beater-otlp",
   "crates/beater-temporal",
   "crates/beater-eval",
+  "crates/beater-stats",
   "crates/beater-replay",
   "crates/beater-security",
   "crates/beater-auth",

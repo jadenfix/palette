@@ -18,7 +18,7 @@ use std::time::Duration;
 
 use beater_browser::{
     BrowserAction, BrowserDriver, BrowserEngine, BrowserError, Grounding, Observation, StepOutcome,
-    StepStatus,
+    StepStatus, UrlPolicy,
 };
 use chromiumoxide::browser::{Browser, BrowserConfig, HeadlessMode};
 use chromiumoxide::cdp::browser_protocol::page::CaptureScreenshotFormat;
@@ -112,6 +112,10 @@ pub struct CdpDriver {
     browser: Browser,
     page: Page,
     handler_task: JoinHandle<()>,
+    /// SSRF guard enforced at every navigation entry point. Defaults to
+    /// [`UrlPolicy::block_private`] so production launches are safe by default;
+    /// override with [`CdpDriver::with_policy`] for trusted/internal targets.
+    policy: UrlPolicy,
 }
 
 impl CdpDriver {
@@ -135,7 +139,24 @@ impl CdpDriver {
             browser,
             page,
             handler_task,
+            policy: UrlPolicy::block_private(),
         })
+    }
+
+    /// Override the SSRF [`UrlPolicy`] applied to every navigation (builder).
+    ///
+    /// Use [`UrlPolicy::allow_all`] for trusted callers that must reach
+    /// loopback/private fixtures (e.g. the live conformance suite).
+    pub fn with_policy(mut self, policy: UrlPolicy) -> Self {
+        self.policy = policy;
+        self
+    }
+
+    /// SSRF gate applied at every navigation entry point (`goto` and
+    /// `act(Goto)`). Extracted as an associated fn so the wiring is unit
+    /// testable without launching a real browser process.
+    fn enforce_nav_policy(policy: &UrlPolicy, url: &str) -> Result<(), BrowserError> {
+        policy.enforce(url)
     }
 
     /// Read the page URL, defaulting to empty when the browser reports none.
@@ -251,6 +272,8 @@ impl BrowserDriver for CdpDriver {
     }
 
     async fn goto(&mut self, url: &str) -> Result<Observation, BrowserError> {
+        // SSRF guard: reject blocked targets before any navigation occurs.
+        Self::enforce_nav_policy(&self.policy, url)?;
         self.page
             .goto(url)
             .await
@@ -450,10 +473,49 @@ mod tests {
             }
         });
 
+        // The conformance fixture is served on 127.0.0.1, which the default
+        // `block_private` policy would (correctly) reject; opt this trusted
+        // local run into `allow_all`.
         let mut driver = CdpDriver::launch(BrowserEngine::Chromium)
             .await
-            .unwrap_or_else(|err| panic!("launch: {err}"));
+            .unwrap_or_else(|err| panic!("launch: {err}"))
+            .with_policy(UrlPolicy::allow_all());
         beater_browser::assert_browser_driver_conformance(&mut driver, &base_url).await;
         drop(server);
+    }
+
+    #[test]
+    fn goto_navigation_guard_blocks_ssrf_targets() {
+        // Proves the exact guard `goto`/`act(Goto)` invoke rejects blocked
+        // targets — including alternate IP encodings — before any browser I/O.
+        let policy = UrlPolicy::block_private();
+        for url in [
+            "http://169.254.169.254/latest/meta-data/", // IMDS
+            "http://127.0.0.1",
+            "http://localhost",
+            "file:///etc/passwd",
+            "http://2130706433", // decimal loopback
+            "http://0177.0.0.1", // octal loopback
+            "http://0x7f.0.0.1", // hex loopback
+            "http://127.1",      // short-form loopback
+            "http://0xA9FEA9FE", // hex IMDS
+        ] {
+            let Err(err) = CdpDriver::enforce_nav_policy(&policy, url) else {
+                panic!("expected SsrfBlocked for {url:?}");
+            };
+            assert!(
+                matches!(err, BrowserError::SsrfBlocked(_)),
+                "expected SsrfBlocked for {url:?}, got {err:?}"
+            );
+        }
+        // Public targets still pass the guard.
+        assert!(CdpDriver::enforce_nav_policy(&policy, "https://example.com").is_ok());
+    }
+
+    #[test]
+    fn default_launch_policy_is_block_private() {
+        // The production constructor must default to the secure policy.
+        let policy = UrlPolicy::block_private();
+        assert!(CdpDriver::enforce_nav_policy(&policy, "http://169.254.169.254").is_err());
     }
 }

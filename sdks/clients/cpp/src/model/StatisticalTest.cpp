@@ -24,8 +24,10 @@ using EnumUnderlyingType = utility::string_t;
 
 StatisticalTest::eStatisticalTest toEnum(const EnumUnderlyingType& val)
 {
-    if (val == utility::conversions::to_string_t(U("paired_normal_approximation")))
-        return StatisticalTest::eStatisticalTest::StatisticalTest_PAIRED_NORMAL_APPROXIMATION;
+    if (val == utility::conversions::to_string_t(U("paired_t")))
+        return StatisticalTest::eStatisticalTest::StatisticalTest_PAIRED_T;
+    if (val == utility::conversions::to_string_t(U("mcnemar_exact")))
+        return StatisticalTest::eStatisticalTest::StatisticalTest_MCNEMAR_EXACT;
     return {};
 }
 
@@ -33,8 +35,10 @@ EnumUnderlyingType fromEnum(StatisticalTest::eStatisticalTest e)
 {
     switch (e)
     {
-    case StatisticalTest::eStatisticalTest::StatisticalTest_PAIRED_NORMAL_APPROXIMATION:
-        return U("paired_normal_approximation");
+    case StatisticalTest::eStatisticalTest::StatisticalTest_PAIRED_T:
+        return U("paired_t");
+    case StatisticalTest::eStatisticalTest::StatisticalTest_MCNEMAR_EXACT:
+        return U("mcnemar_exact");
     default:
         break;
     }

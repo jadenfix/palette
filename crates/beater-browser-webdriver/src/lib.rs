@@ -21,7 +21,7 @@
 use async_trait::async_trait;
 use beater_browser::{
     BrowserAction, BrowserDriver, BrowserEngine, BrowserError, Grounding, Observation, StepOutcome,
-    StepStatus,
+    StepStatus, UrlPolicy,
 };
 use fantoccini::error::CmdError;
 use fantoccini::{Client, ClientBuilder, Locator};
@@ -40,6 +40,9 @@ pub fn locator_for(selector: &str) -> Locator<'_> {
 pub struct WebDriverDriver {
     client: Client,
     engine: BrowserEngine,
+    /// SSRF guard enforced at every navigation entry point. Defaults to
+    /// [`UrlPolicy::block_private`]; override with [`WebDriverDriver::with_policy`].
+    policy: UrlPolicy,
 }
 
 impl WebDriverDriver {
@@ -63,13 +66,37 @@ impl WebDriverDriver {
             .connect(webdriver_url)
             .await
             .map_err(|err| BrowserError::Backend(format!("connect to {webdriver_url}: {err}")))?;
-        Ok(Self { client, engine })
+        Ok(Self {
+            client,
+            engine,
+            policy: UrlPolicy::block_private(),
+        })
     }
 
     /// Wrap an already-connected [`fantoccini::Client`] (e.g. one built with
     /// custom capabilities) and report `engine`.
     pub fn from_client(client: Client, engine: BrowserEngine) -> Self {
-        Self { client, engine }
+        Self {
+            client,
+            engine,
+            policy: UrlPolicy::block_private(),
+        }
+    }
+
+    /// Override the SSRF [`UrlPolicy`] applied to every navigation (builder).
+    ///
+    /// Use [`UrlPolicy::allow_all`] for trusted callers that must reach
+    /// loopback/private fixtures (e.g. the live conformance suite).
+    pub fn with_policy(mut self, policy: UrlPolicy) -> Self {
+        self.policy = policy;
+        self
+    }
+
+    /// SSRF gate applied at every navigation entry point (`goto` and
+    /// `act(Goto)`). Extracted as an associated fn so the wiring is unit
+    /// testable without a live WebDriver session.
+    fn enforce_nav_policy(policy: &UrlPolicy, url: &str) -> Result<(), BrowserError> {
+        policy.enforce(url)
     }
 
     /// Build an [`Observation`] of the current page (url, title, full DOM HTML).
@@ -154,6 +181,8 @@ impl BrowserDriver for WebDriverDriver {
     }
 
     async fn goto(&mut self, url: &str) -> Result<Observation, BrowserError> {
+        // SSRF guard: reject blocked targets before navigating.
+        Self::enforce_nav_policy(&self.policy, url)?;
         self.client
             .goto(url)
             .await
@@ -164,6 +193,9 @@ impl BrowserDriver for WebDriverDriver {
     async fn act(&mut self, action: &BrowserAction) -> Result<StepOutcome, BrowserError> {
         let (grounding, op_error) = match action {
             BrowserAction::Goto { url } => {
+                // SSRF guard: enforce on the action surface too — this branch
+                // navigates directly rather than delegating to `goto`.
+                Self::enforce_nav_policy(&self.policy, url)?;
                 self.client
                     .goto(url)
                     .await
@@ -392,12 +424,42 @@ mod tests {
             }
         });
 
+        // Fixture is served on 127.0.0.1; opt this trusted run past the default
+        // `block_private` SSRF policy.
         let mut driver = WebDriverDriver::connect_with(&webdriver_url, engine)
             .await
-            .unwrap_or_else(|err| panic!("connect to {webdriver_url}: {err}"));
+            .unwrap_or_else(|err| panic!("connect to {webdriver_url}: {err}"))
+            .with_policy(UrlPolicy::allow_all());
 
         beater_browser::assert_browser_driver_conformance(&mut driver, &base_url).await;
 
         server.abort();
+    }
+
+    #[test]
+    fn goto_navigation_guard_blocks_ssrf_targets() {
+        // Proves the exact guard `goto`/`act(Goto)` invoke rejects blocked
+        // targets — including alternate IP encodings — before any WebDriver I/O.
+        let policy = UrlPolicy::block_private();
+        for url in [
+            "http://169.254.169.254/latest/meta-data/",
+            "http://127.0.0.1",
+            "http://localhost",
+            "file:///etc/passwd",
+            "http://2130706433", // decimal loopback
+            "http://0177.0.0.1", // octal loopback
+            "http://0x7f.0.0.1", // hex loopback
+            "http://127.1",      // short-form loopback
+            "http://0xA9FEA9FE", // hex IMDS
+        ] {
+            let Err(err) = WebDriverDriver::enforce_nav_policy(&policy, url) else {
+                panic!("expected SsrfBlocked for {url:?}");
+            };
+            assert!(
+                matches!(err, BrowserError::SsrfBlocked(_)),
+                "expected SsrfBlocked for {url:?}, got {err:?}"
+            );
+        }
+        assert!(WebDriverDriver::enforce_nav_policy(&policy, "https://example.com").is_ok());
     }
 }

@@ -20,7 +20,7 @@ pub mod protocol;
 use async_trait::async_trait;
 use beater_browser::{
     BrowserAction, BrowserDriver, BrowserEngine, BrowserError, Grounding, Observation, StepOutcome,
-    StepStatus,
+    StepStatus, UrlPolicy,
 };
 use protocol::{Command, CommandPayload, Response, ResponsePayload, PROTOCOL_VERSION};
 use std::path::{Path, PathBuf};
@@ -101,6 +101,9 @@ pub struct PlaywrightDriver {
     stdout: BufReader<ChildStdout>,
     next_id: u64,
     closed: bool,
+    /// SSRF guard enforced at every navigation entry point. Defaults to
+    /// [`UrlPolicy::block_private`]; override with [`PlaywrightDriver::with_policy`].
+    policy: UrlPolicy,
 }
 
 impl PlaywrightDriver {
@@ -139,6 +142,7 @@ impl PlaywrightDriver {
             stdout: BufReader::new(stdout),
             next_id: 1,
             closed: false,
+            policy: UrlPolicy::block_private(),
         };
 
         // Read the startup banner first.
@@ -181,6 +185,22 @@ impl PlaywrightDriver {
         }
 
         Ok(driver)
+    }
+
+    /// Override the SSRF [`UrlPolicy`] applied to every navigation (builder).
+    ///
+    /// Use [`UrlPolicy::allow_all`] for trusted callers that must reach
+    /// loopback/private fixtures (e.g. the live conformance suite).
+    pub fn with_policy(mut self, policy: UrlPolicy) -> Self {
+        self.policy = policy;
+        self
+    }
+
+    /// SSRF gate applied at every navigation entry point (`goto` and
+    /// `act(Goto)`). Extracted as an associated fn so the wiring is unit
+    /// testable without spawning the Node runner.
+    fn enforce_nav_policy(policy: &UrlPolicy, url: &str) -> Result<(), BrowserError> {
+        policy.enforce(url)
     }
 
     /// Allocate the next correlation id.
@@ -276,6 +296,8 @@ impl BrowserDriver for PlaywrightDriver {
     }
 
     async fn goto(&mut self, url: &str) -> Result<Observation, BrowserError> {
+        // SSRF guard: reject blocked targets before issuing the navigate command.
+        Self::enforce_nav_policy(&self.policy, url)?;
         let response = self
             .request(CommandPayload::Goto {
                 url: url.to_string(),
@@ -418,6 +440,33 @@ fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn goto_navigation_guard_blocks_ssrf_targets() {
+        // Proves the exact guard `goto`/`act(Goto)` invoke rejects blocked
+        // targets — including alternate IP encodings — before any runner I/O.
+        let policy = UrlPolicy::block_private();
+        for url in [
+            "http://169.254.169.254/latest/meta-data/",
+            "http://127.0.0.1",
+            "http://localhost",
+            "file:///etc/passwd",
+            "http://2130706433", // decimal loopback
+            "http://0177.0.0.1", // octal loopback
+            "http://0x7f.0.0.1", // hex loopback
+            "http://127.1",      // short-form loopback
+            "http://0xA9FEA9FE", // hex IMDS
+        ] {
+            let Err(err) = PlaywrightDriver::enforce_nav_policy(&policy, url) else {
+                panic!("expected SsrfBlocked for {url:?}");
+            };
+            assert!(
+                matches!(err, BrowserError::SsrfBlocked(_)),
+                "expected SsrfBlocked for {url:?}, got {err:?}"
+            );
+        }
+        assert!(PlaywrightDriver::enforce_nav_policy(&policy, "https://example.com").is_ok());
+    }
 
     #[test]
     fn engine_mapping_picks_channel_and_engine() {

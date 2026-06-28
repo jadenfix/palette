@@ -11,25 +11,29 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// 
+/// StatisticalTest : The statistical test that produced an [`ExperimentComparison`]. These mirror `beater_stats::TestKind`; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
+/// The statistical test that produced an [`ExperimentComparison`]. These mirror `beater_stats::TestKind`; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum StatisticalTest {
-    #[serde(rename = "paired_normal_approximation")]
-    PairedNormalApproximation,
+    #[serde(rename = "paired_t")]
+    PairedT,
+    #[serde(rename = "mcnemar_exact")]
+    McnemarExact,
 
 }
 
 impl std::fmt::Display for StatisticalTest {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::PairedNormalApproximation => write!(f, "paired_normal_approximation"),
+            Self::PairedT => write!(f, "paired_t"),
+            Self::McnemarExact => write!(f, "mcnemar_exact"),
         }
     }
 }
 
 impl Default for StatisticalTest {
     fn default() -> StatisticalTest {
-        Self::PairedNormalApproximation
+        Self::PairedT
     }
 }
 

@@ -96,6 +96,14 @@ class ExperimentComparisonTest {
     }
 
     /**
+     * Test the property 'pValue'
+     */
+    @Test
+    void pValueTest() {
+        // TODO: test pValue
+    }
+
+    /**
      * Test the property 'sampleSize'
      */
     @Test

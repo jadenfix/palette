@@ -169,6 +169,9 @@ impl SearchIndex for TantivySearchIndex {
                     self.fields.name => span.name.as_str(),
                     self.fields.model => model_text(span),
                     self.fields.tool => tool_text(span).unwrap_or_default(),
+                    self.fields.input_body => input_body_text(span),
+                    self.fields.output_body => output_body_text(span),
+                    self.fields.error => error_text(span),
                     self.fields.text => searchable_text(span),
                 ))
                 .map_err(StoreError::backend)?;
@@ -356,6 +359,9 @@ struct SearchFields {
     name: tantivy::schema::Field,
     model: tantivy::schema::Field,
     tool: tantivy::schema::Field,
+    input_body: tantivy::schema::Field,
+    output_body: tantivy::schema::Field,
+    error: tantivy::schema::Field,
     text: tantivy::schema::Field,
 }
 
@@ -372,6 +378,9 @@ fn build_schema() -> (Schema, SearchFields) {
     let name = builder.add_text_field("name", TEXT | STORED);
     let model = builder.add_text_field("model", TEXT | STORED);
     let tool = builder.add_text_field("tool", TEXT | STORED);
+    let input_body = builder.add_text_field("input_body", TEXT | STORED);
+    let output_body = builder.add_text_field("output_body", TEXT | STORED);
+    let error = builder.add_text_field("error", TEXT | STORED);
     let text = builder.add_text_field("text", TEXT | STORED);
     (
         builder.build(),
@@ -387,6 +396,9 @@ fn build_schema() -> (Schema, SearchFields) {
             name,
             model,
             tool,
+            input_body,
+            output_body,
+            error,
             text,
         },
     )
@@ -495,6 +507,61 @@ fn tool_text(span: &CanonicalSpan) -> Option<String> {
         .map(ToString::to_string)
 }
 
+const INPUT_BODY_ATTRS: &[&str] = &[
+    "input.value",
+    "llm.prompts",
+    "llm.input_messages",
+    "gen_ai.prompt",
+    "gen_ai.input.messages",
+    "gen_ai.system",
+];
+
+const OUTPUT_BODY_ATTRS: &[&str] = &[
+    "output.value",
+    "llm.completions",
+    "llm.output_messages",
+    "gen_ai.completion",
+    "gen_ai.output.messages",
+];
+
+const ERROR_BODY_ATTRS: &[&str] = &[
+    "error",
+    "error.message",
+    "error.type",
+    "exception.message",
+    "exception.type",
+    "exception.stacktrace",
+];
+
+fn input_body_text(span: &CanonicalSpan) -> String {
+    canonical_body_text(span, INPUT_BODY_ATTRS)
+}
+
+fn output_body_text(span: &CanonicalSpan) -> String {
+    canonical_body_text(span, OUTPUT_BODY_ATTRS)
+}
+
+fn error_text(span: &CanonicalSpan) -> String {
+    canonical_body_text(span, ERROR_BODY_ATTRS)
+}
+
+fn canonical_body_text(span: &CanonicalSpan, keys: &[&str]) -> String {
+    span.attributes
+        .iter()
+        .filter(|(key, _)| keys.iter().any(|candidate| attr_matches(key, candidate)))
+        .map(|(_, value)| value_to_text(value))
+        .filter(|value| !value.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn attr_matches(key: &str, candidate: &str) -> bool {
+    key == candidate
+        || key
+            .strip_prefix(candidate)
+            .is_some_and(|suffix| suffix.starts_with('.') || suffix.starts_with('['))
+}
+
 fn searchable_text(span: &CanonicalSpan) -> String {
     let mut pieces = vec![
         span.name.clone(),
@@ -502,6 +569,9 @@ fn searchable_text(span: &CanonicalSpan) -> String {
         span.status.as_str().to_string(),
         model_text(span),
         tool_text(span).unwrap_or_default(),
+        input_body_text(span),
+        output_body_text(span),
+        error_text(span),
     ];
     for (key, value) in &span.attributes {
         pieces.push(key.clone());
@@ -835,6 +905,117 @@ mod tests {
         assert_eq!(response.hits[0].trace_id, "target-env-model-tool-trace");
         assert!(response.hits[0].model.contains("targetmodel"));
         assert_eq!(response.hits[0].tool, "target_tool");
+    }
+
+    #[tokio::test]
+    async fn fielded_body_search_indexes_inline_prompt_output_and_error_attrs() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+
+        let mut prompt_span = fixture_span_with_project(
+            &tenant,
+            &project,
+            "prompt-trace",
+            "prompt-span",
+            "chat completion",
+            SpanStatus::Ok,
+        );
+        prompt_span.attributes.insert(
+            "llm.input_messages".to_string(),
+            json!([
+                { "role": "system", "content": "Follow the invoicequake policy" },
+                { "role": "user", "content": "Can this refund be approved?" }
+            ]),
+        );
+
+        let mut output_span = fixture_span_with_project(
+            &tenant,
+            &project,
+            "output-trace",
+            "output-span",
+            "chat completion",
+            SpanStatus::Ok,
+        );
+        output_span.attributes.insert(
+            "gen_ai.completion".to_string(),
+            json!("shipmentcalc approved"),
+        );
+
+        let mut error_span = fixture_span_with_project(
+            &tenant,
+            &project,
+            "error-trace",
+            "error-span",
+            "tool failed",
+            SpanStatus::Error,
+        );
+        error_span.attributes.insert(
+            "exception.message".to_string(),
+            json!("cardboom gateway timeout"),
+        );
+
+        index
+            .index_spans(&[prompt_span, output_span, error_span])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        // Inline body attributes flow into the combined `text` field via
+        // `searchable_text`, so they are findable by their literal content.
+        // #125 tokenizes the query literally, so field-DSL prefixes like
+        // `input_body:` are no longer interpreted as field selectors; we search
+        // by the distinctive body terms directly.
+        let prompt = index
+            .search(SearchRequest {
+                tenant_id: tenant.clone(),
+                text: "invoicequake".to_string(),
+                limit: Some(10),
+                ..SearchRequest::default_for_tenant(tenant.clone())
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let output = index
+            .search(SearchRequest {
+                tenant_id: tenant.clone(),
+                text: "shipmentcalc".to_string(),
+                limit: Some(10),
+                ..SearchRequest::default_for_tenant(tenant.clone())
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let error = index
+            .search(SearchRequest {
+                tenant_id: tenant.clone(),
+                text: "cardboom".to_string(),
+                limit: Some(10),
+                ..SearchRequest::default_for_tenant(tenant)
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(prompt.hits.len(), 1);
+        assert_eq!(prompt.hits[0].trace_id, "prompt-trace");
+        assert_eq!(output.hits.len(), 1);
+        assert_eq!(output.hits[0].trace_id, "output-trace");
+        assert_eq!(error.hits.len(), 1);
+        assert_eq!(error.hits[0].trace_id, "error-trace");
+    }
+
+    #[test]
+    fn body_text_extractors_ignore_artifact_refs_and_use_inline_attrs_only() {
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let mut span = fixture_span(&tenant, "trace", "span", "chat completion", SpanStatus::Ok);
+        span.input_ref = Some(span.raw_ref.clone());
+        span.output_ref = Some(span.raw_ref.clone());
+        span.attributes = BTreeMap::from([
+            ("input.value".to_string(), json!("inline prompt body")),
+            ("output.value".to_string(), json!("inline output body")),
+            ("error.message".to_string(), json!("inline error body")),
+        ]);
+
+        assert_eq!(input_body_text(&span), "inline prompt body");
+        assert_eq!(output_body_text(&span), "inline output body");
+        assert_eq!(error_text(&span), "inline error body");
     }
 
     #[tokio::test]

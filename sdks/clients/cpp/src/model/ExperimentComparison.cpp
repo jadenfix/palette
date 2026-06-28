@@ -33,6 +33,8 @@ ExperimentComparison::ExperimentComparison()
     m_DecisionIsSet = false;
     m_Delta = 0.0;
     m_DeltaIsSet = false;
+    m_P_value = 0.0;
+    m_P_valueIsSet = false;
     m_Sample_size = 0;
     m_Sample_sizeIsSet = false;
     m_TestIsSet = false;
@@ -84,6 +86,11 @@ web::json::value ExperimentComparison::toJson() const
     {   
         
         val[utility::conversions::to_string_t(U("delta"))] = ModelBase::toJson(m_Delta);
+    }
+    if(m_P_valueIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("p_value"))] = ModelBase::toJson(m_P_value);
     }
     if(m_Sample_sizeIsSet)
     {   
@@ -179,6 +186,17 @@ bool ExperimentComparison::fromJson(const web::json::value& val)
             
         }
     }
+    if(val.has_field(utility::conversions::to_string_t(U("p_value"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("p_value")));
+        if(!fieldValue.is_null())
+        {
+            double refVal_setPValue;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setPValue);
+            setPValue(refVal_setPValue);
+            
+        }
+    }
     if(val.has_field(utility::conversions::to_string_t(U("sample_size"))))
     {
         const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("sample_size")));
@@ -238,6 +256,10 @@ void ExperimentComparison::toMultipart(std::shared_ptr<MultipartFormData> multip
     if(m_DeltaIsSet)
     {
         multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("delta")), m_Delta));
+    }
+    if(m_P_valueIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("p_value")), m_P_value));
     }
     if(m_Sample_sizeIsSet)
     {
@@ -299,6 +321,12 @@ bool ExperimentComparison::fromMultiPart(std::shared_ptr<MultipartFormData> mult
         double refVal_setDelta;
         ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("delta"))), refVal_setDelta );
         setDelta(refVal_setDelta);
+    }
+    if(multipart->hasContent(utility::conversions::to_string_t(U("p_value"))))
+    {
+        double refVal_setPValue;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("p_value"))), refVal_setPValue );
+        setPValue(refVal_setPValue);
     }
     if(multipart->hasContent(utility::conversions::to_string_t(U("sample_size"))))
     {
@@ -456,6 +484,26 @@ bool ExperimentComparison::deltaIsSet() const
 void ExperimentComparison::unsetDelta()
 {
     m_DeltaIsSet = false;
+}
+double ExperimentComparison::getPValue() const
+{
+    return m_P_value;
+}
+
+void ExperimentComparison::setPValue(double value)
+{
+    m_P_value = value;
+    m_P_valueIsSet = true;
+}
+
+bool ExperimentComparison::pValueIsSet() const
+{
+    return m_P_valueIsSet;
+}
+
+void ExperimentComparison::unsetP_value()
+{
+    m_P_valueIsSet = false;
 }
 int32_t ExperimentComparison::getSampleSize() const
 {

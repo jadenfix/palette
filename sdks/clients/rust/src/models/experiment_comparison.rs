@@ -27,6 +27,9 @@ pub struct ExperimentComparison {
     pub decision: models::GateDecision,
     #[serde(rename = "delta")]
     pub delta: f64,
+    /// Real two-sided p-value from `test`. The previous normal-approximation path reported no p-value at all.
+    #[serde(rename = "p_value")]
+    pub p_value: f64,
     #[serde(rename = "sample_size")]
     pub sample_size: i32,
     #[serde(rename = "test")]
@@ -34,7 +37,7 @@ pub struct ExperimentComparison {
 }
 
 impl ExperimentComparison {
-    pub fn new(adjusted_alpha: f64, baseline_mean: f64, candidate_mean: f64, ci_high: f64, ci_low: f64, decision: models::GateDecision, delta: f64, sample_size: i32, test: models::StatisticalTest) -> ExperimentComparison {
+    pub fn new(adjusted_alpha: f64, baseline_mean: f64, candidate_mean: f64, ci_high: f64, ci_low: f64, decision: models::GateDecision, delta: f64, p_value: f64, sample_size: i32, test: models::StatisticalTest) -> ExperimentComparison {
         ExperimentComparison {
             adjusted_alpha,
             baseline_mean,
@@ -43,6 +46,7 @@ impl ExperimentComparison {
             ci_low,
             decision,
             delta,
+            p_value,
             sample_size,
             test,
         }

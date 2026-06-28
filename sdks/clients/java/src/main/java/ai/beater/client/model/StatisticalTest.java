@@ -26,11 +26,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets StatisticalTest
+ * The statistical test that produced an [&#x60;ExperimentComparison&#x60;]. These mirror &#x60;beater_stats::TestKind&#x60;; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single &#x60;PairedNormalApproximation&#x60; (a hard-coded-z normal approximation with no p-value) is gone — see &#x60;beater-stats&#x60;.
  */
 public enum StatisticalTest {
   
-  PAIRED_NORMAL_APPROXIMATION("paired_normal_approximation");
+  PAIRED_T("paired_t"),
+  
+  MCNEMAR_EXACT("mcnemar_exact");
 
   private String value;
 

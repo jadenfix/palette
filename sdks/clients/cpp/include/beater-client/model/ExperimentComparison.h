@@ -90,6 +90,14 @@ public:
     void unsetDelta();
     void setDelta(double value);
 
+    /// <summary>
+    /// Real two-sided p-value from &#x60;test&#x60;. The previous normal-approximation path reported no p-value at all.
+    /// </summary>
+    double getPValue() const;
+    bool pValueIsSet() const;
+    void unsetP_value();
+    void setPValue(double value);
+
     int32_t getSampleSize() const;
     bool sampleSizeIsSet() const;
     void unsetSample_size();
@@ -122,6 +130,9 @@ protected:
 
     double m_Delta;
     bool m_DeltaIsSet;
+
+    double m_P_value;
+    bool m_P_valueIsSet;
 
     int32_t m_Sample_size;
     bool m_Sample_sizeIsSet;

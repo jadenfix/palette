@@ -42,8 +42,9 @@ class TestExperimentComparison(unittest.TestCase):
                 ci_low = 1.337,
                 decision = 'pass',
                 delta = 1.337,
+                p_value = 1.337,
                 sample_size = 0,
-                test = 'paired_normal_approximation'
+                test = 'paired_t'
             )
         else:
             return ExperimentComparison(
@@ -54,8 +55,9 @@ class TestExperimentComparison(unittest.TestCase):
                 ci_low = 1.337,
                 decision = 'pass',
                 delta = 1.337,
+                p_value = 1.337,
                 sample_size = 0,
-                test = 'paired_normal_approximation',
+                test = 'paired_t',
         )
         """
 

@@ -3,15 +3,28 @@
 //! This crate provides the pure-math layer that **`beater-eval`**, **`beater-gates`**,
 //! the online-eval worker, and the RSI loop (§21) all call into for statistically
 //! valid comparisons.  Nothing in this crate does I/O, allocates a runtime, or
-//! panics on bad input — every function returns a `Result`.
+//! panics on bad input — every routine validates its inputs and returns a
+//! `Result`, so the crate honors the workspace `unwrap_used`/`expect_used = deny`
+//! lints.
 //!
-//! ## What is implemented (Phase 1 — fixed-horizon core, §10.3 #1–#5)
+//! ## What is implemented
 //!
-//! | Function | ARCHITECTURE.md § |
-//! |---|---|
-//! | [`wilson_interval`] | §6.3, §10.3 #2, §10.3 #7 |
-//! | [`two_proportion_z_test`] | §6.3, §10.3 #3 |
-//! | [`bootstrap_diff_ci`] | §6.3, §10.3 #2, §21.4 |
+//! | Function | ARCHITECTURE.md § | Use |
+//! |---|---|---|
+//! | [`wilson_interval`] | §6.3, §10.3 #2, §10.3 #7 | binomial-proportion CI |
+//! | [`two_proportion_z_test`] | §6.3, §10.3 #3 | unpaired candidate-vs-baseline |
+//! | [`bootstrap_diff_ci`] | §6.3, §10.3 #2, §21.4 | bounded/continuous diff CI |
+//! | [`compare_paired`] | §10.3 | paired deploy-gate selector |
+//! | [`paired_t_test`] | §10.3 | continuous paired metric |
+//! | [`mcnemar_exact_p`] | §10.3 | paired binary outcome |
+//!
+//! The paired layer ([`compare_paired`]) is what the **experiment gate** calls
+//! today: it picks **Student's paired t** for continuous metrics and the **exact
+//! McNemar test** for paired binary outcomes, returning a *real* two-sided
+//! p-value computed with a method-appropriate test — replacing the previous
+//! hand-rolled paired normal-approximation in `beater-eval` that hard-coded its
+//! critical value (`z = 1.96 / 2.576`) and reported no p-value at all, so its
+//! *nominal* alpha did not equal its *actual* alpha.
 //!
 //! Anytime-valid / sequential inference (mSPRT, §10.3 #6) is the **required
 //! follow-on phase** and is not included here; see §10.3 phasing note.
@@ -21,48 +34,56 @@
 //! * **No panics** — inputs that violate preconditions return `Err(StatsError::…)`.
 //! * **Reproducible** — all randomised code (bootstrap) accepts an explicit `seed`
 //!   so results are deterministic and can be committed to a test oracle.
-//! * **Zero runtime deps** — the normal CDF and its inverse are implemented via
-//!   the standard polynomial approximations (Abramowitz & Stegun §7.1.26 and §26.2.17)
-//!   so we avoid pulling in a heavy numerical-methods crate.
+//! * **No heavyweight deps** — the normal/Student-t quantiles, incomplete beta,
+//!   exact binomial tail, and normal CDF are hand-rolled (see [`numerics`] and the
+//!   helpers below) so the crate pulls in only `thiserror`.
+
+mod mcnemar;
+mod numerics;
+mod paired;
+
+pub use mcnemar::mcnemar_exact_p;
+pub use paired::paired_t_test;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error type
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Errors returned by `beater-stats` functions.
-#[derive(Debug, Clone, PartialEq)]
+/// Errors returned by `beater-stats` functions.  They are total: every routine
+/// validates its inputs and returns one of these rather than panicking.
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum StatsError {
+    // ── Fixed-horizon proportion / bootstrap core (§10.3 #2/#3, §6.3) ──
     /// `trials` was zero — there is no proportion to estimate.
+    #[error("trials must be > 0")]
     ZeroTrials,
     /// `successes` exceeded `trials`.
+    #[error("successes ({successes}) > trials ({trials})")]
     SuccessesExceedTrials { successes: u64, trials: u64 },
     /// A sample was empty where at least one observation is required.
+    #[error("sample must not be empty")]
     EmptySample,
     /// A parameter was outside its valid range.
+    #[error("parameter `{name}` = {value} is out of range")]
     InvalidParameter { name: &'static str, value: f64 },
     /// The requested number of bootstrap resamples must be ≥ 1.
+    #[error("n_resamples must be ≥ 1, got {0}")]
     InvalidResampleCount(usize),
-}
 
-impl std::fmt::Display for StatsError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::ZeroTrials => write!(f, "trials must be > 0"),
-            Self::SuccessesExceedTrials { successes, trials } => {
-                write!(f, "successes ({successes}) > trials ({trials})")
-            }
-            Self::EmptySample => write!(f, "sample must not be empty"),
-            Self::InvalidParameter { name, value } => {
-                write!(f, "parameter `{name}` = {value} is out of range")
-            }
-            Self::InvalidResampleCount(n) => {
-                write!(f, "n_resamples must be ≥ 1, got {n}")
-            }
-        }
-    }
+    // ── Paired deploy-gate layer (§10.3) ──
+    /// Fewer observations than the method requires.
+    #[error("too few samples: got {got}, need at least {need}")]
+    TooFewSamples { got: usize, need: usize },
+    /// Two paired inputs had different lengths.
+    #[error("mismatched sample lengths: {baseline} vs {candidate}")]
+    MismatchedLengths { baseline: usize, candidate: usize },
+    /// `alpha` outside the open interval (0, 1).
+    #[error("alpha must be in (0, 1), got {0}")]
+    InvalidAlpha(f64),
+    /// A non-finite (NaN/inf) value appeared in the input.
+    #[error("non-finite value in input")]
+    NonFinite,
 }
-
-impl std::error::Error for StatsError {}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Result types
@@ -100,6 +121,38 @@ pub struct BootstrapInterval {
     pub estimate: f64,
     /// Number of bootstrap resamples actually used.
     pub n_resamples: usize,
+}
+
+/// A confidence interval for a point estimate at a stated confidence level.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ConfidenceInterval {
+    pub low: f64,
+    pub high: f64,
+    /// e.g. 0.95 for a 95% interval (== 1 - alpha).
+    pub confidence: f64,
+}
+
+/// Which test produced an outcome — recorded so a reader can tell a t-test
+/// result from an exact McNemar one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TestKind {
+    /// Student's paired t-test (continuous paired metric).
+    PairedT,
+    /// Exact McNemar test (paired binary outcome).
+    McnemarExact,
+}
+
+/// The result of a hypothesis test: the point estimate (always the mean
+/// difference), its confidence interval, a real two-sided p-value, the test
+/// used, the degrees of freedom where defined, and the effective sample size.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TestOutcome {
+    pub estimate: f64,
+    pub ci: Option<ConfidenceInterval>,
+    pub p_value: f64,
+    pub test: TestKind,
+    pub df: Option<f64>,
+    pub sample_size: usize,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -369,6 +422,100 @@ pub fn bootstrap_diff_ci(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// §10.3 — Paired deploy-gate selector (paired-t / exact McNemar)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Compare two paired samples (`candidate` − `baseline`) and return a real test
+/// outcome. This is the entry point the experiment gate uses.
+///
+/// It picks **exact McNemar** when every value is 0 or 1 (a paired binary
+/// outcome) and **Student's paired t** otherwise. The reported `estimate` is
+/// always the mean difference `mean(candidate) − mean(baseline)`, so the CI is
+/// directly comparable against a regression threshold regardless of which test
+/// produced the p-value.
+pub fn compare_paired(
+    baseline: &[f64],
+    candidate: &[f64],
+    alpha: f64,
+) -> Result<TestOutcome, StatsError> {
+    validate_alpha(alpha)?;
+    if baseline.len() != candidate.len() {
+        return Err(StatsError::MismatchedLengths {
+            baseline: baseline.len(),
+            candidate: candidate.len(),
+        });
+    }
+    let n = baseline.len();
+    if n < 2 {
+        return Err(StatsError::TooFewSamples { got: n, need: 2 });
+    }
+    for value in baseline.iter().chain(candidate.iter()) {
+        if !value.is_finite() {
+            return Err(StatsError::NonFinite);
+        }
+    }
+
+    if is_binary(baseline) && is_binary(candidate) {
+        return mcnemar_outcome(baseline, candidate, alpha);
+    }
+
+    let differences: Vec<f64> = candidate
+        .iter()
+        .zip(baseline.iter())
+        .map(|(c, b)| c - b)
+        .collect();
+    paired_t_test(&differences, alpha)
+}
+
+/// Exact-McNemar outcome with a normal-approximation CI on the paired difference
+/// in proportions (`(b − c) / N`), where `b`/`c` are the discordant counts.
+fn mcnemar_outcome(
+    baseline: &[f64],
+    candidate: &[f64],
+    alpha: f64,
+) -> Result<TestOutcome, StatsError> {
+    let total = baseline.len();
+    let mut b: u64 = 0; // baseline 0 -> candidate 1 (candidate improved)
+    let mut c: u64 = 0; // baseline 1 -> candidate 0 (candidate regressed)
+    for (base, cand) in baseline.iter().zip(candidate.iter()) {
+        match (*base as i64, *cand as i64) {
+            (0, 1) => b += 1,
+            (1, 0) => c += 1,
+            _ => {}
+        }
+    }
+    let p_value = mcnemar_exact_p(b, c)?;
+    let n = total as f64;
+    let diff = (b as f64 - c as f64) / n;
+    // Standard McNemar large-sample SE for the difference of paired proportions.
+    let discordant = b as f64 + c as f64;
+    let variance = (discordant - (b as f64 - c as f64).powi(2) / n) / (n * n);
+    let ci = if variance <= 0.0 {
+        ConfidenceInterval {
+            low: diff,
+            high: diff,
+            confidence: 1.0 - alpha,
+        }
+    } else {
+        let z = numerics::normal_quantile(1.0 - alpha / 2.0);
+        let half = z * variance.sqrt();
+        ConfidenceInterval {
+            low: diff - half,
+            high: diff + half,
+            confidence: 1.0 - alpha,
+        }
+    };
+    Ok(TestOutcome {
+        estimate: diff,
+        ci: Some(ci),
+        p_value,
+        test: TestKind::McnemarExact,
+        df: None,
+        sample_size: total,
+    })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Math helpers — normal CDF and quantile (no external deps)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -462,8 +609,33 @@ impl Xorshift64 {
 // Internal utilities
 // ─────────────────────────────────────────────────────────────────────────────
 
-fn mean(xs: &[f64]) -> f64 {
-    xs.iter().sum::<f64>() / xs.len() as f64
+pub(crate) fn mean(values: &[f64]) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
+    values.iter().sum::<f64>() / values.len() as f64
+}
+
+/// Unbiased (n − 1) sample variance; 0.0 for fewer than two values.
+pub(crate) fn sample_variance(values: &[f64]) -> f64 {
+    if values.len() < 2 {
+        return 0.0;
+    }
+    let m = mean(values);
+    let sum_sq: f64 = values.iter().map(|v| (v - m).powi(2)).sum();
+    sum_sq / (values.len() as f64 - 1.0)
+}
+
+pub(crate) fn validate_alpha(alpha: f64) -> Result<(), StatsError> {
+    if alpha.is_finite() && alpha > 0.0 && alpha < 1.0 {
+        Ok(())
+    } else {
+        Err(StatsError::InvalidAlpha(alpha))
+    }
+}
+
+fn is_binary(values: &[f64]) -> bool {
+    values.iter().all(|v| *v == 0.0 || *v == 1.0)
 }
 
 fn resample_mean(xs: &[f64], rng: &mut Xorshift64) -> f64 {
@@ -482,6 +654,61 @@ fn resample_mean(xs: &[f64], rng: &mut Xorshift64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ── compare_paired selector (§10.3) ───────────────────────────────────────
+
+    #[test]
+    fn rejects_invalid_alpha() {
+        assert!(matches!(
+            compare_paired(&[0.0, 1.0], &[1.0, 1.0], 0.0),
+            Err(StatsError::InvalidAlpha(_))
+        ));
+        assert!(matches!(
+            compare_paired(&[0.0, 1.0], &[1.0, 1.0], 1.0),
+            Err(StatsError::InvalidAlpha(_))
+        ));
+    }
+
+    #[test]
+    fn rejects_mismatched_lengths() {
+        assert!(matches!(
+            compare_paired(&[0.0, 1.0, 1.0], &[1.0, 1.0], 0.05),
+            Err(StatsError::MismatchedLengths { .. })
+        ));
+    }
+
+    #[test]
+    fn selects_mcnemar_for_binary() {
+        // Candidate flips three failures to successes, regresses none.
+        let baseline = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0];
+        let candidate = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+        let out = compare_paired(&baseline, &candidate, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(out.test, TestKind::McnemarExact);
+        // delta = (b - c)/N = (3 - 0)/6 = 0.5
+        assert!((out.estimate - 0.5).abs() < 1e-9);
+        // b=3, c=0 -> exact two-sided p = 2 * 0.5^3 = 0.25
+        assert!((out.p_value - 0.25).abs() < 1e-9, "p={}", out.p_value);
+    }
+
+    #[test]
+    fn selects_paired_t_for_continuous() {
+        let baseline = [0.50, 0.55, 0.48, 0.52, 0.51];
+        let candidate = [0.60, 0.62, 0.59, 0.61, 0.63];
+        let out = compare_paired(&baseline, &candidate, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(out.test, TestKind::PairedT);
+        assert!(out.estimate > 0.0);
+        assert!(out.ci.is_some());
+        // A clear, consistent improvement should be significant.
+        assert!(out.p_value < 0.05, "p={}", out.p_value);
+    }
+
+    #[test]
+    fn identical_samples_are_not_significant() {
+        let data = [0.3, 0.7, 0.5, 0.9, 0.1];
+        let out = compare_paired(&data, &data, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        assert!((out.estimate).abs() < 1e-12);
+        assert!((out.p_value - 1.0).abs() < 1e-9);
+    }
 
     // ── normal_cdf / normal_quantile ─────────────────────────────────────────
 

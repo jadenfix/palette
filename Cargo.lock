@@ -902,6 +902,7 @@ version = "0.1.0"
 dependencies = [
  "beater-core",
  "beater-schema",
+ "beater-stats",
  "regex",
  "serde",
  "serde_json",
@@ -1216,6 +1217,9 @@ dependencies = [
 [[package]]
 name = "beater-stats"
 version = "0.1.0"
+dependencies = [
+ "thiserror 1.0.69",
+]
 
 [[package]]
 name = "beater-store"
@@ -1270,6 +1274,7 @@ name = "beater-store-sql"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "base64 0.22.1",
  "beater-core",
  "beater-schema",
  "beater-store",

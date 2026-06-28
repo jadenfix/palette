@@ -29,6 +29,8 @@ pub enum EvalError {
         sample_size: usize,
         min_sample_size: usize,
     },
+    #[error("statistics error: {0}")]
+    Statistics(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -449,6 +451,9 @@ pub struct ExperimentComparison {
     pub delta: f64,
     pub ci_low: f64,
     pub ci_high: f64,
+    /// Real two-sided p-value from `test`. The previous normal-approximation path
+    /// reported no p-value at all.
+    pub p_value: f64,
     pub decision: GateDecision,
     pub test: StatisticalTest,
     pub adjusted_alpha: f64,
@@ -473,10 +478,27 @@ impl GateDecision {
     }
 }
 
+/// The statistical test that produced an [`ExperimentComparison`]. These mirror
+/// `beater_stats::TestKind`; the gate records which method was actually used so a
+/// reader can tell a t-test result from an exact McNemar one. The old single
+/// `PairedNormalApproximation` (a hard-coded-z normal approximation with no
+/// p-value) is gone — see `beater-stats`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum StatisticalTest {
-    PairedNormalApproximation,
+    /// Student's paired t-test (continuous paired metric).
+    PairedT,
+    /// Exact McNemar test (paired binary outcome).
+    McnemarExact,
+}
+
+impl From<beater_stats::TestKind> for StatisticalTest {
+    fn from(kind: beater_stats::TestKind) -> Self {
+        match kind {
+            beater_stats::TestKind::PairedT => StatisticalTest::PairedT,
+            beater_stats::TestKind::McnemarExact => StatisticalTest::McnemarExact,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -511,22 +533,61 @@ pub fn compare_paired_scores(
         });
     }
 
-    let mut differences = Vec::with_capacity(n);
-    for index in 0..n {
-        differences.push(candidate[index] - baseline[index]);
-    }
-    let delta = mean(&differences);
-    let baseline_mean = mean(&baseline[..n]);
-    let candidate_mean = mean(&candidate[..n]);
-    let variance = sample_variance(&differences);
-    let standard_error = (variance / n as f64).sqrt();
+    // Bonferroni single-step correction across the comparison family; this becomes
+    // the per-comparison level the CI and decision are computed at. (Holm /
+    // Benjamini-Hochberg over many metrics live in `beater_stats::multiplicity`
+    // for callers that compare more than one metric at once.)
     let adjusted_alpha = (policy.alpha / policy.comparison_count.max(1) as f64).clamp(0.0001, 0.5);
-    let z = if adjusted_alpha <= 0.01 { 2.576 } else { 1.96 };
-    let ci_low = delta - z * standard_error;
-    let ci_high = delta + z * standard_error;
-    let decision = if ci_high < -policy.max_regression {
+    let baseline = &baseline[..n];
+    let candidate = &candidate[..n];
+
+    // A single paired observation has no sampling variability, so a real
+    // variance-based test is undefined — `beater-stats` correctly refuses n < 2.
+    // This is the deterministic single-case smoke-gate regime (a caller opts in by
+    // setting `min_sample_size = 1`): the interval collapses to the point estimate,
+    // and the p-value is 1.0 because one sample carries no power to reject the null.
+    // The gate still decides from that degenerate interval against the regression
+    // bound, preserving deterministic single-case behavior.
+    if n < 2 {
+        let delta =
+            candidate.first().copied().unwrap_or(0.0) - baseline.first().copied().unwrap_or(0.0);
+        let decision = if delta < -policy.max_regression {
+            GateDecision::FailRegression
+        } else {
+            GateDecision::Pass
+        };
+        return Ok(ExperimentComparison {
+            sample_size: n,
+            baseline_mean: mean(baseline),
+            candidate_mean: mean(candidate),
+            delta,
+            ci_low: delta,
+            ci_high: delta,
+            p_value: 1.0,
+            decision,
+            test: StatisticalTest::PairedT,
+            adjusted_alpha,
+        });
+    }
+
+    // Real statistics: a method-appropriate test (exact McNemar for paired binary
+    // outcomes, Student's paired t otherwise) with a real p-value and a CI whose
+    // nominal level equals its actual level — not the old hard-coded-z normal
+    // approximation. See `beater-stats`.
+    let outcome = beater_stats::compare_paired(baseline, candidate, adjusted_alpha)
+        .map_err(|err| EvalError::Statistics(err.to_string()))?;
+
+    // Every test reports the mean difference as its estimate; the McNemar path
+    // also carries a difference CI, so a CI is always present here.
+    let ci = outcome.ci.unwrap_or(beater_stats::ConfidenceInterval {
+        low: outcome.estimate,
+        high: outcome.estimate,
+        confidence: 1.0 - adjusted_alpha,
+    });
+    let delta = outcome.estimate;
+    let decision = if ci.high < -policy.max_regression {
         GateDecision::FailRegression
-    } else if ci_low >= -policy.max_regression {
+    } else if ci.low >= -policy.max_regression {
         GateDecision::Pass
     } else {
         GateDecision::Inconclusive
@@ -534,34 +595,23 @@ pub fn compare_paired_scores(
 
     Ok(ExperimentComparison {
         sample_size: n,
-        baseline_mean,
-        candidate_mean,
+        baseline_mean: mean(baseline),
+        candidate_mean: mean(candidate),
         delta,
-        ci_low,
-        ci_high,
+        ci_low: ci.low,
+        ci_high: ci.high,
+        p_value: outcome.p_value,
         decision,
-        test: StatisticalTest::PairedNormalApproximation,
+        test: outcome.test.into(),
         adjusted_alpha,
     })
 }
 
 fn mean(values: &[f64]) -> f64 {
-    values.iter().sum::<f64>() / values.len() as f64
-}
-
-fn sample_variance(values: &[f64]) -> f64 {
-    if values.len() < 2 {
+    if values.is_empty() {
         return 0.0;
     }
-    let value_mean = mean(values);
-    values
-        .iter()
-        .map(|value| {
-            let diff = value - value_mean;
-            diff * diff
-        })
-        .sum::<f64>()
-        / (values.len() - 1) as f64
+    values.iter().sum::<f64>() / values.len() as f64
 }
 
 /// What the platform can still provide when an [`EvalResult`] is rerun. The

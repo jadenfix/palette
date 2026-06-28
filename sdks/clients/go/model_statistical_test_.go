@@ -15,17 +15,19 @@ import (
 	"fmt"
 )
 
-// StatisticalTest the model 'StatisticalTest'
+// StatisticalTest The statistical test that produced an [`ExperimentComparison`]. These mirror `beater_stats::TestKind`; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
 type StatisticalTest string
 
 // List of StatisticalTest
 const (
-	STATISTICALTEST_PAIRED_NORMAL_APPROXIMATION StatisticalTest = "paired_normal_approximation"
+	STATISTICALTEST_PAIRED_T StatisticalTest = "paired_t"
+	STATISTICALTEST_MCNEMAR_EXACT StatisticalTest = "mcnemar_exact"
 )
 
 // All allowed values of StatisticalTest enum
 var AllowedStatisticalTestEnumValues = []StatisticalTest{
-	"paired_normal_approximation",
+	"paired_t",
+	"mcnemar_exact",
 }
 
 func (v *StatisticalTest) UnmarshalJSON(src []byte) error {

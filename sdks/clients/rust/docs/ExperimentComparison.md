@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **ci_low** | **f64** |  | 
 **decision** | [**models::GateDecision**](GateDecision.md) |  | 
 **delta** | **f64** |  | 
+**p_value** | **f64** | Real two-sided p-value from `test`. The previous normal-approximation path reported no p-value at all. | 
 **sample_size** | **i32** |  | 
 **test** | [**models::StatisticalTest**](StatisticalTest.md) |  | 
 

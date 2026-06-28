@@ -20,13 +20,14 @@ from typing_extensions import Self
 
 class StatisticalTest(str, Enum):
     """
-    StatisticalTest
+    The statistical test that produced an [`ExperimentComparison`]. These mirror `beater_stats::TestKind`; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
     """
 
     """
     allowed enum values
     """
-    PAIRED_NORMAL_APPROXIMATION = 'paired_normal_approximation'
+    PAIRED_T = 'paired_t'
+    MCNEMAR_EXACT = 'mcnemar_exact'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

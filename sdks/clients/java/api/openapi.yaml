@@ -6050,10 +6050,11 @@ components:
       type: string
     ExperimentComparison:
       example:
+        p_value: 2.027123023002322
         baseline_mean: 5.637376656633329
         decision: pass
         sample_size: 0
-        test: paired_normal_approximation
+        test: paired_t
         adjusted_alpha: 5.962133916683182
         delta: 3.616076749251911
         ci_high: 7.061401241503109
@@ -6080,6 +6081,12 @@ components:
         delta:
           format: double
           type: number
+        p_value:
+          description: |-
+            Real two-sided p-value from `test`. The previous normal-approximation path
+            reported no p-value at all.
+          format: double
+          type: number
         sample_size:
           minimum: 0
           type: integer
@@ -6093,6 +6100,7 @@ components:
       - ci_low
       - decision
       - delta
+      - p_value
       - sample_size
       - test
     ExperimentRunId:
@@ -6102,10 +6110,11 @@ components:
         evaluator_version_id: evaluator_version_id
         tenant_id: tenant_id
         comparison:
+          p_value: 2.027123023002322
           baseline_mean: 5.637376656633329
           decision: pass
           sample_size: 0
-          test: paired_normal_approximation
+          test: paired_t
           adjusted_alpha: 5.962133916683182
           delta: 3.616076749251911
           ci_high: 7.061401241503109
@@ -6116,9 +6125,9 @@ components:
         dataset_version_id: dataset_version_id
         candidate_release_id: candidate_release_id
         gate_policy:
-          max_regression: 1.2315135367772556
+          max_regression: 1.0246457001441578
           min_sample_size: 0
-          alpha: 4.145608029883936
+          alpha: 7.386281948385884
           comparison_count: 0
         created_at: 2000-01-23T04:56:07.000+00:00
         experiment_run_id: experiment_run_id
@@ -6254,9 +6263,9 @@ components:
       type: string
     GatePolicy:
       example:
-        max_regression: 1.2315135367772556
+        max_regression: 1.0246457001441578
         min_sample_size: 0
-        alpha: 4.145608029883936
+        alpha: 7.386281948385884
         comparison_count: 0
       properties:
         alpha:
@@ -6284,10 +6293,11 @@ components:
         tenant_id: tenant_id
         reason: reason
         comparison:
+          p_value: 2.027123023002322
           baseline_mean: 5.637376656633329
           decision: pass
           sample_size: 0
-          test: paired_normal_approximation
+          test: paired_t
           adjusted_alpha: 5.962133916683182
           delta: 3.616076749251911
           ci_high: 7.061401241503109
@@ -6302,9 +6312,9 @@ components:
         gate_run_id: gate_run_id
         experiment_decision: pass
         experiment_gate_policy:
-          max_regression: 1.2315135367772556
+          max_regression: 1.0246457001441578
           min_sample_size: 0
-          alpha: 4.145608029883936
+          alpha: 7.386281948385884
           comparison_count: 0
         project_id: project_id
         gate_id: gate_id
@@ -7212,9 +7222,9 @@ components:
         evaluator_id: evaluator_id
         candidate_release_id: candidate_release_id
         gate_policy:
-          max_regression: 1.2315135367772556
+          max_regression: 1.0246457001441578
           min_sample_size: 0
-          alpha: 4.145608029883936
+          alpha: 7.386281948385884
           comparison_count: 0
         baseline_release_id: baseline_release_id
       properties:
@@ -7333,9 +7343,9 @@ components:
         evaluator_id: evaluator_id
         candidate_release_id: candidate_release_id
         gate_policy:
-          max_regression: 1.2315135367772556
+          max_regression: 1.0246457001441578
           min_sample_size: 0
-          alpha: 4.145608029883936
+          alpha: 7.386281948385884
           comparison_count: 0
         baseline_release_id: baseline_release_id
       properties:
@@ -7582,8 +7592,15 @@ components:
       - unset
       type: string
     StatisticalTest:
+      description: |-
+        The statistical test that produced an [`ExperimentComparison`]. These mirror
+        `beater_stats::TestKind`; the gate records which method was actually used so a
+        reader can tell a t-test result from an exact McNemar one. The old single
+        `PairedNormalApproximation` (a hard-coded-z normal approximation with no
+        p-value) is gone — see `beater-stats`.
       enum:
-      - paired_normal_approximation
+      - paired_t
+      - mcnemar_exact
       type: string
     SubmitReviewAnnotationHttpRequest:
       example:
