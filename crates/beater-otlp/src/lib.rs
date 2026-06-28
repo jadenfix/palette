@@ -493,7 +493,7 @@ fn infer_agent_span_kind(attrs: &CanonicalAttrs, name: &str, otel_kind: i32) -> 
             "tool" | "tool.call" => Some(AgentSpanKind::ToolCall),
             "mcp" | "mcp.request" => Some(AgentSpanKind::McpRequest),
             "retriever" | "retrieval.query" => Some(AgentSpanKind::RetrievalQuery),
-            "embedding" => Some(AgentSpanKind::RetrievalQuery),
+            "embedding" | "reranker" => Some(AgentSpanKind::RetrievalQuery),
             "memory_read" | "memory.read" => Some(AgentSpanKind::MemoryRead),
             "memory_write" | "memory.write" => Some(AgentSpanKind::MemoryWrite),
             "guardrail" | "guardrail.check" => Some(AgentSpanKind::GuardrailCheck),
@@ -1303,6 +1303,74 @@ mod tests {
                 "{value} should map to {expected:?}"
             );
         }
+    }
+
+    #[test]
+    fn maps_openinference_reranker_to_retrieval_query_and_preserves_attrs() {
+        let request = ExportTraceServiceRequest {
+            resource_spans: vec![ResourceSpans {
+                resource: Some(Resource {
+                    attributes: vec![kv("service.name", string_value("search-agent"))],
+                    dropped_attributes_count: 0,
+                    entity_refs: Vec::new(),
+                }),
+                scope_spans: vec![ScopeSpans {
+                    scope: Some(InstrumentationScope {
+                        name: "openinference".to_string(),
+                        version: "1.0.0".to_string(),
+                        attributes: Vec::new(),
+                        dropped_attributes_count: 0,
+                    }),
+                    spans: vec![Span {
+                        trace_id: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                        span_id: vec![3, 3, 3, 3, 3, 3, 3, 3],
+                        trace_state: String::new(),
+                        parent_span_id: Vec::new(),
+                        flags: 0,
+                        name: "rerank documents".to_string(),
+                        kind: span::SpanKind::Internal as i32,
+                        start_time_unix_nano: 1_700_000_000_000_000_000,
+                        end_time_unix_nano: 1_700_000_001_000_000_000,
+                        attributes: vec![
+                            kv("openinference.span.kind", string_value("RERANKER")),
+                            kv("reranker.model_name", string_value("bge-reranker-large")),
+                            kv("reranker.input_documents", int_value(20)),
+                            kv("reranker.output_documents", int_value(5)),
+                        ],
+                        dropped_attributes_count: 0,
+                        events: Vec::new(),
+                        dropped_events_count: 0,
+                        links: Vec::new(),
+                        dropped_links_count: 0,
+                        status: None,
+                    }],
+                    schema_url: String::new(),
+                }],
+                schema_url: String::new(),
+            }],
+        };
+        let scope = TenantScope::new(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+        );
+
+        let native =
+            export_to_native_requests(scope, request).unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(native.len(), 1);
+        let span = &native[0];
+        assert_eq!(span.kind, AgentSpanKind::RetrievalQuery);
+        assert_eq!(
+            span.attributes["openinference.span.kind"],
+            json!("RERANKER")
+        );
+        assert_eq!(
+            span.attributes["reranker.model_name"],
+            json!("bge-reranker-large")
+        );
+        assert_eq!(span.attributes["reranker.input_documents"], json!(20));
+        assert_eq!(span.attributes["reranker.output_documents"], json!(5));
     }
 
     #[test]

@@ -993,13 +993,13 @@ code.
 
 OpenInference defines ten `openinference.span.kind` values —
 `LLM`, `EMBEDDING`, `CHAIN`, `RETRIEVER`, `RERANKER`, `TOOL`, `AGENT`, `GUARDRAIL`,
-`EVALUATOR`, `PROMPT`. The `beater-otlp` table maps eight of them into §5.2 today
-(`CHAIN → agent.step`, `EMBEDDING → retrieval.query`, etc.); **`RERANKER` and
-`PROMPT` are not yet in the table and currently fall through to the OTLP fallback** —
-closing that gap (e.g. `RERANKER → retrieval.query` with the raw kind and
-`reranker.*` attributes preserved) is the §26.2 O8 interop-completeness target, along
-with the churn-prone new OTel `gen_ai.*` names (`gen_ai.provider.name` superseding
-`gen_ai.system`, `gen_ai.conversation.id`, `gen_ai.agent.*`, `gen_ai.tool.*`).
+`EVALUATOR`, `PROMPT`. The `beater-otlp` table maps nine of them into §5.2 today
+(`CHAIN → agent.step`, `EMBEDDING/RERANKER → retrieval.query`, etc.); **`PROMPT`
+is not yet in the table and currently falls through to the OTLP fallback** —
+closing that final OpenInference kind gap is part of the §26.2 O8
+interop-completeness target, along with the churn-prone new OTel `gen_ai.*` names
+(`gen_ai.provider.name` superseding `gen_ai.system`, `gen_ai.conversation.id`,
+`gen_ai.agent.*`, `gen_ai.tool.*`).
 
 Config-driven mapping importer (`SourceImporter` boundary). The hand-written
 normalizers above (OTLP/OpenInference/GenAI/Vercel-AI) cover the standard dialects,
