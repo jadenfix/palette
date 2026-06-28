@@ -966,6 +966,64 @@ mod tests {
     }
 
     #[test]
+    fn dedupe_key_is_scoped_by_tenant_project_and_policy() {
+        let now = Utc::now();
+        let store: Arc<dyn AlertDedupeStore> = Arc::new(MemoryAlertDedupeStore::new());
+        let engine = AlertEngine::with_dedupe_store(store);
+        let policy = fixture_alert_policy(60);
+
+        let first = engine
+            .evaluate(&policy, fixture_alert_input(now))
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(first.emitted);
+
+        let same_scope = engine
+            .evaluate(&policy, fixture_alert_input(now + Duration::seconds(10)))
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(!same_scope.emitted);
+        assert_eq!(
+            same_scope.suppressed_reason.as_deref(),
+            Some("dedupe_window")
+        );
+
+        let mut other_tenant = fixture_alert_input(now + Duration::seconds(10));
+        other_tenant.tenant_id = TenantId::new("tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_scoped = engine
+            .evaluate(&policy, other_tenant)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(
+            tenant_scoped.emitted,
+            "same group in another tenant must not be deduped"
+        );
+
+        let mut other_project = fixture_alert_input(now + Duration::seconds(10));
+        other_project.project_id =
+            ProjectId::new("project-b").unwrap_or_else(|err| panic!("{err}"));
+        let project_scoped = engine
+            .evaluate(&policy, other_project)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(
+            project_scoped.emitted,
+            "same group in another project must not be deduped"
+        );
+
+        let other_policy = AlertPolicy {
+            policy_id: "latency-score".to_string(),
+            ..policy
+        };
+        let policy_scoped = engine
+            .evaluate(
+                &other_policy,
+                fixture_alert_input(now + Duration::seconds(10)),
+            )
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(
+            policy_scoped.emitted,
+            "same group in another policy must not be deduped"
+        );
+    }
+
+    #[test]
     fn json_file_dedupe_store_survives_engine_restart() -> anyhow::Result<()> {
         let temp_dir = tempfile::tempdir()?;
         let store_path = temp_dir.path().join("alert-dedupe.json");
