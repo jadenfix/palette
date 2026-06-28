@@ -152,6 +152,9 @@ struct HistogramFamily {
     series: Mutex<BTreeMap<Labels, Arc<HistogramSeries>>>,
 }
 
+type HistogramBucketSnapshot = Vec<(f64, u64)>;
+type HistogramSeriesSnapshot = (Labels, HistogramBucketSnapshot, f64, u64);
+
 impl HistogramFamily {
     fn new(buckets: Vec<f64>) -> Self {
         Self {
@@ -181,7 +184,7 @@ impl HistogramFamily {
         *sum += value;
     }
 
-    fn snapshot(&self) -> Vec<(Labels, Vec<(f64, u64)>, f64, u64)> {
+    fn snapshot(&self) -> Vec<HistogramSeriesSnapshot> {
         let guard = self.series.lock().unwrap_or_else(|e| e.into_inner());
         guard
             .iter()

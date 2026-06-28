@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use beater_core::{
-    EnvironmentId, IdempotencyKey, OrganizationId, Page, PageRequest, ProjectId, TenantId,
+    EnvironmentId, IdempotencyKey, Money, OrganizationId, Page, PageRequest, ProjectId, TenantId,
     Timestamp, TraceId,
 };
 use beater_schema::{
-    filter_run_summaries, roll_up_runs, ArtifactRef, CanonicalTraceBatch, RawEnvelope, RunFilter,
-    RunSummary, SpanFilter, SpanSummary, TraceView, WriteAck,
+    filter_run_summaries, roll_up_runs, AgentSpanKind, ArtifactRef, CanonicalTraceBatch, ModelRef,
+    RawEnvelope, RunFilter, RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck,
 };
 use std::collections::BTreeSet;
 
@@ -153,6 +153,148 @@ where
     Ok(page_vec(runs, page))
 }
 
+/// One aggregated run row produced by a backend `GROUP BY` over the `spans`
+/// table, keyed on `(project_id, trace_id)`.
+///
+/// Columnar backends (Postgres, ClickHouse) compute the scalar run rollups
+/// (`span_count`, `status`, `started_at`, `ended_at`, `first_span_name`) in the
+/// database and return only the per-run model / cost / release occurrences as
+/// small arrays, ordered by `start_time DESC, seq ASC` to mirror the iteration
+/// order of [`beater_schema::roll_up_runs`]. This is the §8.1-compliant
+/// alternative to [`query_runs_by_materializing_spans`]: the backend reduces
+/// each run to a single row instead of streaming every matching span into
+/// process memory. [`finalize_run_aggregates`] folds these rows into the exact
+/// same `Page<RunSummary>` the in-memory rollup produces.
+#[derive(Clone, Debug)]
+pub struct RunAggregateRow {
+    pub project_id: ProjectId,
+    pub trace_id: TraceId,
+    pub span_count: usize,
+    pub status: SpanStatus,
+    pub first_span_name: String,
+    pub started_at: Timestamp,
+    pub ended_at: Option<Timestamp>,
+    /// Per-span models in `start_time DESC, seq ASC` order (spans without a
+    /// model omitted); de-duplicated by `(provider, name)` in
+    /// [`finalize_run_aggregates`].
+    pub models: Vec<ModelRef>,
+    /// Per-span costs in `start_time DESC, seq ASC` order (spans without a cost
+    /// omitted); folded in [`finalize_run_aggregates`].
+    pub costs: Vec<Money>,
+    /// Per-span release ids in `start_time DESC, seq ASC` order (spans without a
+    /// release id omitted); de-duplicated in [`finalize_run_aggregates`].
+    pub release_ids: Vec<String>,
+    /// The distinct span kinds present in the run, used for the `RunFilter::kind`
+    /// roll-up filter.
+    pub kinds: BTreeSet<AgentSpanKind>,
+}
+
+/// Folds backend-aggregated [`RunAggregateRow`]s into the same
+/// `Page<RunSummary>` that [`query_runs_by_materializing_spans`] would produce
+/// for the same spans and `filter`, but without ever materializing every span.
+///
+/// The dedup / cost-merge / sort / filter / paginate steps mirror
+/// [`beater_schema::roll_up_runs`] and [`beater_schema::filter_run_summaries`]
+/// exactly; the conformance suite and the `finalize_matches_materialized_rollup`
+/// unit test guard against drift.
+pub fn finalize_run_aggregates(
+    tenant: TenantId,
+    rows: Vec<RunAggregateRow>,
+    filter: RunFilter,
+    page: PageRequest,
+) -> Page<RunSummary> {
+    let mut runs: Vec<RunSummary> = rows
+        .iter()
+        // `roll_up_runs`/`filter_run_summaries` keep a run when ANY of its spans
+        // matches `filter.kind`; the backend has already reduced that predicate
+        // to the run's distinct-kind set.
+        .filter(|row| match &filter.kind {
+            Some(kind) => row.kinds.contains(kind),
+            None => true,
+        })
+        .map(|row| RunSummary {
+            tenant_id: tenant.clone(),
+            project_id: row.project_id.clone(),
+            trace_id: row.trace_id.clone(),
+            first_span_name: row.first_span_name.clone(),
+            span_count: row.span_count,
+            status: row.status.clone(),
+            started_at: row.started_at,
+            ended_at: row.ended_at,
+            duration_ms: run_duration_ms(row.started_at, row.ended_at),
+            total_cost: fold_run_cost(&row.costs),
+            models: dedup_models(&row.models),
+            release_ids: dedup_release_ids(&row.release_ids),
+        })
+        .collect();
+
+    // `roll_up_runs` sorts most-recent-first by run start; backends return rows
+    // pre-ordered by a first-appearance proxy so this stable sort reproduces the
+    // reference tie-break for the common case of distinct run start times.
+    runs.sort_by(|left, right| right.started_at.cmp(&left.started_at));
+
+    // `filter.kind` is already applied above; clearing it lets the shared
+    // run-level filter run with an empty span slice (it only consults spans for
+    // the kind predicate).
+    let runs = filter_run_summaries(
+        runs,
+        &[],
+        &RunFilter {
+            kind: None,
+            ..filter
+        },
+    );
+    page_vec(runs, page)
+}
+
+/// Mirrors `beater_schema`'s private `run_duration_ms`: clamps a non-negative
+/// run duration in milliseconds, or `None` when the run has not ended.
+fn run_duration_ms(started_at: Timestamp, ended_at: Option<Timestamp>) -> Option<i64> {
+    ended_at.map(|ended_at| (ended_at - started_at).num_milliseconds().max(0))
+}
+
+/// Mirrors `beater_schema`'s private `merge_cost` fold over the run's per-span
+/// costs (already ordered as `roll_up_runs` would visit them): sums same-currency
+/// amounts and keeps the running total when a span's currency or an overflow
+/// would make the add fail.
+fn fold_run_cost(costs: &[Money]) -> Option<Money> {
+    let mut total: Option<Money> = None;
+    for cost in costs {
+        total = match total {
+            Some(current) => Some(current.try_add(cost).unwrap_or(current)),
+            None => Some(cost.clone()),
+        };
+    }
+    total
+}
+
+/// Mirrors `beater_schema`'s private `push_model`: distinct models by
+/// `(provider, name)`, keeping first-occurrence order.
+fn dedup_models(models: &[ModelRef]) -> Vec<ModelRef> {
+    let mut deduped: Vec<ModelRef> = Vec::new();
+    for model in models {
+        if !deduped
+            .iter()
+            .any(|existing| existing.provider == model.provider && existing.name == model.name)
+        {
+            deduped.push(model.clone());
+        }
+    }
+    deduped
+}
+
+/// Mirrors `beater_schema`'s private `push_release_id`: distinct release ids,
+/// keeping first-occurrence order.
+fn dedup_release_ids(release_ids: &[String]) -> Vec<String> {
+    let mut deduped: Vec<String> = Vec::new();
+    for release_id in release_ids {
+        if !deduped.contains(release_id) {
+            deduped.push(release_id.clone());
+        }
+    }
+    deduped
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OrganizationMetadata {
     pub tenant_id: TenantId,
@@ -269,4 +411,367 @@ pub fn page_vec<T>(mut items: Vec<T>, page: PageRequest) -> Page<T> {
     let end = next_offset.min(items.len());
     let selected = items.drain(offset..end).collect();
     Page::new(selected, next_cursor)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use beater_core::SpanId;
+    use beater_schema::roll_up_runs;
+    use chrono::{TimeZone, Utc};
+    use std::collections::BTreeMap;
+
+    fn ts(seconds: i64) -> Timestamp {
+        Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0)
+            .single()
+            .unwrap_or_else(|| panic!("valid base timestamp"))
+            + chrono::Duration::seconds(seconds)
+    }
+
+    // A test-only span constructor; the wide parameter list keeps the fixture
+    // table-like and readable.
+    #[allow(clippy::too_many_arguments)]
+    fn span(
+        project: &str,
+        trace: &str,
+        span_id: &str,
+        kind: AgentSpanKind,
+        name: &str,
+        status: SpanStatus,
+        started: i64,
+        ended: Option<i64>,
+        model: Option<(&str, &str)>,
+        cost: Option<i64>,
+        release: Option<&str>,
+    ) -> SpanSummary {
+        SpanSummary {
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new(project).unwrap_or_else(|err| panic!("{err}")),
+            trace_id: TraceId::new(trace).unwrap_or_else(|err| panic!("{err}")),
+            span_id: SpanId::new(span_id).unwrap_or_else(|err| panic!("{err}")),
+            kind,
+            name: name.to_string(),
+            status,
+            started_at: ts(started),
+            ended_at: ended.map(ts),
+            model: model.map(|(provider, name)| ModelRef {
+                provider: provider.to_string(),
+                name: name.to_string(),
+            }),
+            cost: cost.map(Money::usd_micros),
+            release_id: release.map(ToString::to_string),
+        }
+    }
+
+    /// Mimics the columnar backends' `GROUP BY (project_id, trace_id)`: the rows
+    /// it emits carry exactly what Postgres/ClickHouse aggregate (scalars in the
+    /// database, ordered model/cost/release arrays), and they are pushed in the
+    /// same first-appearance order the backends' `ORDER BY max(start) DESC`
+    /// yields. `spans` must already be in `start_time DESC, seq ASC` order, as
+    /// `query_spans` returns them.
+    fn aggregate_rows(spans: &[SpanSummary]) -> Vec<RunAggregateRow> {
+        let mut order: Vec<(String, String)> = Vec::new();
+        let mut groups: BTreeMap<(String, String), Vec<&SpanSummary>> = BTreeMap::new();
+        for span in spans {
+            let key = (
+                span.project_id.as_str().to_string(),
+                span.trace_id.as_str().to_string(),
+            );
+            if !groups.contains_key(&key) {
+                order.push(key.clone());
+            }
+            groups.entry(key).or_default().push(span);
+        }
+
+        order
+            .into_iter()
+            .map(|key| {
+                let members = &groups[&key];
+                let status = if members.iter().any(|s| s.status == SpanStatus::Error) {
+                    SpanStatus::Error
+                } else if members.iter().any(|s| s.status == SpanStatus::Ok) {
+                    SpanStatus::Ok
+                } else {
+                    SpanStatus::Unset
+                };
+                let started_at = members
+                    .iter()
+                    .map(|s| s.started_at)
+                    .min()
+                    .unwrap_or_else(|| panic!("non-empty group"));
+                let ended_at = members.iter().filter_map(|s| s.ended_at).max();
+                let first_span_name = members
+                    .iter()
+                    .filter(|s| s.started_at == started_at)
+                    .map(|s| s.name.clone())
+                    .next()
+                    .unwrap_or_else(|| panic!("group has earliest span"));
+                RunAggregateRow {
+                    project_id: members[0].project_id.clone(),
+                    trace_id: members[0].trace_id.clone(),
+                    span_count: members.len(),
+                    status,
+                    first_span_name,
+                    started_at,
+                    ended_at,
+                    models: members.iter().filter_map(|s| s.model.clone()).collect(),
+                    costs: members.iter().filter_map(|s| s.cost.clone()).collect(),
+                    release_ids: members
+                        .iter()
+                        .filter_map(|s| s.release_id.clone())
+                        .collect(),
+                    kinds: members.iter().map(|s| s.kind.clone()).collect(),
+                }
+            })
+            .collect()
+    }
+
+    /// The reference run page: the in-memory rollup the columnar backends must
+    /// reproduce exactly.
+    fn reference(spans: &[SpanSummary], filter: &RunFilter, page: PageRequest) -> Page<RunSummary> {
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let runs = filter_run_summaries(roll_up_runs(tenant, spans.to_vec()), spans, filter);
+        page_vec(runs, page)
+    }
+
+    fn fixture_spans() -> Vec<SpanSummary> {
+        // Ordered `start_time DESC, seq ASC`, as `query_spans` returns them.
+        vec![
+            span(
+                "project",
+                "trace-a",
+                "a-late",
+                AgentSpanKind::LlmCall,
+                "a latest",
+                SpanStatus::Ok,
+                30,
+                Some(40),
+                Some(("openai", "gpt-4")),
+                Some(300),
+                Some("rel-2"),
+            ),
+            span(
+                "project",
+                "trace-b",
+                "b-late",
+                AgentSpanKind::ToolCall,
+                "b latest",
+                SpanStatus::Error,
+                25,
+                Some(25),
+                None,
+                None,
+                None,
+            ),
+            span(
+                "project",
+                "trace-a",
+                "a-mid",
+                AgentSpanKind::LlmCall,
+                "a middle",
+                SpanStatus::Error,
+                20,
+                Some(35),
+                Some(("anthropic", "claude")),
+                Some(200),
+                Some("rel-1"),
+            ),
+            span(
+                "project",
+                "trace-a",
+                "a-early",
+                AgentSpanKind::AgentRun,
+                "a earliest",
+                SpanStatus::Ok,
+                10,
+                Some(15),
+                Some(("openai", "gpt-4")),
+                Some(100),
+                Some("rel-1"),
+            ),
+            span(
+                "project",
+                "trace-b",
+                "b-early",
+                AgentSpanKind::AgentRun,
+                "b earliest",
+                SpanStatus::Ok,
+                5,
+                None,
+                None,
+                Some(50),
+                Some("rel-3"),
+            ),
+            span(
+                "other",
+                "trace-c",
+                "c-only",
+                AgentSpanKind::LlmCall,
+                "c only",
+                SpanStatus::Ok,
+                12,
+                Some(18),
+                Some(("openai", "gpt-4o")),
+                Some(70),
+                Some("rel-4"),
+            ),
+        ]
+    }
+
+    fn assert_parity(filter: RunFilter, page: PageRequest) {
+        let spans = fixture_spans();
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let expected = reference(&spans, &filter, page.clone());
+        let actual = finalize_run_aggregates(tenant, aggregate_rows(&spans), filter, page);
+        assert_eq!(actual.items, expected.items);
+        assert_eq!(actual.next_cursor, expected.next_cursor);
+    }
+
+    #[test]
+    fn finalize_matches_materialized_rollup() {
+        // Unfiltered roll-up, including the multi-span run's summed cost, distinct
+        // models/release ids, status precedence, earliest-span name, and duration.
+        assert_parity(RunFilter::default(), PageRequest::default());
+
+        let expected = reference(
+            &fixture_spans(),
+            &RunFilter::default(),
+            PageRequest::default(),
+        );
+        let run_a = expected
+            .items
+            .iter()
+            .find(|run| run.trace_id.as_str() == "trace-a")
+            .unwrap_or_else(|| panic!("trace-a present"));
+        assert_eq!(run_a.span_count, 3);
+        assert_eq!(run_a.first_span_name, "a earliest");
+        assert_eq!(run_a.status, SpanStatus::Error);
+        assert_eq!(run_a.total_cost, Some(Money::usd_micros(600)));
+        assert_eq!(run_a.duration_ms, Some(30_000));
+        assert_eq!(
+            run_a.models,
+            vec![
+                ModelRef {
+                    provider: "openai".to_string(),
+                    name: "gpt-4".to_string()
+                },
+                ModelRef {
+                    provider: "anthropic".to_string(),
+                    name: "claude".to_string()
+                },
+            ]
+        );
+        assert_eq!(
+            run_a.release_ids,
+            vec!["rel-2".to_string(), "rel-1".to_string()]
+        );
+    }
+
+    #[test]
+    fn finalize_matches_under_run_level_filters_and_paging() {
+        let trace_a = TraceId::new("trace-a").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let cases = [
+            RunFilter {
+                status: Some(SpanStatus::Error),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                kind: Some(AgentSpanKind::ToolCall),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                kind: Some(AgentSpanKind::AgentRun),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                project_id: Some(project),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                trace_id: Some(trace_a),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                model: Some("openai".to_string()),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                release: Some("rel-1".to_string()),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                min_cost_micros: Some(100),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                max_cost_micros: Some(80),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                min_latency_ms: Some(20_000),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                max_latency_ms: Some(10_000),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                started_after: Some(ts(8)),
+                ..RunFilter::default()
+            },
+            RunFilter {
+                started_before: Some(ts(8)),
+                ..RunFilter::default()
+            },
+        ];
+        for filter in cases {
+            assert_parity(filter, PageRequest::default());
+        }
+
+        // Pagination parity, including the opaque offset cursor round-trip.
+        let spans = fixture_spans();
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let first = finalize_run_aggregates(
+            tenant.clone(),
+            aggregate_rows(&spans),
+            RunFilter::default(),
+            PageRequest {
+                limit: 1,
+                cursor: None,
+            },
+        );
+        let expected_first = reference(
+            &spans,
+            &RunFilter::default(),
+            PageRequest {
+                limit: 1,
+                cursor: None,
+            },
+        );
+        assert_eq!(first.items, expected_first.items);
+        let cursor = first
+            .next_cursor
+            .clone()
+            .unwrap_or_else(|| panic!("first page has a cursor"));
+        let second = finalize_run_aggregates(
+            tenant,
+            aggregate_rows(&spans),
+            RunFilter::default(),
+            PageRequest {
+                limit: 2,
+                cursor: Some(cursor.clone()),
+            },
+        );
+        let expected_second = reference(
+            &spans,
+            &RunFilter::default(),
+            PageRequest {
+                limit: 2,
+                cursor: Some(cursor),
+            },
+        );
+        assert_eq!(second.items, expected_second.items);
+        assert_eq!(second.next_cursor, expected_second.next_cursor);
+    }
 }

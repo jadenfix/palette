@@ -1,0 +1,75 @@
+{
+  "id": "trace-001",
+  "timestamp": "2026-06-20T10:00:00Z",
+  "name": "support-agent-run",
+  "input": { "question": "What is the weather in Paris and summarize my last ticket?" },
+  "output": { "answer": "It is 21C and sunny in Paris; your last ticket was resolved." },
+  "sessionId": "sess-42",
+  "userId": "user-7",
+  "release": "v1.4.2",
+  "version": "2",
+  "tags": ["support", "weather"],
+  "metadata": { "channel": "email", "priority": "normal" },
+  "observations": [
+    {
+      "id": "obs-span-retrieve",
+      "traceId": "trace-001",
+      "type": "SPAN",
+      "name": "retrieve_context",
+      "startTime": "2026-06-20T10:00:01Z",
+      "endTime": "2026-06-20T10:00:02Z",
+      "parentObservationId": null,
+      "level": "DEFAULT",
+      "input": { "query": "last ticket for user-7" },
+      "output": { "documents": 3 },
+      "metadata": { "store": "pgvector" }
+    },
+    {
+      "id": "obs-gen-1",
+      "traceId": "trace-001",
+      "type": "GENERATION",
+      "name": "answer_generation",
+      "startTime": "2026-06-20T10:00:02Z",
+      "endTime": "2026-06-20T10:00:05Z",
+      "completionStartTime": "2026-06-20T10:00:03Z",
+      "parentObservationId": "obs-span-retrieve",
+      "level": "DEFAULT",
+      "model": "gpt-4o",
+      "modelParameters": { "temperature": 0.2, "max_tokens": 512 },
+      "input": [
+        { "role": "system", "content": "You are a helpful support agent." },
+        { "role": "user", "content": "What is the weather in Paris?" }
+      ],
+      "output": { "role": "assistant", "content": "It is 21C and sunny in Paris." },
+      "usage": { "input": 120, "output": 45, "total": 165, "unit": "TOKENS" },
+      "costDetails": { "input": 0.0015, "output": 0.0009, "total": 0.0024 },
+      "calculatedTotalCost": 0.0024,
+      "promptName": "support_answer",
+      "promptVersion": 3
+    },
+    {
+      "id": "obs-event-cache",
+      "traceId": "trace-001",
+      "type": "EVENT",
+      "name": "prompt_cache_hit",
+      "startTime": "2026-06-20T10:00:02.500Z",
+      "parentObservationId": "obs-gen-1",
+      "level": "DEFAULT",
+      "metadata": { "cache_key": "support_answer:v3" }
+    },
+    {
+      "id": "obs-span-weather",
+      "traceId": "trace-001",
+      "type": "SPAN",
+      "name": "get_weather",
+      "startTime": "2026-06-20T10:00:06Z",
+      "endTime": "2026-06-20T10:00:07Z",
+      "parentObservationId": null,
+      "level": "ERROR",
+      "statusMessage": "upstream weather API timed out",
+      "input": { "city": "Paris" },
+      "output": null
+    }
+  ],
+  "scores": []
+}

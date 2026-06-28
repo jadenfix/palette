@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use beater_core::{ProjectId, TenantId, Timestamp, TraceId};
 use beater_schema::{CanonicalSpan, SpanStatus, TraceView};
 use beater_security::{sign_webhook, webhook_idempotency_key, WEBHOOK_IDEMPOTENCY_KEY_HEADER};
@@ -189,13 +189,33 @@ pub enum AlertDedupeDecision {
     Suppressed { last_emitted_at: Timestamp },
 }
 
+pub type AlertDedupeStoreResult<T> = Result<T, AlertDedupeStoreError>;
+
+#[derive(Debug, thiserror::Error, Clone, PartialEq, Eq)]
+pub enum AlertDedupeStoreError {
+    #[error("alert dedupe store backend error: {0}")]
+    Backend(String),
+}
+
+impl AlertDedupeStoreError {
+    pub fn backend(error: impl std::fmt::Display) -> Self {
+        Self::Backend(error.to_string())
+    }
+}
+
+impl From<anyhow::Error> for AlertDedupeStoreError {
+    fn from(error: anyhow::Error) -> Self {
+        Self::backend(error)
+    }
+}
+
 pub trait AlertDedupeStore: std::fmt::Debug + Send + Sync {
     fn check_and_record(
         &self,
         group_key: &str,
         now: Timestamp,
         dedupe_window: Duration,
-    ) -> anyhow::Result<AlertDedupeDecision>;
+    ) -> AlertDedupeStoreResult<AlertDedupeDecision>;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -215,11 +235,10 @@ impl AlertDedupeStore for MemoryAlertDedupeStore {
         group_key: &str,
         now: Timestamp,
         dedupe_window: Duration,
-    ) -> anyhow::Result<AlertDedupeDecision> {
-        let mut state = self
-            .state
-            .lock()
-            .map_err(|err| anyhow!("alert dedupe store mutex poisoned: {err}"))?;
+    ) -> AlertDedupeStoreResult<AlertDedupeDecision> {
+        let mut state = self.state.lock().map_err(|err| {
+            AlertDedupeStoreError::backend(format!("alert dedupe store mutex poisoned: {err}"))
+        })?;
         Ok(check_and_record_in_state(
             &mut state,
             group_key,
@@ -297,11 +316,10 @@ impl AlertDedupeStore for JsonFileAlertDedupeStore {
         group_key: &str,
         now: Timestamp,
         dedupe_window: Duration,
-    ) -> anyhow::Result<AlertDedupeDecision> {
-        let _guard = self
-            .lock
-            .lock()
-            .map_err(|err| anyhow!("alert dedupe file store mutex poisoned: {err}"))?;
+    ) -> AlertDedupeStoreResult<AlertDedupeDecision> {
+        let _guard = self.lock.lock().map_err(|err| {
+            AlertDedupeStoreError::backend(format!("alert dedupe file store mutex poisoned: {err}"))
+        })?;
         let mut state = self.load_state()?;
         let decision = check_and_record_in_state(&mut state, group_key, now, dedupe_window);
         if decision == AlertDedupeDecision::Recorded {
@@ -945,6 +963,64 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         assert!(!second.emitted);
         assert_eq!(second.suppressed_reason.as_deref(), Some("dedupe_window"));
+    }
+
+    #[test]
+    fn dedupe_key_is_scoped_by_tenant_project_and_policy() {
+        let now = Utc::now();
+        let store: Arc<dyn AlertDedupeStore> = Arc::new(MemoryAlertDedupeStore::new());
+        let engine = AlertEngine::with_dedupe_store(store);
+        let policy = fixture_alert_policy(60);
+
+        let first = engine
+            .evaluate(&policy, fixture_alert_input(now))
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(first.emitted);
+
+        let same_scope = engine
+            .evaluate(&policy, fixture_alert_input(now + Duration::seconds(10)))
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(!same_scope.emitted);
+        assert_eq!(
+            same_scope.suppressed_reason.as_deref(),
+            Some("dedupe_window")
+        );
+
+        let mut other_tenant = fixture_alert_input(now + Duration::seconds(10));
+        other_tenant.tenant_id = TenantId::new("tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_scoped = engine
+            .evaluate(&policy, other_tenant)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(
+            tenant_scoped.emitted,
+            "same group in another tenant must not be deduped"
+        );
+
+        let mut other_project = fixture_alert_input(now + Duration::seconds(10));
+        other_project.project_id =
+            ProjectId::new("project-b").unwrap_or_else(|err| panic!("{err}"));
+        let project_scoped = engine
+            .evaluate(&policy, other_project)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(
+            project_scoped.emitted,
+            "same group in another project must not be deduped"
+        );
+
+        let other_policy = AlertPolicy {
+            policy_id: "latency-score".to_string(),
+            ..policy
+        };
+        let policy_scoped = engine
+            .evaluate(
+                &other_policy,
+                fixture_alert_input(now + Duration::seconds(10)),
+            )
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(
+            policy_scoped.emitted,
+            "same group in another policy must not be deduped"
+        );
     }
 
     #[test]

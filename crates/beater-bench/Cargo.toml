@@ -4,10 +4,11 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-# beater-bench has no runtime dependencies — it is a dev-only crate whose only
-# consumers are the criterion benchmark harness and the future xtask loadgen
-# helper (§20.2, §23.10).  Keep it dependency-free so it never drags into the
-# production build graph.
+[dependencies]
+beater-core = { path = "../beater-core" }
+beater-schema = { path = "../beater-schema" }
+chrono.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true

@@ -285,6 +285,55 @@ mod tests {
         assert!((p - 0.8).abs() < 0.02, "power = {p}");
     }
 
+    /// The rounded required sample size must not come back underpowered for the
+    /// target it was planned against. This is the A6 gate invariant in miniature:
+    /// a caller can ask for the minimum N, then verify `achieved_power >= target`
+    /// before allowing a pass verdict.
+    #[test]
+    fn required_n_meets_requested_power() {
+        for (effect, alpha, target_power) in [
+            (0.2, 0.05, 0.8),
+            (0.5, 0.05, 0.8),
+            (0.5, 0.01, 0.8),
+            (0.5, 0.05, 0.9),
+            (1.0, 0.05, 0.8),
+        ] {
+            let n = required_sample_size(effect, alpha, target_power)
+                .unwrap_or_else(|err| panic!("{err}"));
+            let planned = achieved_power(n, effect, alpha).unwrap_or_else(|err| panic!("{err}"));
+            assert!(
+                planned + 1e-12 >= target_power,
+                "n={n}, effect={effect}, alpha={alpha}, target={target_power}, achieved={planned}"
+            );
+        }
+    }
+
+    #[test]
+    fn achieved_power_grows_with_n_and_effect_size() {
+        let base = achieved_power(16, 0.4, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        let more_n = achieved_power(64, 0.4, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        let bigger_effect = achieved_power(16, 0.8, 0.05).unwrap_or_else(|err| panic!("{err}"));
+
+        assert!(more_n > base, "{more_n} !> {base}");
+        assert!(bigger_effect > base, "{bigger_effect} !> {base}");
+    }
+
+    /// `minimum_detectable_effect` is the closed-form inverse of
+    /// `achieved_power`: at that MDE and N, the achieved power should be the
+    /// target power.
+    #[test]
+    fn mde_achieves_requested_power() {
+        for (n, alpha, target_power) in [(16, 0.05, 0.8), (64, 0.01, 0.8), (128, 0.05, 0.9)] {
+            let mde = minimum_detectable_effect(n, alpha, target_power)
+                .unwrap_or_else(|err| panic!("{err}"));
+            let achieved = achieved_power(n, mde, alpha).unwrap_or_else(|err| panic!("{err}"));
+            assert!(
+                (achieved - target_power).abs() < 1e-6,
+                "n={n}, alpha={alpha}, target={target_power}, mde={mde}, achieved={achieved}"
+            );
+        }
+    }
+
     /// A zero effect can only be "detected" at the test's size (α/2 one-sided).
     #[test]
     fn achieved_power_zero_effect_is_test_size() {
@@ -345,6 +394,20 @@ mod tests {
         assert!(matches!(
             achieved_power(0, 0.5, 0.05),
             Err(StatsError::InvalidParameter { name: "n", .. })
+        ));
+        assert!(matches!(
+            required_sample_size(f64::INFINITY, 0.05, 0.8),
+            Err(StatsError::InvalidParameter {
+                name: "effect_size",
+                ..
+            })
+        ));
+        assert!(matches!(
+            achieved_power(10, f64::NEG_INFINITY, 0.05),
+            Err(StatsError::InvalidParameter {
+                name: "effect_size",
+                ..
+            })
         ));
     }
 }

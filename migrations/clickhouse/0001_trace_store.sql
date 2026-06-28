@@ -50,16 +50,14 @@ ORDER BY (tenant_id, project_id, environment_id, trace_id, start_time, span_id, 
 TTL toDateTime(start_time) + INTERVAL 90 DAY
 SETTINGS index_granularity = 8192;
 
--- Run summaries are intentionally NOT precomputed into a table or materialized
--- view. ClickHouseTraceStore::query_runs materializes run summaries from the
--- canonical `span_json` column at query time (via the shared
--- `query_runs_by_materializing_spans` helper), keeping behavior byte-identical to
--- the SQLite reference store.
+-- Run summaries are computed on demand by ClickHouseTraceStore::query_runs with a
+-- backend GROUP BY (project_id, trace_id) over the per-span roll-up columns
+-- (model_provider, model_name, cost_currency, cost_micros, release_id), which the
+-- store now fills at write time. This satisfies ARCHITECTURE.md §8.1: run
+-- summaries are aggregated in the backend rather than by materializing every
+-- matching span in process.
 --
--- A `beater.trace_runs` table + `beater.trace_runs_mv` materialized view
--- previously lived here, but the store's write path never populates the per-span
--- columns they aggregated over (cost_currency, cost_micros, model_provider,
--- model_name, release_id, duration_ms) — those are kept only inside `span_json` —
--- so the view could only ever emit wrong/empty aggregates and nothing read from
--- it. They were removed. Do not reintroduce a run-summary table without a write
--- path that fills those span columns AND a read path that queries the table.
+-- Run summaries are still NOT precomputed into a table or materialized view. A
+-- `beater.trace_runs` table + `beater.trace_runs_mv` materialized view previously
+-- lived here but were removed. Do not reintroduce a run-summary table without a
+-- read path that queries it; the on-demand GROUP BY above is the supported path.

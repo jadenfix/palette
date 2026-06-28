@@ -70,6 +70,7 @@ pub const CANONICAL_PREFIXES: &[&str] = &[
     "openinference.",
     "w3c.",
     "temporal.",
+    "langfuse.",
 ];
 
 /// Exact keys without a recognized prefix that are still canonical. Must stay
@@ -342,6 +343,7 @@ mod tests {
         for key in [
             "llm.model_name",
             "openinference.span.kind",
+            "langfuse.observation.type",
             "model",
             "cost_micros",
             "vendor.custom_signal",

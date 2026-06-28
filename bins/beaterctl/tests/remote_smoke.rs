@@ -1,12 +1,14 @@
 use std::net::{SocketAddr, TcpListener};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 
 const OSS_QUERY_LAG_SLO_MS: u64 = 15_000;
+static REMOTE_SMOKE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 #[tokio::test]
 async fn remote_smoke_http_reports_query_lag_under_oss_slo() -> anyhow::Result<()> {
+    let _guard = REMOTE_SMOKE_LOCK.lock().await;
     let tempdir = tempfile::tempdir()?;
     let addrs = free_addrs(2)?;
     let http_addr = addrs[0];
@@ -15,7 +17,7 @@ async fn remote_smoke_http_reports_query_lag_under_oss_slo() -> anyhow::Result<(
     let http_url = format!("http://{http_addr}");
     wait_for_health(&http_url).await?;
 
-    let smoke = run_beaterctl_smoke(&http_url, None)?;
+    let smoke = run_beaterctl_smoke(&http_url, None, None)?;
     assert_eq!(smoke["mode"], "remote");
     assert_eq!(smoke["protocol"], "http");
     assert_eq!(smoke["source"], "otlp");
@@ -27,6 +29,7 @@ async fn remote_smoke_http_reports_query_lag_under_oss_slo() -> anyhow::Result<(
 
 #[tokio::test]
 async fn ingest_test_reports_trace_and_zero_code_env() -> anyhow::Result<()> {
+    let _guard = REMOTE_SMOKE_LOCK.lock().await;
     let tempdir = tempfile::tempdir()?;
     let addrs = free_addrs(2)?;
     let http_addr = addrs[0];
@@ -59,6 +62,7 @@ async fn ingest_test_reports_trace_and_zero_code_env() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn remote_smoke_grpc_reports_query_lag_under_oss_slo() -> anyhow::Result<()> {
+    let _guard = REMOTE_SMOKE_LOCK.lock().await;
     let tempdir = tempfile::tempdir()?;
     let addrs = free_addrs(2)?;
     let http_addr = addrs[0];
@@ -68,9 +72,36 @@ async fn remote_smoke_grpc_reports_query_lag_under_oss_slo() -> anyhow::Result<(
     let grpc_url = format!("http://{grpc_addr}");
     wait_for_health(&http_url).await?;
 
-    let smoke = run_beaterctl_smoke(&http_url, Some(&grpc_url))?;
+    let smoke = run_beaterctl_smoke(&http_url, Some(&grpc_url), None)?;
     assert_eq!(smoke["mode"], "remote");
     assert_eq!(smoke["protocol"], "grpc");
+    assert_eq!(smoke["source"], "otlp");
+    assert_eq!(smoke["trace_span_count"], 1);
+    assert_lag_under_slo(&smoke);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn remote_smoke_http_strict_auth_reads_back_trace() -> anyhow::Result<()> {
+    let _guard = REMOTE_SMOKE_LOCK.lock().await;
+    let tempdir = tempfile::tempdir()?;
+    let addrs = free_addrs(2)?;
+    let http_addr = addrs[0];
+    let grpc_addr = addrs[1];
+    let api_key = create_trace_smoke_key(tempdir.path())?;
+    let _server = BeaterdChild::spawn_with_auth_mode(
+        tempdir.path().to_path_buf(),
+        http_addr,
+        grpc_addr,
+        "required",
+    )?;
+    let http_url = format!("http://{http_addr}");
+    wait_for_health(&http_url).await?;
+
+    let smoke = run_beaterctl_smoke(&http_url, None, Some(&api_key))?;
+    assert_eq!(smoke["mode"], "remote");
+    assert_eq!(smoke["protocol"], "http");
     assert_eq!(smoke["source"], "otlp");
     assert_eq!(smoke["trace_span_count"], 1);
     assert_lag_under_slo(&smoke);
@@ -112,6 +143,17 @@ impl BeaterdChild {
         http_addr: SocketAddr,
         grpc_addr: SocketAddr,
     ) -> anyhow::Result<Self> {
+        // beaterd defaults to --auth-mode required (b728b9e / #127); most of this
+        // smoke harness ingests anonymously, so opt into insecure local explicitly.
+        Self::spawn_with_auth_mode(data_dir, http_addr, grpc_addr, "local")
+    }
+
+    fn spawn_with_auth_mode(
+        data_dir: PathBuf,
+        http_addr: SocketAddr,
+        grpc_addr: SocketAddr,
+        auth_mode: &str,
+    ) -> anyhow::Result<Self> {
         let child = Command::new(beaterd_bin()?)
             .arg("--addr")
             .arg(http_addr.to_string())
@@ -119,6 +161,8 @@ impl BeaterdChild {
             .arg(grpc_addr.to_string())
             .arg("--data-dir")
             .arg(data_dir)
+            .arg("--auth-mode")
+            .arg(auth_mode)
             .arg("--trace-write-drain-interval-ms")
             .arg("25")
             .arg("--trace-ingested-drain-interval-ms")
@@ -140,8 +184,12 @@ impl Drop for BeaterdChild {
 fn run_beaterctl_smoke(
     http_url: &str,
     otlp_grpc_url: Option<&str>,
+    api_key: Option<&str>,
 ) -> anyhow::Result<serde_json::Value> {
     let mut command = Command::new(env!("CARGO_BIN_EXE_beaterctl"));
+    if let Some(api_key) = api_key {
+        command.arg("--api-key").arg(api_key);
+    }
     command
         .arg("smoke")
         .arg("--http-url")
@@ -165,6 +213,35 @@ fn run_beaterctl_smoke(
         String::from_utf8_lossy(&output.stderr)
     );
     serde_json::from_slice(&output.stdout).map_err(anyhow::Error::from)
+}
+
+fn create_trace_smoke_key(data_dir: &Path) -> anyhow::Result<String> {
+    let output = Command::new(env!("CARGO_BIN_EXE_beaterctl"))
+        .arg("api-key-create")
+        .arg("--data-dir")
+        .arg(data_dir)
+        .arg("--tenant-id")
+        .arg("demo")
+        .arg("--project-id")
+        .arg("demo")
+        .arg("--environment-id")
+        .arg("local")
+        .arg("--scopes")
+        .arg("trace-write")
+        .arg("--scopes")
+        .arg("trace-read")
+        .output()?;
+    assert!(
+        output.status.success(),
+        "beaterctl api-key-create failed\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let body: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    body["secret"]
+        .as_str()
+        .map(str::to_string)
+        .ok_or_else(|| anyhow::anyhow!("api-key-create did not return secret: {body}"))
 }
 
 fn assert_lag_under_slo(smoke: &serde_json::Value) {
