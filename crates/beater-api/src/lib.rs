@@ -9,7 +9,7 @@ use beater_alerts::{
 };
 use beater_archive::{ArchiveManifest, ArchiveQuery, ArchivedSpanRow, ParquetTraceArchive};
 use beater_audit::{pii_unmask_event, AuditEvent, AuditOutcome, AuditStore, PiiUnmaskAuditInput};
-use beater_auth::{ApiKeyStore, CreateApiKeyRequest, RevokedApiKey};
+use beater_auth::ApiKeyStore;
 use beater_calibration::{
     calibrate_eval_report, CalibrationPolicy, CalibrationReport, CalibrationStore,
 };
@@ -53,9 +53,7 @@ use beater_schema::{
 use beater_search::{
     NoopSearchIndex, SearchIndex, SearchRequest, SearchResponse, TraceIngestedSearchProcessor,
 };
-use beater_secrets::{
-    ProviderSecretMetadata, ProviderSecretStore, PutProviderSecretRequest, RevokedProviderSecret,
-};
+use beater_secrets::ProviderSecretStore;
 use beater_security::{
     api_key_id_from_secret, verify_api_key, ApiScope, CreatedApiKey, SecurityError,
 };
@@ -75,6 +73,7 @@ use std::sync::Arc;
 use utoipa::{IntoParams, ToSchema};
 
 pub mod openapi;
+pub mod routes;
 
 const API_KEY_HEADER: &str = "x-beater-api-key";
 const PROJECT_ID_HEADER: &str = "x-beater-project-id";
@@ -287,19 +286,20 @@ pub fn router(state: ApiState) -> Router {
         .route("/v1/traces/native", post(ingest_native))
         .route(
             "/v1/api-keys/:tenant_id/:project_id/:environment_id",
-            post(create_api_key_route),
+            post(routes::api_keys::create_api_key_route),
         )
         .route(
             "/v1/api-keys/:tenant_id/:project_id/:environment_id/:api_key_id/revoke",
-            post(revoke_api_key_route),
+            post(routes::api_keys::revoke_api_key_route),
         )
         .route(
             "/v1/provider-secrets/:tenant_id/:project_id",
-            get(list_provider_secrets_route).post(create_provider_secret_route),
+            get(routes::provider_secrets::list_provider_secrets_route)
+                .post(routes::provider_secrets::create_provider_secret_route),
         )
         .route(
             "/v1/provider-secrets/:tenant_id/:project_id/:provider_secret_id/revoke",
-            post(revoke_provider_secret_route),
+            post(routes::provider_secrets::revoke_provider_secret_route),
         )
         .route(
             "/v1/judge/:tenant_id/:project_id/evaluate",
@@ -486,258 +486,12 @@ async fn ingest_native(
     Ok(Json(outcome))
 }
 
-#[utoipa::path(
-    post,
-    path = "/v1/api-keys/{tenant_id}/{project_id}/{environment_id}",
-    tag = "apiKeys",
-    operation_id = "createApiKey",
-    params(
-        ("tenant_id" = String, Path, description = "tenant_id"),
-        ("project_id" = String, Path, description = "project_id"),
-        ("environment_id" = String, Path, description = "environment_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    request_body = CreateApiKeyHttpRequest,
-    responses(
-        (status = 200, description = "Create a scoped API key", body = ApiKeyCreatedResponse),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-    )
-)]
-async fn create_api_key_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path((tenant_id, project_id, environment_id)): Path<(String, String, String)>,
-    Json(request): Json<CreateApiKeyHttpRequest>,
-) -> Result<Json<ApiKeyCreatedResponse>, ApiError> {
-    let api_keys = state
-        .api_keys
-        .clone()
-        .ok_or_else(|| ApiError::not_implemented("api key store is not configured".to_string()))?;
-    let tenant_id = TenantId::new(tenant_id)?;
-    let project_id = ProjectId::new(project_id)?;
-    let environment_id = EnvironmentId::new(environment_id)?;
-    authorize(
-        &state,
-        &headers,
-        &tenant_id,
-        &project_id,
-        &environment_id,
-        ApiScope::Admin,
-    )
-    .await?;
-    ensure_environment_exists(&state, &tenant_id, &project_id, &environment_id).await?;
-    let created = api_keys
-        .create_key(CreateApiKeyRequest {
-            tenant_id,
-            project_id,
-            environment_id,
-            scopes: request.scopes,
-        })
-        .await?;
-    Ok(Json(ApiKeyCreatedResponse::from_created(created)))
-}
-
-#[utoipa::path(
-    post,
-    path = "/v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke",
-    tag = "apiKeys",
-    operation_id = "revokeApiKey",
-    params(
-        ("tenant_id" = String, Path, description = "tenant_id"),
-        ("project_id" = String, Path, description = "project_id"),
-        ("environment_id" = String, Path, description = "environment_id"),
-        ("api_key_id" = String, Path, description = "api_key_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    responses(
-        (status = 200, description = "Revoke an API key", body = RevokedApiKey),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-    )
-)]
-async fn revoke_api_key_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path((tenant_id, project_id, environment_id, api_key_id)): Path<(
-        String,
-        String,
-        String,
-        String,
-    )>,
-) -> Result<Json<RevokedApiKey>, ApiError> {
-    let api_keys = state
-        .api_keys
-        .clone()
-        .ok_or_else(|| ApiError::not_implemented("api key store is not configured".to_string()))?;
-    let tenant_id = TenantId::new(tenant_id)?;
-    let project_id = ProjectId::new(project_id)?;
-    let environment_id = EnvironmentId::new(environment_id)?;
-    authorize(
-        &state,
-        &headers,
-        &tenant_id,
-        &project_id,
-        &environment_id,
-        ApiScope::Admin,
-    )
-    .await?;
-    let api_key_id = ApiKeyId::new(api_key_id)?;
-    let record = api_keys
-        .get_key(api_key_id.clone())
-        .await?
-        .ok_or_else(|| ApiError::not_found(format!("api key {} not found", api_key_id.as_str())))?;
-    if record.tenant_id != tenant_id
-        || record.project_id != project_id
-        || record.environment_id != environment_id
-    {
-        return Err(ApiError::not_found(format!(
-            "api key {} not found",
-            api_key_id.as_str()
-        )));
-    }
-    let revoked = api_keys
-        .revoke_key(api_key_id.clone(), Utc::now())
-        .await?
-        .ok_or_else(|| ApiError::not_found(format!("api key {} not found", api_key_id.as_str())))?;
-    Ok(Json(revoked))
-}
-
-#[utoipa::path(
-    post,
-    path = "/v1/provider-secrets/{tenant_id}/{project_id}",
-    tag = "providerSecrets",
-    operation_id = "createProviderSecret",
-    params(
-        ("tenant_id" = String, Path, description = "tenant_id"),
-        ("project_id" = String, Path, description = "project_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    request_body = CreateProviderSecretHttpRequest,
-    responses(
-        (status = 200, description = "Store an encrypted provider secret", body = ProviderSecretMetadata),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-    )
-)]
-async fn create_provider_secret_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path((tenant_id, project_id)): Path<(String, String)>,
-    Json(request): Json<CreateProviderSecretHttpRequest>,
-) -> Result<Json<ProviderSecretMetadata>, ApiError> {
-    let provider_secrets = provider_secret_store(&state)?;
-    let tenant_id = TenantId::new(tenant_id)?;
-    let project_id = ProjectId::new(project_id)?;
-    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
-    let metadata = provider_secrets
-        .put_secret(PutProviderSecretRequest {
-            tenant_id,
-            project_id,
-            provider: request.provider,
-            display_name: request.display_name,
-            secret_value: request.secret_value,
-        })
-        .await?;
-    Ok(Json(metadata))
-}
-
-#[utoipa::path(
-    get,
-    path = "/v1/provider-secrets/{tenant_id}/{project_id}",
-    tag = "providerSecrets",
-    operation_id = "listProviderSecrets",
-    params(
-        ("tenant_id" = String, Path, description = "tenant_id"),
-        ("project_id" = String, Path, description = "project_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    responses(
-        (status = 200, description = "List provider secret metadata", body = Vec < ProviderSecretMetadata >),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-    )
-)]
-async fn list_provider_secrets_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path((tenant_id, project_id)): Path<(String, String)>,
-) -> Result<Json<Vec<ProviderSecretMetadata>>, ApiError> {
-    let provider_secrets = provider_secret_store(&state)?;
-    let tenant_id = TenantId::new(tenant_id)?;
-    let project_id = ProjectId::new(project_id)?;
-    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
-    let secrets = provider_secrets
-        .list_secret_metadata(tenant_id, project_id)
-        .await?;
-    Ok(Json(secrets))
-}
-
-#[utoipa::path(
-    post,
-    path = "/v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke",
-    tag = "providerSecrets",
-    operation_id = "revokeProviderSecret",
-    params(
-        ("tenant_id" = String, Path, description = "tenant_id"),
-        ("project_id" = String, Path, description = "project_id"),
-        ("provider_secret_id" = String, Path, description = "provider_secret_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    responses(
-        (status = 200, description = "Revoke a provider secret", body = RevokedProviderSecret),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-    )
-)]
-async fn revoke_provider_secret_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path((tenant_id, project_id, provider_secret_id)): Path<(String, String, String)>,
-) -> Result<Json<RevokedProviderSecret>, ApiError> {
-    let provider_secrets = provider_secret_store(&state)?;
-    let tenant_id = TenantId::new(tenant_id)?;
-    let project_id = ProjectId::new(project_id)?;
-    let provider_secret_id = ProviderSecretId::new(provider_secret_id)?;
-    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
-    let revoked = provider_secrets
-        .revoke_secret(
-            tenant_id,
-            project_id,
-            provider_secret_id.clone(),
-            Utc::now(),
-        )
-        .await?
-        .ok_or_else(|| {
-            ApiError::not_found(format!(
-                "provider secret {} not found",
-                provider_secret_id.as_str()
-            ))
-        })?;
-    Ok(Json(revoked))
-}
+// API-key handlers (`createApiKey`, `revokeApiKey`) and provider-secret
+// handlers (`createProviderSecret`, `listProviderSecrets`,
+// `revokeProviderSecret`) moved to `crate::routes::api_keys` and
+// `crate::routes::provider_secrets` (issue #208 resource split). Their
+// `#[utoipa::path]` annotations moved with them verbatim, so the generated
+// OpenAPI spec is byte-identical.
 
 #[utoipa::path(
     post,
