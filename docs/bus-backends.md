@@ -229,11 +229,60 @@ contract independently.  Recommended approaches (choose one):
 
 ### Phase 3 — Vercel Queues adapter (hosted edge)
 
-- Lightweight HTTP adapter wrapping the Vercel Queues REST API.
-- Durability semantics (at-least-once, idempotency key in body) satisfied
-  by Vercel's delivery guarantee.
-- No persistent state on the adapter side; lease/inflight tracking delegated
-  to the queue service.
+**Target crate:** `beater-bus-vercel` (new, no Vercel client deps in-tree yet).
+
+This adapter is for the hosted **edge/control-plane** boundary only. Per
+`ARCHITECTURE.md` §1 #7 and §3.2, Vercel Queues may absorb HTTP/control-plane
+work near the dashboard and stateless routes, but long-running ingest listeners,
+drain loops, eval/replay workers, ClickHouse writers, and stateful consumers must
+run in hosted Rust cells (or the OSS all-in-one `beaterd`). The adapter therefore
+uses Vercel Queues as an at-least-once ingress lane and hands work off to cell
+workers; it is not a replacement runtime for `beaterd`.
+
+**Mapping:**
+
+| `DurableBus` operation | Vercel Queues primitive |
+|---|---|
+| `publish` | HTTP enqueue with the serialized `BusMessage` body and the Beater `(tenant_id, project_id, kind, idempotency_key)` tuple included in the payload. If Vercel exposes a request/message idempotency field, mirror the Beater idempotency key there as an optimization only. |
+| `consume_batch` | Poll consumer fetch from the queue, capped by `limit`, used by off-Vercel hosted cell workers. Push consumers may wake a cell worker but must not run long-lived drain logic inside a Vercel Function. |
+| `consume_kind_batch` | Either queue-per-kind or payload-side filtering after poll fetch. Queue-per-kind is preferred so function fanout does not scan unrelated work. |
+| `consume_scoped_kind_batch` | Queue-per-kind plus payload-side `(tenant_id, project_id)` filtering, or a queue naming scheme that includes the tenant/project scope. The adapter must never return messages from another scope. |
+| `ack` | Queue message acknowledgement/delete after the cell worker commits the side effect. Ack must not happen from the Vercel edge before the worker has durably accepted the job. |
+| `retry_or_dlq` | Re-enqueue with incremented `attempts` and backoff metadata until `max_attempts`; then publish a DLQ record containing the original message, reason, and attempt history. |
+| `replay_dead_letter` | Read the DLQ record by `message_id`, re-enqueue it to the source queue, optionally reset `attempts`, and mark the DLQ record replayed. |
+| `dlq` | Query the adapter's DLQ store or DLQ queue. A read must be non-destructive so operators can inspect before replaying. |
+| `depth` / `depth_for_kind` | Use Vercel queue depth/lag metrics when available; otherwise maintain adapter-side counters for `queued + inflight`. Depth is advisory for backpressure but must not silently undercount. |
+
+**Idempotency and DLQ store:** Vercel Queues can provide at-least-once delivery,
+but Beater's permanent application-level idempotency contract still belongs to
+the adapter. The adapter must maintain a durable idempotency ledger keyed on
+`(tenant_id, project_id, kind, idempotency_key)` before enqueue, or delegate that
+ledger to the hosted cell's Postgres metadata store. A queue-provider dedup field
+is useful only as a short-window optimization; it cannot be the only duplicate
+defense. DLQ records likewise need a durable store or a dedicated DLQ queue with
+reason codes and replay metadata.
+
+**Hosted-edge limits:**
+
+- Vercel Functions may enqueue or wake work, but must not hold open poll loops or
+  run drain workers.
+- Poll consumers run in hosted Rust cells where long leases, retry loops, and
+  provider/eval/replay side effects are allowed.
+- The adapter must preserve the same `DurableBus` semantics as SQLite/NATS/Kafka:
+  at-least-once, idempotent publish, tenant/project isolation, poison-message
+  isolation, replayable DLQ, depth accounting, and bounded backpressure.
+
+**Acceptance criteria:**
+
+1. `VercelQueuesBus` passes the same bus conformance suite as the other adapters,
+   including idempotent publish, tenant-scoped consume, retry/DLQ, replay, depth,
+   and backpressure assertions.
+2. A fake HTTP queue fixture covers enqueue, poll, ack, retry, DLQ, replay, and
+   duplicate publish without depending on live Vercel infrastructure.
+3. An integration test proves a Vercel-edge enqueue path can hand off to a cell
+   worker without running the worker inside a Vercel Function.
+4. No Vercel client dependency is added to `beater-bus`; the adapter lives in
+   `beater-bus-vercel` and wires through `Arc<dyn DurableBus>`.
 
 ---
 
