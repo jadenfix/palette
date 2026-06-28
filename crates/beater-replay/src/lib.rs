@@ -451,6 +451,106 @@ pub struct FailureAttribution {
     pub evidence: Vec<SpanEvidence>,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ForkedReplayOutcome {
+    pub replay_mode: ReplayMode,
+    pub guarantee: String,
+    pub passed: bool,
+    pub score: Option<f64>,
+    pub evidence: Value,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ForkedReplayProbe {
+    pub span_id: SpanId,
+    pub seq: u64,
+    pub replay_mode: ReplayMode,
+    pub guarantee: String,
+    pub passed: bool,
+    pub score: Option<f64>,
+    pub evidence: Value,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct OutcomeFlipAttribution {
+    pub trace_id: TraceId,
+    pub root_cause_span_id: Option<SpanId>,
+    pub confidence: f64,
+    pub replay_mode: Option<ReplayMode>,
+    pub guarantee: Option<String>,
+    pub budget_exhausted: bool,
+    pub probes: Vec<ForkedReplayProbe>,
+}
+
+pub fn find_earliest_outcome_flip<F>(
+    trace_id: TraceId,
+    spans: &[CanonicalSpan],
+    baseline_passed: bool,
+    fork_budget: usize,
+    mut evaluate_fork: F,
+) -> anyhow::Result<OutcomeFlipAttribution>
+where
+    F: FnMut(&CanonicalSpan) -> anyhow::Result<ForkedReplayOutcome>,
+{
+    if baseline_passed {
+        return Err(anyhow!(
+            "earliest outcome-flip attribution requires a failing baseline outcome"
+        ));
+    }
+
+    let mut sorted_spans = spans.to_vec();
+    sorted_spans.sort_by_key(|span| span.seq);
+
+    let mut probes = Vec::new();
+    for span in sorted_spans.iter().take(fork_budget) {
+        let outcome = evaluate_fork(span)
+            .with_context(|| format!("evaluate forked replay at span {}", span.span_id.as_str()))?;
+        let probe = ForkedReplayProbe {
+            span_id: span.span_id.clone(),
+            seq: span.seq,
+            replay_mode: outcome.replay_mode,
+            guarantee: outcome.guarantee,
+            passed: outcome.passed,
+            score: outcome.score,
+            evidence: outcome.evidence,
+        };
+        let flips = probe.passed;
+        let root_cause_span_id = probe.span_id.clone();
+        let replay_mode = probe.replay_mode.clone();
+        let guarantee = probe.guarantee.clone();
+        probes.push(probe);
+        if flips {
+            return Ok(OutcomeFlipAttribution {
+                trace_id,
+                root_cause_span_id: Some(root_cause_span_id),
+                confidence: replay_confidence(&replay_mode),
+                replay_mode: Some(replay_mode),
+                guarantee: Some(guarantee),
+                budget_exhausted: false,
+                probes,
+            });
+        }
+    }
+
+    Ok(OutcomeFlipAttribution {
+        trace_id,
+        root_cause_span_id: None,
+        confidence: 0.0,
+        replay_mode: None,
+        guarantee: None,
+        budget_exhausted: fork_budget < sorted_spans.len(),
+        probes,
+    })
+}
+
+fn replay_confidence(mode: &ReplayMode) -> f64 {
+    match mode {
+        ReplayMode::DeterministicReplay => 0.95,
+        ReplayMode::ForkedReplay => 0.75,
+        ReplayMode::Simulation => 0.5,
+    }
+}
+
 pub fn attribute_failure(
     trace_id: TraceId,
     spans: &[CanonicalSpan],
@@ -672,6 +772,120 @@ mod tests {
 
         assert_eq!(attribution.trace_id, trace_id);
         assert_eq!(attribution.root_cause_span_id, Some(second.span_id));
+    }
+
+    #[test]
+    fn earliest_outcome_flip_search_finds_causal_span_without_error_status() {
+        let trace_id = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
+        let first = fixture_span("first", 1, SpanStatus::Ok);
+        let second = fixture_span("second", 2, SpanStatus::Ok);
+        let third = fixture_span("third", 3, SpanStatus::Ok);
+        let mut evaluated = Vec::new();
+
+        let attribution = find_earliest_outcome_flip(
+            trace_id.clone(),
+            &[third, first, second.clone()],
+            false,
+            8,
+            |span| {
+                evaluated.push(span.span_id.as_str().to_string());
+                Ok(ForkedReplayOutcome {
+                    replay_mode: ReplayMode::ForkedReplay,
+                    guarantee: format!("forked from {}", span.span_id.as_str()),
+                    passed: span.span_id.as_str() == "second",
+                    score: Some(if span.span_id.as_str() == "second" {
+                        1.0
+                    } else {
+                        0.0
+                    }),
+                    evidence: json!({ "span_id": span.span_id.as_str() }),
+                })
+            },
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(evaluated, vec!["first".to_string(), "second".to_string()]);
+        assert_eq!(attribution.trace_id, trace_id);
+        assert_eq!(attribution.root_cause_span_id, Some(second.span_id));
+        assert_eq!(attribution.replay_mode, Some(ReplayMode::ForkedReplay));
+        assert_eq!(attribution.guarantee.as_deref(), Some("forked from second"));
+        assert_eq!(attribution.confidence, 0.75);
+        assert_eq!(attribution.probes.len(), 2);
+        assert_eq!(attribution.probes[1].passed, true);
+    }
+
+    #[test]
+    fn earliest_outcome_flip_search_returns_no_root_when_no_single_span_flips() {
+        let trace_id = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
+        let first = fixture_span("first", 1, SpanStatus::Ok);
+        let second = fixture_span("second", 2, SpanStatus::Ok);
+
+        let attribution =
+            find_earliest_outcome_flip(trace_id, &[second, first], false, 8, |span| {
+                Ok(ForkedReplayOutcome {
+                    replay_mode: ReplayMode::Simulation,
+                    guarantee: format!("simulated from {}", span.span_id.as_str()),
+                    passed: false,
+                    score: Some(0.0),
+                    evidence: json!({ "span_id": span.span_id.as_str() }),
+                })
+            })
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(attribution.root_cause_span_id, None);
+        assert_eq!(attribution.confidence, 0.0);
+        assert_eq!(attribution.replay_mode, None);
+        assert!(!attribution.budget_exhausted);
+        assert_eq!(attribution.probes.len(), 2);
+        assert_eq!(attribution.probes[0].span_id.as_str(), "first");
+        assert_eq!(attribution.probes[1].span_id.as_str(), "second");
+    }
+
+    #[test]
+    fn earliest_outcome_flip_search_respects_fork_budget() {
+        let trace_id = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
+        let first = fixture_span("first", 1, SpanStatus::Ok);
+        let second = fixture_span("second", 2, SpanStatus::Ok);
+        let third = fixture_span("third", 3, SpanStatus::Ok);
+        let mut evaluated = Vec::new();
+
+        let attribution =
+            find_earliest_outcome_flip(trace_id, &[third, first, second], false, 2, |span| {
+                evaluated.push(span.span_id.as_str().to_string());
+                Ok(ForkedReplayOutcome {
+                    replay_mode: ReplayMode::ForkedReplay,
+                    guarantee: format!("forked from {}", span.span_id.as_str()),
+                    passed: span.span_id.as_str() == "third",
+                    score: Some(0.0),
+                    evidence: json!({ "span_id": span.span_id.as_str() }),
+                })
+            })
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(evaluated, vec!["first".to_string(), "second".to_string()]);
+        assert_eq!(attribution.root_cause_span_id, None);
+        assert!(attribution.budget_exhausted);
+        assert_eq!(attribution.probes.len(), 2);
+    }
+
+    #[test]
+    fn earliest_outcome_flip_search_requires_a_failed_baseline() {
+        let trace_id = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
+        let span = fixture_span("first", 1, SpanStatus::Ok);
+
+        let error = find_earliest_outcome_flip(trace_id, &[span], true, 1, |_| {
+            Ok(ForkedReplayOutcome {
+                replay_mode: ReplayMode::DeterministicReplay,
+                guarantee: "unused".to_string(),
+                passed: true,
+                score: Some(1.0),
+                evidence: json!({}),
+            })
+        })
+        .err()
+        .unwrap_or_else(|| panic!("passing baseline must not run root-cause search"));
+
+        assert!(error.to_string().contains("failing baseline outcome"));
     }
 
     fn fixture_span(span_id: &str, seq: u64, status: SpanStatus) -> CanonicalSpan {
