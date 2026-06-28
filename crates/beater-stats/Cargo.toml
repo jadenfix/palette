@@ -1,0 +1,14 @@
+[package]
+name = "beater-stats"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Pure-math statistics primitives for Beater agent evals (Wilson CI, two-proportion z-test, bootstrap CI)."
+
+# No external runtime dependencies: all math is self-contained so the crate
+# can be imported without pulling in any async/network stack.  See §10.3 #2
+# and §6.3 in ARCHITECTURE.md for the statistical contracts implemented here.
+
+[lints]
+workspace = true

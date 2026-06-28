@@ -1201,6 +1201,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-stats"
+version = "0.1.0"
+
+[[package]]
 name = "beater-store"
 version = "0.1.0"
 dependencies = [

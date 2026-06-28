@@ -28,6 +28,7 @@ members = [
   "crates/beater-browser-capture",
   "crates/beater-browser-harness",
   "crates/beater-search",
+  "crates/beater-stats",
   "crates/beater-archive",
   "crates/beater-datasets",
   "crates/beater-experiments",
