@@ -8,8 +8,11 @@ use serde_json::Value as JsonValue;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use tantivy::collector::TopDocs;
-use tantivy::query::{AllQuery, BooleanQuery, Occur, Query, QueryParser, TermQuery};
-use tantivy::schema::{IndexRecordOption, Schema, TantivyDocument, Value, STORED, STRING, TEXT};
+use tantivy::query::{AllQuery, BooleanQuery, EmptyQuery, Occur, Query, TermQuery};
+use tantivy::schema::{
+    Field, IndexRecordOption, Schema, TantivyDocument, Value, STORED, STRING, TEXT,
+};
+use tantivy::tokenizer::TokenStream;
 use tantivy::{doc, Index, IndexWriter, Term};
 
 #[async_trait]
@@ -184,16 +187,7 @@ impl SearchIndex for TantivySearchIndex {
             .context("open search reader")
             .into_store()?;
         let searcher = reader.searcher();
-        let parser = QueryParser::for_index(
-            &self.index,
-            vec![
-                self.fields.text,
-                self.fields.name,
-                self.fields.model,
-                self.fields.tool,
-            ],
-        );
-        let parsed = self.filtered_query(&query, &parser)?;
+        let parsed = self.filtered_query(&query)?;
         let limit = query.limit.unwrap_or(50).clamp(1, 200);
         let top_docs = searcher
             .search(
@@ -234,21 +228,8 @@ impl SearchIndex for TantivySearchIndex {
 const MAX_QUERY_LEN: usize = 1_000;
 
 impl TantivySearchIndex {
-    fn filtered_query(
-        &self,
-        query: &SearchRequest,
-        parser: &QueryParser,
-    ) -> StoreResult<Box<dyn Query>> {
-        // Guard against pathologically long query strings before they reach
-        // the Tantivy parser.  Parse errors (malformed DSL, unbalanced quotes,
-        // unknown fields, etc.) are already converted to StoreError::Backend
-        // by the .into_store()? below — they do not panic.
-        if query.text.len() > MAX_QUERY_LEN {
-            return Err(StoreError::backend(format!(
-                "search query too long: {} bytes (limit {MAX_QUERY_LEN})",
-                query.text.len(),
-            )));
-        }
+    fn filtered_query(&self, query: &SearchRequest) -> StoreResult<Box<dyn Query>> {
+        ensure_query_len("search query", &query.text)?;
 
         let mut clauses: Vec<(Occur, Box<dyn Query>)> = vec![(
             Occur::Must,
@@ -259,10 +240,15 @@ impl TantivySearchIndex {
         } else {
             clauses.push((
                 Occur::Must,
-                parser
-                    .parse_query(&query.text)
-                    .with_context(|| format!("parse search query {:?}", query.text))
-                    .into_store()?,
+                self.literal_any_text_query(
+                    &[
+                        self.fields.text,
+                        self.fields.name,
+                        self.fields.model,
+                        self.fields.tool,
+                    ],
+                    &query.text,
+                )?,
             ));
         }
         if let Some(project_id) = &query.project_id {
@@ -296,23 +282,17 @@ impl TantivySearchIndex {
             clauses.push((Occur::Must, exact_field_query(self.fields.status, status)));
         }
         if let Some(model) = query.model.as_ref().filter(|value| !value.is_empty()) {
-            let model_parser = QueryParser::for_index(&self.index, vec![self.fields.model]);
+            ensure_query_len("model search filter", model)?;
             clauses.push((
                 Occur::Must,
-                model_parser
-                    .parse_query(model)
-                    .with_context(|| format!("parse model search filter {model:?}"))
-                    .into_store()?,
+                self.literal_all_text_query(self.fields.model, model)?,
             ));
         }
         if let Some(tool) = query.tool.as_ref().filter(|value| !value.is_empty()) {
-            let tool_parser = QueryParser::for_index(&self.index, vec![self.fields.tool]);
+            ensure_query_len("tool search filter", tool)?;
             clauses.push((
                 Occur::Must,
-                tool_parser
-                    .parse_query(tool)
-                    .with_context(|| format!("parse tool search filter {tool:?}"))
-                    .into_store()?,
+                self.literal_all_text_query(self.fields.tool, tool)?,
             ));
         }
 
@@ -324,6 +304,42 @@ impl TantivySearchIndex {
         } else {
             Ok(Box::new(BooleanQuery::new(clauses)))
         }
+    }
+
+    fn literal_any_text_query(&self, fields: &[Field], text: &str) -> StoreResult<Box<dyn Query>> {
+        let mut clauses = Vec::new();
+        for field in fields {
+            for token in self.literal_tokens(*field, text)? {
+                clauses.push((Occur::Should, text_term_query(*field, &token)));
+            }
+        }
+        Ok(boolean_or_single(clauses))
+    }
+
+    fn literal_all_text_query(&self, field: Field, text: &str) -> StoreResult<Box<dyn Query>> {
+        let clauses = self
+            .literal_tokens(field, text)?
+            .into_iter()
+            .map(|token| (Occur::Must, text_term_query(field, &token)))
+            .collect();
+        Ok(boolean_or_single(clauses))
+    }
+
+    fn literal_tokens(&self, field: Field, text: &str) -> StoreResult<Vec<String>> {
+        let mut analyzer = self
+            .index
+            .tokenizer_for_field(field)
+            .context("load search field tokenizer")
+            .into_store()?;
+        let mut stream = analyzer.token_stream(text);
+        let mut tokens = Vec::new();
+        while stream.advance() {
+            let token = stream.token().text.trim();
+            if !token.is_empty() {
+                tokens.push(token.to_string());
+            }
+        }
+        Ok(tokens)
     }
 }
 
@@ -422,6 +438,36 @@ fn exact_field_query(field: tantivy::schema::Field, value: &str) -> Box<dyn Quer
         Term::from_field_text(field, value),
         IndexRecordOption::Basic,
     ))
+}
+
+fn text_term_query(field: tantivy::schema::Field, value: &str) -> Box<dyn Query> {
+    Box::new(TermQuery::new(
+        Term::from_field_text(field, value),
+        IndexRecordOption::Basic,
+    ))
+}
+
+fn boolean_or_single(mut clauses: Vec<(Occur, Box<dyn Query>)>) -> Box<dyn Query> {
+    match clauses.len() {
+        0 => Box::new(EmptyQuery),
+        1 => {
+            clauses
+                .pop()
+                .unwrap_or_else(|| (Occur::Must, Box::new(EmptyQuery)))
+                .1
+        }
+        _ => Box::new(BooleanQuery::new(clauses)),
+    }
+}
+
+fn ensure_query_len(label: &str, value: &str) -> StoreResult<()> {
+    if value.len() > MAX_QUERY_LEN {
+        return Err(StoreError::backend(format!(
+            "{label} too long: {} bytes (limit {MAX_QUERY_LEN})",
+            value.len(),
+        )));
+    }
+    Ok(())
 }
 
 fn doc_key(span: &CanonicalSpan) -> String {
@@ -831,40 +877,133 @@ mod tests {
 
     // ── query-hardening regression tests ──────────────────────────────────────
 
-    /// An unbalanced double-quote is a DSL metacharacter that Tantivy cannot
-    /// parse.  The search method must return a typed error, not panic.
+    /// An unbalanced double-quote is a DSL metacharacter. User text is
+    /// tokenized literally, so it must not reach Tantivy's query parser.
     #[tokio::test]
-    async fn malformed_query_unbalanced_quote_returns_error() {
+    async fn metacharacter_query_is_tokenized_without_parse_error() {
         let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
         let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
-        let result = index
+        index
+            .index_spans(&[fixture_span(
+                &tenant,
+                "trace-quoted",
+                "span-quoted",
+                "unbalanced quote marker",
+                SpanStatus::Ok,
+            )])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let response = index
             .search(SearchRequest {
                 text: "\"unbalanced".to_string(),
                 ..SearchRequest::default_for_tenant(tenant)
             })
-            .await;
-        assert!(
-            result.is_err(),
-            "expected error for unbalanced quote, got: {result:?}"
-        );
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(response.hits.len(), 1);
+        assert_eq!(response.hits[0].trace_id, "trace-quoted");
     }
 
-    /// A raw `"` character (lone double-quote) is the minimal unbalanced-phrase
-    /// trigger — also must not panic.
+    /// A raw `"` character is punctuation-only input. It should produce an
+    /// empty literal term query, not a parse error and not an all-docs query.
     #[tokio::test]
-    async fn malformed_query_lone_quote_returns_error() {
+    async fn punctuation_only_query_matches_no_rows_without_parse_error() {
         let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
         let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
-        let result = index
+        index
+            .index_spans(&[fixture_span(
+                &tenant,
+                "trace-punctuation",
+                "span-punctuation",
+                "quote marker",
+                SpanStatus::Ok,
+            )])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let response = index
             .search(SearchRequest {
                 text: "\"".to_string(),
                 ..SearchRequest::default_for_tenant(tenant)
             })
-            .await;
-        assert!(
-            result.is_err(),
-            "expected error for lone quote, got: {result:?}"
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert!(response.hits.is_empty());
+    }
+
+    /// Prefix/wildcard syntax is not executed. The tokenizer extracts `ref`,
+    /// which does not match the indexed `refund` token.
+    #[tokio::test]
+    async fn wildcard_syntax_is_not_executed() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        index
+            .index_spans(&[fixture_span(
+                &tenant,
+                "trace-refund",
+                "span-refund",
+                "refund issued",
+                SpanStatus::Ok,
+            )])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let response = index
+            .search(SearchRequest {
+                text: "ref*".to_string(),
+                ..SearchRequest::default_for_tenant(tenant)
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert!(response.hits.is_empty());
+    }
+
+    /// Model/tool filters are literal analyzed terms. Boolean words like `OR`
+    /// cannot broaden a structured filter into multiple alternatives.
+    #[tokio::test]
+    async fn model_filter_does_not_execute_boolean_syntax() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let mut target = fixture_span(
+            &tenant,
+            "trace-target-model",
+            "span-target-model",
+            "target model span",
+            SpanStatus::Ok,
         );
+        target.model = Some(ModelRef {
+            provider: "openai".to_string(),
+            name: "targetmodel".to_string(),
+        });
+        let mut other = fixture_span(
+            &tenant,
+            "trace-other-model",
+            "span-other-model",
+            "other model span",
+            SpanStatus::Ok,
+        );
+        other.model = Some(ModelRef {
+            provider: "openai".to_string(),
+            name: "othermodel".to_string(),
+        });
+        index
+            .index_spans(&[target, other])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let response = index
+            .search(SearchRequest {
+                model: Some("targetmodel OR othermodel".to_string()),
+                ..SearchRequest::default_for_tenant(tenant)
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert!(response.hits.is_empty());
     }
 
     /// A query string longer than MAX_QUERY_LEN bytes is rejected before it
