@@ -2732,8 +2732,6 @@ fn gate_fixture_experiment(
             decision: spec.decision.clone(),
             test: StatisticalTest::PairedT,
             adjusted_alpha: 0.05,
-            mde: None,
-            required_n: None,
         },
         decision: spec.decision,
         gate_policy: GatePolicy {
