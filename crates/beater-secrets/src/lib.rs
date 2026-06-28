@@ -569,23 +569,51 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn provider_secret_metadata_never_serializes_secret_material() {
+    async fn provider_secret_debug_and_serde_surfaces_redact_secret_material() {
         let store = SqliteProviderSecretStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let plaintext_secret = "sk-test-secret";
         let request = PutProviderSecretRequest {
             tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
             project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
             provider: "openai".to_string(),
             display_name: "production judge".to_string(),
-            secret_value: "sk-test-secret".to_string(),
+            secret_value: plaintext_secret.to_string(),
         };
-        assert!(!format!("{request:?}").contains("sk-test-secret"));
+        let request_debug = format!("{request:?}");
+        assert_no_plaintext(
+            "put provider secret request debug",
+            &request_debug,
+            plaintext_secret,
+        );
+        assert!(request_debug.contains("<redacted>"));
 
         let metadata = store
             .put_secret(request)
             .await
             .unwrap_or_else(|err| panic!("{err}"));
-        let serialized = serde_json::to_string(&metadata).unwrap_or_else(|err| panic!("{err}"));
-        assert!(!serialized.contains("sk-test-secret"));
+        let metadata_json = serde_json::to_string(&metadata).unwrap_or_else(|err| panic!("{err}"));
+        assert_public_surface_has_no_secret_material(
+            "provider secret metadata json",
+            &metadata_json,
+            plaintext_secret,
+        );
+        let metadata_debug = format!("{metadata:?}");
+        assert_public_surface_has_no_secret_material(
+            "provider secret metadata debug",
+            &metadata_debug,
+            plaintext_secret,
+        );
+
+        let listed = store
+            .list_secret_metadata(metadata.tenant_id.clone(), metadata.project_id.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let listed_json = serde_json::to_string(&listed).unwrap_or_else(|err| panic!("{err}"));
+        assert_public_surface_has_no_secret_material(
+            "provider secret metadata list json",
+            &listed_json,
+            plaintext_secret,
+        );
 
         let loaded = store
             .get_secret(
@@ -596,8 +624,31 @@ mod tests {
             .await
             .unwrap_or_else(|err| panic!("{err}"))
             .unwrap_or_else(|| panic!("provider secret should exist"));
-        assert_eq!(loaded.secret_value(), "sk-test-secret");
-        assert!(!format!("{loaded:?}").contains("sk-test-secret"));
+        assert_eq!(loaded.secret_value(), plaintext_secret);
+        let loaded_debug = format!("{loaded:?}");
+        assert_no_plaintext(
+            "decrypted provider secret debug",
+            &loaded_debug,
+            plaintext_secret,
+        );
+        assert!(loaded_debug.contains("<redacted>"));
+
+        let revoked = store
+            .revoke_secret(
+                metadata.tenant_id,
+                metadata.project_id,
+                metadata.provider_secret_id,
+                Utc::now(),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .unwrap_or_else(|| panic!("provider secret should be revoked"));
+        let revoked_json = serde_json::to_string(&revoked).unwrap_or_else(|err| panic!("{err}"));
+        assert_public_surface_has_no_secret_material(
+            "revoked provider secret json",
+            &revoked_json,
+            plaintext_secret,
+        );
     }
 
     #[tokio::test]
@@ -652,5 +703,24 @@ mod tests {
         let store = SqliteProviderSecretStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
 
         assert_provider_secret_scope_isolation(&store).await;
+    }
+
+    fn assert_public_surface_has_no_secret_material(
+        surface_name: &str,
+        surface: &str,
+        plaintext_secret: &str,
+    ) {
+        assert_no_plaintext(surface_name, surface, plaintext_secret);
+        assert!(
+            !surface.contains("secret_value"),
+            "{surface_name} exposed a secret_value field"
+        );
+    }
+
+    fn assert_no_plaintext(surface_name: &str, surface: &str, plaintext_secret: &str) {
+        assert!(
+            !surface.contains(plaintext_secret),
+            "{surface_name} leaked plaintext provider secret"
+        );
     }
 }

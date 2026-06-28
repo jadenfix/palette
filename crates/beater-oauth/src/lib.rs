@@ -28,6 +28,7 @@ use beater_core::{
 };
 use beater_store::StoreError;
 use chrono::{DateTime, Duration, Utc};
+use http::Uri;
 use rand_core::{OsRng, RngCore};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -143,7 +144,7 @@ impl ClientAuthMethod {
 
 /// A registered OAuth client. Confidential clients carry a `client_secret_hash`;
 /// public clients (e.g. native MCP clients) carry `None` and rely on PKCE.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OAuthClient {
     pub client_id: OAuthClientId,
     #[serde(skip_serializing, default)]
@@ -176,9 +177,51 @@ pub struct ClientRegistration {
     pub token_endpoint_auth_method: ClientAuthMethod,
 }
 
+/// Validate an OAuth redirect URI before it can be registered or used to issue
+/// a code. Hosted clients must use HTTPS; native/local clients may use HTTP only
+/// on the loopback hosts used by OAuth 2.1 development flows.
+pub fn validate_redirect_uri(redirect_uri: &str) -> std::result::Result<(), OAuthError> {
+    if redirect_uri.is_empty() || redirect_uri.contains('#') {
+        return Err(invalid_redirect_uri());
+    }
+
+    let uri = redirect_uri
+        .parse::<Uri>()
+        .map_err(|_| invalid_redirect_uri())?;
+    let Some(scheme) = uri.scheme_str() else {
+        return Err(invalid_redirect_uri());
+    };
+    let Some(host) = uri.host().filter(|host| !host.is_empty()) else {
+        return Err(invalid_redirect_uri());
+    };
+
+    if scheme.eq_ignore_ascii_case("https") {
+        return Ok(());
+    }
+    if scheme.eq_ignore_ascii_case("http") && is_loopback_redirect_host(host) {
+        return Ok(());
+    }
+
+    Err(invalid_redirect_uri())
+}
+
+fn invalid_redirect_uri() -> OAuthError {
+    OAuthError::InvalidRequest(
+        "redirect_uri must use https or loopback http and must not contain a fragment".to_string(),
+    )
+}
+
+fn is_loopback_redirect_host(host: &str) -> bool {
+    let host = host
+        .strip_prefix('[')
+        .and_then(|value| value.strip_suffix(']'))
+        .unwrap_or(host);
+    host.eq_ignore_ascii_case("localhost") || host == "127.0.0.1" || host == "::1"
+}
+
 /// The result of registering a client. `client_secret` is `Some` only for
 /// confidential clients and is shown exactly once.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RegisteredClient {
     pub client: OAuthClient,
     pub client_secret: Option<String>,
@@ -186,7 +229,7 @@ pub struct RegisteredClient {
 
 /// An issued authorization code. Single-use; bound to a client, user, redirect
 /// URI, scope, and a PKCE `S256` challenge.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AuthorizationCode {
     pub code_id: AuthCodeId,
     pub client_id: OAuthClientId,
@@ -218,7 +261,7 @@ pub struct AuthorizationGrant {
 }
 
 /// An access token's persisted record. The opaque secret is only in the hash.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AccessToken {
     pub token_id: AccessTokenId,
     pub client_id: OAuthClientId,
@@ -236,7 +279,7 @@ pub struct AccessToken {
 }
 
 /// A refresh token's persisted record.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RefreshToken {
     pub token_id: RefreshTokenId,
     pub client_id: OAuthClientId,
@@ -267,13 +310,108 @@ pub struct AccessTokenClaims {
 }
 
 /// A freshly issued access + refresh token pair, with one-time plaintext values.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct IssuedTokens {
     pub access_token: String,
     pub refresh_token: String,
     pub token_type: &'static str,
     pub expires_in: i64,
     pub scope: BTreeSet<String>,
+}
+
+fn redacted_option(value: &Option<String>) -> Option<&'static str> {
+    value.as_ref().map(|_| "<redacted>")
+}
+
+impl std::fmt::Debug for OAuthClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuthClient")
+            .field("client_id", &self.client_id)
+            .field(
+                "client_secret_hash",
+                &redacted_option(&self.client_secret_hash),
+            )
+            .field("client_name", &self.client_name)
+            .field("redirect_uris", &self.redirect_uris)
+            .field("grant_types", &self.grant_types)
+            .field("scopes", &self.scopes)
+            .field(
+                "token_endpoint_auth_method",
+                &self.token_endpoint_auth_method,
+            )
+            .field("created_at", &self.created_at)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for RegisteredClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RegisteredClient")
+            .field("client", &self.client)
+            .field("client_secret", &redacted_option(&self.client_secret))
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for AuthorizationCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AuthorizationCode")
+            .field("code_id", &self.code_id)
+            .field("client_id", &self.client_id)
+            .field("user_id", &self.user_id)
+            .field("redirect_uri", &self.redirect_uri)
+            .field("scope", &self.scope)
+            .field("tenant_scope", &self.tenant_scope)
+            .field("code_challenge", &self.code_challenge)
+            .field("secret_hash", &"<redacted>")
+            .field("expires_at", &self.expires_at)
+            .field("consumed", &self.consumed)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for AccessToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AccessToken")
+            .field("token_id", &self.token_id)
+            .field("client_id", &self.client_id)
+            .field("user_id", &self.user_id)
+            .field("scope", &self.scope)
+            .field("tenant_scope", &self.tenant_scope)
+            .field("family_id", &self.family_id)
+            .field("secret_hash", &"<redacted>")
+            .field("expires_at", &self.expires_at)
+            .field("revoked", &self.revoked)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for RefreshToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RefreshToken")
+            .field("token_id", &self.token_id)
+            .field("client_id", &self.client_id)
+            .field("user_id", &self.user_id)
+            .field("scope", &self.scope)
+            .field("tenant_scope", &self.tenant_scope)
+            .field("family_id", &self.family_id)
+            .field("secret_hash", &"<redacted>")
+            .field("expires_at", &self.expires_at)
+            .field("revoked", &self.revoked)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for IssuedTokens {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("IssuedTokens")
+            .field("access_token", &"<redacted>")
+            .field("refresh_token", &"<redacted>")
+            .field("token_type", &self.token_type)
+            .field("expires_in", &self.expires_in)
+            .field("scope", &self.scope)
+            .finish()
+    }
 }
 
 // ---- crypto helpers ----
@@ -419,6 +557,9 @@ pub trait OAuthStore: Send + Sync {
                 "at least one redirect_uri is required".to_string(),
             ));
         }
+        for redirect_uri in &registration.redirect_uris {
+            validate_redirect_uri(redirect_uri)?;
+        }
         let client_id = new_uuid_id(OAuthClientId::new);
         let (client_secret, client_secret_hash) =
             if registration.token_endpoint_auth_method.is_public() {
@@ -480,6 +621,7 @@ pub trait OAuthStore: Send + Sync {
                 "redirect_uri not registered for client".to_string(),
             ));
         }
+        validate_redirect_uri(&grant.redirect_uri)?;
         if !is_valid_code_challenge(&grant.code_challenge) {
             return Err(OAuthError::InvalidRequest(
                 "PKCE code_challenge must be a base64url SHA-256 (S256) digest".to_string(),
@@ -1135,6 +1277,24 @@ mod tests {
         result.unwrap_or_else(|err| panic!("expected Ok, got {err:?}"))
     }
 
+    fn assert_debug_redacts<T: std::fmt::Debug>(label: &str, value: &T, secret_values: &[&str]) {
+        let debug = format!("{value:?}");
+        assert!(
+            debug.contains("<redacted>"),
+            "{label} debug output should make redaction explicit: {debug}"
+        );
+        for secret in secret_values {
+            assert!(
+                !secret.is_empty(),
+                "{label} test secret should not be empty"
+            );
+            assert!(
+                !debug.contains(secret),
+                "{label} debug output leaked secret material: {debug}"
+            );
+        }
+    }
+
     fn store() -> SqliteOAuthStore {
         ok(SqliteOAuthStore::in_memory())
     }
@@ -1190,6 +1350,87 @@ mod tests {
         assert!(!verify_pkce_s256(
             "wrong-verifier",
             &challenge_for(VERIFIER)
+        ));
+    }
+
+    #[tokio::test]
+    async fn register_client_accepts_https_and_loopback_http_redirects() {
+        let cases = [
+            "https://app.example.com/cb",
+            "http://localhost:8765/callback",
+            "http://127.0.0.1:8765/callback",
+            "http://[::1]:8765/callback",
+        ];
+
+        for redirect_uri in cases {
+            let store = store();
+            let mut registration = public_client_registration();
+            registration.redirect_uris = vec![redirect_uri.to_string()];
+
+            let registered = ok(store.register_client(registration, Utc::now()).await);
+            assert_eq!(registered.client.redirect_uris, vec![redirect_uri]);
+        }
+    }
+
+    #[tokio::test]
+    async fn register_client_rejects_unsafe_redirect_uris() {
+        let cases = [
+            "",
+            "not a uri",
+            "https://app.example.com/cb#fragment",
+            "http://app.example.com/cb",
+            "ftp://app.example.com/cb",
+            "javascript:alert(1)",
+        ];
+
+        for redirect_uri in cases {
+            let store = store();
+            let mut registration = public_client_registration();
+            registration.redirect_uris = vec![redirect_uri.to_string()];
+
+            assert!(
+                matches!(
+                    store.register_client(registration, Utc::now()).await,
+                    Err(OAuthError::InvalidRequest(_))
+                ),
+                "expected {redirect_uri:?} to be rejected"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn issue_authorization_code_rejects_unsafe_registered_redirect_uri() {
+        let store = store();
+        let now = Utc::now();
+        let client_id = ok(OAuthClientId::new("unsafe-client"));
+        ok(store
+            .put_client(OAuthClient {
+                client_id: client_id.clone(),
+                client_secret_hash: None,
+                client_name: "legacy-client".to_string(),
+                redirect_uris: vec!["http://app.example.com/cb".to_string()],
+                grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
+                scopes: BTreeSet::from(["traces:read".to_string()]),
+                token_endpoint_auth_method: ClientAuthMethod::None,
+                created_at: now,
+            })
+            .await);
+
+        assert!(matches!(
+            store
+                .issue_authorization_code(
+                    AuthorizationGrant {
+                        client_id,
+                        user_id: ok(UserId::new("user-1")),
+                        redirect_uri: "http://app.example.com/cb".to_string(),
+                        scope: BTreeSet::from(["traces:read".to_string()]),
+                        tenant_scope: test_tenant_scope(),
+                        code_challenge: challenge_for(VERIFIER),
+                    },
+                    now,
+                )
+                .await,
+            Err(OAuthError::InvalidRequest(_))
         ));
     }
 
@@ -1523,6 +1764,81 @@ mod tests {
         assert!(!refresh_json.contains("secret_hash"));
         assert!(!refresh_json.contains(&tokens.refresh_token));
         assert!(!refresh_json.contains(&refresh.secret_hash));
+    }
+
+    #[tokio::test]
+    async fn debug_output_redacts_secret_material() {
+        let store = store();
+        let now = Utc::now();
+        let mut reg = public_client_registration();
+        reg.token_endpoint_auth_method = ClientAuthMethod::ClientSecretPost;
+        let registered = ok(store.register_client(reg, now).await);
+        let client_secret = ok(registered.client_secret.clone().ok_or("expected secret"));
+        let client_secret_hash = ok(registered
+            .client
+            .client_secret_hash
+            .clone()
+            .ok_or("expected secret hash"));
+        let client_id = registered.client.client_id.clone();
+        assert_debug_redacts(
+            "registered client",
+            &registered,
+            &[&client_secret, &client_secret_hash],
+        );
+
+        let code = issue_code(&store, &client_id, &challenge_for(VERIFIER), now).await;
+        let (code_id_raw, code_secret) = parse_token(AUTH_CODE_PREFIX, &code)
+            .unwrap_or_else(|| panic!("expected minted authorization code"));
+        let code_id = ok(AuthCodeId::new(code_id_raw));
+        let code_record =
+            ok(store.get_code(&code_id).await).unwrap_or_else(|| panic!("expected auth code"));
+        let code_secret_hash = code_record.secret_hash.clone();
+        assert_debug_redacts(
+            "authorization code",
+            &code_record,
+            &[code_secret, &code_secret_hash],
+        );
+
+        let tokens = ok(store
+            .exchange_code(
+                &client_id,
+                Some(&client_secret),
+                &code,
+                "https://app.example.com/cb",
+                VERIFIER,
+                now,
+            )
+            .await);
+        assert_debug_redacts(
+            "issued token pair",
+            &tokens,
+            &[&tokens.access_token, &tokens.refresh_token],
+        );
+
+        let (access_id_raw, access_secret) = parse_token(ACCESS_TOKEN_PREFIX, &tokens.access_token)
+            .unwrap_or_else(|| panic!("expected minted access token"));
+        let access_id = ok(AccessTokenId::new(access_id_raw));
+        let access = ok(store.get_access_token(&access_id).await)
+            .unwrap_or_else(|| panic!("expected access token"));
+        let access_secret_hash = access.secret_hash.clone();
+        assert_debug_redacts(
+            "access token",
+            &access,
+            &[access_secret, &access_secret_hash],
+        );
+
+        let (refresh_id_raw, refresh_secret) =
+            parse_token(REFRESH_TOKEN_PREFIX, &tokens.refresh_token)
+                .unwrap_or_else(|| panic!("expected minted refresh token"));
+        let refresh_id = ok(RefreshTokenId::new(refresh_id_raw));
+        let refresh = ok(store.get_refresh_token(&refresh_id).await)
+            .unwrap_or_else(|| panic!("expected refresh token"));
+        let refresh_secret_hash = refresh.secret_hash.clone();
+        assert_debug_redacts(
+            "refresh token",
+            &refresh,
+            &[refresh_secret, &refresh_secret_hash],
+        );
     }
 
     #[tokio::test]

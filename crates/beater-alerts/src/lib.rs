@@ -512,7 +512,8 @@ fn slack_alert_payload(policy: &AlertPolicy, input: &AlertInput) -> serde_json::
         }),
     ];
 
-    if !input.links.trace_url.trim().is_empty() {
+    let trace_url = input.links.trace_url.trim();
+    if !trace_url.is_empty() {
         blocks.push(serde_json::json!({
             "type": "actions",
             "elements": [
@@ -524,7 +525,7 @@ fn slack_alert_payload(policy: &AlertPolicy, input: &AlertInput) -> serde_json::
                         "text": "View trace",
                         "emoji": true,
                     },
-                    "url": input.links.trace_url,
+                    "url": trace_url,
                 },
             ],
         }));
@@ -1223,6 +1224,29 @@ mod tests {
         assert!(!section_text.contains("Baseline"));
         assert!(!section_text.contains("Delta"));
         assert_eq!(blocks[0]["text"]["text"].as_str(), Some("Warning alert"));
+    }
+
+    #[test]
+    fn slack_channel_trims_trace_deep_link_button_url() {
+        let policy = fixture_alert_policy(300);
+        let mut input = fixture_alert_input(Utc::now());
+        input.links.trace_url = "  https://beater.test/traces/trace?from=alert  ".to_string();
+
+        let payload = SlackChannel.format_alert(&policy, &input);
+        let blocks = payload["blocks"]
+            .as_array()
+            .unwrap_or_else(|| panic!("blocks must be an array"));
+        let button = blocks
+            .iter()
+            .find(|block| block["type"] == "actions")
+            .and_then(|block| block["elements"].as_array())
+            .and_then(|elements| elements.first())
+            .unwrap_or_else(|| panic!("trace action button must be present"));
+
+        assert_eq!(
+            button["url"].as_str(),
+            Some("https://beater.test/traces/trace?from=alert")
+        );
     }
 
     fn fixture_alert_input(now: Timestamp) -> AlertInput {

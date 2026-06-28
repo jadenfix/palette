@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -26,6 +27,19 @@ def run(root: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def run_with_env_root(root: Path) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["BEATER_ACTION_PINS_ROOT"] = str(root)
+    return subprocess.run(
+        [str(SCRIPT)],
+        cwd=REPO,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+
 def test_allows_local_first_party_and_sha_pinned_refs() -> None:
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
@@ -44,6 +58,28 @@ jobs:
         )
 
         result = run(root)
+
+        assert result.returncode == 0, result.stderr
+        assert "pinned to immutable commit SHAs" in result.stdout
+
+
+def test_env_root_allows_uppercase_sha_parent_local_and_docker_refs() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        write(
+            root / ".github" / "workflows" / "ok.yml",
+            f"""
+name: ok
+jobs:
+  ok:
+    steps:
+      - uses: ../shared/actions/build
+      - uses: docker://ghcr.io/jadenfix/beater/demo-runner:latest
+      - uses: vendor/tool@{PIN.upper()} # v1
+""",
+        )
+
+        result = run_with_env_root(root)
 
         assert result.returncode == 0, result.stderr
         assert "pinned to immutable commit SHAs" in result.stdout
@@ -94,6 +130,7 @@ runs:
 if __name__ == "__main__":
     for test in [
         test_allows_local_first_party_and_sha_pinned_refs,
+        test_env_root_allows_uppercase_sha_parent_local_and_docker_refs,
         test_rejects_mutable_third_party_workflow_refs,
         test_scans_composite_action_metadata,
     ]:

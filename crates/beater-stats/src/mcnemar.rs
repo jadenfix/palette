@@ -8,7 +8,10 @@ use crate::StatsError;
 /// discordant pairs split Binomial(b + c, ½); the two-sided p-value is
 /// `min(1, 2 · P(X ≤ min(b, c)))`. With no discordant pairs the p-value is 1.0.
 pub fn mcnemar_exact_p(b: u64, c: u64) -> Result<f64, StatsError> {
-    let n = b + c;
+    let n = b.checked_add(c).ok_or(StatsError::InvalidParameter {
+        name: "discordant_pairs",
+        value: f64::INFINITY,
+    })?;
     if n == 0 {
         return Ok(1.0);
     }
@@ -41,5 +44,18 @@ mod tests {
             mcnemar_exact_p(2, 7).unwrap_or_else(|err| panic!("{err}")),
             mcnemar_exact_p(7, 2).unwrap_or_else(|err| panic!("{err}"))
         );
+    }
+
+    #[test]
+    fn rejects_discordant_count_overflow() {
+        for (b, c) in [(u64::MAX, 1), (1, u64::MAX)] {
+            assert!(matches!(
+                mcnemar_exact_p(b, c),
+                Err(StatsError::InvalidParameter {
+                    name: "discordant_pairs",
+                    value,
+                }) if value.is_infinite()
+            ));
+        }
     }
 }

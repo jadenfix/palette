@@ -1547,7 +1547,7 @@ impl IngestService {
             }
             if let Some(allowed) = &self.policy.allowed_attributes {
                 if !allowed.contains(&key) {
-                    dropped.insert(key, value);
+                    dropped.insert(key, json!("[redacted]"));
                     continue;
                 }
             }
@@ -1617,6 +1617,45 @@ impl Default for IngestPolicy {
             trace_write_max_attempts: 3,
             trace_completion: TraceCompletionConfig::default(),
         }
+    }
+}
+
+impl IngestPolicy {
+    /// Validate that the policy fields form a coherent configuration.
+    ///
+    /// Call at startup after building the policy from CLI/env args; impossible
+    /// combinations (inline cutoff larger than the raw cap, zero limits) are
+    /// caught here with a clear diagnostic rather than producing silent
+    /// mismatches at runtime.
+    pub fn validate(&self) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.max_raw_payload_bytes >= 1,
+            "max_raw_payload_bytes must be at least 1; got {}",
+            self.max_raw_payload_bytes
+        );
+        anyhow::ensure!(
+            self.max_attributes >= 1,
+            "max_attributes must be at least 1; got {}",
+            self.max_attributes
+        );
+        anyhow::ensure!(
+            self.inline_payload_bytes <= self.max_raw_payload_bytes,
+            "inline_payload_bytes ({}) must not exceed max_raw_payload_bytes ({}); \
+             payloads cannot be inlined when the inline cutoff is larger than the payload cap",
+            self.inline_payload_bytes,
+            self.max_raw_payload_bytes
+        );
+        anyhow::ensure!(
+            self.trace_completion.idle_timeout > Duration::zero(),
+            "trace_idle_timeout must be positive; got {} seconds",
+            self.trace_completion.idle_timeout.num_seconds()
+        );
+        anyhow::ensure!(
+            self.trace_completion.late_window > Duration::zero(),
+            "trace_late_window must be positive; got {} seconds",
+            self.trace_completion.late_window.num_seconds()
+        );
+        Ok(())
     }
 }
 
@@ -3687,7 +3726,7 @@ mod tests {
         // Deny wins over allow.
         assert!(!span.attributes.contains_key("secret"));
         let dropped = &span.unmapped_attrs["dropped_attributes"];
-        assert_eq!(dropped["drop_me"], json!("unlisted"));
+        assert_eq!(dropped["drop_me"], json!("[redacted]"));
         assert_eq!(dropped["secret"], json!("[redacted]"));
         assert!(dropped.get("keep").is_none());
     }
@@ -4339,5 +4378,172 @@ mod tests {
         ) -> beater_store::StoreResult<Page<SpanSummary>> {
             Err(StoreError::Backend("trace store unavailable".to_string()))
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // IngestPolicy::validate() tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn policy_validate_accepts_defaults() {
+        IngestPolicy::default()
+            .validate()
+            .unwrap_or_else(|err| panic!("default policy must be valid: {err}"));
+    }
+
+    #[test]
+    fn policy_validate_rejects_inline_exceeds_raw() {
+        let policy = IngestPolicy {
+            max_raw_payload_bytes: 100,
+            inline_payload_bytes: 200,
+            ..IngestPolicy::default()
+        };
+        let err = policy
+            .validate()
+            .err()
+            .unwrap_or_else(|| panic!("expected validation error"));
+        assert!(
+            err.to_string().contains("inline_payload_bytes"),
+            "expected mention of inline_payload_bytes in: {err}"
+        );
+    }
+
+    #[test]
+    fn policy_validate_rejects_zero_max_raw_payload_bytes() {
+        let policy = IngestPolicy {
+            max_raw_payload_bytes: 0,
+            inline_payload_bytes: 0,
+            ..IngestPolicy::default()
+        };
+        let err = policy
+            .validate()
+            .err()
+            .unwrap_or_else(|| panic!("expected validation error"));
+        assert!(
+            err.to_string().contains("max_raw_payload_bytes"),
+            "expected mention of max_raw_payload_bytes in: {err}"
+        );
+    }
+
+    #[test]
+    fn policy_validate_rejects_zero_max_attributes() {
+        let policy = IngestPolicy {
+            max_attributes: 0,
+            ..IngestPolicy::default()
+        };
+        let err = policy
+            .validate()
+            .err()
+            .unwrap_or_else(|| panic!("expected validation error"));
+        assert!(
+            err.to_string().contains("max_attributes"),
+            "expected mention of max_attributes in: {err}"
+        );
+    }
+
+    #[test]
+    fn policy_validate_rejects_zero_idle_timeout() {
+        let policy = IngestPolicy {
+            trace_completion: TraceCompletionConfig {
+                idle_timeout: Duration::zero(),
+                ..TraceCompletionConfig::default()
+            },
+            ..IngestPolicy::default()
+        };
+        let err = policy
+            .validate()
+            .err()
+            .unwrap_or_else(|| panic!("expected validation error"));
+        assert!(
+            err.to_string().contains("trace_idle_timeout"),
+            "expected mention of trace_idle_timeout in: {err}"
+        );
+    }
+
+    #[test]
+    fn policy_validate_rejects_zero_late_window() {
+        let policy = IngestPolicy {
+            trace_completion: TraceCompletionConfig {
+                late_window: Duration::zero(),
+                ..TraceCompletionConfig::default()
+            },
+            ..IngestPolicy::default()
+        };
+        let err = policy
+            .validate()
+            .err()
+            .unwrap_or_else(|| panic!("expected validation error"));
+        assert!(
+            err.to_string().contains("trace_late_window"),
+            "expected mention of trace_late_window in: {err}"
+        );
+    }
+
+    /// R248: a span that exceeds a custom (small) raw payload cap is rejected with
+    /// PayloadTooLarge — proving that the max_raw_payload_bytes knob is wired
+    /// through to ingest enforcement.
+    #[tokio::test]
+    async fn ingest_rejects_payload_over_custom_raw_limit() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        // 64 bytes is far below the ~300-500 bytes a fixture request serialises to.
+        let service = IngestService::new(
+            artifacts,
+            traces,
+            bus.clone(),
+            IngestPolicy {
+                max_raw_payload_bytes: 64,
+                inline_payload_bytes: 32,
+                ..IngestPolicy::default()
+            },
+        );
+        let err = service
+            .ingest_native(fixture_request())
+            .await
+            .err()
+            .unwrap_or_else(|| panic!("should be rejected over the 64-byte cap"));
+        assert!(
+            matches!(err, IngestError::PayloadTooLarge { .. }),
+            "expected PayloadTooLarge, got {err}"
+        );
+        assert_eq!(
+            bus.depth().await,
+            Ok(0),
+            "nothing should be queued on rejection"
+        );
+    }
+
+    /// R248: the same span that fails under a tiny custom cap succeeds under a
+    /// raised cap — proving that raising max_raw_payload_bytes changes behavior.
+    #[tokio::test]
+    async fn ingest_accepts_payload_within_raised_raw_limit() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        // 4 KiB — large enough for the fixture request, much smaller than the 1 MiB default.
+        let service = IngestService::new(
+            artifacts,
+            traces,
+            bus.clone(),
+            IngestPolicy {
+                max_raw_payload_bytes: 4096,
+                ..IngestPolicy::default()
+            },
+        );
+        let outcome = service
+            .ingest_native(fixture_request())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(outcome.ack.accepted_raw, 1);
+        assert_eq!(bus.depth().await, Ok(1));
     }
 }

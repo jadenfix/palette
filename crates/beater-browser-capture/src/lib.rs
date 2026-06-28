@@ -17,7 +17,9 @@
 use beater_browser::{
     semconv, BrowserAction, BrowserDriver, LlmDecision, Observation, StepStatus, StepTriple,
 };
-use beater_core::{EnvironmentId, Money, ProjectId, TenantId, Timestamp, TokenCounts, TraceId};
+use beater_core::{
+    EnvironmentId, Money, ProjectId, SpanId, TenantId, Timestamp, TokenCounts, TraceId,
+};
 use beater_replay::{ReplayEvent, ReplayEventKind, SqliteReplayStore};
 use beater_schema::{
     AgentSpanKind, ArtifactRef, CanonicalSpan, ModelRef, RedactionClass, SpanStatus,
@@ -64,6 +66,7 @@ pub struct RecordedStep {
 /// Internal input for assembling one [`CanonicalSpan`].
 struct SpanParts {
     span_id: String,
+    parent_span_id: Option<SpanId>,
     kind: AgentSpanKind,
     name: String,
     status: SpanStatus,
@@ -160,6 +163,7 @@ where
         let mut spans = Vec::new();
 
         // 1) Record the LLM decision (the prompt) as a Provider cassette + llm.call span.
+        let mut decision_parent_span_id = None;
         if let Some(decision) = &decision {
             let request = decision.prompt.clone();
             let response = json!({
@@ -200,6 +204,7 @@ where
                 .unwrap_or(step_start);
             let span = self.build_span(SpanParts {
                 span_id: format!("browser-decision-{step_seq}"),
+                parent_span_id: None,
                 kind: AgentSpanKind::LlmCall,
                 name: "browser.decision".to_string(),
                 status: SpanStatus::Ok,
@@ -217,6 +222,7 @@ where
                 attributes,
                 raw_ref,
             })?;
+            decision_parent_span_id = Some(span.span_id.clone());
             spans.push(span);
         }
 
@@ -310,6 +316,7 @@ where
         };
         let span = self.build_span(SpanParts {
             span_id: format!("browser-step-{step_seq}"),
+            parent_span_id: decision_parent_span_id,
             kind: AgentSpanKind::ToolCall,
             name: format!("browser.{}", action.verb()),
             status: span_status,
@@ -394,7 +401,7 @@ where
             environment_id: self.ctx.environment_id.clone(),
             trace_id: self.ctx.trace_id.clone(),
             span_id,
-            parent_span_id: None,
+            parent_span_id: parts.parent_span_id,
             seq,
             kind: parts.kind,
             name: parts.name,
@@ -626,6 +633,17 @@ mod tests {
         assert_eq!(ok.spans.len(), 2);
         assert_eq!(ok.spans[0].kind, AgentSpanKind::LlmCall);
         assert_eq!(ok.spans[1].kind, AgentSpanKind::ToolCall);
+        assert_eq!(ok.spans[0].parent_span_id, None);
+        assert_eq!(
+            ok.spans[1].parent_span_id.as_ref(),
+            Some(&ok.spans[0].span_id),
+            "browser-step-0 should be parented by browser-decision-0"
+        );
+        assert_eq!(
+            miss.spans[1].parent_span_id.as_ref(),
+            Some(&miss.spans[0].span_id),
+            "browser-step-1 should be parented by browser-decision-1"
+        );
         assert_eq!(ok.spans[1].status, SpanStatus::Ok);
         assert_eq!(miss.spans[1].status, SpanStatus::Error);
 
@@ -739,6 +757,36 @@ mod tests {
         // browser runs (2 decisions x 3400 micros / 820 ms each).
         assert_eq!(trace.get("cost_micros"), Some(&json!(6800)));
         assert_eq!(trace.get("latency_ms"), Some(&json!(1640)));
+    }
+
+    #[tokio::test]
+    async fn no_decision_step_remains_rootless() {
+        let dir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = FsArtifactStore::new(dir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let replay = SqliteReplayStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let ctx = context();
+        let driver = MockDriver::with_conformance_fixture();
+        let mut proxy = BrowserToolProxy::new(driver, artifacts, replay, ctx);
+
+        proxy
+            .goto("https://fixture.local/page")
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let recorded = proxy
+            .step(
+                None,
+                BrowserAction::Click {
+                    selector: FIXTURE_KNOWN_SELECTOR.to_string(),
+                },
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(recorded.spans.len(), 1);
+        assert_eq!(recorded.spans[0].kind, AgentSpanKind::ToolCall);
+        assert_eq!(recorded.spans[0].span_id.as_str(), "browser-step-0");
+        assert_eq!(recorded.spans[0].parent_span_id, None);
     }
 
     async fn replay_events<D, A>(proxy: &BrowserToolProxy<D, A>) -> Vec<ReplayEvent> {

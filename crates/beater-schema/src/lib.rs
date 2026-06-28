@@ -5,7 +5,7 @@ use beater_core::{
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 pub const RAW_SCHEMA_VERSION: u32 = 1;
 pub const CANONICAL_SCHEMA_VERSION: u32 = 1;
@@ -695,17 +695,19 @@ pub fn span_release_id(span: &CanonicalSpan) -> Option<String> {
 
 pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary> {
     let mut runs = Vec::<RunSummary>::new();
+    let mut dedup = Vec::<RunDedup<'_>>::new();
     // Index (project_id, trace_id) -> position in `runs` so each span resolves
     // its run in O(1) instead of a linear scan over all runs seen so far. This
     // turns the rollup from O(spans × runs) into O(spans); push order — and
     // therefore the final sort — is unchanged. Keys borrow the ids out of
     // `spans` (which outlives `index`), so the hot path allocates nothing per
     // span — important when the common shape is many spans across few runs.
-    let mut index = std::collections::HashMap::<(&str, &str), usize>::new();
+    let mut index = HashMap::<(&str, &str), usize>::new();
     for span in &spans {
         let key = (span.project_id.as_str(), span.trace_id.as_str());
         if let Some(&pos) = index.get(&key) {
             let run = &mut runs[pos];
+            let dedup = &mut dedup[pos];
             run.span_count += 1;
             if span.started_at < run.started_at {
                 run.started_at = span.started_at;
@@ -713,8 +715,12 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
             }
             run.status = aggregate_run_status(&run.status, &span.status);
             run.total_cost = merge_cost(run.total_cost.clone(), span.cost.clone());
-            push_model(&mut run.models, span.model.clone());
-            push_release_id(&mut run.release_ids, span.release_id.clone());
+            push_model(&mut run.models, &mut dedup.models, span.model.as_ref());
+            push_release_id(
+                &mut run.release_ids,
+                &mut dedup.release_ids,
+                span.release_id.as_deref(),
+            );
             run.ended_at = match (run.ended_at, span.ended_at) {
                 (Some(left), Some(right)) => Some(left.max(right)),
                 (None, Some(right)) => Some(right),
@@ -723,6 +729,15 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
             run.duration_ms = run_duration_ms(run.started_at, run.ended_at);
         } else {
             let ended_at = span.ended_at;
+            let mut run_dedup = RunDedup::default();
+            let mut models = Vec::new();
+            let mut release_ids = Vec::new();
+            push_model(&mut models, &mut run_dedup.models, span.model.as_ref());
+            push_release_id(
+                &mut release_ids,
+                &mut run_dedup.release_ids,
+                span.release_id.as_deref(),
+            );
             index.insert(key, runs.len());
             runs.push(RunSummary {
                 tenant_id: tenant.clone(),
@@ -735,14 +750,21 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
                 ended_at,
                 duration_ms: run_duration_ms(span.started_at, ended_at),
                 total_cost: span.cost.clone(),
-                models: span.model.clone().into_iter().collect(),
-                release_ids: span.release_id.clone().into_iter().collect(),
+                models,
+                release_ids,
             });
+            dedup.push(run_dedup);
         }
     }
 
     runs.sort_by(|left, right| right.started_at.cmp(&left.started_at));
     runs
+}
+
+#[derive(Default)]
+struct RunDedup<'a> {
+    models: HashSet<(&'a str, &'a str)>,
+    release_ids: HashSet<&'a str>,
 }
 
 pub fn filter_run_summaries(
@@ -754,8 +776,8 @@ pub fn filter_run_summaries(
         spans
             .iter()
             .filter(|span| &span.kind == kind)
-            .map(|span| (span.project_id.clone(), span.trace_id.clone()))
-            .collect::<BTreeSet<_>>()
+            .map(|span| (span.project_id.as_str(), span.trace_id.as_str()))
+            .collect::<HashSet<_>>()
     });
     runs.into_iter()
         .filter(|run| match &filter.trace_id {
@@ -809,7 +831,9 @@ pub fn filter_run_summaries(
             None => true,
         })
         .filter(|run| match &kind_trace_ids {
-            Some(trace_ids) => trace_ids.contains(&(run.project_id.clone(), run.trace_id.clone())),
+            Some(trace_ids) => {
+                trace_ids.contains(&(run.project_id.as_str(), run.trace_id.as_str()))
+            }
             None => true,
         })
         .collect()
@@ -838,24 +862,29 @@ fn merge_cost(current: Option<Money>, next: Option<Money>) -> Option<Money> {
     }
 }
 
-fn push_model(models: &mut Vec<ModelRef>, model: Option<ModelRef>) {
+fn push_model<'a>(
+    models: &mut Vec<ModelRef>,
+    seen: &mut HashSet<(&'a str, &'a str)>,
+    model: Option<&'a ModelRef>,
+) {
     let Some(model) = model else {
         return;
     };
-    if !models
-        .iter()
-        .any(|existing| existing.provider == model.provider && existing.name == model.name)
-    {
-        models.push(model);
+    if seen.insert((model.provider.as_str(), model.name.as_str())) {
+        models.push(model.clone());
     }
 }
 
-fn push_release_id(release_ids: &mut Vec<String>, release_id: Option<String>) {
+fn push_release_id<'a>(
+    release_ids: &mut Vec<String>,
+    seen: &mut HashSet<&'a str>,
+    release_id: Option<&'a str>,
+) {
     let Some(release_id) = release_id else {
         return;
     };
-    if !release_ids.contains(&release_id) {
-        release_ids.push(release_id);
+    if seen.insert(release_id) {
+        release_ids.push(release_id.to_string());
     }
 }
 

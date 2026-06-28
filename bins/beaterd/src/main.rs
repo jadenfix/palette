@@ -16,7 +16,7 @@ use beater_gates::SqliteGateStore;
 use beater_human::SqliteHumanReviewStore;
 use beater_ingest::{
     ImportError, IngestPolicy, IngestService, RawTraceIngestRequest, SourceImporter,
-    TRACE_INGESTED_KIND, TRACE_WRITE_BATCH_KIND,
+    TraceCompletionConfig, TRACE_INGESTED_KIND, TRACE_WRITE_BATCH_KIND,
 };
 use beater_judge::{
     HttpRoutingJudgeProvider, JudgeBrokerService, JudgeProvider, KeywordJudgeProvider,
@@ -111,6 +111,35 @@ struct Args {
     trace_write_drain_interval_ms: u64,
     #[arg(long, env = "BEATER_TRACE_WRITE_MAX_ATTEMPTS", default_value_t = 3)]
     trace_write_max_attempts: u32,
+    /// Maximum bytes accepted for a single ingest request payload (native or raw).
+    /// Requests larger than this are rejected with 413. Default: 1 MiB.
+    #[arg(
+        long,
+        env = "BEATER_MAX_RAW_PAYLOAD_BYTES",
+        default_value_t = 1024 * 1024
+    )]
+    max_raw_payload_bytes: usize,
+    /// Byte threshold below which an artifact is stored inline in the span record
+    /// rather than as an external artifact reference. Must not exceed
+    /// max_raw_payload_bytes. Default: 16 KiB.
+    #[arg(
+        long,
+        env = "BEATER_INLINE_PAYLOAD_BYTES",
+        default_value_t = 16 * 1024
+    )]
+    inline_payload_bytes: usize,
+    /// Maximum number of attributes accepted per span. Spans with more attributes
+    /// are rejected with 422. Default: 128.
+    #[arg(long, env = "BEATER_MAX_ATTRIBUTES", default_value_t = 128)]
+    max_attributes: usize,
+    /// Seconds of inactivity after the last span end before an open trace is
+    /// classified as idle-complete. Must be positive. Default: 60.
+    #[arg(long, env = "BEATER_TRACE_IDLE_TIMEOUT_SECONDS", default_value_t = 60)]
+    trace_idle_timeout_seconds: i64,
+    /// Seconds after the root span ends during which late-arriving child spans are
+    /// still accepted. Must be positive. Default: 10.
+    #[arg(long, env = "BEATER_TRACE_LATE_WINDOW_SECONDS", default_value_t = 10)]
+    trace_late_window_seconds: i64,
     #[arg(
         long,
         env = "BEATER_TRACE_INGESTED_DRAIN_INTERVAL_MS",
@@ -310,11 +339,32 @@ async fn main() -> anyhow::Result<()> {
         BusBackendArg::Memory => Arc::new(InMemoryBus::new(args.bus_capacity)),
     };
     let ingest_policy = IngestPolicy {
+        max_raw_payload_bytes: args.max_raw_payload_bytes,
+        inline_payload_bytes: args.inline_payload_bytes,
+        max_attributes: args.max_attributes,
         per_project_event_quota: args.per_project_event_quota,
         quota_window_seconds: args.quota_window_seconds,
         trace_write_max_attempts: args.trace_write_max_attempts,
+        trace_completion: TraceCompletionConfig {
+            idle_timeout: chrono::Duration::seconds(args.trace_idle_timeout_seconds),
+            late_window: chrono::Duration::seconds(args.trace_late_window_seconds),
+        },
         ..IngestPolicy::default()
     };
+    ingest_policy.validate().context(
+        "invalid ingest policy; check BEATER_MAX_RAW_PAYLOAD_BYTES, \
+                  BEATER_INLINE_PAYLOAD_BYTES, BEATER_MAX_ATTRIBUTES, \
+                  BEATER_TRACE_IDLE_TIMEOUT_SECONDS, BEATER_TRACE_LATE_WINDOW_SECONDS",
+    )?;
+    eprintln!(
+        "ingest policy: max_raw_payload_bytes={} inline_payload_bytes={} \
+         max_attributes={} trace_idle_timeout_seconds={} trace_late_window_seconds={}",
+        ingest_policy.max_raw_payload_bytes,
+        ingest_policy.inline_payload_bytes,
+        ingest_policy.max_attributes,
+        ingest_policy.trace_completion.idle_timeout.num_seconds(),
+        ingest_policy.trace_completion.late_window.num_seconds(),
+    );
     // Keep a handle to the global, unfiltered bus so the queue-stats sampler can
     // observe DLQ depth/age across ALL tenants (R13.4/R13.6/R13.8), not just the
     // default scope.

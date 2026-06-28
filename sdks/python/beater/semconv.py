@@ -1,9 +1,8 @@
 """Beater semantic conventions.
 
 This is the SINGLE place the Python SDK defines span-kind and attribute keys.
-Every wrapper (`observe`, `wrap_openai`, `wrap_anthropic`, the LangChain and
-LlamaIndex callbacks) imports from here so the instrumentation can never drift
-within the SDK.
+Every wrapper (`observe`, provider wrappers, and framework callbacks) imports
+from here so the instrumentation can never drift within the SDK.
 
 These strings mirror the Rust normalizer in ``crates/beater-otlp`` and the
 canonical kinds in ``crates/beater-schema``. They are part of the cross-language

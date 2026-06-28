@@ -72,3 +72,21 @@ upstream, but tell us so we can pin/patch).
   encrypted with a key you control rather than an on-disk generated key.
 - Keep the dashboard and OTLP ports off the public internet unless fronted by
   your own auth/proxy.
+
+## Data lifecycle and access-control scope
+
+Treat trace payloads, artifacts, cassettes, provider credentials, and PII unmask
+events as security-sensitive even in OSS self-host installs. Beater's
+architecture requires scoped keys, audited sensitive-data access, retention,
+crypto-shred, artifact encryption, and regional pinning (§1 #4, §14, §20.7).
+
+Current policy expectations:
+
+- Do not rely on `--auth-mode local` outside isolated development.
+- Rotate API keys and provider-secret keys when access changes or a key may have
+  been exposed.
+- Report any bypass of tenant/project/environment isolation, PII-unmask audit,
+  provider-secret encryption, or webhook signature verification as in scope.
+- Treat deletion, crypto-shred, tamper-evident audit, and hosted regional
+  residency gaps as planned controls until their architecture rows are built and
+  verified; do not claim compliance based on `SECURITY.md` alone.

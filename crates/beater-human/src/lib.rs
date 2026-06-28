@@ -452,18 +452,24 @@ impl HumanReviewStore for SqliteHumanReviewStore {
         request: SubmitAnnotationRequest,
     ) -> StoreResult<ReviewAnnotation> {
         let now = Utc::now();
-        let mut task = self
-            .get_task(
-                request.tenant_id.clone(),
-                request.project_id.clone(),
-                request.queue_id.clone(),
-                request.task_id.clone(),
-            )
-            .await?;
         let annotation_id = match request.annotation_id {
             Some(annotation_id) => annotation_id,
             None => AnnotationId::new(Uuid::new_v4().to_string()).map_err(StoreError::backend)?,
         };
+        let mut connection = self.lock().into_store()?;
+        let transaction = connection
+            .transaction()
+            .context("begin review annotation transaction")
+            .into_store()?;
+        let mut task = get_task_locked(
+            &transaction,
+            &request.tenant_id,
+            &request.project_id,
+            &request.queue_id,
+            &request.task_id,
+        )
+        .context("load review task for annotation")
+        .into_store()?;
         let annotation = ReviewAnnotation {
             tenant_id: request.tenant_id,
             project_id: request.project_id,
@@ -483,8 +489,7 @@ impl HumanReviewStore for SqliteHumanReviewStore {
         let annotation_json = serde_json::to_string(&annotation)
             .context("serialize review annotation")
             .into_store()?;
-        let connection = self.lock().into_store()?;
-        connection
+        transaction
             .execute(
                 r#"
                 INSERT INTO review_annotations
@@ -506,7 +511,7 @@ impl HumanReviewStore for SqliteHumanReviewStore {
             )
             .context("insert review annotation")
             .into_store()?;
-        connection
+        transaction
             .execute(
                 r#"
                 UPDATE review_tasks
@@ -524,6 +529,10 @@ impl HumanReviewStore for SqliteHumanReviewStore {
                 ],
             )
             .context("mark review task submitted")
+            .into_store()?;
+        transaction
+            .commit()
+            .context("commit review annotation transaction")
             .into_store()?;
         Ok(annotation)
     }
@@ -794,6 +803,90 @@ mod tests {
             .await?;
         assert_eq!(submitted.state, ReviewTaskState::Submitted);
         assert_eq!(annotation.verdict, ReviewVerdict::Fail);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn submit_annotation_rolls_back_when_task_update_fails() -> anyhow::Result<()> {
+        let store = SqliteHumanReviewStore::in_memory()?;
+        let tenant = TenantId::new("tenant")?;
+        let project = ProjectId::new("project")?;
+        let queue = store
+            .create_queue(CreateReviewQueueRequest {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                queue_id: Some(ReviewQueueId::new("quality")?),
+                name: "quality".to_string(),
+                annotation_schema: json!({"type":"object"}),
+            })
+            .await?;
+        let task = store
+            .enqueue_task(EnqueueReviewTaskRequest {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                queue_id: queue.queue_id.clone(),
+                task_id: Some(ReviewTaskId::new("task-1")?),
+                trace_id: TraceId::new("trace-1")?,
+                span_id: Some(SpanId::new("span-1")?),
+                dataset_id: None,
+                dataset_case_id: None,
+                priority: 10,
+            })
+            .await?;
+
+        {
+            let connection = store.lock()?;
+            connection.execute_batch(
+                r#"
+                CREATE TEMP TRIGGER fail_review_task_submit
+                BEFORE UPDATE OF state ON review_tasks
+                WHEN NEW.state = 'submitted'
+                BEGIN
+                    SELECT RAISE(FAIL, 'forced review task update failure');
+                END;
+                "#,
+            )?;
+        }
+
+        let annotation_id = AnnotationId::new("annotation-1")?;
+        let error = store
+            .submit_annotation(SubmitAnnotationRequest {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                queue_id: queue.queue_id.clone(),
+                task_id: task.task_id.clone(),
+                annotation_id: Some(annotation_id),
+                reviewer_id: "reviewer-a".to_string(),
+                verdict: ReviewVerdict::Fail,
+                payload: json!({"reference": "expected answer", "notes": "wrong answer"}),
+            })
+            .await
+            .err()
+            .unwrap_or_else(|| panic!("forced task update failure should abort submit"));
+        assert!(
+            format!("{error:?}").contains("mark review task submitted"),
+            "unexpected error: {error:?}"
+        );
+
+        {
+            let connection = store.lock()?;
+            connection.execute_batch("DROP TRIGGER fail_review_task_submit;")?;
+        }
+
+        let annotations = store
+            .list_annotations(
+                tenant.clone(),
+                project.clone(),
+                queue.queue_id.clone(),
+                task.task_id.clone(),
+            )
+            .await?;
+        assert!(annotations.is_empty());
+
+        let task = store
+            .get_task(tenant, project, queue.queue_id, task.task_id)
+            .await?;
+        assert_eq!(task.state, ReviewTaskState::Open);
         Ok(())
     }
 

@@ -1,5 +1,7 @@
 use async_trait::async_trait;
-use beater_core::{IdempotencyKey, Page, PageRequest, ProjectId, TenantId, Timestamp, TraceId};
+use beater_core::{
+    IdempotencyKey, Page, PageRequest, ProjectId, SpanId, TenantId, Timestamp, TraceId,
+};
 use beater_schema::{
     span_matches, span_summary, CanonicalSpan, CanonicalTraceBatch, RawEnvelope, RunFilter,
     RunSummary, SpanFilter, SpanSummary, TraceView, WriteAck,
@@ -9,7 +11,10 @@ use beater_store::{
     OrganizationMetadata, ProjectMetadata, QuotaDecision, QuotaLimiter, QuotaReservationRequest,
     RoleBinding, StoreError, StoreResult, TraceStore,
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    sync::{Arc, Mutex},
+};
 
 #[derive(Clone, Default)]
 pub struct InMemoryTraceStore {
@@ -49,8 +54,53 @@ struct InMemoryMetadataState {
 
 #[derive(Clone, Default)]
 struct InMemoryTraceState {
-    raw_envelopes: Vec<RawEnvelope>,
-    spans: Vec<CanonicalSpan>,
+    raw_envelopes: HashMap<RawEnvelopeKey, RawEnvelope>,
+    spans: HashMap<SpanDedupKey, CanonicalSpan>,
+    span_order: Vec<SpanDedupKey>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+struct RawEnvelopeKey {
+    tenant_id: TenantId,
+    project_id: ProjectId,
+    idempotency_key: IdempotencyKey,
+}
+
+impl From<&RawEnvelope> for RawEnvelopeKey {
+    fn from(raw: &RawEnvelope) -> Self {
+        Self {
+            tenant_id: raw.tenant_id.clone(),
+            project_id: raw.project_id.clone(),
+            idempotency_key: raw.idempotency_key.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+struct SpanDedupKey {
+    tenant_id: TenantId,
+    project_id: ProjectId,
+    trace_id: TraceId,
+    span_id: SpanId,
+    seq: u64,
+}
+
+impl From<&CanonicalSpan> for SpanDedupKey {
+    fn from(span: &CanonicalSpan) -> Self {
+        Self {
+            tenant_id: span.tenant_id.clone(),
+            project_id: span.project_id.clone(),
+            trace_id: span.trace_id.clone(),
+            span_id: span.span_id.clone(),
+            seq: span.seq,
+        }
+    }
+}
+
+impl InMemoryTraceState {
+    fn spans_in_insert_order(&self) -> impl Iterator<Item = &CanonicalSpan> {
+        self.span_order.iter().filter_map(|key| self.spans.get(key))
+    }
 }
 
 impl InMemoryTraceStore {
@@ -90,34 +140,31 @@ impl TraceStore for InMemoryTraceStore {
         let mut accepted_raw = 0;
         let mut duplicate_raw = 0;
         for raw in batch.raw_envelopes {
-            let exists = state.raw_envelopes.iter().any(|existing| {
-                existing.tenant_id == raw.tenant_id
-                    && existing.project_id == raw.project_id
-                    && existing.idempotency_key == raw.idempotency_key
-            });
-            if exists {
-                duplicate_raw += 1;
-            } else {
-                state.raw_envelopes.push(raw);
+            let key = RawEnvelopeKey::from(&raw);
+            if let Entry::Vacant(entry) = state.raw_envelopes.entry(key) {
+                entry.insert(raw);
                 accepted_raw += 1;
+            } else {
+                duplicate_raw += 1;
             }
         }
 
         let mut accepted_spans = 0;
         let mut duplicate_spans = 0;
         for span in batch.spans {
-            let exists = state.spans.iter().any(|existing| {
-                existing.tenant_id == span.tenant_id
-                    && existing.project_id == span.project_id
-                    && existing.trace_id == span.trace_id
-                    && existing.span_id == span.span_id
-                    && existing.seq == span.seq
-            });
-            if exists {
-                duplicate_spans += 1;
+            let key = SpanDedupKey::from(&span);
+            let inserted_key = if let Entry::Vacant(entry) = state.spans.entry(key) {
+                let key = entry.key().clone();
+                entry.insert(span);
+                Some(key)
             } else {
-                state.spans.push(span);
+                None
+            };
+            if let Some(key) = inserted_key {
+                state.span_order.push(key);
                 accepted_spans += 1;
+            } else {
+                duplicate_spans += 1;
             }
         }
 
@@ -132,8 +179,7 @@ impl TraceStore for InMemoryTraceStore {
     async fn get_trace(&self, tenant: TenantId, trace: TraceId) -> StoreResult<TraceView> {
         let state = self.lock()?;
         let mut spans = state
-            .spans
-            .iter()
+            .spans_in_insert_order()
             .filter(|span| span.tenant_id == tenant && span.trace_id == trace)
             .cloned()
             .collect::<Vec<_>>();
@@ -153,8 +199,7 @@ impl TraceStore for InMemoryTraceStore {
     ) -> StoreResult<TraceView> {
         let state = self.lock()?;
         let mut spans = state
-            .spans
-            .iter()
+            .spans_in_insert_order()
             .filter(|span| {
                 span.tenant_id == tenant && span.project_id == project && span.trace_id == trace
             })
@@ -175,15 +220,12 @@ impl TraceStore for InMemoryTraceStore {
         idempotency_key: IdempotencyKey,
     ) -> StoreResult<Option<RawEnvelope>> {
         let state = self.lock()?;
-        Ok(state
-            .raw_envelopes
-            .iter()
-            .find(|raw| {
-                raw.tenant_id == tenant
-                    && raw.project_id == project
-                    && raw.idempotency_key == idempotency_key
-            })
-            .cloned())
+        let key = RawEnvelopeKey {
+            tenant_id: tenant,
+            project_id: project,
+            idempotency_key,
+        };
+        Ok(state.raw_envelopes.get(&key).cloned())
     }
 
     async fn query_runs(
@@ -203,8 +245,7 @@ impl TraceStore for InMemoryTraceStore {
     ) -> StoreResult<Page<SpanSummary>> {
         let state = self.lock()?;
         let mut spans = state
-            .spans
-            .iter()
+            .spans_in_insert_order()
             .filter(|span| span.tenant_id == tenant && span_matches(span, &filter))
             .cloned()
             .map(span_summary)

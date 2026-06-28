@@ -9,6 +9,19 @@ marked **GAP** and linked to the source security review.
 
 ---
 
+## Architecture contract map
+
+This catalog tracks regression coverage for security invariants already called
+out in `ARCHITECTURE.md`. It does not change any Covered/GAP status below.
+
+| Catalog area | Architecture contract | Notes |
+|---|---|---|
+| AuthZ / RBAC scope escalation | §20.7 #5.2 enforced RBAC; A20 tenant isolation | A non-owner must be denied mutating routes; scoped keys are not a substitute for enforced role resolution. |
+| Tenant cross-talk / IDOR | §20.7 #5.4 storage-layer tenant isolation; A20 tenant isolation | App-layer scoping is built today; DB-layer RLS is still planned, so API and store tests both matter. |
+| API-key leakage / scope and secret storage | §14 security; §20.7 #5.7 tamper-evident audit; §20.7 #5.12 BYOK/key rotation | Key material must stay scoped, rotatable, encrypted, and auditable across API responses and storage. |
+| PII redaction | §14 redaction and audited PII access | `pii_unmask` must remain separate from ordinary trace reads, and sensitive-data access must emit audit evidence. |
+| Data deletion / crypto-shred | §20.7 #5.5 crypto-shred | Unreadable-after-delete is planned contract work; fixture gaps should not be marked Covered until a deletion path exists. |
+
 ## Catalog
 
 ### AuthN bypass

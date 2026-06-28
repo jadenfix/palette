@@ -227,6 +227,8 @@
 | `SECURITY.md` | §20.7 #5.11 | built | **Built** — `SECURITY.md` present | |
 | `GOVERNANCE.md` | §20.7 #5.11 | built | **Built** — `GOVERNANCE.md` present | |
 | `CONTRIBUTING.md` | §20.7 #5.11 | built | **Built** — `CONTRIBUTING.md` present | |
+| Security review snapshot | §20.1, §20.7 | built evidence | **Built** — `docs/security-review-2026-06-24.md` present | Historical audit snapshot; does not by itself close planned hosted-control-plane gaps |
+| Security regression fixture catalog | §20.7 #5.2/#5.4/#5.5, A20 | built evidence | **Built** — `docs/security-regression-fixtures.md` present | Tracks Covered/GAP rows for security regressions; gaps remain planned until code/tests land |
 | Compliance docs (SOC 2, HIPAA, etc.) | §20.7 | planned | **Planned** | ARCH notes as planned alongside the governance docs |
 | Backups / restore drill | §20.7 #5.9 | planned | **Planned** | No CI restore-drill job found |
 

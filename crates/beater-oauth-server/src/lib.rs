@@ -32,8 +32,8 @@ use beater_core::{
     ApiKeyId, EnvironmentId, OrganizationId, ProjectId, TenantId, TenantScope, UserId,
 };
 use beater_oauth::{
-    AuthorizationGrant, ClientAuthMethod, ClientRegistration, GrantType, IssuedTokens, OAuthError,
-    OAuthStore,
+    validate_redirect_uri, AuthorizationGrant, ClientAuthMethod, ClientRegistration, GrantType,
+    IssuedTokens, OAuthError, OAuthStore,
 };
 use beater_security::ApiScope;
 use chrono::Utc;
@@ -547,6 +547,9 @@ async fn authorize(
             Some("redirect_uri not registered"),
         );
     }
+    if let Err(err) = validate_redirect_uri(&params.redirect_uri) {
+        return oauth_error_from(err);
+    }
 
     // From here, recoverable errors are returned to the client via redirect.
     if params.response_type != "code" {
@@ -916,7 +919,7 @@ mod tests {
     use axum::body::Body;
     use axum::http::Request;
     use beater_accounts::SqliteAccountStore;
-    use beater_oauth::SqliteOAuthStore;
+    use beater_oauth::{OAuthClient, SqliteOAuthStore};
     use http::header::LOCATION;
     use http::header::SET_COOKIE;
     use tower::ServiceExt;
@@ -1251,6 +1254,81 @@ mod tests {
         let body = body_json(resp).await;
         assert_eq!(body["error"], "invalid_scope");
         assert_eq!(body["error_description"], "traces:delete");
+    }
+
+    #[tokio::test]
+    async fn register_rejects_unsafe_redirect_uris() {
+        let app = router(test_state());
+        let cases = [
+            "",
+            "not a uri",
+            "https://app.example.test/cb#fragment",
+            "http://app.example.test/cb",
+            "ftp://app.example.test/cb",
+        ];
+
+        for redirect_uri in cases {
+            let resp = post_json(
+                &app,
+                "/oauth/register",
+                json!({
+                    "client_name": "mcp",
+                    "redirect_uris": [redirect_uri],
+                    "token_endpoint_auth_method": "none",
+                    "scope": "traces:read"
+                }),
+                None,
+            )
+            .await;
+            assert_eq!(
+                resp.status(),
+                StatusCode::BAD_REQUEST,
+                "expected {redirect_uri:?} to be rejected"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn authorize_rejects_unsafe_registered_redirect_uri_without_redirecting() {
+        let state = test_state();
+        let now = Utc::now();
+        let client_id = ok(beater_core::OAuthClientId::new("unsafe-client"));
+        ok(state
+            .oauth
+            .put_client(OAuthClient {
+                client_id: client_id.clone(),
+                client_secret_hash: None,
+                client_name: "legacy-client".to_string(),
+                redirect_uris: vec!["http://app.example.test/cb".to_string()],
+                grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
+                scopes: BTreeSet::from(["traces:read".to_string()]),
+                token_endpoint_auth_method: ClientAuthMethod::None,
+                created_at: now,
+            })
+            .await);
+
+        let app = router(state);
+        let uri = format!(
+            "/oauth/authorize?response_type=token&client_id={client_id}&redirect_uri={}&tenant_id=demo&project_id=demo&environment_id=local&code_challenge={}&code_challenge_method=S256",
+            utf8_percent_encode("http://app.example.test/cb", NON_ALPHANUMERIC),
+            challenge()
+        );
+        let resp = ok(app
+            .oneshot(
+                Request::builder()
+                    .uri(uri)
+                    .body(Body::empty())
+                    .unwrap_or_else(|e| panic!("{e}")),
+            )
+            .await);
+
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert!(
+            resp.headers().get(LOCATION).is_none(),
+            "must not redirect to an unsafe registered URI"
+        );
+        let body = body_json(resp).await;
+        assert_eq!(body["error"], "invalid_request");
     }
 
     #[tokio::test]

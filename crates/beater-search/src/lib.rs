@@ -548,6 +548,9 @@ fn output_body_text(span: &CanonicalSpan) -> String {
 }
 
 fn error_text(span: &CanonicalSpan) -> String {
+    if !error_body_indexable(span) {
+        return String::new();
+    }
     canonical_body_text(span, ERROR_BODY_ATTRS)
 }
 
@@ -576,8 +579,12 @@ fn output_body_indexable(span: &CanonicalSpan) -> bool {
     body_indexable(span, span.output_ref.as_ref())
 }
 
-fn body_indexable(span: &CanonicalSpan, body_ref: Option<&beater_schema::ArtifactRef>) -> bool {
+fn error_body_indexable(span: &CanonicalSpan) -> bool {
     !is_sensitive_redaction(&span.raw_ref.redaction_class)
+}
+
+fn body_indexable(span: &CanonicalSpan, body_ref: Option<&beater_schema::ArtifactRef>) -> bool {
+    error_body_indexable(span)
         && !body_ref
             .is_some_and(|artifact_ref| is_sensitive_redaction(&artifact_ref.redaction_class))
 }
@@ -596,8 +603,12 @@ fn body_attr_value_indexable(span: &CanonicalSpan, key: &str) -> bool {
     let output_body_attr = OUTPUT_BODY_ATTRS
         .iter()
         .any(|candidate| attr_matches(key, candidate));
+    let error_body_attr = ERROR_BODY_ATTRS
+        .iter()
+        .any(|candidate| attr_matches(key, candidate));
     (!input_body_attr || input_body_indexable(span))
         && (!output_body_attr || output_body_indexable(span))
+        && (!error_body_attr || error_body_indexable(span))
 }
 
 fn searchable_text(span: &CanonicalSpan) -> String {
@@ -1061,6 +1072,10 @@ mod tests {
         );
         span.attributes
             .insert("gen_ai.completion".to_string(), json!("secretoutputquake"));
+        span.attributes.insert(
+            "exception.message".to_string(),
+            json!("secreterrorquake gateway timeout"),
+        );
 
         index
             .index_spans(&[span])
@@ -1085,6 +1100,15 @@ mod tests {
             })
             .await
             .unwrap_or_else(|err| panic!("{err}"));
+        let error = index
+            .search(SearchRequest {
+                tenant_id: tenant.clone(),
+                text: "secreterrorquake".to_string(),
+                limit: Some(10),
+                ..SearchRequest::default_for_tenant(tenant.clone())
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
         let metadata = index
             .search(SearchRequest {
                 tenant_id: tenant.clone(),
@@ -1097,8 +1121,26 @@ mod tests {
 
         assert!(input.hits.is_empty());
         assert!(output.hits.is_empty());
+        assert!(error.hits.is_empty());
         assert_eq!(metadata.hits.len(), 1);
         assert_eq!(metadata.hits[0].trace_id, "redacted-trace");
+    }
+
+    #[test]
+    fn body_text_extractors_skip_sensitive_raw_ref_for_all_payload_attrs() {
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let mut span = fixture_span(&tenant, "trace", "span", "chat completion", SpanStatus::Ok);
+        span.raw_ref.redaction_class = RedactionClass::Sensitive;
+        span.attributes = BTreeMap::from([
+            ("input.value".to_string(), json!("inline prompt body")),
+            ("output.value".to_string(), json!("inline output body")),
+            ("exception.message".to_string(), json!("inline error body")),
+        ]);
+
+        assert_eq!(input_body_text(&span), "");
+        assert_eq!(output_body_text(&span), "");
+        assert_eq!(error_text(&span), "");
+        assert!(!body_attr_value_indexable(&span, "exception.message"));
     }
 
     #[test]

@@ -3587,19 +3587,45 @@ fn redact_trace_view(mut trace: TraceView) -> TraceView {
         span.input_ref = span.input_ref.as_ref().map(redact_artifact_ref);
         span.output_ref = span.output_ref.as_ref().map(redact_artifact_ref);
         if span_sensitive {
-            redact_payload_attribute(&mut span.attributes, "input.value");
-            redact_payload_attribute(&mut span.attributes, "output.value");
+            redact_sensitive_span_attributes(span);
         }
     }
     trace
 }
 
-fn redact_payload_attribute(
-    attributes: &mut std::collections::BTreeMap<String, serde_json::Value>,
-    key: &str,
-) {
-    if let Some(value) = attributes.get_mut(key) {
+fn redact_sensitive_span_attributes(span: &mut CanonicalSpan) {
+    for (key, value) in &mut span.attributes {
+        if sensitive_read_safe_attribute(key) {
+            continue;
+        }
         *value = serde_json::json!("[redacted]");
+    }
+    redact_json_values(&mut span.unmapped_attrs);
+}
+
+fn sensitive_read_safe_attribute(key: &str) -> bool {
+    matches!(
+        key,
+        "agent.release_id" | "beater.release_id" | "deployment.release_id" | "release_id"
+    )
+}
+
+fn redact_json_values(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(map) => {
+            for child in map.values_mut() {
+                redact_json_values(child);
+            }
+        }
+        serde_json::Value::Array(values) => {
+            for child in values {
+                redact_json_values(child);
+            }
+        }
+        serde_json::Value::Null => {}
+        scalar => {
+            *scalar = serde_json::json!("[redacted]");
+        }
     }
 }
 
@@ -4465,5 +4491,194 @@ mod tests {
         AnyValue {
             value: Some(any_value::Value::StringValue(value.to_string())),
         }
+    }
+
+    fn redaction_fixture_artifact(redaction_class: RedactionClass) -> ArtifactRef {
+        ArtifactRef {
+            artifact_id: ArtifactId::new("artifact").unwrap_or_else(|err| panic!("{err}")),
+            uri: "artifact://raw".to_string(),
+            sha256: Sha256Hash::new("test-sha").unwrap_or_else(|err| panic!("{err}")),
+            size_bytes: 42,
+            mime_type: "application/json".to_string(),
+            redaction_class,
+        }
+    }
+
+    fn redaction_fixture_span(
+        redaction_class: RedactionClass,
+        attributes: BTreeMap<String, serde_json::Value>,
+        unmapped_attrs: serde_json::Value,
+    ) -> CanonicalSpan {
+        CanonicalSpan {
+            schema_version: 1,
+            normalizer_version: "test".to_string(),
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            environment_id: EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            trace_id: TraceId::new("trace").unwrap_or_else(|err| panic!("{err}")),
+            span_id: SpanId::new("span").unwrap_or_else(|err| panic!("{err}")),
+            parent_span_id: None,
+            seq: 1,
+            kind: AgentSpanKind::AgentRun,
+            name: "span".to_string(),
+            status: SpanStatus::Ok,
+            start_time: Utc::now(),
+            end_time: None,
+            model: None,
+            cost: None,
+            tokens: None,
+            input_ref: None,
+            output_ref: None,
+            attributes,
+            unmapped_attrs,
+            raw_ref: redaction_fixture_artifact(redaction_class),
+        }
+    }
+
+    fn leaky_sensitive_attributes() -> BTreeMap<String, serde_json::Value> {
+        BTreeMap::from([
+            ("input.value".to_string(), json!("question")),
+            ("output.value".to_string(), json!("answer")),
+            (
+                "http.request.header.x-auth-token".to_string(),
+                json!("Bearer super-secret"),
+            ),
+            ("agent.release_id".to_string(), json!("compose-demo")),
+            (
+                "db.statement".to_string(),
+                json!("SELECT * FROM users WHERE password = 'hunter2'"),
+            ),
+            ("api_key".to_string(), json!("sk-live-abc123")),
+            ("gen_ai.prompt.0.content".to_string(), json!("raw prompt")),
+        ])
+    }
+
+    #[test]
+    fn redact_trace_view_redacts_sensitive_attribute_values_and_provenance() {
+        let span = redaction_fixture_span(
+            RedactionClass::Sensitive,
+            leaky_sensitive_attributes(),
+            json!({
+                "dropped_attributes": {
+                    "unlisted.secret": "allow-list miss leaked before #314"
+                },
+                "unmapped": {
+                    "custom.token": "leak-me",
+                    "nested": { "token": "nested-leak" },
+                    "array": ["array-leak"]
+                }
+            }),
+        );
+        let trace = TraceView {
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            trace_id: TraceId::new("trace").unwrap_or_else(|err| panic!("{err}")),
+            spans: vec![span],
+        };
+
+        let redacted = redact_trace_view(trace);
+        let span = &redacted.spans[0];
+        for key in [
+            "input.value",
+            "output.value",
+            "http.request.header.x-auth-token",
+            "db.statement",
+            "api_key",
+            "gen_ai.prompt.0.content",
+        ] {
+            assert_eq!(
+                span.attributes[key],
+                json!("[redacted]"),
+                "{key} value must be redacted on sensitive reads"
+            );
+        }
+        assert_eq!(span.attributes["agent.release_id"], json!("compose-demo"));
+
+        let redacted_text = serde_json::to_string(span).unwrap_or_else(|err| panic!("{err}"));
+        for secret in [
+            "question",
+            "answer",
+            "super-secret",
+            "hunter2",
+            "sk-live-abc123",
+            "raw prompt",
+            "allow-list miss leaked before #314",
+            "leak-me",
+            "nested-leak",
+            "array-leak",
+        ] {
+            assert!(
+                !redacted_text.contains(secret),
+                "redacted sensitive read leaked {secret}"
+            );
+        }
+        assert_eq!(span.raw_ref.uri, "artifact://redacted");
+        assert_eq!(
+            span.unmapped_attrs["dropped_attributes"]["unlisted.secret"],
+            json!("[redacted]")
+        );
+        assert_eq!(
+            span.unmapped_attrs["unmapped"]["custom.token"],
+            json!("[redacted]")
+        );
+        assert_eq!(
+            span.unmapped_attrs["unmapped"]["nested"]["token"],
+            json!("[redacted]")
+        );
+        assert_eq!(
+            span.unmapped_attrs["unmapped"]["array"][0],
+            json!("[redacted]")
+        );
+    }
+
+    #[test]
+    fn redact_trace_view_redacts_secret_spans_like_sensitive_spans() {
+        let span = redaction_fixture_span(
+            RedactionClass::Secret,
+            leaky_sensitive_attributes(),
+            json!({ "unmapped": { "custom.token": "leak-me" } }),
+        );
+        let trace = TraceView {
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            trace_id: TraceId::new("trace").unwrap_or_else(|err| panic!("{err}")),
+            spans: vec![span],
+        };
+
+        let redacted = redact_trace_view(trace);
+        assert_eq!(
+            redacted.spans[0].attributes["agent.release_id"],
+            json!("compose-demo")
+        );
+        assert_eq!(redacted.spans[0].attributes["api_key"], json!("[redacted]"));
+        assert_eq!(
+            redacted.spans[0].unmapped_attrs["unmapped"]["custom.token"],
+            json!("[redacted]")
+        );
+    }
+
+    #[test]
+    fn redact_trace_view_leaves_internal_spans_readable() {
+        let unmapped = json!({ "unmapped": { "custom.flag": true } });
+        let span = redaction_fixture_span(
+            RedactionClass::Internal,
+            leaky_sensitive_attributes(),
+            unmapped.clone(),
+        );
+        let trace = TraceView {
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            trace_id: TraceId::new("trace").unwrap_or_else(|err| panic!("{err}")),
+            spans: vec![span],
+        };
+
+        let redacted = redact_trace_view(trace);
+        let attributes = &redacted.spans[0].attributes;
+        assert_eq!(attributes["input.value"], json!("question"));
+        assert_eq!(
+            attributes["http.request.header.x-auth-token"],
+            json!("Bearer super-secret")
+        );
+        assert_eq!(attributes["agent.release_id"], json!("compose-demo"));
+        assert_eq!(attributes["api_key"], json!("sk-live-abc123"));
+        assert_eq!(redacted.spans[0].unmapped_attrs, unmapped);
+        assert_eq!(redacted.spans[0].raw_ref.uri, "artifact://raw");
     }
 }
