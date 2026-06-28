@@ -1211,6 +1211,21 @@ async fn main() -> anyhow::Result<()> {
                 )?)
                 .await
                 .context("store latest failing gate fixture experiment")?;
+            let explicit_inconclusive = experiments
+                .write_run(gate_fixture_experiment(
+                    &tenant,
+                    &project,
+                    GateFixtureExperimentSpec {
+                        experiment_run_id: "gate-explicit-inconclusive",
+                        dataset: &dataset,
+                        evaluator: &evaluator,
+                        decision: GateDecision::Inconclusive,
+                        delta: 0.0,
+                        created_at: "2026-06-19T10:30:00Z",
+                    },
+                )?)
+                .await
+                .context("store explicit inconclusive gate fixture experiment")?;
             let report = run_gate(
                 &gates,
                 &experiments,
@@ -1227,6 +1242,7 @@ async fn main() -> anyhow::Result<()> {
                     "gate": gate,
                     "older_experiment_run_id": older_pass.experiment_run_id,
                     "latest_experiment_run_id": latest_fail.experiment_run_id,
+                    "inconclusive_experiment_run_id": explicit_inconclusive.experiment_run_id,
                     "gate_run": report
                 }))?
             );
