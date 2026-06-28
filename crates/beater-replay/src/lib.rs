@@ -3,9 +3,9 @@ pub mod reproject;
 use anyhow::{anyhow, Context};
 use beater_core::{sha256_json_hash, ProjectId, Sha256Hash, SpanId, TenantId, Timestamp, TraceId};
 use beater_schema::{CanonicalSpan, ReplayCassette, SpanStatus};
-use beater_store::{IntoStoreResult, StoreResult};
+use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
@@ -177,7 +177,7 @@ impl SqliteReplayStore {
             .context("serialize replay event")
             .into_store()?;
         let connection = self.lock().into_store()?;
-        connection
+        let changed = connection
             .execute(
                 r#"
                 INSERT OR IGNORE INTO replay_events
@@ -199,7 +199,29 @@ impl SqliteReplayStore {
             )
             .context("insert replay event")
             .into_store()?;
-        Ok(event)
+        if changed == 1 {
+            return Ok(event);
+        }
+
+        let stored = Self::select_event(
+            &connection,
+            &event.tenant_id,
+            &event.project_id,
+            &event.trace_id,
+            event.seq,
+            &event.kind,
+            &event.request_hash,
+        )?
+        .ok_or_else(|| StoreError::backend("replay event insert ignored but no row exists"))?;
+        if stored.response_hash != event.response_hash {
+            return Err(StoreError::Conflict(format!(
+                "conflicting replay event seq={} kind={} request_hash={}",
+                event.seq,
+                event.kind.as_str(),
+                event.request_hash.as_str()
+            )));
+        }
+        Ok(stored)
     }
 
     pub async fn list_events(
@@ -237,6 +259,46 @@ impl SqliteReplayStore {
             );
         }
         Ok(events)
+    }
+
+    fn select_event(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        trace_id: &TraceId,
+        seq: u64,
+        kind: &ReplayEventKind,
+        request_hash: &Sha256Hash,
+    ) -> StoreResult<Option<ReplayEvent>> {
+        let event_json = connection
+            .query_row(
+                r#"
+                SELECT event_json
+                FROM replay_events
+                WHERE tenant_id = ?1
+                  AND project_id = ?2
+                  AND trace_id = ?3
+                  AND seq = ?4
+                  AND kind = ?5
+                  AND request_hash = ?6
+                "#,
+                params![
+                    tenant_id.as_str(),
+                    project_id.as_str(),
+                    trace_id.as_str(),
+                    seq as i64,
+                    kind.as_str(),
+                    request_hash.as_str(),
+                ],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .context("select replay event")
+            .into_store()?;
+        event_json
+            .map(|json| serde_json::from_str::<ReplayEvent>(&json).context("decode replay event"))
+            .transpose()
+            .into_store()
     }
 }
 
@@ -303,7 +365,7 @@ pub fn execute_replay(
         .map(|seq| SpanId::new(format!("fork-after-seq-{seq}")))
         .transpose()?;
     let plan = plan_replay(cassette, fork_after);
-    let by_key = event_index(events);
+    let by_key = event_index(events)?;
     let mut replayed_steps = Vec::new();
     let mut live_steps_required = Vec::new();
 
@@ -386,16 +448,24 @@ pub fn cassette_from_events(
     }
 }
 
-fn event_index(events: &[ReplayEvent]) -> BTreeMap<String, ReplayEvent> {
-    events
-        .iter()
-        .map(|event| {
-            (
-                event_key(event.seq, &event.kind, &event.request_hash),
-                event.clone(),
-            )
-        })
-        .collect()
+fn event_index(events: &[ReplayEvent]) -> anyhow::Result<BTreeMap<String, ReplayEvent>> {
+    let mut by_key: BTreeMap<String, ReplayEvent> = BTreeMap::new();
+    for event in events {
+        let key = event_key(event.seq, &event.kind, &event.request_hash);
+        if let Some(existing) = by_key.get(&key) {
+            if existing.response_hash != event.response_hash {
+                return Err(anyhow!(
+                    "conflicting replay event seq={} kind={} request_hash={}",
+                    event.seq,
+                    event.kind.as_str(),
+                    event.request_hash.as_str()
+                ));
+            }
+            continue;
+        }
+        by_key.insert(key, event.clone());
+    }
+    Ok(by_key)
 }
 
 fn event_key(seq: u64, kind: &ReplayEventKind, request_hash: &Sha256Hash) -> String {
@@ -872,6 +942,45 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn sqlite_replay_store_rejects_conflicting_cassette_event() {
+        let store = SqliteReplayStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let trace = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
+        let event = fixture_event(
+            &tenant,
+            &project,
+            &trace,
+            1,
+            ReplayEventKind::Provider,
+            "provider",
+        );
+        store
+            .put_event(event.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let conflict = ReplayEvent::new(
+            tenant,
+            project,
+            trace,
+            event.seq,
+            event.kind.clone(),
+            event.request.clone(),
+            json!({"provider": "different"}),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        let error = store
+            .put_event(conflict)
+            .await
+            .err()
+            .unwrap_or_else(|| panic!("conflicting replay event should be rejected"));
+        assert!(
+            matches!(error, StoreError::Conflict(message) if message.contains("conflicting replay event"))
+        );
+    }
+
+    #[tokio::test]
     async fn sqlite_replay_store_scopes_events_by_tenant_project_and_trace() {
         let store = SqliteReplayStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
         let tenant = TenantId::new("tenant-a").unwrap_or_else(|err| panic!("{err}"));
@@ -1046,6 +1155,45 @@ mod tests {
         assert!(error
             .to_string()
             .contains("deterministic replay missing event"));
+    }
+
+    #[test]
+    fn deterministic_replay_rejects_conflicting_cassette_entries() {
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let trace = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
+        let events = complete_events(&tenant, &project, &trace);
+        let cassette = cassette_from_events(tenant.clone(), trace.clone(), &events);
+        let first = events[0].clone();
+        let conflict = ReplayEvent::new(
+            tenant.clone(),
+            project.clone(),
+            trace.clone(),
+            first.seq,
+            first.kind.clone(),
+            first.request.clone(),
+            json!({"provider": "different"}),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        let error = execute_replay(
+            &cassette,
+            &[first, conflict],
+            ReplayScenario {
+                tenant_id: tenant,
+                project_id: project,
+                trace_id: trace,
+                steps: vec![ReplayStep {
+                    seq: events[0].seq,
+                    kind: events[0].kind.clone(),
+                    request: events[0].request.clone(),
+                }],
+                fork_after_seq: None,
+            },
+        )
+        .err()
+        .unwrap_or_else(|| panic!("conflicting cassette entries should be rejected"));
+        assert!(error.to_string().contains("conflicting replay event"));
     }
 
     #[test]
