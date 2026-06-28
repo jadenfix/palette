@@ -355,6 +355,39 @@ async fn tools_call_surfaces_http_errors() {
     assert!(rpc["error"].is_object(), "unknown tool is a JSON-RPC error");
 }
 
+#[tokio::test]
+async fn tools_call_rejects_non_scalar_query_param() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+
+    let (status, rpc) = mcp_call(
+        &app,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 10,
+            "method": "tools/call",
+            "params": {
+                "name": "listTraces",
+                "arguments": {
+                    "tenant_id": "tenant-1",
+                    "limit": { "bad": true }
+                }
+            }
+        }),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(rpc["error"]["code"], -32602);
+    let message = rpc["error"]["message"]
+        .as_str()
+        .expect("error message is a string");
+    assert!(
+        message.contains("query parameter limit must be a scalar"),
+        "unexpected error message: {message}"
+    );
+}
+
 /// Acceptance #4: `/mcp` is reachable in the beaterd-style merged app and an
 /// `initialize` POST returns 200.
 #[tokio::test]

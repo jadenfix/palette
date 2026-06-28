@@ -299,6 +299,28 @@ fn webhook_payload(timestamp: i64, body: &[u8]) -> Vec<u8> {
 mod tests {
     use super::*;
 
+    fn tenant_id(value: &str) -> TenantId {
+        TenantId::new(value).unwrap_or_else(|err| panic!("{err}"))
+    }
+
+    fn project_id(value: &str) -> ProjectId {
+        ProjectId::new(value).unwrap_or_else(|err| panic!("{err}"))
+    }
+
+    fn environment_id(value: &str) -> EnvironmentId {
+        EnvironmentId::new(value).unwrap_or_else(|err| panic!("{err}"))
+    }
+
+    fn api_key_with_scopes(scopes: &[ApiScope]) -> CreatedApiKey {
+        create_api_key(
+            tenant_id("tenant"),
+            project_id("project"),
+            environment_id("prod"),
+            scopes.iter().cloned().collect(),
+        )
+        .unwrap_or_else(|err| panic!("{err}"))
+    }
+
     #[test]
     fn api_keys_are_hashed_scoped_and_rotatable() {
         let mut scopes = BTreeSet::new();
@@ -337,6 +359,78 @@ mod tests {
             ),
             Err(SecurityError::MissingScope(scope)) if scope == "pii:unmask"
         ));
+    }
+
+    #[test]
+    fn verify_api_key_rejects_tenant_project_and_environment_mismatches() {
+        let created = api_key_with_scopes(&[ApiScope::TraceWrite]);
+
+        assert!(matches!(
+            verify_api_key(
+                &created.record,
+                &created.secret,
+                &tenant_id("other-tenant"),
+                &project_id("project"),
+                &environment_id("prod"),
+                ApiScope::TraceWrite,
+            ),
+            Err(SecurityError::ScopeMismatch)
+        ));
+        assert!(matches!(
+            verify_api_key(
+                &created.record,
+                &created.secret,
+                &tenant_id("tenant"),
+                &project_id("other-project"),
+                &environment_id("prod"),
+                ApiScope::TraceWrite,
+            ),
+            Err(SecurityError::ScopeMismatch)
+        ));
+        assert!(matches!(
+            verify_api_key(
+                &created.record,
+                &created.secret,
+                &tenant_id("tenant"),
+                &project_id("project"),
+                &environment_id("staging"),
+                ApiScope::TraceWrite,
+            ),
+            Err(SecurityError::ScopeMismatch)
+        ));
+    }
+
+    #[test]
+    fn verify_api_key_rejects_wrong_presented_secret() {
+        let created = api_key_with_scopes(&[ApiScope::TraceWrite]);
+        let other = api_key_with_scopes(&[ApiScope::TraceWrite]);
+
+        assert!(matches!(
+            verify_api_key(
+                &created.record,
+                &other.secret,
+                &tenant_id("tenant"),
+                &project_id("project"),
+                &environment_id("prod"),
+                ApiScope::TraceWrite,
+            ),
+            Err(SecurityError::ApiKeyVerificationFailed)
+        ));
+    }
+
+    #[test]
+    fn verify_api_key_accepts_admin_for_narrower_required_scope() {
+        let created = api_key_with_scopes(&[ApiScope::Admin]);
+
+        verify_api_key(
+            &created.record,
+            &created.secret,
+            &tenant_id("tenant"),
+            &project_id("project"),
+            &environment_id("prod"),
+            ApiScope::PiiUnmask,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
     }
 
     #[test]

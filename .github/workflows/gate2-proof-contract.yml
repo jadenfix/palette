@@ -62,6 +62,9 @@ jobs:
       - name: Gate 0 foundation contract
         run: scripts/check-gate0-foundations.py
 
+      - name: Docs walkthrough references
+        run: scripts/check-docs-walkthrough.sh --dry-run
+
       - name: Gate 2 self-host contract tests
         run: |
           cargo test -p beaterd --test offline_compose

@@ -1113,6 +1113,51 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn session_user_cannot_revoke_api_key_from_another_tenant() {
+        let state = test_state();
+        let api_keys = state
+            .api_keys
+            .as_ref()
+            .unwrap_or_else(|| panic!("missing api key store"))
+            .clone();
+        let foreign_key = ok(api_keys
+            .create_key(CreateApiKeyRequest {
+                tenant_id: ok(TenantId::new("other-user")),
+                project_id: ok(ProjectId::new("default")),
+                environment_id: ok(EnvironmentId::new("default")),
+                scopes: BTreeSet::from([ApiScope::TraceRead]),
+            })
+            .await);
+        let app = router(state);
+
+        let resp = post_json(
+            &app,
+            "/auth/register",
+            json!({"email": "dev@example.test", "password": "supersecret"}),
+            None,
+        )
+        .await;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let cookie = format!("{SESSION_COOKIE}={}", cookie_token(&resp));
+
+        let resp = post_json(
+            &app,
+            "/auth/api-keys/revoke",
+            json!({"api_key_id": foreign_key.record.api_key_id.as_str()}),
+            Some(&cookie),
+        )
+        .await;
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+
+        let loaded = ok(api_keys
+            .get_key(foreign_key.record.api_key_id.clone())
+            .await)
+        .unwrap_or_else(|| panic!("expected foreign key to remain stored"));
+        assert!(loaded.active, "foreign tenant key must not be revoked");
+        assert_eq!(loaded.tenant_id, foreign_key.record.tenant_id);
+    }
+
+    #[tokio::test]
     async fn authorization_server_metadata_advertises_s256_and_endpoints() {
         let app = router(test_state());
         let resp = ok(app

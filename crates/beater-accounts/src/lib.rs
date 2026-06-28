@@ -774,6 +774,25 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn serialized_user_and_session_do_not_leak_secret_hashes() {
+        let store = store();
+        let now = Utc::now();
+        let user = ok(store.register("privacy@example.com", "pw", now).await);
+        let minted = ok(store
+            .start_session(user.user_id.clone(), default_session_ttl(), now)
+            .await);
+
+        let user_json = ok(serde_json::to_string(&user));
+        assert!(!user_json.contains("password_hash"));
+        assert!(!user_json.contains(&user.password_hash));
+
+        let session_json = ok(serde_json::to_string(&minted.session));
+        assert!(!session_json.contains("secret_hash"));
+        assert!(!session_json.contains(&minted.session.secret_hash));
+        assert!(!session_json.contains(&minted.token));
+    }
+
+    #[tokio::test]
     async fn expired_session_is_rejected_and_cleaned() {
         let store = store();
         let now = Utc::now();
@@ -882,5 +901,61 @@ mod tests {
         let memberships = ok(store.list_memberships(&user.user_id).await);
         assert_eq!(memberships.len(), 1);
         assert_eq!(memberships[0].role, OrgRole::Admin);
+    }
+
+    #[tokio::test]
+    async fn org_membership_list_is_user_scoped() {
+        let store = store();
+        let now = Utc::now();
+        let first_user = ok(store.register("first@example.com", "pw", now).await);
+        let second_user = ok(store.register("second@example.com", "pw", now).await);
+        let shared_org = ok(OrganizationId::new("shared-org"));
+        let first_only_org = ok(OrganizationId::new("first-only-org"));
+
+        ok(store
+            .put_membership(OrgMembership {
+                organization_id: shared_org.clone(),
+                user_id: first_user.user_id.clone(),
+                role: OrgRole::Owner,
+                created_at: now,
+            })
+            .await);
+        ok(store
+            .put_membership(OrgMembership {
+                organization_id: first_only_org.clone(),
+                user_id: first_user.user_id.clone(),
+                role: OrgRole::Admin,
+                created_at: now + Duration::seconds(1),
+            })
+            .await);
+        ok(store
+            .put_membership(OrgMembership {
+                organization_id: shared_org.clone(),
+                user_id: second_user.user_id.clone(),
+                role: OrgRole::Member,
+                created_at: now + Duration::seconds(2),
+            })
+            .await);
+
+        let first_memberships = ok(store.list_memberships(&first_user.user_id).await);
+        assert_eq!(first_memberships.len(), 2);
+        assert!(first_memberships
+            .iter()
+            .all(|membership| membership.user_id == first_user.user_id));
+        assert_eq!(first_memberships[0].organization_id, shared_org);
+        assert_eq!(first_memberships[0].role, OrgRole::Owner);
+        assert_eq!(first_memberships[1].organization_id, first_only_org);
+        assert_eq!(first_memberships[1].role, OrgRole::Admin);
+
+        let second_memberships = ok(store.list_memberships(&second_user.user_id).await);
+        assert_eq!(second_memberships.len(), 1);
+        assert_eq!(second_memberships[0].user_id, second_user.user_id);
+        assert_eq!(second_memberships[0].organization_id, shared_org);
+        assert_eq!(second_memberships[0].role, OrgRole::Member);
+
+        assert!(ok(store
+            .get_membership(&first_only_org, &second_user.user_id)
+            .await)
+        .is_none());
     }
 }

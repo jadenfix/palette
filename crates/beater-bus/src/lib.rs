@@ -1586,6 +1586,38 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
     }
 
+    #[tokio::test]
+    async fn in_memory_bus_idempotency_keys_are_partitioned_by_scope() {
+        let bus: std::sync::Arc<dyn DurableBus> = std::sync::Arc::new(InMemoryBus::new(8));
+        assert_idempotency_keys_are_partitioned_by_scope(bus).await;
+    }
+
+    #[tokio::test]
+    async fn sqlite_bus_idempotency_keys_are_partitioned_by_scope() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let path = tempdir.path().join("bus.sqlite");
+        let bus: std::sync::Arc<dyn DurableBus> = std::sync::Arc::new(
+            SqliteDurableBus::open(&path, 8).unwrap_or_else(|err| panic!("{err}")),
+        );
+        assert_idempotency_keys_are_partitioned_by_scope(bus).await;
+    }
+
+    #[tokio::test]
+    async fn in_memory_bus_scoped_kind_consume_only_leases_requested_scope() {
+        let bus: std::sync::Arc<dyn DurableBus> = std::sync::Arc::new(InMemoryBus::new(8));
+        assert_scoped_kind_consume_only_leases_requested_scope(bus).await;
+    }
+
+    #[tokio::test]
+    async fn sqlite_bus_scoped_kind_consume_only_leases_requested_scope() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let path = tempdir.path().join("bus.sqlite");
+        let bus: std::sync::Arc<dyn DurableBus> = std::sync::Arc::new(
+            SqliteDurableBus::open(&path, 8).unwrap_or_else(|err| panic!("{err}")),
+        );
+        assert_scoped_kind_consume_only_leases_requested_scope(bus).await;
+    }
+
     fn fixture_message(kind: &str) -> BusMessage {
         BusMessage::new(
             TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
@@ -1609,6 +1641,152 @@ mod tests {
             kind,
             key.as_bytes().to_vec(),
         )
+    }
+
+    async fn assert_idempotency_keys_are_partitioned_by_scope(bus: std::sync::Arc<dyn DurableBus>) {
+        let tenant_a = TenantId::new("scope-tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_b = TenantId::new("scope-tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let project_a = ProjectId::new("scope-project-a").unwrap_or_else(|err| panic!("{err}"));
+        let project_b = ProjectId::new("scope-project-b").unwrap_or_else(|err| panic!("{err}"));
+        let kind = "scope.idempotent";
+        let key = "shared-idempotency-key";
+
+        let target = scoped_fixture_message(&tenant_a, &project_a, kind, key);
+        let same_scope_duplicate = scoped_fixture_message(&tenant_a, &project_a, kind, key);
+        let other_tenant = scoped_fixture_message(&tenant_b, &project_a, kind, key);
+        let other_project = scoped_fixture_message(&tenant_a, &project_b, kind, key);
+
+        assert_eq!(
+            bus.publish(target.clone()).await,
+            Ok(PublishAck::accepted()),
+            "first scoped publish must be accepted"
+        );
+        assert_eq!(
+            bus.publish(same_scope_duplicate.clone()).await,
+            Ok(PublishAck::duplicate()),
+            "same tenant/project/kind/idempotency key must dedupe while queued"
+        );
+        assert_eq!(
+            bus.publish(other_tenant.clone()).await,
+            Ok(PublishAck::accepted()),
+            "same kind/idempotency key in another tenant must be accepted"
+        );
+        assert_eq!(
+            bus.publish(other_project.clone()).await,
+            Ok(PublishAck::accepted()),
+            "same kind/idempotency key in another project must be accepted"
+        );
+        assert_eq!(
+            bus.depth_for_kind(kind).await,
+            Ok(3),
+            "duplicate publish must not increase active depth"
+        );
+
+        let consumed_target = bus
+            .consume_scoped_kind_batch(&tenant_a, &project_a, kind, 1)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(consumed_target, vec![target]);
+        assert_eq!(
+            bus.publish(same_scope_duplicate).await,
+            Ok(PublishAck::duplicate()),
+            "same tenant/project/kind/idempotency key must dedupe while inflight"
+        );
+
+        bus.ack(consumed_target[0].clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let remaining = bus
+            .consume_kind_batch(kind, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(remaining.len(), 2);
+        assert!(remaining.contains(&other_tenant));
+        assert!(remaining.contains(&other_project));
+        for message in remaining {
+            bus.ack(message).await.unwrap_or_else(|err| panic!("{err}"));
+        }
+        assert_eq!(bus.depth().await, Ok(0));
+    }
+
+    async fn assert_scoped_kind_consume_only_leases_requested_scope(
+        bus: std::sync::Arc<dyn DurableBus>,
+    ) {
+        let tenant_a = TenantId::new("consume-tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_b = TenantId::new("consume-tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let project_a = ProjectId::new("consume-project-a").unwrap_or_else(|err| panic!("{err}"));
+        let project_b = ProjectId::new("consume-project-b").unwrap_or_else(|err| panic!("{err}"));
+        let kind = "scope.consume";
+        let other_kind = "scope.consume.other";
+        let key = "consume-colliding-key";
+
+        let target = scoped_fixture_message(&tenant_a, &project_a, kind, key);
+        let other_tenant = scoped_fixture_message(&tenant_b, &project_a, kind, key);
+        let other_project = scoped_fixture_message(&tenant_a, &project_b, kind, key);
+        let other_kind_same_scope = scoped_fixture_message(&tenant_a, &project_a, other_kind, key);
+
+        for message in [
+            target.clone(),
+            other_tenant.clone(),
+            other_project.clone(),
+            other_kind_same_scope.clone(),
+        ] {
+            assert_eq!(
+                bus.publish(message).await,
+                Ok(PublishAck::accepted()),
+                "colliding messages must publish when scope or kind differs"
+            );
+        }
+
+        let target_batch = bus
+            .consume_scoped_kind_batch(&tenant_a, &project_a, kind, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            target_batch,
+            vec![target],
+            "scoped consume must lease only the requested tenant/project/kind"
+        );
+
+        let other_tenant_batch = bus
+            .consume_scoped_kind_batch(&tenant_b, &project_a, kind, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            other_tenant_batch,
+            vec![other_tenant],
+            "same key/kind in another tenant must remain queued"
+        );
+
+        let other_project_batch = bus
+            .consume_scoped_kind_batch(&tenant_a, &project_b, kind, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            other_project_batch,
+            vec![other_project],
+            "same key/kind in another project must remain queued"
+        );
+
+        let other_kind_batch = bus
+            .consume_scoped_kind_batch(&tenant_a, &project_a, other_kind, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            other_kind_batch,
+            vec![other_kind_same_scope],
+            "same tenant/project/key with another kind must remain queued"
+        );
+
+        for message in target_batch
+            .into_iter()
+            .chain(other_tenant_batch)
+            .chain(other_project_batch)
+            .chain(other_kind_batch)
+        {
+            bus.ack(message).await.unwrap_or_else(|err| panic!("{err}"));
+        }
+        assert_eq!(bus.depth().await, Ok(0));
     }
 
     fn install_abort_trigger(bus: &SqliteDurableBus, trigger_name: &str, table_name: &str) {
