@@ -960,6 +960,239 @@ mod tests {
 
     // ── end query-hardening regression tests ──────────────────────────────────
 
+    // ── H7 cross-tenant DSL field-injection regression tests ──────────────────
+    //
+    // These tests prove that the mandatory `Occur::Must` tenant clause in
+    // `filtered_query` cannot be escaped by anything a caller places in the
+    // free-text query string.  All three variants must return zero hits from
+    // tenant B's documents when the search is executed as tenant A.
+
+    /// Happy path: tenant A can see its own spans, tenant B can see its own.
+    /// This baseline confirms the shared index actually has both tenants' data.
+    #[tokio::test]
+    async fn cross_tenant_baseline_each_tenant_sees_own_data() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant_a = TenantId::new("tenant-alpha").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_b = TenantId::new("tenant-bravo").unwrap_or_else(|err| panic!("{err}"));
+
+        index
+            .index_spans(&[
+                fixture_span(
+                    &tenant_a,
+                    "trace-a",
+                    "span-a",
+                    "alpha secret",
+                    SpanStatus::Ok,
+                ),
+                fixture_span(
+                    &tenant_b,
+                    "trace-b",
+                    "span-b",
+                    "bravo secret",
+                    SpanStatus::Ok,
+                ),
+            ])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let resp_a = index
+            .search(SearchRequest {
+                text: "secret".to_string(),
+                limit: Some(50),
+                ..SearchRequest::default_for_tenant(tenant_a.clone())
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let resp_b = index
+            .search(SearchRequest {
+                text: "secret".to_string(),
+                limit: Some(50),
+                ..SearchRequest::default_for_tenant(tenant_b.clone())
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        // Each tenant sees exactly its own span.
+        assert_eq!(
+            resp_a.hits.len(),
+            1,
+            "tenant A should see 1 hit, got {:?}",
+            resp_a.hits.iter().map(|h| &h.span_id).collect::<Vec<_>>()
+        );
+        assert_eq!(resp_a.hits[0].span_id, "span-a");
+        assert_eq!(
+            resp_b.hits.len(),
+            1,
+            "tenant B should see 1 hit, got {:?}",
+            resp_b.hits.iter().map(|h| &h.span_id).collect::<Vec<_>>()
+        );
+        assert_eq!(resp_b.hits[0].span_id, "span-b");
+    }
+
+    /// Attempt 1 — direct field injection: user query string contains
+    /// `tenant_id:tenant-bravo`.  Tantivy's QueryParser can reference any
+    /// schema field with the `field:value` DSL syntax.  Even if Tantivy
+    /// parses this clause, the outer `Occur::Must` tenant guard must prevent
+    /// any tenant-B document from appearing in tenant-A's results.
+    #[tokio::test]
+    async fn cross_tenant_dsl_direct_field_injection_returns_no_hits() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant_a = TenantId::new("tenant-alpha").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_b = TenantId::new("tenant-bravo").unwrap_or_else(|err| panic!("{err}"));
+
+        index
+            .index_spans(&[
+                fixture_span(&tenant_a, "trace-a", "span-a", "alpha data", SpanStatus::Ok),
+                fixture_span(&tenant_b, "trace-b", "span-b", "bravo data", SpanStatus::Ok),
+            ])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        // Attempt to reference tenant B's tenant_id field directly.
+        // May return an error (field not in parser defaults) or zero hits —
+        // either outcome is acceptable; returning tenant-B docs is not.
+        let result = index
+            .search(SearchRequest {
+                text: "tenant_id:tenant-bravo".to_string(),
+                limit: Some(50),
+                ..SearchRequest::default_for_tenant(tenant_a.clone())
+            })
+            .await;
+
+        match result {
+            Err(_) => {
+                // Parser rejected the injected field reference — fine.
+            }
+            Ok(resp) => {
+                let cross_tenant_hits: Vec<_> =
+                    resp.hits.iter().filter(|h| h.span_id == "span-b").collect();
+                assert!(
+                    cross_tenant_hits.is_empty(),
+                    "SECURITY LEAK: tenant-A query with DSL injection returned tenant-B span: \
+                     {:?}",
+                    cross_tenant_hits
+                );
+            }
+        }
+    }
+
+    /// Attempt 2 — OR injection: user query string is `alpha OR
+    /// tenant_id:tenant-bravo`.  An attacker hopes the OR arms are evaluated
+    /// without the tenant guard, leaking docs that match the second arm.
+    /// The mandatory `Occur::Must` tenant clause must prevent this.
+    #[tokio::test]
+    async fn cross_tenant_dsl_or_injection_returns_no_tenant_b_hits() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant_a = TenantId::new("tenant-alpha").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_b = TenantId::new("tenant-bravo").unwrap_or_else(|err| panic!("{err}"));
+
+        index
+            .index_spans(&[
+                fixture_span(
+                    &tenant_a,
+                    "trace-a",
+                    "span-a",
+                    "alpha payload",
+                    SpanStatus::Ok,
+                ),
+                fixture_span(
+                    &tenant_b,
+                    "trace-b",
+                    "span-b",
+                    "bravo payload",
+                    SpanStatus::Ok,
+                ),
+            ])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        // OR-injection: attempt to also match tenant B spans via an OR clause.
+        let result = index
+            .search(SearchRequest {
+                text: "alpha OR tenant_id:tenant-bravo".to_string(),
+                limit: Some(50),
+                ..SearchRequest::default_for_tenant(tenant_a.clone())
+            })
+            .await;
+
+        match result {
+            Err(_) => {
+                // Rejected as malformed / unknown field — acceptable.
+            }
+            Ok(resp) => {
+                let cross_tenant_hits: Vec<_> =
+                    resp.hits.iter().filter(|h| h.span_id == "span-b").collect();
+                assert!(
+                    cross_tenant_hits.is_empty(),
+                    "SECURITY LEAK: OR-injection returned tenant-B span in tenant-A results: \
+                     {:?}",
+                    cross_tenant_hits
+                );
+                // Tenant A's own document MAY appear (the OR's left arm matches).
+                // What must NOT appear is any tenant-B document.
+            }
+        }
+    }
+
+    /// Attempt 3 — raw field override: user query string contains the literal
+    /// `tenant_id` field name but targeting tenant B, using quoted-phrase DSL
+    /// so that it is unlikely to be parsed as a default-field text search.
+    /// This exercises the case where the QueryParser can resolve named fields
+    /// from the Tantivy schema regardless of the default-field list.
+    #[tokio::test]
+    async fn cross_tenant_dsl_quoted_field_injection_returns_no_tenant_b_hits() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant_a = TenantId::new("tenant-alpha").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_b = TenantId::new("tenant-bravo").unwrap_or_else(|err| panic!("{err}"));
+
+        index
+            .index_spans(&[
+                fixture_span(
+                    &tenant_a,
+                    "trace-a",
+                    "span-a",
+                    "alpha content here",
+                    SpanStatus::Ok,
+                ),
+                fixture_span(
+                    &tenant_b,
+                    "trace-b",
+                    "span-b",
+                    "bravo content here",
+                    SpanStatus::Ok,
+                ),
+            ])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        // Quoted phrase targeting the tenant_id field for tenant B.
+        let result = index
+            .search(SearchRequest {
+                text: r#"tenant_id:"tenant-bravo""#.to_string(),
+                limit: Some(50),
+                ..SearchRequest::default_for_tenant(tenant_a.clone())
+            })
+            .await;
+
+        match result {
+            Err(_) => {
+                // Parse error — field reference rejected. Acceptable.
+            }
+            Ok(resp) => {
+                let cross_tenant_hits: Vec<_> =
+                    resp.hits.iter().filter(|h| h.span_id == "span-b").collect();
+                assert!(
+                    cross_tenant_hits.is_empty(),
+                    "SECURITY LEAK: quoted field injection returned tenant-B span in \
+                     tenant-A results: {:?}",
+                    cross_tenant_hits
+                );
+            }
+        }
+    }
+
+    // ── end H7 cross-tenant DSL field-injection regression tests ──────────────
+
     #[tokio::test]
     async fn trace_ingested_processor_reads_project_trace_and_indexes_spans() {
         let traces = Arc::new(InMemoryTraceStore::new());
