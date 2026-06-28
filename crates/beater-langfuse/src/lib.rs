@@ -60,7 +60,8 @@
 use beater_core::{Money, SpanId, TenantScope, Timestamp, TokenCounts, TraceId};
 use beater_ingest::{CanonicalSpanDraft, ImportError, RawTraceIngestRequest, SourceImporter};
 use beater_schema::{
-    AgentSpanKind, AuthContext, CanonicalAttrs, ModelRef, RedactionClass, SourceDialect, SpanStatus,
+    conventions::attr, AgentSpanKind, AuthContext, CanonicalAttrs, ModelRef, RedactionClass,
+    SourceDialect, SpanStatus,
 };
 use chrono::{DateTime, Utc};
 use serde_json::{json, Value};
@@ -285,6 +286,7 @@ fn build_root_draft(
     copy_str(&mut attributes, trace, "sessionId", "langfuse.session_id");
     copy_str(&mut attributes, trace, "userId", "langfuse.user_id");
     copy_str(&mut attributes, trace, "release", "langfuse.release");
+    copy_str(&mut attributes, trace, "release", attr::RELEASE_ID);
     copy_str(&mut attributes, trace, "version", "langfuse.version");
     copy_value(&mut attributes, trace, "tags", "langfuse.tags");
     copy_value(&mut attributes, trace, "metadata", "langfuse.metadata");
@@ -633,6 +635,14 @@ mod tests {
         assert_eq!(
             root.attributes.get("langfuse.session_id"),
             Some(&json!("sess-42"))
+        );
+        assert_eq!(
+            root.attributes.get("langfuse.release"),
+            Some(&json!("v1.4.2"))
+        );
+        assert_eq!(
+            root.attributes.get(attr::RELEASE_ID),
+            Some(&json!("v1.4.2"))
         );
     }
 
