@@ -11,35 +11,62 @@
 #   - Bump pinned SHAs intentionally via .github/dependabot.yml.
 set -euo pipefail
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+default_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root="${1:-${BEATER_ACTION_PINS_ROOT:-$default_root}}"
 violations=0
 
-while IFS= read -r line; do
-  file="${line%%:*}"
-  rest="${line#*:}"
-  lineno="${rest%%:*}"
-  # The action reference: strip everything up to and including "uses:", trim, and
-  # drop any trailing "# comment".
-  ref="$(printf '%s' "$line" | sed -E 's/.*uses:[[:space:]]*//; s/[[:space:]]*#.*$//; s/[[:space:]]*$//')"
+check_uses_ref() {
+  local file="$1"
+  local lineno="$2"
+  local text="$3"
+  local ref pin
 
-  # Skip quoting and local/reusable-workflow references.
+  # The action reference: strip everything up to and including "uses:", trim,
+  # and drop any trailing "# comment".
+  ref="$(printf '%s' "$text" | sed -E 's/.*uses:[[:space:]]*//; s/[[:space:]]*#.*$//; s/[[:space:]]*$//')"
+  ref="${ref//$'\r'/}"
   ref="${ref//\"/}"
   ref="${ref//\'/}"
+
   case "$ref" in
-    ./*|.github/*) continue ;;          # local action / reusable workflow
-    actions/*) continue ;;              # GitHub first-party org (trusted)
-    *@*) : ;;                            # owner/repo@ref — check below
-    *) continue ;;                      # no @ref (e.g. docker://) — out of scope
+    ./*|../*|.github/*) return 0 ;;      # local action / reusable workflow
+    actions/*) return 0 ;;              # GitHub first-party org (trusted)
+    docker://*) return 0 ;;             # container action image refs are out of scope
+    *@*) : ;;                           # owner/repo[@path]@ref — check below
+    *) return 0 ;;                      # no @ref — out of scope
   esac
 
   pin="${ref##*@}"
-  if [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
-    continue                            # immutable SHA — OK
+  if [[ "$pin" =~ ^[0-9a-fA-F]{40}$ ]]; then
+    return 0                            # immutable SHA — OK
   fi
 
   printf 'MUTABLE ACTION REF  %s:%s\n    %s\n' "$file" "$lineno" "$ref" >&2
   violations=$((violations + 1))
-done < <(grep -rnE '^[[:space:]]*-?[[:space:]]*uses:' "$root/.github/workflows/" || true)
+}
+
+scan_file() {
+  local file="$1"
+  local match lineno text
+  while IFS= read -r match; do
+    lineno="${match%%:*}"
+    text="${match#*:}"
+    check_uses_ref "$file" "$lineno" "$text"
+  done < <(grep -nE '^[[:space:]]*-?[[:space:]]*uses:' "$file" || true)
+}
+
+scan_dir() {
+  local dir="$1"
+  [[ -d "$dir" ]] || return 0
+  while IFS= read -r -d '' file; do
+    scan_file "$file"
+  done < <(
+    find "$dir" -type f \( -name '*.yml' -o -name '*.yaml' \) -print0
+  )
+}
+
+scan_dir "$root/.github/workflows"
+scan_dir "$root/.github/actions"
 
 if [[ "$violations" -gt 0 ]]; then
   cat >&2 <<EOF

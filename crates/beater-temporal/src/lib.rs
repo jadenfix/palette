@@ -654,7 +654,7 @@ fn derive_trace_id(history: &Value, events: &[Value]) -> TemporalResult<TraceId>
         .map(str::to_string)
         .or_else(|| {
             events.iter().find_map(|event| {
-                let attrs = event.get("workflowExecutionStartedEventAttributes")?;
+                let attrs = attributes(event, "workflowExecutionStartedEventAttributes");
                 attrs
                     .get("originalExecutionRunId")
                     .or_else(|| attrs.get("firstExecutionRunId"))
@@ -708,6 +708,11 @@ fn attributes<'a>(event: &'a Value, expected_key: &str) -> &'a Value {
     if let Some(value) = event.get(expected_key) {
         return value;
     }
+    if let Some(snake_key) = snake_case_event_attributes_key(expected_key) {
+        if let Some(value) = event.get(&snake_key) {
+            return value;
+        }
+    }
     // Encoding-robust fallback: any `*EventAttributes` field on the event.
     if let Some(object) = event.as_object() {
         for (key, value) in object {
@@ -715,8 +720,31 @@ fn attributes<'a>(event: &'a Value, expected_key: &str) -> &'a Value {
                 return value;
             }
         }
+        for (key, value) in object {
+            if key.ends_with("_event_attributes") {
+                return value;
+            }
+        }
     }
     &NULL
+}
+
+fn snake_case_event_attributes_key(expected_key: &str) -> Option<String> {
+    if !expected_key.ends_with("EventAttributes") {
+        return None;
+    }
+    let mut out = String::with_capacity(expected_key.len() + 8);
+    for (index, ch) in expected_key.chars().enumerate() {
+        if ch.is_ascii_uppercase() {
+            if index != 0 {
+                out.push('_');
+            }
+            out.push(ch.to_ascii_lowercase());
+        } else {
+            out.push(ch);
+        }
+    }
+    Some(out)
 }
 
 fn type_name<'a>(attrs: &'a Value, field: &str) -> Option<&'a str> {
@@ -1244,6 +1272,94 @@ mod tests {
         ]);
         assert_eq!(c.stats.unmapped_events, 0);
         assert_eq!(find(&c, "A").status, SpanStatus::Ok);
+    }
+
+    #[test]
+    fn snake_case_event_attribute_keys_convert_workflow_activity_tree() {
+        let c = convert_ok(vec![
+            json!({
+                "eventId": "1",
+                "eventTime": "2026-06-23T00:00:00Z",
+                "eventType": "WorkflowExecutionStarted",
+                "workflow_execution_started_event_attributes": {
+                    "workflowType": {"name": "SnakeWorkflow"},
+                    "taskQueue": {"name": "snake-q"},
+                    "originalExecutionRunId": "snake-run"
+                }
+            }),
+            json!({
+                "eventId": "5",
+                "eventTime": "2026-06-23T00:00:01Z",
+                "eventType": "ActivityTaskScheduled",
+                "activity_task_scheduled_event_attributes": {
+                    "activityId": "snake-activity-id",
+                    "activityType": {"name": "SnakeActivity"},
+                    "taskQueue": {"name": "snake-q"}
+                }
+            }),
+            json!({
+                "eventId": "7",
+                "eventTime": "2026-06-23T00:00:03Z",
+                "eventType": "ActivityTaskCompleted",
+                "activity_task_completed_event_attributes": {
+                    "scheduledEventId": "5",
+                    "result": {"payloads": []}
+                }
+            }),
+            json!({
+                "eventId": "8",
+                "eventTime": "2026-06-23T00:00:04Z",
+                "eventType": "WorkflowExecutionCompleted",
+                "workflow_execution_completed_event_attributes": {
+                    "result": {"payloads": []}
+                }
+            }),
+        ]);
+
+        assert_eq!(c.trace_id.as_str(), "snake-run");
+        assert_eq!(c.stats.unmapped_events, 0);
+        assert_eq!(c.drafts.len(), 2);
+
+        let root = &c.drafts[0];
+        assert_eq!(root.name, "SnakeWorkflow");
+        assert_eq!(root.parent_span_id, None);
+        assert_eq!(root.seq, 1);
+        assert_eq!(root.status, SpanStatus::Ok);
+        assert_eq!(
+            root.attributes.get("temporal.workflow.type"),
+            Some(&json!("SnakeWorkflow"))
+        );
+
+        let activity = &c.drafts[1];
+        assert_eq!(activity.name, "SnakeActivity");
+        assert_eq!(activity.parent_span_id, Some(root.span_id.clone()));
+        assert_eq!(activity.seq, 5);
+        assert_eq!(activity.status, SpanStatus::Ok);
+        assert_eq!(
+            activity.attributes.get("temporal.activity.type"),
+            Some(&json!("SnakeActivity"))
+        );
+        assert!(activity.output.is_some());
+    }
+
+    #[test]
+    fn exact_lower_camel_attribute_key_wins_over_snake_case_alias() {
+        let c = convert_ok(vec![json!({
+            "eventId": "1",
+            "eventTime": "2026-06-23T00:00:00Z",
+            "eventType": "WorkflowExecutionStarted",
+            "workflowExecutionStartedEventAttributes": {
+                "workflowType": {"name": "LowerCamelWorkflow"},
+                "originalExecutionRunId": "lower-camel-run"
+            },
+            "workflow_execution_started_event_attributes": {
+                "workflowType": {"name": "SnakeWorkflow"},
+                "originalExecutionRunId": "snake-run"
+            }
+        })]);
+
+        assert_eq!(c.trace_id.as_str(), "lower-camel-run");
+        assert_eq!(c.drafts[0].name, "LowerCamelWorkflow");
     }
 
     #[test]

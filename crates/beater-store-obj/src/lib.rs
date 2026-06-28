@@ -2,10 +2,14 @@ use async_trait::async_trait;
 use beater_core::{sha256_hex, ArtifactId, ProjectId, Sha256Hash, TenantId};
 use beater_schema::{ArtifactRef, RedactionClass};
 use beater_store::{ArtifactStore, StoreError, StoreResult};
+use std::ffi::OsString;
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Arc;
 use uuid::Uuid;
+
+const TEMP_FILE_MARKER: &str = ".tmp.";
 
 #[derive(Clone, Debug)]
 pub struct FsArtifactStore {
@@ -89,6 +93,62 @@ impl FsArtifactStore {
         }
         Ok(path)
     }
+
+    fn atomic_temp_path(path: &std::path::Path) -> StoreResult<PathBuf> {
+        let file_name = path.file_name().ok_or_else(|| {
+            StoreError::Integrity(format!(
+                "artifact path has no file name: {}",
+                path.display()
+            ))
+        })?;
+        let mut temp_name = OsString::from(".");
+        temp_name.push(file_name);
+        temp_name.push(TEMP_FILE_MARKER);
+        temp_name.push(Uuid::new_v4().to_string());
+        Ok(path.with_file_name(temp_name))
+    }
+
+    fn write_file_atomically(path: &std::path::Path, bytes: &[u8]) -> StoreResult<()> {
+        let temp_path = Self::atomic_temp_path(path)?;
+        let result = (|| -> std::io::Result<()> {
+            let mut temp_file = fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&temp_path)?;
+            temp_file.write_all(bytes)?;
+            temp_file.flush()?;
+            temp_file.sync_all()?;
+            drop(temp_file);
+
+            fs::rename(&temp_path, path)?;
+            sync_parent_dir_best_effort(path);
+            Ok(())
+        })();
+
+        match result {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                let _ = fs::remove_file(&temp_path);
+                Err(StoreError::backend(error))
+            }
+        }
+    }
+}
+
+fn sync_parent_dir_best_effort(path: &std::path::Path) {
+    #[cfg(unix)]
+    {
+        if let Some(parent) = path.parent() {
+            if let Ok(parent_dir) = fs::File::open(parent) {
+                let _ = parent_dir.sync_all();
+            }
+        }
+    }
+
+    #[cfg(not(unix))]
+    {
+        let _ = path;
+    }
 }
 
 #[async_trait]
@@ -118,7 +178,7 @@ impl ArtifactStore for FsArtifactStore {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(StoreError::backend)?;
         }
-        fs::write(&path, bytes).map_err(StoreError::backend)?;
+        Self::write_file_atomically(&path, bytes)?;
 
         Ok(ArtifactRef {
             artifact_id,
@@ -183,6 +243,73 @@ mod tests {
             .await
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(bytes, br#"{"ok":true}"#);
+        assert_eq!(temp_artifact_file_count(tempdir.path()), 0);
+    }
+
+    #[tokio::test]
+    async fn put_bytes_commits_final_file_without_temp_artifacts() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let store = FsArtifactStore::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+
+        let artifact = store
+            .put_bytes(
+                &tenant,
+                &project,
+                "text/plain",
+                RedactionClass::Internal,
+                b"atomic bytes",
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let path = store
+            .path_for_uri(&artifact.uri)
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(
+            std::fs::read(&path).unwrap_or_else(|err| panic!("{err}")),
+            b"atomic bytes"
+        );
+        assert_eq!(temp_artifact_file_count(tempdir.path()), 0);
+    }
+
+    #[tokio::test]
+    async fn atomic_put_preserves_read_and_hash_validation() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let store = FsArtifactStore::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+
+        let artifact = store
+            .put_bytes(
+                &tenant,
+                &project,
+                "text/plain",
+                RedactionClass::Internal,
+                b"hash checked bytes",
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            store
+                .get_bytes(&artifact)
+                .await
+                .unwrap_or_else(|err| panic!("{err}")),
+            b"hash checked bytes"
+        );
+
+        let path = store
+            .path_for_uri(&artifact.uri)
+            .unwrap_or_else(|err| panic!("{err}"));
+        std::fs::write(path, b"tampered").unwrap_or_else(|err| panic!("{err}"));
+        match store.get_bytes(&artifact).await {
+            Err(StoreError::Integrity(message)) => {
+                assert!(message.contains("artifact hash mismatch"));
+            }
+            other => panic!("expected StoreError::Integrity for corrupt artifact, got {other:?}"),
+        }
+        assert_eq!(temp_artifact_file_count(tempdir.path()), 0);
     }
 
     #[tokio::test]
@@ -433,6 +560,28 @@ mod tests {
                 if file_type.is_dir() {
                     artifact_file_count(&path)
                 } else if file_type.is_file() {
+                    1
+                } else {
+                    0
+                }
+            })
+            .sum()
+    }
+
+    fn temp_artifact_file_count(root: &std::path::Path) -> usize {
+        std::fs::read_dir(root)
+            .unwrap_or_else(|err| panic!("{err}"))
+            .map(|entry| {
+                let entry = entry.unwrap_or_else(|err| panic!("{err}"));
+                let path = entry.path();
+                let file_type = entry.file_type().unwrap_or_else(|err| panic!("{err}"));
+                if file_type.is_dir() {
+                    temp_artifact_file_count(&path)
+                } else if file_type.is_file()
+                    && path
+                        .file_name()
+                        .is_some_and(|name| name.to_string_lossy().contains(TEMP_FILE_MARKER))
+                {
                     1
                 } else {
                     0

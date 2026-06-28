@@ -622,7 +622,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     );
     let recording_pass_marker = stopwatch_script
         .rfind("record_demo_status=\"passed\"")
-        .expect("expected recording pass marker");
+        .unwrap_or_else(|| panic!("expected recording pass marker"));
     assert!(
         reviewable_recording_check < recording_pass_marker,
         "recording duration must be validated before marking browser recording passed"
@@ -1051,10 +1051,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(gate2_proof_contract.contains("GATE2_OUTSIDE_ENV_PREFIXES = [\"GIT_CONFIG_\"]"));
     let raw_preflight_idx = public_handoff
         .find("run_raw_public_preflight(args, expected_commit)")
-        .expect("raw public preflight call in public handoff verifier");
+        .unwrap_or_else(|| panic!("raw public preflight call in public handoff verifier"));
     let clone_idx = public_handoff
         .find("clone_dir, temp_owner, clone_started_epoch = clone_repo")
-        .expect("first clone call in public handoff verifier");
+        .unwrap_or_else(|| panic!("first clone call in public handoff verifier"));
     assert!(
         raw_preflight_idx < clone_idx,
         "public handoff verifier must run the raw public preflight before cloning"
