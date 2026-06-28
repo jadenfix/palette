@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal --component rustfmt
@@ -55,5 +55,6 @@ jobs:
 
       - name: Gate 2 self-host contract tests
         run: |
+          cargo test -p beaterd --test offline_compose
           cargo test -p beaterd --test self_host_contract
           cargo test -p beaterd --test gate2_outside_validator
