@@ -734,8 +734,10 @@ mod tests {
     fn proper_scoring_rejects_invalid_probability_scores() -> anyhow::Result<()> {
         let items = vec![calibration_item("case-1", CalibrationLabel::Pass, 1.2)?];
 
-        let error = brier_score(&items).unwrap_err();
-        assert!(error.to_string().contains("must be between 0 and 1"));
+        match brier_score(&items) {
+            Err(error) => assert!(error.to_string().contains("must be between 0 and 1")),
+            Ok(score) => panic!("expected invalid probability to fail, got {score}"),
+        }
         Ok(())
     }
 
