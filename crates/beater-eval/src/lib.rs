@@ -221,6 +221,83 @@ pub const EVALUATOR_CATALOG: &[EvaluatorCatalogEntry] = &[
         consumes_trace: true,
         wasm_safe: true,
     },
+    // Conversation-level scorers (§20.10 #7.8 / R18.8). These judge a whole
+    // session/thread group rather than a single turn; they route through the
+    // judge broker (§10.1 judge lane) like the rubric LLM judge. §10.4
+    // assumption: the §10.1.1 debiasing protocol (calibration, position-swap,
+    // small panel) holds. Conversations are the cluster unit, so scores
+    // aggregate with trajectory/conversation-clustered SE (§10.3 #1), never as
+    // a mean of independent per-turn scores.
+    EvaluatorCatalogEntry {
+        id: "conversation_coherence",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Conversation coherence",
+        description: "Judges whether turns across a session/thread stay mutually consistent and on-topic. §10.4 assumption: judge debiasing (§10.1.1) holds; aggregates with conversation-clustered SE, not per-turn means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "session_completeness",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Session completeness",
+        description: "Judges whether a session/thread resolved the user's overall goal. §10.4 assumption: judge debiasing (§10.1.1) holds; aggregates with conversation-clustered SE, not per-turn means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "user_frustration",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "User frustration",
+        description: "Judges signs of user frustration (repetition, escalation, abandonment) across a session/thread. §10.4 assumption: judge debiasing (§10.1.1) holds; aggregates with conversation-clustered SE, not per-turn means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    // Agent-trajectory scorers (§20.10 #7.8 / R18.8). These judge an ordered
+    // span sequence (plan→step→tool→…) and route through the judge broker for
+    // quality scoring (§10.4 trajectory / process-reward row, judge lane).
+    // §10.4 assumption: trajectory quality is jointly modeled (AgentPRM-style
+    // promise+progress), NOT a mean of independent per-step scores; per-step
+    // scores aggregate with trajectory-clustered SE (§10.3 #1, cluster =
+    // trajectory) [arXiv:2511.08325; arXiv:2507.21504].
+    EvaluatorCatalogEntry {
+        id: "tool_selection_quality",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Tool selection quality",
+        description: "Judges whether the agent chose appropriate tools for each step of the trajectory. §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "tool_error_rate",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Tool error rate",
+        description: "Judges the rate and severity of tool-call failures across the trajectory. §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "action_completion",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Action completion",
+        description: "Judges whether the agent completed the actions its trajectory set out to perform. §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "agent_flow",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Agent flow",
+        description: "Judges the overall coherence and progress of the agent's step sequence (promise+progress). §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
 ];
 
 pub fn evaluator_catalog() -> &'static [EvaluatorCatalogEntry] {
@@ -899,7 +976,7 @@ mod tests {
     #[test]
     fn evaluator_catalog_classifies_execution_lanes() {
         let catalog = evaluator_catalog();
-        assert_eq!(catalog.len(), 11);
+        assert_eq!(catalog.len(), 18);
 
         let exact = evaluator_catalog_entry("exact_match")
             .unwrap_or_else(|| panic!("exact_match catalog entry should exist"));
@@ -1235,6 +1312,33 @@ mod tests {
             assert_eq!(kind.catalog_entry().id, kind.catalog_id());
             assert_eq!(kind.expected_lane(), EvaluatorLane::DeterministicWasi);
             assert!(kind.catalog_entry().consumes_trace);
+        }
+    }
+
+    #[test]
+    fn conversation_and_trajectory_scorers_are_judge_lane_and_resolvable() {
+        // §20.10 #7.8 / R18.8: conversation-level and agent-trajectory named
+        // scorers are catalogued as judge-lane metadata entries (reusing the
+        // judge-broker mechanism), each resolvable by id via the lookup helper.
+        let conversation_scorers = ["conversation_coherence", "session_completeness", "user_frustration"];
+        let trajectory_scorers = [
+            "tool_selection_quality",
+            "tool_error_rate",
+            "action_completion",
+            "agent_flow",
+        ];
+        for id in conversation_scorers.iter().chain(trajectory_scorers.iter()) {
+            let entry = evaluator_catalog_entry(id)
+                .unwrap_or_else(|| panic!("catalog entry {id} should exist"));
+            assert_eq!(entry.id, *id);
+            assert_eq!(
+                entry.lane,
+                EvaluatorLane::JudgeBroker,
+                "{id} must be judge-lane"
+            );
+            assert!(!entry.wasm_safe, "{id} is a judge scorer, not wasm-safe");
+            assert!(!entry.requires_reference, "{id} scores groups, not refs");
+            assert!(entry.consumes_trace, "{id} reads the session/trajectory");
         }
     }
 
