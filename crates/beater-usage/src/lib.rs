@@ -36,6 +36,14 @@ pub enum UsageRecordSourceKind {
     DatasetEvalReport,
     ExperimentRun,
     Manual,
+    /// A compensating entry that credits (refunds/voids) a prior charge.
+    ///
+    /// The ledger is append-only: corrections are never expressed by mutating or
+    /// deleting an existing row. Instead a `Refund` record is appended whose
+    /// `quantity` is typically negative so that the rollup nets out the original
+    /// charge. `Refund` is the only source kind permitted to carry a negative
+    /// quantity (see [`SqliteUsageLedger::record_usage`]).
+    Refund,
 }
 
 impl UsageRecordSourceKind {
@@ -45,7 +53,14 @@ impl UsageRecordSourceKind {
             Self::DatasetEvalReport => "dataset_eval_report",
             Self::ExperimentRun => "experiment_run",
             Self::Manual => "manual",
+            Self::Refund => "refund",
         }
+    }
+
+    /// Whether this source kind represents a compensating (crediting) entry that
+    /// may carry a negative quantity.
+    pub fn is_compensating(self) -> bool {
+        matches!(self, Self::Refund)
     }
 }
 
@@ -88,8 +103,28 @@ pub struct UsageSummary {
     pub totals: BTreeMap<String, UsageTotal>,
 }
 
+/// Billing-grade usage/metering ledger.
+///
+/// # Invariants
+///
+/// * **Append-only.** Rows are only ever inserted. There is no `UPDATE` or
+///   `DELETE` path anywhere in this trait or its implementations. Corrections,
+///   refunds and voids are expressed as *compensating entries*: a new row (see
+///   [`UsageRecordSourceKind::Refund`]) whose quantity nets against the original
+///   charge in the rollup. The original charge row is never touched.
+/// * **Exactly-once recording.** `(tenant_id, project_id, meter, source_kind,
+///   source_id)` is unique. Re-recording the same dedup tuple is idempotent and
+///   returns the *canonical stored row* (same `usage_record_id`, same stored
+///   quantity), never a freshly generated one.
+/// * **Overflow-safe rollups.** [`summarize_usage`](Self::summarize_usage) sums
+///   quantities with checked arithmetic and returns a typed error rather than
+///   wrapping or panicking; it also rejects mixed units within a single meter.
 #[async_trait]
 pub trait UsageLedgerStore: Send + Sync {
+    /// Append a usage record, idempotently on its dedup tuple.
+    ///
+    /// On a duplicate dedup tuple this is a no-op write and returns the existing
+    /// canonical stored row rather than the in-memory candidate.
     async fn record_usage(&self, insert: UsageRecordInsert) -> StoreResult<UsageRecord>;
 
     async fn list_usage(
@@ -208,10 +243,16 @@ impl SqliteUsageLedger {
 #[async_trait]
 impl UsageLedgerStore for SqliteUsageLedger {
     async fn record_usage(&self, insert: UsageRecordInsert) -> StoreResult<UsageRecord> {
-        if insert.quantity < 0 {
+        // Only compensating entries (refunds/voids) may carry a negative
+        // quantity. A negative charge on any other source kind would silently
+        // drain the ledger and is rejected as an integrity violation; the
+        // correct way to credit a charge is to append a `Refund` record.
+        if insert.quantity < 0 && !insert.source_kind.is_compensating() {
             return Err(StoreError::Integrity(format!(
-                "usage quantity must be non-negative for meter {}",
-                insert.meter.as_str()
+                "usage quantity must be non-negative for meter {} (source kind {}); \
+                 record a refund compensating entry instead",
+                insert.meter.as_str(),
+                insert.source_kind.as_str()
             )));
         }
         let record = UsageRecord {
@@ -230,8 +271,16 @@ impl UsageLedgerStore for SqliteUsageLedger {
         let record_json = serde_json::to_string(&record)
             .context("serialize usage record")
             .into_store()?;
-        let connection = self.lock().into_store()?;
-        connection
+        // Insert-or-ignore and the canonical read-back run inside a single
+        // transaction so the returned row is exactly what is durably stored,
+        // even under concurrent identical inserts: the loser of the dedup race
+        // still reads back the winner's canonical row.
+        let mut connection = self.lock().into_store()?;
+        let transaction = connection
+            .transaction()
+            .context("begin usage record transaction")
+            .into_store()?;
+        transaction
             .execute(
                 r#"
                 INSERT OR IGNORE INTO usage_records
@@ -254,15 +303,20 @@ impl UsageLedgerStore for SqliteUsageLedger {
             )
             .context("insert usage record")
             .into_store()?;
-        Self::select_by_unique(
-            &connection,
+        let stored = Self::select_by_unique(
+            &transaction,
             &record.tenant_id,
             &record.project_id,
             record.meter,
             record.source_kind,
             &record.source_id,
         )
-        .into_store()
+        .into_store()?;
+        transaction
+            .commit()
+            .context("commit usage record transaction")
+            .into_store()?;
+        Ok(stored)
     }
 
     async fn list_usage(
@@ -306,13 +360,17 @@ impl UsageLedgerStore for SqliteUsageLedger {
         project_id: ProjectId,
     ) -> StoreResult<UsageSummary> {
         let connection = self.lock().into_store()?;
+        // Fold the per-row quantities in Rust with checked arithmetic. SQLite's
+        // `SUM` silently promotes to a float on i64 overflow (corrupting money),
+        // so we never let the database do the summation. Rows are read raw
+        // (no GROUP BY) so a per-meter unit/currency mismatch surfaces as a
+        // typed error instead of silently overwriting a bucket.
         let mut statement = connection
             .prepare(
                 r#"
-                SELECT meter, unit, COALESCE(SUM(quantity), 0)
+                SELECT meter, unit, quantity
                 FROM usage_records
                 WHERE tenant_id = ?1 AND project_id = ?2
-                GROUP BY meter, unit
                 ORDER BY meter ASC, unit ASC
                 "#,
             )
@@ -328,10 +386,28 @@ impl UsageLedgerStore for SqliteUsageLedger {
             })
             .context("query usage summary")
             .into_store()?;
-        let mut totals = BTreeMap::new();
+        let mut totals: BTreeMap<String, UsageTotal> = BTreeMap::new();
         for row in rows {
             let (meter, unit, quantity) = row.context("read usage summary row").into_store()?;
-            totals.insert(meter, UsageTotal { quantity, unit });
+            match totals.get_mut(&meter) {
+                None => {
+                    totals.insert(meter, UsageTotal { quantity, unit });
+                }
+                Some(total) => {
+                    if total.unit != unit {
+                        return Err(StoreError::Integrity(format!(
+                            "usage rollup unit mismatch for meter {meter}: \
+                             cannot sum {} and {}",
+                            total.unit, unit
+                        )));
+                    }
+                    total.quantity = total.quantity.checked_add(quantity).ok_or_else(|| {
+                        StoreError::Integrity(format!(
+                            "usage rollup overflow summing quantities for meter {meter}"
+                        ))
+                    })?;
+                }
+            }
         }
         Ok(UsageSummary {
             tenant_id,
@@ -514,8 +590,15 @@ mod tests {
         };
 
         let first = store.record_usage(insert.clone()).await?;
-        let second = store.record_usage(insert).await?;
+        // A second insert on the same dedup tuple, even with a *different*
+        // candidate quantity, must return the canonical stored row unchanged.
+        let mut conflicting = insert.clone();
+        conflicting.quantity = 9_999;
+        let second = store.record_usage(conflicting).await?;
         assert_eq!(first.usage_record_id, second.usage_record_id);
+        assert_eq!(first.quantity, second.quantity);
+        assert_eq!(second.quantity, 25);
+        assert_eq!(first, second);
 
         let records = store
             .list_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
@@ -620,6 +703,282 @@ mod tests {
         assert_eq!(inserts[0].quantity, 25);
         assert_eq!(inserts[1].quantity, 0);
         assert_eq!(inserts[1].source_id, "judge-call-b");
+        Ok(())
+    }
+
+    fn charge(source_id: &str, quantity: i64) -> anyhow::Result<UsageRecordInsert> {
+        Ok(UsageRecordInsert {
+            tenant_id: TenantId::new("tenant")?,
+            project_id: ProjectId::new("project")?,
+            meter: UsageMeter::JudgeCostMicros,
+            quantity,
+            unit: "usd_micros".to_string(),
+            source_kind: UsageRecordSourceKind::JudgeCall,
+            source_id: source_id.to_string(),
+            attributes: json!({}),
+        })
+    }
+
+    fn summary_quantity(summary: &UsageSummary) -> Option<i64> {
+        summary
+            .totals
+            .get(UsageMeter::JudgeCostMicros.as_str())
+            .map(|total| total.quantity)
+    }
+
+    #[tokio::test]
+    async fn zero_quantity_is_recorded_for_audit() -> anyhow::Result<()> {
+        let store = SqliteUsageLedger::in_memory()?;
+        let stored = store.record_usage(charge("cached-call", 0)?).await?;
+        assert_eq!(stored.quantity, 0);
+
+        let records = store
+            .list_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+            .await?;
+        assert_eq!(records.len(), 1);
+
+        let summary = store
+            .summarize_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+            .await?;
+        assert_eq!(summary_quantity(&summary), Some(0));
+        Ok(())
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+    async fn concurrent_identical_inserts_yield_exactly_one_row() -> anyhow::Result<()> {
+        let store = SqliteUsageLedger::in_memory()?;
+        let insert = charge("judge-call-race", 25)?;
+
+        let mut handles = Vec::new();
+        for _ in 0..50 {
+            let store = store.clone();
+            let insert = insert.clone();
+            handles.push(tokio::spawn(
+                async move { store.record_usage(insert).await },
+            ));
+        }
+
+        let mut results = Vec::new();
+        for handle in handles {
+            let record = handle
+                .await
+                .map_err(|err| anyhow!("join error: {err}"))?
+                .map_err(|err| anyhow!("record_usage error: {err}"))?;
+            results.push(record);
+        }
+
+        let canonical = results
+            .first()
+            .cloned()
+            .ok_or_else(|| anyhow!("expected at least one result"))?;
+        for record in &results {
+            assert_eq!(record, &canonical, "all concurrent winners must be identical");
+        }
+
+        let records = store
+            .list_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+            .await?;
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0], canonical);
+        Ok(())
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+    async fn concurrent_distinct_inserts_yield_exactly_n_rows() -> anyhow::Result<()> {
+        let store = SqliteUsageLedger::in_memory()?;
+        const N: i64 = 50;
+
+        let mut handles = Vec::new();
+        for index in 0..N {
+            let store = store.clone();
+            let insert = charge(&format!("judge-call-{index}"), index + 1)?;
+            handles.push(tokio::spawn(
+                async move { store.record_usage(insert).await },
+            ));
+        }
+        for handle in handles {
+            handle
+                .await
+                .map_err(|err| anyhow!("join error: {err}"))?
+                .map_err(|err| anyhow!("record_usage error: {err}"))?;
+        }
+
+        let records = store
+            .list_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+            .await?;
+        assert_eq!(records.len(), N as usize);
+
+        // Sum 1..=N == N*(N+1)/2.
+        let expected = N * (N + 1) / 2;
+        let summary = store
+            .summarize_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+            .await?;
+        assert_eq!(summary_quantity(&summary), Some(expected));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn refund_is_a_compensating_append_only_entry() -> anyhow::Result<()> {
+        let store = SqliteUsageLedger::in_memory()?;
+        let original = store.record_usage(charge("judge-call-1", 1_000)?).await?;
+
+        let refund = UsageRecordInsert {
+            tenant_id: TenantId::new("tenant")?,
+            project_id: ProjectId::new("project")?,
+            meter: UsageMeter::JudgeCostMicros,
+            quantity: -400,
+            unit: "usd_micros".to_string(),
+            source_kind: UsageRecordSourceKind::Refund,
+            source_id: "refund-of-judge-call-1".to_string(),
+            attributes: json!({"refunds": "judge-call-1"}),
+        };
+        let refund_record = store.record_usage(refund).await?;
+        assert_eq!(refund_record.quantity, -400);
+
+        // Both rows present; the original charge is untouched.
+        let records = store
+            .list_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+            .await?;
+        assert_eq!(records.len(), 2);
+        let stored_original = records
+            .iter()
+            .find(|record| record.source_id == "judge-call-1")
+            .ok_or_else(|| anyhow!("original charge row missing"))?;
+        assert_eq!(stored_original, &original);
+
+        // Net rollup reflects the compensating entry.
+        let summary = store
+            .summarize_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+            .await?;
+        assert_eq!(summary_quantity(&summary), Some(600));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn non_refund_negative_quantity_is_rejected() -> anyhow::Result<()> {
+        let store = SqliteUsageLedger::in_memory()?;
+        let error = store
+            .record_usage(charge("bad", -1)?)
+            .await
+            .err()
+            .ok_or_else(|| anyhow!("negative non-refund quantity should be rejected"))?;
+        assert!(matches!(
+            error,
+            StoreError::Integrity(message)
+                if message.contains("usage quantity must be non-negative")
+        ));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn rollup_overflow_returns_typed_error_not_panic() -> anyhow::Result<()> {
+        let store = SqliteUsageLedger::in_memory()?;
+        store
+            .record_usage(charge("near-max", i64::MAX)?)
+            .await?;
+        store.record_usage(charge("one-more", 1)?).await?;
+
+        let error = store
+            .summarize_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+            .await
+            .err()
+            .ok_or_else(|| anyhow!("overflowing rollup should error"))?;
+        assert!(matches!(
+            error,
+            StoreError::Integrity(message) if message.contains("overflow")
+        ));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn rollup_unit_mismatch_returns_typed_error() -> anyhow::Result<()> {
+        let store = SqliteUsageLedger::in_memory()?;
+        store.record_usage(charge("usd-call", 100)?).await?;
+        let mut other_currency = charge("eur-call", 100)?;
+        other_currency.unit = "eur_micros".to_string();
+        store.record_usage(other_currency).await?;
+
+        let error = store
+            .summarize_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+            .await
+            .err()
+            .ok_or_else(|| anyhow!("mixed units in a meter should error"))?;
+        assert!(matches!(
+            error,
+            StoreError::Integrity(message) if message.contains("unit mismatch")
+        ));
+        Ok(())
+    }
+
+    // Table-driven property test (proptest is not a workspace dependency).
+    // For any sequence of inserts with repeats, the final row set equals the set
+    // of distinct dedup tuples (keeping the first quantity per tuple), and the
+    // rollup equals the checked sum of those distinct quantities.
+    #[tokio::test]
+    async fn property_distinct_tuples_define_rows_and_rollup() -> anyhow::Result<()> {
+        use std::collections::BTreeMap as Map;
+
+        // Deterministic LCG so the test is reproducible without a PRNG crate.
+        let mut state: u64 = 0x9E37_79B9_7F4A_7C15;
+        let mut next = || {
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            state
+        };
+
+        for trial in 0..32 {
+            let store = SqliteUsageLedger::in_memory()?;
+            let mut first_quantity: Map<String, i64> = Map::new();
+
+            let ops = 20 + (next() % 40);
+            for _ in 0..ops {
+                let source_id = format!("src-{}", next() % 7);
+                let quantity = (next() % 1_000) as i64;
+                store
+                    .record_usage(charge(&source_id, quantity)?)
+                    .await?;
+                first_quantity.entry(source_id).or_insert(quantity);
+            }
+
+            let records = store
+                .list_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+                .await?;
+            assert_eq!(
+                records.len(),
+                first_quantity.len(),
+                "trial {trial}: row count must equal distinct dedup tuples"
+            );
+            for record in &records {
+                let expected = first_quantity
+                    .get(&record.source_id)
+                    .ok_or_else(|| anyhow!("unexpected source {}", record.source_id))?;
+                assert_eq!(
+                    &record.quantity, expected,
+                    "trial {trial}: stored quantity must be the first inserted"
+                );
+            }
+
+            let mut expected_sum: i64 = 0;
+            for quantity in first_quantity.values() {
+                expected_sum = expected_sum
+                    .checked_add(*quantity)
+                    .ok_or_else(|| anyhow!("test sum overflow"))?;
+            }
+            let summary = store
+                .summarize_usage(TenantId::new("tenant")?, ProjectId::new("project")?)
+                .await?;
+            let rollup = if first_quantity.is_empty() {
+                None
+            } else {
+                Some(expected_sum)
+            };
+            assert_eq!(
+                summary_quantity(&summary),
+                rollup,
+                "trial {trial}: rollup must equal checked sum of distinct quantities"
+            );
+        }
         Ok(())
     }
 }
