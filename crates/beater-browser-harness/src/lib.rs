@@ -33,8 +33,31 @@ pub enum HarnessError {
     Eval(#[from] EvalError),
     #[error("trace projection error: {0}")]
     Capture(String),
+    #[error(
+        "invalid browser task input: expected a string goal or an object with string field `goal`; {0}"
+    )]
+    InvalidTaskInput(&'static str),
     #[error("no tasks to compare")]
     Empty,
+}
+
+fn browser_task_goal(input: &Value) -> Result<&str, HarnessError> {
+    match input {
+        Value::String(goal) => Ok(goal),
+        Value::Object(fields) => match fields.get("goal") {
+            Some(Value::String(goal)) => Ok(goal),
+            Some(_) => Err(HarnessError::InvalidTaskInput(
+                "object field `goal` is not a string",
+            )),
+            None => Err(HarnessError::InvalidTaskInput(
+                "object is missing string field `goal`",
+            )),
+        },
+        Value::Null => Err(HarnessError::InvalidTaskInput("input was null")),
+        Value::Bool(_) => Err(HarnessError::InvalidTaskInput("input was a boolean")),
+        Value::Number(_) => Err(HarnessError::InvalidTaskInput("input was a number")),
+        Value::Array(_) => Err(HarnessError::InvalidTaskInput("input was an array")),
+    }
 }
 
 /// A single planned step: the (optional) decision that produced it and the
@@ -200,9 +223,10 @@ where
         case: DatasetCase,
         _context: HarnessContext,
     ) -> Result<AgentRunOutput, AgentAdapterError> {
-        let goal = case.input.as_str().unwrap_or_default();
+        let goal = browser_task_goal(&case.input).map_err(AgentAdapterError::backend)?;
         let mut driver = (self.make_driver)();
-        let triples = run_scenario(&mut driver, &self.start_url, self.agent.plan(goal))
+        let steps = self.agent.plan(goal);
+        let triples = run_scenario(&mut driver, &self.start_url, steps)
             .await
             .map_err(AgentAdapterError::backend)?;
         let trace = browser_trace(&triples).map_err(AgentAdapterError::backend)?;
@@ -222,6 +246,7 @@ where
 mod tests {
     use super::*;
     use beater_browser::{BrowserEngine, MockDriver, FIXTURE_KNOWN_SELECTOR};
+    use std::sync::{Arc, Mutex};
 
     /// A variant that clicks the correct (grounded) element for every task.
     struct GroundedAgent;
@@ -255,6 +280,29 @@ mod tests {
         }
     }
 
+    struct RecordingAgent {
+        goals: Arc<Mutex<Vec<String>>>,
+    }
+
+    impl BrowserAgent for RecordingAgent {
+        fn label(&self) -> &str {
+            "recording-prompt"
+        }
+
+        fn plan(&self, goal: &str) -> Vec<PlannedStep> {
+            self.goals
+                .lock()
+                .unwrap_or_else(|err| err.into_inner())
+                .push(goal.to_string());
+            vec![(
+                Some(decision(goal, FIXTURE_KNOWN_SELECTOR)),
+                BrowserAction::Click {
+                    selector: FIXTURE_KNOWN_SELECTOR.to_string(),
+                },
+            )]
+        }
+    }
+
     fn decision(goal: &str, selector: &str) -> LlmDecision {
         LlmDecision {
             model: Some("claude".to_string()),
@@ -274,6 +322,112 @@ mod tests {
 
     fn driver() -> MockDriver {
         MockDriver::with_conformance_fixture()
+    }
+
+    fn harness_context() -> HarnessContext {
+        HarnessContext {
+            tenant_id: beater_core::TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: beater_core::ProjectId::new("project")
+                .unwrap_or_else(|err| panic!("{err}")),
+            dataset_id: beater_core::DatasetId::new("dataset")
+                .unwrap_or_else(|err| panic!("{err}")),
+            dataset_version_id: beater_core::DatasetVersionId::new("v1")
+                .unwrap_or_else(|err| panic!("{err}")),
+            agent_release_id: beater_core::AgentReleaseId::new("agent")
+                .unwrap_or_else(|err| panic!("{err}")),
+        }
+    }
+
+    fn dataset_case(input: Value) -> DatasetCase {
+        DatasetCase {
+            tenant_id: beater_core::TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: beater_core::ProjectId::new("project")
+                .unwrap_or_else(|err| panic!("{err}")),
+            dataset_id: beater_core::DatasetId::new("dataset")
+                .unwrap_or_else(|err| panic!("{err}")),
+            case_id: beater_core::DatasetCaseId::new("case").unwrap_or_else(|err| panic!("{err}")),
+            source_trace_id: beater_core::TraceId::new("trace")
+                .unwrap_or_else(|err| panic!("{err}")),
+            source_span_id: beater_core::SpanId::new("span").unwrap_or_else(|err| panic!("{err}")),
+            source_environment_id: beater_core::EnvironmentId::new("prod")
+                .unwrap_or_else(|err| panic!("{err}")),
+            input,
+            output: json!(null),
+            reference: None,
+            trace: json!({}),
+            normalizer_version: "test".to_string(),
+            trace_schema_version: 1,
+            input_artifact_hashes: Vec::new(),
+            created_at: chrono::Utc::now(),
+        }
+    }
+
+    fn recorded_goals(goals: &Arc<Mutex<Vec<String>>>) -> Vec<String> {
+        goals.lock().unwrap_or_else(|err| err.into_inner()).clone()
+    }
+
+    #[tokio::test]
+    async fn adapter_accepts_string_task_input_as_goal() {
+        let goals = Arc::new(Mutex::new(Vec::new()));
+        let adapter = BrowserAgentAdapter::new(
+            RecordingAgent {
+                goals: Arc::clone(&goals),
+            },
+            "https://shop.example/cart",
+            driver,
+        );
+
+        adapter
+            .run_case(dataset_case(json!("complete checkout")), harness_context())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(recorded_goals(&goals), vec!["complete checkout"]);
+    }
+
+    #[tokio::test]
+    async fn adapter_accepts_object_goal_task_input() {
+        let goals = Arc::new(Mutex::new(Vec::new()));
+        let adapter = BrowserAgentAdapter::new(
+            RecordingAgent {
+                goals: Arc::clone(&goals),
+            },
+            "https://shop.example/cart",
+            driver,
+        );
+
+        adapter
+            .run_case(
+                dataset_case(json!({ "goal": "complete checkout" })),
+                harness_context(),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(recorded_goals(&goals), vec!["complete checkout"]);
+    }
+
+    #[tokio::test]
+    async fn adapter_rejects_invalid_task_input() {
+        let goals = Arc::new(Mutex::new(Vec::new()));
+        let adapter = BrowserAgentAdapter::new(
+            RecordingAgent {
+                goals: Arc::clone(&goals),
+            },
+            "https://shop.example/cart",
+            driver,
+        );
+
+        let error = adapter
+            .run_case(dataset_case(json!({ "goal": 42 })), harness_context())
+            .await
+            .err()
+            .unwrap_or_else(|| panic!("expected invalid task input error"));
+
+        assert!(error
+            .to_string()
+            .contains("invalid browser task input: expected a string goal"));
+        assert!(recorded_goals(&goals).is_empty());
     }
 
     #[tokio::test]

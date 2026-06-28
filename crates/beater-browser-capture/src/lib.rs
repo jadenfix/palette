@@ -496,11 +496,16 @@ pub fn browser_trace_from_spans(spans: &[CanonicalSpan]) -> Value {
                 _ => "ok".to_string(),
             });
         // Mirror the native `BrowserAction` serialization (#[serde(tag="action",
-        // content="args")]) so ingested and natively-captured browser_steps share
-        // one `action` shape: { "action": <verb>, "args": { "selector": ... } }.
+        // content="args")]) so ingested and natively-captured browser_steps
+        // share one `action` shape.
         let mut args = serde_json::Map::new();
         if let Some(selector) = attrs.get(semconv::SELECTOR).and_then(Value::as_str) {
             args.insert("selector".to_string(), json!(selector));
+        }
+        if action == "goto" {
+            if let Some(url) = attrs.get(semconv::URL).and_then(Value::as_str) {
+                args.insert("url".to_string(), json!(url));
+            }
         }
         let step = json!({
             "seq": seq,
@@ -762,10 +767,26 @@ mod tests {
     /// Build a `tool.call` `CanonicalSpan` carrying `browser.*` attributes,
     /// mirroring what `beater-otlp` produces for an ingested external agent run.
     fn ingested_tool_span(seq: u64, selector: &str, matched: bool, url: &str) -> CanonicalSpan {
+        ingested_tool_span_with_action(seq, "click", Some(selector), matched, url)
+    }
+
+    fn ingested_goto_span(seq: u64, url: &str) -> CanonicalSpan {
+        ingested_tool_span_with_action(seq, "goto", None, true, url)
+    }
+
+    fn ingested_tool_span_with_action(
+        seq: u64,
+        action: &str,
+        selector: Option<&str>,
+        matched: bool,
+        url: &str,
+    ) -> CanonicalSpan {
         let mut attributes = BTreeMap::new();
         attributes.insert(semconv::ENGINE.to_string(), json!("chromium"));
-        attributes.insert(semconv::ACTION.to_string(), json!("click"));
-        attributes.insert(semconv::SELECTOR.to_string(), json!(selector));
+        attributes.insert(semconv::ACTION.to_string(), json!(action));
+        if let Some(selector) = selector {
+            attributes.insert(semconv::SELECTOR.to_string(), json!(selector));
+        }
         attributes.insert(semconv::SELECTOR_EXISTED.to_string(), json!(matched));
         attributes.insert(semconv::MATCHED_ELEMENT.to_string(), json!(matched));
         attributes.insert(semconv::STEP_SEQ.to_string(), json!(seq));
@@ -786,7 +807,7 @@ mod tests {
             parent_span_id: None,
             seq,
             kind: AgentSpanKind::ToolCall,
-            name: "browser.click".to_string(),
+            name: format!("browser.{action}"),
             status: if matched {
                 SpanStatus::Ok
             } else {
@@ -826,6 +847,7 @@ mod tests {
             steps[1]["outcome"]["grounding"]["matched_element"],
             json!(true)
         );
+        assert_eq!(steps[0]["action"]["args"]["selector"], json!("#cart"));
         assert_eq!(
             steps[1]["outcome"]["observation"]["url"],
             json!("https://shop/confirm")
@@ -838,5 +860,18 @@ mod tests {
             miss_step["outcome"]["grounding"]["matched_element"],
             json!(false)
         );
+    }
+
+    #[test]
+    fn projected_goto_span_preserves_native_action_url_arg() {
+        let trace = browser_trace_from_spans(&[ingested_goto_span(0, "https://shop/cart")]);
+        let step = &trace["browser_steps"][0];
+        assert_eq!(step["action"]["action"], json!("goto"));
+        assert_eq!(step["action"]["args"]["url"], json!("https://shop/cart"));
+        assert_eq!(
+            step["outcome"]["observation"]["url"],
+            json!("https://shop/cart")
+        );
+        assert_eq!(step["outcome"]["grounding"]["selector"], Value::Null);
     }
 }

@@ -115,6 +115,17 @@ pub trait DurableBus: Send + Sync {
     async fn dlq(&self) -> Result<Vec<DeadLetter>, BusError>;
     async fn depth(&self) -> Result<usize, BusError>;
     async fn depth_for_kind(&self, kind: &str) -> Result<usize, BusError>;
+    async fn depth_for_scope(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError>;
+    async fn depth_for_scoped_kind(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError>;
 }
 
 #[derive(Clone, Debug)]
@@ -328,6 +339,39 @@ impl DurableBus for InMemoryBus {
             .filter(|message| message.kind == kind)
             .count())
     }
+
+    async fn depth_for_scope(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError> {
+        let state = self.lock()?;
+        Ok(state
+            .queue
+            .iter()
+            .chain(state.inflight.iter())
+            .filter(|message| message.tenant_id == *tenant_id && message.project_id == *project_id)
+            .count())
+    }
+
+    async fn depth_for_scoped_kind(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError> {
+        let state = self.lock()?;
+        Ok(state
+            .queue
+            .iter()
+            .chain(state.inflight.iter())
+            .filter(|message| {
+                message.tenant_id == *tenant_id
+                    && message.project_id == *project_id
+                    && message.kind == kind
+            })
+            .count())
+    }
 }
 
 #[derive(Clone)]
@@ -444,6 +488,41 @@ impl SqliteDurableBus {
             .map_err(|err| BusError::Storage(err.to_string()))
     }
 
+    fn queue_depth_for_scope(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError> {
+        connection
+            .query_row(
+                "SELECT COUNT(*) FROM queue_messages WHERE tenant_id = ?1 AND project_id = ?2",
+                params![tenant_id.as_str(), project_id.as_str()],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|count| count as usize)
+            .map_err(|err| BusError::Storage(err.to_string()))
+    }
+
+    fn queue_depth_for_scoped_kind(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError> {
+        connection
+            .query_row(
+                r#"
+                SELECT COUNT(*)
+                FROM queue_messages
+                WHERE tenant_id = ?1 AND project_id = ?2 AND kind = ?3
+                "#,
+                params![tenant_id.as_str(), project_id.as_str(), kind],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|count| count as usize)
+            .map_err(|err| BusError::Storage(err.to_string()))
+    }
+
     fn inflight_depth(connection: &Connection) -> Result<usize, BusError> {
         connection
             .query_row("SELECT COUNT(*) FROM inflight_messages", [], |row| {
@@ -464,6 +543,41 @@ impl SqliteDurableBus {
             .map_err(|err| BusError::Storage(err.to_string()))
     }
 
+    fn inflight_depth_for_scope(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError> {
+        connection
+            .query_row(
+                "SELECT COUNT(*) FROM inflight_messages WHERE tenant_id = ?1 AND project_id = ?2",
+                params![tenant_id.as_str(), project_id.as_str()],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|count| count as usize)
+            .map_err(|err| BusError::Storage(err.to_string()))
+    }
+
+    fn inflight_depth_for_scoped_kind(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError> {
+        connection
+            .query_row(
+                r#"
+                SELECT COUNT(*)
+                FROM inflight_messages
+                WHERE tenant_id = ?1 AND project_id = ?2 AND kind = ?3
+                "#,
+                params![tenant_id.as_str(), project_id.as_str(), kind],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|count| count as usize)
+            .map_err(|err| BusError::Storage(err.to_string()))
+    }
+
     fn active_depth(connection: &Connection) -> Result<usize, BusError> {
         Ok(Self::queue_depth(connection)?.saturating_add(Self::inflight_depth(connection)?))
     }
@@ -471,6 +585,32 @@ impl SqliteDurableBus {
     fn active_depth_for_kind(connection: &Connection, kind: &str) -> Result<usize, BusError> {
         Ok(Self::queue_depth_for_kind(connection, kind)?
             .saturating_add(Self::inflight_depth_for_kind(connection, kind)?))
+    }
+
+    fn active_depth_for_scope(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError> {
+        Ok(
+            Self::queue_depth_for_scope(connection, tenant_id, project_id)?.saturating_add(
+                Self::inflight_depth_for_scope(connection, tenant_id, project_id)?,
+            ),
+        )
+    }
+
+    fn active_depth_for_scoped_kind(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError> {
+        Ok(
+            Self::queue_depth_for_scoped_kind(connection, tenant_id, project_id, kind)?
+                .saturating_add(Self::inflight_depth_for_scoped_kind(
+                    connection, tenant_id, project_id, kind,
+                )?),
+        )
     }
 
     fn inflight_exists(connection: &Connection, message_id: &str) -> Result<bool, BusError> {
@@ -819,6 +959,25 @@ impl DurableBus for SqliteDurableBus {
     async fn depth_for_kind(&self, kind: &str) -> Result<usize, BusError> {
         let connection = self.lock()?;
         Self::active_depth_for_kind(&connection, kind)
+    }
+
+    async fn depth_for_scope(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError> {
+        let connection = self.lock()?;
+        Self::active_depth_for_scope(&connection, tenant_id, project_id)
+    }
+
+    async fn depth_for_scoped_kind(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError> {
+        let connection = self.lock()?;
+        Self::active_depth_for_scoped_kind(&connection, tenant_id, project_id, kind)
     }
 }
 
@@ -1600,6 +1759,22 @@ mod tests {
                 .await
                 .unwrap_or_else(|e| panic!("{e}"));
 
+            assert_eq!(bus.depth_for_scope(&tenant_a, &project).await, Ok(1));
+            assert_eq!(bus.depth_for_scope(&tenant_b, &project).await, Ok(1));
+            assert_eq!(
+                bus.depth_for_scoped_kind(&tenant_a, &project, kind).await,
+                Ok(1)
+            );
+            assert_eq!(
+                bus.depth_for_scoped_kind(&tenant_b, &project, kind).await,
+                Ok(1)
+            );
+            assert_eq!(
+                bus.depth_for_scoped_kind(&tenant_a, &project, "c.other")
+                    .await,
+                Ok(0)
+            );
+
             // Tenant A's scoped consume must return only its own message.
             let consumed_a = bus
                 .consume_scoped_kind_batch(&tenant_a, &project, kind, 10)
@@ -1617,6 +1792,11 @@ mod tests {
             bus.ack(consumed_a[0].clone())
                 .await
                 .unwrap_or_else(|e| panic!("{e}"));
+            assert_eq!(bus.depth_for_scope(&tenant_a, &project).await, Ok(0));
+            assert_eq!(
+                bus.depth_for_scoped_kind(&tenant_b, &project, kind).await,
+                Ok(1)
+            );
 
             // Tenant B's message must remain unconsumed.
             let remaining = bus
@@ -1635,6 +1815,7 @@ mod tests {
             bus.ack(remaining[0].clone())
                 .await
                 .unwrap_or_else(|e| panic!("{e}"));
+            assert_eq!(bus.depth_for_scope(&tenant_b, &project).await, Ok(0));
         }
 
         // ── §3 Retry + DLQ routing ────────────────────────────────────────────

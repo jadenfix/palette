@@ -130,7 +130,10 @@ pub fn api_key_id_from_secret(secret: &str) -> Result<ApiKeyId, SecurityError> {
     let Some((api_key_id, token_secret)) = rest.split_once('_') else {
         return Err(SecurityError::MalformedApiKey);
     };
-    if api_key_id.is_empty() || token_secret.is_empty() {
+    if api_key_id.is_empty()
+        || token_secret.len() != 32
+        || !token_secret.bytes().all(|byte| byte.is_ascii_hexdigit())
+    {
         return Err(SecurityError::MalformedApiKey);
     }
     ApiKeyId::new(api_key_id.to_string()).map_err(|_| SecurityError::MalformedApiKey)
@@ -334,6 +337,47 @@ mod tests {
             ),
             Err(SecurityError::MissingScope(scope)) if scope == "pii:unmask"
         ));
+    }
+
+    #[test]
+    fn api_key_id_from_secret_extracts_created_key_id() {
+        let mut scopes = BTreeSet::new();
+        scopes.insert(ApiScope::TraceWrite);
+        let created = create_api_key(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            scopes,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        let parsed = api_key_id_from_secret(&created.secret).unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(parsed, created.record.api_key_id);
+    }
+
+    #[test]
+    fn api_key_id_from_secret_rejects_malformed_secrets() {
+        let malformed = [
+            "api-key-id_0123456789abcdef0123456789abcdef",
+            "bt_",
+            "bt_api-key-id",
+            "bt__0123456789abcdef0123456789abcdef",
+            "bt_api-key-id_",
+            "bt_api-key-id_0123456789abcdef0123456789abcde",
+            "bt_api-key-id_0123456789abcdef0123456789abcdef0",
+            "bt_api-key-id_0123456789abcdef0123456789abcdeg",
+        ];
+
+        for secret in malformed {
+            assert!(
+                matches!(
+                    api_key_id_from_secret(secret),
+                    Err(SecurityError::MalformedApiKey)
+                ),
+                "{secret} should be rejected"
+            );
+        }
     }
 
     #[test]

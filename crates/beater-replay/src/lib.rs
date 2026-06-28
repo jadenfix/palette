@@ -407,12 +407,12 @@ fn json_hash(value: &Value) -> anyhow::Result<Sha256Hash> {
 }
 
 pub fn plan_replay(cassette: &ReplayCassette, fork_after: Option<SpanId>) -> ReplayPlan {
-    let mode = if cassette.missing_required_kinds.is_empty() && fork_after.is_none() {
-        ReplayMode::DeterministicReplay
+    let mode = if !cassette.missing_required_kinds.is_empty() {
+        ReplayMode::Simulation
     } else if fork_after.is_some() {
         ReplayMode::ForkedReplay
     } else {
-        ReplayMode::Simulation
+        ReplayMode::DeterministicReplay
     };
     let guarantee = match mode {
         ReplayMode::DeterministicReplay => {
@@ -822,7 +822,17 @@ mod tests {
             missing_required_kinds: vec!["tool".to_string()],
             ..complete
         };
-        assert_eq!(plan_replay(&missing, None).mode, ReplayMode::Simulation);
+        let simulation = plan_replay(&missing, None);
+        assert_eq!(simulation.mode, ReplayMode::Simulation);
+        assert_eq!(simulation.missing_required_kinds, vec!["tool"]);
+
+        let fork_with_missing = plan_replay(
+            &missing,
+            Some(SpanId::new("fork").unwrap_or_else(|err| panic!("{err}"))),
+        );
+        assert_eq!(fork_with_missing.mode, ReplayMode::Simulation);
+        assert_eq!(fork_with_missing.missing_required_kinds, vec!["tool"]);
+        assert!(fork_with_missing.guarantee.contains("missing"));
     }
 
     #[tokio::test]

@@ -1952,10 +1952,10 @@ fn gate2_public_handoff_full_run_has_local_runtime_preflight_contract() {
     assert!(script.contains("expected_commit, \"beater\""));
     let raw_preflight_idx = script
         .find("run_raw_public_preflight(args, expected_commit)")
-        .expect("raw public preflight call in verifier");
+        .unwrap_or_else(|| panic!("raw public preflight call in verifier"));
     let clone_idx = script
         .find("clone_dir, temp_owner, clone_started_epoch = clone_repo")
-        .expect("first clone call in verifier");
+        .unwrap_or_else(|| panic!("first clone call in verifier"));
     assert!(
         raw_preflight_idx < clone_idx,
         "raw public preflight must run before any public handoff clone"
@@ -2392,10 +2392,10 @@ fn gate2_outside_wrapper_accepts_default_dry_run() {
 fn gate2_outside_wrapper_dry_run_rejects_missing_python3() {
     let fixture = write_outside_wrapper_fixture_repo("main");
     let path_dir = tempdir("create outside wrapper dry-run PATH without python3");
-    symlink(&command_executable("git"), path_dir.path().join("git"))
+    symlink(command_executable("git"), path_dir.path().join("git"))
         .unwrap_or_else(|err| panic!("symlink git fixture: {err}"));
     symlink(
-        &command_executable("dirname"),
+        command_executable("dirname"),
         path_dir.path().join("dirname"),
     )
     .unwrap_or_else(|err| panic!("symlink dirname fixture: {err}"));
@@ -2419,10 +2419,10 @@ fn gate2_outside_wrapper_dry_run_rejects_missing_python3() {
 fn gate2_outside_wrapper_dry_run_rejects_unusable_python3() {
     let fixture = write_outside_wrapper_fixture_repo("main");
     let path_dir = tempdir("create outside wrapper dry-run PATH with unusable python3");
-    symlink(&command_executable("git"), path_dir.path().join("git"))
+    symlink(command_executable("git"), path_dir.path().join("git"))
         .unwrap_or_else(|err| panic!("symlink git fixture: {err}"));
     symlink(
-        &command_executable("dirname"),
+        command_executable("dirname"),
         path_dir.path().join("dirname"),
     )
     .unwrap_or_else(|err| panic!("symlink dirname fixture: {err}"));
@@ -2454,7 +2454,7 @@ fn gate2_outside_wrapper_dry_run_rejects_missing_ffprobe() {
     let fixture = write_outside_wrapper_fixture_repo("main");
     let path_dir = tempdir("create outside wrapper dry-run PATH without ffprobe");
     for name in ["git", "dirname", "python3"] {
-        symlink(&command_executable(name), path_dir.path().join(name))
+        symlink(command_executable(name), path_dir.path().join(name))
             .unwrap_or_else(|err| panic!("symlink {name} fixture: {err}"));
     }
 
@@ -2687,7 +2687,7 @@ fn gate2_outside_wrapper_rejects_missing_ffprobe_before_stopwatch() {
     let clone_started = valid_clone_started_epoch(fixture.path()).to_string();
     let path_dir = tempdir("create outside wrapper PATH without ffprobe");
     for name in ["git", "dirname", "python3"] {
-        symlink(&command_executable(name), path_dir.path().join(name))
+        symlink(command_executable(name), path_dir.path().join(name))
             .unwrap_or_else(|err| panic!("symlink {name} fixture: {err}"));
     }
 
@@ -2718,10 +2718,10 @@ fn gate2_outside_wrapper_rejects_missing_python3_before_stopwatch() {
     git_success(fixture.path(), &["commit", "-m", "add stopwatch stub"]);
     let clone_started = valid_clone_started_epoch(fixture.path()).to_string();
     let path_dir = tempdir("create outside wrapper PATH without python3");
-    symlink(&command_executable("git"), path_dir.path().join("git"))
+    symlink(command_executable("git"), path_dir.path().join("git"))
         .unwrap_or_else(|err| panic!("symlink git fixture: {err}"));
     symlink(
-        &command_executable("dirname"),
+        command_executable("dirname"),
         path_dir.path().join("dirname"),
     )
     .unwrap_or_else(|err| panic!("symlink dirname fixture: {err}"));
@@ -4002,7 +4002,7 @@ fn gate2_outside_validator_rejects_compose_log_path_mismatch() {
     let alternate_log = fixture
         .compose_log_path
         .parent()
-        .expect("compose log path should have parent")
+        .unwrap_or_else(|| panic!("compose log path should have parent"))
         .join("alternate-compose.log");
     fs::write(&alternate_log, compose_log_text())
         .unwrap_or_else(|err| panic!("write alternate compose log artifact: {err}"));
@@ -4070,7 +4070,7 @@ fn gate2_outside_validator_rejects_symlink_compose_log_artifact() {
     let linked_log = fixture
         .compose_log_path
         .parent()
-        .expect("compose log path should have parent")
+        .unwrap_or_else(|| panic!("compose log path should have parent"))
         .join("linked-compose.log");
     symlink(&fixture.compose_log_path, &linked_log)
         .unwrap_or_else(|err| panic!("symlink compose log artifact: {err}"));
@@ -5300,6 +5300,7 @@ fn run_generator_with_compose_logs_saved(
         .unwrap_or_else(|err| panic!("run Gate 2 outside proof generator with compose logs: {err}"))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_generator_with_evidence_options(
     stopwatch_path: &Path,
     output_path: &Path,
@@ -5324,6 +5325,7 @@ fn run_generator_with_evidence_options(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_generator_with_options_and_runner(
     stopwatch_path: &Path,
     output_path: &Path,
@@ -5787,7 +5789,7 @@ fn path_with_dir(dir: &Path) -> String {
 fn path_without_ffprobe(label: &str, tools: &[&str]) -> TempDir {
     let dir = tempdir(label);
     for name in tools {
-        symlink(&command_executable(name), dir.path().join(name))
+        symlink(command_executable(name), dir.path().join(name))
             .unwrap_or_else(|err| panic!("symlink {name} fixture: {err}"));
     }
     dir
@@ -5887,9 +5889,11 @@ fn run_outside_wrapper_real_with_clone_timer_in_repo(repo: &Path, clone_started:
     child
         .stdin
         .as_mut()
-        .expect("fixture wrapper stdin should be piped")
+        .unwrap_or_else(|| panic!("fixture wrapper stdin should be piped"))
         .write_all(b"\n")
-        .expect("write manual checkpoint confirmation to fixture wrapper");
+        .unwrap_or_else(|err| {
+            panic!("write manual checkpoint confirmation to fixture wrapper: {err}")
+        });
     child
         .wait_with_output()
         .unwrap_or_else(|err| panic!("run Gate 2 outside wrapper fixture real run: {err}"))
@@ -5900,12 +5904,12 @@ fn run_service_image_digest_fixture(service: &str, repo_digests: &str) -> String
         .unwrap_or_else(|err| panic!("read gate2-compose-stopwatch.sh: {err}"));
     let function_start = script_text
         .find("service_image_digest() {")
-        .expect("stopwatch script should define service_image_digest");
+        .unwrap_or_else(|| panic!("stopwatch script should define service_image_digest"));
     let function_end_marker = "\n}\n\nrequire_command()";
     let function_end = script_text[function_start..]
         .find(function_end_marker)
         .map(|offset| function_start + offset + "\n}\n".len())
-        .expect("service_image_digest should end before require_command");
+        .unwrap_or_else(|| panic!("service_image_digest should end before require_command"));
     let function = &script_text[function_start..function_end];
     let mut fixture = String::from("set -euo pipefail\n");
     fixture.push_str(function);
@@ -5957,7 +5961,7 @@ service_image_digest "$SERVICE"
         );
     }
     String::from_utf8(output.stdout)
-        .expect("service_image_digest stdout should be utf-8")
+        .unwrap_or_else(|err| panic!("service_image_digest stdout should be utf-8: {err}"))
         .trim()
         .to_owned()
 }
