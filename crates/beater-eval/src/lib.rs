@@ -384,8 +384,11 @@ pub fn evaluate_deterministic(
         }
         EvaluatorKind::JsonObject => Ok(binary_score(case.output.is_object(), "json_object")),
         EvaluatorKind::CostBudget { max_micros } => {
-            let cost = required_trace_i64(spec, case, "cost_micros")?;
-            Ok(binary_score(cost <= *max_micros, "cost_budget"))
+            let cost = required_trace_u64(spec, case, "cost_micros")?;
+            Ok(binary_score(
+                *max_micros >= 0 && cost <= *max_micros as u64,
+                "cost_budget",
+            ))
         }
         EvaluatorKind::LatencyBudgetMs { max_ms } => {
             let latency = required_trace_u64(spec, case, "latency_ms")?;
@@ -510,21 +513,6 @@ fn required_reference<'a>(
         .as_ref()
         .ok_or_else(|| EvalError::MissingReference {
             evaluator_id: spec.id.clone(),
-        })
-}
-
-fn required_trace_i64(
-    spec: &EvaluatorSpec,
-    case: &EvaluationCase,
-    metric: &'static str,
-) -> Result<i64, EvalError> {
-    case.trace
-        .as_ref()
-        .and_then(|trace| trace.get(metric))
-        .and_then(Value::as_i64)
-        .ok_or_else(|| EvalError::MissingTraceMetric {
-            evaluator_id: spec.id.clone(),
-            metric,
         })
 }
 
@@ -1175,6 +1163,25 @@ mod tests {
     }
 
     #[test]
+    fn cost_budget_rejects_negative_trace_metric() {
+        let case = EvaluationCase {
+            input: serde_json::json!(null),
+            output: serde_json::json!(null),
+            reference: None,
+            trace: Some(serde_json::json!({ "cost_micros": -1 })),
+        };
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::CostBudget { max_micros: 100 }),
+                &case,
+            ),
+            Err(EvalError::MissingTraceMetric { evaluator_id, metric })
+                if evaluator_id == "cost_budget" && metric == "cost_micros"
+        ));
+    }
+
+    #[test]
     fn budget_scorers_score_present_trace_metrics() {
         let case = EvaluationCase {
             input: serde_json::json!(null),
@@ -1192,6 +1199,13 @@ mod tests {
         )
         .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(cost.score, 1.0);
+
+        let negative_budget = evaluate_deterministic(
+            &deterministic_spec(EvaluatorKind::CostBudget { max_micros: -1 }),
+            &case,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(negative_budget.score, 0.0);
 
         let latency = evaluate_deterministic(
             &deterministic_spec(EvaluatorKind::LatencyBudgetMs { max_ms: 50 }),
