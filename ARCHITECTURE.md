@@ -3878,7 +3878,7 @@ to §18 milestones, §19 Bar-for-Done, §20/§21 phase items, and §22 tests.
 | Orgs / projects / envs | org/project/environment entities + scoping enforced | §22.1 Store row; `beater-store-conformance` boundaries `[built]` | built |
 | Enforced RBAC | a non-owner is **denied** a mutating route by `authorize()` (A20) | §22.3 §20.7 #5.2; `sdk-contract` (403 test) | planned (RBAC data model exists, never consulted by `authorize()`, §20.1) |
 | SSO / SAML / SCIM | enterprise login JIT-provisions a user (OIDC/SAML/SCIM) | §22.1 Hosted control plane (SSO JIT); Passport (`beater-identity` [planned]) | planned |
-| Storage-layer tenant isolation (RLS) + secure-default auth | cross-tenant read/write **fails at the DB** under Postgres RLS; auth required by default | §22.3 §20.7 #5.4 (A20); `storage-backends` (app-layer `[built]` → DB-layer `[planned]`) | partial (app-enforced today; DB RLS planned) |
+| Storage-layer tenant isolation (RLS) + secure-default auth | cross-tenant read/write **fails at the DB** under Postgres RLS; auth required by default | §22.3 §20.7 #5.4 (A20); `storage-backends` (app-layer `[built]` → DB-layer `[planned]`) | partial (auth required by default; `--auth-mode local` rejects non-loopback HTTP binds; app-enforced today; DB RLS planned) |
 | Quotas / rate-limits / billing ledger | per-tenant quota + rolling-window limit + a usage/billing ledger | §22.1 + Tempo (`beater-usage`) `[built]` ledger; Bandwidth (`beater-billing` [planned]) | partial |
 | Crypto-shred deletion / GDPR + retention + residency | a shredded tenant is **unreadable across hot/cold/artifact**; retention sweeper runs; residency honored | §22.3 §20.7 #5.5 + §20.2 #0.4; `sdk-contract` / `backend` | planned (crypto primitives built; lifecycle planned) |
 | Backups + passing restore drill | a restore drill **meets documented RPO/RTO** | §22.3 §20.7 #5.9; CI restore-drill job | planned |
@@ -4664,3 +4664,67 @@ Crosswalk to the existing ledger: credit-assignment + bisection extend the
 `attribute_failure` work (§11); convergence + real CIs use `beater-stats` (§20.5);
 OOD-probe wiring enforces §21.4; the provenance chain (E2) is prerequisite plumbing
 for §21.
+
+## 28. Integrations & the Agent-Tooling Ecosystem
+
+§26 is about *optimizations and competitive margins*. This section is the missing
+*other axis*: **how the agent ecosystem plugs into Beater, and how Beater sources and
+exposes agent tooling.** The thesis is "very easy for agents **and** humans, with
+sophisticated agentics underneath" — §10/§11/§21 deliver the sophistication; this
+section is the **ease-of-plugging-in** that converts the architectural lead into
+adoption. Every entry carries an honest `[built]/[partial]/[planned]/[deferred]`
+marker (§4 convention) and names the crate it extends. The discipline of §26.3 holds:
+where we **deliberately don't integrate**, we say so (§28.4) rather than leaving a
+silent blind spot. Tracked end-to-end in **#275** (this catalog's working issue),
+with #276 (crate wiring) and #277 (MCP loop-closing) as the code companions. **Integration status verified 2026-06-27**; re-verify each sprint per §26's dated-audit discipline so the [planned] rows do not drift toward fiction.
+
+### 28.0 Design stance — passive OTLP is necessary but not sufficient
+
+The default integration today is *"emit OTLP/OpenInference/OpenLLMetry and we
+normalize it"* (§7) — portable, zero-lock-in, and the right floor. But it is
+**passive**: Beater is not present inside any framework's tool/handoff lifecycle, and
+it neither sources tools for agents nor exposes its own eval/gate/replay tools *into*
+the registries agents already use. The integration roadmap moves up three rungs —
+**ingest (passive) → adapter (present in the lifecycle) → bidirectional (Beater's
+tools callable from the ecosystem)** — without ever making the higher rungs a
+prerequisite for the floor.
+
+### 28.1 Inbound — frameworks & instrumentation
+
+| Surface | Status | Where it lives | Note |
+| --- | --- | --- | --- |
+| Generic OTLP / OpenInference / OpenLLMetry ingest | **[built]** | `beater-otlp`, `beater-ingest` (§7) | the zero-code floor; any instrumented app lights up |
+| OTel `gen_ai.*` semantic-convention completeness | **[partial]** | `beater-otlp` (§26 O8) | churn-prone new names + full OpenInference kind/attr set; #93 |
+| browser-use / Stagehand SDKs | **[built]** | `sdks/python-browser-use`, `sdks/ts-stagehand` | the one shipped first-class agent vertical |
+| Temporal history → canonical spans | **[built]** | `beater-temporal` | sub-agent steps map cleanly to canonical spans |
+| LangChain / LangGraph callbacks | **[partial]** | `sdks/*` (promised in `sdks/README.md`) | mentioned in §21.5; adapter not yet first-class |
+| OpenAI Agents SDK / Anthropic Agent SDK / CrewAI / AutoGen / Pydantic AI / Mastra / Vercel AI SDK / LlamaIndex | **[planned]** | `sdks/*` | **breadth gap (#275 §B)** — span kinds are ready, so each is a mapping exercise. Build **one** deep reference adapter, then template the rest |
+
+### 28.2 Inbound — migration on-ramps ("switch from X")
+
+The `SourceImporter` trait (`beater-temporal/src/lib.rs:256`) + unified `POST /v1/import`
+endpoint are **[built]** but only `temporal_history` + `native` are wired
+(`beaterd/src/main.rs`). Importers for **LangSmith / Langfuse / Braintrust / Phoenix**
+are **[planned]** — additive, no contract change, high conversion value. This is the
+concrete code behind the OTLP-"Switzerland" positioning (#155); export-out keeps the
+round-trip lossless (#155).
+
+### 28.3 Bidirectional — tool registries & agent protocols
+
+| Surface | Status | Triage (#275) | Rationale |
+| --- | --- | --- | --- |
+| **Composio / tool-registry** (inbound: auto-instrument tool calls made *through* a registry as canonical `tool.call` spans) | **[planned]** | INTEGRATE | the user-named headline gap; `tool.call`/`mcp.request` schema already exists |
+| **Composio / MCP directories** (outbound: expose `gate_candidate`/`promote_failures` etc. *as* registry tools) | **[planned]** | PARTNER / BUILD | makes Beater's loop callable from any agent; depends on #277 composite tools |
+| **`beater-mcp` attach inside coding agents** (Claude Code / Codex / ChatGPT connectors, OAuth 2.1 RFC 9728→8414→7591) | **[partial]** | BUILD | connect flow built (§21.5b); **stdio transport + e2e verify still missing (#277)** |
+| **A2A (agent-to-agent) / AG-UI** protocol ingest | **[deferred]** | SKIP-document | needs a canonical `agent.handoff` span kind first (#159); revisit when standards stabilize |
+| **n8n / Zapier / Pipedream** workflow platforms | **[deferred]** | SKIP-document | lower priority than frameworks/registries; conscious deferral, not a blind spot |
+
+### 28.4 What we deliberately don't integrate (yet)
+
+Per §26.3 honesty: **A2A/AG-UI protocol surfaces** and **no-code workflow platforms**
+are consciously deferred until (a) a real user ask exists and (b) the multi-agent
+schema (`agent.handoff`, #159) lands — building them now would add doc/feature weight
+we can't yet justify against the §1 discipline. The bidirectional registry rung
+(§28.3) is gated on #277's composite tools shipping first; we will not expose a
+"loop-closing" tool externally until the loop actually closes (#71).
+

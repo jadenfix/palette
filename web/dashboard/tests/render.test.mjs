@@ -807,6 +807,42 @@ test("generated api client is produced from the checked-in openapi snapshot", ()
   assert.match(generated, /min_cost_micros/);
 });
 
+test("in-app docs runtime surfaces are generated from the openapi contract", () => {
+  const spec = JSON.parse(readFileSync(join(root, "openapi/beater-read-api.json"), "utf8"));
+  const operationIds = Object.values(spec.paths)
+    .flatMap((methods) => Object.values(methods))
+    .map((operation) => operation.operationId)
+    .filter(Boolean);
+
+  assert.ok(operationIds.includes("listTraces"));
+  assert.ok(operationIds.includes("createDataset"));
+
+  const openapiRoute = readFileSync(join(root, "app/api/openapi/route.ts"), "utf8");
+  assert.match(openapiRoute, /openapi", "beater-read-api\.json"/);
+  assert.match(openapiRoute, /readFile\(specPath, "utf8"\)/);
+  assert.match(openapiRoute, /"content-type": "application\/json"/);
+
+  const docsPage = readFileSync(join(root, "app/docs/page.tsx"), "utf8");
+  assert.match(docsPage, /setAttribute\("data-url", "\/api\/openapi"\)/);
+  assert.match(docsPage, /@scalar\/api-reference/);
+  assert.doesNotMatch(docsPage, /beater-read-api\.json/);
+
+  const mcpPage = readFileSync(join(root, "app/docs/mcp/page.tsx"), "utf8");
+  assert.match(mcpPage, /fetch\("\/api\/openapi"\)/);
+  assert.match(mcpPage, /spec\.paths/);
+  assert.match(mcpPage, /op\?\.operationId/);
+  assert.match(mcpPage, /name: op\.operationId/);
+  assert.match(mcpPage, /tool name = operationId/);
+
+  const quickstartsPage = readFileSync(join(root, "app/docs/quickstarts/page.tsx"), "utf8");
+  assert.match(quickstartsPage, /href="\/docs"/);
+  assert.match(quickstartsPage, /one OpenAPI contract/);
+  assert.match(quickstartsPage, /MCP server/);
+  assert.match(quickstartsPage, /tools\/list/);
+  assert.match(quickstartsPage, /CLI/);
+  assert.match(quickstartsPage, /Control-plane clients \(7 languages\)/);
+});
+
 test("browser proof covers all canonical span kinds and can record a demo", () => {
   const e2e = readFileSync(join(root, "tests/e2e/dashboard.spec.ts"), "utf8");
   const spanKinds = loadSpanKindsModule();
