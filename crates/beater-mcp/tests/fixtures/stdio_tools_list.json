@@ -1,0 +1,19 @@
+{
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/list",
+    "params": {}
+  },
+  "response_shape": {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": {
+      "tools": [
+        {
+          "_comment": "Each entry has at minimum: name (string), description (string), inputSchema (object). The full list is derived at runtime from the OpenAPI spec — see §3.3 and crates/beater-mcp/src/lib.rs build_tools()."
+        }
+      ]
+    }
+  }
+}

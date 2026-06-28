@@ -1,0 +1,94 @@
+{
+  "_comment": "Golden fixture for a complete MCP stdio session. Each entry is one newline-delimited JSON-RPC frame on stdin (direction: 'in') or stdout (direction: 'out'). Stderr lines are not captured here. See docs/mcp-stdio.md §2.3 for the lifecycle contract.",
+  "frames": [
+    {
+      "direction": "in",
+      "frame": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2025-06-18",
+          "clientInfo": { "name": "claude-code", "version": "1.0.0" },
+          "capabilities": {}
+        }
+      }
+    },
+    {
+      "direction": "out",
+      "frame": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "protocolVersion": "2025-06-18",
+          "serverInfo": { "name": "beater-mcp", "version": "0.1.0" },
+          "capabilities": { "tools": { "listChanged": false } }
+        }
+      }
+    },
+    {
+      "direction": "in",
+      "frame": {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized",
+        "params": {}
+      },
+      "_comment": "Notification: no id, server emits no response."
+    },
+    {
+      "direction": "in",
+      "frame": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/list",
+        "params": {}
+      }
+    },
+    {
+      "direction": "out",
+      "frame": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "_schema_check": "result.tools must be a non-empty JSON array; each element has name (string), description (string), inputSchema (object). The exact list is runtime-derived from the OpenAPI spec."
+        }
+      },
+      "_comment": "Shape assertion only — full list is dynamic. See stdio_fixture.rs::stdio_tools_list_shape for the runtime check."
+    },
+    {
+      "direction": "in",
+      "frame": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "ping",
+        "params": {}
+      }
+    },
+    {
+      "direction": "out",
+      "frame": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": {}
+      }
+    },
+    {
+      "direction": "in",
+      "frame": {
+        "jsonrpc": "2.0",
+        "id": 99,
+        "method": "shutdown",
+        "params": {}
+      }
+    },
+    {
+      "direction": "out",
+      "frame": {
+        "jsonrpc": "2.0",
+        "id": 99,
+        "result": {}
+      },
+      "_comment": "After sending this response the server waits for EOF on stdin, then exits 0."
+    }
+  ]
+}
