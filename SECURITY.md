@@ -65,8 +65,9 @@ upstream, but tell us so we can pin/patch).
 
 ## Self-host hardening notes
 
-- Run `beaterd` with `--auth-mode required` for any non-localhost bind; the
-  default open mode is for local development only (§20.7 #5.4).
+- `beaterd` defaults to `--auth-mode required`. Use `--auth-mode local` only for
+  explicit local development; it prints a startup warning because mutating and
+  sensitive routes are anonymous in that mode (§20.7 #5.4).
 - Set `BEATER_PROVIDER_SECRET_KEY` (base64 32-byte key) so provider secrets are
   encrypted with a key you control rather than an on-disk generated key.
 - Keep the dashboard and OTLP ports off the public internet unless fronted by

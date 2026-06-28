@@ -36,7 +36,7 @@ The supported deployment is the single `beaterd` binary (R1.2):
 
 ```sh
 # Native:
-cargo run -p beaterd
+cargo run -p beaterd -- --auth-mode local
 
 # Or the full self-host compose (beaterd + dashboard), offline by default (R1.3):
 docker compose up beaterd dashboard
@@ -44,7 +44,8 @@ docker compose up beaterd dashboard
 
 `beaterd` listens on `:8080` (HTTP API + MCP at `/mcp`) and `:4317` (OTLP gRPC),
 and stores data under `.beater/` (SQLite + filesystem) — no external services
-needed.
+needed. The native command and compose files opt into `--auth-mode local`; the
+default `beaterd` mode requires API-key auth.
 
 ## Send your first trace (zero SDK)
 

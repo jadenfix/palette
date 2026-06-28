@@ -20,6 +20,9 @@ point at). Beater itself never phones home:
 - External backends (Postgres, NATS, MinIO, ClickHouse) are **opt-in** behind
   compose profiles. The default path uses embedded SQLite + the local
   filesystem, so there is nothing extra to reach over the network.
+- The compose quickstart explicitly runs `beaterd --auth-mode local` for offline
+  demo ergonomics. Run `beaterd` with its default `--auth-mode required` and
+  bootstrap API keys before exposing it beyond local development.
 
 ## What egress exists, and why
 

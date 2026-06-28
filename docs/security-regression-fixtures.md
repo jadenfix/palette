@@ -19,7 +19,7 @@ Can an attacker reach a protected endpoint without valid credentials?
 |---|---|---|---|
 | No credentials → 401 | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | `POST /v1/traces/native` without `Authorization` header returns `401 Unauthorized` | Covered |
 | Revoked key → 403 | same test (latter half) | After revoking the key, the same secret now returns `403 Forbidden` | Covered |
-| Default auth mode disabled (H4) | — | No test that the server defaults to auth-required; `--auth-mode` defaults to `Local` = no-auth. All existing auth tests manually call `.require_auth()`. A misconfig in prod serves all routes anonymously. | **GAP** |
+| Default auth mode disabled (H4) | `bins/beaterd/src/main.rs :: auth_default_tests::{auth_mode_defaults_to_required, auth_mode_local_is_explicit_opt_in, auth_mode_required_parses}` | The CLI parser defaults `beaterd` to `AuthModeArg::Required`, while `--auth-mode local` remains an explicit insecure opt-in. | Covered |
 
 ### AuthZ / RBAC scope escalation
 
@@ -121,20 +121,19 @@ Do alternate access paths enforce the same auth policy?
 
 | # | Threat category | Security review finding |
 |---|---|---|
-| 1 | Default auth mode is insecure (`Local`) | H4 |
-| 2 | `trace_write` key not tested against admin-only routes | — |
-| 3 | Cross-tenant trace read (IDOR on read path) | — |
-| 4 | `secret_hash` absent from list/get key responses | — |
-| 5 | OTLP / browser-capture redaction bypass | H1 |
-| 6 | Browser DOM / console / prompt redaction | H1 / H3 |
-| 7 | DataFusion archive SQL injection | H6 |
-| 8 | Tantivy query DSL injection / DoS | H7 |
-| 9 | FS artifact store path traversal | M2 |
-| 10 | Browser `goto` SSRF | M3 |
-| 11 | Webhook `endpoint_url` SSRF | M4 |
-| 12 | MCP surface with auth enabled | — |
-| 13 | OAuth session / PKCE / redirect-URI | — |
+| 1 | `trace_write` key not tested against admin-only routes | — |
+| 2 | Cross-tenant trace read (IDOR on read path) | — |
+| 3 | `secret_hash` absent from list/get key responses | — |
+| 4 | OTLP / browser-capture redaction bypass | H1 |
+| 5 | Browser DOM / console / prompt redaction | H1 / H3 |
+| 6 | DataFusion archive SQL injection | H6 |
+| 7 | Tantivy query DSL injection / DoS | H7 |
+| 8 | FS artifact store path traversal | M2 |
+| 9 | Browser `goto` SSRF | M3 |
+| 10 | Webhook `endpoint_url` SSRF | M4 |
+| 11 | MCP surface with auth enabled | — |
+| 12 | OAuth session / PKCE / redirect-URI | — |
 
-Findings marked H4, H1, H6, H7 are rated **Critical / High** in the security
-review.  Recommend addressing items 1, 5, 7, 8 first (aligned with the
+Findings marked H1, H6, H7 are rated **Critical / High** in the security
+review. Recommend addressing items 4, 6, and 7 first (aligned with the
 security review's Top 5).

@@ -69,10 +69,13 @@ cargo run -q -p beaterctl -- smoke --data-dir /tmp/beater-smoke
 Or run the all-in-one server and smoke it remotely:
 
 ```bash
-cargo run -q -p beaterd -- --data-dir /tmp/beaterd
+cargo run -q -p beaterd -- --data-dir /tmp/beaterd --auth-mode local
 cargo run -q -p beaterctl -- smoke --http-url http://127.0.0.1:8080
 cargo run -q -p beaterctl -- ingest test --http-url http://127.0.0.1:8080
 ```
+
+`beaterd` defaults to `--auth-mode required`; the local smoke path above opts
+into anonymous local mode explicitly.
 
 Point a stock OpenTelemetry exporter at the local OTLP port:
 
