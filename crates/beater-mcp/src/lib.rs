@@ -725,9 +725,11 @@ async fn call_tool(
             if value.is_null() {
                 continue;
             }
-            if let Some(rendered) = value_to_path_segment(value) {
-                query_pairs.push(format!("{}={}", urlencode(param), urlencode(&rendered)));
-            }
+            let rendered = value_to_path_segment(value).ok_or((
+                INVALID_PARAMS,
+                format!("query parameter {param} must be a scalar"),
+            ))?;
+            query_pairs.push(format!("{}={}", urlencode(param), urlencode(&rendered)));
         }
     }
     let uri = if query_pairs.is_empty() {

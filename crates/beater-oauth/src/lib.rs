@@ -1366,9 +1366,10 @@ mod tests {
         assert_ne!(rotated.refresh_token, first.refresh_token);
         // The rotated access token validates (checked before any reuse, which
         // would trigger family revocation — see the dedicated reuse test).
-        ok(store
+        let claims = ok(store
             .validate_access_token(&rotated.access_token, now)
             .await);
+        assert_eq!(claims.tenant_scope, test_tenant_scope());
         // The old refresh token is now revoked (rotation) — reuse is rejected.
         assert!(matches!(
             store
@@ -1450,6 +1451,78 @@ mod tests {
             store.authenticate_client(&client_id, None).await,
             Err(OAuthError::InvalidClient)
         ));
+    }
+
+    #[tokio::test]
+    async fn serialized_oauth_records_do_not_leak_secret_hashes() {
+        let store = store();
+        let now = Utc::now();
+        let mut reg = public_client_registration();
+        reg.token_endpoint_auth_method = ClientAuthMethod::ClientSecretBasic;
+        let registered = ok(store.register_client(reg, now).await);
+        let client_secret = ok(registered.client_secret.clone().ok_or("expected secret"));
+        let client_id = registered.client.client_id.clone();
+        let code = issue_code(&store, &client_id, &challenge_for(VERIFIER), now).await;
+        let code_id = AuthCodeId::new(
+            parse_token(AUTH_CODE_PREFIX, &code)
+                .unwrap_or_else(|| panic!("expected minted authorization code"))
+                .0
+                .to_string(),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        let tokens = ok(store
+            .exchange_code(
+                &client_id,
+                Some(&client_secret),
+                &code,
+                "https://app.example.com/cb",
+                VERIFIER,
+                now,
+            )
+            .await);
+        let access_id = AccessTokenId::new(
+            parse_token(ACCESS_TOKEN_PREFIX, &tokens.access_token)
+                .unwrap_or_else(|| panic!("expected minted access token"))
+                .0
+                .to_string(),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        let refresh_id = RefreshTokenId::new(
+            parse_token(REFRESH_TOKEN_PREFIX, &tokens.refresh_token)
+                .unwrap_or_else(|| panic!("expected minted refresh token"))
+                .0
+                .to_string(),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        let client = ok(store.get_client(&client_id).await)
+            .unwrap_or_else(|| panic!("expected registered client"));
+        let code_record =
+            ok(store.get_code(&code_id).await).unwrap_or_else(|| panic!("expected auth code"));
+        let access = ok(store.get_access_token(&access_id).await)
+            .unwrap_or_else(|| panic!("expected access token"));
+        let refresh = ok(store.get_refresh_token(&refresh_id).await)
+            .unwrap_or_else(|| panic!("expected refresh token"));
+
+        let client_json = ok(serde_json::to_string(&client));
+        assert!(!client_json.contains("client_secret_hash"));
+        assert!(!client_json.contains(&client_secret));
+        assert!(!client_json.contains(client.client_secret_hash.as_deref().unwrap_or("")));
+
+        let code_json = ok(serde_json::to_string(&code_record));
+        assert!(!code_json.contains("secret_hash"));
+        assert!(!code_json.contains(&code));
+        assert!(!code_json.contains(&code_record.secret_hash));
+
+        let access_json = ok(serde_json::to_string(&access));
+        assert!(!access_json.contains("secret_hash"));
+        assert!(!access_json.contains(&tokens.access_token));
+        assert!(!access_json.contains(&access.secret_hash));
+
+        let refresh_json = ok(serde_json::to_string(&refresh));
+        assert!(!refresh_json.contains("secret_hash"));
+        assert!(!refresh_json.contains(&tokens.refresh_token));
+        assert!(!refresh_json.contains(&refresh.secret_hash));
     }
 
     #[tokio::test]
