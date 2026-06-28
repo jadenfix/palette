@@ -94,6 +94,80 @@ pub struct CalibrationReport {
     pub created_at: Timestamp,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct CalibrationQualityThresholds {
+    pub min_sample_count: usize,
+    pub min_cohen_kappa: f64,
+    pub max_expected_calibration_error: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_brier_score: Option<f64>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct CalibrationQualityAssessment {
+    pub passed: bool,
+    pub reasons: Vec<CalibrationQualityFailure>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(tag = "reason", rename_all = "snake_case")]
+pub enum CalibrationQualityFailure {
+    SampleCountTooSmall { actual: usize, minimum: usize },
+    CohenKappaTooLow { actual: f64, minimum: f64 },
+    ExpectedCalibrationErrorTooHigh { actual: f64, maximum: f64 },
+    BrierScoreTooHigh { actual: f64, maximum: f64 },
+}
+
+impl CalibrationQualityThresholds {
+    pub fn assess(&self, report: &CalibrationReport) -> CalibrationQualityAssessment {
+        let mut reasons = Vec::new();
+        if report.sample_count < self.min_sample_count {
+            reasons.push(CalibrationQualityFailure::SampleCountTooSmall {
+                actual: report.sample_count,
+                minimum: self.min_sample_count,
+            });
+        }
+        if report.cohen_kappa < self.min_cohen_kappa {
+            reasons.push(CalibrationQualityFailure::CohenKappaTooLow {
+                actual: report.cohen_kappa,
+                minimum: self.min_cohen_kappa,
+            });
+        }
+        if report.expected_calibration_error > self.max_expected_calibration_error {
+            reasons.push(CalibrationQualityFailure::ExpectedCalibrationErrorTooHigh {
+                actual: report.expected_calibration_error,
+                maximum: self.max_expected_calibration_error,
+            });
+        }
+        if let Some(maximum) = self.max_brier_score {
+            if report.brier_score > maximum {
+                reasons.push(CalibrationQualityFailure::BrierScoreTooHigh {
+                    actual: report.brier_score,
+                    maximum,
+                });
+            }
+        }
+
+        CalibrationQualityAssessment {
+            passed: reasons.is_empty(),
+            reasons,
+        }
+    }
+}
+
+impl CalibrationReport {
+    pub fn assess_quality(
+        &self,
+        thresholds: &CalibrationQualityThresholds,
+    ) -> CalibrationQualityAssessment {
+        thresholds.assess(self)
+    }
+
+    pub fn clears_quality_thresholds(&self, thresholds: &CalibrationQualityThresholds) -> bool {
+        self.assess_quality(thresholds).passed
+    }
+}
+
 const RELIABILITY_BIN_COUNT: usize = 10;
 
 #[async_trait]
@@ -739,6 +813,137 @@ mod tests {
         };
         assert!(error.to_string().contains("must be between 0 and 1"));
         Ok(())
+    }
+
+    #[test]
+    fn quality_assessment_passes_when_report_clears_thresholds() -> anyhow::Result<()> {
+        let report = quality_report(50, 0.82, 0.04, 0.09)?;
+        let thresholds = quality_thresholds();
+
+        let assessment = report.assess_quality(&thresholds);
+
+        assert!(assessment.passed);
+        assert!(assessment.reasons.is_empty());
+        assert!(report.clears_quality_thresholds(&thresholds));
+        Ok(())
+    }
+
+    #[test]
+    fn quality_assessment_fails_when_sample_count_is_too_small() -> anyhow::Result<()> {
+        let report = quality_report(19, 0.82, 0.04, 0.09)?;
+
+        let assessment = report.assess_quality(&quality_thresholds());
+
+        assert!(!assessment.passed);
+        assert_eq!(
+            assessment.reasons,
+            vec![CalibrationQualityFailure::SampleCountTooSmall {
+                actual: 19,
+                minimum: 20,
+            }]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn quality_assessment_fails_when_kappa_is_too_low() -> anyhow::Result<()> {
+        let report = quality_report(50, 0.69, 0.04, 0.09)?;
+
+        let assessment = report.assess_quality(&quality_thresholds());
+
+        assert!(!assessment.passed);
+        assert_eq!(
+            assessment.reasons,
+            vec![CalibrationQualityFailure::CohenKappaTooLow {
+                actual: 0.69,
+                minimum: 0.7,
+            }]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn quality_assessment_fails_when_ece_is_too_high() -> anyhow::Result<()> {
+        let report = quality_report(50, 0.82, 0.051, 0.09)?;
+
+        let assessment = report.assess_quality(&quality_thresholds());
+
+        assert!(!assessment.passed);
+        assert_eq!(
+            assessment.reasons,
+            vec![CalibrationQualityFailure::ExpectedCalibrationErrorTooHigh {
+                actual: 0.051,
+                maximum: 0.05,
+            }]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn quality_assessment_fails_when_brier_is_too_high() -> anyhow::Result<()> {
+        let report = quality_report(50, 0.82, 0.04, 0.101)?;
+
+        let assessment = report.assess_quality(&quality_thresholds());
+
+        assert!(!assessment.passed);
+        assert_eq!(
+            assessment.reasons,
+            vec![CalibrationQualityFailure::BrierScoreTooHigh {
+                actual: 0.101,
+                maximum: 0.1,
+            }]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn quality_assessment_omits_brier_when_threshold_is_not_set() -> anyhow::Result<()> {
+        let report = quality_report(50, 0.82, 0.04, 0.5)?;
+        let mut thresholds = quality_thresholds();
+        thresholds.max_brier_score = None;
+
+        let assessment = report.assess_quality(&thresholds);
+
+        assert!(assessment.passed);
+        assert!(assessment.reasons.is_empty());
+        Ok(())
+    }
+
+    fn quality_thresholds() -> CalibrationQualityThresholds {
+        CalibrationQualityThresholds {
+            min_sample_count: 20,
+            min_cohen_kappa: 0.7,
+            max_expected_calibration_error: 0.05,
+            max_brier_score: Some(0.1),
+        }
+    }
+
+    fn quality_report(
+        sample_count: usize,
+        cohen_kappa: f64,
+        expected_calibration_error: f64,
+        brier_score: f64,
+    ) -> anyhow::Result<CalibrationReport> {
+        Ok(CalibrationReport {
+            calibration_report_id: CalibrationReportId::new("calibration-report")?,
+            tenant_id: TenantId::new("tenant")?,
+            project_id: ProjectId::new("project")?,
+            dataset_id: DatasetId::new("dataset")?,
+            dataset_version_id: DatasetVersionId::new("version")?,
+            evaluator_version_id: EvaluatorVersionId::new("judge-v1")?,
+            eval_report_id: "eval-report".to_string(),
+            policy: CalibrationPolicy::default(),
+            sample_count,
+            observed_agreement: 0.9,
+            expected_agreement: 0.2,
+            cohen_kappa,
+            brier_score,
+            expected_calibration_error,
+            reliability_bins: Vec::new(),
+            confusion: CalibrationConfusion::default(),
+            items: Vec::new(),
+            created_at: Utc::now(),
+        })
     }
 
     fn calibration_item(
