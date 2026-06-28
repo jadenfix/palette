@@ -554,6 +554,8 @@ result in the same PR.
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) is the build-ready plan and the source for
   requirement intent.
+- [docs/architecture-status.md](docs/architecture-status.md) is the built/partial/planned
+  status ledger cross-checked against the actual repo tree.
 - [CONTRIBUTING.md](CONTRIBUTING.md) defines PR shape, CI gates, local setup,
   and contract regeneration.
 - [CLAUDE.md](CLAUDE.md) states the hard contract-regeneration rule for coding
