@@ -7888,10 +7888,26 @@
             "type": "number",
             "format": "double"
           },
+          "mde": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Minimum detectable effect at the current sample size, in the metric's own\nunits, at the gate's (adjusted) alpha and the standard power of 0.8\n(§10.3 #5). Populated only when `decision` is `Inconclusive` — the\ncomparison lacked the power to resolve the regression bound, and\nregressions smaller than this are invisible at this N. `None` on a\nconclusive decision (or when the paired differences have zero spread, so\nno effect-scale is defined). This replaces a bare \"underpowered\" flag with\nthe actionable \"how small an effect could we even have seen\" number."
+          },
           "p_value": {
             "type": "number",
             "format": "double",
             "description": "Real two-sided p-value from `test`. The previous normal-approximation path\nreported no p-value at all."
+          },
+          "required_n": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Number of paired observations that would be required to detect the\n*observed* effect at the gate's (adjusted) alpha and power 0.8 (§10.3 #5).\nPopulated only when `decision` is `Inconclusive` and the observed effect is\nnon-degenerate (non-zero delta over non-zero difference spread). `None`\notherwise. This answers \"how many more cases would have made this\nconclusive?\".",
+            "minimum": 0
           },
           "sample_size": {
             "type": "integer",

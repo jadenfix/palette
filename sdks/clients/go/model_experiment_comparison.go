@@ -28,8 +28,12 @@ type ExperimentComparison struct {
 	CiLow float64 `json:"ci_low"`
 	Decision GateDecision `json:"decision"`
 	Delta float64 `json:"delta"`
+	// Minimum detectable effect at the current sample size, in the metric's own units, at the gate's (adjusted) alpha and the standard power of 0.8 (§10.3 #5). Populated only when `decision` is `Inconclusive` — the comparison lacked the power to resolve the regression bound, and regressions smaller than this are invisible at this N. `None` on a conclusive decision (or when the paired differences have zero spread, so no effect-scale is defined). This replaces a bare \"underpowered\" flag with the actionable \"how small an effect could we even have seen\" number.
+	Mde NullableFloat64 `json:"mde,omitempty"`
 	// Real two-sided p-value from `test`. The previous normal-approximation path reported no p-value at all.
 	PValue float64 `json:"p_value"`
+	// Number of paired observations that would be required to detect the *observed* effect at the gate's (adjusted) alpha and power 0.8 (§10.3 #5). Populated only when `decision` is `Inconclusive` and the observed effect is non-degenerate (non-zero delta over non-zero difference spread). `None` otherwise. This answers \"how many more cases would have made this conclusive?\".
+	RequiredN NullableInt32 `json:"required_n,omitempty"`
 	SampleSize int32 `json:"sample_size"`
 	Test StatisticalTest `json:"test"`
 }
@@ -231,6 +235,48 @@ func (o *ExperimentComparison) SetDelta(v float64) {
 	o.Delta = v
 }
 
+// GetMde returns the Mde field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *ExperimentComparison) GetMde() float64 {
+	if o == nil || IsNil(o.Mde.Get()) {
+		var ret float64
+		return ret
+	}
+	return *o.Mde.Get()
+}
+
+// GetMdeOk returns a tuple with the Mde field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *ExperimentComparison) GetMdeOk() (*float64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Mde.Get(), o.Mde.IsSet()
+}
+
+// HasMde returns a boolean if a field has been set.
+func (o *ExperimentComparison) HasMde() bool {
+	if o != nil && o.Mde.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetMde gets a reference to the given NullableFloat64 and assigns it to the Mde field.
+func (o *ExperimentComparison) SetMde(v float64) {
+	o.Mde.Set(&v)
+}
+// SetMdeNil sets the value for Mde to be an explicit nil
+func (o *ExperimentComparison) SetMdeNil() {
+	o.Mde.Set(nil)
+}
+
+// UnsetMde ensures that no value is present for Mde, not even an explicit nil
+func (o *ExperimentComparison) UnsetMde() {
+	o.Mde.Unset()
+}
+
 // GetPValue returns the PValue field value
 func (o *ExperimentComparison) GetPValue() float64 {
 	if o == nil {
@@ -253,6 +299,48 @@ func (o *ExperimentComparison) GetPValueOk() (*float64, bool) {
 // SetPValue sets field value
 func (o *ExperimentComparison) SetPValue(v float64) {
 	o.PValue = v
+}
+
+// GetRequiredN returns the RequiredN field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *ExperimentComparison) GetRequiredN() int32 {
+	if o == nil || IsNil(o.RequiredN.Get()) {
+		var ret int32
+		return ret
+	}
+	return *o.RequiredN.Get()
+}
+
+// GetRequiredNOk returns a tuple with the RequiredN field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *ExperimentComparison) GetRequiredNOk() (*int32, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.RequiredN.Get(), o.RequiredN.IsSet()
+}
+
+// HasRequiredN returns a boolean if a field has been set.
+func (o *ExperimentComparison) HasRequiredN() bool {
+	if o != nil && o.RequiredN.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetRequiredN gets a reference to the given NullableInt32 and assigns it to the RequiredN field.
+func (o *ExperimentComparison) SetRequiredN(v int32) {
+	o.RequiredN.Set(&v)
+}
+// SetRequiredNNil sets the value for RequiredN to be an explicit nil
+func (o *ExperimentComparison) SetRequiredNNil() {
+	o.RequiredN.Set(nil)
+}
+
+// UnsetRequiredN ensures that no value is present for RequiredN, not even an explicit nil
+func (o *ExperimentComparison) UnsetRequiredN() {
+	o.RequiredN.Unset()
 }
 
 // GetSampleSize returns the SampleSize field value
@@ -320,7 +408,13 @@ func (o ExperimentComparison) ToMap() (map[string]interface{}, error) {
 	toSerialize["ci_low"] = o.CiLow
 	toSerialize["decision"] = o.Decision
 	toSerialize["delta"] = o.Delta
+	if o.Mde.IsSet() {
+		toSerialize["mde"] = o.Mde.Get()
+	}
 	toSerialize["p_value"] = o.PValue
+	if o.RequiredN.IsSet() {
+		toSerialize["required_n"] = o.RequiredN.Get()
+	}
 	toSerialize["sample_size"] = o.SampleSize
 	toSerialize["test"] = o.Test
 	return toSerialize, nil

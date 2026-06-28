@@ -91,12 +91,28 @@ public:
     void setDelta(double value);
 
     /// <summary>
+    /// Minimum detectable effect at the current sample size, in the metric&#39;s own units, at the gate&#39;s (adjusted) alpha and the standard power of 0.8 (§10.3 #5). Populated only when &#x60;decision&#x60; is &#x60;Inconclusive&#x60; — the comparison lacked the power to resolve the regression bound, and regressions smaller than this are invisible at this N. &#x60;None&#x60; on a conclusive decision (or when the paired differences have zero spread, so no effect-scale is defined). This replaces a bare \&quot;underpowered\&quot; flag with the actionable \&quot;how small an effect could we even have seen\&quot; number.
+    /// </summary>
+    double getMde() const;
+    bool mdeIsSet() const;
+    void unsetMde();
+    void setMde(double value);
+
+    /// <summary>
     /// Real two-sided p-value from &#x60;test&#x60;. The previous normal-approximation path reported no p-value at all.
     /// </summary>
     double getPValue() const;
     bool pValueIsSet() const;
     void unsetP_value();
     void setPValue(double value);
+
+    /// <summary>
+    /// Number of paired observations that would be required to detect the *observed* effect at the gate&#39;s (adjusted) alpha and power 0.8 (§10.3 #5). Populated only when &#x60;decision&#x60; is &#x60;Inconclusive&#x60; and the observed effect is non-degenerate (non-zero delta over non-zero difference spread). &#x60;None&#x60; otherwise. This answers \&quot;how many more cases would have made this conclusive?\&quot;.
+    /// </summary>
+    int32_t getRequiredN() const;
+    bool requiredNIsSet() const;
+    void unsetRequired_n();
+    void setRequiredN(int32_t value);
 
     int32_t getSampleSize() const;
     bool sampleSizeIsSet() const;
@@ -131,8 +147,14 @@ protected:
     double m_Delta;
     bool m_DeltaIsSet;
 
+    double m_Mde;
+    bool m_MdeIsSet;
+
     double m_P_value;
     bool m_P_valueIsSet;
+
+    int32_t m_Required_n;
+    bool m_Required_nIsSet;
 
     int32_t m_Sample_size;
     bool m_Sample_sizeIsSet;

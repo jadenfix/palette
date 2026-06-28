@@ -33,8 +33,12 @@ ExperimentComparison::ExperimentComparison()
     m_DecisionIsSet = false;
     m_Delta = 0.0;
     m_DeltaIsSet = false;
+    m_Mde = 0.0;
+    m_MdeIsSet = false;
     m_P_value = 0.0;
     m_P_valueIsSet = false;
+    m_Required_n = 0;
+    m_Required_nIsSet = false;
     m_Sample_size = 0;
     m_Sample_sizeIsSet = false;
     m_TestIsSet = false;
@@ -87,10 +91,20 @@ web::json::value ExperimentComparison::toJson() const
         
         val[utility::conversions::to_string_t(U("delta"))] = ModelBase::toJson(m_Delta);
     }
+    if(m_MdeIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("mde"))] = ModelBase::toJson(m_Mde);
+    }
     if(m_P_valueIsSet)
     {   
         
         val[utility::conversions::to_string_t(U("p_value"))] = ModelBase::toJson(m_P_value);
+    }
+    if(m_Required_nIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("required_n"))] = ModelBase::toJson(m_Required_n);
     }
     if(m_Sample_sizeIsSet)
     {   
@@ -186,6 +200,17 @@ bool ExperimentComparison::fromJson(const web::json::value& val)
             
         }
     }
+    if(val.has_field(utility::conversions::to_string_t(U("mde"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("mde")));
+        if(!fieldValue.is_null())
+        {
+            double refVal_setMde;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setMde);
+            setMde(refVal_setMde);
+            
+        }
+    }
     if(val.has_field(utility::conversions::to_string_t(U("p_value"))))
     {
         const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("p_value")));
@@ -194,6 +219,17 @@ bool ExperimentComparison::fromJson(const web::json::value& val)
             double refVal_setPValue;
             ok &= ModelBase::fromJson(fieldValue, refVal_setPValue);
             setPValue(refVal_setPValue);
+            
+        }
+    }
+    if(val.has_field(utility::conversions::to_string_t(U("required_n"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("required_n")));
+        if(!fieldValue.is_null())
+        {
+            int32_t refVal_setRequiredN;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setRequiredN);
+            setRequiredN(refVal_setRequiredN);
             
         }
     }
@@ -257,9 +293,17 @@ void ExperimentComparison::toMultipart(std::shared_ptr<MultipartFormData> multip
     {
         multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("delta")), m_Delta));
     }
+    if(m_MdeIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("mde")), m_Mde));
+    }
     if(m_P_valueIsSet)
     {
         multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("p_value")), m_P_value));
+    }
+    if(m_Required_nIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("required_n")), m_Required_n));
     }
     if(m_Sample_sizeIsSet)
     {
@@ -322,11 +366,23 @@ bool ExperimentComparison::fromMultiPart(std::shared_ptr<MultipartFormData> mult
         ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("delta"))), refVal_setDelta );
         setDelta(refVal_setDelta);
     }
+    if(multipart->hasContent(utility::conversions::to_string_t(U("mde"))))
+    {
+        double refVal_setMde;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("mde"))), refVal_setMde );
+        setMde(refVal_setMde);
+    }
     if(multipart->hasContent(utility::conversions::to_string_t(U("p_value"))))
     {
         double refVal_setPValue;
         ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("p_value"))), refVal_setPValue );
         setPValue(refVal_setPValue);
+    }
+    if(multipart->hasContent(utility::conversions::to_string_t(U("required_n"))))
+    {
+        int32_t refVal_setRequiredN;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("required_n"))), refVal_setRequiredN );
+        setRequiredN(refVal_setRequiredN);
     }
     if(multipart->hasContent(utility::conversions::to_string_t(U("sample_size"))))
     {
@@ -485,6 +541,26 @@ void ExperimentComparison::unsetDelta()
 {
     m_DeltaIsSet = false;
 }
+double ExperimentComparison::getMde() const
+{
+    return m_Mde;
+}
+
+void ExperimentComparison::setMde(double value)
+{
+    m_Mde = value;
+    m_MdeIsSet = true;
+}
+
+bool ExperimentComparison::mdeIsSet() const
+{
+    return m_MdeIsSet;
+}
+
+void ExperimentComparison::unsetMde()
+{
+    m_MdeIsSet = false;
+}
 double ExperimentComparison::getPValue() const
 {
     return m_P_value;
@@ -504,6 +580,26 @@ bool ExperimentComparison::pValueIsSet() const
 void ExperimentComparison::unsetP_value()
 {
     m_P_valueIsSet = false;
+}
+int32_t ExperimentComparison::getRequiredN() const
+{
+    return m_Required_n;
+}
+
+void ExperimentComparison::setRequiredN(int32_t value)
+{
+    m_Required_n = value;
+    m_Required_nIsSet = true;
+}
+
+bool ExperimentComparison::requiredNIsSet() const
+{
+    return m_Required_nIsSet;
+}
+
+void ExperimentComparison::unsetRequired_n()
+{
+    m_Required_nIsSet = false;
 }
 int32_t ExperimentComparison::getSampleSize() const
 {

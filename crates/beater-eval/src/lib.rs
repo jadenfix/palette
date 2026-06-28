@@ -457,6 +457,24 @@ pub struct ExperimentComparison {
     pub decision: GateDecision,
     pub test: StatisticalTest,
     pub adjusted_alpha: f64,
+    /// Minimum detectable effect at the current sample size, in the metric's own
+    /// units, at the gate's (adjusted) alpha and the standard power of 0.8
+    /// (§10.3 #5). Populated only when `decision` is `Inconclusive` — the
+    /// comparison lacked the power to resolve the regression bound, and
+    /// regressions smaller than this are invisible at this N. `None` on a
+    /// conclusive decision (or when the paired differences have zero spread, so
+    /// no effect-scale is defined). This replaces a bare "underpowered" flag with
+    /// the actionable "how small an effect could we even have seen" number.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mde: Option<f64>,
+    /// Number of paired observations that would be required to detect the
+    /// *observed* effect at the gate's (adjusted) alpha and power 0.8 (§10.3 #5).
+    /// Populated only when `decision` is `Inconclusive` and the observed effect is
+    /// non-degenerate (non-zero delta over non-zero difference spread). `None`
+    /// otherwise. This answers "how many more cases would have made this
+    /// conclusive?".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_n: Option<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -567,6 +585,10 @@ pub fn compare_paired_scores(
             decision,
             test: StatisticalTest::PairedT,
             adjusted_alpha,
+            // The single-case smoke-gate regime never returns `Inconclusive`, so
+            // there is no underpowered verdict to annotate.
+            mde: None,
+            required_n: None,
         });
     }
 
@@ -593,6 +615,21 @@ pub fn compare_paired_scores(
         GateDecision::Inconclusive
     };
 
+    // §10.3 #5: an inconclusive verdict means the comparison lacked the power to
+    // resolve the regression bound. Rather than a bare "underpowered", report the
+    // minimum detectable effect at this N and the sample size that would have made
+    // the *observed* effect detectable — both at the gate's alpha and power 0.8.
+    // The planning math is standardized (Cohen's d), so we scale by the SD of the
+    // paired differences to express the MDE in the metric's own units and to
+    // standardize the observed delta. This covers both the paired-t and (as a
+    // normal approximation) the McNemar path, since both reduce to a mean
+    // difference of the paired observations.
+    let (mde, required_n) = if decision == GateDecision::Inconclusive {
+        power_annotations(baseline, candidate, n, delta, adjusted_alpha)
+    } else {
+        (None, None)
+    };
+
     Ok(ExperimentComparison {
         sample_size: n,
         baseline_mean: mean(baseline),
@@ -604,7 +641,57 @@ pub fn compare_paired_scores(
         decision,
         test: outcome.test.into(),
         adjusted_alpha,
+        mde,
+        required_n,
     })
+}
+
+/// Compute the §10.3 #5 power annotations for an inconclusive comparison: the
+/// minimum detectable effect at the current sample size (in the metric's own
+/// units) and the sample size required to detect the observed effect, both at the
+/// gate's `alpha` and the standard power of 0.8.
+///
+/// Returns `(None, None)` when the paired differences have no spread (no
+/// effect-scale is defined), and a `None` `required_n` when the observed effect is
+/// exactly zero (no finite N detects a null effect) — the MDE is still reported in
+/// that case.
+fn power_annotations(
+    baseline: &[f64],
+    candidate: &[f64],
+    n: usize,
+    delta: f64,
+    alpha: f64,
+) -> (Option<f64>, Option<usize>) {
+    let differences: Vec<f64> = candidate
+        .iter()
+        .zip(baseline.iter())
+        .map(|(c, b)| c - b)
+        .collect();
+    let sd = std_dev(&differences);
+    if !sd.is_finite() || sd <= 0.0 {
+        // Zero (or non-finite) spread: a standardized effect is undefined.
+        return (None, None);
+    }
+
+    // MDE in the metric's own units = standardized MDE × SD of the differences.
+    let mde = beater_stats::minimum_detectable_effect(n, alpha, beater_stats::DEFAULT_POWER)
+        .ok()
+        .map(|d| d * sd);
+
+    // Required N to detect the observed standardized effect d = |delta| / SD.
+    let required_n = beater_stats::required_sample_size(delta / sd, alpha, beater_stats::DEFAULT_POWER).ok();
+
+    (mde, required_n)
+}
+
+/// Unbiased (n − 1) sample standard deviation; 0.0 for fewer than two values.
+fn std_dev(values: &[f64]) -> f64 {
+    if values.len() < 2 {
+        return 0.0;
+    }
+    let m = mean(values);
+    let sum_sq: f64 = values.iter().map(|v| (v - m).powi(2)).sum();
+    (sum_sq / (values.len() as f64 - 1.0)).sqrt()
 }
 
 fn mean(values: &[f64]) -> f64 {
@@ -816,6 +903,48 @@ mod tests {
 
         assert_eq!(comparison.decision, GateDecision::FailRegression);
         assert!(comparison.adjusted_alpha < 0.05);
+        // A conclusive verdict carries no underpowered annotation.
+        assert!(comparison.mde.is_none());
+        assert!(comparison.required_n.is_none());
+    }
+
+    #[test]
+    fn inconclusive_gate_reports_mde_and_required_n() {
+        // A tiny, noisy paired effect: the difference distribution straddles zero,
+        // so the CI straddles the regression bound and the gate is *inconclusive*
+        // — exactly the underpowered regime §10.3 #5 must annotate.
+        let baseline = vec![0.0; 8];
+        let candidate = vec![0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.4];
+        let comparison = compare_paired_scores(
+            &baseline,
+            &candidate,
+            &GatePolicy {
+                min_sample_size: 4,
+                ..GatePolicy::default()
+            },
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(
+            comparison.decision,
+            GateDecision::Inconclusive,
+            "expected an inconclusive (underpowered) verdict, got {:?}",
+            comparison.decision
+        );
+
+        // Instead of a bare "underpowered", the comparison now reports actionable
+        // power numbers: a finite, positive MDE at this N and a finite required-N
+        // to detect the observed effect.
+        let mde = comparison
+            .mde
+            .unwrap_or_else(|| panic!("inconclusive comparison must report an MDE"));
+        assert!(mde.is_finite() && mde > 0.0, "mde = {mde}");
+        let required_n = comparison
+            .required_n
+            .unwrap_or_else(|| panic!("inconclusive comparison must report required_n"));
+        // The observed effect is far smaller than the spread, so detecting it
+        // would take many more than the 8 cases we ran.
+        assert!(required_n > comparison.sample_size, "required_n = {required_n}");
     }
 
     fn browser_step(action: &str, selector: Option<&str>, matched: bool, status: &str) -> Value {
