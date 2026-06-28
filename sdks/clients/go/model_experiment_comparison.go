@@ -28,6 +28,8 @@ type ExperimentComparison struct {
 	CiLow float64 `json:"ci_low"`
 	Decision GateDecision `json:"decision"`
 	Delta float64 `json:"delta"`
+	// Real two-sided p-value from `test`. The previous normal-approximation path reported no p-value at all.
+	PValue float64 `json:"p_value"`
 	SampleSize int32 `json:"sample_size"`
 	Test StatisticalTest `json:"test"`
 }
@@ -38,7 +40,7 @@ type _ExperimentComparison ExperimentComparison
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewExperimentComparison(adjustedAlpha float64, baselineMean float64, candidateMean float64, ciHigh float64, ciLow float64, decision GateDecision, delta float64, sampleSize int32, test StatisticalTest) *ExperimentComparison {
+func NewExperimentComparison(adjustedAlpha float64, baselineMean float64, candidateMean float64, ciHigh float64, ciLow float64, decision GateDecision, delta float64, pValue float64, sampleSize int32, test StatisticalTest) *ExperimentComparison {
 	this := ExperimentComparison{}
 	this.AdjustedAlpha = adjustedAlpha
 	this.BaselineMean = baselineMean
@@ -47,6 +49,7 @@ func NewExperimentComparison(adjustedAlpha float64, baselineMean float64, candid
 	this.CiLow = ciLow
 	this.Decision = decision
 	this.Delta = delta
+	this.PValue = pValue
 	this.SampleSize = sampleSize
 	this.Test = test
 	return &this
@@ -228,6 +231,30 @@ func (o *ExperimentComparison) SetDelta(v float64) {
 	o.Delta = v
 }
 
+// GetPValue returns the PValue field value
+func (o *ExperimentComparison) GetPValue() float64 {
+	if o == nil {
+		var ret float64
+		return ret
+	}
+
+	return o.PValue
+}
+
+// GetPValueOk returns a tuple with the PValue field value
+// and a boolean to check if the value has been set.
+func (o *ExperimentComparison) GetPValueOk() (*float64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.PValue, true
+}
+
+// SetPValue sets field value
+func (o *ExperimentComparison) SetPValue(v float64) {
+	o.PValue = v
+}
+
 // GetSampleSize returns the SampleSize field value
 func (o *ExperimentComparison) GetSampleSize() int32 {
 	if o == nil {
@@ -293,6 +320,7 @@ func (o ExperimentComparison) ToMap() (map[string]interface{}, error) {
 	toSerialize["ci_low"] = o.CiLow
 	toSerialize["decision"] = o.Decision
 	toSerialize["delta"] = o.Delta
+	toSerialize["p_value"] = o.PValue
 	toSerialize["sample_size"] = o.SampleSize
 	toSerialize["test"] = o.Test
 	return toSerialize, nil
@@ -310,6 +338,7 @@ func (o *ExperimentComparison) UnmarshalJSON(data []byte) (err error) {
 		"ci_low",
 		"decision",
 		"delta",
+		"p_value",
 		"sample_size",
 		"test",
 	}

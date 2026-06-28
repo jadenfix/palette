@@ -1138,6 +1138,12 @@ export interface components {
             decision: components["schemas"]["GateDecision"];
             /** Format: double */
             delta: number;
+            /**
+             * Format: double
+             * @description Real two-sided p-value from `test`. The previous normal-approximation path
+             *     reported no p-value at all.
+             */
+            p_value: number;
             sample_size: number;
             test: components["schemas"]["StatisticalTest"];
         };
@@ -1556,8 +1562,15 @@ export interface components {
         };
         /** @enum {string} */
         SpanStatus: "ok" | "error" | "unset";
-        /** @enum {string} */
-        StatisticalTest: "paired_normal_approximation";
+        /**
+         * @description The statistical test that produced an [`ExperimentComparison`]. These mirror
+         *     `beater_stats::TestKind`; the gate records which method was actually used so a
+         *     reader can tell a t-test result from an exact McNemar one. The old single
+         *     `PairedNormalApproximation` (a hard-coded-z normal approximation with no
+         *     p-value) is gone — see `beater-stats`.
+         * @enum {string}
+         */
+        StatisticalTest: "paired_t" | "mcnemar_exact";
         SubmitReviewAnnotationHttpRequest: {
             annotation_id?: string | null;
             payload: unknown;

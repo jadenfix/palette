@@ -12,7 +12,7 @@
 /*
  * StatisticalTest.h
  *
- * 
+ * The statistical test that produced an [&#x60;ExperimentComparison&#x60;]. These mirror &#x60;beater_stats::TestKind&#x60;; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single &#x60;PairedNormalApproximation&#x60; (a hard-coded-z normal approximation with no p-value) is gone — see &#x60;beater-stats&#x60;.
  */
 
 #ifndef ORG_OPENAPITOOLS_CLIENT_MODEL_StatisticalTest_H_
@@ -48,7 +48,8 @@ public:
 
     enum class eStatisticalTest
     {
-        StatisticalTest_PAIRED_NORMAL_APPROXIMATION,
+        StatisticalTest_PAIRED_T,
+        StatisticalTest_MCNEMAR_EXACT,
     };
 
     eStatisticalTest getValue() const;

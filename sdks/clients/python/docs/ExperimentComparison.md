@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **ci_low** | **float** |  | 
 **decision** | [**GateDecision**](GateDecision.md) |  | 
 **delta** | **float** |  | 
+**p_value** | **float** | Real two-sided p-value from &#x60;test&#x60;. The previous normal-approximation path reported no p-value at all. | 
 **sample_size** | **int** |  | 
 **test** | [**StatisticalTest**](StatisticalTest.md) |  | 
 

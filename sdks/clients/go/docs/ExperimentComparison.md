@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **CiLow** | **float64** |  | 
 **Decision** | [**GateDecision**](GateDecision.md) |  | 
 **Delta** | **float64** |  | 
+**PValue** | **float64** | Real two-sided p-value from &#x60;test&#x60;. The previous normal-approximation path reported no p-value at all. | 
 **SampleSize** | **int32** |  | 
 **Test** | [**StatisticalTest**](StatisticalTest.md) |  | 
 
@@ -18,7 +19,7 @@ Name | Type | Description | Notes
 
 ### NewExperimentComparison
 
-`func NewExperimentComparison(adjustedAlpha float64, baselineMean float64, candidateMean float64, ciHigh float64, ciLow float64, decision GateDecision, delta float64, sampleSize int32, test StatisticalTest, ) *ExperimentComparison`
+`func NewExperimentComparison(adjustedAlpha float64, baselineMean float64, candidateMean float64, ciHigh float64, ciLow float64, decision GateDecision, delta float64, pValue float64, sampleSize int32, test StatisticalTest, ) *ExperimentComparison`
 
 NewExperimentComparison instantiates a new ExperimentComparison object
 This constructor will assign default values to properties that have it defined,
@@ -171,6 +172,26 @@ and a boolean to check if the value has been set.
 `func (o *ExperimentComparison) SetDelta(v float64)`
 
 SetDelta sets Delta field to given value.
+
+
+### GetPValue
+
+`func (o *ExperimentComparison) GetPValue() float64`
+
+GetPValue returns the PValue field if non-nil, zero value otherwise.
+
+### GetPValueOk
+
+`func (o *ExperimentComparison) GetPValueOk() (*float64, bool)`
+
+GetPValueOk returns a tuple with the PValue field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetPValue
+
+`func (o *ExperimentComparison) SetPValue(v float64)`
+
+SetPValue sets PValue field to given value.
 
 
 ### GetSampleSize

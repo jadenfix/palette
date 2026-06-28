@@ -4,7 +4,8 @@
 
 | Name | Value |
 |---- | -----|
-| PairedNormalApproximation | paired_normal_approximation |
+| PairedT | paired_t |
+| McnemarExact | mcnemar_exact |
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

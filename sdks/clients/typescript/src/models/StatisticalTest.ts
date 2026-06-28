@@ -14,11 +14,16 @@
 
 
 /**
- * 
+ * The statistical test that produced an [`ExperimentComparison`]. These mirror
+ * `beater_stats::TestKind`; the gate records which method was actually used so a
+ * reader can tell a t-test result from an exact McNemar one. The old single
+ * `PairedNormalApproximation` (a hard-coded-z normal approximation with no
+ * p-value) is gone — see `beater-stats`.
  * @export
  */
 export const StatisticalTest = {
-    PairedNormalApproximation: 'paired_normal_approximation'
+    PairedT: 'paired_t',
+    McnemarExact: 'mcnemar_exact'
 } as const;
 export type StatisticalTest = typeof StatisticalTest[keyof typeof StatisticalTest];
 

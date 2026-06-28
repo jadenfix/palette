@@ -13,6 +13,7 @@ static experiment_comparison_t *experiment_comparison_create_internal(
     double ci_low,
     beater_api_gate_decision__e decision,
     double delta,
+    double p_value,
     int sample_size,
     beater_api_statistical_test__e test
     ) {
@@ -27,6 +28,7 @@ static experiment_comparison_t *experiment_comparison_create_internal(
     experiment_comparison_local_var->ci_low = ci_low;
     experiment_comparison_local_var->decision = decision;
     experiment_comparison_local_var->delta = delta;
+    experiment_comparison_local_var->p_value = p_value;
     experiment_comparison_local_var->sample_size = sample_size;
     experiment_comparison_local_var->test = test;
 
@@ -42,6 +44,7 @@ __attribute__((deprecated)) experiment_comparison_t *experiment_comparison_creat
     double ci_low,
     beater_api_gate_decision__e decision,
     double delta,
+    double p_value,
     int sample_size,
     beater_api_statistical_test__e test
     ) {
@@ -53,6 +56,7 @@ __attribute__((deprecated)) experiment_comparison_t *experiment_comparison_creat
         ci_low,
         decision,
         delta,
+        p_value,
         sample_size,
         test
         );
@@ -137,6 +141,15 @@ cJSON *experiment_comparison_convertToJSON(experiment_comparison_t *experiment_c
         goto fail;
     }
     if(cJSON_AddNumberToObject(item, "delta", experiment_comparison->delta) == NULL) {
+    goto fail; //Numeric
+    }
+
+
+    // experiment_comparison->p_value
+    if (!experiment_comparison->p_value) {
+        goto fail;
+    }
+    if(cJSON_AddNumberToObject(item, "p_value", experiment_comparison->p_value) == NULL) {
     goto fail; //Numeric
     }
 
@@ -283,6 +296,21 @@ experiment_comparison_t *experiment_comparison_parseFromJSON(cJSON *experiment_c
     goto end; //Numeric
     }
 
+    // experiment_comparison->p_value
+    cJSON *p_value = cJSON_GetObjectItemCaseSensitive(experiment_comparisonJSON, "p_value");
+    if (cJSON_IsNull(p_value)) {
+        p_value = NULL;
+    }
+    if (!p_value) {
+        goto end;
+    }
+
+    
+    if(!cJSON_IsNumber(p_value))
+    {
+    goto end; //Numeric
+    }
+
     // experiment_comparison->sample_size
     cJSON *sample_size = cJSON_GetObjectItemCaseSensitive(experiment_comparisonJSON, "sample_size");
     if (cJSON_IsNull(sample_size)) {
@@ -319,6 +347,7 @@ experiment_comparison_t *experiment_comparison_parseFromJSON(cJSON *experiment_c
         ci_low->valuedouble,
         decision_local_nonprim,
         delta->valuedouble,
+        p_value->valuedouble,
         sample_size->valuedouble,
         test_local_nonprim
         );
