@@ -15,9 +15,6 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-conv = json.loads((ROOT / "sdks/semconv/conventions.json").read_text())
-required_strings = set(conv["span_kinds"]) | set(conv["attributes"].values())
-required_config = set(conv["defaults"].values()) | set(conv["env"].values())
 SEMCONV_WIRE_RE = re.compile(r"^(?:[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+|x-beater-[a-z0-9-]+)$")
 
 # (semconv file, config file, line-comment marker) per SDK.
@@ -32,6 +29,17 @@ SDKS = {
         "//",
     ),
 }
+
+
+def load_conventions(root: pathlib.Path) -> dict:
+    return json.loads((root / "sdks/semconv/conventions.json").read_text())
+
+
+def required_values(conventions: dict) -> tuple[set, set]:
+    required_strings = set(conventions["span_kinds"]) | set(conventions["attributes"].values())
+    required_config = set(conventions["defaults"].values()) | set(conventions["env"].values())
+    return required_strings, required_config
+
 
 def assigned_values(path: pathlib.Path, comment: str) -> set:
     """Double-quoted string literals appearing in CODE (not comments).
@@ -69,27 +77,51 @@ def semconv_wire_values(values: set) -> set:
     return {value for value in values if SEMCONV_WIRE_RE.fullmatch(value)}
 
 
-failed = False
-for lang, (semconv_rel, config_rel, comment) in SDKS.items():
-    sem_vals = semconv_wire_values(assigned_values(ROOT / semconv_rel, comment))
-    cfg_vals = assigned_values(ROOT / config_rel, comment)
-    missing_sem = sorted(required_strings - sem_vals)
-    extra_sem = sorted(sem_vals - required_strings)
-    missing_cfg = sorted(required_config - cfg_vals)
-    if missing_sem or extra_sem or missing_cfg:
-        failed = True
-        print(f"FAIL {lang}:")
-        if missing_sem:
-            print(f"  semconv ({semconv_rel}) missing assigned values: {missing_sem}")
-        if extra_sem:
-            print(f"  semconv ({semconv_rel}) has extra assigned values: {extra_sem}")
-        if missing_cfg:
-            print(f"  config ({config_rel}) missing defaults/env values: {missing_cfg}")
-    else:
-        print(f"PASS {lang}: {len(sem_vals)} exact conventions + {len(required_config)} config values present")
+def check_all(root: pathlib.Path = ROOT, sdks: dict = SDKS) -> tuple[bool, list[str]]:
+    conventions = load_conventions(root)
+    required_strings, required_config = required_values(conventions)
+    failed = False
+    lines: list[str] = []
 
-if failed:
-    print("\nSemconv drift detected. Update the SDK to match sdks/semconv/conventions.json "
-          "(regenerate it with `cargo xtask regen-semconv`).", file=sys.stderr)
-    sys.exit(1)
-print("\nPASS: all SDK semconv + config match the single source.")
+    for lang, (semconv_rel, config_rel, comment) in sdks.items():
+        sem_vals = semconv_wire_values(assigned_values(root / semconv_rel, comment))
+        cfg_vals = assigned_values(root / config_rel, comment)
+        missing_sem = sorted(required_strings - sem_vals)
+        extra_sem = sorted(sem_vals - required_strings)
+        missing_cfg = sorted(required_config - cfg_vals)
+        if missing_sem or extra_sem or missing_cfg:
+            failed = True
+            lines.append(f"FAIL {lang}:")
+            if missing_sem:
+                lines.append(f"  semconv ({semconv_rel}) missing assigned values: {missing_sem}")
+            if extra_sem:
+                lines.append(f"  semconv ({semconv_rel}) has extra assigned values: {extra_sem}")
+            if missing_cfg:
+                lines.append(f"  config ({config_rel}) missing defaults/env values: {missing_cfg}")
+        else:
+            lines.append(
+                f"PASS {lang}: {len(sem_vals)} exact conventions + "
+                f"{len(required_config)} config values present"
+            )
+
+    return failed, lines
+
+
+def main() -> int:
+    failed, lines = check_all()
+    for line in lines:
+        print(line)
+    if failed:
+        print(
+            "\nSemconv drift detected. Update the SDK to match "
+            "sdks/semconv/conventions.json (regenerate it with "
+            "`cargo xtask regen-semconv`).",
+            file=sys.stderr,
+        )
+        return 1
+    print("\nPASS: all SDK semconv + config match the single source.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
