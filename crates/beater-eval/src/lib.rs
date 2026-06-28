@@ -27,6 +27,13 @@ pub enum EvalError {
         evaluator_id: String,
         reason: String,
     },
+    #[error("evaluator {evaluator_id} requires a reference value")]
+    MissingReference { evaluator_id: String },
+    #[error("evaluator {evaluator_id} requires trace metric {metric}")]
+    MissingTraceMetric {
+        evaluator_id: String,
+        metric: &'static str,
+    },
     #[error(
         "underpowered comparison: sample_size={sample_size}, min_sample_size={min_sample_size}"
     )]
@@ -285,7 +292,8 @@ pub fn evaluate_deterministic(
 
     match &spec.kind {
         EvaluatorKind::ExactMatch => {
-            let pass = case.reference.as_ref() == Some(&case.output);
+            let reference = required_reference(spec, case)?;
+            let pass = reference == &case.output;
             Ok(binary_score(pass, "exact_match"))
         }
         EvaluatorKind::RegexMatch { pattern } => {
@@ -299,21 +307,11 @@ pub fn evaluate_deterministic(
         }
         EvaluatorKind::JsonObject => Ok(binary_score(case.output.is_object(), "json_object")),
         EvaluatorKind::CostBudget { max_micros } => {
-            let cost = case
-                .trace
-                .as_ref()
-                .and_then(|trace| trace.get("cost_micros"))
-                .and_then(Value::as_i64)
-                .unwrap_or(0);
+            let cost = required_trace_i64(spec, case, "cost_micros")?;
             Ok(binary_score(cost <= *max_micros, "cost_budget"))
         }
         EvaluatorKind::LatencyBudgetMs { max_ms } => {
-            let latency = case
-                .trace
-                .as_ref()
-                .and_then(|trace| trace.get("latency_ms"))
-                .and_then(Value::as_u64)
-                .unwrap_or(0);
+            let latency = required_trace_u64(spec, case, "latency_ms")?;
             Ok(binary_score(latency <= *max_ms, "latency_budget"))
         }
         EvaluatorKind::LlmJudge { .. } => Err(EvalError::RequiresJudgeBroker(spec.id.clone())),
@@ -427,6 +425,47 @@ pub fn evaluate_deterministic(
     }
 }
 
+fn required_reference<'a>(
+    spec: &EvaluatorSpec,
+    case: &'a EvaluationCase,
+) -> Result<&'a Value, EvalError> {
+    case.reference
+        .as_ref()
+        .ok_or_else(|| EvalError::MissingReference {
+            evaluator_id: spec.id.clone(),
+        })
+}
+
+fn required_trace_i64(
+    spec: &EvaluatorSpec,
+    case: &EvaluationCase,
+    metric: &'static str,
+) -> Result<i64, EvalError> {
+    case.trace
+        .as_ref()
+        .and_then(|trace| trace.get(metric))
+        .and_then(Value::as_i64)
+        .ok_or_else(|| EvalError::MissingTraceMetric {
+            evaluator_id: spec.id.clone(),
+            metric,
+        })
+}
+
+fn required_trace_u64(
+    spec: &EvaluatorSpec,
+    case: &EvaluationCase,
+    metric: &'static str,
+) -> Result<u64, EvalError> {
+    case.trace
+        .as_ref()
+        .and_then(|trace| trace.get(metric))
+        .and_then(Value::as_u64)
+        .ok_or_else(|| EvalError::MissingTraceMetric {
+            evaluator_id: spec.id.clone(),
+            metric,
+        })
+}
+
 fn numeric_tolerance_score(
     spec: &EvaluatorSpec,
     case: &EvaluationCase,
@@ -441,7 +480,7 @@ fn numeric_tolerance_score(
     }
 
     let output = case.output.as_f64();
-    let reference = case.reference.as_ref().and_then(Value::as_f64);
+    let reference = required_reference(spec, case)?.as_f64();
     let (difference, allowed, pass) = match (output, reference) {
         (Some(output), Some(reference)) => {
             let difference = (output - reference).abs();
@@ -1000,6 +1039,84 @@ mod tests {
             evaluate_deterministic(&spec, &case),
             Err(EvalError::InvalidNumericTolerance { .. })
         ));
+    }
+
+    #[test]
+    fn reference_scorers_reject_missing_reference() {
+        let case = EvaluationCase {
+            input: serde_json::json!("question"),
+            output: serde_json::json!("answer"),
+            reference: None,
+            trace: None,
+        };
+
+        assert!(matches!(
+            evaluate_deterministic(&deterministic_spec(EvaluatorKind::ExactMatch), &case),
+            Err(EvalError::MissingReference { evaluator_id }) if evaluator_id == "exact_match"
+        ));
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::NumericTolerance { abs: 0.0, rel: 0.0 }),
+                &case,
+            ),
+            Err(EvalError::MissingReference { evaluator_id }) if evaluator_id == "numeric_tolerance"
+        ));
+    }
+
+    #[test]
+    fn budget_scorers_reject_missing_trace_metrics() {
+        let case = EvaluationCase {
+            input: serde_json::json!(null),
+            output: serde_json::json!(null),
+            reference: None,
+            trace: Some(serde_json::json!({})),
+        };
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::CostBudget { max_micros: 100 }),
+                &case,
+            ),
+            Err(EvalError::MissingTraceMetric { evaluator_id, metric })
+                if evaluator_id == "cost_budget" && metric == "cost_micros"
+        ));
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::LatencyBudgetMs { max_ms: 100 }),
+                &case,
+            ),
+            Err(EvalError::MissingTraceMetric { evaluator_id, metric })
+                if evaluator_id == "latency_budget_ms" && metric == "latency_ms"
+        ));
+    }
+
+    #[test]
+    fn budget_scorers_score_present_trace_metrics() {
+        let case = EvaluationCase {
+            input: serde_json::json!(null),
+            output: serde_json::json!(null),
+            reference: None,
+            trace: Some(serde_json::json!({
+                "cost_micros": 42,
+                "latency_ms": 99,
+            })),
+        };
+
+        let cost = evaluate_deterministic(
+            &deterministic_spec(EvaluatorKind::CostBudget { max_micros: 100 }),
+            &case,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(cost.score, 1.0);
+
+        let latency = evaluate_deterministic(
+            &deterministic_spec(EvaluatorKind::LatencyBudgetMs { max_ms: 50 }),
+            &case,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(latency.score, 0.0);
     }
 
     #[test]
