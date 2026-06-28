@@ -693,11 +693,16 @@ pub fn span_release_id(span: &CanonicalSpan) -> Option<String> {
 
 pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary> {
     let mut runs = Vec::<RunSummary>::new();
+    // Index (project_id, trace_id) -> position in `runs` so each span resolves
+    // its run in O(1) instead of a linear scan over all runs seen so far. This
+    // turns the rollup from O(spans × runs) into O(spans); push order — and
+    // therefore the final sort — is unchanged.
+    let mut index = std::collections::HashMap::<(ProjectId, TraceId), usize>::new();
     for span in &spans {
-        if let Some(run) = runs
-            .iter_mut()
-            .find(|run| run.project_id == span.project_id && run.trace_id == span.trace_id)
+        if let Some(&pos) =
+            index.get(&(span.project_id.clone(), span.trace_id.clone()))
         {
+            let run = &mut runs[pos];
             run.span_count += 1;
             if span.started_at < run.started_at {
                 run.started_at = span.started_at;
@@ -715,6 +720,10 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
             run.duration_ms = run_duration_ms(run.started_at, run.ended_at);
         } else {
             let ended_at = span.ended_at;
+            index.insert(
+                (span.project_id.clone(), span.trace_id.clone()),
+                runs.len(),
+            );
             runs.push(RunSummary {
                 tenant_id: tenant.clone(),
                 project_id: span.project_id.clone(),
