@@ -140,50 +140,53 @@ fn self_host_files_define_gate_two_compose_surface() {
         "minio/",
     );
 
-    let image_workflow = read(root.join(".github/workflows/container-images.yml"));
-    assert!(image_workflow.contains("packages: write"));
-    assert!(image_workflow.contains("group: container-images-${{ github.ref }}"));
-    assert!(image_workflow.contains("cancel-in-progress: true"));
-    assert!(image_workflow.contains("ubuntu-24.04-arm"));
-    assert!(image_workflow.contains("platform: linux/arm64"));
-    assert!(image_workflow.contains("docker buildx imagetools create"));
-    assert!(image_workflow.contains("context: ."));
-    assert!(image_workflow.contains("target: runtime"));
-    assert!(image_workflow.contains("Build beaterctl tools target"));
-    assert!(image_workflow.contains("target: tools"));
-    assert!(image_workflow.contains("push: false"));
-    assert!(image_workflow.contains("cache-from: type=gha,scope=beaterd-${{ matrix.suffix }}"));
-    assert!(
-        image_workflow.contains("cache-to: type=gha,mode=max,scope=beaterd-${{ matrix.suffix }}")
-    );
-    assert!(image_workflow
-        .contains("cache-to: type=gha,mode=max,scope=beaterctl-tools-${{ matrix.suffix }}"));
-    assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/beaterd:main"));
-    assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/dashboard:main"));
-    assert!(image_workflow.contains("Build and push dashboard e2e runner"));
-    assert!(image_workflow.contains("target: e2e"));
-    assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/dashboard-e2e:main"));
-    assert!(image_workflow.contains("Publish dashboard e2e manifest"));
-    assert!(image_workflow.contains("Build and push OTEL Python runner"));
-    assert!(image_workflow.contains("context: ./examples/python"));
-    assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/otel-python:main"));
-    assert!(image_workflow.contains("Publish OTEL Python runner manifest"));
-    assert!(image_workflow.contains("Install public handoff prerequisites"));
-    assert!(image_workflow.contains("sudo apt-get install -y --no-install-recommends ffmpeg"));
-    assert!(image_workflow.contains("Checkout public handoff verifier"));
-    assert!(image_workflow.contains("Verify Gate 2 public handoff readiness"));
-    assert!(image_workflow
-        .contains("scripts/check-gate2-public-handoff.py --expected-commit \"${{ github.sha }}\""));
-
-    let gate2_workflow = read(root.join(".github/workflows/gate2-proof-contract.yml"));
-    assert!(gate2_workflow.contains("pull_request:"));
-    assert!(gate2_workflow.contains("permissions:"));
-    assert!(gate2_workflow.contains("contents: read"));
-    assert!(gate2_workflow.contains("CARGO_NET_RETRY: \"10\""));
-    assert!(gate2_workflow.contains("CARGO_HTTP_MULTIPLEXING: \"false\""));
-    assert!(gate2_workflow.contains("cargo fmt --all -- --check"));
-    assert!(gate2_workflow.contains("bash -n \"$script\""));
+    let ci_workflow = read(root.join(".github/workflows/ci.yml"));
+    assert!(ci_workflow.contains("name: ci"));
+    assert!(ci_workflow.contains("pull_request:"));
+    assert!(ci_workflow.contains("push:"));
+    assert!(ci_workflow.contains("branches: [main]"));
+    assert!(ci_workflow.contains("workflow_dispatch:"));
+    assert!(ci_workflow.contains("permissions:"));
+    assert!(ci_workflow.contains("contents: read"));
+    assert!(ci_workflow.contains("CARGO_NET_RETRY: \"10\""));
+    assert!(ci_workflow.contains("CARGO_HTTP_MULTIPLEXING: \"false\""));
+    for job in [
+        "backend:",
+        "frontend:",
+        "agents:",
+        "algorithms:",
+        "vercel:",
+        "lint:",
+    ] {
+        assert!(ci_workflow.contains(job), "ci.yml must define job {job}");
+    }
+    for name in [
+        "name: backend",
+        "name: frontend",
+        "name: agents",
+        "name: algorithms",
+        "name: vercel",
+        "name: lint",
+    ] {
+        assert!(ci_workflow.contains(name), "ci.yml must expose {name}");
+    }
+    assert!(ci_workflow.contains("./beater-cli test backend"));
+    assert!(ci_workflow.contains("BEATER_DOCKER_BACKENDS: \"1\""));
+    assert!(ci_workflow.contains("./beater-cli test frontend"));
+    assert!(ci_workflow.contains("./beater-cli test agents"));
+    assert!(ci_workflow.contains("browser-actions/setup-chrome@v1"));
+    assert!(ci_workflow.contains("BEATER_GATE2_BROWSER_PROOF: \"1\""));
+    assert!(ci_workflow.contains("./beater-cli test algorithms"));
+    assert!(ci_workflow.contains("tufin/oasdiff breaking"));
+    assert!(ci_workflow.contains("git show \"origin/${base_ref}:sdks/openapi/beater-api.json\""));
+    assert!(ci_workflow.contains("vercel pull"));
+    assert!(ci_workflow.contains("vercel build"));
+    assert!(ci_workflow.contains("vercel deploy --prebuilt --prod"));
+    assert!(ci_workflow.contains("./beater-cli format --check"));
+    assert!(ci_workflow.contains("cargo clippy --workspace --all-targets --exclude beaterd"));
+    assert!(ci_workflow.contains("bash -n \"$script\""));
     for script in [
+        "beater-cli",
         "scripts/check-openapi-drift.sh",
         "scripts/gate2-compose-stopwatch.sh",
         "scripts/gate2-outside-local-preflight.sh",
@@ -193,92 +196,66 @@ fn self_host_files_define_gate_two_compose_surface() {
         "scripts/validate-gate2-outside-proof.sh",
     ] {
         assert!(
-            gate2_workflow.contains(script),
-            "gate2-proof-contract must syntax-check {script}"
+            ci_workflow.contains(script),
+            "ci lint job must syntax-check {script}"
         );
     }
-    assert!(
-        gate2_workflow.contains("python3 -m py_compile scripts/check-gate2-outside-readiness.py")
-    );
-    assert!(gate2_workflow.contains("python3 -m py_compile scripts/check-gate2-public-handoff.py"));
-    assert!(gate2_workflow.contains("python3 -m py_compile scripts/check-gate0-foundations.py"));
-    assert!(
-        gate2_workflow.contains("python3 -m py_compile scripts/generate-gate2-outside-proof.py")
-    );
-    assert!(gate2_workflow.contains("scripts/validate-gate2-outside-proof.sh --allow-pending"));
-    assert!(gate2_workflow.contains("Gate 0 foundation contract"));
-    assert!(gate2_workflow.contains("scripts/check-gate0-foundations.py"));
-    assert!(gate2_workflow.contains("cargo test -p beaterd --test self_host_contract"));
-    assert!(gate2_workflow.contains("cargo test -p beaterd --test gate2_outside_validator"));
+    assert!(ci_workflow.contains("python3 -m py_compile scripts/check-gate2-outside-readiness.py"));
+    assert!(ci_workflow.contains("python3 -m py_compile scripts/check-gate2-public-handoff.py"));
+    assert!(ci_workflow.contains("python3 -m py_compile scripts/check-gate0-foundations.py"));
+    assert!(ci_workflow.contains("python3 -m py_compile scripts/generate-gate2-outside-proof.py"));
+    assert!(!ci_workflow.contains("BEATER_GATE2_SKIP_BROWSER"));
 
-    // The old dashboard-ui.yml was split into two workflows: frontend.yml
-    // (tests + lint + the production build) and gate2-browser-proof.yml (the
-    // live, Playwright-container browser proof). Assert the surface on each.
-    let frontend_workflow = read(root.join(".github/workflows/frontend.yml"));
-    assert!(frontend_workflow.contains("pull_request:"));
-    assert!(frontend_workflow.contains("push:"));
-    assert!(frontend_workflow.contains("branches: [main]"));
-    assert!(frontend_workflow.contains("workflow_dispatch:"));
-    assert!(frontend_workflow.contains("contents: read"));
-    assert!(frontend_workflow.contains("CARGO_NET_RETRY: \"10\""));
-    assert!(frontend_workflow.contains("CARGO_HTTP_MULTIPLEXING: \"false\""));
-    assert!(frontend_workflow.contains("timeout-minutes: 20"));
-    assert!(frontend_workflow.contains("actions/setup-node@v4"));
-    assert!(frontend_workflow.contains("node-version: 24"));
-    assert!(frontend_workflow.contains("cache: npm"));
-    assert!(frontend_workflow.contains("cache-dependency-path: web/dashboard/package-lock.json"));
-    assert!(frontend_workflow.contains("working-directory: web/dashboard"));
-    assert!(frontend_workflow.contains("npm ci"));
-    assert!(frontend_workflow.contains("npm test"));
-    assert!(frontend_workflow.contains("npm run build"));
-    assert!(frontend_workflow.contains("scripts/check-openapi-drift.sh"));
-    assert!(!frontend_workflow.contains("BEATER_GATE2_SKIP_BROWSER"));
-    assert!(!frontend_workflow.contains("npx playwright install --with-deps chromium"));
+    let beater_cli = read(root.join("beater-cli"));
+    assert!(beater_cli.contains("format [--check]"));
+    assert!(beater_cli.contains("docker compose up --build beaterd dashboard"));
+    assert!(beater_cli.contains("docker compose down"));
+    assert!(beater_cli.contains("cargo xtask check-drift"));
+    assert!(beater_cli.contains("scripts/check-contract-sync.sh"));
+    assert!(beater_cli.contains("cargo test --workspace"));
+    assert!(beater_cli.contains("cargo test -p beaterd --test sqlite_migrations"));
+    assert!(beater_cli.contains("cargo test -p beater-store-sql -- --ignored"));
+    assert!(beater_cli.contains("npm test"));
+    assert!(beater_cli.contains("npm run build"));
+    assert!(beater_cli.contains("npx tsc --noEmit -p tsconfig.json"));
+    assert!(beater_cli.contains("scripts/check-openapi-drift.sh"));
+    assert!(beater_cli.contains("cargo test -p beaterd --test live_smoke -- --test-threads=1"));
+    assert!(beater_cli.contains("bash scripts/browser-e2e.sh"));
+    assert!(beater_cli.contains("scripts/gate2-proof.sh"));
+    assert!(beater_cli.contains("scripts/validate-gate2-outside-proof.sh --allow-pending"));
+    assert!(beater_cli.contains("scripts/check-gate0-foundations.py"));
+    assert!(beater_cli.contains("cargo test -p beaterd --test self_host_contract"));
+    assert!(beater_cli.contains("cargo test -p beaterd --test gate2_outside_validator"));
 
-    let browser_proof_workflow = read(root.join(".github/workflows/gate2-browser-proof.yml"));
-    assert!(browser_proof_workflow.contains("pull_request:"));
-    assert!(browser_proof_workflow.contains("push:"));
-    assert!(browser_proof_workflow.contains("branches: [main]"));
-    assert!(browser_proof_workflow.contains("workflow_dispatch:"));
-    assert!(browser_proof_workflow.contains("contents: read"));
-    assert!(browser_proof_workflow.contains("CARGO_NET_RETRY: \"10\""));
-    assert!(browser_proof_workflow.contains("CARGO_HTTP_MULTIPLEXING: \"false\""));
-    assert!(browser_proof_workflow.contains("live-browser-proof:"));
-    assert!(browser_proof_workflow.contains("timeout-minutes: 25"));
-    assert!(browser_proof_workflow.contains("container:"));
-    assert!(browser_proof_workflow.contains("image: mcr.microsoft.com/playwright:v1.57.0-noble"));
-    assert!(browser_proof_workflow.contains("actions/setup-node@v4"));
-    assert!(browser_proof_workflow.contains("actions/setup-python@v5"));
-    assert!(browser_proof_workflow.contains("node-version: 24"));
-    assert!(browser_proof_workflow.contains("python-version: \"3.12\""));
-    assert!(browser_proof_workflow.contains("build-essential"));
-    assert!(browser_proof_workflow.contains("pkg-config"));
-    assert!(browser_proof_workflow.contains("https://sh.rustup.rs"));
-    assert!(browser_proof_workflow.contains("$HOME/.cargo/bin"));
-    assert!(browser_proof_workflow.contains("cache: npm"));
-    assert!(
-        browser_proof_workflow.contains("cache-dependency-path: web/dashboard/package-lock.json")
-    );
-    assert!(browser_proof_workflow.contains("working-directory: web/dashboard"));
-    assert!(browser_proof_workflow.contains("npm ci"));
-    assert!(browser_proof_workflow.contains("scripts/gate2-proof.sh"));
-    assert!(browser_proof_workflow.contains("BEATER_GATE2_SKIP_PLAYWRIGHT_INSTALL: \"1\""));
-    assert!(!browser_proof_workflow.contains("BEATER_GATE2_SKIP_BROWSER"));
-    assert!(!browser_proof_workflow.contains("npx playwright install --with-deps chromium"));
+    let workflow_entries = fs::read_dir(root.join(".github/workflows"))
+        .expect("read .github/workflows")
+        .map(|entry| {
+            entry
+                .expect("read workflow entry")
+                .file_name()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .collect::<Vec<_>>();
+    for retired in [
+        "backend.yml",
+        "browser.yml",
+        "container-images.yml",
+        "deploy-backend.yml",
+        "deploy-dashboard.yml",
+        "frontend.yml",
+        "gate1-live-smoke.yml",
+        "gate2-browser-proof.yml",
+        "gate2-proof-contract.yml",
+        "sdk-contract.yml",
+        "storage-backends.yml",
+    ] {
+        assert!(
+            !workflow_entries.contains(&retired.to_string()),
+            "{retired} must stay folded into ci.yml"
+        );
+    }
 
-    let gate1_live_workflow = read(root.join(".github/workflows/gate1-live-smoke.yml"));
-    assert!(gate1_live_workflow.contains("pull_request:"));
-    assert!(gate1_live_workflow.contains("push:"));
-    assert!(gate1_live_workflow.contains("branches: [main]"));
-    assert!(gate1_live_workflow.contains("workflow_dispatch:"));
-    assert!(gate1_live_workflow.contains("contents: read"));
-    assert!(gate1_live_workflow.contains("CARGO_NET_RETRY: \"10\""));
-    assert!(gate1_live_workflow.contains("CARGO_HTTP_MULTIPLEXING: \"false\""));
-    assert!(gate1_live_workflow.contains("timeout-minutes: 20"));
-    assert!(gate1_live_workflow.contains("Gate 1 live runtime smoke"));
-    assert!(
-        gate1_live_workflow.contains("cargo test -p beaterd --test live_smoke -- --test-threads=1")
-    );
     let live_smoke = read(root.join("bins/beaterd/tests/live_smoke.rs"));
     for proof in [
         "beaterd_accepts_otlp_http_and_grpc_and_makes_traces_queryable",
@@ -1385,7 +1362,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("cloned readiness"));
     assert!(readme.contains("wrapper dry-run checks"));
     assert!(readme.contains("immediately before that second `git clone`"));
-    assert!(readme.contains("gate2-proof-contract"));
+    assert!(readme.contains("`ci` workflow's `agents` and `algorithms` jobs"));
 
     let requirements = read(root.join("REQUIREMENTS.md"));
     assert!(requirements.contains("docs/demos/gate2-outside-person-proof.md"));

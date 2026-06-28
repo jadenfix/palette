@@ -1,0 +1,183 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_NET_RETRY: "10"
+  CARGO_HTTP_MULTIPLEXING: "false"
+  RUST_BACKTRACE: "1"
+
+jobs:
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: Test backend and storage contracts
+        env:
+          BEATER_DOCKER_BACKENDS: "1"
+        run: ./beater-cli test backend
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/dashboard/package-lock.json
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: Test dashboard
+        run: ./beater-cli test frontend
+
+  agents:
+    name: agents
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/dashboard/package-lock.json
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+      - name: Install browser proof dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config
+          python -m pip install --upgrade pip opentelemetry-sdk opentelemetry-exporter-otlp pytest
+          npm --prefix web/dashboard ci
+          cd web/dashboard
+          npx playwright install --with-deps chromium
+      - name: Test agents and live browser proof
+        env:
+          BEATER_GATE2_BROWSER_PROOF: "1"
+        run: ./beater-cli test agents
+
+  algorithms:
+    name: algorithms
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal --component rustfmt && rustup default stable
+      - name: Test contracts and proof fixtures
+        run: ./beater-cli test algorithms
+      - name: Additive-only OpenAPI policy
+        run: |
+          base_ref="${GITHUB_BASE_REF:-main}"
+          git fetch --no-tags --depth=1 origin "$base_ref"
+          cargo run -q -p beater-api --example dump_openapi > /tmp/new-spec.json
+          git show "origin/${base_ref}:sdks/openapi/beater-api.json" > /tmp/base-spec.json
+          docker run --rm -v /tmp:/specs tufin/oasdiff breaking \
+            /specs/base-spec.json /specs/new-spec.json --fail-on ERR
+
+  vercel:
+    name: vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: web/dashboard
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/dashboard/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build or deploy on Vercel
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "Vercel secrets are not fully configured; running local Next build instead."
+            npm run build
+            exit 0
+          fi
+          npm i -g vercel@latest
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+            vercel build --token="$VERCEL_TOKEN"
+          else
+            vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+            vercel build --prod --token="$VERCEL_TOKEN"
+            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+            fi
+          fi
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy --component rustfmt
+          rustup default stable
+      - name: Rust format
+        run: ./beater-cli format --check
+      - name: Rust lint
+        run: cargo clippy --workspace --all-targets --exclude beaterd
+      - name: Script syntax
+        run: |
+          for script in \
+            beater-cli \
+            scripts/check-openapi-drift.sh \
+            scripts/gate2-compose-stopwatch.sh \
+            scripts/gate2-outside-local-preflight.sh \
+            scripts/gate2-outside-run.sh \
+            scripts/gate2-proof.sh \
+            scripts/smoke-compose.sh \
+            scripts/validate-gate2-outside-proof.sh
+          do
+            bash -n "$script"
+          done
+          python3 -m py_compile scripts/check-gate2-outside-readiness.py
+          python3 -m py_compile scripts/check-gate2-public-handoff.py
+          python3 -m py_compile scripts/check-gate0-foundations.py
+          python3 -m py_compile scripts/generate-gate2-outside-proof.py
+          python3 -m py_compile scripts/gate2_proof_contract.py
+          python3 -m py_compile scripts/seed-gate2-redaction-trace.py

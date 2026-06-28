@@ -9,9 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jadenfix/beater/actions/workflows/backend.yml"><img alt="backend" src="https://github.com/jadenfix/beater/actions/workflows/backend.yml/badge.svg?branch=main"></a>
-  <a href="https://github.com/jadenfix/beater/actions/workflows/sdk-contract.yml"><img alt="sdk-contract" src="https://github.com/jadenfix/beater/actions/workflows/sdk-contract.yml/badge.svg?branch=main"></a>
-  <a href="https://github.com/jadenfix/beater/actions/workflows/frontend.yml"><img alt="frontend" src="https://github.com/jadenfix/beater/actions/workflows/frontend.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/jadenfix/beater/actions/workflows/ci.yml"><img alt="ci" src="https://github.com/jadenfix/beater/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-Apache--2.0-3fb5ff"></a>
 </p>
 
@@ -48,7 +46,7 @@ Run the current self-host topology:
 ```bash
 git clone https://github.com/jadenfix/beater.git
 cd beater
-docker compose up
+./beater-cli dev
 ```
 
 Default local endpoints:
@@ -105,6 +103,16 @@ cargo test -p beater-api
 cargo test -p beater-api --test openapi_coverage
 cargo test -p beater-store-conformance
 cargo run -q -p beaterctl -- smoke --data-dir /tmp/beater-smoke
+```
+
+The root helper wraps the common lanes:
+
+```bash
+./beater-cli format
+./beater-cli dev
+./beater-cli down
+./beater-cli update-schema
+./beater-cli test
 ```
 
 Contract changes must regenerate from source and prove zero drift:

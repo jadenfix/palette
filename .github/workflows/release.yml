@@ -35,7 +35,7 @@ jobs:
         run: |
           docker compose up -d
           # Per-SDK smoke against a representative endpoint per resource group.
-          # (Reuses the live-smoke harness pattern from gate1-live-smoke.yml.)
+          # Reuses the live-smoke harness pattern from the ci.yml agents job.
           ./scripts/smoke-compose.sh
           docker compose down
 

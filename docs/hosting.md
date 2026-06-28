@@ -80,14 +80,13 @@ browser.
 
 ## CI-driven deploys (GitHub Actions)
 
-Two workflows deploy on push to `main`; both no-op (green) if their token secret
-is absent, so forks are unaffected.
+`.github/workflows/ci.yml` has one Vercel job. It deploys the dashboard on push
+to `main` when these repo secrets are configured, and otherwise no-ops with a
+local Next build so forks stay green:
 
-- `.github/workflows/deploy-backend.yml` → Fly. Repo secret: **`FLY_API_TOKEN`**
-  (`fly tokens create deploy`).
-- `.github/workflows/deploy-dashboard.yml` → Vercel. Repo secrets:
-  **`VERCEL_TOKEN`**, **`VERCEL_ORG_ID`**, **`VERCEL_PROJECT_ID`**
-  (org/project IDs are in `.vercel/project.json` after linking).
+- **`VERCEL_TOKEN`**
+- **`VERCEL_ORG_ID`**
+- **`VERCEL_PROJECT_ID`**
 
 Set them under **Settings → Secrets and variables → Actions**.
 
@@ -99,7 +98,6 @@ Set them under **Settings → Secrets and variables → Actions**.
 | Vercel env | `BEATER_API_BASE_URL` | dashboard → backend URL |
 | Vercel env | `BEATER_API_TOKEN` (or `BEATER_API_KEY`) | dashboard → backend auth |
 | Vercel env | `BEATER_GATE2_CONFIRMATION_SALT` | gate2 confirmation HMAC |
-| GH Actions | `FLY_API_TOKEN` | backend deploy |
 | GH Actions | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | dashboard deploy |
 
 ## End-to-end smoke (post-deploy)

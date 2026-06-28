@@ -68,19 +68,17 @@ back. Docs are not a follow-up.
 
 ## CI/CD must be green before a PR is merged
 
-A PR cannot merge until **every** required CI gate passes. The gates (under
-`.github/workflows/`) are:
+A PR cannot merge until **every** required CI gate passes. The PR/main CI surface
+is intentionally small: `.github/workflows/ci.yml` exposes only these jobs.
 
-| Workflow | What it guards |
+| Job | What it guards |
 | --- | --- |
-| `backend` | `cargo fmt`, `cargo clippy -D warnings` (unwrap/expect denied), `cargo test --workspace` |
-| `sdk-contract` | spec ↔ served routes, spec ↔ all 7 SDK clients, semconv ↔ SDKs, `oasdiff` breaking-change check — **single-source-of-truth contract must show zero drift** |
-| `storage-backends` | trait-conformance suite across SQLite / in-memory (and the wired columnar backends as they land) |
-| `browser` | browser-agent observability crates and the Playwright/CDP/WebDriver harness |
-| `frontend` | `web/dashboard` build, lint, and generated-OpenAPI-client checks |
-| `gate1-live-smoke` | live `beaterd` OTLP HTTP/gRPC round-trip becomes queryable/searchable |
-| `gate2-proof-contract` | the clean-clone-to-browser proof template and proof-artifact fixtures |
-| `container-images` | multi-arch GHCR image build/publish for `beaterd`, dashboard, and demo runners |
+| `backend` | Rust workspace tests, beaterd SQLite migrations, SDK example compilation, and Docker-backed storage conformance |
+| `frontend` | `web/dashboard` tests, production build, TypeScript type-check, and generated OpenAPI client drift |
+| `agents` | browser-agent crates, live `beaterd` smoke coverage, real browser/SDK e2e, and Gate 2 browser proof |
+| `algorithms` | OpenAPI coverage, SDK/semconv zero drift, additive-only API policy, Gate 0 foundations, and proof fixtures |
+| `vercel` | the single dashboard Vercel build/deploy path; if Vercel secrets are absent it falls back to a local Next build |
+| `lint` | `cargo fmt`, workspace clippy, shell syntax, and Python script compilation |
 
 The **single-source-of-truth contract** — `sdks/openapi/beater-api.json` →
 7 SDK clients → MCP tools → CLI → docs (and `sdks/semconv/conventions.json` for
@@ -88,7 +86,7 @@ span kinds/attributes) — must regenerate to **zero drift**. Run the full local
 check before you push:
 
 ```bash
-scripts/check-contract-sync.sh
+./beater-cli update-schema --check
 ```
 
 If you cannot get CI green, mark the PR a draft and say what is failing. Do not
@@ -102,19 +100,17 @@ rustup toolchain install stable
 cargo install cargo-nextest
 
 # 2. Build & run the test suite
-cargo build --workspace
-cargo test --workspace            # or: cargo nextest run --workspace
-cargo clippy --workspace --all-targets -- -D warnings
-cargo fmt --all
+./beater-cli format
+./beater-cli test
 
-# 3. Run the all-in-one server locally
-cargo run -q -p beaterd -- --data-dir /tmp/beaterd
+# 3. Run the all-in-one server locally (foreground)
+./beater-cli dev
 
 # 4. Smoke an OTLP round-trip (see ARCHITECTURE.md §22 for the full matrix)
 cargo run -q -p beaterctl -- smoke --data-dir /tmp/beater-smoke
 
-# 5. Full self-host stack via Docker Compose
-docker compose up
+# 5. Stop the compose stack when finished
+./beater-cli down
 ```
 
 Docker is required for `scripts/regen-sdks.sh`, the live SDK conformance suite,
@@ -142,9 +138,7 @@ Do all of this in the same change (CI enforces it — see below):
    `utoipa::ToSchema`.
 2. **Regenerate everything from the contract** — one command:
    ```bash
-   cargo xtask regen-spec      # spec + dashboard snapshot
-   scripts/regen-sdks.sh       # 7 clients (+ reproducible C/C++ patches)
-   cargo xtask regen-semconv   # sdks/semconv/conventions.json (if conventions changed)
+   ./beater-cli update-schema
    ```
 3. **If you touched span kinds / attribute keys**, change them ONLY in
    `crates/beater-schema` (`conventions` module) and re-run `regen-semconv`; then
@@ -154,12 +148,12 @@ Do all of this in the same change (CI enforces it — see below):
 ### Verify there is no drift — one command
 
 ```bash
-scripts/check-contract-sync.sh
+./beater-cli update-schema --check
 ```
 
 This runs every drift gate: spec ↔ served routes, spec ↔ all 7 SDK clients,
 the API-shape audit, and semantic-conventions ↔ all 5 SDKs. CI runs the same
-gates in `.github/workflows/sdk-contract.yml`, so **a handler change that isn't
+gates in `.github/workflows/ci.yml` job `algorithms`, so **a handler change that isn't
 regenerated into the spec, SDKs, MCP tools, and docs cannot merge**, and
 `oasdiff` blocks breaking contract changes.
 

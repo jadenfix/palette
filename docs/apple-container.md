@@ -42,8 +42,8 @@ container its own IP, so `run-beaterd.sh` resolves the address via
 
 ## CI
 
-The `Dockerfile` build is verified in CI by `.github/workflows/container-images.yml`
-(Docker buildx, multi-platform). Apple `container` is **not** exercised in CI:
+The Docker path is exercised by local compose and CI storage/runtime lanes in
+`.github/workflows/ci.yml`. Apple `container` is **not** exercised in CI:
 GitHub's hosted arm64 macOS runners are themselves VMs, and Apple's
 `Virtualization.framework` does not support nested virtualization on arm64, so
 `container build`/`run` abort with `VZErrorDomain Code=2 "Virtualization is not

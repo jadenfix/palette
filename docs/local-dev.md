@@ -39,7 +39,7 @@ The supported deployment is the single `beaterd` binary (R1.2):
 cargo run -p beaterd
 
 # Or the full self-host compose (beaterd + dashboard), offline by default (R1.3):
-docker compose up beaterd dashboard
+./beater-cli dev
 ```
 
 `beaterd` listens on `:8080` (HTTP API + MCP at `/mcp`) and `:4317` (OTLP gRPC),
@@ -65,21 +65,19 @@ generated from `sdks/openapi/beater-api.json`. If you change a `/v1` endpoint,
 request/response type, span kind, or attribute, regenerate in the same change:
 
 ```sh
-cargo xtask regen-spec      # OpenAPI spec + dashboard snapshot
-scripts/regen-sdks.sh       # all 7 generated clients
-cargo xtask regen-semconv   # conventions.json (if conventions changed)
+./beater-cli update-schema
 ```
 
 Verify there is no drift before pushing:
 
 ```sh
-scripts/check-contract-sync.sh
+./beater-cli update-schema --check
 ```
 
 ## Lint and format before a PR
 
 ```sh
-cargo fmt --all
+./beater-cli format
 cargo clippy --workspace --all-targets   # unwrap/expect denied in non-test code
 ```
 
@@ -92,6 +90,6 @@ call. To opt in for testing, set `BEATER_SELF_HOST_TELEMETRY=1`; see
 ## Opening a PR
 
 Use the [pull request template](../.github/PULL_REQUEST_TEMPLATE.md). The
-contract gates in CI (`.github/workflows/sdk-contract.yml`) run the same checks
-as `scripts/check-contract-sync.sh`, so a handler change that is not regenerated
-cannot merge.
+contract gates in CI (`.github/workflows/ci.yml`, job `algorithms`) run the same
+checks as `./beater-cli update-schema --check`, so a handler change that is not
+regenerated cannot merge.

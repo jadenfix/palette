@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-command drift test: proves the API contract, the 7 SDK clients, the MCP
 # tools, the docs, and the semantic conventions are all in sync with the Rust
-# handlers. Run before pushing; CI (sdk-contract.yml) runs the same gates.
+# handlers. Run before pushing; CI (ci.yml, job `algorithms`) runs the same gates.
 #
 # Exit non-zero on ANY drift. See CONTRIBUTING.md.
 set -euo pipefail

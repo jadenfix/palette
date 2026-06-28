@@ -190,8 +190,8 @@ scripts/validate-gate2-outside-proof.sh
 ```
 
 Maintainers should run this full public-clone verifier before handing the repo
-to an outside runner, after the `container-images` workflow has published the
-current commit:
+to an outside runner, after the `ci` workflow's `agents` and `algorithms` jobs
+have passed for the current commit:
 
 ```bash
 scripts/check-gate2-public-handoff.py --full-run

@@ -11,7 +11,7 @@ Every `/v1` endpoint, request/response type, MCP tool, CLI command, and SDK
 client is generated from one artifact: `sdks/openapi/beater-api.json` (itself
 generated from the Rust handlers in `crates/beater-api`). The drift gate
 (`scripts/check-contract-sync.sh`) and `oasdiff` in
-`.github/workflows/sdk-contract.yml` block any change that is not regenerated
+`.github/workflows/ci.yml` job `algorithms` block any change that is not regenerated
 across the spec, all 7 SDK clients, the MCP tools, and the docs.
 
 ## Stability guarantee for `/v1`
