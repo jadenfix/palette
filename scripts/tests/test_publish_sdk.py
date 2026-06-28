@@ -57,6 +57,26 @@ class PublishSdkVersionValidationTests(unittest.TestCase):
         self.assertIn("go: tag v0.2.0 pushed", result.stdout)
         self.assertIn("Published go @ 0.2.0", result.stdout)
 
+    def test_registry_targets_skip_cleanly_without_secrets(self) -> None:
+        cases = (
+            ("rust", "CARGO_REGISTRY_TOKEN"),
+            ("python", "PYPI_TOKEN"),
+            ("typescript", "NPM_TOKEN"),
+            ("java", "OSSRH_USERNAME"),
+        )
+        for target, secret_name in cases:
+            with self.subTest(target=target):
+                result = run_publish_sdk(target, "0.2.0")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(f"SKIP {target}: {secret_name} not set", result.stdout)
+                self.assertNotIn(f"Published {target}", result.stdout)
+
+    def test_unknown_target_fails_after_version_validation(self) -> None:
+        result = run_publish_sdk("ruby", "0.2.0")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Unknown target: ruby", result.stderr)
+        self.assertNotIn("SKIP ruby", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
