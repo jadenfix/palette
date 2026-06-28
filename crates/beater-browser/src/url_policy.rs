@@ -18,10 +18,12 @@
 //! The policy type lives in the core `beater-browser` crate so every driver
 //! backend (`beater-browser-cdp`, `beater-browser-playwright`,
 //! `beater-browser-webdriver`) can import it without pulling in store or API
-//! dependencies. **Wiring into the live navigation path** is intentionally left
-//! as a follow-up per-driver task: each driver's `goto` implementation should
-//! call `policy.check(url)?` before issuing the real CDP/WebDriver/Playwright
-//! navigate command.
+//! dependencies. **All live drivers enforce the policy** at the start of every
+//! navigation entry point (`goto` and `act(Goto)`) via `policy.enforce(url)?`,
+//! before issuing the real CDP/WebDriver/Playwright navigate command. The live
+//! drivers default to [`UrlPolicy::block_private`] (secure by default); a caller
+//! that must reach a trusted internal/loopback target opts in via each driver's
+//! `with_policy(UrlPolicy::allow_all())` builder.
 //!
 //! `MockDriver` accepts an optional `UrlPolicy` via
 //! [`crate::MockDriver::with_policy`] so tests can exercise policy enforcement
@@ -170,7 +172,19 @@ impl UrlPolicy {
         }
 
         // --- IP address checks ---
-        if let Ok(ip) = host.parse::<IpAddr>() {
+        //
+        // First try the strict `IpAddr` parser (canonical dotted-quad IPv4 and
+        // every IPv6 form). If that fails, fall back to the browser-style
+        // "relaxed" IPv4 parser, which canonicalizes alternate encodings that a
+        // real renderer would accept but `IpAddr` rejects — decimal
+        // (`2130706433`), hex (`0x7f.0.0.1`), octal (`0177.0.0.1`), and
+        // short-forms (`127.1`). Without this, those bypass the guard by
+        // falling through as opaque "hostnames".
+        let ip = host
+            .parse::<IpAddr>()
+            .ok()
+            .or_else(|| parse_relaxed_ipv4(host).map(IpAddr::V4));
+        if let Some(ip) = ip {
             if let Some(reason) = check_ip_blocked(&ip) {
                 return PolicyVerdict::Block(format!("rejected: {reason}: {url}"));
             }
@@ -190,6 +204,80 @@ impl UrlPolicy {
     }
 }
 
+/// Parse the "relaxed" / alternate textual forms of an IPv4 address that web
+/// browsers accept but [`std::net::Ipv4Addr`]'s `FromStr` rejects. Returns
+/// `None` when `host` is not a numeric IPv4 representation (i.e. it is a real
+/// hostname or an IPv6 literal), so the caller falls through to ordinary
+/// hostname handling.
+///
+/// Implements the WHATWG URL "IPv4 number parser": the host is split into
+/// 1–4 dot-separated parts, each parsed with radix auto-detection (`0x`/`0X`
+/// → hex, leading `0` → octal, otherwise decimal). All but the final part are
+/// single octets (`< 256`); the final part absorbs the remaining low-order
+/// bytes. This canonicalizes:
+///
+/// - decimal:    `2130706433`   → `127.0.0.1`
+/// - hex:        `0x7f.0.0.1`   → `127.0.0.1`, `0x7f000001` → `127.0.0.1`
+/// - octal:      `0177.0.0.1`   → `127.0.0.1`
+/// - short-form: `127.1`        → `127.0.0.1`, `10.1` → `10.0.0.1`
+fn parse_relaxed_ipv4(host: &str) -> Option<std::net::Ipv4Addr> {
+    let mut parts: Vec<&str> = host.split('.').collect();
+    // Tolerate a single trailing dot ("127.0.0.1.") as browsers do.
+    if parts.len() > 1 && parts.last() == Some(&"") {
+        parts.pop();
+    }
+    if parts.is_empty() || parts.len() > 4 {
+        return None;
+    }
+
+    let mut nums: Vec<u64> = Vec::with_capacity(parts.len());
+    for part in &parts {
+        nums.push(parse_ipv4_part(part)?);
+    }
+
+    let n = nums.len();
+    // Every part except the last is a single octet and must fit in one byte.
+    if nums[..n - 1].iter().any(|&v| v > 0xff) {
+        return None;
+    }
+    // The final part fills the remaining `4 - (n - 1)` low-order bytes.
+    let remaining_bytes = (4 - (n - 1)) as u32;
+    let max_last: u64 = (1u64 << (8 * remaining_bytes)) - 1;
+    let last = nums[n - 1];
+    if last > max_last {
+        return None;
+    }
+
+    let mut addr: u32 = 0;
+    for (i, &v) in nums[..n - 1].iter().enumerate() {
+        addr |= (v as u32) << (8 * (3 - i as u32));
+    }
+    addr |= last as u32;
+    Some(std::net::Ipv4Addr::from(addr))
+}
+
+/// Parse one dot-separated part of a relaxed IPv4 literal with radix
+/// auto-detection. Returns `None` if the part is not a valid number in its
+/// detected radix (so the whole host is treated as a hostname).
+fn parse_ipv4_part(part: &str) -> Option<u64> {
+    if part.is_empty() {
+        return None;
+    }
+    let (radix, digits) =
+        if let Some(rest) = part.strip_prefix("0x").or_else(|| part.strip_prefix("0X")) {
+            (16u32, rest)
+        } else if part.len() > 1 && part.starts_with('0') {
+            (8u32, &part[1..])
+        } else {
+            (10u32, part)
+        };
+    // "0", "0x" and "00" all denote zero.
+    if digits.is_empty() {
+        return Some(0);
+    }
+    u64::from_str_radix(digits, radix).ok()
+}
+
 /// Returns `Some(reason)` if the given IP address is in a blocked range, or
 /// `None` if it is a routable public address.
 fn check_ip_blocked(ip: &IpAddr) -> Option<String> {
@@ -206,9 +294,7 @@ fn check_ip_blocked(ip: &IpAddr) -> Option<String> {
             }
             // 172.16.0.0/12 — RFC 1918 private (172.16.0.0 – 172.31.255.255)
             if octets[0] == 172 && (octets[1] >= 16 && octets[1] <= 31) {
-                return Some(format!(
-                    "{ip} is in RFC 1918 private range (172.16.0.0/12)"
-                ));
+                return Some(format!("{ip} is in RFC 1918 private range (172.16.0.0/12)"));
             }
             // 192.168.0.0/16 — RFC 1918 private
             if octets[0] == 192 && octets[1] == 168 {
@@ -246,9 +332,7 @@ fn check_ip_blocked(ip: &IpAddr) -> Option<String> {
             // fc00::/7 — unique-local (RFC 4193, analogous to RFC 1918)
             // segments[0] in range [0xfc00, 0xfdff]
             if (segments[0] & 0xfe00) == 0xfc00 {
-                return Some(format!(
-                    "{ip} is an IPv6 unique-local address (fc00::/7)"
-                ));
+                return Some(format!("{ip} is an IPv6 unique-local address (fc00::/7)"));
             }
             // ::ffff:0:0/96 — IPv4-mapped IPv6; re-check the embedded IPv4
             if segments[0] == 0
@@ -330,10 +414,10 @@ mod tests {
     fn block_private_allows_public_ipv4() {
         let p = UrlPolicy::block_private();
         // Publicly-routable IPs
-        allows(&p, "https://8.8.8.8");       // Google DNS
-        allows(&p, "https://1.1.1.1");       // Cloudflare
-        allows(&p, "https://203.0.113.5");   // TEST-NET-3 (documentation range, public)
-        allows(&p, "https://198.51.100.1");  // TEST-NET-2 (documentation range, public)
+        allows(&p, "https://8.8.8.8"); // Google DNS
+        allows(&p, "https://1.1.1.1"); // Cloudflare
+        allows(&p, "https://203.0.113.5"); // TEST-NET-3 (documentation range, public)
+        allows(&p, "https://198.51.100.1"); // TEST-NET-2 (documentation range, public)
     }
 
     #[test]
@@ -413,7 +497,10 @@ mod tests {
         let p = UrlPolicy::block_private();
         // AWS/GCP/Azure IMDS endpoint
         blocks(&p, "http://169.254.169.254");
-        blocks(&p, "http://169.254.169.254/latest/meta-data/iam/security-credentials/");
+        blocks(
+            &p,
+            "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+        );
         // Generic 169.254.x.x
         blocks(&p, "http://169.254.0.1");
         blocks(&p, "http://169.254.255.255");
@@ -535,6 +622,53 @@ mod tests {
         let p = UrlPolicy::block_private();
         blocks(&p, "http://0.0.0.0");
         blocks(&p, "http://[::]/");
+    }
+
+    // ── alternate IPv4 encodings (blocked) ──────────────────────────────────
+
+    /// Decimal, octal, hex and short-form encodings of loopback must all be
+    /// canonicalized and blocked — these previously bypassed the guard by
+    /// falling through as opaque hostnames.
+    #[test]
+    fn block_private_blocks_alternate_encodings_of_loopback() {
+        let p = UrlPolicy::block_private();
+        blocks(&p, "http://2130706433"); // decimal 127.0.0.1
+        blocks(&p, "http://2130706433/latest/meta-data/"); // with path
+        blocks(&p, "http://0177.0.0.1"); // octal first octet
+        blocks(&p, "http://017700000001"); // octal whole address
+        blocks(&p, "http://0x7f.0.0.1"); // hex first octet
+        blocks(&p, "http://0x7f000001"); // hex whole address
+        blocks(&p, "http://127.1"); // short-form -> 127.0.0.1
+        blocks(&p, "http://127.0.1"); // 3-part short-form
+        blocks(&p, "http://127.1:8080/admin"); // short-form + port + path
+    }
+
+    /// Alternate encodings of RFC 1918 private and cloud-metadata addresses.
+    #[test]
+    fn block_private_blocks_alternate_encodings_of_private_and_metadata() {
+        let p = UrlPolicy::block_private();
+        // 169.254.169.254 (IMDS) as decimal and hex.
+        blocks(&p, "http://2852039166");
+        blocks(&p, "http://0xA9FEA9FE");
+        blocks(&p, "http://0xa9fea9fe");
+        // 10.0.0.1 short-form / hex.
+        blocks(&p, "http://10.1");
+        blocks(&p, "http://0xa.0.0.1");
+        // 192.168.0.1 decimal.
+        blocks(&p, "http://3232235521");
+    }
+
+    /// The relaxed parser must not over-block: a numeric encoding of a *public*
+    /// IP and ordinary hostnames (including ones with numeric labels) stay
+    /// allowed.
+    #[test]
+    fn block_private_relaxed_parser_allows_public_and_hostnames() {
+        let p = UrlPolicy::block_private();
+        allows(&p, "http://134744072"); // 8.8.8.8 decimal -> public
+        allows(&p, "http://1.1"); // 1.0.0.1 -> public short-form
+        allows(&p, "https://example.com");
+        allows(&p, "https://1.example.com"); // numeric label, still a hostname
+        allows(&p, "https://192-0-2-1.example.com"); // not dotted, hostname
     }
 
     // ── case-insensitive scheme / hostname ──────────────────────────────────

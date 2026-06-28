@@ -644,8 +644,8 @@ mod tests {
     /// publicly-routable HTTPS URLs — the normal operating case.
     #[tokio::test]
     async fn mock_driver_block_private_allows_public_https() {
-        let mut driver = MockDriver::with_conformance_fixture()
-            .with_policy(UrlPolicy::block_private());
+        let mut driver =
+            MockDriver::with_conformance_fixture().with_policy(UrlPolicy::block_private());
         // Should succeed (no error) and return the mocked observation.
         let obs = driver
             .goto("https://example.com/page")

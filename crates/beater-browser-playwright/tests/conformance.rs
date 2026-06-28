@@ -14,8 +14,8 @@
 //! Playwright-backed driver.
 
 use beater_browser::{
-    assert_browser_driver_conformance, BrowserDriver, BrowserEngine, CONFORMANCE_FIXTURE_HTML,
-    FIXTURE_CONSOLE_MESSAGE,
+    assert_browser_driver_conformance, BrowserDriver, BrowserEngine, UrlPolicy,
+    CONFORMANCE_FIXTURE_HTML, FIXTURE_CONSOLE_MESSAGE,
 };
 use beater_browser_playwright::{PlaywrightConfig, PlaywrightDriver};
 use std::net::SocketAddr;
@@ -67,7 +67,10 @@ async fn playwright_driver_passes_conformance() {
     let config = PlaywrightConfig::new(BrowserEngine::Chromium).with_headless(true);
     let mut driver = PlaywrightDriver::launch(config)
         .await
-        .unwrap_or_else(|err| panic!("launch playwright driver: {err}"));
+        .unwrap_or_else(|err| panic!("launch playwright driver: {err}"))
+        // Fixture is served on 127.0.0.1; opt this trusted run past the
+        // default `block_private` SSRF policy.
+        .with_policy(UrlPolicy::allow_all());
 
     assert_browser_driver_conformance(&mut driver, &base_url).await;
 }
@@ -80,7 +83,10 @@ async fn playwright_driver_captures_console_and_network() {
     let config = PlaywrightConfig::new(BrowserEngine::Chromium).with_headless(true);
     let mut driver = PlaywrightDriver::launch(config)
         .await
-        .unwrap_or_else(|err| panic!("launch playwright driver: {err}"));
+        .unwrap_or_else(|err| panic!("launch playwright driver: {err}"))
+        // Fixture is served on 127.0.0.1; opt this trusted run past the
+        // default `block_private` SSRF policy.
+        .with_policy(UrlPolicy::allow_all());
 
     let observation = driver
         .goto(&base_url)
