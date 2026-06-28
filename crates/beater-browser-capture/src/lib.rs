@@ -147,14 +147,14 @@ where
         // decision — without it observability is "half" (decision but no view).
         let screenshot_before = self.driver.screenshot().await?;
         let screenshot_before_ref = self
-            .put_bytes(&screenshot_before, "image/png", RedactionClass::Internal)
+            .put_bytes(&screenshot_before, "image/png", RedactionClass::Sensitive)
             .await?;
         let dom_before_bytes = match &observation_before.dom_html {
             Some(html) => html.clone().into_bytes(),
             None => self.driver.dom().await?.into_bytes(),
         };
         let dom_before_ref = self
-            .put_bytes(&dom_before_bytes, "text/html", RedactionClass::Internal)
+            .put_bytes(&dom_before_bytes, "text/html", RedactionClass::Sensitive)
             .await?;
 
         let mut spans = Vec::new();
@@ -171,7 +171,7 @@ where
                 .await?;
 
             let raw_ref = self
-                .put_json(&serde_json::to_value(decision)?, RedactionClass::Internal)
+                .put_json(&serde_json::to_value(decision)?, RedactionClass::Sensitive)
                 .await?;
             let mut attributes = BTreeMap::new();
             if let Some(reasoning) = &decision.reasoning {
@@ -231,11 +231,11 @@ where
             None => self.driver.dom().await?.into_bytes(),
         };
         let dom_ref = self
-            .put_bytes(&dom_bytes, "text/html", RedactionClass::Internal)
+            .put_bytes(&dom_bytes, "text/html", RedactionClass::Sensitive)
             .await?;
         let screenshot = self.driver.screenshot().await?;
         let screenshot_ref = self
-            .put_bytes(&screenshot, "image/png", RedactionClass::Internal)
+            .put_bytes(&screenshot, "image/png", RedactionClass::Sensitive)
             .await?;
 
         // 4) Record the action as a Tool cassette + tool.call span.
@@ -256,7 +256,7 @@ where
             outcome: outcome.clone(),
         };
         let raw_ref = self
-            .put_json(&serde_json::to_value(&triple)?, RedactionClass::Internal)
+            .put_json(&serde_json::to_value(&triple)?, RedactionClass::Sensitive)
             .await?;
 
         let mut attributes = BTreeMap::new();
@@ -662,6 +662,21 @@ mod tests {
             tool.input_ref.is_some(),
             "the agent's pre-action perception should be referenced as the span input"
         );
+        assert_eq!(
+            tool.input_ref
+                .as_ref()
+                .unwrap_or_else(|| panic!("tool input ref"))
+                .redaction_class,
+            RedactionClass::Sensitive
+        );
+        assert_eq!(
+            tool.output_ref
+                .as_ref()
+                .unwrap_or_else(|| panic!("tool output ref"))
+                .redaction_class,
+            RedactionClass::Sensitive
+        );
+        assert_eq!(tool.raw_ref.redaction_class, RedactionClass::Sensitive);
 
         // The llm.call span carries the decision's model, cost, tokens, and uses
         // the perception (pre-action screenshot) as its input — so what the agent
@@ -674,6 +689,14 @@ mod tests {
             llm.input_ref.is_some(),
             "the perception should be the llm.call input"
         );
+        assert_eq!(
+            llm.input_ref
+                .as_ref()
+                .unwrap_or_else(|| panic!("llm input ref"))
+                .redaction_class,
+            RedactionClass::Sensitive
+        );
+        assert_eq!(llm.raw_ref.redaction_class, RedactionClass::Sensitive);
         assert!(llm.attributes.contains_key(semconv::INPUT_TOKENS));
         assert!(llm.attributes.contains_key(semconv::COST_MICROS));
         // A non-instantaneous decision latency yields end > start.

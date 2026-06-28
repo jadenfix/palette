@@ -171,7 +171,7 @@ pub fn export_to_raw_trace_ingest_request(
         source_schema_version,
         normalizer_version: "beater-otlp-v1".to_string(),
         mime_type: "application/x-protobuf".to_string(),
-        redaction_class: RedactionClass::Internal,
+        redaction_class: RedactionClass::Sensitive,
         raw_bytes,
         raw_idempotency_key: None,
         auth_context: Some(auth_context),
@@ -405,7 +405,7 @@ fn convert_span(
         input: attributes.remove("input.value"),
         output: attributes.remove("output.value"),
         attributes,
-        redaction_class: RedactionClass::Internal,
+        redaction_class: RedactionClass::Sensitive,
         idempotency_key: Some(IdempotencyKey::new(format!(
             "otlp:{}:{}:{}:{}",
             scope.tenant_id.as_str(),
@@ -1226,6 +1226,7 @@ mod tests {
         assert_eq!(span.span_id.as_str(), "1112131415161718");
         assert_eq!(span.kind, AgentSpanKind::LlmCall);
         assert_eq!(span.status, SpanStatus::Ok);
+        assert_eq!(span.redaction_class, RedactionClass::Sensitive);
         assert_eq!(
             span.model,
             Some(ModelRef {
@@ -1268,6 +1269,7 @@ mod tests {
         );
         assert_eq!(raw_request.source_schema_version.as_deref(), Some("1.37.0"));
         assert_eq!(raw_request.normalizer_version, "beater-otlp-v1");
+        assert_eq!(raw_request.redaction_class, RedactionClass::Sensitive);
         assert_eq!(raw_request.spans.len(), 1);
         assert_eq!(raw_request.spans[0].kind, AgentSpanKind::LlmCall);
     }
