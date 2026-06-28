@@ -43,6 +43,9 @@ jobs:
       - name: Spec + all 7 SDK clients in sync
         run: scripts/regen-sdks.sh --check
 
+      - name: API shape consistency audit
+        run: python3 scripts/audit-api-shapes.py
+
       - name: Additive-only contract policy (oasdiff)
         run: |
           cargo run -q -p beater-api --example dump_openapi > /tmp/new-spec.json

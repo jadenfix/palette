@@ -26,6 +26,15 @@ CREATE TABLE IF NOT EXISTS spans (
   name TEXT NOT NULL,
   start_time TIMESTAMPTZ NOT NULL,
   end_time TIMESTAMPTZ,
+  -- Per-span roll-up columns derived from the canonical span at write time so
+  -- query_runs aggregates run summaries with a backend GROUP BY instead of
+  -- materializing every span (ARCHITECTURE.md §8.1). The full canonical object
+  -- still lives in span_json.
+  model_provider TEXT,
+  model_name TEXT,
+  cost_currency TEXT,
+  cost_micros BIGINT,
+  release_id TEXT,
   span_json JSONB NOT NULL,
   PRIMARY KEY (tenant_id, project_id, trace_id, span_id, seq),
   CONSTRAINT spans_kind_known CHECK (
@@ -54,6 +63,42 @@ CREATE INDEX IF NOT EXISTS idx_spans_tenant_trace
 
 CREATE INDEX IF NOT EXISTS idx_spans_tenant_kind_status
   ON spans (tenant_id, kind, status, start_time);
+
+-- Backfill the roll-up columns on databases created before they were added.
+-- CREATE TABLE IF NOT EXISTS above skips an existing table, so these run as
+-- separate idempotent statements.
+ALTER TABLE spans ADD COLUMN IF NOT EXISTS model_provider TEXT;
+ALTER TABLE spans ADD COLUMN IF NOT EXISTS model_name TEXT;
+ALTER TABLE spans ADD COLUMN IF NOT EXISTS cost_currency TEXT;
+ALTER TABLE spans ADD COLUMN IF NOT EXISTS cost_micros BIGINT;
+ALTER TABLE spans ADD COLUMN IF NOT EXISTS release_id TEXT;
+
+UPDATE spans
+SET
+  model_provider = COALESCE(model_provider, span_json #>> '{model,provider}'),
+  model_name = COALESCE(model_name, span_json #>> '{model,name}'),
+  cost_currency = COALESCE(cost_currency, span_json #>> '{cost,currency}'),
+  cost_micros = COALESCE(
+    cost_micros,
+    CASE
+      WHEN (span_json #>> '{cost,amount_micros}') ~ '^-?[0-9]+$'
+      THEN (span_json #>> '{cost,amount_micros}')::BIGINT
+      ELSE NULL
+    END
+  ),
+  release_id = COALESCE(
+    release_id,
+    span_json #>> '{attributes,beater.release_id}',
+    span_json #>> '{attributes,agent.release_id}',
+    span_json #>> '{attributes,deployment.release_id}',
+    span_json #>> '{attributes,release.id}',
+    span_json #>> '{attributes,release_id}'
+  )
+WHERE model_provider IS NULL
+   OR model_name IS NULL
+   OR cost_currency IS NULL
+   OR cost_micros IS NULL
+   OR release_id IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_spans_scope_start
   ON spans (tenant_id, project_id, environment_id, start_time DESC);

@@ -61,7 +61,7 @@ impl ParquetTraceArchive {
             return Err(anyhow!("archive span set crosses project boundary"));
         }
 
-        let path = self.archive_path(tenant_id, project_id);
+        let path = self.archive_path(tenant_id, project_id, spans)?;
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)
                 .with_context(|| format!("create archive dir {}", parent.display()))?;
@@ -106,9 +106,7 @@ impl ParquetTraceArchive {
             .await
             .with_context(|| format!("register parquet archive {}", path.display()))?;
         let dataframe = ctx.table(TABLE_NAME).await.context("load archive table")?;
-        let dataframe = build_query_dataframe(dataframe, &query)?;
-        let batches = dataframe.collect().await.context("run archive query")?;
-        rows_from_batches(&batches)
+        query_dataframe(dataframe, query).await
     }
 
     pub async fn query_project(
@@ -127,19 +125,42 @@ impl ParquetTraceArchive {
         }
         query.project_id = Some(project_id.clone());
         let project_dir = self.project_dir(tenant_id, project_id);
-        if !project_dir_has_parquet(&project_dir)? {
+        let parquet_paths = parquet_files(&project_dir)?;
+        if parquet_paths.is_empty() {
             return Ok(Vec::new());
         }
-        self.query_path(project_dir, query).await
+        self.query_paths(&parquet_paths, query).await
     }
 
-    fn archive_path(&self, tenant_id: &TenantId, project_id: &ProjectId) -> PathBuf {
-        let file_name = format!(
-            "{}-{}.parquet",
-            Utc::now().format("%Y%m%dT%H%M%S%.fZ"),
-            Uuid::new_v4()
-        );
-        self.project_dir(tenant_id, project_id).join(file_name)
+    async fn query_paths(
+        &self,
+        paths: &[PathBuf],
+        query: ArchiveQuery,
+    ) -> anyhow::Result<Vec<ArchivedSpanRow>> {
+        let path_strings = paths
+            .iter()
+            .map(|path| path_to_utf8(path.as_path()))
+            .collect::<anyhow::Result<Vec<_>>>()?;
+        let ctx = SessionContext::new();
+        let dataframe = ctx
+            .read_parquet(path_strings, ParquetReadOptions::default())
+            .await
+            .context("read parquet archive files")?;
+        query_dataframe(dataframe, query).await
+    }
+
+    fn archive_path(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        spans: &[CanonicalSpan],
+    ) -> anyhow::Result<PathBuf> {
+        let partition_month = archive_partition_month(spans)?;
+        let file_name = format!("{}.parquet", Uuid::new_v4());
+        Ok(self
+            .project_dir(tenant_id, project_id)
+            .join(partition_month)
+            .join(file_name))
     }
 
     fn project_dir(&self, tenant_id: &TenantId, project_id: &ProjectId) -> PathBuf {
@@ -403,6 +424,15 @@ fn build_query_dataframe(dataframe: DataFrame, query: &ArchiveQuery) -> anyhow::
         .context("limit archive rows")
 }
 
+async fn query_dataframe(
+    dataframe: DataFrame,
+    query: ArchiveQuery,
+) -> anyhow::Result<Vec<ArchivedSpanRow>> {
+    let dataframe = build_query_dataframe(dataframe, &query)?;
+    let batches = dataframe.collect().await.context("run archive query")?;
+    rows_from_batches(&batches)
+}
+
 fn archive_columns() -> Vec<String> {
     archive_schema()
         .fields()
@@ -597,27 +627,62 @@ fn safe_segment(value: &str) -> String {
     encoded
 }
 
-fn project_dir_has_parquet(path: &Path) -> anyhow::Result<bool> {
+fn archive_partition_month(spans: &[CanonicalSpan]) -> anyhow::Result<String> {
+    let earliest_start_time = spans
+        .iter()
+        .map(|span| span.start_time)
+        .min()
+        .ok_or_else(|| anyhow!("cannot partition an empty span set"))?;
+    Ok(earliest_start_time.format("%Y%m").to_string())
+}
+
+fn parquet_files(path: &Path) -> anyhow::Result<Vec<PathBuf>> {
+    let mut files = Vec::new();
+    collect_parquet_files(path, &mut files)?;
+    files.sort();
+    Ok(files)
+}
+
+fn collect_parquet_files(path: &Path, files: &mut Vec<PathBuf>) -> anyhow::Result<()> {
     if !path.exists() {
-        return Ok(false);
+        return Ok(());
     }
+    if path.is_file() {
+        if is_parquet_path(path) {
+            files.push(path.to_path_buf());
+        }
+        return Ok(());
+    }
+
     if !path.is_dir() {
-        return Ok(false);
+        return Ok(());
     }
+
     for entry in
         fs::read_dir(path).with_context(|| format!("read archive dir {}", path.display()))?
     {
         let entry = entry.with_context(|| format!("read archive entry {}", path.display()))?;
-        if entry
-            .path()
-            .extension()
-            .and_then(|extension| extension.to_str())
-            == Some("parquet")
-        {
-            return Ok(true);
+        let entry_path = entry.path();
+        let file_type = entry
+            .file_type()
+            .with_context(|| format!("read archive entry type {}", entry_path.display()))?;
+        if file_type.is_dir() {
+            collect_parquet_files(&entry_path, files)?;
+        } else if file_type.is_file() && is_parquet_path(&entry_path) {
+            files.push(entry_path);
         }
     }
-    Ok(false)
+    Ok(())
+}
+
+fn is_parquet_path(path: &Path) -> bool {
+    path.extension().and_then(|extension| extension.to_str()) == Some("parquet")
+}
+
+fn path_to_utf8(path: &Path) -> anyhow::Result<String> {
+    path.to_str()
+        .map(ToOwned::to_owned)
+        .ok_or_else(|| anyhow!("archive path is not valid UTF-8: {}", path.display()))
 }
 
 #[cfg(test)]
@@ -690,6 +755,115 @@ mod tests {
         assert_eq!(rows[0].status, "error");
         assert_eq!(rows[0].cost_amount_micros.as_deref(), Some("2500"));
         assert_eq!(rows[0].input_tokens.as_deref(), Some("7"));
+    }
+
+    #[tokio::test]
+    async fn archive_path_uses_safe_segments_and_earliest_span_month_partition() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let archive =
+            ParquetTraceArchive::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant/path").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project:alpha").unwrap_or_else(|err| panic!("{err}"));
+        let mut later_span = fixture_span(
+            &tenant,
+            &project,
+            "prod",
+            "trace-partition",
+            "span-later",
+            2,
+            SpanStatus::Ok,
+        );
+        later_span.start_time = timestamp("2026-03-03T10:00:00Z");
+        let mut earliest_span = fixture_span(
+            &tenant,
+            &project,
+            "prod",
+            "trace-partition",
+            "span-earliest",
+            1,
+            SpanStatus::Ok,
+        );
+        earliest_span.start_time = timestamp("2026-02-28T23:59:59Z");
+
+        let manifest = archive
+            .archive_spans(&tenant, &project, &[later_span, earliest_span])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let relative_path = manifest
+            .path
+            .strip_prefix(tempdir.path())
+            .unwrap_or_else(|err| panic!("{err}"));
+        let parent = relative_path
+            .parent()
+            .unwrap_or_else(|| panic!("archive path has no parent"));
+        let file_stem = relative_path
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            .unwrap_or_else(|| panic!("archive file stem is not utf-8"));
+
+        assert_eq!(
+            parent,
+            PathBuf::from("tenant%2Fpath")
+                .join("project%3Aalpha")
+                .join("202602")
+        );
+        assert_eq!(
+            relative_path
+                .extension()
+                .and_then(|extension| extension.to_str()),
+            Some("parquet")
+        );
+        Uuid::parse_str(file_stem).unwrap_or_else(|err| panic!("{err}"));
+    }
+
+    #[tokio::test]
+    async fn query_project_reads_partitioned_archive_files_recursively() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let archive =
+            ParquetTraceArchive::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant-recursive").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project-recursive").unwrap_or_else(|err| panic!("{err}"));
+        let mut january_span = fixture_span(
+            &tenant,
+            &project,
+            "prod",
+            "trace-recursive",
+            "span-january",
+            1,
+            SpanStatus::Ok,
+        );
+        january_span.start_time = timestamp("2026-01-05T00:00:00Z");
+        let mut february_span = fixture_span(
+            &tenant,
+            &project,
+            "prod",
+            "trace-recursive",
+            "span-february",
+            2,
+            SpanStatus::Ok,
+        );
+        february_span.start_time = timestamp("2026-02-05T00:00:00Z");
+
+        archive
+            .archive_spans(&tenant, &project, &[february_span])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        archive
+            .archive_spans(&tenant, &project, &[january_span])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let rows = archive
+            .query_project(&tenant, &project, ArchiveQuery::tenant(tenant.clone()))
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(
+            rows.iter()
+                .map(|row| row.span_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["span-january", "span-february"]
+        );
     }
 
     #[tokio::test]
@@ -1309,5 +1483,11 @@ mod tests {
             mime_type: "application/json".to_string(),
             redaction_class: RedactionClass::Internal,
         }
+    }
+
+    fn timestamp(value: &str) -> Timestamp {
+        chrono::DateTime::parse_from_rfc3339(value)
+            .unwrap_or_else(|err| panic!("{err}"))
+            .with_timezone(&Utc)
     }
 }

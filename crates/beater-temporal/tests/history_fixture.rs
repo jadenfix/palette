@@ -4,7 +4,8 @@
 
 use beater_core::{EnvironmentId, ProjectId, TenantId, TenantScope};
 use beater_schema::{AgentSpanKind, SpanStatus};
-use beater_temporal::{convert_history, ConvertedHistory};
+use beater_temporal::{convert_history, temporal_history_to_raw_ingest, ConvertedHistory};
+use serde_json::{json, Value};
 
 const HISTORY: &str = include_str!("fixtures/order_workflow_history.json");
 
@@ -17,9 +18,12 @@ fn scope() -> TenantScope {
 }
 
 fn convert() -> ConvertedHistory {
-    let history: serde_json::Value =
-        serde_json::from_str(HISTORY).unwrap_or_else(|e| panic!("fixture json: {e}"));
+    let history = fixture_history();
     convert_history(&scope(), &history).unwrap_or_else(|e| panic!("convert: {e}"))
+}
+
+fn fixture_history() -> Value {
+    serde_json::from_str(HISTORY).unwrap_or_else(|e| panic!("fixture json: {e}"))
 }
 
 #[test]
@@ -88,4 +92,90 @@ fn no_event_is_silently_dropped() {
         converted.stats.total_events
     );
     assert_eq!(converted.stats.total_events, 14);
+}
+
+#[test]
+fn unknown_event_is_counted_and_raw_preserved_without_breaking_known_conversion() {
+    let mut history = fixture_history();
+    history
+        .get_mut("events")
+        .and_then(Value::as_array_mut)
+        .unwrap_or_else(|| panic!("events array"))
+        .push(json!({
+            "eventId": "15",
+            "eventTime": "2026-06-23T12:00:43Z",
+            "eventType": "EVENT_TYPE_WORKFLOW_EXECUTION_PATCHED",
+            "workflowExecutionPatchedEventAttributes": {
+                "patchId": "temporal-1.28-new-event",
+                "details": {"still": "available only in raw"}
+            }
+        }));
+
+    let converted = convert_history(&scope(), &history).unwrap_or_else(|e| panic!("convert: {e}"));
+    assert_eq!(converted.stats.total_events, 15);
+    assert_eq!(converted.stats.mapped_events, 14);
+    assert_eq!(converted.stats.unmapped_events, 1);
+    assert_eq!(
+        converted.stats.mapped_events + converted.stats.unmapped_events,
+        converted.stats.total_events
+    );
+
+    // Known events still reconstruct the golden span tree.
+    assert_eq!(
+        converted
+            .drafts
+            .iter()
+            .map(|draft| draft.name.as_str())
+            .collect::<Vec<_>>(),
+        vec![
+            "OrderWorkflow",
+            "ValidateOrder",
+            "timer:settle-delay",
+            "FulfillmentWorkflow",
+            "signal:addNote",
+        ]
+    );
+
+    let root = &converted.drafts[0];
+    assert_eq!(root.status, SpanStatus::Ok);
+    assert_eq!(
+        root.attributes.get("temporal.unmapped_event_count"),
+        Some(&json!(1u64))
+    );
+    assert_eq!(
+        root.attributes.get("temporal.unmapped_event_types"),
+        Some(&json!(["WORKFLOW_EXECUTION_PATCHED"]))
+    );
+
+    let raw_bytes = serde_json::to_vec(&history).unwrap_or_else(|e| panic!("history json: {e}"));
+    let request = temporal_history_to_raw_ingest(scope(), raw_bytes.clone(), None)
+        .unwrap_or_else(|e| panic!("raw ingest: {e}"));
+    assert_eq!(request.raw_bytes, raw_bytes);
+    assert_eq!(request.spans.len(), 5);
+    assert_eq!(
+        request.spans[0]
+            .attributes
+            .get("temporal.unmapped_event_count"),
+        Some(&json!(1u64))
+    );
+
+    let preserved_raw: Value =
+        serde_json::from_slice(&request.raw_bytes).unwrap_or_else(|e| panic!("raw json: {e}"));
+    let raw_unknown = preserved_raw
+        .get("events")
+        .and_then(Value::as_array)
+        .and_then(|events| {
+            events.iter().find(|event| {
+                event.get("eventType").and_then(Value::as_str)
+                    == Some("EVENT_TYPE_WORKFLOW_EXECUTION_PATCHED")
+            })
+        })
+        .unwrap_or_else(|| panic!("unknown event preserved in raw bytes"));
+    assert_eq!(
+        raw_unknown
+            .get("workflowExecutionPatchedEventAttributes")
+            .and_then(|attrs| attrs.get("patchId"))
+            .and_then(Value::as_str),
+        Some("temporal-1.28-new-event")
+    );
 }

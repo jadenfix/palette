@@ -1,0 +1,1464 @@
+/* ==========================================================================
+   BEATER UI SYSTEM — account · auth · api keys · usage · billing · nav
+   Additive component layer that extends the trace-console language defined in
+   globals.css (light canvas, ink-primary, teal accent, hairline borders,
+   tabular numerals). Namespaced classes only; never overrides the locked
+   trace view. Kept in its own file so globals.css stays contract-clean.
+   ========================================================================== */
+
+:root {
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+  /* Weights — bold (700) is reserved for true emphasis, not every label.
+     Labels/nav/tags sit at 600 so the values they describe can outrank them. */
+  --w-medium: 500;
+  --w-semi: 600;
+  --w-bold: 700;
+  --w-black: 800;
+  /* ---- Color rationale ----------------------------------------------------
+     Beater watches the vitals of running agents, so the palette borrows from
+     the instruments that watch vitals: cyan-teal phosphor on a deep, cool
+     near-black — the look of an oscilloscope or a patient monitor.
+       • Teal (brand) sits between blue (trust, stability) and green (health,
+         "go"). It reads as calm precision and signal clarity — diagnostics,
+         not alarm — which is exactly the job. Deep teal (var(--accent), from
+         globals) carries steady UI accents; the brighter "signal" cyan below
+         is reserved for things that are alive (the pulse), so motion and glow
+         always mean "running".
+       • Neutrals stay cool and quiet (globals) so colour only appears where it
+         carries meaning.
+       • Error red is kept muted on purpose: a debugger surfaces failures
+         constantly, so they must register without shouting.
+     ------------------------------------------------------------------------ */
+  --signal: #2fd4c4;          /* live pulse / heartbeat — the "alive" cyan */
+  --signal-bright: #5ef0e2;
+  --scope-0: #07100f;         /* deepest scope black, cool teal undertone */
+  --scope-1: #0b1722;         /* deep blue-teal (trust + depth) */
+  --scope-2: #0a201c;         /* teal shadow */
+  --scope-blue: #16306e;      /* cool indigo accent for gradient depth */
+  --ink-900: #0c0f12;
+  --accent-line: color-mix(in srgb, var(--accent) 34%, var(--line));
+  --danger: var(--red);
+  --danger-soft: #fdf0ef;
+  --danger-line: #e7bbb6;
+  --success-soft: #e9f6f0;
+  --success-line: #b6dcc8;
+  --warn-soft: #fbf3e2;
+  --warn-line: #e7d3a8;
+  /* Focus ring uses the accent (5.47:1 on white) not --focus (1.66:1, invisible). */
+  --ring: 0 0 0 2px var(--canvas), 0 0 0 4px var(--accent);
+  --field-border: #7e8b9d; /* 3.46:1 on white — a perceivable input boundary (AA UI) */
+  --elev-1: 0 1px 2px rgb(20 23 26 / 0.05);
+  --elev-2: 0 1px 2px rgb(20 23 26 / 0.05), 0 8px 24px rgb(20 23 26 / 0.07);
+  --elev-3: 0 2px 4px rgb(20 23 26 / 0.06), 0 24px 60px rgb(20 23 26 / 0.16);
+}
+
+/* ---- Buttons -------------------------------------------------------------- */
+.btn {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: var(--w-semi);
+  gap: 7px;
+  height: 36px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0 14px;
+  text-align: center;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 80ms ease;
+  white-space: nowrap;
+  width: auto;
+}
+
+.btn svg {
+  flex: 0 0 auto;
+  height: 15px;
+  stroke-width: 2.1;
+  width: 15px;
+}
+
+.btn:hover {
+  background: var(--surface-muted);
+}
+
+.btn:active {
+  transform: translateY(0.5px);
+}
+
+.btn:focus-visible {
+  box-shadow: var(--ring);
+  /* Transparent outline survives Windows High Contrast / forced-colors,
+     where box-shadow is stripped. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Accessible, visible focus for every interactive control in this layer.
+   globals.css focuses with --focus (1.66:1, invisible on light surfaces); these
+   higher-specificity rules override it with the accent (>=3:1). */
+.nav-link:focus-visible,
+.account-chip:focus-visible,
+.menu a:focus-visible,
+.menu button:focus-visible,
+.segmented button:focus-visible,
+.copy-btn:focus-visible,
+.affix-btn:focus-visible,
+.option-card:focus-within,
+.btn-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.btn-primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #262b31;
+  border-color: #262b31;
+}
+
+.btn-accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-accent:hover {
+  background: var(--accent-ink);
+  border-color: var(--accent-ink);
+}
+
+.btn-danger {
+  background: var(--surface);
+  border-color: var(--danger-line);
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: var(--danger-soft);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.btn-ghost:hover {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-sm {
+  height: 30px;
+  font-size: 12px;
+  padding: 0 10px;
+}
+
+.btn-lg {
+  height: 42px;
+  font-size: 14px;
+  padding: 0 18px;
+}
+
+.btn-link {
+  background: none;
+  border: 0;
+  color: var(--accent-ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  width: auto;
+}
+
+.btn-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ---- Form fields ---------------------------------------------------------- */
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field .field-label,
+.field-label {
+  align-items: baseline;
+  color: var(--ink-soft);
+  display: flex;
+  font-size: 12px;
+  font-weight: var(--w-semi);
+  gap: 6px;
+  /* Left-aligned: the required * must hug the label, not fly to the right edge
+     where it reads as a stray validation marker. The optional count right-aligns
+     on its own via margin-left:auto below. */
+  justify-content: flex-start;
+  text-transform: none;
+}
+
+.field-label .req {
+  color: var(--danger);
+}
+
+.field-label .opt {
+  /* Carries live info (e.g. a selected count) — keep it legible (AA), not faint. */
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: var(--w-semi);
+  margin-left: auto;
+}
+
+.field input,
+.field select,
+.input-affix input {
+  height: 38px;
+}
+
+/* Inputs share the button radius (6px) so adjacent controls rhyme, and carry a
+   border with real contrast (globals' --line-strong is 1.67:1 — invisible). */
+.field input,
+.field select {
+  border-color: var(--field-border);
+  border-radius: var(--radius-sm);
+}
+
+.field input::placeholder {
+  /* globals sets --faint (2.49:1); lift placeholders to --muted (5:1). */
+  color: var(--muted);
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.input-affix {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.input-affix:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.input-affix input::placeholder {
+  color: var(--muted);
+}
+
+.input-affix input {
+  border: 0;
+  flex: 1 1 auto;
+}
+
+.input-affix input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.input-affix .affix-btn {
+  align-items: center;
+  align-self: stretch;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  padding: 0 11px;
+  width: auto;
+}
+
+.input-affix .affix-btn:hover {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.input-affix .affix-btn svg {
+  height: 15px;
+  width: 15px;
+}
+
+/* ---- Segmented control ---------------------------------------------------- */
+.segmented {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+}
+
+.segmented button {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-xs);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: var(--w-semi);
+  height: 28px;
+  padding: 0 14px;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+  width: auto;
+}
+
+.segmented button:hover {
+  color: var(--ink);
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--surface);
+  box-shadow: var(--elev-1);
+  color: var(--ink);
+}
+
+/* ---- Scope / option cards ------------------------------------------------- */
+.option-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+}
+
+.option-card {
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: grid;
+  gap: 2px 10px;
+  grid-template-columns: 18px minmax(0, 1fr);
+  padding: 11px 12px;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.option-card:hover {
+  border-color: var(--line-strong);
+}
+
+.option-card[data-selected="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+
+.option-card input {
+  accent-color: var(--accent);
+  height: 16px;
+  margin-top: 1px;
+  width: 16px;
+}
+
+/* globals.css applies `label span { text-transform: uppercase }` for the trace
+   console; these cards live in a <label>, so opt out explicitly. */
+.option-card .option-name {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: var(--w-semi);
+  text-transform: none;
+}
+
+.option-card .option-name code {
+  color: var(--accent-ink);
+  font-size: 12px;
+}
+
+.option-card .option-desc {
+  /* --ink-soft (>=9:1) stays AA even on the selected card's accent-soft tint,
+     where --muted would drop to 4.44:1. */
+  color: var(--ink-soft);
+  font-size: 11px;
+  grid-column: 2;
+  line-height: 1.4;
+  text-transform: none;
+}
+
+/* ---- Tags / chips / status ------------------------------------------------ */
+.tag {
+  align-items: center;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: var(--w-semi);
+  gap: 5px;
+  line-height: 1;
+  padding: 4px 9px;
+}
+
+.tag.mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-weight: 600;
+}
+
+.tag-accent {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent-ink);
+}
+
+.tag-success {
+  background: var(--success-soft);
+  border-color: var(--success-line);
+  color: var(--green);
+}
+
+.tag-danger {
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  color: var(--danger);
+}
+
+/* ---- Alerts --------------------------------------------------------------- */
+.alert {
+  align-items: flex-start;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft);
+  display: flex;
+  font-size: 12px;
+  gap: 10px;
+  line-height: 1.45;
+  padding: 11px 13px;
+}
+
+.alert svg {
+  flex: 0 0 auto;
+  height: 16px;
+  margin-top: 1px;
+  width: 16px;
+}
+
+.alert strong {
+  font-weight: 700;
+}
+
+.alert-info {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent-ink);
+}
+
+.alert-success {
+  background: var(--success-soft);
+  border-color: var(--success-line);
+  color: #0c5a3f;
+}
+
+.alert-danger {
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  color: #8c2f28;
+}
+
+.alert-warn {
+  background: var(--warn-soft);
+  border-color: var(--warn-line);
+  color: #7a5310;
+}
+
+/* ---- Copy field / code block ---------------------------------------------- */
+.copyfield {
+  align-items: center;
+  background: var(--ink-900);
+  border: 1px solid #27313a;
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 4px 4px 4px 12px;
+}
+
+.copyfield code {
+  color: #e6edf4;
+  flex: 1 1 auto;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 8px 0;
+  white-space: nowrap;
+}
+
+.copyfield.wrap code {
+  overflow-x: visible;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.copy-btn {
+  align-items: center;
+  background: #1b2128;
+  border: 1px solid #2d3741;
+  border-radius: var(--radius-xs);
+  color: #cdd7e1;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  gap: 6px;
+  height: 30px;
+  justify-content: center;
+  padding: 0 11px;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+  width: auto;
+}
+
+.copy-btn:hover {
+  background: #232b34;
+  color: #fff;
+}
+
+.copy-btn[data-copied="true"] {
+  border-color: color-mix(in srgb, var(--accent) 60%, #2d3741);
+  color: #7fe3d6;
+}
+
+.copy-btn svg {
+  height: 14px;
+  width: 14px;
+}
+
+.codeblock {
+  background: var(--ink-900);
+  border: 1px solid #27313a;
+  border-radius: var(--radius-sm);
+  color: #dbe4ed;
+  display: block;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+  overflow: auto;
+  padding: 13px 15px;
+  white-space: pre;
+}
+
+/* ---- Global nav shell ----------------------------------------------------- */
+.app-nav {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 18px;
+  height: 56px;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.brand-lockup {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.brand-lockup b {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.nav-links {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.nav-link {
+  align-items: center;
+  border-radius: var(--radius-xs);
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 7px;
+  height: 34px;
+  padding: 0 11px;
+  white-space: nowrap;
+}
+
+.nav-link svg {
+  height: 15px;
+  width: 15px;
+}
+
+.nav-link:hover {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.nav-link[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.nav-right {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+/* ---- Account chip + menu -------------------------------------------------- */
+.account {
+  position: relative;
+}
+
+.account-chip {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  font-weight: var(--w-semi);
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px 0 5px;
+  width: auto;
+}
+
+.account-chip:hover {
+  background: var(--surface-muted);
+}
+
+.avatar {
+  align-items: center;
+  background: var(--ink);
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 26px;
+  font-size: 11px;
+  font-weight: 800;
+  height: 26px;
+  justify-content: center;
+  text-transform: uppercase;
+  width: 26px;
+}
+
+.menu {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-3);
+  display: grid;
+  gap: 2px;
+  min-width: 240px;
+  padding: 6px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 50;
+}
+
+.menu-head {
+  display: grid;
+  gap: 2px;
+  padding: 8px 9px 9px;
+}
+
+.menu-head strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-head small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.menu-sep {
+  background: var(--line);
+  height: 1px;
+  margin: 4px 0;
+}
+
+.menu a,
+.menu button {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-xs);
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 9px;
+  height: 34px;
+  justify-content: flex-start;
+  padding: 0 9px;
+  text-align: left;
+  width: 100%;
+}
+
+.menu a:hover,
+.menu button:hover {
+  background: var(--surface-muted);
+}
+
+.menu .danger {
+  color: var(--danger);
+}
+
+.menu svg {
+  color: var(--faint);
+  height: 15px;
+  width: 15px;
+}
+
+/* ---- Settings / account page scaffold ------------------------------------- */
+.settings {
+  margin: 0 auto;
+  max-width: 940px;
+  padding: 30px 20px 64px;
+  width: 100%;
+}
+
+.page-head {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+}
+
+.page-head .page-titles {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.page-head h1 {
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.page-head p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
+.page-head .page-actions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.stack {
+  display: grid;
+  gap: 16px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+  overflow: hidden;
+}
+
+.panel-head {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.panel-head .panel-titles {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.panel-head h2 {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.panel-head p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.panel-body {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.panel-foot {
+  align-items: center;
+  background: var(--surface-raised);
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  display: flex;
+  font-size: 12px;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+
+.form-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* ---- API key list --------------------------------------------------------- */
+.keylist {
+  display: grid;
+}
+
+.key-row {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 4px 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 13px 0;
+}
+
+.key-row:first-child {
+  padding-top: 0;
+}
+
+.key-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.key-id {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.key-id strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.key-id code {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.key-meta {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 11px;
+  gap: 6px 12px;
+}
+
+.key-scopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
+/* ---- Stats + usage meters ------------------------------------------------- */
+.statgrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+  display: grid;
+  gap: 6px;
+  padding: 14px 15px;
+}
+
+.stat .stat-label {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 11px;
+  font-weight: var(--w-semi);
+  gap: 7px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.stat .stat-label svg {
+  color: var(--accent);
+  height: 14px;
+  width: 14px;
+}
+
+.stat .stat-value {
+  color: var(--ink);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.stat .stat-sub {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.meter-row {
+  display: grid;
+  gap: 8px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.meter-row:first-child {
+  padding-top: 0;
+}
+
+.meter-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.meter-head {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.meter-head .meter-name {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: var(--w-semi);
+}
+
+.meter-head .meter-value {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.meter-head .meter-value small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.meter-track {
+  background: var(--surface-muted);
+  border-radius: var(--radius-pill);
+  height: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.meter-fill {
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  height: 100%;
+  min-width: 4px;
+  transition: width 240ms ease;
+}
+
+/* ---- Plan / billing card -------------------------------------------------- */
+.plan {
+  align-items: center;
+  background:
+    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    var(--surface);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  justify-content: space-between;
+  padding: 18px 20px;
+}
+
+.plan .plan-info {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.plan .plan-name {
+  align-items: center;
+  color: var(--ink);
+  display: flex;
+  font-size: 18px;
+  font-weight: 800;
+  gap: 10px;
+  letter-spacing: -0.01em;
+}
+
+.plan .plan-desc {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 52ch;
+}
+
+.plan .plan-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+/* ---- Empty states --------------------------------------------------------- */
+.empty-state {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-state .empty-glyph {
+  align-items: center;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  margin-bottom: 4px;
+  width: 44px;
+}
+
+.empty-state .empty-glyph svg {
+  height: 20px;
+  width: 20px;
+}
+
+.empty-state strong {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.empty-state p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 42ch;
+}
+
+/* ---- Critical path (trace waterfall) ------------------------------------- */
+.cp-chip {
+  align-items: center;
+  color: var(--accent-ink);
+  display: inline-flex;
+  font-weight: var(--w-semi);
+  gap: 5px;
+  margin-left: 10px;
+}
+
+.cp-dot {
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  flex: 0 0 7px;
+  height: 7px;
+  width: 7px;
+}
+
+.cp-hint {
+  align-items: center;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  color: var(--accent-ink);
+  display: flex;
+  font-size: 12px;
+  gap: 9px;
+  line-height: 1.45;
+  margin: 0 0 10px;
+  padding: 8px 11px;
+}
+
+.cp-hint strong {
+  color: var(--ink);
+  font-weight: var(--w-semi);
+}
+
+/* Highlight the spans on the critical path inside the (locked) waterfall —
+   additive styling only, no structural change to the trace view. */
+.waterfall .span-line[data-critical="true"] {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.waterfall .span-line[data-critical="true"] .span-bar {
+  background: var(--accent);
+}
+
+/* ---- Auth (sign in / register) ------------------------------------------- */
+.auth {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  min-height: 100vh;
+}
+
+.auth-brand {
+  background:
+    radial-gradient(125% 115% at 8% 4%, color-mix(in srgb, var(--signal) 24%, transparent) 0%, transparent 50%),
+    radial-gradient(120% 120% at 100% 100%, color-mix(in srgb, var(--scope-blue) 55%, transparent) 0%, transparent 58%),
+    linear-gradient(155deg, var(--scope-1) 0%, var(--scope-0) 58%, var(--scope-2) 140%);
+  background-color: var(--scope-0);
+  color: #e7edf3;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 44px 48px;
+  position: relative;
+}
+
+.auth-brand::after {
+  background:
+    radial-gradient(55% 45% at 88% 12%, color-mix(in srgb, var(--signal) 26%, transparent), transparent 70%);
+  content: "";
+  inset: 0;
+  opacity: 0.3;
+  pointer-events: none;
+  position: absolute;
+}
+
+/* Signature: an agent-vitals monitor. The product watches the heartbeat of a
+   running agent, so the brand panel literally shows one — a live EKG sweep. */
+.vitals {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent),
+    #0a0d10;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, #1b2026);
+  border-radius: var(--radius-md);
+  margin-top: 22px;
+  overflow: hidden;
+  padding: 11px 14px 4px;
+}
+
+.vitals-top {
+  align-items: center;
+  color: #7fb9b1;
+  display: flex;
+  font-size: 11px;
+  font-weight: var(--w-semi);
+  gap: 8px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.vitals-top .vitals-state {
+  color: #8be9dc;
+  margin-left: auto;
+}
+
+.vitals-dot {
+  animation: vitals-blink 2.6s ease-in-out infinite;
+  background: var(--signal);
+  border-radius: 50%;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--signal) 80%, transparent);
+  flex: 0 0 7px;
+  height: 7px;
+  width: 7px;
+}
+
+.ekg {
+  display: block;
+  height: 58px;
+  width: 100%;
+}
+
+.ekg-base {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 32%, transparent);
+  stroke-width: 1.5;
+}
+
+.ekg-scan {
+  animation: ekg-scan 2.6s linear infinite;
+  fill: none;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--signal) 85%, transparent));
+  stroke: var(--signal-bright);
+  stroke-dasharray: 6 94;
+  stroke-dashoffset: 100;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+@keyframes ekg-scan {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes vitals-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.auth-brand > * {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-brand .brand-lockup b {
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.auth-pitch h2 {
+  color: #fff;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  max-width: 16ch;
+}
+
+.auth-pitch p {
+  color: #aeb9c5;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 14px;
+  max-width: 40ch;
+}
+
+/* The five steps are one closed loop, so they're threaded by a single line —
+   the structure encodes the product, it isn't decoration. */
+.loop {
+  display: grid;
+  gap: 2px;
+  position: relative;
+}
+
+.loop::before {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 60%, transparent),
+    color-mix(in srgb, var(--accent) 16%, transparent)
+  );
+  bottom: 19px;
+  content: "";
+  left: 11px;
+  position: absolute;
+  top: 19px;
+  width: 2px;
+}
+
+.loop-step {
+  align-items: center;
+  color: #c4cdd8;
+  display: flex;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 12px;
+  padding: 7px 0;
+}
+
+.loop-step .loop-dot {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 20%, var(--ink-900));
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 50%;
+  color: #8be9dc;
+  display: inline-flex;
+  flex: 0 0 24px;
+  height: 24px;
+  justify-content: center;
+  position: relative;
+  width: 24px;
+  z-index: 1;
+}
+
+.loop-step .loop-dot svg {
+  height: 13px;
+  width: 13px;
+}
+
+.auth-foot {
+  color: #7e8a98;
+  font-size: 12px;
+}
+
+.auth-foot code {
+  color: #aeb9c5;
+}
+
+.auth-panel {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.auth-card {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.auth-card .auth-card-head {
+  display: grid;
+  gap: 6px;
+}
+
+.auth-card h1 {
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.auth-card .auth-sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-alt {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 880px) {
+  .auth {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-brand {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-nav {
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .nav-link span {
+    display: none;
+  }
+
+  .key-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Quality floor: honour reduced-motion. The EKG holds a single static beat,
+   transitions collapse — nothing moves for anyone who asked it not to. */
+@media (prefers-reduced-motion: reduce) {
+  .ekg-scan,
+  .vitals-dot,
+  .meter-fill {
+    animation: none;
+    transition: none;
+  }
+
+  .ekg-scan {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    opacity: 0.85;
+  }
+}

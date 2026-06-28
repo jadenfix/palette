@@ -631,6 +631,101 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn sqlite_usage_reads_are_scoped_by_tenant_and_project() -> anyhow::Result<()> {
+        fn scoped_charge(
+            tenant_id: &str,
+            project_id: &str,
+            source_id: &str,
+            quantity: i64,
+        ) -> anyhow::Result<UsageRecordInsert> {
+            Ok(UsageRecordInsert {
+                tenant_id: TenantId::new(tenant_id)?,
+                project_id: ProjectId::new(project_id)?,
+                meter: UsageMeter::JudgeCostMicros,
+                quantity,
+                unit: "usd_micros".to_string(),
+                source_kind: UsageRecordSourceKind::JudgeCall,
+                source_id: source_id.to_string(),
+                attributes: json!({}),
+            })
+        }
+
+        let store = SqliteUsageLedger::in_memory()?;
+        let target_tenant = TenantId::new("tenant-a")?;
+        let target_project = ProjectId::new("project-a")?;
+
+        store
+            .record_usage(scoped_charge("tenant-a", "project-a", "shared-call", 25)?)
+            .await?;
+        store
+            .record_usage(scoped_charge(
+                "tenant-a",
+                "project-a",
+                "target-only-call",
+                75,
+            )?)
+            .await?;
+        store
+            .record_usage(scoped_charge(
+                "tenant-b",
+                "project-b",
+                "shared-call",
+                10_000,
+            )?)
+            .await?;
+        store
+            .record_usage(scoped_charge(
+                "tenant-a",
+                "project-b",
+                "shared-call",
+                20_000,
+            )?)
+            .await?;
+        store
+            .record_usage(scoped_charge(
+                "tenant-b",
+                "project-a",
+                "shared-call",
+                30_000,
+            )?)
+            .await?;
+
+        let records = store
+            .list_usage(target_tenant.clone(), target_project.clone())
+            .await?;
+        assert_eq!(records.len(), 2);
+        assert!(
+            records
+                .iter()
+                .all(|record| record.tenant_id == target_tenant
+                    && record.project_id == target_project)
+        );
+        let quantities_by_source: std::collections::BTreeMap<&str, i64> = records
+            .iter()
+            .map(|record| (record.source_id.as_str(), record.quantity))
+            .collect();
+        assert_eq!(
+            quantities_by_source,
+            std::collections::BTreeMap::from([("shared-call", 25), ("target-only-call", 75)])
+        );
+
+        let summary = store
+            .summarize_usage(target_tenant.clone(), target_project.clone())
+            .await?;
+        assert_eq!(summary.tenant_id, target_tenant);
+        assert_eq!(summary.project_id, target_project);
+        assert_eq!(summary.totals.len(), 1);
+        assert_eq!(
+            summary.totals.get(UsageMeter::JudgeCostMicros.as_str()),
+            Some(&UsageTotal {
+                quantity: 100,
+                unit: "usd_micros".to_string(),
+            })
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn sqlite_usage_rejects_negative_quantities() -> anyhow::Result<()> {
         let store = SqliteUsageLedger::in_memory()?;
         let insert = UsageRecordInsert {
@@ -701,8 +796,6 @@ mod tests {
                 ci_low: 1.0,
                 ci_high: 1.0,
                 p_value: 1.0,
-                mde: None,
-                required_n: None,
                 decision: beater_eval::GateDecision::Pass,
                 test: beater_eval::StatisticalTest::PairedT,
                 adjusted_alpha: 0.05,

@@ -186,6 +186,14 @@ fn sha256_hex(input: &[u8]) -> String {
     to_hex(&hasher.finalize())
 }
 
+fn is_session_secret(secret: &str) -> bool {
+    secret.len() == 64
+        && secret
+            .as_bytes()
+            .iter()
+            .all(|byte| byte.is_ascii_hexdigit())
+}
+
 /// Mint a new session token for `user_id`. The returned plaintext token is the
 /// only time the secret is available; only its hash is persisted.
 pub fn mint_session(user_id: UserId, ttl: Duration, now: Timestamp) -> MintedSession {
@@ -218,7 +226,7 @@ pub fn parse_session_token(token: &str) -> Result<(SessionId, &str)> {
         .strip_prefix("bs_")
         .ok_or(AccountError::MalformedSession)?;
     let (id, secret) = rest.split_once('_').ok_or(AccountError::MalformedSession)?;
-    if id.is_empty() || secret.is_empty() {
+    if id.is_empty() || !is_session_secret(secret) {
         return Err(AccountError::MalformedSession);
     }
     let session_id = SessionId::new(id.to_string()).map_err(|_| AccountError::MalformedSession)?;
@@ -748,7 +756,10 @@ mod tests {
         assert_eq!(validated_user.user_id, user.user_id);
 
         // Tampered secret is rejected.
-        let tampered = format!("{}x", minted.token);
+        let mut tampered = minted.token.clone();
+        let replacement = if tampered.ends_with('0') { '1' } else { '0' };
+        tampered.pop();
+        tampered.push(replacement);
         assert!(matches!(
             store.validate_session(&tampered, now).await,
             Err(AccountError::SessionInvalid)
@@ -760,6 +771,25 @@ mod tests {
             store.validate_session(&minted.token, now).await,
             Err(AccountError::SessionInvalid)
         ));
+    }
+
+    #[tokio::test]
+    async fn serialized_user_and_session_do_not_leak_secret_hashes() {
+        let store = store();
+        let now = Utc::now();
+        let user = ok(store.register("privacy@example.com", "pw", now).await);
+        let minted = ok(store
+            .start_session(user.user_id.clone(), default_session_ttl(), now)
+            .await);
+
+        let user_json = ok(serde_json::to_string(&user));
+        assert!(!user_json.contains("password_hash"));
+        assert!(!user_json.contains(&user.password_hash));
+
+        let session_json = ok(serde_json::to_string(&minted.session));
+        assert!(!session_json.contains("secret_hash"));
+        assert!(!session_json.contains(&minted.session.secret_hash));
+        assert!(!session_json.contains(&minted.token));
     }
 
     #[tokio::test]
@@ -780,14 +810,61 @@ mod tests {
         assert!(ok(store.get_session(&minted.session.session_id).await).is_none());
     }
 
+    #[test]
+    fn minted_session_token_parses() {
+        let user_id = ok(UserId::new(Uuid::new_v4().to_string()));
+        let minted = mint_session(user_id, default_session_ttl(), Utc::now());
+
+        let (session_id, secret) = ok(parse_session_token(&minted.token));
+
+        assert_eq!(session_id, minted.session.session_id);
+        assert_eq!(secret.len(), 64);
+        assert!(secret
+            .as_bytes()
+            .iter()
+            .all(|byte| byte.is_ascii_hexdigit()));
+        assert_eq!(minted.session.secret_hash, sha256_hex(secret.as_bytes()));
+    }
+
+    #[test]
+    fn parse_session_token_rejects_bad_secret_format() {
+        let id = Uuid::new_v4();
+        let short_secret = "a".repeat(63);
+        let long_secret = "a".repeat(65);
+        let non_hex_secret = format!("{}g", "a".repeat(63));
+
+        for secret in [short_secret, long_secret, non_hex_secret] {
+            let token = format!("bs_{id}_{secret}");
+            assert!(matches!(
+                parse_session_token(&token),
+                Err(AccountError::MalformedSession)
+            ));
+        }
+    }
+
     #[tokio::test]
     async fn malformed_session_tokens() {
         let store = store();
         let now = Utc::now();
-        for bad in ["", "nope", "bs_", "bs_only", "bs__secret", "bs_id_"] {
+        let id = Uuid::new_v4();
+        let short_secret = "a".repeat(63);
+        let long_secret = "a".repeat(65);
+        let non_hex_secret = format!("{}g", "a".repeat(63));
+        let bad_tokens = [
+            String::new(),
+            "nope".to_string(),
+            "bs_".to_string(),
+            "bs_only".to_string(),
+            "bs__secret".to_string(),
+            "bs_id_".to_string(),
+            format!("bs_{id}_{short_secret}"),
+            format!("bs_{id}_{long_secret}"),
+            format!("bs_{id}_{non_hex_secret}"),
+        ];
+        for bad in bad_tokens {
             assert!(matches!(
-                store.validate_session(bad, now).await,
-                Err(AccountError::MalformedSession | AccountError::SessionInvalid)
+                store.validate_session(&bad, now).await,
+                Err(AccountError::MalformedSession)
             ));
         }
     }
@@ -824,5 +901,61 @@ mod tests {
         let memberships = ok(store.list_memberships(&user.user_id).await);
         assert_eq!(memberships.len(), 1);
         assert_eq!(memberships[0].role, OrgRole::Admin);
+    }
+
+    #[tokio::test]
+    async fn org_membership_list_is_user_scoped() {
+        let store = store();
+        let now = Utc::now();
+        let first_user = ok(store.register("first@example.com", "pw", now).await);
+        let second_user = ok(store.register("second@example.com", "pw", now).await);
+        let shared_org = ok(OrganizationId::new("shared-org"));
+        let first_only_org = ok(OrganizationId::new("first-only-org"));
+
+        ok(store
+            .put_membership(OrgMembership {
+                organization_id: shared_org.clone(),
+                user_id: first_user.user_id.clone(),
+                role: OrgRole::Owner,
+                created_at: now,
+            })
+            .await);
+        ok(store
+            .put_membership(OrgMembership {
+                organization_id: first_only_org.clone(),
+                user_id: first_user.user_id.clone(),
+                role: OrgRole::Admin,
+                created_at: now + Duration::seconds(1),
+            })
+            .await);
+        ok(store
+            .put_membership(OrgMembership {
+                organization_id: shared_org.clone(),
+                user_id: second_user.user_id.clone(),
+                role: OrgRole::Member,
+                created_at: now + Duration::seconds(2),
+            })
+            .await);
+
+        let first_memberships = ok(store.list_memberships(&first_user.user_id).await);
+        assert_eq!(first_memberships.len(), 2);
+        assert!(first_memberships
+            .iter()
+            .all(|membership| membership.user_id == first_user.user_id));
+        assert_eq!(first_memberships[0].organization_id, shared_org);
+        assert_eq!(first_memberships[0].role, OrgRole::Owner);
+        assert_eq!(first_memberships[1].organization_id, first_only_org);
+        assert_eq!(first_memberships[1].role, OrgRole::Admin);
+
+        let second_memberships = ok(store.list_memberships(&second_user.user_id).await);
+        assert_eq!(second_memberships.len(), 1);
+        assert_eq!(second_memberships[0].user_id, second_user.user_id);
+        assert_eq!(second_memberships[0].organization_id, shared_org);
+        assert_eq!(second_memberships[0].role, OrgRole::Member);
+
+        assert!(ok(store
+            .get_membership(&first_only_org, &second_user.user_id)
+            .await)
+        .is_none());
     }
 }

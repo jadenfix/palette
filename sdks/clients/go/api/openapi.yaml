@@ -4712,6 +4712,10 @@ components:
     AuditAction:
       enum:
       - pii_unmask
+      - api_key_create
+      - api_key_revoke
+      - provider_secret_create
+      - provider_secret_revoke
       type: string
     AuditEvent:
       example:

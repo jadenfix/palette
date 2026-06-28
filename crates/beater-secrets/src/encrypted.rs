@@ -146,6 +146,7 @@ impl SecretKeyring {
         let path = path.as_ref();
         let key_id = key_id.into();
         if path.exists() {
+            validate_existing_key_file_permissions(path)?;
             let encoded = fs::read_to_string(path)
                 .with_context(|| format!("read provider secret key file {}", path.display()))?;
             return Self::from_base64(key_id, &encoded);
@@ -170,6 +171,27 @@ impl SecretKeyring {
             .get(key_id)
             .ok_or_else(|| anyhow!("provider secret encryption key {key_id} is unavailable"))
     }
+}
+
+#[cfg(unix)]
+fn validate_existing_key_file_permissions(path: &Path) -> anyhow::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let metadata = fs::metadata(path)
+        .with_context(|| format!("stat provider secret key file {}", path.display()))?;
+    let mode = metadata.permissions().mode() & 0o777;
+    if mode & 0o077 != 0 {
+        return Err(anyhow!(
+            "provider secret key file {} must not be accessible by group or other users; found mode {mode:o}",
+            path.display()
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn validate_existing_key_file_permissions(_path: &Path) -> anyhow::Result<()> {
+    Ok(())
 }
 
 fn write_new_key_file(path: &Path, encoded_key: &str) -> anyhow::Result<()> {
@@ -798,6 +820,15 @@ mod tests {
         assert_eq!(loaded.secret_value(), "sk-rotating-secret");
     }
 
+    #[tokio::test]
+    async fn encrypted_provider_secret_store_enforces_tenant_project_scope() {
+        let keyring = SecretKeyring::generated_for_tests().unwrap_or_else(|err| panic!("{err}"));
+        let store = EncryptedSqliteProviderSecretStore::in_memory(keyring)
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        crate::assert_provider_secret_scope_isolation(&store).await;
+    }
+
     #[test]
     fn keyring_requires_active_key_to_be_present() {
         let key = SecretEncryptionKey::new("present", [1_u8; KEY_BYTES])
@@ -811,6 +842,17 @@ mod tests {
         let path = tempdir.path().join("provider-secrets.key");
         let first = SecretKeyring::load_or_create_local_file(&path, "local-v1")
             .unwrap_or_else(|err| panic!("{err}"));
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+
+            let mode = fs::metadata(&path)
+                .unwrap_or_else(|err| panic!("{err}"))
+                .permissions()
+                .mode()
+                & 0o777;
+            assert_eq!(mode, 0o600);
+        }
         let second = SecretKeyring::load_or_create_local_file(&path, "local-v1")
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(
@@ -830,5 +872,26 @@ mod tests {
                 .to_base64()
                 .as_str()
         ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn existing_local_key_file_with_broad_permissions_is_rejected() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let path = tempdir.path().join("provider-secrets.key");
+        let key = SecretEncryptionKey::generate("local-v1").unwrap_or_else(|err| panic!("{err}"));
+        fs::write(&path, format!("{}\n", key.to_base64())).unwrap_or_else(|err| panic!("{err}"));
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644))
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let error = SecretKeyring::load_or_create_local_file(&path, "local-v1")
+            .err()
+            .unwrap_or_else(|| panic!("group/world-readable key file should be rejected"));
+        assert!(
+            format!("{error:?}").contains("must not be accessible by group or other users"),
+            "unexpected error: {error:?}"
+        );
     }
 }

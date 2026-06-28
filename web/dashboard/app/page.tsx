@@ -57,6 +57,9 @@ import {
   shortHash,
 } from "../lib/dashboard-query";
 import { Gate2ConfirmationCode, Gate2SpanClickTracker } from "./Gate2Confirmation";
+import { getSession } from "../lib/auth";
+import { criticalPathSpanIds, criticalPathStats, formatMs } from "../lib/analyze";
+import { AccountMenu } from "../components/AccountMenu";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -68,7 +71,10 @@ export default async function DashboardPage({
   const params = (await searchParams) ?? {};
   const query: DashboardQuery = parseQueryFromSearchParams(params);
   const data = await loadDashboardData(query);
+  const account = await getSession();
   const spans = data.trace ? orderSpansForWaterfall(data.trace.spans) : [];
+  const criticalIds = criticalPathSpanIds(spans);
+  const criticalStats = criticalPathStats(spans);
   const selectedTraceProjectId = traceProjectId(data.trace);
   const listedSelectedRun = data.trace
     ? data.runs.items.find(
@@ -137,6 +143,13 @@ export default async function DashboardPage({
             <RotateCcw aria-hidden="true" />
             <span>Refresh</span>
           </Link>
+          {account ? (
+            <AccountMenu account={account} />
+          ) : (
+            <Link href="/login" className="btn btn-primary btn-sm">
+              Sign in
+            </Link>
+          )}
         </div>
       </header>
 
@@ -407,8 +420,29 @@ export default async function DashboardPage({
         <section className="trace-pane" aria-label="Trace detail">
           <div className="section-heading">
             <h2>Waterfall</h2>
-            <span>{spans.length} spans</span>
+            <span>
+              {spans.length} spans
+              {criticalStats.spanCount > 0 ? (
+                <span
+                  className="cp-chip"
+                  title={`Critical path: the ${criticalStats.spanCount} nested spans that determine when this run finishes (longest path through the timed span tree).`}
+                >
+                  <span className="cp-dot" aria-hidden="true" />
+                  critical path {formatMs(criticalStats.totalMs)}
+                </span>
+              ) : null}
+            </span>
           </div>
+          {criticalStats.parallelizable ? (
+            <p className="cp-hint">
+              <span className="cp-dot" aria-hidden="true" />
+              <span>
+                <strong>{criticalStats.parallelizable.a}</strong> and{" "}
+                <strong>{criticalStats.parallelizable.b}</strong> ran back-to-back — if they&apos;re
+                independent, running them in parallel could save ~{formatMs(criticalStats.parallelizable.savingsMs)}.
+              </span>
+            </p>
+          ) : null}
           <div className="waterfall" aria-label="Agent span waterfall">
             {spans.length > 0 ? <TimelineAxis spans={spans} /> : null}
             {spans.length > 0 ? (
@@ -438,6 +472,7 @@ export default async function DashboardPage({
                   data-depth={depth}
                   data-kind={span.kind}
                   data-status={span.status}
+                  data-critical={criticalIds.has(span.span_id) ? "true" : undefined}
                   data-span-id={span.span_id}
                   data-span-seq={span.seq}
                   data-gate2-confirm-span={isLlmCall ? "true" : undefined}

@@ -430,6 +430,9 @@ async fn main() -> anyhow::Result<()> {
             )
             .context("compare paired scores")?;
             println!("{}", serde_json::to_string_pretty(&comparison)?);
+            if comparison.decision != GateDecision::Pass {
+                std::process::exit(1);
+            }
         }
         Command::JudgeBudget { remaining_micros } => {
             let budget = Money::usd_micros(remaining_micros);
@@ -2048,6 +2051,8 @@ async fn run_remote_smoke(
     let trace = wait_for_remote_trace(
         &http_url,
         &tenant_id,
+        &project_id,
+        &environment_id,
         &trace_id,
         StdDuration::from_millis(timeout_ms),
         api_key,
@@ -2230,6 +2235,8 @@ async fn emit_remote_grpc(
 async fn wait_for_remote_trace(
     http_url: &str,
     tenant_id: &str,
+    project_id: &str,
+    environment_id: &str,
     trace_id: &str,
     timeout: StdDuration,
     api_key: Option<&str>,
@@ -2244,6 +2251,8 @@ async fn wait_for_remote_trace(
     let deadline = tokio::time::Instant::now() + timeout;
     loop {
         let trace = with_bearer(client.get(&url), api_key)
+            .header("x-beater-project-id", project_id)
+            .header("x-beater-environment-id", environment_id)
             .send()
             .await
             .context("read smoke trace")?
@@ -2534,8 +2543,6 @@ fn gate_fixture_experiment(
             ci_low: spec.delta,
             ci_high: spec.delta,
             p_value: 1.0,
-            mde: None,
-            required_n: None,
             decision: spec.decision.clone(),
             test: StatisticalTest::PairedT,
             adjusted_alpha: 0.05,

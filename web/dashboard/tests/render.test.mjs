@@ -357,7 +357,8 @@ test("dashboard client uses public beater read endpoints", () => {
   assert.match(api, /\/v1\/spans\//);
   assert.match(api, /\/io/);
   assert.match(api, /const activeRun = query\.traceId/);
-  assert.match(api, /activeRun\?\.project_id && !query\.projectId/);
+  assert.match(api, /const activeRunMatchesTrace = activeRun !== undefined && activeRun\.trace_id === activeTraceId/);
+  assert.match(api, /activeRunMatchesTrace && activeRun\.project_id && !query\.projectId/);
   assert.match(api, /tracePath\(traceQuery, activeTraceId\)/);
   assert.match(api, /spanPath\(traceQuery, trace\.trace_id, activeSpanId\)/);
   assert.match(api, /query,\n\s+runs,/);
@@ -701,6 +702,53 @@ test("dashboard loader scopes tenant-wide trace details to the selected run proj
   );
 });
 
+test("dashboard loader does not scope explicit trace details to an unrelated fallback run", async () => {
+  const runs = {
+    items: [
+      {
+        tenant_id: "demo",
+        project_id: "project-b",
+        trace_id: "trace-2",
+        first_span_name: "other-run",
+        span_count: 1
+      }
+    ],
+    next_cursor: null
+  };
+  const span = {
+    ...spanFixture("span-1", null, "2026-01-01T00:00:00Z", 1),
+    project_id: "project-a",
+    trace_id: "trace-1",
+    kind: "llm.call"
+  };
+  const trace = { tenant_id: "demo", trace_id: "trace-1", spans: [span] };
+  const requests = [];
+  const { loadDashboardData } = loadDashboardApiModule({
+    fetch: async (url, init) => {
+      const href = String(url);
+      requests.push({ href, headers: init?.headers ?? {} });
+      if (href.includes("/v1/traces/demo?")) return okJson(runs);
+      if (href.includes("/v1/traces/demo/trace-1")) return okJson(trace);
+      if (href.includes("/v1/spans/demo/trace-1/span-1/io")) {
+        return okJson({ input: { kind: "missing" }, output: { kind: "missing" } });
+      }
+      if (href.includes("/v1/spans/demo/trace-1/span-1")) return okJson(span);
+      throw new Error(`unexpected fetch ${href}`);
+    }
+  });
+
+  const data = await loadDashboardData({ tenantId: "demo", traceId: "trace-1" });
+
+  assert.equal(data.selectedSpan?.project_id, "project-a");
+  const detailRequests = requests.filter(({ href }) => href.includes("/v1/traces/demo/trace-1") || href.includes("/v1/spans/demo/trace-1"));
+  assert.equal(detailRequests.length, 3);
+  assert.ok(
+    detailRequests.every(
+      ({ headers }) => headers["x-beater-project-id"] === undefined
+    )
+  );
+});
+
 function okJson(value) {
   return {
     ok: true,
@@ -757,6 +805,42 @@ test("generated api client is produced from the checked-in openapi snapshot", ()
   assert.match(generated, /listTraces/);
   assert.match(generated, /started_after/);
   assert.match(generated, /min_cost_micros/);
+});
+
+test("in-app docs runtime surfaces are generated from the openapi contract", () => {
+  const spec = JSON.parse(readFileSync(join(root, "openapi/beater-read-api.json"), "utf8"));
+  const operationIds = Object.values(spec.paths)
+    .flatMap((methods) => Object.values(methods))
+    .map((operation) => operation.operationId)
+    .filter(Boolean);
+
+  assert.ok(operationIds.includes("listTraces"));
+  assert.ok(operationIds.includes("createDataset"));
+
+  const openapiRoute = readFileSync(join(root, "app/api/openapi/route.ts"), "utf8");
+  assert.match(openapiRoute, /openapi", "beater-read-api\.json"/);
+  assert.match(openapiRoute, /readFile\(specPath, "utf8"\)/);
+  assert.match(openapiRoute, /"content-type": "application\/json"/);
+
+  const docsPage = readFileSync(join(root, "app/docs/page.tsx"), "utf8");
+  assert.match(docsPage, /setAttribute\("data-url", "\/api\/openapi"\)/);
+  assert.match(docsPage, /@scalar\/api-reference/);
+  assert.doesNotMatch(docsPage, /beater-read-api\.json/);
+
+  const mcpPage = readFileSync(join(root, "app/docs/mcp/page.tsx"), "utf8");
+  assert.match(mcpPage, /fetch\("\/api\/openapi"\)/);
+  assert.match(mcpPage, /spec\.paths/);
+  assert.match(mcpPage, /op\?\.operationId/);
+  assert.match(mcpPage, /name: op\.operationId/);
+  assert.match(mcpPage, /tool name = operationId/);
+
+  const quickstartsPage = readFileSync(join(root, "app/docs/quickstarts/page.tsx"), "utf8");
+  assert.match(quickstartsPage, /href="\/docs"/);
+  assert.match(quickstartsPage, /one OpenAPI contract/);
+  assert.match(quickstartsPage, /MCP server/);
+  assert.match(quickstartsPage, /tools\/list/);
+  assert.match(quickstartsPage, /CLI/);
+  assert.match(quickstartsPage, /Control-plane clients \(7 languages\)/);
 });
 
 test("browser proof covers all canonical span kinds and can record a demo", () => {

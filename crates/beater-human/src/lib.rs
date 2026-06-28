@@ -861,7 +861,8 @@ mod tests {
                 payload: json!({"reference": "expected answer", "notes": "wrong answer"}),
             })
             .await
-            .expect_err("forced task update failure should abort submit");
+            .err()
+            .unwrap_or_else(|| panic!("forced task update failure should abort submit"));
         assert!(
             format!("{error:?}").contains("mark review task submitted"),
             "unexpected error: {error:?}"
@@ -886,6 +887,56 @@ mod tests {
             .get_task(tenant, project, queue.queue_id, task.task_id)
             .await?;
         assert_eq!(task.state, ReviewTaskState::Open);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn review_task_listing_isolates_scope() -> anyhow::Result<()> {
+        let store = SqliteHumanReviewStore::in_memory()?;
+        let tenant = TenantId::new("tenant")?;
+        let other_tenant = TenantId::new("other-tenant")?;
+        let project = ProjectId::new("project")?;
+        let other_project = ProjectId::new("other-project")?;
+
+        let target_queue = create_queue(&store, &tenant, &project, "target").await?;
+        let sibling_queue = create_queue(&store, &tenant, &project, "sibling").await?;
+        let other_project_queue =
+            create_queue(&store, &tenant, &other_project, "other-project-queue").await?;
+        let other_tenant_queue =
+            create_queue(&store, &other_tenant, &project, "other-tenant-queue").await?;
+
+        enqueue_task(&store, &tenant, &project, &target_queue, "target-task", 10).await?;
+        enqueue_task(&store, &tenant, &project, &sibling_queue, "queue-leak", 20).await?;
+        enqueue_task(
+            &store,
+            &tenant,
+            &other_project,
+            &other_project_queue,
+            "project-leak",
+            30,
+        )
+        .await?;
+        enqueue_task(
+            &store,
+            &other_tenant,
+            &project,
+            &other_tenant_queue,
+            "tenant-leak",
+            40,
+        )
+        .await?;
+
+        let tasks = store
+            .list_tasks(
+                tenant,
+                project,
+                target_queue.queue_id,
+                Some(ReviewTaskState::Open),
+            )
+            .await?;
+
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].task_id.as_str(), "target-task");
         Ok(())
     }
 
@@ -1033,6 +1084,46 @@ mod tests {
             created_at: Utc::now(),
             updated_at: Utc::now(),
         })
+    }
+
+    async fn create_queue(
+        store: &SqliteHumanReviewStore,
+        tenant: &TenantId,
+        project: &ProjectId,
+        queue_id: &str,
+    ) -> anyhow::Result<ReviewQueue> {
+        Ok(store
+            .create_queue(CreateReviewQueueRequest {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                queue_id: Some(ReviewQueueId::new(queue_id)?),
+                name: queue_id.to_string(),
+                annotation_schema: json!({"type": "object"}),
+            })
+            .await?)
+    }
+
+    async fn enqueue_task(
+        store: &SqliteHumanReviewStore,
+        tenant: &TenantId,
+        project: &ProjectId,
+        queue: &ReviewQueue,
+        task_id: &str,
+        priority: i64,
+    ) -> anyhow::Result<ReviewTask> {
+        Ok(store
+            .enqueue_task(EnqueueReviewTaskRequest {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                queue_id: queue.queue_id.clone(),
+                task_id: Some(ReviewTaskId::new(task_id)?),
+                trace_id: TraceId::new(format!("trace-{task_id}"))?,
+                span_id: Some(SpanId::new(format!("span-{task_id}"))?),
+                dataset_id: None,
+                dataset_case_id: None,
+                priority,
+            })
+            .await?)
     }
 
     fn fixture_annotation(

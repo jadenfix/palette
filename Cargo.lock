@@ -735,7 +735,11 @@ dependencies = [
 name = "beater-bench"
 version = "0.1.0"
 dependencies = [
+ "beater-core",
+ "beater-schema",
+ "chrono",
  "criterion",
+ "serde_json",
 ]
 
 [[package]]
@@ -1028,6 +1032,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-langfuse"
+version = "0.1.0"
+dependencies = [
+ "beater-bus",
+ "beater-core",
+ "beater-ingest",
+ "beater-schema",
+ "beater-store",
+ "beater-store-memory",
+ "beater-store-obj",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "beater-mcp"
 version = "0.1.0"
 dependencies = [
@@ -1037,6 +1060,7 @@ dependencies = [
  "beater-api",
  "beater-archive",
  "beater-audit",
+ "beater-auth",
  "beater-bus",
  "beater-calibration",
  "beater-core",
@@ -1048,6 +1072,7 @@ dependencies = [
  "beater-judge",
  "beater-search",
  "beater-secrets",
+ "beater-security",
  "beater-store-obj",
  "beater-store-sql",
  "beater-usage",
@@ -1240,6 +1265,7 @@ dependencies = [
  "async-trait",
  "beater-core",
  "beater-schema",
+ "chrono",
  "thiserror 1.0.69",
  "tokio",
 ]
@@ -1397,6 +1423,7 @@ dependencies = [
  "beater-human",
  "beater-ingest",
  "beater-judge",
+ "beater-langfuse",
  "beater-mcp",
  "beater-oauth",
  "beater-oauth-server",

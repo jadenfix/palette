@@ -1,15 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import {
+  KeyRound,
+  ShieldCheck,
+  Trash2,
+  AlertCircle,
+  CheckCircle2,
+  TriangleAlert,
+  Plus,
+} from "lucide-react";
 
-const SCOPES: { id: string; label: string }[] = [
-  { id: "trace_read", label: "trace:read — read traces & spans" },
-  { id: "trace_write", label: "trace:write — ingest traces" },
-  { id: "dataset_write", label: "dataset:write — manage datasets" },
-  { id: "eval_run", label: "eval:run — run evals/judges" },
-  { id: "pii_unmask", label: "pii:unmask — reveal redacted I/O" },
-  { id: "admin", label: "admin — full access (mint keys)" },
+import { CopyButton, CopyField } from "../../../components/CopyButton";
+
+type Scope = { id: string; name: string; desc: string };
+
+const SCOPES: Scope[] = [
+  { id: "trace_read", name: "trace:read", desc: "Read traces, spans, and span I/O." },
+  { id: "trace_write", name: "trace:write", desc: "Ingest traces via OTLP and the native API." },
+  { id: "dataset_write", name: "dataset:write", desc: "Create and version datasets." },
+  { id: "eval_run", name: "eval:run", desc: "Run evals and judges over candidates." },
+  { id: "pii_unmask", name: "pii:unmask", desc: "Reveal redacted I/O — every use is audited." },
+  { id: "admin", name: "admin", desc: "Full access, including minting new keys." },
 ];
+
+const DEFAULT_SCOPES = ["trace_read"];
 
 type CreatedKey = {
   api_key_id: string;
@@ -19,27 +34,27 @@ type CreatedKey = {
   environment_id: string;
 };
 
-const inputStyle = { padding: "0.5rem", borderRadius: 6, border: "1px solid #333" };
-const cardStyle = {
-  border: "1px solid #2a2a2a",
-  borderRadius: 12,
-  padding: "1.25rem",
-  marginTop: "1.25rem",
-  display: "flex",
-  flexDirection: "column" as const,
-  gap: "0.75rem",
+type SessionKey = {
+  api_key_id: string;
+  scopes: string[];
+  project_id: string;
+  environment_id: string;
+  prefix: string;
 };
 
+function maskSecret(secret: string): string {
+  return `${secret.slice(0, 11)}…${secret.slice(-4)}`;
+}
+
 export default function ApiKeyManager() {
-  const [selected, setSelected] = useState<Set<string>>(new Set(["trace_read"]));
+  const [selected, setSelected] = useState<Set<string>>(new Set(DEFAULT_SCOPES));
   const [project, setProject] = useState("default");
   const [environment, setEnvironment] = useState("default");
   const [created, setCreated] = useState<CreatedKey | null>(null);
+  const [sessionKeys, setSessionKeys] = useState<SessionKey[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const [revokeId, setRevokeId] = useState("");
-  const [revokeMsg, setRevokeMsg] = useState<string | null>(null);
+  const [revoked, setRevoked] = useState<string | null>(null);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -55,6 +70,7 @@ export default function ApiKeyManager() {
     setBusy(true);
     setError(null);
     setCreated(null);
+    setRevoked(null);
     try {
       const res = await fetch("/api/auth/api-keys", {
         method: "POST",
@@ -69,11 +85,22 @@ export default function ApiKeyManager() {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         if (res.status === 401) setError("Your session expired — please sign in again.");
         else if (data.error === "api_keys_unavailable")
-          setError("API keys require the backend to run with strict auth.");
-        else setError("Could not create the key. Check your selected scopes.");
+          setError("API keys require the backend to run with strict auth enabled.");
+        else setError("Could not create the key. Check your selected scopes and try again.");
         return;
       }
-      setCreated((await res.json()) as CreatedKey);
+      const key = (await res.json()) as CreatedKey;
+      setCreated(key);
+      setSessionKeys((prev) => [
+        {
+          api_key_id: key.api_key_id,
+          scopes: key.scopes,
+          project_id: key.project_id,
+          environment_id: key.environment_id,
+          prefix: maskSecret(key.secret),
+        },
+        ...prev,
+      ]);
     } catch {
       setError("Network error — please try again.");
     } finally {
@@ -81,136 +108,224 @@ export default function ApiKeyManager() {
     }
   }
 
-  async function revoke(event: React.FormEvent) {
-    event.preventDefault();
-    setRevokeMsg(null);
+  async function revoke(apiKeyId: string) {
+    setRevoked(null);
     try {
       const res = await fetch("/api/auth/api-keys/revoke", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ api_key_id: revokeId.trim() }),
+        body: JSON.stringify({ api_key_id: apiKeyId }),
       });
       if (res.status === 204) {
-        setRevokeMsg("Key revoked.");
-        setRevokeId("");
+        setSessionKeys((prev) => prev.filter((k) => k.api_key_id !== apiKeyId));
+        if (created?.api_key_id === apiKeyId) setCreated(null);
+        setRevoked("Key revoked.");
       } else if (res.status === 404) {
-        setRevokeMsg("No such key in your tenant.");
+        setRevoked("No such key in your tenant.");
       } else if (res.status === 403) {
-        setRevokeMsg("That key belongs to another tenant.");
+        setRevoked("That key belongs to another tenant.");
       } else {
-        setRevokeMsg("Could not revoke the key.");
+        setRevoked("Could not revoke the key.");
       }
     } catch {
-      setRevokeMsg("Network error — please try again.");
+      setRevoked("Network error — please try again.");
     }
   }
 
-  return (
-    <>
-      <form onSubmit={generate} style={cardStyle}>
-        <h2 style={{ fontSize: "1.05rem", margin: 0 }}>Create a key</h2>
-        <fieldset style={{ border: "none", padding: 0, margin: 0, display: "grid", gap: 6 }}>
-          {SCOPES.map((s) => (
-            <label key={s.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                type="checkbox"
-                checked={selected.has(s.id)}
-                onChange={() => toggle(s.id)}
-              />
-              <span style={{ fontSize: "0.9rem" }}>{s.label}</span>
-            </label>
-          ))}
-        </fieldset>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-            <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Project</span>
-            <input value={project} onChange={(e) => setProject(e.target.value)} style={inputStyle} />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-            <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Environment</span>
-            <input
-              value={environment}
-              onChange={(e) => setEnvironment(e.target.value)}
-              style={inputStyle}
-            />
-          </label>
-        </div>
-        {error ? (
-          <p role="alert" style={{ color: "#f87171", fontSize: "0.85rem", margin: 0 }}>
-            {error}
-          </p>
-        ) : null}
-        <button
-          type="submit"
-          disabled={busy || selected.size === 0}
-          style={{
-            padding: "0.6rem",
-            borderRadius: 6,
-            border: "none",
-            background: "#3b82f6",
-            color: "white",
-            cursor: busy ? "default" : "pointer",
-            opacity: busy || selected.size === 0 ? 0.7 : 1,
-          }}
-        >
-          {busy ? "Creating…" : "Generate key"}
-        </button>
-      </form>
+  const snippet = created
+    ? [
+        `export BEATER_API_KEY="${created.secret}"`,
+        `export BEATER_API_BASE_URL="http://127.0.0.1:8080"`,
+        ``,
+        `curl -H "x-beater-api-key: $BEATER_API_KEY" \\`,
+        `  "$BEATER_API_BASE_URL/v1/traces/$BEATER_TENANT"`,
+      ].join("\n")
+    : "";
 
+  return (
+    <div className="stack">
       {created ? (
-        <div style={{ ...cardStyle, borderColor: "#3b82f6" }}>
-          <h2 style={{ fontSize: "1.05rem", margin: 0 }}>Your new key</h2>
-          <p style={{ fontSize: "0.8rem", opacity: 0.8, margin: 0 }}>
-            Copy it now — it is shown only once. Scopes: {created.scopes.join(", ")} · project{" "}
-            {created.project_id} · env {created.environment_id}
-          </p>
-          <code
-            style={{
-              display: "block",
-              padding: "0.6rem",
-              background: "#111",
-              borderRadius: 6,
-              wordBreak: "break-all",
-              userSelect: "all",
-            }}
-          >
-            {created.secret}
-          </code>
-          <p style={{ fontSize: "0.75rem", opacity: 0.7, margin: 0 }}>
-            Key id: <code>{created.api_key_id}</code>
-          </p>
-        </div>
+        <section className="panel" style={{ borderColor: "var(--accent-line)" }}>
+          <div className="panel-head">
+            <div className="panel-titles">
+              <h2>Your new API key</h2>
+              <p>Copy it now — for your security, the secret is shown only once.</p>
+            </div>
+            <span className="tag tag-success">
+              <CheckCircle2 aria-hidden="true" width={13} height={13} /> Created
+            </span>
+          </div>
+          <div className="panel-body">
+            <CopyField value={created.secret} wrap />
+            <div className="alert alert-warn">
+              <TriangleAlert aria-hidden="true" />
+              <span>
+                Store it in a secret manager. If you lose it, revoke this key and create a new one.
+              </span>
+            </div>
+            <div className="field">
+              <span className="field-label">Use it from an agent</span>
+              <pre className="codeblock">{snippet}</pre>
+            </div>
+            <div className="key-meta">
+              <span>
+                key id <code>{created.api_key_id}</code>
+              </span>
+              <span>
+                project <code>{created.project_id}</code>
+              </span>
+              <span>
+                env <code>{created.environment_id}</code>
+              </span>
+            </div>
+          </div>
+          <div className="panel-foot">
+            <span>Done copying?</span>
+            <CopyButton value={snippet} label="Copy snippet" className="btn btn-sm" />
+          </div>
+        </section>
       ) : null}
 
-      <form onSubmit={revoke} style={cardStyle}>
-        <h2 style={{ fontSize: "1.05rem", margin: 0 }}>Revoke a key</h2>
-        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Key id</span>
-          <input
-            value={revokeId}
-            onChange={(e) => setRevokeId(e.target.value)}
-            placeholder="api key id"
-            style={inputStyle}
-          />
-        </label>
-        {revokeMsg ? (
-          <p style={{ fontSize: "0.85rem", margin: 0 }}>{revokeMsg}</p>
-        ) : null}
-        <button
-          type="submit"
-          disabled={revokeId.trim().length === 0}
-          style={{
-            padding: "0.6rem",
-            borderRadius: 6,
-            border: "1px solid #555",
-            background: "transparent",
-            color: "#eee",
-            cursor: revokeId.trim().length === 0 ? "default" : "pointer",
-          }}
-        >
-          Revoke
-        </button>
+      <form className="panel" onSubmit={generate}>
+        <div className="panel-head">
+          <div className="panel-titles">
+            <h2>Create a key</h2>
+            <p>Scope it to exactly what your agent needs. Least privilege by default.</p>
+          </div>
+        </div>
+        <div className="panel-body">
+          <div className="field">
+            <span className="field-label">
+              Scopes <span className="opt">{selected.size} selected</span>
+            </span>
+            <div className="option-grid">
+              {SCOPES.map((s) => (
+                <label className="option-card" key={s.id} data-selected={selected.has(s.id)}>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(s.id)}
+                    onChange={() => toggle(s.id)}
+                  />
+                  <span className="option-name">
+                    <code>{s.name}</code>
+                  </span>
+                  <span className="option-desc">{s.desc}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <label className="field">
+              <span className="field-label">Project</span>
+              <input value={project} onChange={(e) => setProject(e.target.value)} />
+            </label>
+            <label className="field">
+              <span className="field-label">Environment</span>
+              <input value={environment} onChange={(e) => setEnvironment(e.target.value)} />
+            </label>
+          </div>
+
+          {error ? (
+            <div className="alert alert-danger" role="alert">
+              <AlertCircle aria-hidden="true" />
+              <span>{error}</span>
+            </div>
+          ) : null}
+        </div>
+        <div className="panel-foot">
+          <span className="key-meta">
+            <ShieldCheck aria-hidden="true" width={13} height={13} /> Keys are hashed at rest; the
+            secret never leaves your browser after this.
+          </span>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            aria-busy={busy}
+            disabled={busy || selected.size === 0}
+          >
+            <Plus aria-hidden="true" />
+            {busy ? "Creating…" : "Create key"}
+          </button>
+        </div>
       </form>
-    </>
+
+      <section className="panel">
+        <div className="panel-head">
+          <div className="panel-titles">
+            <h2>Keys created this session</h2>
+            <p>Revoke instantly. Older keys can be revoked by id below.</p>
+          </div>
+        </div>
+        <div className="panel-body">
+          {revoked ? (
+            <div className="alert alert-info" role="status">
+              <CheckCircle2 aria-hidden="true" />
+              <span>{revoked}</span>
+            </div>
+          ) : null}
+          {sessionKeys.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-glyph" aria-hidden="true">
+                <KeyRound />
+              </span>
+              <strong>No keys created here yet</strong>
+              <p>Keys you create in this session show up here. Older keys can be revoked by id below.</p>
+            </div>
+          ) : (
+            <div className="keylist">
+              {sessionKeys.map((k) => (
+                <div className="key-row" key={k.api_key_id}>
+                  <div className="key-id">
+                    <strong>{k.prefix}</strong>
+                    <code>{k.api_key_id}</code>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    onClick={() => revoke(k.api_key_id)}
+                  >
+                    <Trash2 aria-hidden="true" /> Revoke
+                  </button>
+                  <div className="key-scopes">
+                    <span className="tag mono">{k.project_id}</span>
+                    <span className="tag mono">{k.environment_id}</span>
+                    {k.scopes.map((s) => (
+                      <span className="tag tag-accent" key={s}>
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <RevokeById onRevoke={revoke} />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function RevokeById({ onRevoke }: { onRevoke: (id: string) => void }) {
+  const [id, setId] = useState("");
+  return (
+    <form
+      className="form-row"
+      style={{ alignItems: "end", gridTemplateColumns: "minmax(0, 1fr) auto" }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (id.trim()) onRevoke(id.trim());
+        setId("");
+      }}
+    >
+      <label className="field">
+        <span className="field-label">Revoke by key id</span>
+        <input value={id} onChange={(e) => setId(e.target.value)} placeholder="api key id" />
+      </label>
+      <button type="submit" className="btn btn-danger" disabled={id.trim().length === 0}>
+        <Trash2 aria-hidden="true" /> Revoke
+      </button>
+    </form>
   );
 }

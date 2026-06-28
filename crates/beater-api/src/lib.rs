@@ -8,7 +8,10 @@ use beater_alerts::{
     OnlineSamplingPolicy, SamplingDecision,
 };
 use beater_archive::{ArchiveManifest, ArchiveQuery, ArchivedSpanRow, ParquetTraceArchive};
-use beater_audit::{pii_unmask_event, AuditEvent, AuditOutcome, AuditStore, PiiUnmaskAuditInput};
+use beater_audit::{
+    pii_unmask_event, AuditAction, AuditEvent, AuditEventInsert, AuditOutcome, AuditStore,
+    PiiUnmaskAuditInput,
+};
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, RevokedApiKey};
 use beater_calibration::{
     calibrate_eval_report, CalibrationPolicy, CalibrationReport, CalibrationStore,
@@ -521,7 +524,7 @@ async fn create_api_key_route(
     let tenant_id = TenantId::new(tenant_id)?;
     let project_id = ProjectId::new(project_id)?;
     let environment_id = EnvironmentId::new(environment_id)?;
-    authorize(
+    let auth = authorize(
         &state,
         &headers,
         &tenant_id,
@@ -533,12 +536,36 @@ async fn create_api_key_route(
     ensure_environment_exists(&state, &tenant_id, &project_id, &environment_id).await?;
     let created = api_keys
         .create_key(CreateApiKeyRequest {
-            tenant_id,
-            project_id,
-            environment_id,
+            tenant_id: tenant_id.clone(),
+            project_id: project_id.clone(),
+            environment_id: environment_id.clone(),
             scopes: request.scopes,
         })
         .await?;
+    append_optional_audit_event(
+        &state,
+        AuditEventInsert {
+            tenant_id,
+            project_id,
+            environment_id: Some(environment_id),
+            actor_api_key_id: auth.context.api_key_id.clone(),
+            action: AuditAction::ApiKeyCreate,
+            resource_type: "api_key".to_string(),
+            resource_id: created.record.api_key_id.as_str().to_string(),
+            outcome: AuditOutcome::Allowed,
+            reason: None,
+            attributes: serde_json::json!({
+                "scopes": created
+                    .record
+                    .scopes
+                    .iter()
+                    .map(ApiScope::as_str)
+                    .collect::<Vec<_>>(),
+                "active": created.record.active,
+            }),
+        },
+    )
+    .await?;
     Ok(Json(ApiKeyCreatedResponse::from_created(created)))
 }
 
@@ -582,7 +609,7 @@ async fn revoke_api_key_route(
     let tenant_id = TenantId::new(tenant_id)?;
     let project_id = ProjectId::new(project_id)?;
     let environment_id = EnvironmentId::new(environment_id)?;
-    authorize(
+    let auth = authorize(
         &state,
         &headers,
         &tenant_id,
@@ -609,6 +636,25 @@ async fn revoke_api_key_route(
         .revoke_key(api_key_id.clone(), Utc::now())
         .await?
         .ok_or_else(|| ApiError::not_found(format!("api key {} not found", api_key_id.as_str())))?;
+    append_optional_audit_event(
+        &state,
+        AuditEventInsert {
+            tenant_id,
+            project_id,
+            environment_id: Some(environment_id),
+            actor_api_key_id: auth.context.api_key_id.clone(),
+            action: AuditAction::ApiKeyRevoke,
+            resource_type: "api_key".to_string(),
+            resource_id: api_key_id.as_str().to_string(),
+            outcome: AuditOutcome::Allowed,
+            reason: None,
+            attributes: serde_json::json!({
+                "active": revoked.active,
+                "rotated_at": revoked.rotated_at.to_rfc3339(),
+            }),
+        },
+    )
+    .await?;
     Ok(Json(revoked))
 }
 
@@ -642,16 +688,37 @@ async fn create_provider_secret_route(
     let provider_secrets = provider_secret_store(&state)?;
     let tenant_id = TenantId::new(tenant_id)?;
     let project_id = ProjectId::new(project_id)?;
-    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
+    let auth =
+        authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let metadata = provider_secrets
         .put_secret(PutProviderSecretRequest {
-            tenant_id,
-            project_id,
+            tenant_id: tenant_id.clone(),
+            project_id: project_id.clone(),
             provider: request.provider,
             display_name: request.display_name,
             secret_value: request.secret_value,
         })
         .await?;
+    append_optional_audit_event(
+        &state,
+        AuditEventInsert {
+            tenant_id,
+            project_id,
+            environment_id: auth.environment_id.clone(),
+            actor_api_key_id: auth.context.api_key_id.clone(),
+            action: AuditAction::ProviderSecretCreate,
+            resource_type: "provider_secret".to_string(),
+            resource_id: metadata.provider_secret_id.as_str().to_string(),
+            outcome: AuditOutcome::Allowed,
+            reason: None,
+            attributes: serde_json::json!({
+                "provider": metadata.provider.as_str(),
+                "display_name": metadata.display_name.as_str(),
+                "active": metadata.active,
+            }),
+        },
+    )
+    .await?;
     Ok(Json(metadata))
 }
 
@@ -721,11 +788,12 @@ async fn revoke_provider_secret_route(
     let tenant_id = TenantId::new(tenant_id)?;
     let project_id = ProjectId::new(project_id)?;
     let provider_secret_id = ProviderSecretId::new(provider_secret_id)?;
-    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
+    let auth =
+        authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let revoked = provider_secrets
         .revoke_secret(
-            tenant_id,
-            project_id,
+            tenant_id.clone(),
+            project_id.clone(),
             provider_secret_id.clone(),
             Utc::now(),
         )
@@ -736,6 +804,25 @@ async fn revoke_provider_secret_route(
                 provider_secret_id.as_str()
             ))
         })?;
+    append_optional_audit_event(
+        &state,
+        AuditEventInsert {
+            tenant_id,
+            project_id,
+            environment_id: auth.environment_id.clone(),
+            actor_api_key_id: auth.context.api_key_id.clone(),
+            action: AuditAction::ProviderSecretRevoke,
+            resource_type: "provider_secret".to_string(),
+            resource_id: provider_secret_id.as_str().to_string(),
+            outcome: AuditOutcome::Allowed,
+            reason: None,
+            attributes: serde_json::json!({
+                "active": revoked.active,
+                "rotated_at": revoked.rotated_at.to_rfc3339(),
+            }),
+        },
+    )
+    .await?;
     Ok(Json(revoked))
 }
 
@@ -1253,8 +1340,16 @@ async fn search_spans(
         environment_id: params.environment_id,
         trace_id: params.trace_id.map(TraceId::new).transpose()?,
         span_id: params.span_id.map(beater_core::SpanId::new).transpose()?,
-        kind: params.kind,
-        status: params.status,
+        kind: params
+            .kind
+            .map(parse_span_kind)
+            .transpose()?
+            .map(|kind| kind.as_str().to_string()),
+        status: params
+            .status
+            .map(parse_span_status)
+            .transpose()?
+            .map(|status| status.as_str().to_string()),
         model: params.model,
         tool: params.tool,
         limit: params.limit,
@@ -2694,6 +2789,16 @@ fn audit_store(state: &ApiState) -> Result<Arc<dyn AuditStore>, ApiError> {
     require(&state.audit, "audit store")
 }
 
+async fn append_optional_audit_event(
+    state: &ApiState,
+    insert: AuditEventInsert,
+) -> Result<(), ApiError> {
+    if let Some(audit) = state.audit.clone() {
+        audit.append_event(insert).await?;
+    }
+    Ok(())
+}
+
 async fn record_usage_if_configured(
     state: &ApiState,
     inserts: Vec<UsageRecordInsert>,
@@ -3748,7 +3853,7 @@ mod tests {
     use axum::body::{to_bytes, Body};
     use beater_bus::InMemoryBus;
     use beater_core::sha256_hex;
-    use beater_core::{EnvironmentId, IdempotencyKey, ProjectId, SpanId, TenantScope};
+    use beater_core::{EnvironmentId, IdempotencyKey, ProjectId, SpanId, TenantScope, TraceId};
     use beater_ingest::IngestPolicy;
     use beater_otlp::encode_export_trace_request;
     use beater_schema::{AgentSpanKind, RedactionClass, SourceDialect, SpanStatus, TraceView};
@@ -4022,6 +4127,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         let response = app
+            .clone()
             .oneshot(
                 Request::builder()
                     .method("GET")
@@ -4039,6 +4145,51 @@ mod tests {
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(search.hits.len(), 1);
         assert_eq!(search.hits[0].trace_id, "trace");
+
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/search/tenant/spans?q=hello&status=ok&kind=agent_run")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let search: SearchResponse =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(search.hits.len(), 1);
+        assert_eq!(search.hits[0].trace_id, "trace");
+
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/search/tenant/spans?q=hello&kind=not.a.kind")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/search/tenant/spans?q=hello&status=passed")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     }
 
     #[tokio::test]
@@ -4091,8 +4242,18 @@ mod tests {
             serde_json::from_slice(&response_body).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(trace.spans.len(), 1);
         assert_eq!(trace.spans[0].normalizer_version, "beater-otlp-v1");
+        assert_eq!(trace.spans[0].raw_ref.uri, "artifact://redacted");
+
+        let stored_trace = traces
+            .get_trace(
+                TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                TraceId::new("0102030405060708090a0b0c0d0e0f10")
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
         let raw_bytes = artifacts
-            .get_bytes(&trace.spans[0].raw_ref)
+            .get_bytes(&stored_trace.spans[0].raw_ref)
             .await
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(raw_bytes, body);

@@ -30,7 +30,10 @@ if [[ -n "$VERSION" ]]; then
 fi
 
 echo "==> Regenerating OpenAPI spec from beater-api handlers"
-cargo run -q -p beater-api --example dump_openapi > "$SPEC"
+tmp_spec="$(mktemp "${TMPDIR:-/tmp}/beater-openapi.XXXXXX")"
+trap 'rm -f "$tmp_spec"' EXIT
+cargo run -q -p beater-api --example dump_openapi > "$tmp_spec"
+mv "$tmp_spec" "$SPEC"
 # Keep the dashboard snapshot identical to the canonical spec.
 cp "$SPEC" web/dashboard/openapi/beater-read-api.json
 
@@ -65,6 +68,15 @@ for lang in "${LANGS[@]}"; do
     if find "$out" -name '*.rej' -o -name '*.orig' | grep -q .; then
       echo "ERROR: patch left .rej/.orig in $out -- patch is stale vs generated output" >&2
       exit 1
+    fi
+  fi
+
+  # The Java generator emits a trailing space in this regenerated enum header.
+  # Normalize the touched file so `regen --check` and `git diff --check` agree.
+  if [[ "$lang" == "java" ]]; then
+    java_audit_action="$out/src/main/java/ai/beater/client/model/AuditAction.java"
+    if [[ -f "$java_audit_action" ]]; then
+      perl -0pi -e 's/[ \t]+$//mg; s/\n+\z/\n/' "$java_audit_action"
     fi
   fi
 done
