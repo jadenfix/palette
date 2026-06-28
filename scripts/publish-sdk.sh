@@ -9,10 +9,32 @@
 # ergonomic packages are stamped here so a `v0.2.0` tag actually publishes 0.2.0.
 set -euo pipefail
 
+usage() {
+  echo "usage: publish-sdk.sh <target> <version>"
+  echo "       publish-sdk.sh --validate-version <version>"
+}
+
+validate_version() {
+  local candidate="$1"
+  local semver_re='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+  if [[ ! "$candidate" =~ $semver_re ]]; then
+    echo "ERROR: release version must be SemVer without a leading v: $candidate" >&2
+    exit 1
+  fi
+}
+
+if [[ "${1:-}" == "--validate-version" ]]; then
+  [ "$#" -eq 2 ] || { usage >&2; exit 2; }
+  validate_version "$2"
+  echo "Valid release version: $2"
+  exit 0
+fi
+
 target="${1:?usage: publish-sdk.sh <target> <version>}"
 version="${2:?usage: publish-sdk.sh <target> <version>}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
+validate_version "$version"
 
 skip() { echo "SKIP $target: $1 not set (wire the secret to enable publishing)"; exit 0; }
 

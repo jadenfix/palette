@@ -1063,4 +1063,60 @@ mod tests {
         assert_eq!(ok_runs[0].project_id.as_str(), project.as_str());
         assert_eq!(ok_runs[0].trace_id, other_trace);
     }
+
+    #[test]
+    fn run_kind_filter_is_project_scoped_for_reused_trace_ids() {
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let other_project = ProjectId::new("other-project").unwrap_or_else(|err| panic!("{err}"));
+        let trace = TraceId::new("shared-trace").unwrap_or_else(|err| panic!("{err}"));
+        let started_at = Utc
+            .with_ymd_and_hms(2026, 1, 1, 0, 0, 0)
+            .single()
+            .unwrap_or_else(|| panic!("valid timestamp"));
+        let spans = vec![
+            SpanSummary {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                trace_id: trace.clone(),
+                span_id: SpanId::new("project-root").unwrap_or_else(|err| panic!("{err}")),
+                kind: AgentSpanKind::AgentRun,
+                name: "project root".to_string(),
+                status: SpanStatus::Ok,
+                started_at,
+                ended_at: Some(started_at),
+                model: None,
+                cost: None,
+                release_id: None,
+            },
+            SpanSummary {
+                tenant_id: tenant.clone(),
+                project_id: other_project.clone(),
+                trace_id: trace.clone(),
+                span_id: SpanId::new("other-project-step").unwrap_or_else(|err| panic!("{err}")),
+                kind: AgentSpanKind::AgentStep,
+                name: "other project step".to_string(),
+                status: SpanStatus::Ok,
+                started_at,
+                ended_at: Some(started_at),
+                model: None,
+                cost: None,
+                release_id: None,
+            },
+        ];
+
+        let runs = roll_up_runs(tenant, spans.clone());
+        let filtered = filter_run_summaries(
+            runs,
+            &spans,
+            &RunFilter {
+                kind: Some(AgentSpanKind::AgentStep),
+                ..RunFilter::default()
+            },
+        );
+
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].project_id, other_project);
+        assert_eq!(filtered[0].trace_id, trace);
+    }
 }

@@ -755,13 +755,18 @@ pub fn compare_paired_scores(
             policy.alpha
         )));
     }
+    if policy.comparison_count == 0 {
+        return Err(EvalError::Statistics(
+            "comparison_count must be greater than zero".to_string(),
+        ));
+    }
 
     // Single-step Bonferroni correction across the comparison family: the
     // per-comparison level the CI and decision are computed at. No lower clamp — a
     // large `comparison_count` must genuinely shrink alpha; clamping it up would let
     // the family-wise error rate exceed the requested level. `compare_paired`
     // validates the result is a usable alpha in (0, 1).
-    let adjusted_alpha = policy.alpha / policy.comparison_count.max(1) as f64;
+    let adjusted_alpha = policy.alpha / policy.comparison_count as f64;
 
     if n == 0 {
         return Err(EvalError::Statistics("no scores to compare".to_string()));
@@ -1350,6 +1355,22 @@ mod tests {
             },
         );
         assert!(matches!(result, Err(EvalError::Statistics(_))));
+    }
+
+    #[test]
+    fn zero_comparison_count_errors() {
+        let result = compare_paired_scores(
+            &[1.0; 10],
+            &[1.0; 10],
+            &GatePolicy {
+                comparison_count: 0,
+                ..GatePolicy::default()
+            },
+        );
+        assert!(matches!(
+            result,
+            Err(EvalError::Statistics(message)) if message.contains("comparison_count")
+        ));
     }
 
     fn browser_step(action: &str, selector: Option<&str>, matched: bool, status: &str) -> Value {

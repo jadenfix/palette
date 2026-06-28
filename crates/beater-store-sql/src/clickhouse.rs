@@ -11,20 +11,25 @@
 //! asserts) is enforced at the application layer: existing keys are looked up
 //! before insert and only genuinely new rows are written.
 //!
-//! Run summaries are derived by materializing spans through the shared
-//! [`query_runs_by_materializing_spans`] helper, keeping behavior identical to
-//! the SQLite reference store. The live integration test that boots a real
-//! ClickHouse container is `#[ignore]`d so a Docker-less `cargo test` still
-//! passes; CI with Docker runs it explicitly.
+//! Each span's model, cost, and release id are projected into the dedicated
+//! `beater.spans` columns at write time, so `query_runs` aggregates run
+//! summaries with a backend `GROUP BY (project_id, trace_id)` rather than
+//! materializing every matching span in process (ARCHITECTURE.md §8.1). The
+//! shared [`finalize_run_aggregates`] helper folds the aggregated rows into the
+//! same `Page<RunSummary>` the SQLite reference store produces. The live
+//! integration test that boots a real ClickHouse container is `#[ignore]`d so a
+//! Docker-less `cargo test` still passes; CI with Docker runs it explicitly.
 
 use async_trait::async_trait;
-use beater_core::{IdempotencyKey, Page, PageRequest, ProjectId, TenantId, TraceId};
+use beater_core::{
+    IdempotencyKey, Money, Page, PageRequest, ProjectId, TenantId, Timestamp, TraceId,
+};
 use beater_schema::{
-    span_summary, CanonicalSpan, CanonicalTraceBatch, RawEnvelope, RunFilter, RunSummary,
-    SpanFilter, SpanSummary, TraceView, WriteAck,
+    span_release_id, span_summary, AgentSpanKind, CanonicalSpan, CanonicalTraceBatch, ModelRef,
+    RawEnvelope, RunFilter, RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck,
 };
 use beater_store::{
-    page_vec, query_runs_by_materializing_spans, StoreError, StoreResult, TraceStore,
+    finalize_run_aggregates, page_vec, RunAggregateRow, StoreError, StoreResult, TraceStore,
 };
 use std::collections::BTreeSet;
 
@@ -367,6 +372,10 @@ impl TraceStore for ClickHouseTraceStore {
                 continue;
             }
             let span_json = serde_json::to_string(span).map_err(StoreError::backend)?;
+            // Project the roll-up dimensions into the dedicated span columns
+            // (derived from the canonical span exactly as `roll_up_runs` reads
+            // them) so `query_runs` aggregates via GROUP BY instead of parsing
+            // every `span_json` (ARCHITECTURE.md §8.1).
             let row = serde_json::json!({
                 "tenant_id": span.tenant_id.as_str(),
                 "project_id": span.project_id.as_str(),
@@ -380,6 +389,11 @@ impl TraceStore for ClickHouseTraceStore {
                 "name": span.name,
                 "start_time": format_clickhouse_datetime(&span.start_time),
                 "end_time": span.end_time.as_ref().map(format_clickhouse_datetime),
+                "model_provider": span.model.as_ref().map(|model| model.provider.as_str()),
+                "model_name": span.model.as_ref().map(|model| model.name.as_str()),
+                "cost_currency": span.cost.as_ref().map(|cost| cost.currency.as_str()),
+                "cost_micros": span.cost.as_ref().map(|cost| cost.amount_micros),
+                "release_id": span_release_id(span),
                 "span_json": span_json,
             });
             span_rows.push_str(&serde_json::to_string(&row).map_err(StoreError::backend)?);
@@ -445,7 +459,51 @@ impl TraceStore for ClickHouseTraceStore {
         filter: RunFilter,
         page: PageRequest,
     ) -> StoreResult<Page<RunSummary>> {
-        query_runs_by_materializing_spans(self, tenant, filter, page).await
+        // Backend GROUP BY over the projected span columns (§8.1). ClickHouse's
+        // `groupArray` order is indeterminate, so each model/cost/release
+        // occurrence carries its `(start_time, seq)` sort key and is ordered in
+        // `run_aggregate_from_json` to match `roll_up_runs`. Run-level filters
+        // and pagination are applied by `finalize_run_aggregates`.
+        let mut predicates = vec![format!("tenant_id = '{}'", escape(tenant.as_str()))];
+        if let Some(project) = &filter.project_id {
+            predicates.push(format!("project_id = '{}'", escape(project.as_str())));
+        }
+        if let Some(environment) = &filter.environment_id {
+            predicates.push(format!(
+                "environment_id = '{}'",
+                escape(environment.as_str())
+            ));
+        }
+        if let Some(trace) = &filter.trace_id {
+            predicates.push(format!("trace_id = '{}'", escape(trace.as_str())));
+        }
+        let sql = format!(
+            "SELECT \
+               project_id, \
+               trace_id, \
+               toString(count()) AS span_count, \
+               if(countIf(status = 'error') > 0, 'error', if(countIf(status = 'ok') > 0, 'ok', 'unset')) AS status, \
+               argMin(name, (start_time, seq)) AS first_span_name, \
+               toString(min(start_time)) AS started_at, \
+               toString(max(end_time)) AS ended_at, \
+               groupArrayIf((toString(start_time), toString(seq), model_provider, model_name), isNotNull(model_provider) AND isNotNull(model_name)) AS models, \
+               groupArrayIf((toString(start_time), toString(seq), cost_currency, toString(cost_micros)), isNotNull(cost_currency) AND isNotNull(cost_micros)) AS costs, \
+               groupArrayIf((toString(start_time), toString(seq), release_id), isNotNull(release_id)) AS release_ids, \
+               groupUniqArray(kind) AS kinds \
+             FROM beater.spans \
+             WHERE {} \
+             GROUP BY project_id, trace_id \
+             ORDER BY max(start_time) DESC, project_id ASC, trace_id ASC \
+             FORMAT JSONEachRow",
+            predicates.join(" AND ")
+        );
+        let body = self.query_raw(&sql).await?;
+        let mut aggregates = Vec::new();
+        for line in body.lines().filter(|line| !line.trim().is_empty()) {
+            let row: serde_json::Value = serde_json::from_str(line).map_err(StoreError::backend)?;
+            aggregates.push(run_aggregate_from_json(&row)?);
+        }
+        Ok(finalize_run_aggregates(tenant, aggregates, filter, page))
     }
 
     async fn query_spans(
@@ -537,4 +595,143 @@ fn escape(value: &str) -> String {
 /// Formats a timestamp for ClickHouse `DateTime64(6, 'UTC')` columns.
 fn format_clickhouse_datetime(timestamp: &chrono::DateTime<chrono::Utc>) -> String {
     timestamp.format("%Y-%m-%d %H:%M:%S%.6f").to_string()
+}
+
+/// Parses a ClickHouse `DateTime64(6)` rendering (`YYYY-MM-DD HH:MM:SS.ffffff`)
+/// back into a UTC timestamp.
+fn parse_clickhouse_datetime(text: &str) -> StoreResult<Timestamp> {
+    chrono::NaiveDateTime::parse_from_str(text, "%Y-%m-%d %H:%M:%S%.f")
+        .map(|naive| naive.and_utc())
+        .map_err(StoreError::integrity)
+}
+
+/// One per-span aggregate occurrence: its `(start_time, seq)` ordering key plus
+/// the remaining tuple fields (model/cost/release values) from index 2 on.
+struct Occurrence {
+    start: String,
+    seq: u64,
+    fields: Vec<String>,
+}
+
+/// Reads a `groupArrayIf((toString(start_time), toString(seq), ...))` column and
+/// orders it `start_time DESC, seq ASC` — the order `roll_up_runs` would visit
+/// the spans (ClickHouse `groupArray` does not preserve insertion order). The
+/// fixed-width `DateTime64` text sorts chronologically, so a string compare on
+/// `start` is exact.
+fn ordered_occurrences(row: &serde_json::Value, key: &str) -> StoreResult<Vec<Occurrence>> {
+    let array = row
+        .get(key)
+        .and_then(|value| value.as_array())
+        .ok_or_else(|| StoreError::integrity(format!("missing {key} aggregate")))?;
+    let mut occurrences = Vec::with_capacity(array.len());
+    for entry in array {
+        let fields = entry
+            .as_array()
+            .ok_or_else(|| StoreError::integrity(format!("{key} entry is not a tuple")))?
+            .iter()
+            .map(|field| {
+                field
+                    .as_str()
+                    .map(ToString::to_string)
+                    .ok_or_else(|| StoreError::integrity(format!("{key} field is not a string")))
+            })
+            .collect::<StoreResult<Vec<String>>>()?;
+        if fields.len() < 3 {
+            return Err(StoreError::integrity(format!("{key} tuple is too short")));
+        }
+        let seq = fields[1]
+            .parse::<u64>()
+            .map_err(|err| StoreError::integrity(format!("{key} seq is not an integer: {err}")))?;
+        occurrences.push(Occurrence {
+            start: fields[0].clone(),
+            seq,
+            fields,
+        });
+    }
+    occurrences.sort_by(|left, right| {
+        right
+            .start
+            .cmp(&left.start)
+            .then_with(|| left.seq.cmp(&right.seq))
+    });
+    Ok(occurrences)
+}
+
+/// Reads payload field `index` (counting the model/cost/release values, which
+/// begin at tuple index 2) from an ordered occurrence.
+fn occurrence_field(occurrence: &Occurrence, index: usize) -> StoreResult<&str> {
+    occurrence
+        .fields
+        .get(index)
+        .map(String::as_str)
+        .ok_or_else(|| StoreError::integrity("aggregate tuple missing a field"))
+}
+
+/// Builds a [`RunAggregateRow`] from one `query_runs` GROUP BY row.
+fn run_aggregate_from_json(row: &serde_json::Value) -> StoreResult<RunAggregateRow> {
+    let span_count = json_str(row, "span_count")?
+        .parse::<usize>()
+        .map_err(|err| StoreError::integrity(format!("span_count is not an integer: {err}")))?;
+    let status = json_str(row, "status")?;
+    let started_at = parse_clickhouse_datetime(&json_str(row, "started_at")?)?;
+    let ended_at = match row.get("ended_at") {
+        Some(serde_json::Value::String(text)) => Some(parse_clickhouse_datetime(text)?),
+        _ => None,
+    };
+
+    let mut models = Vec::new();
+    for occurrence in ordered_occurrences(row, "models")? {
+        models.push(ModelRef {
+            provider: occurrence_field(&occurrence, 2)?.to_string(),
+            name: occurrence_field(&occurrence, 3)?.to_string(),
+        });
+    }
+
+    let mut costs = Vec::new();
+    for occurrence in ordered_occurrences(row, "costs")? {
+        let currency = serde_json::from_value(serde_json::Value::String(
+            occurrence_field(&occurrence, 2)?.to_string(),
+        ))
+        .map_err(StoreError::integrity)?;
+        let amount_micros = occurrence_field(&occurrence, 3)?
+            .parse::<i64>()
+            .map_err(|err| {
+                StoreError::integrity(format!("cost_micros is not an integer: {err}"))
+            })?;
+        costs.push(Money::new(amount_micros, currency));
+    }
+
+    let mut release_ids = Vec::new();
+    for occurrence in ordered_occurrences(row, "release_ids")? {
+        release_ids.push(occurrence_field(&occurrence, 2)?.to_string());
+    }
+
+    let kinds = row
+        .get("kinds")
+        .and_then(|value| value.as_array())
+        .ok_or_else(|| StoreError::integrity("missing kinds aggregate"))?
+        .iter()
+        .map(|entry| {
+            let kind = entry
+                .as_str()
+                .ok_or_else(|| StoreError::integrity("span kind is not a string"))?;
+            AgentSpanKind::parse(kind)
+                .ok_or_else(|| StoreError::integrity(format!("unknown span kind {kind}")))
+        })
+        .collect::<StoreResult<BTreeSet<AgentSpanKind>>>()?;
+
+    Ok(RunAggregateRow {
+        project_id: ProjectId::new(json_str(row, "project_id")?).map_err(StoreError::integrity)?,
+        trace_id: TraceId::new(json_str(row, "trace_id")?).map_err(StoreError::integrity)?,
+        span_count,
+        status: SpanStatus::parse(&status)
+            .ok_or_else(|| StoreError::integrity(format!("unknown span status {status}")))?,
+        first_span_name: json_str(row, "first_span_name")?,
+        started_at,
+        ended_at,
+        models,
+        costs,
+        release_ids,
+        kinds,
+    })
 }

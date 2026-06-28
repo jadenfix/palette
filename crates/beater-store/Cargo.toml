@@ -12,6 +12,7 @@ beater-schema = { path = "../beater-schema" }
 thiserror.workspace = true
 
 [dev-dependencies]
+chrono.workspace = true
 tokio.workspace = true
 
 [lints]
