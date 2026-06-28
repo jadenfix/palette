@@ -1032,6 +1032,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-langfuse"
+version = "0.1.0"
+dependencies = [
+ "beater-bus",
+ "beater-core",
+ "beater-ingest",
+ "beater-schema",
+ "beater-store",
+ "beater-store-memory",
+ "beater-store-obj",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "beater-mcp"
 version = "0.1.0"
 dependencies = [
@@ -1402,6 +1421,7 @@ dependencies = [
  "beater-human",
  "beater-ingest",
  "beater-judge",
+ "beater-langfuse",
  "beater-mcp",
  "beater-oauth",
  "beater-oauth-server",

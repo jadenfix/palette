@@ -315,6 +315,11 @@ async fn main() -> anyhow::Result<()> {
             beater_temporal::TemporalHistoryImporter,
             "temporal-history-import-v1",
             metrics.clone(),
+        )))
+        .with_importer(std::sync::Arc::new(MeteredImporter::new(
+            beater_langfuse::LangfuseImporter,
+            beater_langfuse::LANGFUSE_CONTRACT,
+            metrics.clone(),
         )));
     if args.trace_write_drain_interval_ms > 0 {
         let trace_write_hooks = TraceWriteWorkerHooks {

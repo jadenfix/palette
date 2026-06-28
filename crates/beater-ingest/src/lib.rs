@@ -1837,8 +1837,9 @@ impl TraceIngestedPublishReport {
 /// the recognized semantic-convention keys (the same keys the OTLP normalizer
 /// reads to populate model/cost/tokens/kind/seq/input/output) or belongs to a
 /// recognized namespace prefix (`llm.`, `gen_ai.`, `browser.`, `resource.`,
-/// `otel.`, `beater.`, `agent.`, `openinference.`, `w3c.`). Everything else
-/// "fails canonical mapping" and is recorded under `unmapped_attrs.unmapped`.
+/// `otel.`, `beater.`, `agent.`, `openinference.`, `w3c.`, `temporal.`,
+/// `langfuse.`). Everything else "fails canonical mapping" and is recorded under
+/// `unmapped_attrs.unmapped`.
 pub mod canonical_mapping {
     /// Recognized namespace prefixes whose attributes the canonical model
     /// understands (either projected to a typed field or carried as a known
@@ -1854,6 +1855,7 @@ pub mod canonical_mapping {
         "openinference.",
         "w3c.",
         "temporal.",
+        "langfuse.",
     ];
 
     /// Exact keys without a recognized prefix that are still canonical because the
