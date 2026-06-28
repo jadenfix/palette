@@ -197,80 +197,7 @@ impl SqliteAuditStore {
         project_id: ProjectId,
     ) -> StoreResult<AuditChainVerification> {
         let connection = self.lock().into_store()?;
-        let mut statement = connection
-            .prepare(
-                r#"
-                SELECT audit_event_id, event_json, previous_event_hash, event_hash
-                FROM audit_events
-                WHERE tenant_id = ?1 AND project_id = ?2
-                ORDER BY created_at ASC, audit_event_id ASC
-                "#,
-            )
-            .context("prepare audit chain verification query")
-            .into_store()?;
-        let rows = statement
-            .query_map(params![tenant_id.as_str(), project_id.as_str()], |row| {
-                Ok(AuditChainRow {
-                    audit_event_id: AuditEventId::new(row.get::<_, String>(0)?)
-                        .map_err(sql_decode_error)?,
-                    event_json: row.get(1)?,
-                    previous_event_hash: row
-                        .get::<_, Option<String>>(2)?
-                        .map(Sha256Hash::new)
-                        .transpose()
-                        .map_err(sql_decode_error)?,
-                    event_hash: row
-                        .get::<_, Option<String>>(3)?
-                        .map(Sha256Hash::new)
-                        .transpose()
-                        .map_err(sql_decode_error)?,
-                })
-            })
-            .context("query audit chain rows")
-            .into_store()?;
-
-        let mut previous_event_hash = None;
-        let mut checked_events = 0;
-        let mut legacy_events = 0;
-        for row in rows {
-            let row = row.context("read audit chain row").into_store()?;
-            let expected_previous_event_hash = previous_event_hash.clone();
-            if row.event_hash.is_none() && expected_previous_event_hash.is_none() {
-                legacy_events += 1;
-                continue;
-            }
-
-            let expected_event_hash =
-                audit_event_chain_hash(&row.event_json, expected_previous_event_hash.as_ref())
-                    .into_store()?;
-            let actual_event_hash = row.event_hash.clone();
-            if row.previous_event_hash != expected_previous_event_hash
-                || row.event_hash.as_ref() != Some(&expected_event_hash)
-            {
-                return Ok(AuditChainVerification {
-                    valid: false,
-                    checked_events,
-                    legacy_events,
-                    failure: Some(AuditChainFailure {
-                        audit_event_id: row.audit_event_id,
-                        expected_previous_event_hash,
-                        actual_previous_event_hash: row.previous_event_hash,
-                        expected_event_hash,
-                        actual_event_hash,
-                    }),
-                });
-            }
-
-            checked_events += 1;
-            previous_event_hash = row.event_hash;
-        }
-
-        Ok(AuditChainVerification {
-            valid: true,
-            checked_events,
-            legacy_events,
-            failure: None,
-        })
+        verify_audit_chain(&connection, &tenant_id, &project_id)
     }
 
     fn lock(&self) -> anyhow::Result<std::sync::MutexGuard<'_, Connection>> {
@@ -352,6 +279,7 @@ impl AuditStore for SqliteAuditStore {
         project_id: ProjectId,
     ) -> StoreResult<Vec<AuditEvent>> {
         let connection = self.lock().into_store()?;
+        ensure_audit_chain_readable(verify_audit_chain(&connection, &tenant_id, &project_id)?)?;
         let mut statement = connection
             .prepare(
                 r#"
@@ -389,6 +317,101 @@ struct AuditChainRow {
     event_json: String,
     previous_event_hash: Option<Sha256Hash>,
     event_hash: Option<Sha256Hash>,
+}
+
+fn verify_audit_chain(
+    connection: &Connection,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+) -> StoreResult<AuditChainVerification> {
+    let mut statement = connection
+        .prepare(
+            r#"
+            SELECT audit_event_id, event_json, previous_event_hash, event_hash
+            FROM audit_events
+            WHERE tenant_id = ?1 AND project_id = ?2
+            ORDER BY created_at ASC, audit_event_id ASC
+            "#,
+        )
+        .context("prepare audit chain verification query")
+        .into_store()?;
+    let rows = statement
+        .query_map(params![tenant_id.as_str(), project_id.as_str()], |row| {
+            Ok(AuditChainRow {
+                audit_event_id: AuditEventId::new(row.get::<_, String>(0)?)
+                    .map_err(sql_decode_error)?,
+                event_json: row.get(1)?,
+                previous_event_hash: row
+                    .get::<_, Option<String>>(2)?
+                    .map(Sha256Hash::new)
+                    .transpose()
+                    .map_err(sql_decode_error)?,
+                event_hash: row
+                    .get::<_, Option<String>>(3)?
+                    .map(Sha256Hash::new)
+                    .transpose()
+                    .map_err(sql_decode_error)?,
+            })
+        })
+        .context("query audit chain rows")
+        .into_store()?;
+
+    let mut previous_event_hash = None;
+    let mut checked_events = 0;
+    let mut legacy_events = 0;
+    for row in rows {
+        let row = row.context("read audit chain row").into_store()?;
+        let expected_previous_event_hash = previous_event_hash.clone();
+        if row.event_hash.is_none() && expected_previous_event_hash.is_none() {
+            legacy_events += 1;
+            continue;
+        }
+
+        let expected_event_hash =
+            audit_event_chain_hash(&row.event_json, expected_previous_event_hash.as_ref())
+                .into_store()?;
+        let actual_event_hash = row.event_hash.clone();
+        if row.previous_event_hash != expected_previous_event_hash
+            || row.event_hash.as_ref() != Some(&expected_event_hash)
+        {
+            return Ok(AuditChainVerification {
+                valid: false,
+                checked_events,
+                legacy_events,
+                failure: Some(AuditChainFailure {
+                    audit_event_id: row.audit_event_id,
+                    expected_previous_event_hash,
+                    actual_previous_event_hash: row.previous_event_hash,
+                    expected_event_hash,
+                    actual_event_hash,
+                }),
+            });
+        }
+
+        checked_events += 1;
+        previous_event_hash = row.event_hash;
+    }
+
+    Ok(AuditChainVerification {
+        valid: true,
+        checked_events,
+        legacy_events,
+        failure: None,
+    })
+}
+
+fn ensure_audit_chain_readable(verification: AuditChainVerification) -> StoreResult<()> {
+    if verification.valid {
+        return Ok(());
+    }
+
+    let failed_event = verification
+        .failure
+        .map(|failure| failure.audit_event_id.as_str().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+    Err(StoreError::Integrity(format!(
+        "audit chain verification failed at event {failed_event}"
+    )))
 }
 
 #[derive(Serialize)]
@@ -616,6 +639,49 @@ mod tests {
         assert_ne!(
             Some(&failure.expected_event_hash),
             failure.actual_event_hash.as_ref()
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn sqlite_audit_store_refuses_tampered_readback() -> anyhow::Result<()> {
+        let store = SqliteAuditStore::in_memory()?;
+        let tenant_id = TenantId::new("tenant-readback-tamper")?;
+        let project_id = ProjectId::new("project-readback-tamper")?;
+        let mut event = store
+            .append_event(sample_pii_unmask_event(
+                &tenant_id,
+                &project_id,
+                "trace-readback-tamper",
+            )?)
+            .await?;
+        event.reason = Some("changed after append".to_string());
+        let tampered_event_json = serde_json::to_string(&event)?;
+
+        {
+            let connection = store.lock()?;
+            connection.execute(
+                r#"
+                UPDATE audit_events
+                SET event_json = ?1
+                WHERE tenant_id = ?2 AND project_id = ?3 AND audit_event_id = ?4
+                "#,
+                rusqlite::params![
+                    tampered_event_json,
+                    tenant_id.as_str(),
+                    project_id.as_str(),
+                    event.audit_event_id.as_str(),
+                ],
+            )?;
+        }
+
+        let result = store.list_events(tenant_id, project_id).await;
+        let Err(StoreError::Integrity(message)) = result else {
+            panic!("expected integrity error for tampered audit readback, got {result:?}");
+        };
+        assert!(
+            message.contains(event.audit_event_id.as_str()),
+            "integrity message should name the failed audit event: {message}"
         );
         Ok(())
     }

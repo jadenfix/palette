@@ -23,6 +23,7 @@ beater-gates = { path = "../../crates/beater-gates" }
 beater-human = { path = "../../crates/beater-human" }
 beater-ingest = { path = "../../crates/beater-ingest" }
 beater-judge = { path = "../../crates/beater-judge" }
+beater-langfuse = { path = "../../crates/beater-langfuse" }
 beater-mcp = { path = "../../crates/beater-mcp" }
 beater-otlp = { path = "../../crates/beater-otlp" }
 beater-search = { path = "../../crates/beater-search" }

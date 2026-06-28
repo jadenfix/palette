@@ -407,12 +407,12 @@ fn json_hash(value: &Value) -> anyhow::Result<Sha256Hash> {
 }
 
 pub fn plan_replay(cassette: &ReplayCassette, fork_after: Option<SpanId>) -> ReplayPlan {
-    let mode = if cassette.missing_required_kinds.is_empty() && fork_after.is_none() {
-        ReplayMode::DeterministicReplay
+    let mode = if !cassette.missing_required_kinds.is_empty() {
+        ReplayMode::Simulation
     } else if fork_after.is_some() {
         ReplayMode::ForkedReplay
     } else {
-        ReplayMode::Simulation
+        ReplayMode::DeterministicReplay
     };
     let guarantee = match mode {
         ReplayMode::DeterministicReplay => {
@@ -822,7 +822,17 @@ mod tests {
             missing_required_kinds: vec!["tool".to_string()],
             ..complete
         };
-        assert_eq!(plan_replay(&missing, None).mode, ReplayMode::Simulation);
+        let simulation = plan_replay(&missing, None);
+        assert_eq!(simulation.mode, ReplayMode::Simulation);
+        assert_eq!(simulation.missing_required_kinds, vec!["tool"]);
+
+        let fork_with_missing = plan_replay(
+            &missing,
+            Some(SpanId::new("fork").unwrap_or_else(|err| panic!("{err}"))),
+        );
+        assert_eq!(fork_with_missing.mode, ReplayMode::Simulation);
+        assert_eq!(fork_with_missing.missing_required_kinds, vec!["tool"]);
+        assert!(fork_with_missing.guarantee.contains("missing"));
     }
 
     #[tokio::test]
@@ -859,6 +869,129 @@ mod tests {
         assert_eq!(cassette.clock_events, 1);
         assert_eq!(cassette.random_events, 1);
         assert!(cassette.missing_required_kinds.is_empty());
+    }
+
+    #[tokio::test]
+    async fn sqlite_replay_store_scopes_events_by_tenant_project_and_trace() {
+        let store = SqliteReplayStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let other_tenant = TenantId::new("tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project-a").unwrap_or_else(|err| panic!("{err}"));
+        let other_project = ProjectId::new("project-b").unwrap_or_else(|err| panic!("{err}"));
+        let trace = TraceId::new("shared-trace").unwrap_or_else(|err| panic!("{err}"));
+        let other_trace = TraceId::new("other-trace").unwrap_or_else(|err| panic!("{err}"));
+
+        let target_events = [
+            scoped_event(
+                &tenant,
+                &project,
+                &trace,
+                1,
+                ReplayEventKind::Provider,
+                "shared-provider-request",
+                "target-provider",
+            ),
+            scoped_event(
+                &tenant,
+                &project,
+                &trace,
+                2,
+                ReplayEventKind::Tool,
+                "shared-tool-request",
+                "target-tool",
+            ),
+        ];
+
+        let colliding_events = [
+            scoped_event(
+                &other_tenant,
+                &project,
+                &trace,
+                1,
+                ReplayEventKind::Provider,
+                "shared-provider-request",
+                "other-tenant-provider",
+            ),
+            scoped_event(
+                &tenant,
+                &other_project,
+                &trace,
+                1,
+                ReplayEventKind::Provider,
+                "shared-provider-request",
+                "other-project-provider",
+            ),
+            scoped_event(
+                &other_tenant,
+                &other_project,
+                &trace,
+                2,
+                ReplayEventKind::Tool,
+                "shared-tool-request",
+                "other-scope-tool",
+            ),
+            scoped_event(
+                &tenant,
+                &project,
+                &other_trace,
+                2,
+                ReplayEventKind::Tool,
+                "shared-tool-request",
+                "other-trace-tool",
+            ),
+        ];
+
+        assert_eq!(
+            target_events[0].request_hash,
+            colliding_events[0].request_hash
+        );
+        assert_eq!(
+            target_events[0].request_hash,
+            colliding_events[1].request_hash
+        );
+        assert_eq!(
+            target_events[1].request_hash,
+            colliding_events[2].request_hash
+        );
+        assert_eq!(
+            target_events[1].request_hash,
+            colliding_events[3].request_hash
+        );
+
+        for event in target_events.iter().chain(colliding_events.iter()).cloned() {
+            store
+                .put_event(event)
+                .await
+                .unwrap_or_else(|err| panic!("{err}"));
+        }
+
+        let loaded = store
+            .list_events(tenant.clone(), project.clone(), trace.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(loaded.len(), target_events.len());
+        assert!(loaded.iter().all(|event| {
+            event.tenant_id.as_str() == tenant.as_str()
+                && event.project_id.as_str() == project.as_str()
+                && event.trace_id.as_str() == trace.as_str()
+        }));
+        assert_eq!(loaded[0].seq, 1);
+        assert_eq!(loaded[0].kind, ReplayEventKind::Provider);
+        assert_eq!(loaded[0].response, json!({ "response": "target-provider" }));
+        assert_eq!(loaded[1].seq, 2);
+        assert_eq!(loaded[1].kind, ReplayEventKind::Tool);
+        assert_eq!(loaded[1].response, json!({ "response": "target-tool" }));
+
+        let cassette = store
+            .cassette(tenant, project, trace)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(cassette.provider_events, 1);
+        assert_eq!(cassette.tool_events, 1);
+        assert_eq!(cassette.memory_events, 0);
+        assert_eq!(cassette.retrieval_events, 0);
+        assert_eq!(cassette.clock_events, 0);
+        assert_eq!(cassette.random_events, 0);
     }
 
     #[test]
@@ -1234,6 +1367,27 @@ mod tests {
             kind,
             json!({ "request": label }),
             json!({ label: "ok" }),
+        )
+        .unwrap_or_else(|err| panic!("{err}"))
+    }
+
+    fn scoped_event(
+        tenant: &TenantId,
+        project: &ProjectId,
+        trace: &TraceId,
+        seq: u64,
+        kind: ReplayEventKind,
+        request_label: &str,
+        response_label: &str,
+    ) -> ReplayEvent {
+        ReplayEvent::new(
+            tenant.clone(),
+            project.clone(),
+            trace.clone(),
+            seq,
+            kind,
+            json!({ "request": request_label }),
+            json!({ "response": response_label }),
         )
         .unwrap_or_else(|err| panic!("{err}"))
     }

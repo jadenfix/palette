@@ -55,10 +55,15 @@ jobs:
           python3 -m py_compile scripts/generate-gate2-outside-proof.py
           python3 -m py_compile scripts/gate2_proof_contract.py
           python3 -m py_compile scripts/seed-gate2-redaction-trace.py
+          python3 -m py_compile scripts/tests/test_check_gate2_outside_readiness.py
+          python3 scripts/tests/test_check_gate2_outside_readiness.py
           scripts/validate-gate2-outside-proof.sh --allow-pending
 
       - name: Gate 0 foundation contract
         run: scripts/check-gate0-foundations.py
+
+      - name: Docs walkthrough references
+        run: scripts/check-docs-walkthrough.sh --dry-run
 
       - name: Gate 2 self-host contract tests
         run: |

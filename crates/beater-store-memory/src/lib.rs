@@ -338,7 +338,7 @@ impl MetadataStore for InMemoryMetadataStore {
         principal_id: String,
     ) -> StoreResult<Vec<RoleBinding>> {
         let state = self.lock()?;
-        Ok(state
+        let mut bindings = state
             .role_bindings
             .iter()
             .filter(|binding| {
@@ -347,7 +347,9 @@ impl MetadataStore for InMemoryMetadataStore {
                     && binding.principal_id == principal_id
             })
             .cloned()
-            .collect())
+            .collect::<Vec<_>>();
+        bindings.sort_by(|left, right| left.role.cmp(&right.role));
+        Ok(bindings)
     }
 }
 
@@ -399,6 +401,7 @@ mod tests {
         assert_metadata_store_conformance, assert_quota_limiter_concurrency_conformance,
         assert_quota_limiter_conformance, assert_trace_store_conformance,
     };
+    use std::collections::BTreeSet;
 
     #[tokio::test]
     async fn in_memory_trace_store_conforms() {
@@ -411,6 +414,96 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn list_role_bindings_orders_by_role() {
+        let store = InMemoryMetadataStore::new();
+        let tenant = tenant_id("tenant");
+        let project = project_id("project");
+
+        for role in ["viewer", "admin", "editor"] {
+            store
+                .put_role_binding(role_binding(
+                    &tenant,
+                    Some(&project),
+                    "api-key:ordered",
+                    role,
+                ))
+                .await
+                .unwrap_or_else(|err| panic!("{err}"));
+        }
+
+        let bindings = store
+            .list_role_bindings(tenant, Some(project), "api-key:ordered".to_string())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let roles = bindings
+            .iter()
+            .map(|binding| binding.role.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(roles, vec!["admin", "editor", "viewer"]);
+    }
+
+    #[tokio::test]
+    async fn list_role_bindings_isolates_tenant_project_and_principal() {
+        let store = InMemoryMetadataStore::new();
+        let tenant = tenant_id("tenant");
+        let other_tenant = tenant_id("other-tenant");
+        let project = project_id("project");
+        let other_project = project_id("other-project");
+
+        for binding in [
+            role_binding(&tenant, Some(&project), "api-key:target", "viewer"),
+            role_binding(
+                &other_tenant,
+                Some(&project),
+                "api-key:target",
+                "tenant-leak",
+            ),
+            role_binding(
+                &tenant,
+                Some(&other_project),
+                "api-key:target",
+                "project-leak",
+            ),
+            role_binding(&tenant, Some(&project), "api-key:other", "principal-leak"),
+            role_binding(&tenant, None, "api-key:target", "tenant-wide"),
+        ] {
+            store
+                .put_role_binding(binding)
+                .await
+                .unwrap_or_else(|err| panic!("{err}"));
+        }
+
+        let project_bindings = store
+            .list_role_bindings(
+                tenant.clone(),
+                Some(project.clone()),
+                "api-key:target".to_string(),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            project_bindings
+                .iter()
+                .map(|binding| binding.role.as_str())
+                .collect::<Vec<_>>(),
+            vec!["viewer"]
+        );
+
+        let tenant_wide_bindings = store
+            .list_role_bindings(tenant, None, "api-key:target".to_string())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            tenant_wide_bindings
+                .iter()
+                .map(|binding| binding.role.as_str())
+                .collect::<Vec<_>>(),
+            vec!["tenant-wide"]
+        );
+    }
+
+    #[tokio::test]
     async fn in_memory_quota_limiter_conforms() {
         assert_quota_limiter_conformance(InMemoryQuotaLimiter::new()).await;
     }
@@ -418,5 +511,29 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
     async fn in_memory_quota_limiter_concurrency_conforms() {
         assert_quota_limiter_concurrency_conformance(InMemoryQuotaLimiter::new()).await;
+    }
+
+    fn tenant_id(value: &str) -> TenantId {
+        TenantId::new(value).unwrap_or_else(|err| panic!("{err}"))
+    }
+
+    fn project_id(value: &str) -> ProjectId {
+        ProjectId::new(value).unwrap_or_else(|err| panic!("{err}"))
+    }
+
+    fn role_binding(
+        tenant_id: &TenantId,
+        project_id: Option<&ProjectId>,
+        principal_id: &str,
+        role: &str,
+    ) -> RoleBinding {
+        RoleBinding {
+            tenant_id: tenant_id.clone(),
+            project_id: project_id.cloned(),
+            principal_id: principal_id.to_string(),
+            role: role.to_string(),
+            permissions: BTreeSet::from([format!("{role}:permission")]),
+            created_at: std::time::SystemTime::UNIX_EPOCH.into(),
+        }
     }
 }
