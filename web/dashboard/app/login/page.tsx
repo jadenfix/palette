@@ -30,8 +30,8 @@ function humanize(status: number, code: unknown): string {
   if (code === "email_taken") return "That email is already registered — try signing in.";
   if (code === "invalid_credentials") return "Incorrect email or password.";
   if (status === 400) return "Enter a valid email and a password of at least 8 characters.";
-  if (status === 502) return "Can't reach the API. Is the backend running?";
-  return "Something went wrong. Please try again.";
+  if (status === 502) return "Can't reach beaterd — is it running?";
+  return "Couldn't sign you in. Try again in a moment.";
 }
 
 export default function LoginPage() {
@@ -63,7 +63,7 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     } catch {
-      setError("Network error — please try again.");
+      setError("Can't reach beaterd. Check it's running, then retry.");
     } finally {
       setBusy(false);
     }
@@ -79,10 +79,10 @@ export default function LoginPage() {
       <aside className="auth-brand">
         <BrandLockup size={30} />
         <div className="auth-pitch">
-          <h2>See every heartbeat of your agents.</h2>
+          <h2>Every agent run, traced, replayed, and graded.</h2>
           <p>
-            Trace, replay, and grade every agent run — local-first, in one Rust
-            binary. The whole loop, on your machine.
+            Local-first observability for AI agents — the whole loop in one Rust
+            binary, on your machine.
           </p>
           <div className="vitals">
             <div className="vitals-top">
@@ -114,26 +114,16 @@ export default function LoginPage() {
             <h1>{isRegister ? "Create your account" : "Welcome back"}</h1>
             <p className="auth-sub">
               {isRegister
-                ? "Spin up a tenant and mint your first API key in seconds."
+                ? "Create a tenant and your first API key."
                 : "Sign in to inspect traces, run evals, and manage keys."}
             </p>
           </div>
 
-          <div className="segmented" role="tablist" aria-label="Authentication mode">
-            <button
-              type="button"
-              role="tab"
-              aria-pressed={!isRegister}
-              onClick={() => switchMode("login")}
-            >
+          <div className="segmented" role="group" aria-label="Choose sign in or create account">
+            <button type="button" aria-pressed={!isRegister} onClick={() => switchMode("login")}>
               Sign in
             </button>
-            <button
-              type="button"
-              role="tab"
-              aria-pressed={isRegister}
-              onClick={() => switchMode("register")}
-            >
+            <button type="button" aria-pressed={isRegister} onClick={() => switchMode("register")}>
               Create account
             </button>
           </div>
@@ -149,6 +139,8 @@ export default function LoginPage() {
                 autoComplete="email"
                 placeholder="you@company.com"
                 required
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "auth-error" : undefined}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -166,6 +158,8 @@ export default function LoginPage() {
                   placeholder={isRegister ? "At least 8 characters" : "Your password"}
                   required
                   minLength={8}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? "auth-error" : undefined}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -179,12 +173,12 @@ export default function LoginPage() {
                 </button>
               </div>
               {isRegister ? (
-                <span className="field-hint">Use 8+ characters with a mix you won't forget.</span>
+                <span className="field-hint">Use at least 8 characters.</span>
               ) : null}
             </label>
 
             {error ? (
-              <div className="alert alert-danger" role="alert">
+              <div className="alert alert-danger" role="alert" id="auth-error">
                 <AlertCircle aria-hidden="true" />
                 <span>{error}</span>
               </div>

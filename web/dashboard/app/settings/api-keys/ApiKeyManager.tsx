@@ -160,7 +160,7 @@ export default function ApiKeyManager() {
             <div className="alert alert-warn">
               <TriangleAlert aria-hidden="true" />
               <span>
-                Store it in a secret manager. If you lose it, revoke this key and mint a new one.
+                Store it in a secret manager. If you lose it, revoke this key and create a new one.
               </span>
             </div>
             <div className="field">
@@ -241,10 +241,11 @@ export default function ApiKeyManager() {
           <button
             type="submit"
             className="btn btn-primary"
+            aria-busy={busy}
             disabled={busy || selected.size === 0}
           >
             <Plus aria-hidden="true" />
-            {busy ? "Creating…" : "Generate key"}
+            {busy ? "Creating…" : "Create key"}
           </button>
         </div>
       </form>
@@ -268,8 +269,8 @@ export default function ApiKeyManager() {
               <span className="empty-glyph" aria-hidden="true">
                 <KeyRound />
               </span>
-              <strong>No keys yet</strong>
-              <p>Generate a key above to start sending traces and running evals.</p>
+              <strong>No keys created here yet</strong>
+              <p>Keys you create in this session show up here. Older keys can be revoked by id below.</p>
             </div>
           ) : (
             <div className="keylist">

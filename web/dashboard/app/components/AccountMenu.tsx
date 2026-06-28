@@ -52,8 +52,9 @@ export function AccountMenu({ account }: { account: Account }) {
       <button
         type="button"
         className="account-chip"
-        aria-haspopup="menu"
+        aria-haspopup="true"
         aria-expanded={open}
+        aria-label={`Account: ${account.email}`}
         onClick={() => setOpen((v) => !v)}
       >
         <span className="avatar" aria-hidden="true">
@@ -62,23 +63,25 @@ export function AccountMenu({ account }: { account: Account }) {
         <ChevronDown aria-hidden="true" width={14} height={14} />
       </button>
       {open ? (
-        <div className="menu" role="menu">
+        // A disclosure of plain links/buttons — not role="menu", which would
+        // demand roving arrow-key focus management we don't implement. Tab works.
+        <div className="menu">
           <div className="menu-head">
             <strong>{account.email}</strong>
             <small>tenant {account.tenant_id}</small>
           </div>
           <div className="menu-sep" />
-          <Link role="menuitem" href="/settings/api-keys" onClick={() => setOpen(false)}>
+          <Link href="/settings/api-keys" onClick={() => setOpen(false)}>
             <KeyRound aria-hidden="true" /> API keys
           </Link>
-          <Link role="menuitem" href="/settings/usage" onClick={() => setOpen(false)}>
+          <Link href="/settings/usage" onClick={() => setOpen(false)}>
             <Gauge aria-hidden="true" /> Usage
           </Link>
-          <Link role="menuitem" href="/settings/billing" onClick={() => setOpen(false)}>
+          <Link href="/settings/billing" onClick={() => setOpen(false)}>
             <CreditCard aria-hidden="true" /> Billing
           </Link>
           <div className="menu-sep" />
-          <button role="menuitem" className="danger" onClick={signOut} disabled={busy}>
+          <button type="button" className="danger" onClick={signOut} disabled={busy}>
             <LogOut aria-hidden="true" /> {busy ? "Signing out…" : "Sign out"}
           </button>
         </div>

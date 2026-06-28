@@ -51,6 +51,7 @@ export function AppNav({ account }: { account: Account | null }) {
             key={href}
             href={href}
             className="nav-link"
+            aria-label={label}
             aria-current={match(pathname) ? "page" : undefined}
           >
             <Icon aria-hidden="true" />

@@ -1,13 +1,5 @@
 import Link from "next/link";
-import {
-  Check,
-  Sparkles,
-  CreditCard,
-  FileText,
-  Gauge,
-  CircleCheck,
-  CircleDashed,
-} from "lucide-react";
+import { Check, Sparkles, CreditCard, Gauge, CircleCheck, CircleDashed } from "lucide-react";
 
 import { getSession } from "../../../lib/auth";
 
@@ -21,7 +13,7 @@ const LOCAL_FEATURES = [
 ];
 
 const HOSTED_FEATURES = [
-  "Managed cells with autoscaling ingest",
+  "Autoscaling managed ingest",
   "SSO, RBAC, and audit-grade access controls",
   "Team workspaces and shared dashboards",
   "Usage-based billing with spend controls",
@@ -62,7 +54,7 @@ export default async function BillingPage() {
           <h1>Billing</h1>
           <p>
             Beater is local-first and free to self-host. Managed hosting with
-            usage-based billing is on the way.
+            usage-based billing is coming soon.
           </p>
         </div>
         <div className="page-actions">
@@ -73,32 +65,16 @@ export default async function BillingPage() {
       </div>
 
       <div className="stack">
-        <div className="plan">
-          <div className="plan-info">
-            <span className="plan-name">
-              Local
-              <span className="tag tag-success">
-                <CircleCheck aria-hidden="true" width={13} height={13} /> Active
-              </span>
-            </span>
-            <span className="plan-desc">
-              Self-hosted on your own beaterd. No seats, no quotas, no card required —
-              the entire loop runs on your machine.
-            </span>
-          </div>
-          <div className="plan-actions">
-            <span className="tag mono">tenant {account.tenant_id}</span>
-          </div>
-        </div>
-
         <div className="statgrid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-          <section className="panel">
+          <section className="panel" style={{ borderColor: "var(--accent-line)" }}>
             <div className="panel-head">
               <div className="panel-titles">
                 <h2>Local · self-hosted</h2>
                 <p>$0 — your infrastructure</p>
               </div>
-              <span className="tag tag-accent">Current</span>
+              <span className="tag tag-success">
+                <CircleCheck aria-hidden="true" width={13} height={13} /> Active
+              </span>
             </div>
             <div className="panel-body">
               <ul style={{ display: "grid", gap: 10, listStyle: "none", margin: 0, padding: 0 }}>
@@ -109,6 +85,10 @@ export default async function BillingPage() {
                   </li>
                 ))}
               </ul>
+            </div>
+            <div className="panel-foot">
+              <span>Running on your beaterd</span>
+              <span className="tag mono">tenant {account.tenant_id}</span>
             </div>
           </section>
 
@@ -122,7 +102,7 @@ export default async function BillingPage() {
                 <p>Usage-based — coming soon</p>
               </div>
               <span className="tag">
-                <CircleDashed aria-hidden="true" width={13} height={13} /> Upcoming
+                <CircleDashed aria-hidden="true" width={13} height={13} /> Coming soon
               </span>
             </div>
             <div className="panel-body">
@@ -147,35 +127,17 @@ export default async function BillingPage() {
         <section className="panel">
           <div className="panel-head">
             <div className="panel-titles">
-              <h2>Payment method</h2>
-              <p>No card is needed while you self-host.</p>
+              <h2>Payment &amp; invoices</h2>
+              <p>Nothing to bill while you self-host.</p>
             </div>
           </div>
           <div className="panel-body">
-            <div className="empty-state">
-              <span className="empty-glyph" aria-hidden="true">
-                <CreditCard />
+            <div className="alert">
+              <CreditCard aria-hidden="true" />
+              <span>
+                No payment method or invoices on the Local plan — it&apos;s free. A card and
+                receipts appear here when you move to managed hosting.
               </span>
-              <strong>No payment method required</strong>
-              <p>You're on the Local plan. Add a card when you move to managed hosting.</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-head">
-            <div className="panel-titles">
-              <h2>Invoices</h2>
-              <p>Receipts will appear here once you're on a paid plan.</p>
-            </div>
-          </div>
-          <div className="panel-body">
-            <div className="empty-state">
-              <span className="empty-glyph" aria-hidden="true">
-                <FileText />
-              </span>
-              <strong>No invoices yet</strong>
-              <p>The Local plan is free, so there's nothing to bill.</p>
             </div>
           </div>
         </section>
