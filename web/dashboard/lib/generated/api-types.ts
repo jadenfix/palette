@@ -276,6 +276,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/gateway/{tenant_id}/{project_id}/{environment_id}/chat/completions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["gatewayChatCompletions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/import/{tenant_id}/{project_id}/{environment_id}": {
         parameters: {
             query?: never;
@@ -915,6 +931,57 @@ export interface components {
             output: unknown;
             trace?: unknown;
         };
+        /** @description One choice in an OpenAI-compatible response. */
+        ChatCompletionChoice: {
+            finish_reason?: string | null;
+            /** Format: int32 */
+            index: number;
+            message: components["schemas"]["ChatMessage"];
+        };
+        /**
+         * @description An OpenAI-compatible chat completion request. The `model` field is a free-form
+         *     model identifier, making the gateway model-agnostic: any provider/model can be
+         *     named per request, paired with a [`ModelRouting`] credential policy.
+         */
+        ChatCompletionRequest: {
+            /** Format: int64 */
+            max_tokens?: number | null;
+            messages: components["schemas"]["ChatMessage"][];
+            model: string;
+            /**
+             * @description OpenAI-style reasoning effort hint (`low` | `medium` | `high`), forwarded
+             *     to providers that understand it.
+             */
+            reasoning_effort?: string | null;
+            /** Format: double */
+            temperature?: number | null;
+            /** Format: double */
+            top_p?: number | null;
+        };
+        /** @description An OpenAI-compatible chat completion response. */
+        ChatCompletionResponse: {
+            choices: components["schemas"]["ChatCompletionChoice"][];
+            /** Format: int64 */
+            created: number;
+            id: string;
+            model: string;
+            object: string;
+            usage: components["schemas"]["ChatCompletionUsage"];
+        };
+        /** @description Token usage in the OpenAI-compatible response shape. */
+        ChatCompletionUsage: {
+            /** Format: int64 */
+            completion_tokens: number;
+            /** Format: int64 */
+            prompt_tokens: number;
+            /** Format: int64 */
+            total_tokens: number;
+        };
+        /** @description A single chat message in the OpenAI-compatible request. */
+        ChatMessage: {
+            content: string;
+            role: string;
+        };
         CreateApiKeyHttpRequest: {
             scopes: components["schemas"]["ApiScope"][];
         };
@@ -1216,6 +1283,36 @@ export interface components {
             reason: string;
             tenant_id: components["schemas"]["TenantId"];
         };
+        /**
+         * @description Body for [`gateway_chat_completions_route`]: an OpenAI-compatible chat
+         *     completion request plus the per-request routing policy and an optional budget
+         *     ceiling. An empty `routing` means "I did not bring a key" — the gateway falls
+         *     back to its managed default model if one is configured (hosted), otherwise it
+         *     returns a typed no-key error (OSS).
+         */
+        GatewayChatHttpRequest: {
+            /**
+             * Format: int64
+             * @description Per-tenant budget ceiling in micros; defaults when omitted.
+             */
+            budget_micros?: number | null;
+            /** @description The OpenAI-compatible chat completion request. */
+            completion: components["schemas"]["ChatCompletionRequest"];
+            /** @description Ordered failover list of credential policies (BYOK or managed). */
+            routing?: components["schemas"]["ModelRouting"][];
+        };
+        /** @description The result of a successfully proxied completion. */
+        GatewayOutcome: {
+            /** Format: int32 */
+            attempts: number;
+            cached: boolean;
+            cost: components["schemas"]["Money"];
+            model: components["schemas"]["ModelRef"];
+            provider: string;
+            request_hash: components["schemas"]["Sha256Hash"];
+            response: components["schemas"]["ChatCompletionResponse"];
+            tokens: components["schemas"]["TokenCounts"];
+        };
         HealthResponse: {
             ok: boolean;
         };
@@ -1280,6 +1377,33 @@ export interface components {
         ModelRef: {
             name: string;
             provider: string;
+        };
+        /**
+         * @description Per-request credential routing policy.
+         *
+         *     This enum is the encoding of *"any model, optionally BYOK, else managed
+         *     default"*:
+         *
+         *     * [`ModelRouting::Byok`] — use the tenant's own opaque provider secret. The
+         *       model named in the [`ChatCompletionRequest`] is used as-is, so any model the
+         *       key can reach is reachable.
+         *     * [`ModelRouting::Managed`] — use Beater's managed credentials with the given
+         *       default model. Only available when the gateway is built with a
+         *       [`ManagedDefault`] (hosted edition).
+         *
+         *     A [`GatewayRequest`] carries an *ordered* `Vec<ModelRouting>` so the gateway
+         *     can fail over from one key/provider to the next. An empty list means *"I did
+         *     not bring a key"*: the gateway then uses the managed default if configured, or
+         *     returns [`GatewayError::NoKeyAndNoManagedDefault`] in OSS.
+         */
+        ModelRouting: {
+            /** @enum {string} */
+            kind: "byok";
+            provider_secret_id: components["schemas"]["ProviderSecretId"];
+        } | {
+            default_model: components["schemas"]["ModelRef"];
+            /** @enum {string} */
+            kind: "managed";
         };
         Money: {
             /** Format: int64 */
@@ -2853,6 +2977,109 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gatewayChatCompletions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description environment_id */
+                environment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GatewayChatHttpRequest"];
+            };
+        };
+        responses: {
+            /** @description Proxied OpenAI-compatible chat completion */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GatewayOutcome"];
+                };
+            };
+            /** @description Invalid request, scope, or no key + no managed default */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Per-tenant budget exceeded */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Provider secret not found or inactive */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description All providers/keys failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gateway request timed out */
+            504: {
                 headers: {
                     [name: string]: unknown;
                 };

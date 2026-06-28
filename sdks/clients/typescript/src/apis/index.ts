@@ -9,6 +9,7 @@ export * from './DatasetsApi';
 export * from './EvalsApi';
 export * from './ExperimentsApi';
 export * from './GatesApi';
+export * from './GatewayApi';
 export * from './HealthApi';
 export * from './IngestApi';
 export * from './JudgeApi';

@@ -20,6 +20,7 @@ beater-calibration = { path = "../../crates/beater-calibration" }
 beater-datasets = { path = "../../crates/beater-datasets" }
 beater-experiments = { path = "../../crates/beater-experiments" }
 beater-gates = { path = "../../crates/beater-gates" }
+beater-gateway = { path = "../../crates/beater-gateway" }
 beater-human = { path = "../../crates/beater-human" }
 beater-ingest = { path = "../../crates/beater-ingest" }
 beater-judge = { path = "../../crates/beater-judge" }

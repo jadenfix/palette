@@ -8,6 +8,7 @@ use beater_schema::{
     RunSummary, SpanFilter, SpanSummary, TraceView, WriteAck,
 };
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 pub type StoreResult<T> = Result<T, StoreError>;
 
@@ -210,6 +211,16 @@ pub struct QuotaDecision {
 #[async_trait]
 pub trait QuotaLimiter: Send + Sync {
     async fn reserve_quota(&self, request: QuotaReservationRequest) -> StoreResult<QuotaDecision>;
+}
+
+#[async_trait]
+impl<T> QuotaLimiter for Arc<T>
+where
+    T: QuotaLimiter + ?Sized,
+{
+    async fn reserve_quota(&self, request: QuotaReservationRequest) -> StoreResult<QuotaDecision> {
+        (**self).reserve_quota(request).await
+    }
 }
 
 #[async_trait]

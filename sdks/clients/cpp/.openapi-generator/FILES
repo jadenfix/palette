@@ -23,6 +23,7 @@ include/beater-client/api/DatasetsApi.h
 include/beater-client/api/EvalsApi.h
 include/beater-client/api/ExperimentsApi.h
 include/beater-client/api/GatesApi.h
+include/beater-client/api/GatewayApi.h
 include/beater-client/api/HealthApi.h
 include/beater-client/api/IngestApi.h
 include/beater-client/api/JudgeApi.h
@@ -57,6 +58,11 @@ include/beater-client/model/CalibrationReport.h
 include/beater-client/model/CanonicalSpan.h
 include/beater-client/model/CaseExperimentScore.h
 include/beater-client/model/CaseOutputOverrideRequest.h
+include/beater-client/model/ChatCompletionChoice.h
+include/beater-client/model/ChatCompletionRequest.h
+include/beater-client/model/ChatCompletionResponse.h
+include/beater-client/model/ChatCompletionUsage.h
+include/beater-client/model/ChatMessage.h
 include/beater-client/model/CreateApiKeyHttpRequest.h
 include/beater-client/model/CreateDatasetRequest.h
 include/beater-client/model/CreateDatasetVersionRequest.h
@@ -95,6 +101,8 @@ include/beater-client/model/GateDecision.h
 include/beater-client/model/GateDefinition.h
 include/beater-client/model/GatePolicy.h
 include/beater-client/model/GateRunReport.h
+include/beater-client/model/GatewayChatHttpRequest.h
+include/beater-client/model/GatewayOutcome.h
 include/beater-client/model/HealthResponse.h
 include/beater-client/model/ImportSourceHttpRequest.h
 include/beater-client/model/InconclusivePolicy.h
@@ -104,6 +112,9 @@ include/beater-client/model/JudgeAuditRecord.h
 include/beater-client/model/JudgeBrokerOutcome.h
 include/beater-client/model/MaintenanceWindow.h
 include/beater-client/model/ModelRef.h
+include/beater-client/model/ModelRouting.h
+include/beater-client/model/ModelRouting_oneOf.h
+include/beater-client/model/ModelRouting_oneOf_1.h
 include/beater-client/model/Money.h
 include/beater-client/model/NativeIngestRequest.h
 include/beater-client/model/OnlineSamplingPolicy.h
@@ -174,6 +185,7 @@ src/api/DatasetsApi.cpp
 src/api/EvalsApi.cpp
 src/api/ExperimentsApi.cpp
 src/api/GatesApi.cpp
+src/api/GatewayApi.cpp
 src/api/HealthApi.cpp
 src/api/IngestApi.cpp
 src/api/JudgeApi.cpp
@@ -208,6 +220,11 @@ src/model/CalibrationReport.cpp
 src/model/CanonicalSpan.cpp
 src/model/CaseExperimentScore.cpp
 src/model/CaseOutputOverrideRequest.cpp
+src/model/ChatCompletionChoice.cpp
+src/model/ChatCompletionRequest.cpp
+src/model/ChatCompletionResponse.cpp
+src/model/ChatCompletionUsage.cpp
+src/model/ChatMessage.cpp
 src/model/CreateApiKeyHttpRequest.cpp
 src/model/CreateDatasetRequest.cpp
 src/model/CreateDatasetVersionRequest.cpp
@@ -246,6 +263,8 @@ src/model/GateDecision.cpp
 src/model/GateDefinition.cpp
 src/model/GatePolicy.cpp
 src/model/GateRunReport.cpp
+src/model/GatewayChatHttpRequest.cpp
+src/model/GatewayOutcome.cpp
 src/model/HealthResponse.cpp
 src/model/ImportSourceHttpRequest.cpp
 src/model/InconclusivePolicy.cpp
@@ -255,6 +274,9 @@ src/model/JudgeAuditRecord.cpp
 src/model/JudgeBrokerOutcome.cpp
 src/model/MaintenanceWindow.cpp
 src/model/ModelRef.cpp
+src/model/ModelRouting.cpp
+src/model/ModelRouting_oneOf.cpp
+src/model/ModelRouting_oneOf_1.cpp
 src/model/Money.cpp
 src/model/NativeIngestRequest.cpp
 src/model/OnlineSamplingPolicy.cpp

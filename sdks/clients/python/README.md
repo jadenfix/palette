@@ -107,6 +107,7 @@ Class | Method | HTTP request | Description
 *ExperimentsApi* | [**run_judge_experiment**](docs/ExperimentsApi.md#run_judge_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge | 
 *GatesApi* | [**create_gate**](docs/GatesApi.md#create_gate) | **POST** /v1/gates/{tenant_id}/{project_id} | 
 *GatesApi* | [**run_gate**](docs/GatesApi.md#run_gate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run | 
+*GatewayApi* | [**gateway_chat_completions**](docs/GatewayApi.md#gateway_chat_completions) | **POST** /v1/gateway/{tenant_id}/{project_id}/{environment_id}/chat/completions | 
 *HealthApi* | [**health**](docs/HealthApi.md#health) | **GET** /health | 
 *IngestApi* | [**drain_trace_ingested**](docs/IngestApi.md#drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
 *IngestApi* | [**drain_trace_writes**](docs/IngestApi.md#drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
@@ -161,6 +162,11 @@ Class | Method | HTTP request | Description
  - [CanonicalSpan](docs/CanonicalSpan.md)
  - [CaseExperimentScore](docs/CaseExperimentScore.md)
  - [CaseOutputOverrideRequest](docs/CaseOutputOverrideRequest.md)
+ - [ChatCompletionChoice](docs/ChatCompletionChoice.md)
+ - [ChatCompletionRequest](docs/ChatCompletionRequest.md)
+ - [ChatCompletionResponse](docs/ChatCompletionResponse.md)
+ - [ChatCompletionUsage](docs/ChatCompletionUsage.md)
+ - [ChatMessage](docs/ChatMessage.md)
  - [CreateApiKeyHttpRequest](docs/CreateApiKeyHttpRequest.md)
  - [CreateDatasetRequest](docs/CreateDatasetRequest.md)
  - [CreateDatasetVersionRequest](docs/CreateDatasetVersionRequest.md)
@@ -199,6 +205,8 @@ Class | Method | HTTP request | Description
  - [GateDefinition](docs/GateDefinition.md)
  - [GatePolicy](docs/GatePolicy.md)
  - [GateRunReport](docs/GateRunReport.md)
+ - [GatewayChatHttpRequest](docs/GatewayChatHttpRequest.md)
+ - [GatewayOutcome](docs/GatewayOutcome.md)
  - [HealthResponse](docs/HealthResponse.md)
  - [ImportSourceHttpRequest](docs/ImportSourceHttpRequest.md)
  - [InconclusivePolicy](docs/InconclusivePolicy.md)
@@ -208,6 +216,9 @@ Class | Method | HTTP request | Description
  - [JudgeBrokerOutcome](docs/JudgeBrokerOutcome.md)
  - [MaintenanceWindow](docs/MaintenanceWindow.md)
  - [ModelRef](docs/ModelRef.md)
+ - [ModelRouting](docs/ModelRouting.md)
+ - [ModelRoutingOneOf](docs/ModelRoutingOneOf.md)
+ - [ModelRoutingOneOf1](docs/ModelRoutingOneOf1.md)
  - [Money](docs/Money.md)
  - [NativeIngestRequest](docs/NativeIngestRequest.md)
  - [OnlineSamplingPolicy](docs/OnlineSamplingPolicy.md)

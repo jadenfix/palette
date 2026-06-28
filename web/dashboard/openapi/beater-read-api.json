@@ -2352,6 +2352,183 @@
         }
       }
     },
+    "/v1/gateway/{tenant_id}/{project_id}/{environment_id}/chat/completions": {
+      "post": {
+        "tags": [
+          "gateway"
+        ],
+        "operationId": "gatewayChatCompletions",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "description": "tenant_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "description": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment_id",
+            "in": "path",
+            "description": "environment_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer API token for strict auth",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-api-key",
+            "in": "header",
+            "description": "API key alternative for strict auth",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-project-id",
+            "in": "header",
+            "description": "Strict-auth project scope",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-environment-id",
+            "in": "header",
+            "description": "Strict-auth environment scope",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GatewayChatHttpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Proxied OpenAI-compatible chat completion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, scope, or no key + no managed default",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Per-tenant budget exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Credentials lack the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider secret not found or inactive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "All providers/keys failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway request timed out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/import/{tenant_id}/{project_id}/{environment_id}": {
       "post": {
         "tags": [
@@ -6983,6 +7160,156 @@
           "trace": {}
         }
       },
+      "ChatCompletionChoice": {
+        "type": "object",
+        "description": "One choice in an OpenAI-compatible response.",
+        "required": [
+          "index",
+          "message"
+        ],
+        "properties": {
+          "finish_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "message": {
+            "$ref": "#/components/schemas/ChatMessage"
+          }
+        }
+      },
+      "ChatCompletionRequest": {
+        "type": "object",
+        "description": "An OpenAI-compatible chat completion request. The `model` field is a free-form\nmodel identifier, making the gateway model-agnostic: any provider/model can be\nnamed per request, paired with a [`ModelRouting`] credential policy.",
+        "required": [
+          "model",
+          "messages"
+        ],
+        "properties": {
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            }
+          },
+          "model": {
+            "type": "string"
+          },
+          "reasoning_effort": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "OpenAI-style reasoning effort hint (`low` | `medium` | `high`), forwarded\nto providers that understand it."
+          },
+          "temperature": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "top_p": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "ChatCompletionResponse": {
+        "type": "object",
+        "description": "An OpenAI-compatible chat completion response.",
+        "required": [
+          "id",
+          "object",
+          "created",
+          "model",
+          "choices",
+          "usage"
+        ],
+        "properties": {
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionChoice"
+            }
+          },
+          "created": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/ChatCompletionUsage"
+          }
+        }
+      },
+      "ChatCompletionUsage": {
+        "type": "object",
+        "description": "Token usage in the OpenAI-compatible response shape.",
+        "required": [
+          "prompt_tokens",
+          "completion_tokens",
+          "total_tokens"
+        ],
+        "properties": {
+          "completion_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "ChatMessage": {
+        "type": "object",
+        "description": "A single chat message in the OpenAI-compatible request.",
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
       "CreateApiKeyHttpRequest": {
         "type": "object",
         "required": [
@@ -8160,6 +8487,76 @@
           }
         }
       },
+      "GatewayChatHttpRequest": {
+        "type": "object",
+        "description": "Body for [`gateway_chat_completions_route`]: an OpenAI-compatible chat\ncompletion request plus the per-request routing policy and an optional budget\nceiling. An empty `routing` means \"I did not bring a key\" — the gateway falls\nback to its managed default model if one is configured (hosted), otherwise it\nreturns a typed no-key error (OSS).",
+        "required": [
+          "completion"
+        ],
+        "properties": {
+          "budget_micros": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Per-tenant budget ceiling in micros; defaults when omitted."
+          },
+          "completion": {
+            "$ref": "#/components/schemas/ChatCompletionRequest",
+            "description": "The OpenAI-compatible chat completion request."
+          },
+          "routing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelRouting"
+            },
+            "description": "Ordered failover list of credential policies (BYOK or managed)."
+          }
+        }
+      },
+      "GatewayOutcome": {
+        "type": "object",
+        "description": "The result of a successfully proxied completion.",
+        "required": [
+          "response",
+          "cost",
+          "cached",
+          "provider",
+          "model",
+          "tokens",
+          "request_hash",
+          "attempts"
+        ],
+        "properties": {
+          "attempts": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "cached": {
+            "type": "boolean"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelRef"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "request_hash": {
+            "$ref": "#/components/schemas/Sha256Hash"
+          },
+          "response": {
+            "$ref": "#/components/schemas/ChatCompletionResponse"
+          },
+          "tokens": {
+            "$ref": "#/components/schemas/TokenCounts"
+          }
+        }
+      },
       "HealthResponse": {
         "type": "object",
         "required": [
@@ -8367,6 +8764,49 @@
             "type": "string"
           }
         }
+      },
+      "ModelRouting": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Bring-your-own-key: resolve the tenant's opaque provider secret.",
+            "required": [
+              "provider_secret_id",
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "byok"
+                ]
+              },
+              "provider_secret_id": {
+                "$ref": "#/components/schemas/ProviderSecretId"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Use the managed default model (hosted only).",
+            "required": [
+              "default_model",
+              "kind"
+            ],
+            "properties": {
+              "default_model": {
+                "$ref": "#/components/schemas/ModelRef"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "managed"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Per-request credential routing policy.\n\nThis enum is the encoding of *\"any model, optionally BYOK, else managed\ndefault\"*:\n\n* [`ModelRouting::Byok`] — use the tenant's own opaque provider secret. The\n  model named in the [`ChatCompletionRequest`] is used as-is, so any model the\n  key can reach is reachable.\n* [`ModelRouting::Managed`] — use Beater's managed credentials with the given\n  default model. Only available when the gateway is built with a\n  [`ManagedDefault`] (hosted edition).\n\nA [`GatewayRequest`] carries an *ordered* `Vec<ModelRouting>` so the gateway\ncan fail over from one key/provider to the next. An empty list means *\"I did\nnot bring a key\"*: the gateway then uses the managed default if configured, or\nreturns [`GatewayError::NoKeyAndNoManagedDefault`] in OSS."
       },
       "Money": {
         "type": "object",
@@ -9999,6 +10439,10 @@
     {
       "name": "judge",
       "description": "Ad-hoc judge evaluation and ledger"
+    },
+    {
+      "name": "gateway",
+      "description": "Model-agnostic, BYOK LLM gateway (Patchbay)"
     },
     {
       "name": "reviews",

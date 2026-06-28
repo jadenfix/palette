@@ -35,6 +35,11 @@ docs/CalibrationsApi.md
 docs/CanonicalSpan.md
 docs/CaseExperimentScore.md
 docs/CaseOutputOverrideRequest.md
+docs/ChatCompletionChoice.md
+docs/ChatCompletionRequest.md
+docs/ChatCompletionResponse.md
+docs/ChatCompletionUsage.md
+docs/ChatMessage.md
 docs/CreateApiKeyHttpRequest.md
 docs/CreateDatasetRequest.md
 docs/CreateDatasetVersionRequest.md
@@ -77,6 +82,9 @@ docs/GateDefinition.md
 docs/GatePolicy.md
 docs/GateRunReport.md
 docs/GatesApi.md
+docs/GatewayApi.md
+docs/GatewayChatHttpRequest.md
+docs/GatewayOutcome.md
 docs/HealthApi.md
 docs/HealthResponse.md
 docs/ImportSourceHttpRequest.md
@@ -89,6 +97,9 @@ docs/JudgeAuditRecord.md
 docs/JudgeBrokerOutcome.md
 docs/MaintenanceWindow.md
 docs/ModelRef.md
+docs/ModelRouting.md
+docs/ModelRoutingOneOf.md
+docs/ModelRoutingOneOf1.md
 docs/Money.md
 docs/NativeIngestRequest.md
 docs/OnlineApi.md
@@ -175,6 +186,7 @@ src/main/java/ai/beater/client/api/DatasetsApi.java
 src/main/java/ai/beater/client/api/EvalsApi.java
 src/main/java/ai/beater/client/api/ExperimentsApi.java
 src/main/java/ai/beater/client/api/GatesApi.java
+src/main/java/ai/beater/client/api/GatewayApi.java
 src/main/java/ai/beater/client/api/HealthApi.java
 src/main/java/ai/beater/client/api/IngestApi.java
 src/main/java/ai/beater/client/api/JudgeApi.java
@@ -210,6 +222,11 @@ src/main/java/ai/beater/client/model/CalibrationReport.java
 src/main/java/ai/beater/client/model/CanonicalSpan.java
 src/main/java/ai/beater/client/model/CaseExperimentScore.java
 src/main/java/ai/beater/client/model/CaseOutputOverrideRequest.java
+src/main/java/ai/beater/client/model/ChatCompletionChoice.java
+src/main/java/ai/beater/client/model/ChatCompletionRequest.java
+src/main/java/ai/beater/client/model/ChatCompletionResponse.java
+src/main/java/ai/beater/client/model/ChatCompletionUsage.java
+src/main/java/ai/beater/client/model/ChatMessage.java
 src/main/java/ai/beater/client/model/CreateApiKeyHttpRequest.java
 src/main/java/ai/beater/client/model/CreateDatasetRequest.java
 src/main/java/ai/beater/client/model/CreateDatasetVersionRequest.java
@@ -248,6 +265,8 @@ src/main/java/ai/beater/client/model/GateDecision.java
 src/main/java/ai/beater/client/model/GateDefinition.java
 src/main/java/ai/beater/client/model/GatePolicy.java
 src/main/java/ai/beater/client/model/GateRunReport.java
+src/main/java/ai/beater/client/model/GatewayChatHttpRequest.java
+src/main/java/ai/beater/client/model/GatewayOutcome.java
 src/main/java/ai/beater/client/model/HealthResponse.java
 src/main/java/ai/beater/client/model/ImportSourceHttpRequest.java
 src/main/java/ai/beater/client/model/InconclusivePolicy.java
@@ -257,6 +276,9 @@ src/main/java/ai/beater/client/model/JudgeAuditRecord.java
 src/main/java/ai/beater/client/model/JudgeBrokerOutcome.java
 src/main/java/ai/beater/client/model/MaintenanceWindow.java
 src/main/java/ai/beater/client/model/ModelRef.java
+src/main/java/ai/beater/client/model/ModelRouting.java
+src/main/java/ai/beater/client/model/ModelRoutingOneOf.java
+src/main/java/ai/beater/client/model/ModelRoutingOneOf1.java
 src/main/java/ai/beater/client/model/Money.java
 src/main/java/ai/beater/client/model/NativeIngestRequest.java
 src/main/java/ai/beater/client/model/OnlineSamplingPolicy.java
@@ -318,6 +340,7 @@ src/test/java/ai/beater/client/api/DatasetsApiTest.java
 src/test/java/ai/beater/client/api/EvalsApiTest.java
 src/test/java/ai/beater/client/api/ExperimentsApiTest.java
 src/test/java/ai/beater/client/api/GatesApiTest.java
+src/test/java/ai/beater/client/api/GatewayApiTest.java
 src/test/java/ai/beater/client/api/HealthApiTest.java
 src/test/java/ai/beater/client/api/IngestApiTest.java
 src/test/java/ai/beater/client/api/JudgeApiTest.java
@@ -352,6 +375,11 @@ src/test/java/ai/beater/client/model/CalibrationReportTest.java
 src/test/java/ai/beater/client/model/CanonicalSpanTest.java
 src/test/java/ai/beater/client/model/CaseExperimentScoreTest.java
 src/test/java/ai/beater/client/model/CaseOutputOverrideRequestTest.java
+src/test/java/ai/beater/client/model/ChatCompletionChoiceTest.java
+src/test/java/ai/beater/client/model/ChatCompletionRequestTest.java
+src/test/java/ai/beater/client/model/ChatCompletionResponseTest.java
+src/test/java/ai/beater/client/model/ChatCompletionUsageTest.java
+src/test/java/ai/beater/client/model/ChatMessageTest.java
 src/test/java/ai/beater/client/model/CreateApiKeyHttpRequestTest.java
 src/test/java/ai/beater/client/model/CreateDatasetRequestTest.java
 src/test/java/ai/beater/client/model/CreateDatasetVersionRequestTest.java
@@ -390,6 +418,8 @@ src/test/java/ai/beater/client/model/GateDecisionTest.java
 src/test/java/ai/beater/client/model/GateDefinitionTest.java
 src/test/java/ai/beater/client/model/GatePolicyTest.java
 src/test/java/ai/beater/client/model/GateRunReportTest.java
+src/test/java/ai/beater/client/model/GatewayChatHttpRequestTest.java
+src/test/java/ai/beater/client/model/GatewayOutcomeTest.java
 src/test/java/ai/beater/client/model/HealthResponseTest.java
 src/test/java/ai/beater/client/model/ImportSourceHttpRequestTest.java
 src/test/java/ai/beater/client/model/InconclusivePolicyTest.java
@@ -399,6 +429,9 @@ src/test/java/ai/beater/client/model/JudgeAuditRecordTest.java
 src/test/java/ai/beater/client/model/JudgeBrokerOutcomeTest.java
 src/test/java/ai/beater/client/model/MaintenanceWindowTest.java
 src/test/java/ai/beater/client/model/ModelRefTest.java
+src/test/java/ai/beater/client/model/ModelRoutingOneOf1Test.java
+src/test/java/ai/beater/client/model/ModelRoutingOneOfTest.java
+src/test/java/ai/beater/client/model/ModelRoutingTest.java
 src/test/java/ai/beater/client/model/MoneyTest.java
 src/test/java/ai/beater/client/model/NativeIngestRequestTest.java
 src/test/java/ai/beater/client/model/OnlineSamplingPolicyTest.java

@@ -81,6 +81,7 @@ Category | Method | HTTP request | Description
 *ExperimentsAPI* | [**ExperimentsAPI_runJudgeExperiment**](docs/ExperimentsAPI.md#ExperimentsAPI_runJudgeExperiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge | 
 *GatesAPI* | [**GatesAPI_createGate**](docs/GatesAPI.md#GatesAPI_createGate) | **POST** /v1/gates/{tenant_id}/{project_id} | 
 *GatesAPI* | [**GatesAPI_runGate**](docs/GatesAPI.md#GatesAPI_runGate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run | 
+*GatewayAPI* | [**GatewayAPI_gatewayChatCompletions**](docs/GatewayAPI.md#GatewayAPI_gatewayChatCompletions) | **POST** /v1/gateway/{tenant_id}/{project_id}/{environment_id}/chat/completions | 
 *HealthAPI* | [**HealthAPI_health**](docs/HealthAPI.md#HealthAPI_health) | **GET** /health | 
 *IngestAPI* | [**IngestAPI_drainTraceIngested**](docs/IngestAPI.md#IngestAPI_drainTraceIngested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
 *IngestAPI* | [**IngestAPI_drainTraceWrites**](docs/IngestAPI.md#IngestAPI_drainTraceWrites) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
@@ -135,6 +136,11 @@ Category | Method | HTTP request | Description
  - [canonical_span_t](docs/canonical_span.md)
  - [case_experiment_score_t](docs/case_experiment_score.md)
  - [case_output_override_request_t](docs/case_output_override_request.md)
+ - [chat_completion_choice_t](docs/chat_completion_choice.md)
+ - [chat_completion_request_t](docs/chat_completion_request.md)
+ - [chat_completion_response_t](docs/chat_completion_response.md)
+ - [chat_completion_usage_t](docs/chat_completion_usage.md)
+ - [chat_message_t](docs/chat_message.md)
  - [create_api_key_http_request_t](docs/create_api_key_http_request.md)
  - [create_dataset_request_t](docs/create_dataset_request.md)
  - [create_dataset_version_request_t](docs/create_dataset_version_request.md)
@@ -173,6 +179,8 @@ Category | Method | HTTP request | Description
  - [gate_definition_t](docs/gate_definition.md)
  - [gate_policy_t](docs/gate_policy.md)
  - [gate_run_report_t](docs/gate_run_report.md)
+ - [gateway_chat_http_request_t](docs/gateway_chat_http_request.md)
+ - [gateway_outcome_t](docs/gateway_outcome.md)
  - [health_response_t](docs/health_response.md)
  - [import_source_http_request_t](docs/import_source_http_request.md)
  - [inconclusive_policy_t](docs/inconclusive_policy.md)
@@ -182,6 +190,9 @@ Category | Method | HTTP request | Description
  - [judge_broker_outcome_t](docs/judge_broker_outcome.md)
  - [maintenance_window_t](docs/maintenance_window.md)
  - [model_ref_t](docs/model_ref.md)
+ - [model_routing_t](docs/model_routing.md)
+ - [model_routing_one_of_t](docs/model_routing_one_of.md)
+ - [model_routing_one_of_1_t](docs/model_routing_one_of_1.md)
  - [money_t](docs/money.md)
  - [native_ingest_request_t](docs/native_ingest_request.md)
  - [online_sampling_policy_t](docs/online_sampling_policy.md)

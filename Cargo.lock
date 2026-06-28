@@ -643,6 +643,7 @@ dependencies = [
  "beater-eval",
  "beater-experiments",
  "beater-gates",
+ "beater-gateway",
  "beater-human",
  "beater-ingest",
  "beater-judge",
@@ -947,6 +948,30 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "tokio",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "beater-gateway"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum 0.7.9",
+ "beater-core",
+ "beater-judge",
+ "beater-schema",
+ "beater-secrets",
+ "beater-store",
+ "beater-store-memory",
+ "chrono",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
  "tokio",
  "utoipa",
  "uuid",
@@ -1382,6 +1407,7 @@ dependencies = [
  "beater-datasets",
  "beater-experiments",
  "beater-gates",
+ "beater-gateway",
  "beater-human",
  "beater-ingest",
  "beater-judge",

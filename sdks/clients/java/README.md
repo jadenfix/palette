@@ -146,6 +146,8 @@ Class | Method | HTTP request | Description
 *GatesApi* | [**createGateWithHttpInfo**](docs/GatesApi.md#createGateWithHttpInfo) | **POST** /v1/gates/{tenant_id}/{project_id} | 
 *GatesApi* | [**runGate**](docs/GatesApi.md#runGate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run | 
 *GatesApi* | [**runGateWithHttpInfo**](docs/GatesApi.md#runGateWithHttpInfo) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run | 
+*GatewayApi* | [**gatewayChatCompletions**](docs/GatewayApi.md#gatewayChatCompletions) | **POST** /v1/gateway/{tenant_id}/{project_id}/{environment_id}/chat/completions | 
+*GatewayApi* | [**gatewayChatCompletionsWithHttpInfo**](docs/GatewayApi.md#gatewayChatCompletionsWithHttpInfo) | **POST** /v1/gateway/{tenant_id}/{project_id}/{environment_id}/chat/completions | 
 *HealthApi* | [**health**](docs/HealthApi.md#health) | **GET** /health | 
 *HealthApi* | [**healthWithHttpInfo**](docs/HealthApi.md#healthWithHttpInfo) | **GET** /health | 
 *IngestApi* | [**drainTraceIngested**](docs/IngestApi.md#drainTraceIngested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
@@ -226,6 +228,11 @@ Class | Method | HTTP request | Description
  - [CanonicalSpan](docs/CanonicalSpan.md)
  - [CaseExperimentScore](docs/CaseExperimentScore.md)
  - [CaseOutputOverrideRequest](docs/CaseOutputOverrideRequest.md)
+ - [ChatCompletionChoice](docs/ChatCompletionChoice.md)
+ - [ChatCompletionRequest](docs/ChatCompletionRequest.md)
+ - [ChatCompletionResponse](docs/ChatCompletionResponse.md)
+ - [ChatCompletionUsage](docs/ChatCompletionUsage.md)
+ - [ChatMessage](docs/ChatMessage.md)
  - [CreateApiKeyHttpRequest](docs/CreateApiKeyHttpRequest.md)
  - [CreateDatasetRequest](docs/CreateDatasetRequest.md)
  - [CreateDatasetVersionRequest](docs/CreateDatasetVersionRequest.md)
@@ -264,6 +271,8 @@ Class | Method | HTTP request | Description
  - [GateDefinition](docs/GateDefinition.md)
  - [GatePolicy](docs/GatePolicy.md)
  - [GateRunReport](docs/GateRunReport.md)
+ - [GatewayChatHttpRequest](docs/GatewayChatHttpRequest.md)
+ - [GatewayOutcome](docs/GatewayOutcome.md)
  - [HealthResponse](docs/HealthResponse.md)
  - [ImportSourceHttpRequest](docs/ImportSourceHttpRequest.md)
  - [InconclusivePolicy](docs/InconclusivePolicy.md)
@@ -273,6 +282,9 @@ Class | Method | HTTP request | Description
  - [JudgeBrokerOutcome](docs/JudgeBrokerOutcome.md)
  - [MaintenanceWindow](docs/MaintenanceWindow.md)
  - [ModelRef](docs/ModelRef.md)
+ - [ModelRouting](docs/ModelRouting.md)
+ - [ModelRoutingOneOf](docs/ModelRoutingOneOf.md)
+ - [ModelRoutingOneOf1](docs/ModelRoutingOneOf1.md)
  - [Money](docs/Money.md)
  - [NativeIngestRequest](docs/NativeIngestRequest.md)
  - [OnlineSamplingPolicy](docs/OnlineSamplingPolicy.md)

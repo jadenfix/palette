@@ -15,6 +15,7 @@ beater_client/api/datasets_api.py
 beater_client/api/evals_api.py
 beater_client/api/experiments_api.py
 beater_client/api/gates_api.py
+beater_client/api/gateway_api.py
 beater_client/api/health_api.py
 beater_client/api/ingest_api.py
 beater_client/api/judge_api.py
@@ -54,6 +55,11 @@ beater_client/models/calibration_report.py
 beater_client/models/canonical_span.py
 beater_client/models/case_experiment_score.py
 beater_client/models/case_output_override_request.py
+beater_client/models/chat_completion_choice.py
+beater_client/models/chat_completion_request.py
+beater_client/models/chat_completion_response.py
+beater_client/models/chat_completion_usage.py
+beater_client/models/chat_message.py
 beater_client/models/create_api_key_http_request.py
 beater_client/models/create_dataset_request.py
 beater_client/models/create_dataset_version_request.py
@@ -92,6 +98,8 @@ beater_client/models/gate_decision.py
 beater_client/models/gate_definition.py
 beater_client/models/gate_policy.py
 beater_client/models/gate_run_report.py
+beater_client/models/gateway_chat_http_request.py
+beater_client/models/gateway_outcome.py
 beater_client/models/health_response.py
 beater_client/models/import_source_http_request.py
 beater_client/models/inconclusive_policy.py
@@ -101,6 +109,9 @@ beater_client/models/judge_audit_record.py
 beater_client/models/judge_broker_outcome.py
 beater_client/models/maintenance_window.py
 beater_client/models/model_ref.py
+beater_client/models/model_routing.py
+beater_client/models/model_routing_one_of.py
+beater_client/models/model_routing_one_of1.py
 beater_client/models/money.py
 beater_client/models/native_ingest_request.py
 beater_client/models/online_sampling_policy.py
@@ -184,6 +195,11 @@ docs/CalibrationsApi.md
 docs/CanonicalSpan.md
 docs/CaseExperimentScore.md
 docs/CaseOutputOverrideRequest.md
+docs/ChatCompletionChoice.md
+docs/ChatCompletionRequest.md
+docs/ChatCompletionResponse.md
+docs/ChatCompletionUsage.md
+docs/ChatMessage.md
 docs/CreateApiKeyHttpRequest.md
 docs/CreateDatasetRequest.md
 docs/CreateDatasetVersionRequest.md
@@ -226,6 +242,9 @@ docs/GateDefinition.md
 docs/GatePolicy.md
 docs/GateRunReport.md
 docs/GatesApi.md
+docs/GatewayApi.md
+docs/GatewayChatHttpRequest.md
+docs/GatewayOutcome.md
 docs/HealthApi.md
 docs/HealthResponse.md
 docs/ImportSourceHttpRequest.md
@@ -238,6 +257,9 @@ docs/JudgeAuditRecord.md
 docs/JudgeBrokerOutcome.md
 docs/MaintenanceWindow.md
 docs/ModelRef.md
+docs/ModelRouting.md
+docs/ModelRoutingOneOf.md
+docs/ModelRoutingOneOf1.md
 docs/Money.md
 docs/NativeIngestRequest.md
 docs/OnlineApi.md
@@ -333,6 +355,11 @@ test/test_calibrations_api.py
 test/test_canonical_span.py
 test/test_case_experiment_score.py
 test/test_case_output_override_request.py
+test/test_chat_completion_choice.py
+test/test_chat_completion_request.py
+test/test_chat_completion_response.py
+test/test_chat_completion_usage.py
+test/test_chat_message.py
 test/test_create_api_key_http_request.py
 test/test_create_dataset_request.py
 test/test_create_dataset_version_request.py
@@ -375,6 +402,9 @@ test/test_gate_definition.py
 test/test_gate_policy.py
 test/test_gate_run_report.py
 test/test_gates_api.py
+test/test_gateway_api.py
+test/test_gateway_chat_http_request.py
+test/test_gateway_outcome.py
 test/test_health_api.py
 test/test_health_response.py
 test/test_import_source_http_request.py
@@ -387,6 +417,9 @@ test/test_judge_audit_record.py
 test/test_judge_broker_outcome.py
 test/test_maintenance_window.py
 test/test_model_ref.py
+test/test_model_routing.py
+test/test_model_routing_one_of.py
+test/test_model_routing_one_of1.py
 test/test_money.py
 test/test_native_ingest_request.py
 test/test_online_api.py

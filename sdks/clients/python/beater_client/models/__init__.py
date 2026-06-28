@@ -38,6 +38,11 @@ from beater_client.models.calibration_report import CalibrationReport
 from beater_client.models.canonical_span import CanonicalSpan
 from beater_client.models.case_experiment_score import CaseExperimentScore
 from beater_client.models.case_output_override_request import CaseOutputOverrideRequest
+from beater_client.models.chat_completion_choice import ChatCompletionChoice
+from beater_client.models.chat_completion_request import ChatCompletionRequest
+from beater_client.models.chat_completion_response import ChatCompletionResponse
+from beater_client.models.chat_completion_usage import ChatCompletionUsage
+from beater_client.models.chat_message import ChatMessage
 from beater_client.models.create_api_key_http_request import CreateApiKeyHttpRequest
 from beater_client.models.create_dataset_request import CreateDatasetRequest
 from beater_client.models.create_dataset_version_request import CreateDatasetVersionRequest
@@ -76,6 +81,8 @@ from beater_client.models.gate_decision import GateDecision
 from beater_client.models.gate_definition import GateDefinition
 from beater_client.models.gate_policy import GatePolicy
 from beater_client.models.gate_run_report import GateRunReport
+from beater_client.models.gateway_chat_http_request import GatewayChatHttpRequest
+from beater_client.models.gateway_outcome import GatewayOutcome
 from beater_client.models.health_response import HealthResponse
 from beater_client.models.import_source_http_request import ImportSourceHttpRequest
 from beater_client.models.inconclusive_policy import InconclusivePolicy
@@ -85,6 +92,9 @@ from beater_client.models.judge_audit_record import JudgeAuditRecord
 from beater_client.models.judge_broker_outcome import JudgeBrokerOutcome
 from beater_client.models.maintenance_window import MaintenanceWindow
 from beater_client.models.model_ref import ModelRef
+from beater_client.models.model_routing import ModelRouting
+from beater_client.models.model_routing_one_of import ModelRoutingOneOf
+from beater_client.models.model_routing_one_of1 import ModelRoutingOneOf1
 from beater_client.models.money import Money
 from beater_client.models.native_ingest_request import NativeIngestRequest
 from beater_client.models.online_sampling_policy import OnlineSamplingPolicy

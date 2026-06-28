@@ -39,6 +39,7 @@ members = [
   "crates/beater-alerts",
   "crates/beater-usage",
   "crates/beater-audit",
+  "crates/beater-gateway",
   "crates/beater-api",
   "crates/beater-bench",
   "crates/beater-mcp",

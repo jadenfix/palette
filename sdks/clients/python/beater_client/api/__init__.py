@@ -10,6 +10,7 @@ from beater_client.api.datasets_api import DatasetsApi
 from beater_client.api.evals_api import EvalsApi
 from beater_client.api.experiments_api import ExperimentsApi
 from beater_client.api.gates_api import GatesApi
+from beater_client.api.gateway_api import GatewayApi
 from beater_client.api.health_api import HealthApi
 from beater_client.api.ingest_api import IngestApi
 from beater_client.api.judge_api import JudgeApi

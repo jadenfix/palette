@@ -33,6 +33,8 @@ tags:
   name: gates
 - description: Ad-hoc judge evaluation and ledger
   name: judge
+- description: "Model-agnostic, BYOK LLM gateway (Patchbay)"
+  name: gateway
 - description: Human review queues and annotations
   name: reviews
 - description: Online sampling decisions
@@ -1752,6 +1754,130 @@ paths:
           description: Resource not found
       tags:
       - gates
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /v1/gateway/{tenant_id}/{project_id}/{environment_id}/chat/completions:
+    post:
+      operationId: gatewayChatCompletions
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: environment_id
+        explode: false
+        in: path
+        name: environment_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GatewayChatHttpRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayOutcome'
+          description: Proxied OpenAI-compatible chat completion
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or no key + no managed default"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "402":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Per-tenant budget exceeded
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Provider secret not found or inactive
+        "502":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: All providers/keys failed
+        "504":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Gateway request timed out
+      tags:
+      - gateway
       x-content-type: application/json
       x-accepts:
       - application/json
@@ -5331,6 +5457,153 @@ components:
       required:
       - case_id
       - output
+    ChatCompletionChoice:
+      description: One choice in an OpenAI-compatible response.
+      example:
+        finish_reason: finish_reason
+        index: 0
+        message:
+          role: role
+          content: content
+      properties:
+        finish_reason:
+          nullable: true
+          type: string
+        index:
+          format: int32
+          minimum: 0
+          type: integer
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+      required:
+      - index
+      - message
+    ChatCompletionRequest:
+      description: |-
+        An OpenAI-compatible chat completion request. The `model` field is a free-form
+        model identifier, making the gateway model-agnostic: any provider/model can be
+        named per request, paired with a [`ModelRouting`] credential policy.
+      example:
+        reasoning_effort: reasoning_effort
+        top_p: 5.962133916683182
+        max_tokens: 0
+        temperature: 1.4658129805029452
+        messages:
+        - role: role
+          content: content
+        - role: role
+          content: content
+        model: model
+      properties:
+        max_tokens:
+          format: int64
+          minimum: 0
+          nullable: true
+          type: integer
+        messages:
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+          type: array
+        model:
+          type: string
+        reasoning_effort:
+          description: |-
+            OpenAI-style reasoning effort hint (`low` | `medium` | `high`), forwarded
+            to providers that understand it.
+          nullable: true
+          type: string
+        temperature:
+          format: double
+          nullable: true
+          type: number
+        top_p:
+          format: double
+          nullable: true
+          type: number
+      required:
+      - messages
+      - model
+    ChatCompletionResponse:
+      description: An OpenAI-compatible chat completion response.
+      example:
+        created: 1
+        usage:
+          completion_tokens: 0
+          prompt_tokens: 0
+          total_tokens: 0
+        model: model
+        id: id
+        choices:
+        - finish_reason: finish_reason
+          index: 0
+          message:
+            role: role
+            content: content
+        - finish_reason: finish_reason
+          index: 0
+          message:
+            role: role
+            content: content
+        object: object
+      properties:
+        choices:
+          items:
+            $ref: '#/components/schemas/ChatCompletionChoice'
+          type: array
+        created:
+          format: int64
+          type: integer
+        id:
+          type: string
+        model:
+          type: string
+        object:
+          type: string
+        usage:
+          $ref: '#/components/schemas/ChatCompletionUsage'
+      required:
+      - choices
+      - created
+      - id
+      - model
+      - object
+      - usage
+    ChatCompletionUsage:
+      description: Token usage in the OpenAI-compatible response shape.
+      example:
+        completion_tokens: 0
+        prompt_tokens: 0
+        total_tokens: 0
+      properties:
+        completion_tokens:
+          format: int64
+          minimum: 0
+          type: integer
+        prompt_tokens:
+          format: int64
+          minimum: 0
+          type: integer
+        total_tokens:
+          format: int64
+          minimum: 0
+          type: integer
+      required:
+      - completion_tokens
+      - prompt_tokens
+      - total_tokens
+    ChatMessage:
+      description: A single chat message in the OpenAI-compatible request.
+      example:
+        role: role
+        content: content
+      properties:
+        content:
+          type: string
+        role:
+          type: string
+      required:
+      - content
+      - role
     CreateApiKeyHttpRequest:
       example:
         scopes:
@@ -6385,6 +6658,112 @@ components:
       - project_id
       - reason
       - tenant_id
+    GatewayChatHttpRequest:
+      description: |-
+        Body for [`gateway_chat_completions_route`]: an OpenAI-compatible chat
+        completion request plus the per-request routing policy and an optional budget
+        ceiling. An empty `routing` means "I did not bring a key" — the gateway falls
+        back to its managed default model if one is configured (hosted), otherwise it
+        returns a typed no-key error (OSS).
+      example:
+        completion:
+          reasoning_effort: reasoning_effort
+          top_p: 5.962133916683182
+          max_tokens: 0
+          temperature: 1.4658129805029452
+          messages:
+          - role: role
+            content: content
+          - role: role
+            content: content
+          model: model
+        routing:
+        - kind: byok
+          provider_secret_id: provider_secret_id
+        - kind: byok
+          provider_secret_id: provider_secret_id
+        budget_micros: 0
+      properties:
+        budget_micros:
+          description: Per-tenant budget ceiling in micros; defaults when omitted.
+          format: int64
+          nullable: true
+          type: integer
+        completion:
+          $ref: '#/components/schemas/ChatCompletionRequest'
+        routing:
+          description: Ordered failover list of credential policies (BYOK or managed).
+          items:
+            $ref: '#/components/schemas/ModelRouting'
+          type: array
+      required:
+      - completion
+    GatewayOutcome:
+      description: The result of a successfully proxied completion.
+      example:
+        cost:
+          currency: USD
+          amount_micros: 1
+        provider: provider
+        request_hash: request_hash
+        response:
+          created: 1
+          usage:
+            completion_tokens: 0
+            prompt_tokens: 0
+            total_tokens: 0
+          model: model
+          id: id
+          choices:
+          - finish_reason: finish_reason
+            index: 0
+            message:
+              role: role
+              content: content
+          - finish_reason: finish_reason
+            index: 0
+            message:
+              role: role
+              content: content
+          object: object
+        cached: true
+        model:
+          provider: provider
+          name: name
+        tokens:
+          output: 0
+          input: 0
+          reasoning: 0
+          cache_read: 0
+        attempts: 0
+      properties:
+        attempts:
+          format: int32
+          minimum: 0
+          type: integer
+        cached:
+          type: boolean
+        cost:
+          $ref: '#/components/schemas/Money'
+        model:
+          $ref: '#/components/schemas/ModelRef'
+        provider:
+          type: string
+        request_hash:
+          type: string
+        response:
+          $ref: '#/components/schemas/ChatCompletionResponse'
+        tokens:
+          $ref: '#/components/schemas/TokenCounts'
+      required:
+      - attempts
+      - cached
+      - cost
+      - model
+      - provider
+      - request_hash
+      - response
+      - tokens
     HealthResponse:
       example:
         ok: true
@@ -6627,6 +7006,27 @@ components:
       required:
       - name
       - provider
+    ModelRouting:
+      description: |-
+        Per-request credential routing policy.
+
+        This enum is the encoding of *"any model, optionally BYOK, else managed
+        default"*:
+
+        * [`ModelRouting::Byok`] — use the tenant's own opaque provider secret. The
+          model named in the [`ChatCompletionRequest`] is used as-is, so any model the
+          key can reach is reachable.
+        * [`ModelRouting::Managed`] — use Beater's managed credentials with the given
+          default model. Only available when the gateway is built with a
+          [`ManagedDefault`] (hosted edition).
+
+        A [`GatewayRequest`] carries an *ordered* `Vec<ModelRouting>` so the gateway
+        can fail over from one key/provider to the next. An empty list means *"I did
+        not bring a key"*: the gateway then uses the managed default if configured, or
+        returns [`GatewayError::NoKeyAndNoManagedDefault`] in OSS.
+      oneOf:
+      - $ref: '#/components/schemas/ModelRouting_oneOf'
+      - $ref: '#/components/schemas/ModelRouting_oneOf_1'
     Money:
       example:
         currency: USD
@@ -8147,6 +8547,33 @@ components:
           type: string
       required:
       - type
+    ModelRouting_oneOf:
+      description: "Bring-your-own-key: resolve the tenant's opaque provider secret."
+      example:
+        kind: byok
+        provider_secret_id: provider_secret_id
+      properties:
+        kind:
+          enum:
+          - byok
+          type: string
+        provider_secret_id:
+          type: string
+      required:
+      - kind
+      - provider_secret_id
+    ModelRouting_oneOf_1:
+      description: Use the managed default model (hosted only).
+      properties:
+        default_model:
+          $ref: '#/components/schemas/ModelRef'
+        kind:
+          enum:
+          - managed
+          type: string
+      required:
+      - default_model
+      - kind
     Page_RunSummary_items_inner:
       example:
         duration_ms: 0

@@ -18,6 +18,7 @@ use beater_ingest::{
     ImportError, IngestPolicy, IngestService, RawTraceIngestRequest, SourceImporter,
     TRACE_INGESTED_KIND, TRACE_WRITE_BATCH_KIND,
 };
+use beater_gateway::{Gateway, NoopSpanSink, RoutingChatProvider, SqliteGatewayCache};
 use beater_judge::{
     HttpRoutingJudgeProvider, JudgeBrokerService, JudgeProvider, KeywordJudgeProvider,
     SqliteJudgeLedger,
@@ -215,6 +216,7 @@ async fn main() -> anyhow::Result<()> {
     let audit_db_path = args.data_dir.join("audit.sqlite");
     let provider_secret_db_path = args.data_dir.join("provider-secrets.sqlite");
     let judge_db_path = args.data_dir.join("judge.sqlite");
+    let gateway_cache_db_path = args.data_dir.join("gateway-cache.sqlite");
     let bus_db_path = args.data_dir.join("bus.sqlite");
     let security_db_path = args.data_dir.join("security.sqlite");
     let mut sqlite_store_paths = vec![
@@ -290,6 +292,20 @@ async fn main() -> anyhow::Result<()> {
         judge_ledger.clone(),
         judge_provider,
         Money::usd_micros(args.judge_budget_micros),
+    ));
+    // LLM gateway ("Patchbay", §20.10 #7.3 / R18.3): a model-agnostic,
+    // BYOK-capable chat-completions surface over the same provider/cache/BYOK/
+    // budget substrate as the judge broker. `managed = None` here mirrors the OSS
+    // / self-host edition where BYOK is required (no managed default); a hosted
+    // deployment would pass `Some(ManagedDefault::new(..))`.
+    let gateway_cache = SqliteGatewayCache::open(gateway_cache_db_path)?;
+    let gateway = Arc::new(Gateway::new(
+        provider_secrets.clone(),
+        gateway_cache,
+        RoutingChatProvider::default(),
+        quota_limiter.clone(),
+        NoopSpanSink,
+        None,
     ));
     let bus: Arc<dyn DurableBus> = match args.bus_backend {
         BusBackendArg::Sqlite => Arc::new(
@@ -370,7 +386,8 @@ async fn main() -> anyhow::Result<()> {
             .with_calibrations(calibrations)
             .with_usage(usage)
             .with_audit(audit)
-            .with_judge(provider_secrets, judge_broker, judge_ledger);
+            .with_judge(provider_secrets, judge_broker, judge_ledger)
+            .with_gateway(gateway);
     // Build the API-key store once (strict auth only) and share it between the
     // `/v1` auth path and the session-authorized `/auth/api-keys` endpoints.
     let api_key_store: Option<Arc<dyn beater_auth::ApiKeyStore>> =

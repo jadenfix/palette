@@ -12,6 +12,7 @@ api_datasets.go
 api_evals.go
 api_experiments.go
 api_gates.go
+api_gateway.go
 api_health.go
 api_ingest.go
 api_judge.go
@@ -53,6 +54,11 @@ docs/CalibrationsAPI.md
 docs/CanonicalSpan.md
 docs/CaseExperimentScore.md
 docs/CaseOutputOverrideRequest.md
+docs/ChatCompletionChoice.md
+docs/ChatCompletionRequest.md
+docs/ChatCompletionResponse.md
+docs/ChatCompletionUsage.md
+docs/ChatMessage.md
 docs/CreateApiKeyHttpRequest.md
 docs/CreateDatasetRequest.md
 docs/CreateDatasetVersionRequest.md
@@ -95,6 +101,9 @@ docs/GateDefinition.md
 docs/GatePolicy.md
 docs/GateRunReport.md
 docs/GatesAPI.md
+docs/GatewayAPI.md
+docs/GatewayChatHttpRequest.md
+docs/GatewayOutcome.md
 docs/HealthAPI.md
 docs/HealthResponse.md
 docs/ImportSourceHttpRequest.md
@@ -107,6 +116,9 @@ docs/JudgeAuditRecord.md
 docs/JudgeBrokerOutcome.md
 docs/MaintenanceWindow.md
 docs/ModelRef.md
+docs/ModelRouting.md
+docs/ModelRoutingOneOf.md
+docs/ModelRoutingOneOf1.md
 docs/Money.md
 docs/NativeIngestRequest.md
 docs/OnlineAPI.md
@@ -193,6 +205,11 @@ model_calibration_report.go
 model_canonical_span.go
 model_case_experiment_score.go
 model_case_output_override_request.go
+model_chat_completion_choice.go
+model_chat_completion_request.go
+model_chat_completion_response.go
+model_chat_completion_usage.go
+model_chat_message.go
 model_create_api_key_http_request.go
 model_create_dataset_request.go
 model_create_dataset_version_request.go
@@ -231,6 +248,8 @@ model_gate_decision.go
 model_gate_definition.go
 model_gate_policy.go
 model_gate_run_report.go
+model_gateway_chat_http_request.go
+model_gateway_outcome.go
 model_health_response.go
 model_import_source_http_request.go
 model_inconclusive_policy.go
@@ -240,6 +259,9 @@ model_judge_audit_record.go
 model_judge_broker_outcome.go
 model_maintenance_window.go
 model_model_ref.go
+model_model_routing.go
+model_model_routing_one_of.go
+model_model_routing_one_of_1.go
 model_money.go
 model_native_ingest_request.go
 model_online_sampling_policy.go
@@ -302,6 +324,7 @@ test/api_datasets_test.go
 test/api_evals_test.go
 test/api_experiments_test.go
 test/api_gates_test.go
+test/api_gateway_test.go
 test/api_health_test.go
 test/api_ingest_test.go
 test/api_judge_test.go

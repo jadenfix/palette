@@ -99,6 +99,7 @@ pub mod datasets_api;
 pub mod evals_api;
 pub mod experiments_api;
 pub mod gates_api;
+pub mod gateway_api;
 pub mod health_api;
 pub mod ingest_api;
 pub mod judge_api;

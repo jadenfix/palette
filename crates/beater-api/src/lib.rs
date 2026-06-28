@@ -30,6 +30,10 @@ use beater_experiments::{
     ExperimentRunSpec, ExperimentStore, JudgeExperimentRunSpec,
 };
 use beater_gates::{run_gate, GateDefinition, GateRunReport, GateStore, InconclusivePolicy};
+use beater_gateway::{
+    ChatCompletionRequest, GatewayError, GatewayOutcome, GatewayRequest, GatewayService,
+    ModelRouting,
+};
 use beater_human::{
     promote_review_annotation_to_dataset_case,
     CreateReviewQueueRequest as CreateReviewQueueStoreRequest, EnqueueReviewTaskRequest,
@@ -104,6 +108,7 @@ pub struct ApiState {
     provider_secrets: Option<Arc<dyn ProviderSecretStore>>,
     judge_broker: Option<Arc<dyn JudgeBroker>>,
     judge_ledger: Option<Arc<dyn JudgeLedgerStore>>,
+    gateway: Option<Arc<dyn GatewayService>>,
     usage: Option<Arc<dyn UsageLedgerStore>>,
     audit: Option<Arc<dyn AuditStore>>,
     /// OAuth 2.1 authorization-server store. When set, `authorize()` also
@@ -138,6 +143,7 @@ impl ApiState {
             provider_secrets: None,
             judge_broker: None,
             judge_ledger: None,
+            gateway: None,
             usage: None,
             audit: None,
             oauth: None,
@@ -242,6 +248,13 @@ impl ApiState {
         self
     }
 
+    /// Wire the LLM gateway ("Patchbay") so the model-agnostic, BYOK-capable
+    /// chat-completions surface (`/v1/gateway/.../chat/completions`) is enabled.
+    pub fn with_gateway(mut self, gateway: Arc<dyn GatewayService>) -> Self {
+        self.gateway = Some(gateway);
+        self
+    }
+
     pub fn with_human_reviews(mut self, human_reviews: Arc<dyn HumanReviewStore>) -> Self {
         self.human_reviews = Some(human_reviews);
         self
@@ -273,7 +286,7 @@ impl ApiState {
 /// spec; the `openapi_coverage` integration test enforces this both ways.
 ///
 /// Update this when adding or removing a `/v1` route in [`router`].
-pub const V1_ROUTE_COUNT: usize = 41;
+pub const V1_ROUTE_COUNT: usize = 42;
 
 /// See [`V1_ROUTE_COUNT`].
 pub fn v1_route_count() -> usize {
@@ -308,6 +321,10 @@ pub fn router(state: ApiState) -> Router {
         .route(
             "/v1/judge/:tenant_id/:project_id/ledger",
             get(list_judge_ledger_route),
+        )
+        .route(
+            "/v1/gateway/:tenant_id/:project_id/:environment_id/chat/completions",
+            post(gateway_chat_completions_route),
         )
         .route("/v1/usage/:tenant_id/:project_id", get(get_usage_summary_route))
         .route("/v1/audit/:tenant_id/:project_id", get(list_audit_events_route))
@@ -768,6 +785,81 @@ async fn run_judge_eval_route(
         .await
         .map_err(judge_failure)?;
     record_usage_if_configured(&state, vec![judge_usage_from_outcome(&outcome)]).await?;
+    Ok(Json(outcome))
+}
+
+/// Default per-request budget ceiling (in micros) applied when a gateway request
+/// does not specify one. Generous so callers do not *have* to set a budget.
+const DEFAULT_GATEWAY_BUDGET_MICROS: i64 = 1_000_000_000;
+
+/// Body for [`gateway_chat_completions_route`]: an OpenAI-compatible chat
+/// completion request plus the per-request routing policy and an optional budget
+/// ceiling. An empty `routing` means "I did not bring a key" — the gateway falls
+/// back to its managed default model if one is configured (hosted), otherwise it
+/// returns a typed no-key error (OSS).
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+struct GatewayChatHttpRequest {
+    /// The OpenAI-compatible chat completion request.
+    completion: ChatCompletionRequest,
+    /// Ordered failover list of credential policies (BYOK or managed).
+    #[serde(default)]
+    routing: Vec<ModelRouting>,
+    /// Per-tenant budget ceiling in micros; defaults when omitted.
+    #[serde(default)]
+    budget_micros: Option<i64>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/gateway/{tenant_id}/{project_id}/{environment_id}/chat/completions",
+    tag = "gateway",
+    operation_id = "gatewayChatCompletions",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("environment_id" = String, Path, description = "environment_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    request_body = GatewayChatHttpRequest,
+    responses(
+        (status = 200, description = "Proxied OpenAI-compatible chat completion", body = GatewayOutcome),
+        (status = 400, description = "Invalid request, scope, or no key + no managed default", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 402, description = "Per-tenant budget exceeded", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 404, description = "Provider secret not found or inactive", body = ErrorResponse),
+        (status = 502, description = "All providers/keys failed", body = ErrorResponse),
+        (status = 504, description = "Gateway request timed out", body = ErrorResponse),
+    )
+)]
+async fn gateway_chat_completions_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id, environment_id)): Path<(String, String, String)>,
+    Json(request): Json<GatewayChatHttpRequest>,
+) -> Result<Json<GatewayOutcome>, ApiError> {
+    let gateway = gateway_service(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let environment_id = EnvironmentId::new(environment_id)?;
+    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
+    let now = Utc::now();
+    let outcome = gateway
+        .complete(GatewayRequest {
+            tenant_id,
+            project_id,
+            environment_id,
+            completion: request.completion,
+            routing: request.routing,
+            budget_micros: request.budget_micros.unwrap_or(DEFAULT_GATEWAY_BUDGET_MICROS),
+            window_start: now,
+            reset_at: now + chrono::Duration::hours(1),
+        })
+        .await
+        .map_err(gateway_failure)?;
     Ok(Json(outcome))
 }
 
@@ -2657,6 +2749,10 @@ fn judge_ledger(state: &ApiState) -> Result<Arc<dyn JudgeLedgerStore>, ApiError>
     require(&state.judge_ledger, "judge ledger")
 }
 
+fn gateway_service(state: &ApiState) -> Result<Arc<dyn GatewayService>, ApiError> {
+    require(&state.gateway, "llm gateway")
+}
+
 fn experiment_store(state: &ApiState) -> Result<Arc<dyn ExperimentStore>, ApiError> {
     require(&state.experiments, "experiment store")
 }
@@ -3564,6 +3660,28 @@ fn judge_failure(error: JudgeBrokerError) -> ApiError {
         JudgeBrokerError::Provider(_) | JudgeBrokerError::Store(_) => {
             ApiError::internal(error.to_string())
         }
+    }
+}
+
+fn gateway_failure(error: GatewayError) -> ApiError {
+    match error {
+        GatewayError::NoKeyAndNoManagedDefault | GatewayError::ManagedDefaultUnavailable => {
+            ApiError::bad_request(error.to_string())
+        }
+        GatewayError::ProviderSecretNotFound(_) => ApiError::not_found(error.to_string()),
+        GatewayError::BudgetExceeded { .. } => {
+            ApiError::with_status(StatusCode::PAYMENT_REQUIRED, error.to_string())
+        }
+        GatewayError::Timeout { .. } => {
+            ApiError::with_status(StatusCode::GATEWAY_TIMEOUT, error.to_string())
+        }
+        GatewayError::AllProvidersFailed(_) => {
+            ApiError::with_status(StatusCode::BAD_GATEWAY, error.to_string())
+        }
+        GatewayError::Cache(_)
+        | GatewayError::Store(_)
+        | GatewayError::Hash(_)
+        | GatewayError::Span(_) => ApiError::internal(error.to_string()),
     }
 }
 

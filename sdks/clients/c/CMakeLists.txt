@@ -72,6 +72,11 @@ set(SRCS
     model/canonical_span.c
     model/case_experiment_score.c
     model/case_output_override_request.c
+    model/chat_completion_choice.c
+    model/chat_completion_request.c
+    model/chat_completion_response.c
+    model/chat_completion_usage.c
+    model/chat_message.c
     model/create_api_key_http_request.c
     model/create_dataset_request.c
     model/create_dataset_version_request.c
@@ -110,6 +115,8 @@ set(SRCS
     model/gate_definition.c
     model/gate_policy.c
     model/gate_run_report.c
+    model/gateway_chat_http_request.c
+    model/gateway_outcome.c
     model/health_response.c
     model/import_source_http_request.c
     model/inconclusive_policy.c
@@ -119,6 +126,9 @@ set(SRCS
     model/judge_broker_outcome.c
     model/maintenance_window.c
     model/model_ref.c
+    model/model_routing.c
+    model/model_routing_one_of.c
+    model/model_routing_one_of_1.c
     model/money.c
     model/native_ingest_request.c
     model/online_sampling_policy.c
@@ -180,6 +190,7 @@ set(SRCS
     api/EvalsAPI.c
     api/ExperimentsAPI.c
     api/GatesAPI.c
+    api/GatewayAPI.c
     api/HealthAPI.c
     api/IngestAPI.c
     api/JudgeAPI.c
@@ -225,6 +236,11 @@ set(HDRS
     model/canonical_span.h
     model/case_experiment_score.h
     model/case_output_override_request.h
+    model/chat_completion_choice.h
+    model/chat_completion_request.h
+    model/chat_completion_response.h
+    model/chat_completion_usage.h
+    model/chat_message.h
     model/create_api_key_http_request.h
     model/create_dataset_request.h
     model/create_dataset_version_request.h
@@ -263,6 +279,8 @@ set(HDRS
     model/gate_definition.h
     model/gate_policy.h
     model/gate_run_report.h
+    model/gateway_chat_http_request.h
+    model/gateway_outcome.h
     model/health_response.h
     model/import_source_http_request.h
     model/inconclusive_policy.h
@@ -272,6 +290,9 @@ set(HDRS
     model/judge_broker_outcome.h
     model/maintenance_window.h
     model/model_ref.h
+    model/model_routing.h
+    model/model_routing_one_of.h
+    model/model_routing_one_of_1.h
     model/money.h
     model/native_ingest_request.h
     model/online_sampling_policy.h
@@ -333,6 +354,7 @@ set(HDRS
     api/EvalsAPI.h
     api/ExperimentsAPI.h
     api/GatesAPI.h
+    api/GatewayAPI.h
     api/HealthAPI.h
     api/IngestAPI.h
     api/JudgeAPI.h
@@ -433,6 +455,7 @@ set(HDRS "")
 #    unit-tests/manual-EvalsAPI.c
 #    unit-tests/manual-ExperimentsAPI.c
 #    unit-tests/manual-GatesAPI.c
+#    unit-tests/manual-GatewayAPI.c
 #    unit-tests/manual-HealthAPI.c
 #    unit-tests/manual-IngestAPI.c
 #    unit-tests/manual-JudgeAPI.c

@@ -17,6 +17,7 @@ beater-datasets = { path = "../beater-datasets" }
 beater-eval = { path = "../beater-eval" }
 beater-experiments = { path = "../beater-experiments" }
 beater-gates = { path = "../beater-gates" }
+beater-gateway = { path = "../beater-gateway" }
 beater-human = { path = "../beater-human" }
 beater-ingest = { path = "../beater-ingest" }
 beater-judge = { path = "../beater-judge" }

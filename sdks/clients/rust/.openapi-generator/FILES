@@ -32,6 +32,11 @@ docs/CalibrationsApi.md
 docs/CanonicalSpan.md
 docs/CaseExperimentScore.md
 docs/CaseOutputOverrideRequest.md
+docs/ChatCompletionChoice.md
+docs/ChatCompletionRequest.md
+docs/ChatCompletionResponse.md
+docs/ChatCompletionUsage.md
+docs/ChatMessage.md
 docs/CreateApiKeyHttpRequest.md
 docs/CreateDatasetRequest.md
 docs/CreateDatasetVersionRequest.md
@@ -74,6 +79,9 @@ docs/GateDefinition.md
 docs/GatePolicy.md
 docs/GateRunReport.md
 docs/GatesApi.md
+docs/GatewayApi.md
+docs/GatewayChatHttpRequest.md
+docs/GatewayOutcome.md
 docs/HealthApi.md
 docs/HealthResponse.md
 docs/ImportSourceHttpRequest.md
@@ -86,6 +94,9 @@ docs/JudgeAuditRecord.md
 docs/JudgeBrokerOutcome.md
 docs/MaintenanceWindow.md
 docs/ModelRef.md
+docs/ModelRouting.md
+docs/ModelRoutingOneOf.md
+docs/ModelRoutingOneOf1.md
 docs/Money.md
 docs/NativeIngestRequest.md
 docs/OnlineApi.md
@@ -156,6 +167,7 @@ src/apis/datasets_api.rs
 src/apis/evals_api.rs
 src/apis/experiments_api.rs
 src/apis/gates_api.rs
+src/apis/gateway_api.rs
 src/apis/health_api.rs
 src/apis/ingest_api.rs
 src/apis/judge_api.rs
@@ -192,6 +204,11 @@ src/models/calibration_report.rs
 src/models/canonical_span.rs
 src/models/case_experiment_score.rs
 src/models/case_output_override_request.rs
+src/models/chat_completion_choice.rs
+src/models/chat_completion_request.rs
+src/models/chat_completion_response.rs
+src/models/chat_completion_usage.rs
+src/models/chat_message.rs
 src/models/create_api_key_http_request.rs
 src/models/create_dataset_request.rs
 src/models/create_dataset_version_request.rs
@@ -230,6 +247,8 @@ src/models/gate_decision.rs
 src/models/gate_definition.rs
 src/models/gate_policy.rs
 src/models/gate_run_report.rs
+src/models/gateway_chat_http_request.rs
+src/models/gateway_outcome.rs
 src/models/health_response.rs
 src/models/import_source_http_request.rs
 src/models/inconclusive_policy.rs
@@ -240,6 +259,9 @@ src/models/judge_broker_outcome.rs
 src/models/maintenance_window.rs
 src/models/mod.rs
 src/models/model_ref.rs
+src/models/model_routing.rs
+src/models/model_routing_one_of.rs
+src/models/model_routing_one_of_1.rs
 src/models/money.rs
 src/models/native_ingest_request.rs
 src/models/online_sampling_policy.rs

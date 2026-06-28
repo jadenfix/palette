@@ -67,6 +67,8 @@ type APIClient struct {
 
 	GatesAPI *GatesAPIService
 
+	GatewayAPI *GatewayAPIService
+
 	HealthAPI *HealthAPIService
 
 	IngestAPI *IngestAPIService
@@ -113,6 +115,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.EvalsAPI = (*EvalsAPIService)(&c.common)
 	c.ExperimentsAPI = (*ExperimentsAPIService)(&c.common)
 	c.GatesAPI = (*GatesAPIService)(&c.common)
+	c.GatewayAPI = (*GatewayAPIService)(&c.common)
 	c.HealthAPI = (*HealthAPIService)(&c.common)
 	c.IngestAPI = (*IngestAPIService)(&c.common)
 	c.JudgeAPI = (*JudgeAPIService)(&c.common)

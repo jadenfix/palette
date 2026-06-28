@@ -12,6 +12,7 @@ src/apis/DatasetsApi.ts
 src/apis/EvalsApi.ts
 src/apis/ExperimentsApi.ts
 src/apis/GatesApi.ts
+src/apis/GatewayApi.ts
 src/apis/HealthApi.ts
 src/apis/IngestApi.ts
 src/apis/JudgeApi.ts
@@ -48,6 +49,11 @@ src/models/CalibrationReport.ts
 src/models/CanonicalSpan.ts
 src/models/CaseExperimentScore.ts
 src/models/CaseOutputOverrideRequest.ts
+src/models/ChatCompletionChoice.ts
+src/models/ChatCompletionRequest.ts
+src/models/ChatCompletionResponse.ts
+src/models/ChatCompletionUsage.ts
+src/models/ChatMessage.ts
 src/models/CreateApiKeyHttpRequest.ts
 src/models/CreateDatasetRequest.ts
 src/models/CreateDatasetVersionRequest.ts
@@ -86,6 +92,8 @@ src/models/GateDecision.ts
 src/models/GateDefinition.ts
 src/models/GatePolicy.ts
 src/models/GateRunReport.ts
+src/models/GatewayChatHttpRequest.ts
+src/models/GatewayOutcome.ts
 src/models/HealthResponse.ts
 src/models/ImportSourceHttpRequest.ts
 src/models/InconclusivePolicy.ts
@@ -95,6 +103,9 @@ src/models/JudgeAuditRecord.ts
 src/models/JudgeBrokerOutcome.ts
 src/models/MaintenanceWindow.ts
 src/models/ModelRef.ts
+src/models/ModelRouting.ts
+src/models/ModelRoutingOneOf.ts
+src/models/ModelRoutingOneOf1.ts
 src/models/Money.ts
 src/models/NativeIngestRequest.ts
 src/models/OnlineSamplingPolicy.ts
