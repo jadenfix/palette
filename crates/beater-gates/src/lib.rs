@@ -591,9 +591,13 @@ mod tests {
                 ci_low: delta,
                 ci_high: delta,
                 p_value: 1.0,
+                mde: None,
+                required_n: None,
                 decision: decision.clone(),
                 test: StatisticalTest::PairedT,
                 adjusted_alpha: 0.05,
+                mde: None,
+                required_n: None,
             },
             decision,
             gate_policy: GatePolicy {

@@ -646,14 +646,22 @@ pub fn promote_review_annotation_to_dataset_case(
             trace.trace_id.as_str()
         ));
     }
-    let reference = reference_override.or_else(|| annotation_reference(annotation));
+    let reference = reference_override
+        .and_then(usable_reference)
+        .or_else(|| annotation_reference(annotation))
+        .ok_or_else(|| {
+            anyhow!(
+                "review annotation {} requires a non-null reference or expected value before dataset promotion",
+                annotation.annotation_id.as_str()
+            )
+        })?;
     promote_trace_span_to_case(
         tenant_id,
         project_id,
         dataset_id,
         trace,
         task.span_id.clone(),
-        reference,
+        Some(reference),
     )
 }
 
@@ -688,7 +696,17 @@ fn annotation_reference(annotation: &ReviewAnnotation) -> Option<Value> {
         .payload
         .get("reference")
         .cloned()
+        .and_then(usable_reference)
         .or_else(|| annotation.payload.get("expected").cloned())
+        .and_then(usable_reference)
+}
+
+fn usable_reference(reference: Value) -> Option<Value> {
+    if reference.is_null() {
+        None
+    } else {
+        Some(reference)
+    }
 }
 
 fn task_state_name(state: &ReviewTaskState) -> &'static str {
@@ -785,31 +803,15 @@ mod tests {
         let tenant = TenantId::new("tenant")?;
         let project = ProjectId::new("project")?;
         let queue = ReviewQueueId::new("quality")?;
-        let task = ReviewTask {
-            tenant_id: tenant.clone(),
-            project_id: project.clone(),
-            queue_id: queue.clone(),
-            task_id: ReviewTaskId::new("task-1")?,
-            trace_id: TraceId::new("trace-1")?,
-            span_id: Some(SpanId::new("span-1")?),
-            dataset_id: None,
-            dataset_case_id: None,
-            priority: 1,
-            state: ReviewTaskState::Submitted,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        };
-        let annotation = ReviewAnnotation {
-            tenant_id: tenant.clone(),
-            project_id: project.clone(),
-            queue_id: queue,
-            task_id: task.task_id.clone(),
-            annotation_id: AnnotationId::new("annotation-1")?,
-            reviewer_id: "reviewer-a".to_string(),
-            verdict: ReviewVerdict::NeedsFix,
-            payload: json!({"reference": {"answer": "world"}}),
-            created_at: Utc::now(),
-        };
+        let task = fixture_review_task(&tenant, &project, &queue)?;
+        let annotation = fixture_annotation(
+            &tenant,
+            &project,
+            &queue,
+            &task,
+            "annotation-1",
+            json!({"reference": {"answer": "world"}}),
+        )?;
         let trace = fixture_trace(&tenant, &project)?;
         let case = promote_review_annotation_to_dataset_case(
             tenant,
@@ -824,6 +826,142 @@ mod tests {
         assert_eq!(case.reference, Some(json!({"answer": "world"})));
         assert_eq!(case.source_span_id.as_str(), "span-1");
         Ok(())
+    }
+
+    #[tokio::test]
+    async fn review_annotation_promotes_to_dataset_case_with_expected_value() -> anyhow::Result<()>
+    {
+        let tenant = TenantId::new("tenant")?;
+        let project = ProjectId::new("project")?;
+        let queue = ReviewQueueId::new("quality")?;
+        let task = fixture_review_task(&tenant, &project, &queue)?;
+        let annotation = fixture_annotation(
+            &tenant,
+            &project,
+            &queue,
+            &task,
+            "annotation-expected",
+            json!({"expected": {"answer": "world"}}),
+        )?;
+        let trace = fixture_trace(&tenant, &project)?;
+        let case = promote_review_annotation_to_dataset_case(
+            tenant,
+            project,
+            DatasetId::new("dataset")?,
+            &trace,
+            &task,
+            &annotation,
+            None,
+        )?;
+
+        assert_eq!(case.reference, Some(json!({"answer": "world"})));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn review_annotation_promotion_allows_reference_override() -> anyhow::Result<()> {
+        let tenant = TenantId::new("tenant")?;
+        let project = ProjectId::new("project")?;
+        let queue = ReviewQueueId::new("quality")?;
+        let task = fixture_review_task(&tenant, &project, &queue)?;
+        let annotation = fixture_annotation(
+            &tenant,
+            &project,
+            &queue,
+            &task,
+            "annotation-override",
+            json!({"notes": "use supplied reference"}),
+        )?;
+        let trace = fixture_trace(&tenant, &project)?;
+        let case = promote_review_annotation_to_dataset_case(
+            tenant,
+            project,
+            DatasetId::new("dataset")?,
+            &trace,
+            &task,
+            &annotation,
+            Some(json!({"answer": "override"})),
+        )?;
+
+        assert_eq!(case.reference, Some(json!({"answer": "override"})));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn review_annotation_promotion_rejects_missing_reference() -> anyhow::Result<()> {
+        let tenant = TenantId::new("tenant")?;
+        let project = ProjectId::new("project")?;
+        let queue = ReviewQueueId::new("quality")?;
+        let task = fixture_review_task(&tenant, &project, &queue)?;
+        let annotation = fixture_annotation(
+            &tenant,
+            &project,
+            &queue,
+            &task,
+            "annotation-missing-reference",
+            json!({"reference": null, "expected": null}),
+        )?;
+        let trace = fixture_trace(&tenant, &project)?;
+
+        let error = match promote_review_annotation_to_dataset_case(
+            tenant,
+            project,
+            DatasetId::new("dataset")?,
+            &trace,
+            &task,
+            &annotation,
+            None,
+        ) {
+            Ok(_) => panic!("promotion should reject an annotation without a usable reference"),
+            Err(error) => error,
+        };
+
+        assert!(error
+            .to_string()
+            .contains("requires a non-null reference or expected value"));
+        Ok(())
+    }
+
+    fn fixture_review_task(
+        tenant: &TenantId,
+        project: &ProjectId,
+        queue: &ReviewQueueId,
+    ) -> anyhow::Result<ReviewTask> {
+        Ok(ReviewTask {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            queue_id: queue.clone(),
+            task_id: ReviewTaskId::new("task-1")?,
+            trace_id: TraceId::new("trace-1")?,
+            span_id: Some(SpanId::new("span-1")?),
+            dataset_id: None,
+            dataset_case_id: None,
+            priority: 1,
+            state: ReviewTaskState::Submitted,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        })
+    }
+
+    fn fixture_annotation(
+        tenant: &TenantId,
+        project: &ProjectId,
+        queue: &ReviewQueueId,
+        task: &ReviewTask,
+        annotation_id: &str,
+        payload: Value,
+    ) -> anyhow::Result<ReviewAnnotation> {
+        Ok(ReviewAnnotation {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            queue_id: queue.clone(),
+            task_id: task.task_id.clone(),
+            annotation_id: AnnotationId::new(annotation_id)?,
+            reviewer_id: "reviewer-a".to_string(),
+            verdict: ReviewVerdict::NeedsFix,
+            payload,
+            created_at: Utc::now(),
+        })
     }
 
     fn fixture_trace(tenant: &TenantId, project: &ProjectId) -> anyhow::Result<TraceView> {

@@ -482,11 +482,53 @@ pub struct OutcomeFlipAttribution {
     pub probes: Vec<ForkedReplayProbe>,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OutcomeFlipSearchMode {
+    #[default]
+    Linear,
+    MonotoneBisect,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OutcomeFlipSearchConfig {
+    pub mode: OutcomeFlipSearchMode,
+}
+
+impl OutcomeFlipSearchConfig {
+    pub fn monotone_bisect() -> Self {
+        Self {
+            mode: OutcomeFlipSearchMode::MonotoneBisect,
+        }
+    }
+}
+
 pub fn find_earliest_outcome_flip<F>(
     trace_id: TraceId,
     spans: &[CanonicalSpan],
     baseline_passed: bool,
     fork_budget: usize,
+    evaluate_fork: F,
+) -> anyhow::Result<OutcomeFlipAttribution>
+where
+    F: FnMut(&CanonicalSpan) -> anyhow::Result<ForkedReplayOutcome>,
+{
+    find_earliest_outcome_flip_with_config(
+        trace_id,
+        spans,
+        baseline_passed,
+        fork_budget,
+        OutcomeFlipSearchConfig::default(),
+        evaluate_fork,
+    )
+}
+
+pub fn find_earliest_outcome_flip_with_config<F>(
+    trace_id: TraceId,
+    spans: &[CanonicalSpan],
+    baseline_passed: bool,
+    fork_budget: usize,
+    config: OutcomeFlipSearchConfig,
     mut evaluate_fork: F,
 ) -> anyhow::Result<OutcomeFlipAttribution>
 where
@@ -507,19 +549,34 @@ where
             .then_with(|| a.span_id.as_str().cmp(b.span_id.as_str()))
     });
 
+    match config.mode {
+        OutcomeFlipSearchMode::Linear => find_earliest_outcome_flip_linear(
+            trace_id,
+            &sorted_spans,
+            fork_budget,
+            &mut evaluate_fork,
+        ),
+        OutcomeFlipSearchMode::MonotoneBisect => find_earliest_outcome_flip_monotone_bisect(
+            trace_id,
+            &sorted_spans,
+            fork_budget,
+            &mut evaluate_fork,
+        ),
+    }
+}
+
+fn find_earliest_outcome_flip_linear<F>(
+    trace_id: TraceId,
+    sorted_spans: &[CanonicalSpan],
+    fork_budget: usize,
+    evaluate_fork: &mut F,
+) -> anyhow::Result<OutcomeFlipAttribution>
+where
+    F: FnMut(&CanonicalSpan) -> anyhow::Result<ForkedReplayOutcome>,
+{
     let mut probes = Vec::new();
     for span in sorted_spans.iter().take(fork_budget) {
-        let outcome = evaluate_fork(span)
-            .with_context(|| format!("evaluate forked replay at span {}", span.span_id.as_str()))?;
-        let probe = ForkedReplayProbe {
-            span_id: span.span_id.clone(),
-            seq: span.seq,
-            replay_mode: outcome.replay_mode,
-            guarantee: outcome.guarantee,
-            passed: outcome.passed,
-            score: outcome.score,
-            evidence: outcome.evidence,
-        };
+        let probe = evaluate_outcome_flip_probe(span, evaluate_fork)?;
         let flips = probe.passed;
         let root_cause_span_id = probe.span_id.clone();
         let replay_mode = probe.replay_mode.clone();
@@ -544,8 +601,89 @@ where
         confidence: 0.0,
         replay_mode: None,
         guarantee: None,
-        budget_exhausted: fork_budget < sorted_spans.len(),
+        budget_exhausted: probes.len() >= fork_budget && probes.len() < sorted_spans.len(),
         probes,
+    })
+}
+
+fn find_earliest_outcome_flip_monotone_bisect<F>(
+    trace_id: TraceId,
+    sorted_spans: &[CanonicalSpan],
+    fork_budget: usize,
+    evaluate_fork: &mut F,
+) -> anyhow::Result<OutcomeFlipAttribution>
+where
+    F: FnMut(&CanonicalSpan) -> anyhow::Result<ForkedReplayOutcome>,
+{
+    let mut probes = Vec::new();
+    let mut low = 0;
+    let mut high = sorted_spans.len();
+    let mut candidate = None;
+
+    while low < high && probes.len() < fork_budget {
+        let mid = low + (high - low) / 2;
+        let probe = evaluate_outcome_flip_probe(&sorted_spans[mid], evaluate_fork)?;
+        if probe.passed {
+            candidate = Some(probe.clone());
+            high = mid;
+        } else {
+            low = mid + 1;
+        }
+        probes.push(probe);
+    }
+
+    if low == high {
+        if let Some(probe) = candidate {
+            return Ok(OutcomeFlipAttribution {
+                trace_id,
+                root_cause_span_id: Some(probe.span_id),
+                confidence: replay_confidence(&probe.replay_mode),
+                replay_mode: Some(probe.replay_mode),
+                guarantee: Some(probe.guarantee),
+                budget_exhausted: false,
+                probes,
+            });
+        }
+
+        return Ok(OutcomeFlipAttribution {
+            trace_id,
+            root_cause_span_id: None,
+            confidence: 0.0,
+            replay_mode: None,
+            guarantee: None,
+            budget_exhausted: false,
+            probes,
+        });
+    }
+
+    Ok(OutcomeFlipAttribution {
+        trace_id,
+        root_cause_span_id: None,
+        confidence: 0.0,
+        replay_mode: None,
+        guarantee: None,
+        budget_exhausted: !sorted_spans.is_empty() && probes.len() >= fork_budget,
+        probes,
+    })
+}
+
+fn evaluate_outcome_flip_probe<F>(
+    span: &CanonicalSpan,
+    evaluate_fork: &mut F,
+) -> anyhow::Result<ForkedReplayProbe>
+where
+    F: FnMut(&CanonicalSpan) -> anyhow::Result<ForkedReplayOutcome>,
+{
+    let outcome = evaluate_fork(span)
+        .with_context(|| format!("evaluate forked replay at span {}", span.span_id.as_str()))?;
+    Ok(ForkedReplayProbe {
+        span_id: span.span_id.clone(),
+        seq: span.seq,
+        replay_mode: outcome.replay_mode,
+        guarantee: outcome.guarantee,
+        passed: outcome.passed,
+        score: outcome.score,
+        evidence: outcome.evidence,
     })
 }
 
@@ -909,7 +1047,7 @@ mod tests {
         assert_eq!(attribution.guarantee.as_deref(), Some("forked from second"));
         assert_eq!(attribution.confidence, 0.75);
         assert_eq!(attribution.probes.len(), 2);
-        assert_eq!(attribution.probes[1].passed, true);
+        assert!(attribution.probes[1].passed);
     }
 
     #[test]
@@ -964,6 +1102,44 @@ mod tests {
         assert_eq!(attribution.root_cause_span_id, None);
         assert!(attribution.budget_exhausted);
         assert_eq!(attribution.probes.len(), 2);
+    }
+
+    #[test]
+    fn earliest_outcome_flip_search_bisects_monotone_outcomes() {
+        let trace_id = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
+        let mut spans = Vec::new();
+        for seq in 1..=9 {
+            spans.push(fixture_span(&format!("span-{seq}"), seq, SpanStatus::Ok));
+        }
+        spans.reverse();
+        let mut evaluated = Vec::new();
+
+        let attribution = find_earliest_outcome_flip_with_config(
+            trace_id,
+            &spans,
+            false,
+            4,
+            OutcomeFlipSearchConfig::monotone_bisect(),
+            |span| {
+                evaluated.push(span.seq);
+                Ok(ForkedReplayOutcome {
+                    replay_mode: ReplayMode::ForkedReplay,
+                    guarantee: format!("forked from {}", span.seq),
+                    passed: span.seq >= 6,
+                    score: Some(if span.seq >= 6 { 1.0 } else { 0.0 }),
+                    evidence: json!({ "seq": span.seq }),
+                })
+            },
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(
+            attribution.root_cause_span_id.as_ref().map(SpanId::as_str),
+            Some("span-6")
+        );
+        assert_eq!(evaluated, vec![5, 8, 7, 6]);
+        assert_eq!(attribution.probes.len(), 4);
+        assert!(!attribution.budget_exhausted);
     }
 
     #[test]

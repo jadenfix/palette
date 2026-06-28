@@ -97,6 +97,45 @@ async fn sweeps_orphaned_artifacts_against_live_spans() {
     );
 }
 
+#[tokio::test]
+async fn project_scoped_sweep_ignores_out_of_scope_candidates() {
+    let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+    let artifacts =
+        Arc::new(FsArtifactStore::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}")));
+    let trace_store = SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+
+    let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+    let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+    let other_project = ProjectId::new("other-project").unwrap_or_else(|err| panic!("{err}"));
+    let in_scope_orphan = put(&*artifacts, &tenant, &project, b"in-scope-orphan").await;
+    let out_of_scope = put(&*artifacts, &tenant, &other_project, b"other-project").await;
+
+    let sweeper = OrphanedArtifactSweeper::new(artifacts.clone());
+    let candidates = vec![in_scope_orphan.clone(), out_of_scope.clone()];
+    let report = sweeper
+        .sweep(
+            &trace_store,
+            tenant.clone(),
+            Some(project.clone()),
+            &candidates,
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+
+    assert_eq!(report.retained, 0);
+    assert_eq!(report.deleted, 1);
+    assert_eq!(report.deleted_uris, vec![in_scope_orphan.uri.clone()]);
+
+    match artifacts.get_bytes(&in_scope_orphan).await {
+        Err(_) => {}
+        Ok(_) => panic!("in-scope orphan should have been deleted"),
+    }
+    artifacts
+        .get_bytes(&out_of_scope)
+        .await
+        .unwrap_or_else(|err| panic!("out-of-scope candidate must survive: {err}"));
+}
+
 async fn put(
     store: &FsArtifactStore,
     tenant: &TenantId,
