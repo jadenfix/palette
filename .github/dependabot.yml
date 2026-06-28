@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Keep SHA-pinned GitHub Actions current (see scripts/check-action-pins.sh).
+  # Dependabot rewrites the pinned SHA and updates the trailing "# <version>"
+  # comment, so bumps stay intentional and reviewable.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    labels:
+      - dependencies
+      - github-actions

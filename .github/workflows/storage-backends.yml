@@ -29,7 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          toolchain: stable
       - name: Confirm Docker daemon is available (testcontainers requirement)
         run: docker info
       # Pre-pull the images the tests boot so a slow registry pull does not
