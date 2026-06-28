@@ -24,6 +24,7 @@ pub enum SourceDialect {
     PhoenixImport,
     LangSmithImport,
     LangfuseImport,
+    MappingImport,
     Temporal,
     TemporalHistoryImport,
 }
@@ -40,6 +41,7 @@ impl SourceDialect {
             Self::PhoenixImport => "phoenix_import",
             Self::LangSmithImport => "langsmith_import",
             Self::LangfuseImport => "langfuse_import",
+            Self::MappingImport => "mapping_import",
             Self::Temporal => "temporal",
             Self::TemporalHistoryImport => "temporal_history_import",
         }
