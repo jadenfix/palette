@@ -171,11 +171,9 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
   await expect(detail.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
   await expect(detail.getByRole("heading", { name: "Canonical" })).toBeVisible();
   await expect(detail.getByRole("heading", { name: "Unmapped" })).toBeVisible();
-  await expect(detail.getByLabel("Prompt I/O").locator("pre")).toHaveText(
-    "Can this order be refunded after 31 days?"
-  );
+  await expect(detail.getByLabel("Prompt I/O").locator("pre")).toHaveText("redacted by policy");
   await expect(detail.getByLabel("Completion I/O").locator("pre")).toHaveText(
-    "Escalate because the order is outside the standard window."
+    "redacted by policy"
   );
   const proofOrder = await detail.evaluate((node) => {
     const essentialsNode = node.querySelector(".span-proof-strip");
@@ -188,18 +186,15 @@ test("renders a stock OTLP llm span through table, waterfall, detail, and I/O", 
     };
   });
   expect(proofOrder).toEqual({ essentialsBeforePath: true, ioBeforePath: true });
-  await expect(detail).toContainText("Can this order be refunded after 31 days?");
-  await expect(detail).toContainText("Escalate because the order is outside the standard window.");
+  await expect(detail).not.toContainText("Can this order be refunded after 31 days?");
+  await expect(detail).not.toContainText("Escalate because the order is outside the standard window.");
 
   await tool.click();
   await expect(detail.getByRole("heading", { name: "Input" })).toBeVisible();
   await expect(detail.getByRole("heading", { name: "Output" })).toBeVisible();
-  await expect(detail.getByLabel("Input I/O").locator("pre")).toHaveText(
-    '{\n  "order_id": "ord_123"\n}'
-  );
-  await expect(detail.getByLabel("Output I/O").locator("pre")).toHaveText(
-    '{\n  "status": "delivered",\n  "age_days": 31\n}'
-  );
+  await expect(detail.getByLabel("Input I/O").locator("pre")).toHaveText("redacted by policy");
+  await expect(detail.getByLabel("Output I/O").locator("pre")).toHaveText("redacted by policy");
+  await expect(page.locator("body")).not.toContainText("ord_123");
 });
 
 test("keeps an explicitly opened trace coherent when secondary filters exclude it", async ({
