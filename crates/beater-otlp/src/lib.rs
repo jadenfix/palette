@@ -488,7 +488,7 @@ fn infer_agent_span_kind(attrs: &CanonicalAttrs, name: &str, otel_kind: i32) -> 
             "agent" | "agent.run" => Some(AgentSpanKind::AgentRun),
             "turn" | "agent.turn" => Some(AgentSpanKind::AgentTurn),
             "plan" | "agent.plan" => Some(AgentSpanKind::AgentPlan),
-            "chain" | "agent.step" => Some(AgentSpanKind::AgentStep),
+            "chain" | "prompt" | "agent.step" => Some(AgentSpanKind::AgentStep),
             "llm" | "chat" | "generate_content" | "llm.call" => Some(AgentSpanKind::LlmCall),
             "tool" | "tool.call" => Some(AgentSpanKind::ToolCall),
             "mcp" | "mcp.request" => Some(AgentSpanKind::McpRequest),
@@ -593,6 +593,7 @@ fn extract_model(attrs: &CanonicalAttrs) -> Option<ModelRef> {
         attrs,
         &[
             "llm.provider",
+            "gen_ai.provider.name",
             "gen_ai.system",
             "model.provider",
             "provider",
@@ -1371,6 +1372,36 @@ mod tests {
         );
         assert_eq!(span.attributes["reranker.input_documents"], json!(20));
         assert_eq!(span.attributes["reranker.output_documents"], json!(5));
+    }
+
+    #[test]
+    fn maps_openinference_prompt_to_agent_step() {
+        let attrs = BTreeMap::from([
+            ("openinference.span.kind".to_string(), json!("PROMPT")),
+            ("prompt.template".to_string(), json!("Hello, {{name}}")),
+        ]);
+
+        assert_eq!(
+            infer_agent_span_kind(&attrs, "render prompt", span::SpanKind::Internal as i32),
+            AgentSpanKind::AgentStep
+        );
+        assert_eq!(attrs["prompt.template"], json!("Hello, {{name}}"));
+    }
+
+    #[test]
+    fn extracts_model_provider_from_gen_ai_provider_name() {
+        let attrs = BTreeMap::from([
+            ("gen_ai.provider.name".to_string(), json!("anthropic")),
+            ("gen_ai.request.model".to_string(), json!("claude-sonnet-4")),
+        ]);
+
+        assert_eq!(
+            extract_model(&attrs),
+            Some(ModelRef {
+                provider: "anthropic".to_string(),
+                name: "claude-sonnet-4".to_string(),
+            })
+        );
     }
 
     #[test]
