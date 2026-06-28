@@ -100,6 +100,7 @@ cargo build -q -p beaterd -p beaterctl
   --data-dir "$data_dir" \
   --addr "$http_addr" \
   --otlp-grpc-addr "$grpc_addr" \
+  --auth-mode local \
   --trace-write-drain-interval-ms 25 \
   --trace-ingested-drain-interval-ms 25 &
 server_pid="$!"

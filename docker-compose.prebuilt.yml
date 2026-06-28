@@ -46,6 +46,20 @@ services:
 
   beaterd:
     image: ${BEATERD_IMAGE:-ghcr.io/jadenfix/beater/beaterd:main}
+    # The image default (auth-mode required, #127) refuses anonymous access.
+    # This dev stack opts INTO the insecure local mode explicitly. We must
+    # repeat the image CMD args because compose `command` overrides them.
+    command:
+      [
+        "--addr",
+        "0.0.0.0:8080",
+        "--otlp-grpc-addr",
+        "0.0.0.0:4317",
+        "--data-dir",
+        "/data",
+        "--auth-mode",
+        "local",
+      ]
     environment:
       BEATER_TRACE_WRITE_DRAIN_INTERVAL_MS: "250"
       BEATER_TRACE_INGESTED_DRAIN_INTERVAL_MS: "250"

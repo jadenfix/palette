@@ -95,7 +95,7 @@ struct Args {
     quota_window_seconds: i64,
     #[arg(long, env = "BEATER_QUOTA_DB_PATH")]
     quota_db_path: Option<PathBuf>,
-    #[arg(long, value_enum, default_value_t = AuthModeArg::Local)]
+    #[arg(long, value_enum, default_value_t = AuthModeArg::Required)]
     auth_mode: AuthModeArg,
     #[arg(long, env = "BEATER_PROVIDER_SECRET_KEY")]
     provider_secret_key: Option<String>,
@@ -152,7 +152,7 @@ enum Command {
     },
 }
 
-#[derive(Clone, Copy, Debug, ValueEnum)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 enum AuthModeArg {
     Local,
     Required,
@@ -188,6 +188,17 @@ async fn main() -> anyhow::Result<()> {
             eprintln!("self-host telemetry enabled (opt-in); reporting to {endpoint}")
         }
         None => eprintln!("self-host telemetry disabled (opt-out default); no outbound reporting"),
+    }
+    if matches!(args.auth_mode, AuthModeArg::Local) {
+        eprintln!("============================================================");
+        eprintln!("WARNING: beaterd is running in INSECURE --auth-mode local.");
+        eprintln!("  Listening on {}", args.addr);
+        eprintln!("  Mutating/sensitive routes are served ANONYMOUSLY:");
+        eprintln!("    tenant/project reads + writes, API-key minting,");
+        eprintln!("    provider-secret routes, audit routes, and unmask.");
+        eprintln!("  Anyone who can reach this address has full access.");
+        eprintln!("  Pass --auth-mode required to enforce API-key authentication.");
+        eprintln!("============================================================");
     }
     let trace_db_path = args.data_dir.join("traces.sqlite");
     let quota_path = args
@@ -1197,5 +1208,31 @@ mod queue_stats_tests {
             (lane_oldest_failure_seconds(&dead_letters, TRACE_WRITE_BATCH_KIND, now) - 290.0).abs()
                 < 1.5
         );
+    }
+}
+
+#[cfg(test)]
+mod auth_default_tests {
+    use super::*;
+
+    // #127: beaterd must require auth out of the box. With no auth flags the
+    // parsed mode must be Required so mutating/sensitive routes are not served
+    // anonymously by default.
+    #[test]
+    fn auth_mode_defaults_to_required() {
+        let args = Args::parse_from(["beaterd"]);
+        assert_eq!(args.auth_mode, AuthModeArg::Required);
+    }
+
+    #[test]
+    fn auth_mode_local_is_explicit_opt_in() {
+        let args = Args::parse_from(["beaterd", "--auth-mode", "local"]);
+        assert_eq!(args.auth_mode, AuthModeArg::Local);
+    }
+
+    #[test]
+    fn auth_mode_required_parses() {
+        let args = Args::parse_from(["beaterd", "--auth-mode", "required"]);
+        assert_eq!(args.auth_mode, AuthModeArg::Required);
     }
 }
