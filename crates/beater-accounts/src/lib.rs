@@ -171,9 +171,11 @@ fn dummy_password_hash() -> &'static str {
 }
 
 fn to_hex(bytes: &[u8]) -> String {
+    use std::fmt::Write as _;
     let mut out = String::with_capacity(bytes.len() * 2);
     for byte in bytes {
-        out.push_str(&format!("{byte:02x}"));
+        // Writing into a String is infallible; avoids a temporary String per byte.
+        let _ = write!(out, "{byte:02x}");
     }
     out
 }
