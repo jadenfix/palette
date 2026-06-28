@@ -691,7 +691,12 @@ impl IngestService {
         &self,
         request: NativeIngestRequest,
     ) -> Result<IngestOutcome, IngestError> {
-        self.enforce_quota_events(&request.scope, 1).await?;
+        self.enforce_quota_events(
+            &request.scope,
+            1,
+            request.idempotency_key.as_ref().map(|key| key.as_str()),
+        )
+        .await?;
         let prepared = self.prepare_native_batch(request).await?;
         self.write_batch_and_queue_downstream(prepared).await
     }
@@ -700,7 +705,12 @@ impl IngestService {
         &self,
         request: NativeIngestRequest,
     ) -> Result<IngestOutcome, IngestError> {
-        self.enforce_quota_events(&request.scope, 1).await?;
+        self.enforce_quota_events(
+            &request.scope,
+            1,
+            request.idempotency_key.as_ref().map(|key| key.as_str()),
+        )
+        .await?;
         let prepared = self.prepare_native_batch(request).await?;
         let publish = self.publish_trace_write(&prepared).await?;
         Ok(IngestOutcome {
@@ -714,8 +724,12 @@ impl IngestService {
         request: RawTraceIngestRequest,
     ) -> Result<IngestOutcome, IngestError> {
         let event_count = request.spans.len() as u64;
-        self.enforce_quota_events(&request.scope, event_count)
-            .await?;
+        self.enforce_quota_events(
+            &request.scope,
+            event_count,
+            request.raw_idempotency_key.as_ref().map(|key| key.as_str()),
+        )
+        .await?;
         let prepared = self.prepare_raw_batch(request).await?;
         self.write_batch_and_queue_downstream(prepared).await
     }
@@ -760,8 +774,12 @@ impl IngestService {
         request: RawTraceIngestRequest,
     ) -> Result<IngestOutcome, IngestError> {
         let event_count = request.spans.len() as u64;
-        self.enforce_quota_events(&request.scope, event_count)
-            .await?;
+        self.enforce_quota_events(
+            &request.scope,
+            event_count,
+            request.raw_idempotency_key.as_ref().map(|key| key.as_str()),
+        )
+        .await?;
         let prepared = self.prepare_raw_batch(request).await?;
         let publish = self.publish_trace_write(&prepared).await?;
         Ok(IngestOutcome {
@@ -1485,6 +1503,7 @@ impl IngestService {
         &self,
         scope: &TenantScope,
         event_count: u64,
+        idempotency_key: Option<&str>,
     ) -> Result<(), IngestError> {
         let Some(limit) = self.policy.per_project_event_quota else {
             return Ok(());
@@ -1503,6 +1522,10 @@ impl IngestService {
                 limit,
                 window_start,
                 reset_at,
+                // Carry the batch idempotency key so a client retry of the same
+                // logical ingest (e.g. after a network timeout) does not
+                // double-charge the project's event quota for the same window.
+                idempotency_key: idempotency_key.map(str::to_string),
             })
             .await
             .map_err(IngestError::Store)?;

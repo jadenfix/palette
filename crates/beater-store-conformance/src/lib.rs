@@ -929,6 +929,7 @@ where
             limit: 3,
             window_start,
             reset_at,
+            idempotency_key: None,
         })
         .await
         .unwrap_or_else(|err| panic!("{err}"));
@@ -943,6 +944,7 @@ where
             limit: 3,
             window_start,
             reset_at,
+            idempotency_key: None,
         })
         .await
         .unwrap_or_else(|err| panic!("{err}"));
@@ -966,6 +968,7 @@ where
             limit: 3,
             window_start: next_window,
             reset_at: next_reset,
+            idempotency_key: None,
         })
         .await
         .unwrap_or_else(|err| panic!("{err}"));
@@ -1053,6 +1056,7 @@ async fn assert_reservation_storm<L>(
             limit,
             window_start,
             reset_at,
+            idempotency_key: None,
         };
         handles.push(tokio::spawn(
             async move { limiter.reserve_quota(request).await },
@@ -1101,6 +1105,7 @@ async fn assert_reservation_storm<L>(
             limit,
             window_start,
             reset_at,
+            idempotency_key: None,
         })
         .await
         .unwrap_or_else(|err| panic!("{err}"));
@@ -1112,6 +1117,122 @@ async fn assert_reservation_storm<L>(
         settle.used
     );
     assert!(settle.used <= limit);
+}
+
+/// Idempotency invariant for any [`QuotaLimiter`]: a reservation carrying an
+/// `idempotency_key` is applied to the counter at most once per window, no matter
+/// how many times the *same* logical reservation is retried, while reservations
+/// with no key keep the historical apply-every-time behavior.
+///
+/// This is the billing-critical guard against the client-retry double-count: a
+/// network timeout makes a client resend a reservation it already committed, and
+/// without a key the resend is a legitimately new charge against the window. A
+/// correct limiter replays the original decision for a repeated key and leaves
+/// the counter untouched.
+///
+/// Runs cleanly against both the in-memory and SQLite backends, so it lives in
+/// the shared conformance suite.
+pub async fn assert_quota_limiter_idempotency_conformance<L>(limiter: L)
+where
+    L: QuotaLimiter,
+{
+    let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+    let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+    let window_start = Utc
+        .with_ymd_and_hms(2026, 2, 1, 0, 0, 0)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+    let reset_at = Utc
+        .with_ymd_and_hms(2026, 2, 1, 0, 1, 0)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+
+    let keyed = |amount: u64, key: &str| QuotaReservationRequest {
+        tenant_id: tenant.clone(),
+        project_id: project.clone(),
+        amount,
+        limit: 5,
+        window_start,
+        reset_at,
+        idempotency_key: Some(key.to_string()),
+    };
+
+    // First accepted reservation advances the counter to 2.
+    let first = limiter
+        .reserve_quota(keyed(2, "k1"))
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert!(first.accepted);
+    assert_eq!(first.used, 2);
+
+    // Retrying the same key replays the original decision verbatim and must NOT
+    // advance the counter again.
+    let retry = limiter
+        .reserve_quota(keyed(2, "k1"))
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(
+        retry, first,
+        "retried key must replay the original decision"
+    );
+
+    // A distinct probe proves the counter only moved by 2 (the single application
+    // of k1), not by 4 (a double-count): 2 + 1 == 3.
+    let probe = limiter
+        .reserve_quota(QuotaReservationRequest {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            amount: 1,
+            limit: 5,
+            window_start,
+            reset_at,
+            idempotency_key: None,
+        })
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert!(probe.accepted);
+    assert_eq!(probe.used, 3, "k1 must have applied exactly once");
+
+    // A keyed reservation that is denied (over limit) is also replayed on retry,
+    // and a denial never advances the counter.
+    let denied = limiter
+        .reserve_quota(keyed(10, "k2"))
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert!(!denied.accepted);
+    assert_eq!(denied.used, 3);
+    let denied_retry = limiter
+        .reserve_quota(keyed(10, "k2"))
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(denied_retry, denied, "retried denial must replay verbatim");
+
+    // The same key in a *different* window is a fresh reservation, not a replay.
+    let next_window = Utc
+        .with_ymd_and_hms(2026, 2, 1, 0, 1, 0)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+    let next_reset = Utc
+        .with_ymd_and_hms(2026, 2, 1, 0, 2, 0)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+    let new_window = limiter
+        .reserve_quota(QuotaReservationRequest {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            amount: 2,
+            limit: 5,
+            window_start: next_window,
+            reset_at: next_reset,
+            idempotency_key: Some("k1".to_string()),
+        })
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert!(new_window.accepted);
+    assert_eq!(
+        new_window.used, 2,
+        "a key in a fresh window starts that window's counter from zero"
+    );
 }
 
 fn fixture_batch() -> (

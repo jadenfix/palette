@@ -339,6 +339,16 @@ pub struct QuotaReservationRequest {
     pub limit: u64,
     pub window_start: Timestamp,
     pub reset_at: Timestamp,
+    /// Optional client-supplied token that makes a reservation idempotent within
+    /// its window. Concurrency between *distinct* reservers is already race-free
+    /// (the limiter serializes the read-modify-write), but a client that retries
+    /// the *same logical reservation* after a network timeout would otherwise be
+    /// counted twice — the retry is a legitimately new request to the server. When
+    /// a key is supplied the limiter records the outcome under
+    /// `(tenant, project, window_start, idempotency_key)`, and a retry replays the
+    /// original decision without advancing the counter again. `None` preserves the
+    /// historical behavior for callers that do not retry.
+    pub idempotency_key: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
