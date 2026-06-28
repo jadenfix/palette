@@ -798,6 +798,15 @@ mod tests {
         assert_eq!(loaded.secret_value(), "sk-rotating-secret");
     }
 
+    #[tokio::test]
+    async fn encrypted_provider_secret_store_enforces_tenant_project_scope() {
+        let keyring = SecretKeyring::generated_for_tests().unwrap_or_else(|err| panic!("{err}"));
+        let store = EncryptedSqliteProviderSecretStore::in_memory(keyring)
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        crate::assert_provider_secret_scope_isolation(&store).await;
+    }
+
     #[test]
     fn keyring_requires_active_key_to_be_present() {
         let key = SecretEncryptionKey::new("present", [1_u8; KEY_BYTES])

@@ -157,8 +157,11 @@ export async function loadDashboardData(query: DashboardQuery): Promise<Dashboar
     ? runs.items.find((run) => run.trace_id === query.traceId) ?? runs.items[0]
     : runs.items[0];
   const activeTraceId = query.traceId || activeRun?.trace_id;
+  const activeRunMatchesTrace = activeRun !== undefined && activeRun.trace_id === activeTraceId;
   const traceQuery =
-    activeRun?.project_id && !query.projectId ? { ...query, projectId: activeRun.project_id } : query;
+    activeRunMatchesTrace && activeRun.project_id && !query.projectId
+      ? { ...query, projectId: activeRun.project_id }
+      : query;
   let trace: TraceView | null = null;
   let selectedSpan: CanonicalSpan | null = null;
   let selectedIo: SpanIoResponse | null = null;

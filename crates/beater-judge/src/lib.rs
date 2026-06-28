@@ -1394,6 +1394,190 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn sqlite_judge_ledger_list_records_is_scoped_to_tenant_and_project() {
+        let ledger = SqliteJudgeLedger::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant_id = TenantId::new("tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("project-a").unwrap_or_else(|err| panic!("{err}"));
+        let other_tenant_id = TenantId::new("tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let other_project_id = ProjectId::new("project-b").unwrap_or_else(|err| panic!("{err}"));
+        let request_hash =
+            Sha256Hash::new("shared-request-hash").unwrap_or_else(|err| panic!("{err}"));
+
+        let target_first = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "target-first-response",
+                rationale: "target first",
+                score: 0.25,
+                cost_micros: 25,
+                cached: false,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &target_first, "2026-01-01T00:00:01Z");
+        append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &other_project_id,
+                request_hash: &request_hash,
+                response_hash: "same-tenant-other-project-response",
+                rationale: "same tenant other project",
+                score: 0.5,
+                cost_micros: 50,
+                cached: false,
+            },
+        )
+        .await;
+        append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &other_tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "other-tenant-same-project-response",
+                rationale: "other tenant same project",
+                score: 0.75,
+                cost_micros: 75,
+                cached: false,
+            },
+        )
+        .await;
+        let target_second = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "target-second-response",
+                rationale: "target second",
+                score: 1.0,
+                cost_micros: 100,
+                cached: true,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &target_second, "2026-01-01T00:00:04Z");
+
+        let records = ledger
+            .list_records(tenant_id.clone(), project_id.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(
+            records
+                .iter()
+                .map(|record| record.judge_call_id.clone())
+                .collect::<Vec<_>>(),
+            vec![target_first.judge_call_id, target_second.judge_call_id]
+        );
+        assert!(records
+            .iter()
+            .all(|record| record.tenant_id == tenant_id && record.project_id == project_id));
+    }
+
+    #[tokio::test]
+    async fn sqlite_judge_ledger_cached_response_uses_latest_uncached_record_in_scope() {
+        let ledger = SqliteJudgeLedger::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant_id = TenantId::new("tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("project-a").unwrap_or_else(|err| panic!("{err}"));
+        let other_tenant_id = TenantId::new("tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let other_project_id = ProjectId::new("project-b").unwrap_or_else(|err| panic!("{err}"));
+        let request_hash =
+            Sha256Hash::new("shared-request-hash").unwrap_or_else(|err| panic!("{err}"));
+
+        let target_old = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "target-old-response",
+                rationale: "target old",
+                score: 0.2,
+                cost_micros: 20,
+                cached: false,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &target_old, "2026-01-01T00:00:01Z");
+        let target_latest = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "target-latest-response",
+                rationale: "target latest",
+                score: 0.8,
+                cost_micros: 80,
+                cached: false,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &target_latest, "2026-01-01T00:00:02Z");
+        let target_cached = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "target-cached-response",
+                rationale: "target cached",
+                score: 0.99,
+                cost_micros: 99,
+                cached: true,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &target_cached, "2026-01-01T00:00:03Z");
+        let other_tenant_newer = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &other_tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "other-tenant-newer-response",
+                rationale: "other tenant newer",
+                score: 0.1,
+                cost_micros: 10,
+                cached: false,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &other_tenant_newer, "2026-01-01T00:00:04Z");
+        let other_project_newer = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &other_project_id,
+                request_hash: &request_hash,
+                response_hash: "other-project-newer-response",
+                rationale: "other project newer",
+                score: 0.3,
+                cost_micros: 30,
+                cached: false,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &other_project_newer, "2026-01-01T00:00:05Z");
+
+        let cached = ledger
+            .cached_response(tenant_id, project_id, request_hash)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .unwrap_or_else(|| panic!("expected cached judge response"));
+
+        assert_eq!(cached.response_hash, target_latest.response_hash);
+        assert_eq!(cached.response.score, 0.8);
+        assert_eq!(cached.response.rationale, "target latest");
+        assert_eq!(cached.provider_cost, Money::usd_micros(80));
+    }
+
+    #[tokio::test]
     async fn openai_provider_retries_rate_limit_and_parses_structured_score() {
         let calls = Arc::new(AtomicUsize::new(0));
         let endpoint = spawn_mock_provider(Arc::new(MockHttpJudgeState {
@@ -1502,6 +1686,65 @@ mod tests {
             output: serde_json::json!("answer"),
             reference: Some(serde_json::json!("answer")),
         }
+    }
+
+    struct TestLedgerRecord<'a> {
+        tenant_id: &'a TenantId,
+        project_id: &'a ProjectId,
+        request_hash: &'a Sha256Hash,
+        response_hash: &'a str,
+        rationale: &'a str,
+        score: f64,
+        cost_micros: i64,
+        cached: bool,
+    }
+
+    async fn append_ledger_record(
+        ledger: &SqliteJudgeLedger,
+        record: TestLedgerRecord<'_>,
+    ) -> JudgeAuditRecord {
+        let provider_cost = Money::usd_micros(record.cost_micros);
+        ledger
+            .append_record(JudgeAuditInsert {
+                tenant_id: record.tenant_id.clone(),
+                project_id: record.project_id.clone(),
+                evaluator_id: "judge-correctness".to_string(),
+                provider: "openai".to_string(),
+                provider_secret_id: ProviderSecretId::new("secret")
+                    .unwrap_or_else(|err| panic!("{err}")),
+                model: "judge-model".to_string(),
+                request_hash: record.request_hash.clone(),
+                response_hash: Sha256Hash::new(record.response_hash)
+                    .unwrap_or_else(|err| panic!("{err}")),
+                response: JudgeResponse {
+                    score: record.score,
+                    rationale: record.rationale.to_string(),
+                    cost: provider_cost.clone(),
+                },
+                provider_cost,
+                charged_cost: if record.cached {
+                    Money::usd_micros(0)
+                } else {
+                    Money::usd_micros(record.cost_micros)
+                },
+                cached: record.cached,
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+    }
+
+    fn set_record_created_at(
+        ledger: &SqliteJudgeLedger,
+        record: &JudgeAuditRecord,
+        created_at: &str,
+    ) {
+        let connection = ledger.lock().unwrap_or_else(|err| panic!("{err}"));
+        connection
+            .execute(
+                "UPDATE judge_audit_records SET created_at = ?1 WHERE judge_call_id = ?2",
+                rusqlite::params![created_at, record.judge_call_id.as_str()],
+            )
+            .unwrap_or_else(|err| panic!("{err}"));
     }
 
     async fn spawn_mock_provider(state: Arc<MockHttpJudgeState>) -> anyhow::Result<String> {

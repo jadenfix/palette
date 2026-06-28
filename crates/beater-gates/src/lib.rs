@@ -480,6 +480,147 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_gate_is_scoped_by_tenant_and_project() -> anyhow::Result<()> {
+        let gates = SqliteGateStore::in_memory()?;
+        let tenant = TenantId::new("tenant-a")?;
+        let other_tenant = TenantId::new("tenant-b")?;
+        let project = ProjectId::new("project-a")?;
+        let other_project = ProjectId::new("project-b")?;
+        let gate_id = GateId::new("deploy")?;
+
+        let exact_gate = gates
+            .put_gate(gate_definition(
+                tenant.clone(),
+                project.clone(),
+                gate_id.clone(),
+                "exact scope",
+            ))
+            .await?;
+        let other_tenant_gate = gates
+            .put_gate(gate_definition(
+                other_tenant.clone(),
+                project.clone(),
+                gate_id.clone(),
+                "other tenant",
+            ))
+            .await?;
+        let other_project_gate = gates
+            .put_gate(gate_definition(
+                tenant.clone(),
+                other_project.clone(),
+                gate_id.clone(),
+                "other project",
+            ))
+            .await?;
+
+        assert_eq!(
+            gates
+                .get_gate(tenant.clone(), project.clone(), gate_id.clone())
+                .await?,
+            exact_gate
+        );
+        assert_eq!(
+            gates
+                .get_gate(other_tenant.clone(), project.clone(), gate_id.clone())
+                .await?,
+            other_tenant_gate
+        );
+        assert_eq!(
+            gates
+                .get_gate(tenant.clone(), other_project.clone(), gate_id.clone())
+                .await?,
+            other_project_gate
+        );
+
+        let missing = gates
+            .get_gate(other_tenant, other_project, gate_id.clone())
+            .await;
+        assert!(
+            matches!(missing, Err(StoreError::NotFound(message)) if message.contains(gate_id.as_str()))
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn latest_run_is_scoped_by_tenant_and_project() -> anyhow::Result<()> {
+        let gates = SqliteGateStore::in_memory()?;
+        let tenant = TenantId::new("tenant-a")?;
+        let other_tenant = TenantId::new("tenant-b")?;
+        let project = ProjectId::new("project-a")?;
+        let other_project = ProjectId::new("project-b")?;
+        let gate_id = GateId::new("deploy")?;
+        let base = Utc::now();
+
+        gates
+            .write_run(gate_run_report(
+                tenant.clone(),
+                project.clone(),
+                gate_id.clone(),
+                "run-exact-old",
+                "exp-exact-old",
+                base,
+            )?)
+            .await?;
+        let exact_latest = gates
+            .write_run(gate_run_report(
+                tenant.clone(),
+                project.clone(),
+                gate_id.clone(),
+                "run-exact-new",
+                "exp-exact-new",
+                base + chrono::Duration::seconds(10),
+            )?)
+            .await?;
+        let other_tenant_latest = gates
+            .write_run(gate_run_report(
+                other_tenant.clone(),
+                project.clone(),
+                gate_id.clone(),
+                "run-other-tenant",
+                "exp-other-tenant",
+                base + chrono::Duration::seconds(20),
+            )?)
+            .await?;
+        let other_project_latest = gates
+            .write_run(gate_run_report(
+                tenant.clone(),
+                other_project.clone(),
+                gate_id.clone(),
+                "run-other-project",
+                "exp-other-project",
+                base + chrono::Duration::seconds(30),
+            )?)
+            .await?;
+
+        assert_eq!(
+            gates
+                .latest_run(tenant.clone(), project.clone(), gate_id.clone())
+                .await?
+                .map(|report| report.gate_run_id),
+            Some(exact_latest.gate_run_id)
+        );
+        assert_eq!(
+            gates
+                .latest_run(other_tenant.clone(), project.clone(), gate_id.clone())
+                .await?
+                .map(|report| report.gate_run_id),
+            Some(other_tenant_latest.gate_run_id)
+        );
+        assert_eq!(
+            gates
+                .latest_run(tenant.clone(), other_project.clone(), gate_id.clone())
+                .await?
+                .map(|report| report.gate_run_id),
+            Some(other_project_latest.gate_run_id)
+        );
+        assert!(gates
+            .latest_run(other_tenant, other_project, gate_id)
+            .await?
+            .is_none());
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn gate_rejects_mismatched_explicit_experiment() -> anyhow::Result<()> {
         let gates = SqliteGateStore::in_memory()?;
         let experiments = beater_experiments::SqliteExperimentStore::in_memory()?;
@@ -562,6 +703,48 @@ mod tests {
             "experiment exp-inconclusive was inconclusive; deploy gates never pass inconclusive results"
         );
         Ok(())
+    }
+
+    fn gate_definition(
+        tenant_id: TenantId,
+        project_id: ProjectId,
+        gate_id: GateId,
+        name: &str,
+    ) -> GateDefinition {
+        GateDefinition {
+            tenant_id,
+            project_id,
+            gate_id,
+            name: name.to_string(),
+            dataset_id: None,
+            evaluator_version_id: None,
+            inconclusive_policy: InconclusivePolicy::Fail,
+            created_at: Utc::now(),
+        }
+    }
+
+    fn gate_run_report(
+        tenant_id: TenantId,
+        project_id: ProjectId,
+        gate_id: GateId,
+        gate_run_id: &str,
+        experiment_run_id: &str,
+        created_at: Timestamp,
+    ) -> anyhow::Result<GateRunReport> {
+        let gate = gate_definition(tenant_id.clone(), project_id.clone(), gate_id, "deploy");
+        let experiment = experiment_report(
+            tenant_id,
+            project_id,
+            experiment_run_id,
+            DatasetId::new("dataset")?,
+            EvaluatorVersionId::new("exact-v1")?,
+            GateDecision::Pass,
+            0.1,
+        )?;
+        let mut report = evaluate_gate(&gate, &experiment)?;
+        report.gate_run_id = GateRunId::new(gate_run_id)?;
+        report.created_at = created_at;
+        Ok(report)
     }
 
     fn experiment_report(

@@ -3,8 +3,7 @@ use std::process::{Command, Stdio};
 
 use serde_json::{json, Value};
 
-#[test]
-fn beaterd_mcp_stdio_lists_tools() -> anyhow::Result<()> {
+fn run_beaterd_mcp_stdio(request: Value) -> anyhow::Result<Value> {
     let tempdir = tempfile::tempdir()?;
     let mut child = Command::new(env!("CARGO_BIN_EXE_beaterd"))
         .arg("--data-dir")
@@ -27,11 +26,7 @@ fn beaterd_mcp_stdio_lists_tools() -> anyhow::Result<()> {
             .stdin
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("missing beaterd stdin"))?;
-        writeln!(
-            stdin,
-            "{}",
-            json!({ "jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {} })
-        )?;
+        writeln!(stdin, "{request}")?;
     }
     drop(child.stdin.take());
 
@@ -50,10 +45,20 @@ fn beaterd_mcp_stdio_lists_tools() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("beaterd wrote no stdout"))?;
     assert!(
         lines.next().is_none(),
-        "stdio tools/list smoke should emit exactly one JSON-RPC line, got:\n{stdout}"
+        "stdio smoke should emit exactly one JSON-RPC line, got:\n{stdout}"
     );
 
-    let rpc: Value = serde_json::from_str(first)?;
+    serde_json::from_str(first).map_err(Into::into)
+}
+
+#[test]
+fn beaterd_mcp_stdio_lists_tools() -> anyhow::Result<()> {
+    let rpc = run_beaterd_mcp_stdio(json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/list",
+        "params": {}
+    }))?;
     assert_eq!(rpc["jsonrpc"], "2.0");
     assert_eq!(rpc["id"], 1);
     let tools = rpc["result"]["tools"]
@@ -61,6 +66,45 @@ fn beaterd_mcp_stdio_lists_tools() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("tools/list result missing tools array: {rpc}"))?;
     assert_eq!(tools.len(), beater_mcp::tool_names().len() + 1);
     assert!(tools.iter().any(|tool| tool["name"] == "help"));
+
+    Ok(())
+}
+
+#[test]
+fn beaterd_mcp_stdio_calls_help_tool() -> anyhow::Result<()> {
+    let rpc = run_beaterd_mcp_stdio(json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": "help",
+            "arguments": { "tool": "listTraces" }
+        }
+    }))?;
+
+    assert_eq!(rpc["jsonrpc"], "2.0");
+    assert_eq!(rpc["id"], 1);
+    let result = &rpc["result"];
+    assert_eq!(result["isError"], false, "help tool must not error: {rpc}");
+    assert!(
+        result["content"]
+            .as_array()
+            .is_some_and(|items| !items.is_empty()),
+        "help tool should include text content: {rpc}"
+    );
+
+    let tool = &result["structuredContent"]["tool"];
+    assert_eq!(tool["name"], "listTraces");
+    assert_eq!(tool["method"], "GET");
+    assert_eq!(tool["path"], "/v1/traces/{tenant_id}");
+    assert!(
+        tool["inputSchema"].is_object(),
+        "help should describe listTraces input schema: {rpc}"
+    );
+    assert!(
+        tool["outputSchema"].is_object(),
+        "help should describe listTraces output schema: {rpc}"
+    );
 
     Ok(())
 }
