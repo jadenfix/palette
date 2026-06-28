@@ -447,7 +447,7 @@ async fn tools_list_exposes_output_schema_and_annotations() {
             }
         }
 
-        // annotations carry all three method-derived hints + a title.
+        // annotations carry method-derived hints plus operation-aware POST risk.
         let ann = &tool["annotations"];
         assert_eq!(
             ann["title"], tool["description"],
@@ -456,7 +456,13 @@ async fn tools_list_exposes_output_schema_and_annotations() {
         let method = methods.get(name).expect("tool maps to a spec method");
         let expect_read_only = method == "GET";
         let expect_idempotent = matches!(method.as_str(), "GET" | "PUT" | "DELETE");
-        let expect_destructive = matches!(method.as_str(), "PUT" | "DELETE");
+        let expect_destructive = matches!(method.as_str(), "PUT" | "DELETE")
+            || (method == "POST" && matches!(name, "revokeApiKey" | "revokeProviderSecret"));
+        let expect_open_world = method == "POST"
+            && matches!(
+                name,
+                "evaluateJudge" | "runJudgeEval" | "runJudgeExperiment" | "importSource"
+            );
         assert_eq!(
             ann["readOnlyHint"], expect_read_only,
             "{name} ({method}): readOnlyHint"
@@ -469,12 +475,15 @@ async fn tools_list_exposes_output_schema_and_annotations() {
             ann["destructiveHint"], expect_destructive,
             "{name} ({method}): destructiveHint"
         );
+        assert_eq!(
+            ann["openWorldHint"], expect_open_world,
+            "{name} ({method}): openWorldHint"
+        );
     }
 }
 
-/// A GET tool is read-only and non-destructive; a POST tool is neither
-/// read-only nor (by method) destructive. Pin representative operations so a
-/// regression in the mapping is caught by name.
+/// Pin representative operations so a regression in the method and
+/// operation-aware safety hints is caught by name.
 #[tokio::test]
 async fn representative_tools_have_correct_safety_hints() {
     let (state, _tempdir) = build_state();
@@ -497,7 +506,23 @@ async fn representative_tools_have_correct_safety_hints() {
     // POST: a write, not read-only.
     let create = by_name("createDataset");
     assert_eq!(create["annotations"]["readOnlyHint"], false);
+    assert_eq!(create["annotations"]["destructiveHint"], false);
     assert_eq!(create["annotations"]["idempotentHint"], false);
+    assert_eq!(create["annotations"]["openWorldHint"], false);
+
+    // Destructive POST: revokes access, so clients should confirm it.
+    let revoke = by_name("revokeApiKey");
+    assert_eq!(revoke["annotations"]["readOnlyHint"], false);
+    assert_eq!(revoke["annotations"]["destructiveHint"], true);
+    assert_eq!(revoke["annotations"]["idempotentHint"], false);
+    assert_eq!(revoke["annotations"]["openWorldHint"], false);
+
+    // Open-world POST: can invoke an external provider.
+    let judge = by_name("evaluateJudge");
+    assert_eq!(judge["annotations"]["readOnlyHint"], false);
+    assert_eq!(judge["annotations"]["destructiveHint"], false);
+    assert_eq!(judge["annotations"]["idempotentHint"], false);
+    assert_eq!(judge["annotations"]["openWorldHint"], true);
 }
 
 /// The `outputSchema` for an operation returning a component type resolves its
