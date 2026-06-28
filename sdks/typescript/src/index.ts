@@ -12,6 +12,8 @@
 
 export { init, getConfig, flush, shutdown } from "./tracing";
 export { observe, span, setInput, setOutput } from "./observe";
+export { auto, instrument } from "./auto";
+export type { InstrumentOptions, InstrumentProvider, InstrumentResult, SkippedProvider } from "./auto";
 export { wrapOpenAI } from "./providers/openai";
 export { wrapAnthropic } from "./providers/anthropic";
 export { SpanKind, Attr, SPAN_KINDS } from "./semconv";
