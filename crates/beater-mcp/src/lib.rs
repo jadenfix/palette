@@ -34,6 +34,7 @@ use beater_api::{openapi::urlencode, router as api_router, ApiState};
 use http::{HeaderMap, Method, Request, StatusCode};
 use serde_json::{json, Map, Value};
 use std::sync::OnceLock;
+use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
 use tower::ServiceExt;
 
 /// Latest MCP protocol version this server implements. Advertised by default and
@@ -462,6 +463,47 @@ pub fn router(state: ApiState) -> Router {
     Router::new()
         .route("/mcp", post(handle_mcp).get(handle_mcp_get))
         .with_state(state)
+}
+
+/// Serve MCP JSON-RPC over stdin/stdout.
+///
+/// The stdio transport is line-delimited JSON-RPC: each non-empty stdin line is
+/// one request, and every response is written as exactly one stdout line. All
+/// diagnostic output belongs on stderr in the caller so stdout remains valid MCP
+/// traffic for local clients.
+pub async fn serve_stdio(state: ApiState) -> std::io::Result<()> {
+    serve_stdio_streams(state, tokio::io::stdin(), tokio::io::stdout()).await
+}
+
+/// Testable stdio transport implementation over arbitrary async streams.
+pub async fn serve_stdio_streams<R, W>(
+    state: ApiState,
+    input: R,
+    mut output: W,
+) -> std::io::Result<()>
+where
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
+{
+    let mut lines = BufReader::new(input).lines();
+    let headers = HeaderMap::new();
+
+    while let Some(line) = lines.next_line().await? {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let response = match serde_json::from_str::<Value>(&line) {
+            Ok(request) => dispatch_rpc(&state, &headers, &request).await,
+            Err(_) => Some(rpc_error(Value::Null, PARSE_ERROR, "invalid JSON")),
+        };
+        if let Some(response) = response {
+            output.write_all(response.to_string().as_bytes()).await?;
+            output.write_all(b"\n").await?;
+            output.flush().await?;
+        }
+    }
+
+    output.flush().await
 }
 
 /// JSON-RPC error codes (subset used here).

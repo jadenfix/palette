@@ -37,7 +37,7 @@ use beater_store_sql::{
     migrate_local_beaterd_sqlite, SqliteMetadataStore, SqliteQuotaLimiter, SqliteTraceStore,
 };
 use beater_usage::SqliteUsageLedger;
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::json;
@@ -54,6 +54,8 @@ use tonic::transport::Server;
     about = "All-in-one Beater agent observability server"
 )]
 struct Args {
+    #[command(subcommand)]
+    command: Option<Command>,
     #[arg(long, default_value = "127.0.0.1:8080")]
     addr: SocketAddr,
     #[arg(long, default_value = "127.0.0.1:4317")]
@@ -128,6 +130,17 @@ struct Args {
     /// a self-hosted beaterd makes no outbound telemetry call unless this is set.
     #[arg(long, env = beater_core::SelfHostTelemetryConfig::ENV_VAR)]
     self_host_telemetry: bool,
+}
+
+#[derive(Debug, Subcommand)]
+enum Command {
+    /// Serve the Model Context Protocol over a local transport.
+    Mcp {
+        /// Read newline-delimited JSON-RPC requests from stdin and write
+        /// responses to stdout. Diagnostics stay on stderr.
+        #[arg(long)]
+        stdio: bool,
+    },
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -382,6 +395,16 @@ async fn main() -> anyhow::Result<()> {
         ],
         api_keys: api_key_store,
     };
+
+    if let Some(Command::Mcp { stdio }) = args.command {
+        if !stdio {
+            anyhow::bail!("the mcp subcommand currently requires --stdio");
+        }
+        beater_mcp::serve_stdio(state)
+            .await
+            .context("serve mcp stdio")?;
+        return Ok(());
+    }
 
     let latency_metrics = metrics.clone();
     let app = router(state.clone())

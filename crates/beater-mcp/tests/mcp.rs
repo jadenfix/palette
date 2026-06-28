@@ -246,6 +246,36 @@ async fn initialize_and_tools_list_over_mcp_route() {
     );
 }
 
+#[tokio::test]
+async fn initialize_and_tools_list_over_stdio_transport() {
+    let (state, _tempdir) = build_state();
+    let input = [
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {} }).to_string(),
+        json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {} }).to_string(),
+    ]
+    .join("\n")
+        + "\n";
+    let mut output = Vec::new();
+
+    unwrap(beater_mcp::serve_stdio_streams(state, input.as_bytes(), &mut output).await);
+
+    let text = String::from_utf8(output).expect("stdio output is utf8");
+    let lines: Vec<Value> = text
+        .lines()
+        .map(|line| serde_json::from_str(line).expect("stdout line is JSON-RPC"))
+        .collect();
+    assert_eq!(lines.len(), 2);
+    assert_eq!(lines[0]["jsonrpc"], "2.0");
+    assert_eq!(lines[0]["id"], 1);
+    assert_eq!(lines[0]["result"]["serverInfo"]["name"], "beater-mcp");
+    assert_eq!(lines[1]["jsonrpc"], "2.0");
+    assert_eq!(lines[1]["id"], 2);
+    let tools = lines[1]["result"]["tools"]
+        .as_array()
+        .expect("tools/list result");
+    assert_eq!(tools.len(), beater_mcp::tool_names().len() + 1);
+}
+
 /// Parity: a `tools/call` returns the same JSON body as the equivalent direct
 /// HTTP request, with identical auth (here: anonymous, auth disabled).
 #[tokio::test]

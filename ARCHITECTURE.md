@@ -207,7 +207,7 @@ drift. What is **[built]** today vs **[planned]** is marked.
 | **Docs site** | renders the committed `sdks/openapi/beater-api.json` | static site / hosted docs | tracks the spec version | published from `main`; the committed spec is the source so docs never drift | [planned site; spec is built] |
 | **7 generated SDK clients** (`sdks/clients/*`: py, ts, go, java, c, cpp, …) | OpenAPI spec via `scripts/regen-sdks.sh` (+ reproducible C/C++ patches) | committed in-repo; published to each language registry (PyPI / npm / pkg.go.dev / Maven, etc.) by `scripts/publish-sdk.sh` | spec/contract version; per-language package version | `pip`/`npm`/`go get`/Maven by users; `sdk-contract` CI blocks any drift from the spec | clients [built]; registry publish [planned] |
 | **Native Rust SDK** (`sdks/rust`) | hand-written, `tracing`/OTel layers; **excluded** from the cargo workspace | crates.io package | semver | `cargo add beater` (accelerator, not the adoption gate, §1 #2, §15) | [built in-repo; crates.io publish planned] |
-| **MCP server** (`beater-mcp`) | every `/v1` operation resolved from the spec at runtime, + composite recipes + RSI tools (§21) | served by `beaterd` at `POST /mcp` | tracks the spec (operations resolved at runtime → auto-in-sync) | **stdio** for local clients (Claude Code/Cursor/Codex) and **streamable-HTTP + OAuth 2.1** for hosted (§21). streamable-HTTP is [built]; **stdio is the one [planned] transport gap (§21).** | streamable-HTTP [built]; stdio [planned] |
+| **MCP server** (`beater-mcp`) | every `/v1` operation resolved from the spec at runtime, + composite recipes + RSI tools (§21) | served by `beaterd` at `POST /mcp`; local stdio via `beaterd mcp --stdio` | tracks the spec (operations resolved at runtime → auto-in-sync) | **stdio** for local clients (Claude Code/Cursor/Codex) and **streamable-HTTP + OAuth 2.1** for hosted (§21). | streamable-HTTP [built]; stdio tools/list smoke [built] |
 | **CLI** (`beaterctl`) | resolves `/v1` operations from the spec at runtime (`beater api`), plus local fixtures/smoke | the server image, and a standalone binary | tracks server/spec | `cargo run -p beaterctl` or the released binary; used in CI smoke + local dev | [built] |
 
 The discipline that keeps these consistent is one workflow (`CLAUDE.md`,
@@ -2457,8 +2457,9 @@ HTTP endpoints already exist on `main` (`beater-oauth`/`beater-oauth-server` wir
 into `beaterd`: `/.well-known/oauth-authorization-server`, `/oauth/authorize`,
 `/oauth/token`, dynamic client registration) and the MCP is already served at
 `POST /mcp` alongside them; the streamable-HTTP transport reuses exactly that
-surface. **stdio is the one transport not yet present and is the concrete MCP
-deployability gap to close.**
+surface. `beaterd mcp --stdio` now exposes the same tool set locally over stdin /
+stdout. The remaining MCP deployability gap is end-to-end client setup proof
+(Claude Code / Cursor / Codex / ChatGPT) and authenticated hosted attach.
 
 Design invariants (carried from §1):
 
@@ -2881,9 +2882,10 @@ the identical RFC 9728 → 8414 → 7591 → authorize/token discovery and then 
 `/mcp` with the bearer token. (Config-file shape follows Codex's MCP server schema;
 the URL + HTTP transport are the only Beater-specific values.)
 
-**Local `stdio` transport is the alternate path and is `[planned]`.** Today the
-server speaks HTTP only (`POST/GET /mcp`); a `stdio` transport for a fully local,
-no-network coding-agent attach is on the roadmap, not built.
+**Local `stdio` transport is the alternate path and is `[built]` for the basic
+tool-catalog smoke.** `beaterd mcp --stdio` serves newline-delimited JSON-RPC for
+fully local, no-network coding-agent attach; full end-client attach proof remains
+part of the deployability work above.
 
 **Value prop — quant-by-default.** Attaching this one MCP gives the coding agent the
 **entire quantitative stack**, so its self-improvement is *statistically gated and
@@ -2915,10 +2917,11 @@ prints the exporter snippet + dashboard URL; and the MCP does the heavy lifting
 **DX SLO is time-to-first-scored-failure** (§15) — not just a trace, a *scored
 failing case* — and the Claude-Code / Codex attach is the fastest route to it.
 
-> **Built-vs-planned (honest).** The **OAuth 2.1 server** and the **`/mcp` HTTP
-> endpoint** are **[built]** (`crates/beater-oauth-server`, `crates/beater-mcp` on
-> `main`). The **streamable-HTTP transport**, the **end-to-end Claude-Code / Codex
-> OAuth connect verification**, and the **`stdio`** transport are **partial/planned**.
+> **Built-vs-planned (honest).** The **OAuth 2.1 server**, the **`/mcp` HTTP
+> endpoint**, the **streamable-HTTP transport**, and basic **`stdio`** transport are
+> **[built]** (`crates/beater-oauth-server`, `crates/beater-mcp`, `beaterd mcp
+> --stdio`). The **end-to-end Claude-Code / Codex OAuth connect verification** is
+> still **[planned]**.
 
 ### 21.6 Bounded-autonomy policy
 
@@ -3222,8 +3225,12 @@ curl -fsS -X POST http://127.0.0.1:8080/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | head
 ```
 
-`[planned]` stdio: `beaterd mcp --stdio` then a `tools/list` JSON-RPC frame on
-stdin returns the same tool set.
+`[built]` stdio:
+
+```bash
+printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' \
+  | beaterd mcp --stdio
+```
 
 **SDKs (7 generated clients + native Rust, §3.3).**
 *Tests:* the `sdk-contract` gate — spec ↔ served routes, spec ↔ each of the 7
@@ -3335,7 +3342,7 @@ The CI gate is the workflow that blocks merge if the item regresses.
 | §20.7 #5.11 governance/SECURITY | `SECURITY.md` + compliance docs present | repo presence check; **`SECURITY.md` now exists `[built]`** | `backend` |
 | §20.8 #6.2 zero-code bootstrap | env-var-only app produces traces with no code (§1 #13) | the README zero-code OTLP snippet `[built]` (manual); env-var distro `[planned]` | `gate1-live-smoke` |
 | §20.8 #6.4 `beaterctl quickstart` | timed e2e shows a *scored failing case* under the §15 SLO | `beaterctl quickstart` `[planned]` | `gate1-live-smoke` |
-| §21 MCP stdio transport | `tools/list` over stdio returns the full tool set | `beaterd mcp --stdio` `[planned]`; streamable-HTTP `/mcp` `[built]` | `sdk-contract` |
+| §21 MCP stdio transport | `tools/list` over stdio returns the full tool set | `beaterd mcp --stdio` `[built]`; streamable-HTTP `/mcp` `[built]` | `sdk-contract` |
 | §21.1 RSI tools | propose→simulate(Train)→accept(Test) only on a stat-sig held-out win (A13/A14) | `gate_candidate` MCP recipe `[planned]` | `backend` |
 | §21.9 RSI MVP acceptance | indexes a small agent, proposes a generalizable change, verifies a Test win, applies via Claude Code with approval | end-to-end MCP episode `[planned]` | `backend` |
 
@@ -3679,7 +3686,7 @@ to §18 milestones, §19 Bar-for-Done, §20/§21 phase items, and §22 tests.
 | Real statistics | method-appropriate CI, real p-value, test-selection, Holm-BH/FDR, anytime-valid | §22.1 Statistics row (A2–A8); `cargo test -p beater-stats` | planned (hardcoded-z path deleted; `beater-stats` not yet built, §10.3) |
 | Candidate-vs-baseline gate blocks a regression | the gate **exits non-zero** on a real confidence-bound regression | §22.1 Experiments+gates; `! beaterctl gate-run …` (non-zero exit) `[built]` | partial (built on the deleted-stats path; trustworthy once `beater-stats` lands) |
 | Replay earliest-flip | forked replay finds the **earliest outcome-flipping span** on a seeded failure (A18) | §22.1 Replay row; `replay-fixture` `[built]` (cassette); real forked search §11 `[planned]` | partial |
-| MCP deployable < 5 min | stdio **and** hosted streamable-HTTP/OAuth, connecting from Claude Code/Cursor/ChatGPT/Codex with `tools/list`+`tools/call` | §22.1 MCP row + §22.3 §21 stdio row; `curl POST /mcp` `[built]`; `beaterd mcp --stdio` `[planned]` | partial (streamable-HTTP built; stdio is the named gap) |
+| MCP deployable < 5 min | stdio **and** hosted streamable-HTTP/OAuth, connecting from Claude Code/Cursor/ChatGPT/Codex with `tools/list`+`tools/call` | §22.1 MCP row + §22.3 §21 stdio row; `curl POST /mcp` `[built]`; `beaterd mcp --stdio` `[built]` | partial (basic transports built; end-client attach proof remains) |
 | RSI loop closes end-to-end | index→propose→simulate(Train)→accept(Test)→apply via Claude Code with approval | §22.1 RSI row + §22.3 §21.8 row; end-to-end MCP episode | planned |
 | §21 guardrail rejects an overfit change | the §21.4 guardrail **REJECTS** a deliberately-overfit change on a **held-out OOD probe** (demonstrated) | §22.1 RSI row + §22.3 §21.1 RSI row; OOD-reject acceptance test (§21.4) | planned |
 | SDK ↔ MCP ↔ API zero-drift | spec == served routes == all 7 clients == MCP tools == CLI == 5 semconv SDKs | §22.5 `sdk-contract` gate; `scripts/check-contract-sync.sh` `[built]` | built |
@@ -4028,5 +4035,4 @@ contract (§25.3).
   **beat-boxes naming** (§4) are preserved throughout: the dashboard is
   **Soundstage**, and each screen carries its beat-box (Encore, Backbeat,
   Beatboxing, Setlist, Mixdown, Rewind, Crate Dig, Tempo/Heartbeat) crosswalk.
-
 
