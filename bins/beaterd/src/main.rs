@@ -1106,9 +1106,9 @@ mod queue_stats_tests {
         now: chrono::DateTime<Utc>,
     ) -> DeadLetter {
         let mut message = BusMessage::new(
-            TenantId::new(tenant).expect("tenant"),
-            ProjectId::new("demo").expect("project"),
-            IdempotencyKey::new("k").expect("key"),
+            TenantId::new(tenant).unwrap_or_else(|err| panic!("tenant: {err}")),
+            ProjectId::new("demo").unwrap_or_else(|err| panic!("project: {err}")),
+            IdempotencyKey::new("k").unwrap_or_else(|err| panic!("key: {err}")),
             kind,
             vec![],
         );
