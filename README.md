@@ -131,7 +131,8 @@ see [ARCHITECTURE.md](ARCHITECTURE.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Outside Runner Quickstart
 
 This is the public clean-clone path Gate 2 is measured on. The one-screen
-handoff is
+handoff, the [Gate 2 Outside Runner Card](docs/demos/gate2-outside-runner-card.md),
+lives at
 [docs/demos/gate2-outside-runner-card.md](docs/demos/gate2-outside-runner-card.md).
 Prerequisites:
 Docker Desktop or another local Docker daemon, Docker Compose v2, `git`, `curl`,
