@@ -320,25 +320,47 @@ fn tool_to_json(tool: &ToolSpec) -> Value {
     }
     obj.insert(
         "annotations".to_string(),
-        annotations_for(&tool.method, &tool.description),
+        annotations_for(&tool.method, &tool.name, &tool.description),
     );
     Value::Object(obj)
 }
 
-/// Behavioural hints derived purely from the HTTP method, per the MCP tool
-/// annotations contract: `GET` is read-only; `PUT`/`DELETE` are idempotent and
-/// may overwrite/remove state, so they are flagged destructive; `POST` is a
-/// non-idempotent, non-destructive write. These are advisory hints clients use
-/// to gate or batch calls — they are not a security boundary.
-fn annotations_for(method: &str, title: &str) -> Value {
+/// `POST` operations that perform a **destructive** update — they revoke or
+/// remove access a client should confirm before calling. `PUT`/`DELETE` are
+/// always destructive; these are the `POST`s that are too. Membership is keyed on
+/// `operationId` (validated against the live spec in tests), not the HTTP method,
+/// because most `POST`s are additive writes that are *not* destructive.
+const DESTRUCTIVE_POST_OPERATIONS: &[&str] = &["revokeApiKey", "revokeProviderSecret"];
+
+/// `POST` operations that reach an **open world** of external entities — the
+/// judge broker's model providers, or an external source import — so a client
+/// should treat them as having side effects beyond Beater's own store (cost, rate
+/// limits, third-party calls), not just a local write.
+const OPEN_WORLD_POST_OPERATIONS: &[&str] = &[
+    "evaluateJudge",
+    "runJudgeEval",
+    "runJudgeExperiment",
+    "importSource",
+];
+
+/// Behavioural hints for an MCP tool. `readOnly`/`idempotent` follow HTTP-method
+/// semantics (`GET` read-only; `GET`/`PUT`/`DELETE` idempotent). `destructive`
+/// and `openWorld` additionally consult the `operation_id`, because the method
+/// alone under-warns: most `POST`s are additive writes, but a few revoke access
+/// (destructive) or call external providers (open world). These are advisory
+/// hints clients use for confirmation UX — they are not a security boundary.
+fn annotations_for(method: &str, operation_id: &str, title: &str) -> Value {
     let read_only = method == "GET";
     let idempotent = matches!(method, "GET" | "PUT" | "DELETE");
-    let destructive = matches!(method, "PUT" | "DELETE");
+    let destructive = matches!(method, "PUT" | "DELETE")
+        || (method == "POST" && DESTRUCTIVE_POST_OPERATIONS.contains(&operation_id));
+    let open_world = method == "POST" && OPEN_WORLD_POST_OPERATIONS.contains(&operation_id);
     json!({
         "title": title,
         "readOnlyHint": read_only,
         "destructiveHint": destructive,
         "idempotentHint": idempotent,
+        "openWorldHint": open_world,
     })
 }
 
@@ -381,7 +403,7 @@ fn help_tool_json() -> Value {
             }
         },
         // Pure read of static, in-process data: read-only and idempotent.
-        "annotations": annotations_for("GET", "Discover Beater MCP tools"),
+        "annotations": annotations_for("GET", "help", "Discover Beater MCP tools"),
     })
 }
 
@@ -815,7 +837,9 @@ mod tests {
             ("DELETE", false, true, true),
         ];
         for (method, read_only, destructive, idempotent) in cases {
-            let a = annotations_for(method, "do a thing");
+            // An operation_id that is in neither classification set, so destructive
+            // and openWorld follow the method alone.
+            let a = annotations_for(method, "doThing", "do a thing");
             assert_eq!(a["title"], "do a thing", "{method}: title carried through");
             assert_eq!(a["readOnlyHint"], read_only, "{method}: readOnlyHint");
             assert_eq!(
@@ -823,6 +847,7 @@ mod tests {
                 "{method}: destructiveHint"
             );
             assert_eq!(a["idempotentHint"], idempotent, "{method}: idempotentHint");
+            assert_eq!(a["openWorldHint"], false, "{method}: openWorldHint");
         }
     }
 
@@ -831,10 +856,70 @@ mod tests {
     #[test]
     fn read_only_is_never_destructive() {
         for method in ["GET", "POST", "PUT", "DELETE"] {
-            let a = annotations_for(method, "t");
+            let a = annotations_for(method, "op", "t");
             if a["readOnlyHint"] == Value::Bool(true) {
                 assert_eq!(a["destructiveHint"], Value::Bool(false), "{method}");
             }
+        }
+    }
+
+    /// A `POST` that revokes access is flagged destructive even though its method
+    /// is `POST` (the old method-only logic under-warned here); an additive `POST`
+    /// is not.
+    #[test]
+    fn destructive_post_operations_are_flagged() {
+        for op in ["revokeApiKey", "revokeProviderSecret"] {
+            let a = annotations_for("POST", op, "t");
+            assert_eq!(a["destructiveHint"], Value::Bool(true), "{op} destructive");
+        }
+        for op in ["createDataset", "ingestNative", "submitReviewAnnotation"] {
+            let a = annotations_for("POST", op, "t");
+            assert_eq!(
+                a["destructiveHint"],
+                Value::Bool(false),
+                "{op} additive, not destructive"
+            );
+        }
+    }
+
+    /// A `POST` that calls an external model provider or imports from an external
+    /// source is flagged open-world; a purely local `POST` is not.
+    #[test]
+    fn open_world_post_operations_are_flagged() {
+        for op in [
+            "evaluateJudge",
+            "runJudgeEval",
+            "runJudgeExperiment",
+            "importSource",
+        ] {
+            let a = annotations_for("POST", op, "t");
+            assert_eq!(a["openWorldHint"], Value::Bool(true), "{op} open world");
+        }
+        for op in ["createDataset", "runDeterministicEval", "revokeApiKey"] {
+            let a = annotations_for("POST", op, "t");
+            assert_eq!(a["openWorldHint"], Value::Bool(false), "{op} local");
+        }
+    }
+
+    /// Anti-drift: every operation_id in the classification sets must be a real
+    /// `POST` operation in the live spec, so a typo or a removed/renamed endpoint
+    /// fails CI instead of silently mis-annotating (or never matching).
+    #[test]
+    fn classification_sets_reference_real_post_operations() {
+        let doc = serde_json::to_value(beater_api::openapi::openapi()).unwrap_or(Value::Null);
+        let post_ops: std::collections::BTreeSet<String> = beater_api::openapi::operations(&doc)
+            .into_iter()
+            .filter(|op| op.method.eq_ignore_ascii_case("post"))
+            .map(|op| op.operation_id.to_string())
+            .collect();
+        for op in DESTRUCTIVE_POST_OPERATIONS
+            .iter()
+            .chain(OPEN_WORLD_POST_OPERATIONS.iter())
+        {
+            assert!(
+                post_ops.contains(*op),
+                "classified operation `{op}` is not a POST operation in the spec"
+            );
         }
     }
 
