@@ -21,7 +21,7 @@ export async function fetchUsageSummary(
   const token = store.get(SESSION_COOKIE)?.value;
   const base = dashboardApiBaseUrl();
   const headers: Record<string, string> = {
-    ...(dashboardApiHeaders({ tenantId, projectId }) as Record<string, string>),
+    ...(dashboardApiHeaders({ projectId }) as Record<string, string>),
   };
   if (token) headers.cookie = `${SESSION_COOKIE}=${token}`;
 

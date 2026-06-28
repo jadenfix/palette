@@ -2283,7 +2283,7 @@ endpoints. The dashboard today is one server-rendered trace-waterfall page.
 | 2.5 | Human annotation queues + inline scoring UI | full `beater-human` backend, no UI | `web/dashboard/app/review` (queue + task inbox) + inline `AnnotationPanel` on span detail posting `submitReviewAnnotation`; keyboard labeling | L | none |
 | 2.6 | Failed-vs-passed trace diff | none | `GET /v1/traces/:tenant/:a/diff/:b` aligning spans by name/kind/seq emitting per-span deltas **[contract]**; `web/dashboard/app/diff` side-by-side view | L | contract |
 | 2.7 | Cost/latency analytics dashboard | single-run summary strip only | `GET /v1/metrics/:tenant` timeseries (p50/p95/p99, cost/token trends, model/release breakdown) **[contract]**; `web/dashboard/app/analytics` charts | L | contract |
-| 2.8 | Search UI + saved views | strong filter form, no full-text UI | `web/dashboard/app/search` + `searchSpansPath()` calling `/v1/search/:tenant/spans`; attribute-predicate query bar; saved views | M | none |
+| 2.8 | Search UI + saved views | `/search` full-text + predicate form and BM25 result table are built; saved views are not | saved views on top of `web/dashboard/app/search` + `searchSpansPath()` calling `/v1/search/:tenant/spans`; attribute-predicate query bar remains the read path | M | none |
 | 2.9 | Client interactivity (live tail, virtualized) | fully server-rendered, GET-form nav | client components (SWR/react-query) over read APIs; SSE/websocket live-tail on `/v1/traces`; virtualized span lists | L | none |
 
 Acceptance: a user can browse datasets, open an experiment and see per-case
@@ -3982,7 +3982,7 @@ read-API" names the §20.2/§20.4/§20.7 item that unblocks it.
 | Route | Purpose | Key interactions | Read-API | Status |
 | --- | --- | --- | --- | --- |
 | `/` **Traces** | the §0 core surface: trace table → span waterfall | filters (status/time/model/release/cost/latency, §13); waterfall with depth; span detail; **multimodal + chat/tool-call I/O**; **redaction unmask w/ reason** | `listTraces`/`getTrace`/`getSpan`/`getSpanIo` (in `lib/api.ts`) | **[built]** (table+waterfall+redaction live; chat/tool-call/multimodal rendering needs §20.3 #1.2/#1.3) |
-| `/search` **Crate Dig** | full-text + predicate search over spans | attribute-predicate query bar; BM25 results (§13); **saved views** | `/v1/search/:tenant/spans` (§20.4 #2.8) | **[needs read-API]** (filter form built; full-text UI planned) |
+| `/search` **Crate Dig** | full-text + predicate search over spans | attribute-predicate query bar; BM25 results (§13); **saved views planned** | `/v1/search/:tenant/spans` (§20.4 #2.8) | **[partial]** (full-text form + result table built; saved views planned) |
 | `/sessions` **Sessions** | multi-turn conversation/thread grouping | session list → turns → traces; user/thread filters | `/v1/sessions` (§20.3 #1.1) | **[needs read-API]** |
 | `/datasets` **Encore** | browse datasets / versions / cases | version picker; case table; **promote-from-query**; CSV/JSONL import | `GET /v1/datasets…` (§20.4 #2.1), promote (§20.4 #2.1b) | **[needs read-API]** (create-only POST today) |
 | `/experiments/[id]` **Beatboxing** | A/B candidate-vs-baseline | per-case score table; baseline-vs-candidate **deltas with `ci_low/ci_high`**; **gate badge** (pass/fail/**inconclusive**); trace deep-links; per-slice segments | `ExperimentRunReport`; `GET /v1/experiments/:tenant/:project` (§20.4 #2.3, §20.5 #3.5) | **[needs read-API]** |
@@ -4605,4 +4605,3 @@ schema (`agent.handoff`, #159) lands — building them now would add doc/feature
 we can't yet justify against the §1 discipline. The bidirectional registry rung
 (§28.3) is gated on #277's composite tools shipping first; we will not expose a
 "loop-closing" tool externally until the loop actually closes (#71).
-

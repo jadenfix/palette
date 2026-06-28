@@ -257,6 +257,9 @@ test("dashboard page exposes the trace inspection surface", () => {
   assert.match(page, /aria-label=\{`\$\{label\} I\/O`\}/);
   assert.match(page, /spanAncestry/);
   assert.match(page, /apiHostLabel/);
+  assert.match(page, /href=\{searchHref\(data\.query\)\}/);
+  assert.match(page, /function searchHref/);
+  assert.match(page, /\/search\?/);
   assert.doesNotMatch(page, /No secondary filters/);
   assert.doesNotMatch(page, /className=\{`run-state \$\{run\.status\}`\}/);
   assert.doesNotMatch(page, /No artifact references/);
@@ -331,6 +334,45 @@ test("dashboard chrome stays dense and tool-like", () => {
   assert.doesNotMatch(css, /\.span-identity \.status \{\n  display: none;/);
 });
 
+test("dashboard search page uses generated span search", () => {
+  const page = readFileSync(join(root, "app/search/page.tsx"), "utf8");
+  const api = readFileSync(join(root, "lib/api.ts"), "utf8");
+  const css = readFileSync(join(root, "app/globals.css"), "utf8");
+
+  assert.match(page, /Span Search/);
+  assert.match(page, /Crate Dig/);
+  assert.match(page, /loadSearchData/);
+  assert.match(page, /SearchHit/);
+  assert.match(page, /SearchQuery/);
+  assert.match(page, /searchParams\?: Promise<SearchParams>/);
+  assert.match(page, /boundedLimit/);
+  assert.match(page, /Math\.min\(100, Math\.max\(1, Math\.trunc\(parsed\)\)\)/);
+  assert.match(page, /name="q"/);
+  assert.match(page, /name="trace_id"/);
+  assert.match(page, /name="span_id"/);
+  assert.match(page, /traceHitHref/);
+  assert.match(page, /params\.set\("trace", hit\.trace_id\)/);
+  assert.match(page, /params\.set\("span", hit\.span_id\)/);
+  assert.match(page, /No search hits match this query/);
+  assert.doesNotMatch(page, /"use client"/);
+
+  assert.match(api, /type SearchOperation = operations\["searchSpans"\]/);
+  assert.match(api, /type SearchQueryParams = NonNullable<SearchOperation\["parameters"\]\["query"\]>/);
+  assert.match(api, /export type SearchHit = components\["schemas"\]\["SearchHit"\]/);
+  assert.match(api, /export type SearchResponse = components\["schemas"\]\["SearchResponse"\]/);
+  assert.match(api, /searchParamsForSpanSearch/);
+  assert.match(api, /searchSpansPath/);
+  assert.match(api, /\/v1\/search\/\$\{encodeURIComponent\(path\.tenant_id\)\}\/spans/);
+  assert.match(api, /fetchJson<SearchResponse>/);
+  assert.match(api, /response: \{ hits: \[\] \}/);
+
+  assert.match(css, /\.search-filter-grid/);
+  assert.match(css, /\.search-results/);
+  assert.match(css, /\.search-row\[data-status="error"\]/);
+  assert.match(css, /\.search-hit-signals/);
+  assert.match(css, /\.search-score/);
+});
+
 test("local Gate 2 proof serves standalone CSS assets", () => {
   const proof = readFileSync(join(root, "..", "..", "scripts/gate2-proof.sh"), "utf8");
   assert.match(proof, /npm run build/);
@@ -348,13 +390,19 @@ test("dashboard client uses public beater read endpoints", () => {
   assert.match(api, /SpanOperation/);
   assert.match(api, /SpanPathParams/);
   assert.match(api, /TraceReadQuery/);
+  assert.match(api, /SearchOperation/);
+  assert.match(api, /SearchPathParams/);
   assert.match(api, /encodeURIComponent\(path\.tenant_id\)/);
   assert.match(api, /spanPath/);
+  assert.match(api, /searchSpansPath/);
+  assert.match(api, /searchParamsForSpanSearch/);
   assert.match(api, /fetchJson<CanonicalSpan>/);
+  assert.match(api, /fetchJson<SearchResponse>/);
   assert.match(api, /traceReadParams/);
   assert.match(api, /params\.set\("unmask", "true"\)/);
   assert.match(api, /params\.set\("reason"/);
   assert.match(api, /\/v1\/spans\//);
+  assert.match(api, /\/v1\/search\//);
   assert.match(api, /\/io/);
   assert.match(api, /const activeRun = query\.traceId/);
   assert.match(api, /const activeRunMatchesTrace = activeRun !== undefined && activeRun\.trace_id === activeTraceId/);
@@ -371,6 +419,43 @@ test("dashboard client uses public beater read endpoints", () => {
   assert.match(api, /selectedSpan = selectedSpanFromTrace;/);
   assert.match(api, /selectedIo = await fetchJson<SpanIoResponse>/);
   assert.match(api, /if \(!query\.unmask\) return params;/);
+});
+
+test("dashboard search URLs use generated searchSpans params", () => {
+  const { searchSpansPath } = loadDashboardApiModule();
+
+  assert.equal(
+    searchSpansPath({
+      tenantId: "tenant/1",
+      projectId: "demo",
+      environmentId: "local",
+      q: "prompt error",
+      traceId: "trace-1",
+      spanId: "span-1",
+      kind: "llm.call",
+      status: "error",
+      model: "gpt-4.1",
+      tool: "browser",
+      limit: 25
+    }),
+    "/v1/search/tenant%2F1/spans?q=prompt+error&project_id=demo&environment_id=local&trace_id=trace-1&span_id=span-1&kind=llm.call&status=error&model=gpt-4.1&tool=browser&limit=25"
+  );
+});
+
+test("dashboard search loader returns an empty result on API failure", async () => {
+  const { loadSearchData } = loadDashboardApiModule({
+    fetch: async () => ({
+      ok: false,
+      status: 503,
+      statusText: "Service Unavailable",
+      text: async () => JSON.stringify({ message: "search unavailable" })
+    })
+  });
+
+  const data = await loadSearchData({ tenantId: "demo", projectId: "demo", environmentId: "local" });
+
+  assert.equal(data.response.hits.length, 0);
+  assert.equal(data.error, "API 503 Service Unavailable: search unavailable");
 });
 
 test("dashboard API errors stay concise and user-facing", () => {
