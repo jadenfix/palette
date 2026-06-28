@@ -11,7 +11,7 @@ import {
   Plus,
 } from "lucide-react";
 
-import { CopyButton, CopyField } from "../../components/CopyButton";
+import { CopyButton, CopyField } from "../../../components/CopyButton";
 
 type Scope = { id: string; name: string; desc: string };
 

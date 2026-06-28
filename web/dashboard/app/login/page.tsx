@@ -14,7 +14,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { BrandLockup, BrandVitals } from "../components/BeaterMark";
+import { BrandLockup, BrandVitals } from "../../components/BeaterMark";
 
 type Mode = "login" | "register";
 

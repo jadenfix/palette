@@ -1,5 +1,5 @@
 import { getSession } from "../../lib/auth";
-import { AppNav } from "../components/AppNav";
+import { AppNav } from "../../components/AppNav";
 
 export const dynamic = "force-dynamic";
 

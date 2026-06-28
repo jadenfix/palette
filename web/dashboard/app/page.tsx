@@ -52,7 +52,7 @@ import {
 import { Gate2ConfirmationCode, Gate2SpanClickTracker } from "./Gate2Confirmation";
 import { getSession } from "../lib/auth";
 import { criticalPathSpanIds, criticalPathStats, formatMs } from "../lib/analyze";
-import { AccountMenu } from "./components/AccountMenu";
+import { AccountMenu } from "../components/AccountMenu";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
