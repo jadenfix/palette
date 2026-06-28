@@ -9,6 +9,9 @@ are checked in now so containerized self-host deployments have explicit schema
 contracts and so future Postgres/ClickHouse `TraceStore` backends can be held to
 the same shape instead of inventing incompatible tables.
 
+- `sqlite/`: local OSS runtime schema for `beaterd --data-dir`, including trace,
+  queue, idempotency, auth, dataset, review, eval, gate, audit, usage, replay,
+  and schema-migration metadata.
 - `postgres/`: transactional metadata, quota, bus, auth, dataset, review, eval,
   gate, audit, usage, replay, and trace hot-store schema.
 - `clickhouse/`: scale-oriented trace/raw-event schema with tenant-leading sort
