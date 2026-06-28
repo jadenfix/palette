@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Pure-math statistics primitives for Beater agent evals (Wilson CI, two-proportion z-test, bootstrap CI, paired-t, exact McNemar)."
+description = "Pure-math statistics primitives for Beater agent evals (Wilson CI, two-proportion z-test, bootstrap CI, paired-t, exact McNemar, multiplicity correction)."
 
 # The only runtime dependency is `thiserror` for the error enum; all math
 # (normal/Student-t quantiles, incomplete beta, exact binomial tail, bootstrap)
