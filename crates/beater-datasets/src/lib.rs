@@ -869,12 +869,19 @@ fn select_cases(
     let Some(case_ids) = case_ids else {
         return Ok(all_cases);
     };
+    // Index cases by id once (first occurrence wins, matching the prior
+    // `.find` semantics) so each requested id is resolved in O(1) instead of a
+    // linear scan over all_cases — turns selection from O(requested × total)
+    // into O(requested + total).
+    let mut by_id = std::collections::HashMap::<&str, &DatasetCase>::with_capacity(all_cases.len());
+    for case in &all_cases {
+        by_id.entry(case.case_id.as_str()).or_insert(case);
+    }
     let mut selected = Vec::with_capacity(case_ids.len());
     for case_id in case_ids {
-        let case = all_cases
-            .iter()
-            .find(|case| case.case_id.as_str() == case_id.as_str())
-            .cloned()
+        let case = by_id
+            .get(case_id.as_str())
+            .map(|case| (*case).clone())
             .ok_or_else(|| anyhow!("dataset case {} not found", case_id.as_str()))?;
         selected.push(case);
     }
