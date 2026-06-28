@@ -468,7 +468,8 @@ where
     // Seed four spans. `seq` drives `start_time` (base + seq seconds), so the
     // newest-first order is seq 4, 3, 2, 1.
     for seq in 1..=4u64 {
-        let trace = TraceId::new(format!("keyset-trace-{seq}")).unwrap_or_else(|err| panic!("{err}"));
+        let trace =
+            TraceId::new(format!("keyset-trace-{seq}")).unwrap_or_else(|err| panic!("{err}"));
         let ack = store
             .write_batch(fixture_project_batch(
                 &tenant,
@@ -636,11 +637,7 @@ where
     let mut cursor = None;
     for _ in 0..3 {
         let page = store
-            .query_spans(
-                tenant.clone(),
-                filter(),
-                PageRequest { limit: 1, cursor },
-            )
+            .query_spans(tenant.clone(), filter(), PageRequest { limit: 1, cursor })
             .await
             .unwrap_or_else(|err| panic!("{err}"));
         for span in &page.items {
@@ -663,6 +660,70 @@ where
         vec!["version one".to_string(), "version two".to_string()],
         "both seq versions must be returned exactly once across the keyset pages \
          (no skip from a non-unique (start_time, span_id) key, no duplicate)"
+    );
+}
+
+/// Conformance for tenant-wide keyset pagination when two rows tie on
+/// `(start_time, span_id, seq)` and differ only by project/trace.
+///
+/// `query_spans` allows `project_id` and `trace_id` to be omitted, so the keyset
+/// cursor must remain total across all traces in the tenant. Without
+/// `project_id` and `trace_id` in the cursor/order, a page boundary between
+/// these rows treats the second row as equal to the cursor and skips it.
+///
+/// Only call this against backends whose `query_spans` is keyset-based; the
+/// in-memory store paginates by offset and is exempt by design.
+pub async fn assert_span_pagination_tenant_wide_tiebreak<S>(store: S)
+where
+    S: TraceStore,
+{
+    let tenant = TenantId::new("tenant-wide-keyset").unwrap_or_else(|err| panic!("{err}"));
+    let project_a = ProjectId::new("project-a").unwrap_or_else(|err| panic!("{err}"));
+    let project_b = ProjectId::new("project-b").unwrap_or_else(|err| panic!("{err}"));
+    let trace_a = TraceId::new("trace-a").unwrap_or_else(|err| panic!("{err}"));
+    let trace_b = TraceId::new("trace-b").unwrap_or_else(|err| panic!("{err}"));
+
+    for (project, trace, name) in [
+        (&project_a, &trace_a, "project a span"),
+        (&project_b, &trace_b, "project b span"),
+    ] {
+        let ack = store
+            .write_batch(fixture_versioned_span_batch(
+                &tenant,
+                project,
+                trace,
+                "shared-span",
+                &[(1, name)],
+            ))
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(ack.accepted_spans, 1);
+    }
+
+    let filter = || SpanFilter {
+        span_id: Some(SpanId::new("shared-span").unwrap_or_else(|err| panic!("{err}"))),
+        ..SpanFilter::default()
+    };
+
+    let mut names: Vec<String> = Vec::new();
+    let mut cursor = None;
+    for _ in 0..3 {
+        let page = store
+            .query_spans(tenant.clone(), filter(), PageRequest { limit: 1, cursor })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        names.extend(page.items.iter().map(|span| span.name.clone()));
+        match page.next_cursor {
+            Some(next) => cursor = Some(next),
+            None => break,
+        }
+    }
+
+    names.sort();
+    assert_eq!(
+        names,
+        vec!["project a span".to_string(), "project b span".to_string()],
+        "tenant-wide keyset pagination must return every tied row exactly once"
     );
 }
 

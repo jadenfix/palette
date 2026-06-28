@@ -837,7 +837,7 @@ impl TraceStore for SqliteTraceStore {
         page: PageRequest,
     ) -> StoreResult<Page<SpanSummary>> {
         let limit = page.limit.max(1) as usize;
-        // Keyset (seek) cursor on `(start_time, span_id, seq)` per
+        // Keyset (seek) cursor on `(start_time, span_id, project_id, trace_id, seq)` per
         // ARCHITECTURE.md §20.2 #0.2: the cursor carries the last row of the
         // previous page, so the scan resumes from that point instead of
         // counting rows with OFFSET. This fixes scan cost at depth and keeps
@@ -846,16 +846,22 @@ impl TraceStore for SqliteTraceStore {
         // seq)`: a re-emitted span shares its `span_id` (and usually its
         // `start_time`) with an earlier version, so `(start_time, span_id)`
         // alone is NOT unique and a page boundary between two versions would
-        // either skip or duplicate a row. A malformed cursor decodes to `None`
-        // and is treated as "start from the beginning" rather than panicking.
-        let (cursor_start_time, cursor_span_id, cursor_seq) = match page
-            .cursor
-            .as_deref()
-            .and_then(decode_span_cursor)
-        {
-            Some((start_time, span_id, seq)) => (Some(start_time), Some(span_id), Some(seq)),
-            None => (None, None, None),
-        };
+        // either skip or duplicate a row. `project_id` and `trace_id` complete
+        // the key for tenant-wide or project-wide queries, where otherwise two
+        // traces can share the same `(start_time, span_id, seq)`. A malformed
+        // cursor decodes to `None` and is treated as "start from the beginning"
+        // rather than panicking.
+        let (cursor_start_time, cursor_span_id, cursor_project_id, cursor_trace_id, cursor_seq) =
+            match page.cursor.as_deref().and_then(decode_span_cursor) {
+                Some((start_time, span_id, project_id, trace_id, seq)) => (
+                    Some(start_time),
+                    Some(span_id),
+                    Some(project_id),
+                    Some(trace_id),
+                    Some(seq),
+                ),
+                None => (None, None, None, None, None),
+            };
         let fetch_limit = limit.saturating_add(1);
         let fetch_limit_i64 = i64::try_from(fetch_limit).unwrap_or(i64::MAX);
         let connection = self.lock()?;
@@ -863,12 +869,11 @@ impl TraceStore for SqliteTraceStore {
             .prepare(
                 // The rows are ordered newest-first (`start_time DESC`), so the
                 // keyset predicate seeks to rows that sort strictly *after* the
-                // cursor in that order: `(start_time, span_id, seq) < (cursor)`.
-                // The tenant filter leads the predicate per §8.3. `span_id`
-                // then `seq` are the deterministic tiebreakers that match the
-                // cursor key and the PRIMARY KEY, so two versions of the same
-                // span (same `span_id`, different `seq`) never collide on a
-                // page boundary.
+                // cursor in that order:
+                // `(start_time, span_id, project_id, trace_id, seq) < (cursor)`.
+                // The tenant filter leads the predicate per §8.3. The remaining
+                // fields make the key total across tenant-wide queries and match
+                // the PRIMARY KEY components that can otherwise tie.
                 r#"
                 SELECT span_json, seq
                 FROM spans
@@ -882,9 +887,11 @@ impl TraceStore for SqliteTraceStore {
                   AND (?8 IS NULL
                        OR start_time < ?8
                        OR (start_time = ?8 AND span_id < ?9)
-                       OR (start_time = ?8 AND span_id = ?9 AND seq < ?10))
-                ORDER BY start_time DESC, span_id DESC, seq DESC
-                LIMIT ?11
+                       OR (start_time = ?8 AND span_id = ?9 AND project_id < ?10)
+                       OR (start_time = ?8 AND span_id = ?9 AND project_id = ?10 AND trace_id < ?11)
+                       OR (start_time = ?8 AND span_id = ?9 AND project_id = ?10 AND trace_id = ?11 AND seq < ?12))
+                ORDER BY start_time DESC, span_id DESC, project_id DESC, trace_id DESC, seq DESC
+                LIMIT ?13
                 "#,
             )
             .map_err(StoreError::backend)?;
@@ -906,6 +913,8 @@ impl TraceStore for SqliteTraceStore {
                     filter.status.as_ref().map(|status| status.as_str()),
                     cursor_start_time.as_deref(),
                     cursor_span_id.as_deref(),
+                    cursor_project_id.as_deref(),
+                    cursor_trace_id.as_deref(),
                     cursor_seq,
                     fetch_limit_i64,
                 ],
@@ -940,41 +949,43 @@ impl TraceStore for SqliteTraceStore {
 
 /// Encode an opaque keyset cursor from the last span of a page.
 ///
-/// The cursor is the base64 of `<start_time RFC3339>|<span_id>|<seq>`. The start
-/// time is rendered with the same `to_rfc3339()` representation that is stored
-/// in the `start_time` column, so the seek predicate compares like-for-like.
-/// `seq` is the final tiebreaker that makes the key unique against the table
-/// PRIMARY KEY `(tenant, project, trace, span_id, seq)`, so a re-emitted span
-/// (same `span_id`, new `seq`) is never skipped at a page boundary. The two `|`
-/// separators are unambiguous because neither an RFC3339 timestamp nor a decimal
-/// `seq` contains `|`, and `seq` is split off the *end* with `rsplit_once('|')`
-/// so a span id that itself contained a `|` still decodes correctly.
+/// The cursor is the base64 of a small JSON object containing
+/// `start_time`, `span_id`, `project_id`, `trace_id`, and `seq`. The timestamp
+/// is rendered with the same `to_rfc3339()` representation that is stored in the
+/// `start_time` column, so the seek predicate compares like-for-like. The extra
+/// key fields make pagination stable across tenant-wide queries where multiple
+/// traces can share the same `(start_time, span_id, seq)`.
 fn encode_span_cursor(summary: &SpanSummary, seq: u64) -> String {
     use base64::Engine as _;
-    let raw = format!(
-        "{}|{}|{}",
-        summary.started_at.to_rfc3339(),
-        summary.span_id.as_str(),
-        seq
-    );
+    let raw = serde_json::json!({
+        "start_time": summary.started_at.to_rfc3339(),
+        "span_id": summary.span_id.as_str(),
+        "project_id": summary.project_id.as_str(),
+        "trace_id": summary.trace_id.as_str(),
+        "seq": seq,
+    })
+    .to_string();
     base64::engine::general_purpose::STANDARD.encode(raw)
 }
 
-/// Decode a keyset cursor into its `(start_time, span_id, seq)` components.
+/// Decode a keyset cursor into its ordered key components.
 ///
-/// Returns `None` for any malformed cursor (bad base64, non-UTF-8, a missing
-/// separator, or a non-integer `seq`). Callers treat `None` as "no cursor" so a
-/// corrupt token degrades to the first page rather than panicking — the
-/// workspace denies `unwrap`/`expect`, including in tests.
-fn decode_span_cursor(cursor: &str) -> Option<(String, String, i64)> {
+/// Returns `None` for any malformed cursor (bad base64, invalid JSON, missing
+/// fields, or a non-integer `seq`). Callers treat `None` as "no cursor" so a
+/// corrupt token degrades to the first page rather than panicking.
+fn decode_span_cursor(cursor: &str) -> Option<(String, String, String, String, i64)> {
     use base64::Engine as _;
-    let bytes = base64::engine::general_purpose::STANDARD.decode(cursor).ok()?;
-    let text = String::from_utf8(bytes).ok()?;
-    // Split `seq` off the end first so a `|` inside a span id stays with the id.
-    let (head, seq) = text.rsplit_once('|')?;
-    let seq = seq.parse::<i64>().ok()?;
-    let (start_time, span_id) = head.split_once('|')?;
-    Some((start_time.to_string(), span_id.to_string(), seq))
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(cursor)
+        .ok()?;
+    let value: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+    Some((
+        value.get("start_time")?.as_str()?.to_string(),
+        value.get("span_id")?.as_str()?.to_string(),
+        value.get("project_id")?.as_str()?.to_string(),
+        value.get("trace_id")?.as_str()?.to_string(),
+        value.get("seq")?.as_i64()?,
+    ))
 }
 
 fn decode_organization(row: &rusqlite::Row<'_>) -> rusqlite::Result<OrganizationMetadata> {
@@ -1060,7 +1071,7 @@ mod tests {
     use beater_store_conformance::{
         assert_metadata_store_conformance, assert_quota_limiter_conformance,
         assert_span_pagination_keyset_stability, assert_span_pagination_seq_tiebreak,
-        assert_trace_store_conformance,
+        assert_span_pagination_tenant_wide_tiebreak, assert_trace_store_conformance,
     };
     use beater_store_memory::{InMemoryMetadataStore, InMemoryQuotaLimiter, InMemoryTraceStore};
     use chrono::{TimeZone, Utc};
@@ -1161,6 +1172,17 @@ mod tests {
         // two versions of one span share `span_id` and `start_time`, so a
         // `(start_time, span_id)` key would skip the second at a page boundary.
         assert_span_pagination_seq_tiebreak(
+            SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn sqlite_span_pagination_breaks_ties_across_traces() {
+        // Tenant-wide span queries can see identical `(start_time, span_id, seq)`
+        // values from different traces/projects, so the cursor must carry
+        // project_id and trace_id too.
+        assert_span_pagination_tenant_wide_tiebreak(
             SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")),
         )
         .await;
