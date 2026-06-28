@@ -32,9 +32,9 @@ async fn sweeps_orphaned_artifacts_against_live_spans() {
 
     // Three real artifacts: raw payload + span output are referenced by the live
     // trace; the third is an orphan with no referencing span.
-    let raw_ref = put(&*artifacts, &tenant, &project, b"raw-payload").await;
-    let output_ref = put(&*artifacts, &tenant, &project, b"span-output").await;
-    let orphan_ref = put(&*artifacts, &tenant, &project, b"orphaned-bytes").await;
+    let raw_ref = put(&artifacts, &tenant, &project, b"raw-payload").await;
+    let output_ref = put(&artifacts, &tenant, &project, b"span-output").await;
+    let orphan_ref = put(&artifacts, &tenant, &project, b"orphaned-bytes").await;
 
     // Write a trace whose span references raw_ref + output_ref but not orphan_ref.
     let raw = raw_envelope(&tenant, &project, raw_ref.clone());
