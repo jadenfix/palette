@@ -7,6 +7,8 @@
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
+|**abs** | **Double** |  |  |
+|**rel** | **Double** |  |  |
 |**type** | [**TypeEnum**](#TypeEnum) |  |  |
 
 
@@ -15,7 +17,7 @@
 
 | Name | Value |
 |---- | -----|
-| JSON_OBJECT | &quot;json_object&quot; |
+| NUMERIC_TOLERANCE | &quot;numeric_tolerance&quot; |
 
 
 

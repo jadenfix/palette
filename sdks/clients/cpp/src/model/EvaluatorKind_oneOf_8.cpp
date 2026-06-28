@@ -20,8 +20,8 @@ namespace model {
 
 EvaluatorKind_oneOf_8::EvaluatorKind_oneOf_8()
 {
-    m_Min_ratio = 0.0;
-    m_Min_ratioIsSet = false;
+    m_Max_steps = 0L;
+    m_Max_stepsIsSet = false;
     m_TypeIsSet = false;
 }
 
@@ -37,10 +37,10 @@ void EvaluatorKind_oneOf_8::validate()
 web::json::value EvaluatorKind_oneOf_8::toJson() const
 {
     web::json::value val = web::json::value::object();
-    if(m_Min_ratioIsSet)
+    if(m_Max_stepsIsSet)
     {   
         
-        val[utility::conversions::to_string_t(U("min_ratio"))] = ModelBase::toJson(m_Min_ratio);
+        val[utility::conversions::to_string_t(U("max_steps"))] = ModelBase::toJson(m_Max_steps);
     }
     if(m_TypeIsSet)
     {   
@@ -56,14 +56,14 @@ web::json::value EvaluatorKind_oneOf_8::toJson() const
 bool EvaluatorKind_oneOf_8::fromJson(const web::json::value& val)
 {
     bool ok = true;
-    if(val.has_field(utility::conversions::to_string_t(U("min_ratio"))))
+    if(val.has_field(utility::conversions::to_string_t(U("max_steps"))))
     {
-        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("min_ratio")));
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("max_steps")));
         if(!fieldValue.is_null())
         {
-            double refVal_setMinRatio;
-            ok &= ModelBase::fromJson(fieldValue, refVal_setMinRatio);
-            setMinRatio(refVal_setMinRatio);
+            int64_t refVal_setMaxSteps;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setMaxSteps);
+            setMaxSteps(refVal_setMaxSteps);
             
         }
     }
@@ -89,9 +89,9 @@ void EvaluatorKind_oneOf_8::toMultipart(std::shared_ptr<MultipartFormData> multi
     {
         namePrefix += utility::conversions::to_string_t(U("."));
     }
-    if(m_Min_ratioIsSet)
+    if(m_Max_stepsIsSet)
     {
-        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("min_ratio")), m_Min_ratio));
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("max_steps")), m_Max_steps));
     }
     if(m_TypeIsSet)
     {
@@ -108,11 +108,11 @@ bool EvaluatorKind_oneOf_8::fromMultiPart(std::shared_ptr<MultipartFormData> mul
         namePrefix += utility::conversions::to_string_t(U("."));
     }
 
-    if(multipart->hasContent(utility::conversions::to_string_t(U("min_ratio"))))
+    if(multipart->hasContent(utility::conversions::to_string_t(U("max_steps"))))
     {
-        double refVal_setMinRatio;
-        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("min_ratio"))), refVal_setMinRatio );
-        setMinRatio(refVal_setMinRatio);
+        int64_t refVal_setMaxSteps;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("max_steps"))), refVal_setMaxSteps );
+        setMaxSteps(refVal_setMaxSteps);
     }
     if(multipart->hasContent(utility::conversions::to_string_t(U("type"))))
     {
@@ -126,8 +126,8 @@ bool EvaluatorKind_oneOf_8::fromMultiPart(std::shared_ptr<MultipartFormData> mul
 EvaluatorKind_oneOf_8::TypeEnum EvaluatorKind_oneOf_8::toTypeEnum(const utility::string_t& value) const
 {
     
-    if (value == utility::conversions::to_string_t("browser_grounding")) {
-        return TypeEnum::browser_grounding;
+    if (value == utility::conversions::to_string_t("browser_step_efficiency")) {
+        return TypeEnum::browser_step_efficiency;
     }
     
     throw std::invalid_argument("Invalid value for conversion to TypeEnum");
@@ -139,31 +139,31 @@ const utility::string_t EvaluatorKind_oneOf_8::fromTypeEnum(const TypeEnum value
     switch(value)
     {
         
-        case TypeEnum::browser_grounding: return utility::conversions::to_string_t("browser_grounding");
+        case TypeEnum::browser_step_efficiency: return utility::conversions::to_string_t("browser_step_efficiency");
         
     }
 }
 
 
-double EvaluatorKind_oneOf_8::getMinRatio() const
+int64_t EvaluatorKind_oneOf_8::getMaxSteps() const
 {
-    return m_Min_ratio;
+    return m_Max_steps;
 }
 
-void EvaluatorKind_oneOf_8::setMinRatio(double value)
+void EvaluatorKind_oneOf_8::setMaxSteps(int64_t value)
 {
-    m_Min_ratio = value;
-    m_Min_ratioIsSet = true;
+    m_Max_steps = value;
+    m_Max_stepsIsSet = true;
 }
 
-bool EvaluatorKind_oneOf_8::minRatioIsSet() const
+bool EvaluatorKind_oneOf_8::maxStepsIsSet() const
 {
-    return m_Min_ratioIsSet;
+    return m_Max_stepsIsSet;
 }
 
-void EvaluatorKind_oneOf_8::unsetMin_ratio()
+void EvaluatorKind_oneOf_8::unsetMax_steps()
 {
-    m_Min_ratioIsSet = false;
+    m_Max_stepsIsSet = false;
 }
 EvaluatorKind_oneOf_8::TypeEnum EvaluatorKind_oneOf_8::getType() const
 {

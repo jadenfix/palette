@@ -22,13 +22,15 @@ evaluator_kind_one_of_7_t* instantiate_evaluator_kind_one_of_7(int include_optio
   evaluator_kind_one_of_7_t* evaluator_kind_one_of_7 = NULL;
   if (include_optional) {
     evaluator_kind_one_of_7 = evaluator_kind_one_of_7_create(
-      0,
-      beater_api_evaluator_kind_one_of_7_TYPE_browser_step_efficiency
+      "0",
+      beater_api_evaluator_kind_one_of_7_TYPE_browser_task_success,
+      "0"
     );
   } else {
     evaluator_kind_one_of_7 = evaluator_kind_one_of_7_create(
-      0,
-      beater_api_evaluator_kind_one_of_7_TYPE_browser_step_efficiency
+      "0",
+      beater_api_evaluator_kind_one_of_7_TYPE_browser_task_success,
+      "0"
     );
   }
 

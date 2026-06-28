@@ -6,6 +6,7 @@
 |---- | -----|
 | EvaluatorKindOneOf |  |
 | EvaluatorKindOneOf1 |  |
+| EvaluatorKindOneOf10 |  |
 | EvaluatorKindOneOf2 |  |
 | EvaluatorKindOneOf3 |  |
 | EvaluatorKindOneOf4 |  |

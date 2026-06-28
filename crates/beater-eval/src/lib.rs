@@ -22,6 +22,18 @@ pub enum EvalError {
     },
     #[error("invalid regex: {0}")]
     InvalidRegex(String),
+    #[error("invalid numeric tolerance for evaluator {evaluator_id}: {reason}")]
+    InvalidNumericTolerance {
+        evaluator_id: String,
+        reason: String,
+    },
+    #[error("evaluator {evaluator_id} requires a reference value")]
+    MissingReference { evaluator_id: String },
+    #[error("evaluator {evaluator_id} requires trace metric {metric}")]
+    MissingTraceMetric {
+        evaluator_id: String,
+        metric: &'static str,
+    },
     #[error(
         "underpowered comparison: sample_size={sample_size}, min_sample_size={min_sample_size}"
     )]
@@ -66,6 +78,10 @@ pub enum EvaluatorKind {
     ExactMatch,
     RegexMatch {
         pattern: String,
+    },
+    NumericTolerance {
+        abs: f64,
+        rel: f64,
     },
     JsonObject,
     CostBudget {
@@ -127,6 +143,16 @@ pub const EVALUATOR_CATALOG: &[EvaluatorCatalogEntry] = &[
         display_name: "Regex match",
         description: "Scores a string output against a configured regular expression.",
         requires_reference: false,
+        consumes_trace: false,
+        wasm_safe: true,
+    },
+    EvaluatorCatalogEntry {
+        id: "numeric_tolerance",
+        lane: EvaluatorLane::DeterministicWasi,
+        display_name: "Numeric tolerance",
+        description:
+            "Scores numeric output against a numeric reference within absolute/relative tolerance.",
+        requires_reference: true,
         consumes_trace: false,
         wasm_safe: true,
     },
@@ -202,6 +228,83 @@ pub const EVALUATOR_CATALOG: &[EvaluatorCatalogEntry] = &[
         consumes_trace: true,
         wasm_safe: true,
     },
+    // Conversation-level scorers (§20.10 #7.8 / R18.8). These judge a whole
+    // session/thread group rather than a single turn; they route through the
+    // judge broker (§10.1 judge lane) like the rubric LLM judge. §10.4
+    // assumption: the §10.1.1 debiasing protocol (calibration, position-swap,
+    // small panel) holds. Conversations are the cluster unit, so scores
+    // aggregate with trajectory/conversation-clustered SE (§10.3 #1), never as
+    // a mean of independent per-turn scores.
+    EvaluatorCatalogEntry {
+        id: "conversation_coherence",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Conversation coherence",
+        description: "Judges whether turns across a session/thread stay mutually consistent and on-topic. §10.4 assumption: judge debiasing (§10.1.1) holds; aggregates with conversation-clustered SE, not per-turn means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "session_completeness",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Session completeness",
+        description: "Judges whether a session/thread resolved the user's overall goal. §10.4 assumption: judge debiasing (§10.1.1) holds; aggregates with conversation-clustered SE, not per-turn means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "user_frustration",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "User frustration",
+        description: "Judges signs of user frustration (repetition, escalation, abandonment) across a session/thread. §10.4 assumption: judge debiasing (§10.1.1) holds; aggregates with conversation-clustered SE, not per-turn means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    // Agent-trajectory scorers (§20.10 #7.8 / R18.8). These judge an ordered
+    // span sequence (plan→step→tool→…) and route through the judge broker for
+    // quality scoring (§10.4 trajectory / process-reward row, judge lane).
+    // §10.4 assumption: trajectory quality is jointly modeled (AgentPRM-style
+    // promise+progress), NOT a mean of independent per-step scores; per-step
+    // scores aggregate with trajectory-clustered SE (§10.3 #1, cluster =
+    // trajectory) [arXiv:2511.08325; arXiv:2507.21504].
+    EvaluatorCatalogEntry {
+        id: "tool_selection_quality",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Tool selection quality",
+        description: "Judges whether the agent chose appropriate tools for each step of the trajectory. §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "tool_error_rate",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Tool error rate",
+        description: "Judges the rate and severity of tool-call failures across the trajectory. §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "action_completion",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Action completion",
+        description: "Judges whether the agent completed the actions its trajectory set out to perform. §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "agent_flow",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Agent flow",
+        description: "Judges the overall coherence and progress of the agent's step sequence (promise+progress). §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
 ];
 
 pub fn evaluator_catalog() -> &'static [EvaluatorCatalogEntry] {
@@ -217,6 +320,7 @@ impl EvaluatorKind {
         match self {
             Self::ExactMatch => "exact_match",
             Self::RegexMatch { .. } => "regex_match",
+            Self::NumericTolerance { .. } => "numeric_tolerance",
             Self::JsonObject => "json_object",
             Self::CostBudget { .. } => "cost_budget",
             Self::LatencyBudgetMs { .. } => "latency_budget_ms",
@@ -265,7 +369,8 @@ pub fn evaluate_deterministic(
 
     match &spec.kind {
         EvaluatorKind::ExactMatch => {
-            let pass = case.reference.as_ref() == Some(&case.output);
+            let reference = required_reference(spec, case)?;
+            let pass = reference == &case.output;
             Ok(binary_score(pass, "exact_match"))
         }
         EvaluatorKind::RegexMatch { pattern } => {
@@ -274,23 +379,16 @@ pub fn evaluate_deterministic(
                 Regex::new(pattern).map_err(|err| EvalError::InvalidRegex(err.to_string()))?;
             Ok(binary_score(regex.is_match(output), "regex_match"))
         }
+        EvaluatorKind::NumericTolerance { abs, rel } => {
+            numeric_tolerance_score(spec, case, *abs, *rel)
+        }
         EvaluatorKind::JsonObject => Ok(binary_score(case.output.is_object(), "json_object")),
         EvaluatorKind::CostBudget { max_micros } => {
-            let cost = case
-                .trace
-                .as_ref()
-                .and_then(|trace| trace.get("cost_micros"))
-                .and_then(Value::as_i64)
-                .unwrap_or(0);
+            let cost = required_trace_i64(spec, case, "cost_micros")?;
             Ok(binary_score(cost <= *max_micros, "cost_budget"))
         }
         EvaluatorKind::LatencyBudgetMs { max_ms } => {
-            let latency = case
-                .trace
-                .as_ref()
-                .and_then(|trace| trace.get("latency_ms"))
-                .and_then(Value::as_u64)
-                .unwrap_or(0);
+            let latency = required_trace_u64(spec, case, "latency_ms")?;
             Ok(binary_score(latency <= *max_ms, "latency_budget"))
         }
         EvaluatorKind::LlmJudge { .. } => Err(EvalError::RequiresJudgeBroker(spec.id.clone())),
@@ -404,6 +502,87 @@ pub fn evaluate_deterministic(
     }
 }
 
+fn required_reference<'a>(
+    spec: &EvaluatorSpec,
+    case: &'a EvaluationCase,
+) -> Result<&'a Value, EvalError> {
+    case.reference
+        .as_ref()
+        .ok_or_else(|| EvalError::MissingReference {
+            evaluator_id: spec.id.clone(),
+        })
+}
+
+fn required_trace_i64(
+    spec: &EvaluatorSpec,
+    case: &EvaluationCase,
+    metric: &'static str,
+) -> Result<i64, EvalError> {
+    case.trace
+        .as_ref()
+        .and_then(|trace| trace.get(metric))
+        .and_then(Value::as_i64)
+        .ok_or_else(|| EvalError::MissingTraceMetric {
+            evaluator_id: spec.id.clone(),
+            metric,
+        })
+}
+
+fn required_trace_u64(
+    spec: &EvaluatorSpec,
+    case: &EvaluationCase,
+    metric: &'static str,
+) -> Result<u64, EvalError> {
+    case.trace
+        .as_ref()
+        .and_then(|trace| trace.get(metric))
+        .and_then(Value::as_u64)
+        .ok_or_else(|| EvalError::MissingTraceMetric {
+            evaluator_id: spec.id.clone(),
+            metric,
+        })
+}
+
+fn numeric_tolerance_score(
+    spec: &EvaluatorSpec,
+    case: &EvaluationCase,
+    abs: f64,
+    rel: f64,
+) -> Result<ScoreResult, EvalError> {
+    if !abs.is_finite() || !rel.is_finite() || abs < 0.0 || rel < 0.0 {
+        return Err(EvalError::InvalidNumericTolerance {
+            evaluator_id: spec.id.clone(),
+            reason: "abs and rel must be finite non-negative numbers".to_string(),
+        });
+    }
+
+    let output = case.output.as_f64();
+    let reference = required_reference(spec, case)?.as_f64();
+    let (difference, allowed, pass) = match (output, reference) {
+        (Some(output), Some(reference)) => {
+            let difference = (output - reference).abs();
+            let allowed = abs.max(rel * reference.abs());
+            (Some(difference), Some(allowed), difference <= allowed)
+        }
+        _ => (None, None, false),
+    };
+
+    Ok(ScoreResult {
+        score: if pass { 1.0 } else { 0.0 },
+        label: Some(if pass { "pass" } else { "fail" }.to_string()),
+        evidence: serde_json::json!({
+            "metric": "numeric_tolerance",
+            "output": output,
+            "reference": reference,
+            "difference": difference,
+            "allowed": allowed,
+            "abs": abs,
+            "rel": rel,
+            "pass": pass,
+        }),
+    })
+}
+
 /// Extract the `browser_steps` array (serialized `StepTriple`s) from a case
 /// trace. Returns an empty vec when absent — every browser evaluator degrades to
 /// a deterministic "fail/neutral" rather than erroring on a non-browser trace.
@@ -457,6 +636,24 @@ pub struct ExperimentComparison {
     pub decision: GateDecision,
     pub test: StatisticalTest,
     pub adjusted_alpha: f64,
+    /// Minimum detectable effect at the current sample size, in the metric's own
+    /// units, at the gate's (adjusted) alpha and the standard power of 0.8
+    /// (§10.3 #5). Populated only when `decision` is `Inconclusive` — the
+    /// comparison lacked the power to resolve the regression bound, and
+    /// regressions smaller than this are invisible at this N. `None` on a
+    /// conclusive decision (or when the paired differences have zero spread, so
+    /// no effect-scale is defined). This replaces a bare "underpowered" flag with
+    /// the actionable "how small an effect could we even have seen" number.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mde: Option<f64>,
+    /// Number of paired observations that would be required to detect the
+    /// *observed* effect at the gate's (adjusted) alpha and power 0.8 (§10.3 #5).
+    /// Populated only when `decision` is `Inconclusive` and the observed effect is
+    /// non-degenerate (non-zero delta over non-zero difference spread). `None`
+    /// otherwise. This answers "how many more cases would have made this
+    /// conclusive?".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_n: Option<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -558,13 +755,18 @@ pub fn compare_paired_scores(
             policy.alpha
         )));
     }
+    if policy.comparison_count == 0 {
+        return Err(EvalError::Statistics(
+            "comparison_count must be greater than zero".to_string(),
+        ));
+    }
 
     // Single-step Bonferroni correction across the comparison family: the
     // per-comparison level the CI and decision are computed at. No lower clamp — a
     // large `comparison_count` must genuinely shrink alpha; clamping it up would let
     // the family-wise error rate exceed the requested level. `compare_paired`
     // validates the result is a usable alpha in (0, 1).
-    let adjusted_alpha = policy.alpha / policy.comparison_count.max(1) as f64;
+    let adjusted_alpha = policy.alpha / policy.comparison_count as f64;
 
     if n == 0 {
         return Err(EvalError::Statistics("no scores to compare".to_string()));
@@ -596,6 +798,10 @@ pub fn compare_paired_scores(
             decision,
             test: StatisticalTest::PairedT,
             adjusted_alpha,
+            // The single-case smoke-gate regime never returns `Inconclusive`, so
+            // there is no underpowered verdict to annotate.
+            mde: None,
+            required_n: None,
         });
     }
 
@@ -622,6 +828,21 @@ pub fn compare_paired_scores(
         GateDecision::Inconclusive
     };
 
+    // §10.3 #5: an inconclusive verdict means the comparison lacked the power to
+    // resolve the regression bound. Rather than a bare "underpowered", report the
+    // minimum detectable effect at this N and the sample size that would have made
+    // the *observed* effect detectable — both at the gate's alpha and power 0.8.
+    // The planning math is standardized (Cohen's d), so we scale by the SD of the
+    // paired differences to express the MDE in the metric's own units and to
+    // standardize the observed delta. This covers both the paired-t and (as a
+    // normal approximation) the McNemar path, since both reduce to a mean
+    // difference of the paired observations.
+    let (mde, required_n) = if decision == GateDecision::Inconclusive {
+        power_annotations(baseline, candidate, n, delta, adjusted_alpha)
+    } else {
+        (None, None)
+    };
+
     Ok(ExperimentComparison {
         sample_size: n,
         baseline_mean: mean(baseline),
@@ -633,7 +854,58 @@ pub fn compare_paired_scores(
         decision,
         test: outcome.test.into(),
         adjusted_alpha,
+        mde,
+        required_n,
     })
+}
+
+/// Compute the §10.3 #5 power annotations for an inconclusive comparison: the
+/// minimum detectable effect at the current sample size (in the metric's own
+/// units) and the sample size required to detect the observed effect, both at the
+/// gate's `alpha` and the standard power of 0.8.
+///
+/// Returns `(None, None)` when the paired differences have no spread (no
+/// effect-scale is defined), and a `None` `required_n` when the observed effect is
+/// exactly zero (no finite N detects a null effect) — the MDE is still reported in
+/// that case.
+fn power_annotations(
+    baseline: &[f64],
+    candidate: &[f64],
+    n: usize,
+    delta: f64,
+    alpha: f64,
+) -> (Option<f64>, Option<usize>) {
+    let differences: Vec<f64> = candidate
+        .iter()
+        .zip(baseline.iter())
+        .map(|(c, b)| c - b)
+        .collect();
+    let sd = std_dev(&differences);
+    if !sd.is_finite() || sd <= 0.0 {
+        // Zero (or non-finite) spread: a standardized effect is undefined.
+        return (None, None);
+    }
+
+    // MDE in the metric's own units = standardized MDE × SD of the differences.
+    let mde = beater_stats::minimum_detectable_effect(n, alpha, beater_stats::DEFAULT_POWER)
+        .ok()
+        .map(|d| d * sd);
+
+    // Required N to detect the observed standardized effect d = |delta| / SD.
+    let required_n =
+        beater_stats::required_sample_size(delta / sd, alpha, beater_stats::DEFAULT_POWER).ok();
+
+    (mde, required_n)
+}
+
+/// Unbiased (n − 1) sample standard deviation; 0.0 for fewer than two values.
+fn std_dev(values: &[f64]) -> f64 {
+    if values.len() < 2 {
+        return 0.0;
+    }
+    let m = mean(values);
+    let sum_sq: f64 = values.iter().map(|v| (v - m).powi(2)).sum();
+    (sum_sq / (values.len() as f64 - 1.0)).sqrt()
 }
 
 fn mean(values: &[f64]) -> f64 {
@@ -748,7 +1020,7 @@ mod tests {
     #[test]
     fn evaluator_catalog_classifies_execution_lanes() {
         let catalog = evaluator_catalog();
-        assert_eq!(catalog.len(), 10);
+        assert_eq!(catalog.len(), 18);
 
         let exact = evaluator_catalog_entry("exact_match")
             .unwrap_or_else(|| panic!("exact_match catalog entry should exist"));
@@ -760,6 +1032,11 @@ mod tests {
         assert_eq!(cost.catalog_id(), "cost_budget");
         assert_eq!(cost.expected_lane(), EvaluatorLane::DeterministicWasi);
         assert!(cost.catalog_entry().consumes_trace);
+
+        let numeric = EvaluatorKind::NumericTolerance { abs: 0.1, rel: 0.0 };
+        assert_eq!(numeric.catalog_id(), "numeric_tolerance");
+        assert!(numeric.catalog_entry().requires_reference);
+        assert!(!numeric.catalog_entry().consumes_trace);
 
         let judge = EvaluatorKind::LlmJudge {
             rubric: "correctness".to_string(),
@@ -783,6 +1060,145 @@ mod tests {
                 ..
             })
         ));
+    }
+
+    #[test]
+    fn numeric_tolerance_scores_against_numeric_reference() {
+        let spec = deterministic_spec(EvaluatorKind::NumericTolerance {
+            abs: 0.05,
+            rel: 0.01,
+        });
+        let passing = EvaluationCase {
+            input: serde_json::json!("estimate"),
+            output: serde_json::json!(100.9),
+            reference: Some(serde_json::json!(100.0)),
+            trace: None,
+        };
+        let failing = EvaluationCase {
+            output: serde_json::json!(102.0),
+            ..passing.clone()
+        };
+        let non_numeric = EvaluationCase {
+            output: serde_json::json!("100.0"),
+            ..passing.clone()
+        };
+
+        let pass = evaluate_deterministic(&spec, &passing).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(pass.score, 1.0);
+        let difference = pass.evidence["difference"]
+            .as_f64()
+            .unwrap_or_else(|| panic!("difference should be numeric"));
+        let allowed = pass.evidence["allowed"]
+            .as_f64()
+            .unwrap_or_else(|| panic!("allowed should be numeric"));
+        assert!((difference - 0.9).abs() < 1e-12);
+        assert_eq!(allowed, 1.0);
+
+        let fail = evaluate_deterministic(&spec, &failing).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(fail.score, 0.0);
+        assert_eq!(fail.evidence["pass"], serde_json::json!(false));
+
+        let rejected =
+            evaluate_deterministic(&spec, &non_numeric).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(rejected.score, 0.0);
+        assert_eq!(rejected.evidence["difference"], serde_json::json!(null));
+    }
+
+    #[test]
+    fn numeric_tolerance_rejects_invalid_thresholds() {
+        let spec = deterministic_spec(EvaluatorKind::NumericTolerance {
+            abs: -0.1,
+            rel: 0.0,
+        });
+        let case = EvaluationCase {
+            input: serde_json::json!(null),
+            output: serde_json::json!(1.0),
+            reference: Some(serde_json::json!(1.0)),
+            trace: None,
+        };
+
+        assert!(matches!(
+            evaluate_deterministic(&spec, &case),
+            Err(EvalError::InvalidNumericTolerance { .. })
+        ));
+    }
+
+    #[test]
+    fn reference_scorers_reject_missing_reference() {
+        let case = EvaluationCase {
+            input: serde_json::json!("question"),
+            output: serde_json::json!("answer"),
+            reference: None,
+            trace: None,
+        };
+
+        assert!(matches!(
+            evaluate_deterministic(&deterministic_spec(EvaluatorKind::ExactMatch), &case),
+            Err(EvalError::MissingReference { evaluator_id }) if evaluator_id == "exact_match"
+        ));
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::NumericTolerance { abs: 0.0, rel: 0.0 }),
+                &case,
+            ),
+            Err(EvalError::MissingReference { evaluator_id }) if evaluator_id == "numeric_tolerance"
+        ));
+    }
+
+    #[test]
+    fn budget_scorers_reject_missing_trace_metrics() {
+        let case = EvaluationCase {
+            input: serde_json::json!(null),
+            output: serde_json::json!(null),
+            reference: None,
+            trace: Some(serde_json::json!({})),
+        };
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::CostBudget { max_micros: 100 }),
+                &case,
+            ),
+            Err(EvalError::MissingTraceMetric { evaluator_id, metric })
+                if evaluator_id == "cost_budget" && metric == "cost_micros"
+        ));
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::LatencyBudgetMs { max_ms: 100 }),
+                &case,
+            ),
+            Err(EvalError::MissingTraceMetric { evaluator_id, metric })
+                if evaluator_id == "latency_budget_ms" && metric == "latency_ms"
+        ));
+    }
+
+    #[test]
+    fn budget_scorers_score_present_trace_metrics() {
+        let case = EvaluationCase {
+            input: serde_json::json!(null),
+            output: serde_json::json!(null),
+            reference: None,
+            trace: Some(serde_json::json!({
+                "cost_micros": 42,
+                "latency_ms": 99,
+            })),
+        };
+
+        let cost = evaluate_deterministic(
+            &deterministic_spec(EvaluatorKind::CostBudget { max_micros: 100 }),
+            &case,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(cost.score, 1.0);
+
+        let latency = evaluate_deterministic(
+            &deterministic_spec(EvaluatorKind::LatencyBudgetMs { max_ms: 50 }),
+            &case,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(latency.score, 0.0);
     }
 
     #[test]
@@ -849,6 +1265,51 @@ mod tests {
 
         assert_eq!(comparison.decision, GateDecision::FailRegression);
         assert!(comparison.adjusted_alpha < 0.05);
+        // A conclusive verdict carries no underpowered annotation.
+        assert!(comparison.mde.is_none());
+        assert!(comparison.required_n.is_none());
+    }
+
+    #[test]
+    fn inconclusive_gate_reports_mde_and_required_n() {
+        // A tiny, noisy paired effect: the difference distribution straddles zero,
+        // so the CI straddles the regression bound and the gate is *inconclusive*
+        // — exactly the underpowered regime §10.3 #5 must annotate.
+        let baseline = vec![0.0; 8];
+        let candidate = vec![0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.4];
+        let comparison = compare_paired_scores(
+            &baseline,
+            &candidate,
+            &GatePolicy {
+                min_sample_size: 4,
+                ..GatePolicy::default()
+            },
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(
+            comparison.decision,
+            GateDecision::Inconclusive,
+            "expected an inconclusive (underpowered) verdict, got {:?}",
+            comparison.decision
+        );
+
+        // Instead of a bare "underpowered", the comparison now reports actionable
+        // power numbers: a finite, positive MDE at this N and a finite required-N
+        // to detect the observed effect.
+        let mde = comparison
+            .mde
+            .unwrap_or_else(|| panic!("inconclusive comparison must report an MDE"));
+        assert!(mde.is_finite() && mde > 0.0, "mde = {mde}");
+        let required_n = comparison
+            .required_n
+            .unwrap_or_else(|| panic!("inconclusive comparison must report required_n"));
+        // The observed effect is far smaller than the spread, so detecting it
+        // would take many more than the 8 cases we ran.
+        assert!(
+            required_n > comparison.sample_size,
+            "required_n = {required_n}"
+        );
     }
 
     #[test]
@@ -894,6 +1355,22 @@ mod tests {
             },
         );
         assert!(matches!(result, Err(EvalError::Statistics(_))));
+    }
+
+    #[test]
+    fn zero_comparison_count_errors() {
+        let result = compare_paired_scores(
+            &[1.0; 10],
+            &[1.0; 10],
+            &GatePolicy {
+                comparison_count: 0,
+                ..GatePolicy::default()
+            },
+        );
+        assert!(matches!(
+            result,
+            Err(EvalError::Statistics(message)) if message.contains("comparison_count")
+        ));
     }
 
     fn browser_step(action: &str, selector: Option<&str>, matched: bool, status: &str) -> Value {
@@ -973,6 +1450,37 @@ mod tests {
             assert_eq!(kind.catalog_entry().id, kind.catalog_id());
             assert_eq!(kind.expected_lane(), EvaluatorLane::DeterministicWasi);
             assert!(kind.catalog_entry().consumes_trace);
+        }
+    }
+
+    #[test]
+    fn conversation_and_trajectory_scorers_are_judge_lane_and_resolvable() {
+        // §20.10 #7.8 / R18.8: conversation-level and agent-trajectory named
+        // scorers are catalogued as judge-lane metadata entries (reusing the
+        // judge-broker mechanism), each resolvable by id via the lookup helper.
+        let conversation_scorers = [
+            "conversation_coherence",
+            "session_completeness",
+            "user_frustration",
+        ];
+        let trajectory_scorers = [
+            "tool_selection_quality",
+            "tool_error_rate",
+            "action_completion",
+            "agent_flow",
+        ];
+        for id in conversation_scorers.iter().chain(trajectory_scorers.iter()) {
+            let entry = evaluator_catalog_entry(id)
+                .unwrap_or_else(|| panic!("catalog entry {id} should exist"));
+            assert_eq!(entry.id, *id);
+            assert_eq!(
+                entry.lane,
+                EvaluatorLane::JudgeBroker,
+                "{id} must be judge-lane"
+            );
+            assert!(!entry.wasm_safe, "{id} is a judge scorer, not wasm-safe");
+            assert!(!entry.requires_reference, "{id} scores groups, not refs");
+            assert!(entry.consumes_trace, "{id} reads the session/trajectory");
         }
     }
 

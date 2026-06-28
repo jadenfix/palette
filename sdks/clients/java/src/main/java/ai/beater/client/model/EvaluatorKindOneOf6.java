@@ -25,32 +25,33 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
-import org.openapitools.jackson.nullable.JsonNullable;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.openapitools.jackson.nullable.JsonNullable;
-import java.util.NoSuchElementException;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import ai.beater.client.ApiClient;
 /**
- * Browser world-state success: asserts the final step&#39;s observed page (url and/or DOM) matches the configured target — NOT the agent&#39;s self-reported \&quot;done\&quot;. Reads &#x60;trace.browser_steps&#x60;.
+ * EvaluatorKindOneOf6
  */
 @JsonPropertyOrder({
-  EvaluatorKindOneOf6.JSON_PROPERTY_DOM_CONTAINS,
-  EvaluatorKindOneOf6.JSON_PROPERTY_TYPE,
-  EvaluatorKindOneOf6.JSON_PROPERTY_URL_CONTAINS
+  EvaluatorKindOneOf6.JSON_PROPERTY_MODEL,
+  EvaluatorKindOneOf6.JSON_PROPERTY_RUBRIC,
+  EvaluatorKindOneOf6.JSON_PROPERTY_TYPE
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class EvaluatorKindOneOf6 {
-  public static final String JSON_PROPERTY_DOM_CONTAINS = "dom_contains";
-  private JsonNullable<String> domContains = JsonNullable.<String>undefined();
+  public static final String JSON_PROPERTY_MODEL = "model";
+  @javax.annotation.Nonnull
+  private String model;
+
+  public static final String JSON_PROPERTY_RUBRIC = "rubric";
+  @javax.annotation.Nonnull
+  private String rubric;
 
   /**
    * Gets or Sets type
    */
   public enum TypeEnum {
-    BROWSER_TASK_SUCCESS(String.valueOf("browser_task_success"));
+    LLM_JUDGE(String.valueOf("llm_judge"));
 
     private String value;
 
@@ -83,41 +84,54 @@ public class EvaluatorKindOneOf6 {
   @javax.annotation.Nonnull
   private TypeEnum type;
 
-  public static final String JSON_PROPERTY_URL_CONTAINS = "url_contains";
-  private JsonNullable<String> urlContains = JsonNullable.<String>undefined();
-
   public EvaluatorKindOneOf6() { 
   }
 
-  public EvaluatorKindOneOf6 domContains(@javax.annotation.Nullable String domContains) {
-    this.domContains = JsonNullable.<String>of(domContains);
+  public EvaluatorKindOneOf6 model(@javax.annotation.Nonnull String model) {
+    this.model = model;
     return this;
   }
 
   /**
-   * Get domContains
-   * @return domContains
+   * Get model
+   * @return model
    */
-  @javax.annotation.Nullable
-  @JsonIgnore
-  public String getDomContains() {
-        return domContains.orElse(null);
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_MODEL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getModel() {
+    return model;
   }
 
-  @JsonProperty(JSON_PROPERTY_DOM_CONTAINS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public JsonNullable<String> getDomContains_JsonNullable() {
-    return domContains;
-  }
-  
-  @JsonProperty(JSON_PROPERTY_DOM_CONTAINS)
-  public void setDomContains_JsonNullable(JsonNullable<String> domContains) {
-    this.domContains = domContains;
+  @JsonProperty(JSON_PROPERTY_MODEL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setModel(@javax.annotation.Nonnull String model) {
+    this.model = model;
   }
 
-  public void setDomContains(@javax.annotation.Nullable String domContains) {
-    this.domContains = JsonNullable.<String>of(domContains);
+
+  public EvaluatorKindOneOf6 rubric(@javax.annotation.Nonnull String rubric) {
+    this.rubric = rubric;
+    return this;
+  }
+
+  /**
+   * Get rubric
+   * @return rubric
+   */
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_RUBRIC)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getRubric() {
+    return rubric;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RUBRIC)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRubric(@javax.annotation.Nonnull String rubric) {
+    this.rubric = rubric;
   }
 
 
@@ -145,38 +159,6 @@ public class EvaluatorKindOneOf6 {
   }
 
 
-  public EvaluatorKindOneOf6 urlContains(@javax.annotation.Nullable String urlContains) {
-    this.urlContains = JsonNullable.<String>of(urlContains);
-    return this;
-  }
-
-  /**
-   * Get urlContains
-   * @return urlContains
-   */
-  @javax.annotation.Nullable
-  @JsonIgnore
-  public String getUrlContains() {
-        return urlContains.orElse(null);
-  }
-
-  @JsonProperty(JSON_PROPERTY_URL_CONTAINS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public JsonNullable<String> getUrlContains_JsonNullable() {
-    return urlContains;
-  }
-  
-  @JsonProperty(JSON_PROPERTY_URL_CONTAINS)
-  public void setUrlContains_JsonNullable(JsonNullable<String> urlContains) {
-    this.urlContains = urlContains;
-  }
-
-  public void setUrlContains(@javax.annotation.Nullable String urlContains) {
-    this.urlContains = JsonNullable.<String>of(urlContains);
-  }
-
-
   /**
    * Return true if this EvaluatorKind_oneOf_6 object is equal to o.
    */
@@ -189,34 +171,23 @@ public class EvaluatorKindOneOf6 {
       return false;
     }
     EvaluatorKindOneOf6 evaluatorKindOneOf6 = (EvaluatorKindOneOf6) o;
-    return equalsNullable(this.domContains, evaluatorKindOneOf6.domContains) &&
-        Objects.equals(this.type, evaluatorKindOneOf6.type) &&
-        equalsNullable(this.urlContains, evaluatorKindOneOf6.urlContains);
-  }
-
-  private static <T> boolean equalsNullable(JsonNullable<T> a, JsonNullable<T> b) {
-    return a == b || (a != null && b != null && a.isPresent() && b.isPresent() && Objects.deepEquals(a.get(), b.get()));
+    return Objects.equals(this.model, evaluatorKindOneOf6.model) &&
+        Objects.equals(this.rubric, evaluatorKindOneOf6.rubric) &&
+        Objects.equals(this.type, evaluatorKindOneOf6.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hashCodeNullable(domContains), type, hashCodeNullable(urlContains));
-  }
-
-  private static <T> int hashCodeNullable(JsonNullable<T> a) {
-    if (a == null) {
-      return 1;
-    }
-    return a.isPresent() ? Arrays.deepHashCode(new Object[]{a.get()}) : 31;
+    return Objects.hash(model, rubric, type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EvaluatorKindOneOf6 {\n");
-    sb.append("    domContains: ").append(toIndentedString(domContains)).append("\n");
+    sb.append("    model: ").append(toIndentedString(model)).append("\n");
+    sb.append("    rubric: ").append(toIndentedString(rubric)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    urlContains: ").append(toIndentedString(urlContains)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -264,19 +235,19 @@ public class EvaluatorKindOneOf6 {
 
     StringJoiner joiner = new StringJoiner("&");
 
-    // add `dom_contains` to the URL query string
-    if (getDomContains() != null) {
-      joiner.add(String.format("%sdom_contains%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getDomContains()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    // add `model` to the URL query string
+    if (getModel() != null) {
+      joiner.add(String.format("%smodel%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getModel()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `rubric` to the URL query string
+    if (getRubric() != null) {
+      joiner.add(String.format("%srubric%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getRubric()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `type` to the URL query string
     if (getType() != null) {
       joiner.add(String.format("%stype%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getType()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
-    }
-
-    // add `url_contains` to the URL query string
-    if (getUrlContains() != null) {
-      joiner.add(String.format("%surl_contains%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getUrlContains()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     return joiner.toString();

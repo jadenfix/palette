@@ -15,6 +15,7 @@ package ai.beater.client.model;
 
 import ai.beater.client.model.EvaluatorKindOneOf;
 import ai.beater.client.model.EvaluatorKindOneOf1;
+import ai.beater.client.model.EvaluatorKindOneOf10;
 import ai.beater.client.model.EvaluatorKindOneOf2;
 import ai.beater.client.model.EvaluatorKindOneOf3;
 import ai.beater.client.model.EvaluatorKindOneOf4;
@@ -61,6 +62,22 @@ class EvaluatorKindTest {
     @Test
     void patternTest() {
         // TODO: test pattern
+    }
+
+    /**
+     * Test the property 'abs'
+     */
+    @Test
+    void absTest() {
+        // TODO: test abs
+    }
+
+    /**
+     * Test the property 'rel'
+     */
+    @Test
+    void relTest() {
+        // TODO: test rel
     }
 
     /**

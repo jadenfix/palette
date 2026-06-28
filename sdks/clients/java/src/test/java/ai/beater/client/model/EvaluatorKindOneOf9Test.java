@@ -38,6 +38,14 @@ class EvaluatorKindOneOf9Test {
     }
 
     /**
+     * Test the property 'minRatio'
+     */
+    @Test
+    void minRatioTest() {
+        // TODO: test minRatio
+    }
+
+    /**
      * Test the property 'type'
      */
     @Test

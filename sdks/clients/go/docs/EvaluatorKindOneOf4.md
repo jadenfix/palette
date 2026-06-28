@@ -4,14 +4,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**MaxMs** | **int64** |  | 
+**MaxMicros** | **int64** |  | 
 **Type** | **string** |  | 
 
 ## Methods
 
 ### NewEvaluatorKindOneOf4
 
-`func NewEvaluatorKindOneOf4(maxMs int64, type_ string, ) *EvaluatorKindOneOf4`
+`func NewEvaluatorKindOneOf4(maxMicros int64, type_ string, ) *EvaluatorKindOneOf4`
 
 NewEvaluatorKindOneOf4 instantiates a new EvaluatorKindOneOf4 object
 This constructor will assign default values to properties that have it defined,
@@ -26,24 +26,24 @@ NewEvaluatorKindOneOf4WithDefaults instantiates a new EvaluatorKindOneOf4 object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
-### GetMaxMs
+### GetMaxMicros
 
-`func (o *EvaluatorKindOneOf4) GetMaxMs() int64`
+`func (o *EvaluatorKindOneOf4) GetMaxMicros() int64`
 
-GetMaxMs returns the MaxMs field if non-nil, zero value otherwise.
+GetMaxMicros returns the MaxMicros field if non-nil, zero value otherwise.
 
-### GetMaxMsOk
+### GetMaxMicrosOk
 
-`func (o *EvaluatorKindOneOf4) GetMaxMsOk() (*int64, bool)`
+`func (o *EvaluatorKindOneOf4) GetMaxMicrosOk() (*int64, bool)`
 
-GetMaxMsOk returns a tuple with the MaxMs field if it's non-nil, zero value otherwise
+GetMaxMicrosOk returns a tuple with the MaxMicros field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetMaxMs
+### SetMaxMicros
 
-`func (o *EvaluatorKindOneOf4) SetMaxMs(v int64)`
+`func (o *EvaluatorKindOneOf4) SetMaxMicros(v int64)`
 
-SetMaxMs sets MaxMs field to given value.
+SetMaxMicros sets MaxMicros field to given value.
 
 
 ### GetType

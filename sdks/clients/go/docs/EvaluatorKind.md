@@ -6,6 +6,8 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Type** | **string** |  | 
 **Pattern** | **string** |  | 
+**Abs** | **float64** |  | 
+**Rel** | **float64** |  | 
 **MaxMicros** | **int64** |  | 
 **MaxMs** | **int64** |  | 
 **Model** | **string** |  | 
@@ -19,7 +21,7 @@ Name | Type | Description | Notes
 
 ### NewEvaluatorKind
 
-`func NewEvaluatorKind(type_ string, pattern string, maxMicros int64, maxMs int64, model string, rubric string, maxSteps int64, minRatio float64, ) *EvaluatorKind`
+`func NewEvaluatorKind(type_ string, pattern string, abs float64, rel float64, maxMicros int64, maxMs int64, model string, rubric string, maxSteps int64, minRatio float64, ) *EvaluatorKind`
 
 NewEvaluatorKind instantiates a new EvaluatorKind object
 This constructor will assign default values to properties that have it defined,
@@ -72,6 +74,46 @@ and a boolean to check if the value has been set.
 `func (o *EvaluatorKind) SetPattern(v string)`
 
 SetPattern sets Pattern field to given value.
+
+
+### GetAbs
+
+`func (o *EvaluatorKind) GetAbs() float64`
+
+GetAbs returns the Abs field if non-nil, zero value otherwise.
+
+### GetAbsOk
+
+`func (o *EvaluatorKind) GetAbsOk() (*float64, bool)`
+
+GetAbsOk returns a tuple with the Abs field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetAbs
+
+`func (o *EvaluatorKind) SetAbs(v float64)`
+
+SetAbs sets Abs field to given value.
+
+
+### GetRel
+
+`func (o *EvaluatorKind) GetRel() float64`
+
+GetRel returns the Rel field if non-nil, zero value otherwise.
+
+### GetRelOk
+
+`func (o *EvaluatorKind) GetRelOk() (*float64, bool)`
+
+GetRelOk returns a tuple with the Rel field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetRel
+
+`func (o *EvaluatorKind) SetRel(v float64)`
+
+SetRel sets Rel field to given value.
 
 
 ### GetMaxMicros

@@ -12,7 +12,7 @@
 /*
  * EvaluatorKind_oneOf_6.h
  *
- * Browser world-state success: asserts the final step&#39;s observed page (url and/or DOM) matches the configured target — NOT the agent&#39;s self-reported \&quot;done\&quot;. Reads &#x60;trace.browser_steps&#x60;.
+ * 
  */
 
 #ifndef ORG_OPENAPITOOLS_CLIENT_MODEL_EvaluatorKind_oneOf_6_H_
@@ -31,9 +31,6 @@ namespace model {
 
 
 
-/// <summary>
-/// Browser world-state success: asserts the final step&#39;s observed page (url and/or DOM) matches the configured target — NOT the agent&#39;s self-reported \&quot;done\&quot;. Reads &#x60;trace.browser_steps&#x60;.
-/// </summary>
 class  EvaluatorKind_oneOf_6
     : public ModelBase
 {
@@ -58,7 +55,7 @@ public:
 
     enum class TypeEnum
     {
-        browser_task_success,
+        llm_judge,
         
     };
 
@@ -66,31 +63,31 @@ public:
     const utility::string_t fromTypeEnum(const TypeEnum value) const;
 
 
-    utility::string_t getDomContains() const;
-    bool domContainsIsSet() const;
-    void unsetDom_contains();
-    void setDomContains(const utility::string_t& value);
+    utility::string_t getModel() const;
+    bool modelIsSet() const;
+    void unsetModel();
+    void setModel(const utility::string_t& value);
+
+    utility::string_t getRubric() const;
+    bool rubricIsSet() const;
+    void unsetRubric();
+    void setRubric(const utility::string_t& value);
 
     TypeEnum getType() const;
     bool typeIsSet() const;
     void unsetType();
     void setType(const TypeEnum value);
 
-    utility::string_t getUrlContains() const;
-    bool urlContainsIsSet() const;
-    void unsetUrl_contains();
-    void setUrlContains(const utility::string_t& value);
-
 
 protected:
-    utility::string_t m_Dom_contains;
-    bool m_Dom_containsIsSet;
+    utility::string_t m_Model;
+    bool m_ModelIsSet;
+
+    utility::string_t m_Rubric;
+    bool m_RubricIsSet;
 
     TypeEnum m_Type;
     bool m_TypeIsSet;
-
-    utility::string_t m_Url_contains;
-    bool m_Url_containsIsSet;
 
 };
 

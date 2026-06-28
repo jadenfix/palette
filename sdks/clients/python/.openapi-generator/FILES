@@ -76,6 +76,7 @@ beater_client/models/evaluation_case.py
 beater_client/models/evaluator_kind.py
 beater_client/models/evaluator_kind_one_of.py
 beater_client/models/evaluator_kind_one_of1.py
+beater_client/models/evaluator_kind_one_of10.py
 beater_client/models/evaluator_kind_one_of2.py
 beater_client/models/evaluator_kind_one_of3.py
 beater_client/models/evaluator_kind_one_of4.py
@@ -208,6 +209,7 @@ docs/EvaluationCase.md
 docs/EvaluatorKind.md
 docs/EvaluatorKindOneOf.md
 docs/EvaluatorKindOneOf1.md
+docs/EvaluatorKindOneOf10.md
 docs/EvaluatorKindOneOf2.md
 docs/EvaluatorKindOneOf3.md
 docs/EvaluatorKindOneOf4.md
@@ -357,6 +359,7 @@ test/test_evaluation_case.py
 test/test_evaluator_kind.py
 test/test_evaluator_kind_one_of.py
 test/test_evaluator_kind_one_of1.py
+test/test_evaluator_kind_one_of10.py
 test/test_evaluator_kind_one_of2.py
 test/test_evaluator_kind_one_of3.py
 test/test_evaluator_kind_one_of4.py

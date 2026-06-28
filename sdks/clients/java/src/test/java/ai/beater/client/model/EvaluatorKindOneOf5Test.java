@@ -38,19 +38,11 @@ class EvaluatorKindOneOf5Test {
     }
 
     /**
-     * Test the property 'model'
+     * Test the property 'maxMs'
      */
     @Test
-    void modelTest() {
-        // TODO: test model
-    }
-
-    /**
-     * Test the property 'rubric'
-     */
-    @Test
-    void rubricTest() {
-        // TODO: test rubric
+    void maxMsTest() {
+        // TODO: test maxMs
     }
 
     /**

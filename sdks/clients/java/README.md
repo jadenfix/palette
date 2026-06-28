@@ -248,6 +248,7 @@ Class | Method | HTTP request | Description
  - [EvaluatorKind](docs/EvaluatorKind.md)
  - [EvaluatorKindOneOf](docs/EvaluatorKindOneOf.md)
  - [EvaluatorKindOneOf1](docs/EvaluatorKindOneOf1.md)
+ - [EvaluatorKindOneOf10](docs/EvaluatorKindOneOf10.md)
  - [EvaluatorKindOneOf2](docs/EvaluatorKindOneOf2.md)
  - [EvaluatorKindOneOf3](docs/EvaluatorKindOneOf3.md)
  - [EvaluatorKindOneOf4](docs/EvaluatorKindOneOf4.md)

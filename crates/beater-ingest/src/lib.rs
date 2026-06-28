@@ -1,7 +1,7 @@
 use beater_bus::{BusError, BusMessage, DeadLetter, DurableBus, PublishAck};
 use beater_core::{
-    sha256_hex, Clock, EnvironmentId, IdempotencyKey, ProjectId, Sha256Hash, SpanId, SystemClock,
-    TenantId, TenantScope, Timestamp, TokenCounts, TraceId,
+    sha256_hex, Clock, EnvironmentId, IdempotencyKey, Money, ProjectId, Sha256Hash, SpanId,
+    SystemClock, TenantId, TenantScope, Timestamp, TokenCounts, TraceId,
 };
 use beater_schema::{
     make_idempotency_key, AgentSpanKind, ArtifactRef, AuthContext, CanonicalAttrs, CanonicalSpan,
@@ -10,7 +10,7 @@ use beater_schema::{
 };
 use beater_store::{ArtifactStore, QuotaLimiter, QuotaReservationRequest, StoreError, TraceStore};
 use beater_store_memory::InMemoryQuotaLimiter;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -122,6 +122,484 @@ impl SourceImporter for NativeSpansImporter {
     }
 }
 
+/// Config-driven importer for custom JSON trace shapes.
+///
+/// The payload is `{ "config": MappingConfig, "document": <source json> }`.
+/// Paths are intentionally small dot paths (`spans`, `events.0.name`, `$.spans`);
+/// this keeps the importer auditable and deterministic while covering the common
+/// long-tail "rename fields into canonical spans" case.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MappingImporter;
+
+#[derive(Deserialize)]
+struct MappingPayload {
+    config: MappingConfig,
+    document: Value,
+}
+
+#[derive(Deserialize)]
+struct MappingConfig {
+    spans_path: String,
+    fields: MappingFields,
+    #[serde(default)]
+    kind_map: BTreeMap<String, String>,
+    #[serde(default)]
+    attributes_path: Option<String>,
+    #[serde(default)]
+    attribute_map: BTreeMap<String, String>,
+    #[serde(default)]
+    timestamp_unit: MappingTimestampUnit,
+    #[serde(default = "mapping_normalizer_version")]
+    normalizer_version: String,
+    #[serde(default)]
+    source_schema_url: Option<String>,
+    #[serde(default)]
+    source_schema_version: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct MappingFields {
+    trace_id: String,
+    span_id: String,
+    kind: String,
+    name: String,
+    start_time: String,
+    #[serde(default)]
+    parent_span_id: Option<String>,
+    #[serde(default)]
+    seq: Option<String>,
+    #[serde(default)]
+    status: Option<String>,
+    #[serde(default)]
+    end_time: Option<String>,
+    #[serde(default)]
+    input: Option<String>,
+    #[serde(default)]
+    output: Option<String>,
+    #[serde(default)]
+    model_provider: Option<String>,
+    #[serde(default)]
+    model_name: Option<String>,
+    #[serde(default)]
+    cost_micros: Option<String>,
+    #[serde(default)]
+    cost_currency: Option<String>,
+    #[serde(default)]
+    tokens_input: Option<String>,
+    #[serde(default)]
+    tokens_output: Option<String>,
+    #[serde(default)]
+    tokens_reasoning: Option<String>,
+    #[serde(default)]
+    tokens_cache_read: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum MappingTimestampUnit {
+    #[default]
+    Rfc3339,
+    UnixMillis,
+    UnixSeconds,
+}
+
+fn mapping_normalizer_version() -> String {
+    "beater-mapping-import-v1".to_string()
+}
+
+impl SourceImporter for MappingImporter {
+    fn source(&self) -> &'static str {
+        "mapping"
+    }
+
+    fn normalize(
+        &self,
+        scope: &TenantScope,
+        raw_bytes: &[u8],
+        auth: Option<AuthContext>,
+    ) -> Result<RawTraceIngestRequest, ImportError> {
+        let payload: MappingPayload =
+            serde_json::from_slice(raw_bytes).map_err(|err| ImportError::Invalid {
+                source_name: self.source().to_string(),
+                message: err.to_string(),
+            })?;
+        let spans_value = select_mapping_path(&payload.document, &payload.config.spans_path)
+            .ok_or_else(|| {
+                mapping_invalid(format!(
+                    "missing spans array at path '{}'",
+                    payload.config.spans_path
+                ))
+            })?;
+        let spans_array = spans_value.as_array().ok_or_else(|| {
+            mapping_invalid(format!(
+                "spans path '{}' must resolve to an array",
+                payload.config.spans_path
+            ))
+        })?;
+        if spans_array.is_empty() {
+            return Err(mapping_invalid("spans array cannot be empty".to_string()));
+        }
+
+        let mut spans = Vec::with_capacity(spans_array.len());
+        for (index, source_span) in spans_array.iter().enumerate() {
+            spans.push(mapping_span(&payload.config, source_span, index)?);
+        }
+
+        Ok(RawTraceIngestRequest {
+            scope: scope.clone(),
+            source: SourceDialect::MappingImport,
+            source_schema_url: payload
+                .config
+                .source_schema_url
+                .or_else(|| Some("beater://mapping/v1".to_string())),
+            source_schema_version: payload
+                .config
+                .source_schema_version
+                .or_else(|| Some("1".to_string())),
+            normalizer_version: payload.config.normalizer_version,
+            mime_type: "application/json".to_string(),
+            redaction_class: RedactionClass::Sensitive,
+            raw_bytes: raw_bytes.to_vec(),
+            raw_idempotency_key: None,
+            auth_context: auth,
+            spans,
+        })
+    }
+}
+
+fn mapping_span(
+    config: &MappingConfig,
+    source_span: &Value,
+    index: usize,
+) -> Result<CanonicalSpanDraft, ImportError> {
+    let fields = &config.fields;
+    let mut attributes = mapping_attributes(config, source_span)?;
+    let raw_kind_value = required_mapping_value(source_span, &fields.kind, "kind")?;
+    let raw_kind = scalar_to_string(raw_kind_value).ok_or_else(|| {
+        mapping_invalid(format!(
+            "field kind at path '{}' must be scalar",
+            fields.kind
+        ))
+    })?;
+    let kind = match config.kind_map.get(&raw_kind).map(String::as_str) {
+        Some(mapped) => AgentSpanKind::parse(mapped).ok_or_else(|| {
+            mapping_invalid(format!(
+                "kind_map value for '{raw_kind}' is not a canonical span kind: {mapped}"
+            ))
+        })?,
+        None => AgentSpanKind::parse(&raw_kind).unwrap_or_else(|| {
+            attributes.insert("mapping.span_kind.raw".to_string(), json!(raw_kind));
+            AgentSpanKind::AgentStep
+        }),
+    };
+    let name = required_mapping_string(source_span, &fields.name, "name")?;
+    let trace_id = TraceId::new(required_mapping_string(
+        source_span,
+        &fields.trace_id,
+        "trace_id",
+    )?)
+    .map_err(|err| mapping_invalid(format!("invalid trace_id: {err}")))?;
+    let span_id = SpanId::new(required_mapping_string(
+        source_span,
+        &fields.span_id,
+        "span_id",
+    )?)
+    .map_err(|err| mapping_invalid(format!("invalid span_id: {err}")))?;
+    let parent_span_id = optional_mapping_string(source_span, fields.parent_span_id.as_deref())?
+        .map(SpanId::new)
+        .transpose()
+        .map_err(|err| mapping_invalid(format!("invalid parent_span_id: {err}")))?;
+    let seq = match optional_mapping_u64(source_span, fields.seq.as_deref())? {
+        Some(seq) => seq,
+        None => u64::try_from(index + 1)
+            .map_err(|_| mapping_invalid("span sequence overflow".to_string()))?,
+    };
+    let status = optional_mapping_string(source_span, fields.status.as_deref())?
+        .map(|status| {
+            let status = status.to_ascii_lowercase();
+            SpanStatus::parse(&status).ok_or_else(|| {
+                mapping_invalid(format!(
+                    "unsupported status '{status}' at configured status path"
+                ))
+            })
+        })
+        .transpose()?
+        .unwrap_or(SpanStatus::Unset);
+    let start_time = Some(parse_mapping_timestamp(
+        required_mapping_value(source_span, &fields.start_time, "start_time")?,
+        config.timestamp_unit,
+        "start_time",
+    )?);
+    let end_time = optional_mapping_value(source_span, fields.end_time.as_deref())
+        .map(|value| parse_mapping_timestamp(value, config.timestamp_unit, "end_time"))
+        .transpose()?;
+    let input = optional_mapping_value(source_span, fields.input.as_deref()).cloned();
+    let output = optional_mapping_value(source_span, fields.output.as_deref()).cloned();
+    let model_name = optional_mapping_string(source_span, fields.model_name.as_deref())?;
+    let model_provider = optional_mapping_string(source_span, fields.model_provider.as_deref())?;
+    let model = model_name.map(|name| ModelRef {
+        provider: model_provider.unwrap_or_else(|| "unknown".to_string()),
+        name,
+    });
+    let cost = optional_mapping_i64(source_span, fields.cost_micros.as_deref())?
+        .map(|amount_micros| -> Result<Money, ImportError> {
+            let currency = optional_mapping_string(source_span, fields.cost_currency.as_deref())?
+                .unwrap_or_else(|| "USD".to_string());
+            if currency != "USD" {
+                return Err(mapping_invalid(format!(
+                    "unsupported cost currency '{currency}'; only USD is currently supported"
+                )));
+            }
+            Ok(Money::usd_micros(amount_micros))
+        })
+        .transpose()?;
+    let tokens = mapping_tokens(source_span, fields)?;
+
+    Ok(CanonicalSpanDraft {
+        trace_id,
+        span_id,
+        parent_span_id,
+        seq,
+        kind,
+        name,
+        status,
+        start_time,
+        end_time,
+        model,
+        cost,
+        tokens,
+        input,
+        output,
+        attributes,
+    })
+}
+
+fn mapping_attributes(
+    config: &MappingConfig,
+    source_span: &Value,
+) -> Result<CanonicalAttrs, ImportError> {
+    let mut attributes = BTreeMap::new();
+    let Some(path) = config.attributes_path.as_deref() else {
+        return Ok(attributes);
+    };
+    let value = select_mapping_path(source_span, path)
+        .ok_or_else(|| mapping_invalid(format!("missing attributes object at path '{path}'")))?;
+    let object = value.as_object().ok_or_else(|| {
+        mapping_invalid(format!(
+            "attributes path '{path}' must resolve to an object"
+        ))
+    })?;
+    for (key, value) in object {
+        let mapped = config
+            .attribute_map
+            .get(key)
+            .map(String::as_str)
+            .unwrap_or(key.as_str());
+        attributes.insert(mapped.to_string(), value.clone());
+    }
+    Ok(attributes)
+}
+
+fn mapping_tokens(
+    source_span: &Value,
+    fields: &MappingFields,
+) -> Result<Option<TokenCounts>, ImportError> {
+    let input = optional_mapping_u64(source_span, fields.tokens_input.as_deref())?;
+    let output = optional_mapping_u64(source_span, fields.tokens_output.as_deref())?;
+    let reasoning = optional_mapping_u64(source_span, fields.tokens_reasoning.as_deref())?;
+    let cache_read = optional_mapping_u64(source_span, fields.tokens_cache_read.as_deref())?;
+    if input.is_none() && output.is_none() && reasoning.is_none() && cache_read.is_none() {
+        return Ok(None);
+    }
+    Ok(Some(TokenCounts {
+        input: input.unwrap_or(0),
+        output: output.unwrap_or(0),
+        reasoning: reasoning.unwrap_or(0),
+        cache_read: cache_read.unwrap_or(0),
+    }))
+}
+
+fn required_mapping_value<'a>(
+    value: &'a Value,
+    path: &str,
+    label: &str,
+) -> Result<&'a Value, ImportError> {
+    select_mapping_path(value, path)
+        .ok_or_else(|| mapping_invalid(format!("missing required field {label} at path '{path}'")))
+}
+
+fn required_mapping_string(value: &Value, path: &str, label: &str) -> Result<String, ImportError> {
+    scalar_to_string(required_mapping_value(value, path, label)?)
+        .ok_or_else(|| mapping_invalid(format!("field {label} at path '{path}' must be scalar")))
+}
+
+fn optional_mapping_value<'a>(value: &'a Value, path: Option<&str>) -> Option<&'a Value> {
+    path.and_then(|path| select_mapping_path(value, path))
+}
+
+fn optional_mapping_string(
+    value: &Value,
+    path: Option<&str>,
+) -> Result<Option<String>, ImportError> {
+    match optional_mapping_value(value, path) {
+        Some(value) => scalar_to_string(value).map(Some).ok_or_else(|| {
+            mapping_invalid(format!(
+                "field at path '{}' must be scalar",
+                path.unwrap_or_default()
+            ))
+        }),
+        None => Ok(None),
+    }
+}
+
+fn optional_mapping_u64(value: &Value, path: Option<&str>) -> Result<Option<u64>, ImportError> {
+    match optional_mapping_value(value, path) {
+        Some(Value::Number(number)) => number
+            .as_u64()
+            .ok_or_else(|| {
+                mapping_invalid(format!(
+                    "field at path '{}' must be a non-negative integer",
+                    path.unwrap_or_default()
+                ))
+            })
+            .map(Some),
+        Some(Value::String(raw)) => raw.parse::<u64>().map(Some).map_err(|err| {
+            mapping_invalid(format!(
+                "field at path '{}' must be a non-negative integer: {err}",
+                path.unwrap_or_default()
+            ))
+        }),
+        Some(_) => Err(mapping_invalid(format!(
+            "field at path '{}' must be a non-negative integer",
+            path.unwrap_or_default()
+        ))),
+        None => Ok(None),
+    }
+}
+
+fn optional_mapping_i64(value: &Value, path: Option<&str>) -> Result<Option<i64>, ImportError> {
+    match optional_mapping_value(value, path) {
+        Some(Value::Number(number)) => number
+            .as_i64()
+            .ok_or_else(|| {
+                mapping_invalid(format!(
+                    "field at path '{}' must be an integer",
+                    path.unwrap_or_default()
+                ))
+            })
+            .map(Some),
+        Some(Value::String(raw)) => raw.parse::<i64>().map(Some).map_err(|err| {
+            mapping_invalid(format!(
+                "field at path '{}' must be an integer: {err}",
+                path.unwrap_or_default()
+            ))
+        }),
+        Some(_) => Err(mapping_invalid(format!(
+            "field at path '{}' must be an integer",
+            path.unwrap_or_default()
+        ))),
+        None => Ok(None),
+    }
+}
+
+fn scalar_to_string(value: &Value) -> Option<String> {
+    match value {
+        Value::String(value) => Some(value.clone()),
+        Value::Number(value) => Some(value.to_string()),
+        Value::Bool(value) => Some(value.to_string()),
+        Value::Null | Value::Array(_) | Value::Object(_) => None,
+    }
+}
+
+fn parse_mapping_timestamp(
+    value: &Value,
+    unit: MappingTimestampUnit,
+    label: &str,
+) -> Result<Timestamp, ImportError> {
+    if let Some(raw) = value.as_str() {
+        if let Ok(parsed) = DateTime::parse_from_rfc3339(raw) {
+            return Ok(parsed.with_timezone(&Utc));
+        }
+        let parsed = raw.parse::<i64>().map_err(|err| {
+            mapping_invalid(format!(
+                "{label} must be RFC3339 or configured integer time: {err}"
+            ))
+        })?;
+        return timestamp_from_i64(parsed, unit, label);
+    }
+    if let Some(raw) = value.as_i64() {
+        return timestamp_from_i64(raw, unit, label);
+    }
+    if let Some(raw) = value.as_u64() {
+        let raw = i64::try_from(raw)
+            .map_err(|_| mapping_invalid(format!("{label} timestamp overflows i64")))?;
+        return timestamp_from_i64(raw, unit, label);
+    }
+    Err(mapping_invalid(format!(
+        "{label} must be an RFC3339 string or integer timestamp"
+    )))
+}
+
+fn timestamp_from_i64(
+    raw: i64,
+    unit: MappingTimestampUnit,
+    label: &str,
+) -> Result<Timestamp, ImportError> {
+    match unit {
+        MappingTimestampUnit::Rfc3339 => Err(mapping_invalid(format!(
+            "{label} numeric timestamp requires timestamp_unit unix_millis or unix_seconds"
+        ))),
+        MappingTimestampUnit::UnixMillis => {
+            Utc.timestamp_millis_opt(raw).single().ok_or_else(|| {
+                mapping_invalid(format!(
+                    "{label} unix_millis timestamp is out of range: {raw}"
+                ))
+            })
+        }
+        MappingTimestampUnit::UnixSeconds => Utc.timestamp_opt(raw, 0).single().ok_or_else(|| {
+            mapping_invalid(format!(
+                "{label} unix_seconds timestamp is out of range: {raw}"
+            ))
+        }),
+    }
+}
+
+fn select_mapping_path<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
+    let path = path.trim();
+    if path == "$" {
+        return Some(value);
+    }
+    let path = path
+        .strip_prefix("$.")
+        .or_else(|| path.strip_prefix('/'))
+        .unwrap_or(path);
+    if path.is_empty() {
+        return None;
+    }
+    let mut current = value;
+    for segment in path.split('.') {
+        if segment.is_empty() {
+            return None;
+        }
+        current = match current {
+            Value::Object(object) => object.get(segment)?,
+            Value::Array(array) => {
+                let index = segment.parse::<usize>().ok()?;
+                array.get(index)?
+            }
+            _ => return None,
+        };
+    }
+    Some(current)
+}
+
+fn mapping_invalid(message: String) -> ImportError {
+    ImportError::Invalid {
+        source_name: "mapping".to_string(),
+        message,
+    }
+}
+
 #[derive(Clone)]
 pub struct IngestService {
     artifacts: Arc<dyn ArtifactStore>,
@@ -143,6 +621,8 @@ impl IngestService {
         let mut importers: BTreeMap<&'static str, Arc<dyn SourceImporter>> = BTreeMap::new();
         let native = NativeSpansImporter;
         importers.insert(native.source(), Arc::new(native));
+        let mapping = MappingImporter;
+        importers.insert(mapping.source(), Arc::new(mapping));
         Self {
             artifacts,
             traces,
@@ -454,15 +934,19 @@ impl IngestService {
         tenant_id: TenantId,
         project_id: ProjectId,
     ) -> Result<IngestQueueStatus, IngestError> {
-        let total_depth = self.bus.depth().await.map_err(map_bus_error)?;
+        let total_depth = self
+            .bus
+            .depth_for_scope(&tenant_id, &project_id)
+            .await
+            .map_err(map_bus_error)?;
         let trace_write_depth = self
             .bus
-            .depth_for_kind(TRACE_WRITE_BATCH_KIND)
+            .depth_for_scoped_kind(&tenant_id, &project_id, TRACE_WRITE_BATCH_KIND)
             .await
             .map_err(map_bus_error)?;
         let trace_ingested_depth = self
             .bus
-            .depth_for_kind(TRACE_INGESTED_KIND)
+            .depth_for_scoped_kind(&tenant_id, &project_id, TRACE_INGESTED_KIND)
             .await
             .map_err(map_bus_error)?;
         let dead_letters = self
@@ -1396,8 +1880,9 @@ impl TraceIngestedPublishReport {
 /// the recognized semantic-convention keys (the same keys the OTLP normalizer
 /// reads to populate model/cost/tokens/kind/seq/input/output) or belongs to a
 /// recognized namespace prefix (`llm.`, `gen_ai.`, `browser.`, `resource.`,
-/// `otel.`, `beater.`, `agent.`, `openinference.`, `w3c.`). Everything else
-/// "fails canonical mapping" and is recorded under `unmapped_attrs.unmapped`.
+/// `otel.`, `beater.`, `agent.`, `openinference.`, `w3c.`, `temporal.`,
+/// `langfuse.`). Everything else "fails canonical mapping" and is recorded under
+/// `unmapped_attrs.unmapped`.
 pub mod canonical_mapping {
     /// Recognized namespace prefixes whose attributes the canonical model
     /// understands (either projected to a typed field or carried as a known
@@ -1413,6 +1898,7 @@ pub mod canonical_mapping {
         "openinference.",
         "w3c.",
         "temporal.",
+        "langfuse.",
     ];
 
     /// Exact keys without a recognized prefix that are still canonical because the
@@ -1790,6 +2276,25 @@ mod tests {
         async fn depth_for_kind(&self, kind: &str) -> Result<usize, BusError> {
             self.inner.depth_for_kind(kind).await
         }
+
+        async fn depth_for_scope(
+            &self,
+            tenant_id: &TenantId,
+            project_id: &ProjectId,
+        ) -> Result<usize, BusError> {
+            self.inner.depth_for_scope(tenant_id, project_id).await
+        }
+
+        async fn depth_for_scoped_kind(
+            &self,
+            tenant_id: &TenantId,
+            project_id: &ProjectId,
+            kind: &str,
+        ) -> Result<usize, BusError> {
+            self.inner
+                .depth_for_scoped_kind(tenant_id, project_id, kind)
+                .await
+        }
     }
 
     #[tokio::test]
@@ -1970,6 +2475,133 @@ mod tests {
             .await
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(stored_bytes, raw_bytes);
+    }
+
+    #[test]
+    fn mapping_importer_projects_foreign_json_to_canonical_drafts() {
+        let scope = TenantScope::new(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+        );
+        let payload = mapping_payload();
+        let raw_bytes = serde_json::to_vec(&payload).unwrap_or_else(|err| panic!("{err}"));
+
+        let request = MappingImporter
+            .normalize(&scope, &raw_bytes, None)
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(request.source, SourceDialect::MappingImport);
+        assert_eq!(request.normalizer_version, "beater-mapping-import-v1");
+        assert_eq!(request.redaction_class, RedactionClass::Sensitive);
+        assert_eq!(request.raw_bytes, raw_bytes);
+        assert_eq!(request.spans.len(), 1);
+
+        let span = &request.spans[0];
+        assert_eq!(span.trace_id.as_str(), "mapped-trace");
+        assert_eq!(span.span_id.as_str(), "mapped-span");
+        assert_eq!(
+            span.parent_span_id.as_ref().map(SpanId::as_str),
+            Some("root")
+        );
+        assert_eq!(span.seq, 7);
+        assert_eq!(span.kind, AgentSpanKind::LlmCall);
+        assert_eq!(span.name, "chat completion");
+        assert_eq!(span.status, SpanStatus::Ok);
+        assert_eq!(
+            span.start_time,
+            Some(
+                Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0)
+                    .single()
+                    .unwrap_or_else(|| panic!("valid timestamp"))
+            )
+        );
+        assert_eq!(
+            span.end_time,
+            Some(
+                Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 1)
+                    .single()
+                    .unwrap_or_else(|| panic!("valid timestamp"))
+            )
+        );
+        assert_eq!(span.input, Some(json!("hello")));
+        assert_eq!(span.output, Some(json!("world")));
+        assert_eq!(
+            span.model.as_ref().map(|model| model.name.as_str()),
+            Some("gpt-test")
+        );
+        assert_eq!(span.cost.as_ref().map(|cost| cost.amount_micros), Some(42));
+        assert_eq!(span.tokens.as_ref().map(|tokens| tokens.input), Some(10));
+        assert_eq!(span.tokens.as_ref().map(|tokens| tokens.output), Some(5));
+        assert_eq!(span.attributes["llm.temperature"], json!(0.2));
+        assert_eq!(span.attributes["vendor.extra"], json!("kept"));
+    }
+
+    #[test]
+    fn mapping_importer_preserves_unknown_kind_and_falls_back_to_agent_step() {
+        let mut payload = mapping_payload();
+        payload["document"]["events"][0]["type"] = json!("vendor.weird");
+        payload["config"]["kind_map"] = json!({});
+        let scope = TenantScope::new(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+        );
+        let raw_bytes = serde_json::to_vec(&payload).unwrap_or_else(|err| panic!("{err}"));
+
+        let request = MappingImporter
+            .normalize(&scope, &raw_bytes, None)
+            .unwrap_or_else(|err| panic!("{err}"));
+        let span = &request.spans[0];
+
+        assert_eq!(span.kind, AgentSpanKind::AgentStep);
+        assert_eq!(
+            span.attributes["mapping.span_kind.raw"],
+            json!("vendor.weird")
+        );
+    }
+
+    #[test]
+    fn mapping_importer_rejects_missing_required_path() {
+        let mut payload = mapping_payload();
+        payload["document"]["events"][0]
+            .as_object_mut()
+            .unwrap_or_else(|| panic!("event object"))
+            .remove("trace");
+        let scope = TenantScope::new(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+        );
+        let raw_bytes = serde_json::to_vec(&payload).unwrap_or_else(|err| panic!("{err}"));
+
+        let error = match MappingImporter.normalize(&scope, &raw_bytes, None) {
+            Ok(_) => panic!("mapping importer should reject missing trace_id"),
+            Err(error) => error,
+        };
+
+        match error {
+            ImportError::Invalid { message, .. } => {
+                assert!(message.contains("missing required field trace_id"));
+            }
+        }
+    }
+
+    #[test]
+    fn ingest_service_registers_builtin_mapping_importer() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let service = IngestService::new(artifacts, traces, bus, IngestPolicy::default());
+
+        assert_eq!(
+            service.registered_import_sources(),
+            vec!["mapping", "native"]
+        );
     }
 
     #[tokio::test]
@@ -3238,6 +3870,77 @@ mod tests {
         assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(2));
     }
 
+    #[tokio::test]
+    async fn queue_status_depths_are_scoped_to_requested_project() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let service = IngestService::new(
+            artifacts,
+            traces.clone(),
+            bus.clone(),
+            IngestPolicy::default(),
+        );
+        let tenant_a = TenantId::new("tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_b = TenantId::new("tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let environment = EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}"));
+        let mut request_a = fixture_request_with_span("span-a");
+        request_a.scope = TenantScope::new(tenant_a.clone(), project.clone(), environment.clone());
+        request_a.trace_id = TraceId::new("trace-a").unwrap_or_else(|err| panic!("{err}"));
+        request_a.span_id = SpanId::new("span-a").unwrap_or_else(|err| panic!("{err}"));
+        let mut request_b = fixture_request_with_span("span-b");
+        request_b.scope = TenantScope::new(tenant_b.clone(), project.clone(), environment);
+        request_b.trace_id = TraceId::new("trace-b").unwrap_or_else(|err| panic!("{err}"));
+        request_b.span_id = SpanId::new("span-b").unwrap_or_else(|err| panic!("{err}"));
+
+        service
+            .buffer_native(request_a)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        service
+            .buffer_native(request_b)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(2));
+
+        let tenant_a_status = service
+            .queue_status(tenant_a.clone(), project.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(tenant_a_status.total_depth, 1);
+        assert_eq!(tenant_a_status.trace_write_depth, 1);
+        assert_eq!(tenant_a_status.trace_ingested_depth, 0);
+
+        let write_report = service
+            .drain_trace_writes_for(&tenant_a, &project, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(write_report.consumed, 1);
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(1));
+        assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(1));
+
+        let tenant_a_status = service
+            .queue_status(tenant_a, project.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(tenant_a_status.total_depth, 1);
+        assert_eq!(tenant_a_status.trace_write_depth, 0);
+        assert_eq!(tenant_a_status.trace_ingested_depth, 1);
+
+        let tenant_b_status = service
+            .queue_status(tenant_b, project)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(tenant_b_status.total_depth, 1);
+        assert_eq!(tenant_b_status.trace_write_depth, 1);
+        assert_eq!(tenant_b_status.trace_ingested_depth, 0);
+    }
+
     #[test]
     fn trace_completion_is_state_machine() {
         assert_eq!(
@@ -3475,6 +4178,67 @@ mod tests {
             idempotency_key: None,
             auth_context: None,
         }
+    }
+
+    fn mapping_payload() -> Value {
+        json!({
+            "config": {
+                "spans_path": "events",
+                "fields": {
+                    "trace_id": "trace",
+                    "span_id": "span",
+                    "parent_span_id": "parent",
+                    "seq": "seq",
+                    "kind": "type",
+                    "name": "operation",
+                    "status": "status",
+                    "start_time": "start",
+                    "end_time": "end",
+                    "input": "prompt",
+                    "output": "completion",
+                    "model_provider": "provider",
+                    "model_name": "model",
+                    "cost_micros": "cost_micros",
+                    "cost_currency": "currency",
+                    "tokens_input": "tokens.input",
+                    "tokens_output": "tokens.output"
+                },
+                "kind_map": {
+                    "chat": "llm.call"
+                },
+                "attributes_path": "attrs",
+                "attribute_map": {
+                    "legacy.temperature": "llm.temperature"
+                }
+            },
+            "document": {
+                "events": [{
+                    "trace": "mapped-trace",
+                    "span": "mapped-span",
+                    "parent": "root",
+                    "seq": 7,
+                    "type": "chat",
+                    "operation": "chat completion",
+                    "status": "ok",
+                    "start": "2026-01-01T00:00:00Z",
+                    "end": "2026-01-01T00:00:01Z",
+                    "prompt": "hello",
+                    "completion": "world",
+                    "provider": "openai",
+                    "model": "gpt-test",
+                    "cost_micros": 42,
+                    "currency": "USD",
+                    "tokens": {
+                        "input": 10,
+                        "output": 5
+                    },
+                    "attrs": {
+                        "legacy.temperature": 0.2,
+                        "vendor.extra": "kept"
+                    }
+                }]
+            }
+        })
     }
 
     /// R4.7: a trace the store has never seen reports `NotFound`. The completion

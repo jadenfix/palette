@@ -5,6 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**abs** | **float** |  | 
+**rel** | **float** |  | 
 **type** | **str** |  | 
 
 ## Example

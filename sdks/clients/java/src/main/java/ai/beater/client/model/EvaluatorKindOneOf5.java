@@ -33,25 +33,20 @@ import ai.beater.client.ApiClient;
  * EvaluatorKindOneOf5
  */
 @JsonPropertyOrder({
-  EvaluatorKindOneOf5.JSON_PROPERTY_MODEL,
-  EvaluatorKindOneOf5.JSON_PROPERTY_RUBRIC,
+  EvaluatorKindOneOf5.JSON_PROPERTY_MAX_MS,
   EvaluatorKindOneOf5.JSON_PROPERTY_TYPE
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class EvaluatorKindOneOf5 {
-  public static final String JSON_PROPERTY_MODEL = "model";
+  public static final String JSON_PROPERTY_MAX_MS = "max_ms";
   @javax.annotation.Nonnull
-  private String model;
-
-  public static final String JSON_PROPERTY_RUBRIC = "rubric";
-  @javax.annotation.Nonnull
-  private String rubric;
+  private Long maxMs;
 
   /**
    * Gets or Sets type
    */
   public enum TypeEnum {
-    LLM_JUDGE(String.valueOf("llm_judge"));
+    LATENCY_BUDGET_MS(String.valueOf("latency_budget_ms"));
 
     private String value;
 
@@ -87,51 +82,28 @@ public class EvaluatorKindOneOf5 {
   public EvaluatorKindOneOf5() { 
   }
 
-  public EvaluatorKindOneOf5 model(@javax.annotation.Nonnull String model) {
-    this.model = model;
+  public EvaluatorKindOneOf5 maxMs(@javax.annotation.Nonnull Long maxMs) {
+    this.maxMs = maxMs;
     return this;
   }
 
   /**
-   * Get model
-   * @return model
+   * Get maxMs
+   * minimum: 0
+   * @return maxMs
    */
   @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_MODEL)
+  @JsonProperty(JSON_PROPERTY_MAX_MS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public String getModel() {
-    return model;
+  public Long getMaxMs() {
+    return maxMs;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MODEL)
+  @JsonProperty(JSON_PROPERTY_MAX_MS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setModel(@javax.annotation.Nonnull String model) {
-    this.model = model;
-  }
-
-
-  public EvaluatorKindOneOf5 rubric(@javax.annotation.Nonnull String rubric) {
-    this.rubric = rubric;
-    return this;
-  }
-
-  /**
-   * Get rubric
-   * @return rubric
-   */
-  @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_RUBRIC)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public String getRubric() {
-    return rubric;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_RUBRIC)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRubric(@javax.annotation.Nonnull String rubric) {
-    this.rubric = rubric;
+  public void setMaxMs(@javax.annotation.Nonnull Long maxMs) {
+    this.maxMs = maxMs;
   }
 
 
@@ -171,22 +143,20 @@ public class EvaluatorKindOneOf5 {
       return false;
     }
     EvaluatorKindOneOf5 evaluatorKindOneOf5 = (EvaluatorKindOneOf5) o;
-    return Objects.equals(this.model, evaluatorKindOneOf5.model) &&
-        Objects.equals(this.rubric, evaluatorKindOneOf5.rubric) &&
+    return Objects.equals(this.maxMs, evaluatorKindOneOf5.maxMs) &&
         Objects.equals(this.type, evaluatorKindOneOf5.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(model, rubric, type);
+    return Objects.hash(maxMs, type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EvaluatorKindOneOf5 {\n");
-    sb.append("    model: ").append(toIndentedString(model)).append("\n");
-    sb.append("    rubric: ").append(toIndentedString(rubric)).append("\n");
+    sb.append("    maxMs: ").append(toIndentedString(maxMs)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -235,14 +205,9 @@ public class EvaluatorKindOneOf5 {
 
     StringJoiner joiner = new StringJoiner("&");
 
-    // add `model` to the URL query string
-    if (getModel() != null) {
-      joiner.add(String.format("%smodel%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getModel()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
-    }
-
-    // add `rubric` to the URL query string
-    if (getRubric() != null) {
-      joiner.add(String.format("%srubric%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getRubric()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    // add `max_ms` to the URL query string
+    if (getMaxMs() != null) {
+      joiner.add(String.format("%smax_ms%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getMaxMs()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `type` to the URL query string

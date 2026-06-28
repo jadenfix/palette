@@ -19,10 +19,11 @@ import (
 // checks if the EvaluatorKindOneOf7 type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &EvaluatorKindOneOf7{}
 
-// EvaluatorKindOneOf7 Browser step efficiency: passes when the run used at most `max_steps` browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
+// EvaluatorKindOneOf7 Browser world-state success: asserts the final step's observed page (url and/or DOM) matches the configured target — NOT the agent's self-reported \"done\". Reads `trace.browser_steps`.
 type EvaluatorKindOneOf7 struct {
-	MaxSteps int64 `json:"max_steps"`
+	DomContains NullableString `json:"dom_contains,omitempty"`
 	Type string `json:"type"`
+	UrlContains NullableString `json:"url_contains,omitempty"`
 }
 
 type _EvaluatorKindOneOf7 EvaluatorKindOneOf7
@@ -31,9 +32,8 @@ type _EvaluatorKindOneOf7 EvaluatorKindOneOf7
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewEvaluatorKindOneOf7(maxSteps int64, type_ string) *EvaluatorKindOneOf7 {
+func NewEvaluatorKindOneOf7(type_ string) *EvaluatorKindOneOf7 {
 	this := EvaluatorKindOneOf7{}
-	this.MaxSteps = maxSteps
 	this.Type = type_
 	return &this
 }
@@ -46,28 +46,46 @@ func NewEvaluatorKindOneOf7WithDefaults() *EvaluatorKindOneOf7 {
 	return &this
 }
 
-// GetMaxSteps returns the MaxSteps field value
-func (o *EvaluatorKindOneOf7) GetMaxSteps() int64 {
-	if o == nil {
-		var ret int64
+// GetDomContains returns the DomContains field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *EvaluatorKindOneOf7) GetDomContains() string {
+	if o == nil || IsNil(o.DomContains.Get()) {
+		var ret string
 		return ret
 	}
-
-	return o.MaxSteps
+	return *o.DomContains.Get()
 }
 
-// GetMaxStepsOk returns a tuple with the MaxSteps field value
+// GetDomContainsOk returns a tuple with the DomContains field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *EvaluatorKindOneOf7) GetMaxStepsOk() (*int64, bool) {
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *EvaluatorKindOneOf7) GetDomContainsOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.MaxSteps, true
+	return o.DomContains.Get(), o.DomContains.IsSet()
 }
 
-// SetMaxSteps sets field value
-func (o *EvaluatorKindOneOf7) SetMaxSteps(v int64) {
-	o.MaxSteps = v
+// HasDomContains returns a boolean if a field has been set.
+func (o *EvaluatorKindOneOf7) HasDomContains() bool {
+	if o != nil && o.DomContains.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetDomContains gets a reference to the given NullableString and assigns it to the DomContains field.
+func (o *EvaluatorKindOneOf7) SetDomContains(v string) {
+	o.DomContains.Set(&v)
+}
+// SetDomContainsNil sets the value for DomContains to be an explicit nil
+func (o *EvaluatorKindOneOf7) SetDomContainsNil() {
+	o.DomContains.Set(nil)
+}
+
+// UnsetDomContains ensures that no value is present for DomContains, not even an explicit nil
+func (o *EvaluatorKindOneOf7) UnsetDomContains() {
+	o.DomContains.Unset()
 }
 
 // GetType returns the Type field value
@@ -94,6 +112,48 @@ func (o *EvaluatorKindOneOf7) SetType(v string) {
 	o.Type = v
 }
 
+// GetUrlContains returns the UrlContains field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *EvaluatorKindOneOf7) GetUrlContains() string {
+	if o == nil || IsNil(o.UrlContains.Get()) {
+		var ret string
+		return ret
+	}
+	return *o.UrlContains.Get()
+}
+
+// GetUrlContainsOk returns a tuple with the UrlContains field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *EvaluatorKindOneOf7) GetUrlContainsOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.UrlContains.Get(), o.UrlContains.IsSet()
+}
+
+// HasUrlContains returns a boolean if a field has been set.
+func (o *EvaluatorKindOneOf7) HasUrlContains() bool {
+	if o != nil && o.UrlContains.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetUrlContains gets a reference to the given NullableString and assigns it to the UrlContains field.
+func (o *EvaluatorKindOneOf7) SetUrlContains(v string) {
+	o.UrlContains.Set(&v)
+}
+// SetUrlContainsNil sets the value for UrlContains to be an explicit nil
+func (o *EvaluatorKindOneOf7) SetUrlContainsNil() {
+	o.UrlContains.Set(nil)
+}
+
+// UnsetUrlContains ensures that no value is present for UrlContains, not even an explicit nil
+func (o *EvaluatorKindOneOf7) UnsetUrlContains() {
+	o.UrlContains.Unset()
+}
+
 func (o EvaluatorKindOneOf7) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -104,8 +164,13 @@ func (o EvaluatorKindOneOf7) MarshalJSON() ([]byte, error) {
 
 func (o EvaluatorKindOneOf7) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["max_steps"] = o.MaxSteps
+	if o.DomContains.IsSet() {
+		toSerialize["dom_contains"] = o.DomContains.Get()
+	}
 	toSerialize["type"] = o.Type
+	if o.UrlContains.IsSet() {
+		toSerialize["url_contains"] = o.UrlContains.Get()
+	}
 	return toSerialize, nil
 }
 
@@ -114,7 +179,6 @@ func (o *EvaluatorKindOneOf7) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"max_steps",
 		"type",
 	}
 

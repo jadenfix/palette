@@ -34,6 +34,7 @@
 #include <cpprest/details/basic_types.h>
 #include "beater-client/model/EvaluatorKind_oneOf_3.h"
 #include "beater-client/model/EvaluatorKind_oneOf_2.h"
+#include "beater-client/model/EvaluatorKind_oneOf_10.h"
 
 namespace org {
 namespace openapitools {
@@ -89,7 +90,7 @@ public:
     /////////////////////////////////////////////
     /// EvaluatorKind members
 
-    using VariantType = std::variant<EvaluatorKind_oneOf, EvaluatorKind_oneOf_1, EvaluatorKind_oneOf_2, EvaluatorKind_oneOf_3, EvaluatorKind_oneOf_4, EvaluatorKind_oneOf_5, EvaluatorKind_oneOf_6, EvaluatorKind_oneOf_7, EvaluatorKind_oneOf_8, EvaluatorKind_oneOf_9>;
+    using VariantType = std::variant<EvaluatorKind_oneOf, EvaluatorKind_oneOf_1, EvaluatorKind_oneOf_10, EvaluatorKind_oneOf_2, EvaluatorKind_oneOf_3, EvaluatorKind_oneOf_4, EvaluatorKind_oneOf_5, EvaluatorKind_oneOf_6, EvaluatorKind_oneOf_7, EvaluatorKind_oneOf_8, EvaluatorKind_oneOf_9>;
 
     const VariantType& getVariant() const;
     void setVariant(VariantType value);

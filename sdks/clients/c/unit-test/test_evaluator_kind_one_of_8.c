@@ -22,13 +22,13 @@ evaluator_kind_one_of_8_t* instantiate_evaluator_kind_one_of_8(int include_optio
   evaluator_kind_one_of_8_t* evaluator_kind_one_of_8 = NULL;
   if (include_optional) {
     evaluator_kind_one_of_8 = evaluator_kind_one_of_8_create(
-      1.337,
-      beater_api_evaluator_kind_one_of_8_TYPE_browser_grounding
+      0,
+      beater_api_evaluator_kind_one_of_8_TYPE_browser_step_efficiency
     );
   } else {
     evaluator_kind_one_of_8 = evaluator_kind_one_of_8_create(
-      1.337,
-      beater_api_evaluator_kind_one_of_8_TYPE_browser_grounding
+      0,
+      beater_api_evaluator_kind_one_of_8_TYPE_browser_step_efficiency
     );
   }
 

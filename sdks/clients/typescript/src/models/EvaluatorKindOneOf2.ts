@@ -21,6 +21,18 @@ import { mapValues } from '../runtime';
 export interface EvaluatorKindOneOf2 {
     /**
      * 
+     * @type {number}
+     * @memberof EvaluatorKindOneOf2
+     */
+    abs: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof EvaluatorKindOneOf2
+     */
+    rel: number;
+    /**
+     * 
      * @type {string}
      * @memberof EvaluatorKindOneOf2
      */
@@ -32,7 +44,7 @@ export interface EvaluatorKindOneOf2 {
  * @export
  */
 export const EvaluatorKindOneOf2TypeEnum = {
-    JsonObject: 'json_object'
+    NumericTolerance: 'numeric_tolerance'
 } as const;
 export type EvaluatorKindOneOf2TypeEnum = typeof EvaluatorKindOneOf2TypeEnum[keyof typeof EvaluatorKindOneOf2TypeEnum];
 
@@ -41,6 +53,8 @@ export type EvaluatorKindOneOf2TypeEnum = typeof EvaluatorKindOneOf2TypeEnum[key
  * Check if a given object implements the EvaluatorKindOneOf2 interface.
  */
 export function instanceOfEvaluatorKindOneOf2(value: object): value is EvaluatorKindOneOf2 {
+    if (!('abs' in value) || value['abs'] === undefined) return false;
+    if (!('rel' in value) || value['rel'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
     return true;
 }
@@ -55,6 +69,8 @@ export function EvaluatorKindOneOf2FromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
+        'abs': json['abs'],
+        'rel': json['rel'],
         'type': json['type'],
     };
 }
@@ -70,6 +86,8 @@ export function EvaluatorKindOneOf2ToJSONTyped(value?: EvaluatorKindOneOf2 | nul
 
     return {
         
+        'abs': value['abs'],
+        'rel': value['rel'],
         'type': value['type'],
     };
 }

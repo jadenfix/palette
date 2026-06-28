@@ -23,14 +23,14 @@ evaluator_kind_one_of_6_t* instantiate_evaluator_kind_one_of_6(int include_optio
   if (include_optional) {
     evaluator_kind_one_of_6 = evaluator_kind_one_of_6_create(
       "0",
-      beater_api_evaluator_kind_one_of_6_TYPE_browser_task_success,
-      "0"
+      "0",
+      beater_api_evaluator_kind_one_of_6_TYPE_llm_judge
     );
   } else {
     evaluator_kind_one_of_6 = evaluator_kind_one_of_6_create(
       "0",
-      beater_api_evaluator_kind_one_of_6_TYPE_browser_task_success,
-      "0"
+      "0",
+      beater_api_evaluator_kind_one_of_6_TYPE_llm_judge
     );
   }
 

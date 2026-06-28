@@ -35,13 +35,15 @@ class TestEvaluatorKindOneOf6(unittest.TestCase):
         model = EvaluatorKindOneOf6()
         if include_optional:
             return EvaluatorKindOneOf6(
-                dom_contains = '',
-                type = 'browser_task_success',
-                url_contains = ''
+                model = '',
+                rubric = '',
+                type = 'llm_judge'
             )
         else:
             return EvaluatorKindOneOf6(
-                type = 'browser_task_success',
+                model = '',
+                rubric = '',
+                type = 'llm_judge',
         )
         """
 

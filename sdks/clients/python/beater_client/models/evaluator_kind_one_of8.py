@@ -17,24 +17,25 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Union
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 
 class EvaluatorKindOneOf8(BaseModel):
     """
-    Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
+    Browser step efficiency: passes when the run used at most `max_steps` browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
     """ # noqa: E501
-    min_ratio: Union[StrictFloat, StrictInt]
+    max_steps: Annotated[int, Field(strict=True, ge=0)]
     type: StrictStr
-    __properties: ClassVar[List[str]] = ["min_ratio", "type"]
+    __properties: ClassVar[List[str]] = ["max_steps", "type"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['browser_grounding']):
-            raise ValueError("must be one of enum values ('browser_grounding')")
+        if value not in set(['browser_step_efficiency']):
+            raise ValueError("must be one of enum values ('browser_step_efficiency')")
         return value
 
     model_config = ConfigDict(
@@ -88,7 +89,7 @@ class EvaluatorKindOneOf8(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "min_ratio": obj.get("min_ratio"),
+            "max_steps": obj.get("max_steps"),
             "type": obj.get("type")
         })
         return _obj

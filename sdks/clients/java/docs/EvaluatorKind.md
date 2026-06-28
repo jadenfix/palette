@@ -5,6 +5,7 @@
 ## oneOf schemas
 * [EvaluatorKindOneOf](EvaluatorKindOneOf.md)
 * [EvaluatorKindOneOf1](EvaluatorKindOneOf1.md)
+* [EvaluatorKindOneOf10](EvaluatorKindOneOf10.md)
 * [EvaluatorKindOneOf2](EvaluatorKindOneOf2.md)
 * [EvaluatorKindOneOf3](EvaluatorKindOneOf3.md)
 * [EvaluatorKindOneOf4](EvaluatorKindOneOf4.md)
@@ -20,6 +21,7 @@
 import ai.beater.client.model.EvaluatorKind;
 import ai.beater.client.model.EvaluatorKindOneOf;
 import ai.beater.client.model.EvaluatorKindOneOf1;
+import ai.beater.client.model.EvaluatorKindOneOf10;
 import ai.beater.client.model.EvaluatorKindOneOf2;
 import ai.beater.client.model.EvaluatorKindOneOf3;
 import ai.beater.client.model.EvaluatorKindOneOf4;
@@ -46,6 +48,13 @@ public class Example {
         exampleEvaluatorKind.setActualInstance(exampleEvaluatorKindOneOf1);
         // to get back the EvaluatorKindOneOf1 set earlier
         EvaluatorKindOneOf1 testEvaluatorKindOneOf1 = (EvaluatorKindOneOf1) exampleEvaluatorKind.getActualInstance();
+
+        // create a new EvaluatorKindOneOf10
+        EvaluatorKindOneOf10 exampleEvaluatorKindOneOf10 = new EvaluatorKindOneOf10();
+        // set EvaluatorKind to EvaluatorKindOneOf10
+        exampleEvaluatorKind.setActualInstance(exampleEvaluatorKindOneOf10);
+        // to get back the EvaluatorKindOneOf10 set earlier
+        EvaluatorKindOneOf10 testEvaluatorKindOneOf10 = (EvaluatorKindOneOf10) exampleEvaluatorKind.getActualInstance();
 
         // create a new EvaluatorKindOneOf2
         EvaluatorKindOneOf2 exampleEvaluatorKindOneOf2 = new EvaluatorKindOneOf2();

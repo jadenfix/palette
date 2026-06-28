@@ -132,8 +132,8 @@
 
 | Component | ARCH § | Claimed status | Actual (verified) | Notes / Discrepancy |
 |---|---|---|---|---|
-| `beater-replay` (cassettes + deterministic replay) | §11 | built (cassette path) | **Partial** — `crates/beater-replay/` in workspace | `replay-fixture` cassette path built; real forked-replay search (earliest-flip attribution) is planned |
-| Forked replay / earliest-failing-span attribution | §11 | planned | **Planned** | The heuristic `attribute_failure` first-error exists; full forked binary search planned |
+| `beater-replay` (cassettes + deterministic replay) | §11 | built (cassette path) | **Partial** — `crates/beater-replay/` in workspace | `replay-fixture` cassette path built; `attribute_failure` is now recovery-aware recorded-trace attribution; harness-backed forked replay remains planned |
+| Forked replay / earliest-failing-span attribution | §11 | planned | **Partial** | First-error stub retired; `find_earliest_outcome_flip` is a linear earliest-first helper over caller-supplied fork evaluations. #112 remains the bisection fast-path; full harness-backed counterfactual replay remains planned |
 | `beater-search` (Tantivy full-text index) | §13 | built | **Built** — `crates/beater-search/` in workspace | |
 
 ---
@@ -184,7 +184,7 @@
 | Vercel dashboard deploy (`vercel.json`) | §3.2, §25 | built | **Built** — `web/dashboard/vercel.json` present | CI deploy step gated; deploy pending secrets |
 | `docs/hosting.md` | §3.2 | built | **Built** — `docs/hosting.md` present | |
 | Docs site (published OpenAPI docs) | §3.3 | planned (site); spec is built | **Partial** — `sdks/openapi/beater-api.json` is built; no published site | |
-| Multi-arch GHCR image (`container-images` workflow) | §3.3 | built | **Unverified** — `Dockerfile` present; CI workflow existence not verified in this pass | |
+| Multi-arch GHCR image (`container-images` workflow) | §3.3, §22.5 | built | **Built** — `.github/workflows/container-images.yml` builds amd64/arm64 GHCR images for `beaterd`, dashboard, dashboard e2e, and OTEL Python runner, then verifies public handoff readiness | Publishes SHA and `main` tags used by the clean-machine compose path |
 
 ---
 

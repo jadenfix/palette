@@ -19,9 +19,9 @@ import (
 // checks if the EvaluatorKindOneOf8 type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &EvaluatorKindOneOf8{}
 
-// EvaluatorKindOneOf8 Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
+// EvaluatorKindOneOf8 Browser step efficiency: passes when the run used at most `max_steps` browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
 type EvaluatorKindOneOf8 struct {
-	MinRatio float64 `json:"min_ratio"`
+	MaxSteps int64 `json:"max_steps"`
 	Type string `json:"type"`
 }
 
@@ -31,9 +31,9 @@ type _EvaluatorKindOneOf8 EvaluatorKindOneOf8
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewEvaluatorKindOneOf8(minRatio float64, type_ string) *EvaluatorKindOneOf8 {
+func NewEvaluatorKindOneOf8(maxSteps int64, type_ string) *EvaluatorKindOneOf8 {
 	this := EvaluatorKindOneOf8{}
-	this.MinRatio = minRatio
+	this.MaxSteps = maxSteps
 	this.Type = type_
 	return &this
 }
@@ -46,28 +46,28 @@ func NewEvaluatorKindOneOf8WithDefaults() *EvaluatorKindOneOf8 {
 	return &this
 }
 
-// GetMinRatio returns the MinRatio field value
-func (o *EvaluatorKindOneOf8) GetMinRatio() float64 {
+// GetMaxSteps returns the MaxSteps field value
+func (o *EvaluatorKindOneOf8) GetMaxSteps() int64 {
 	if o == nil {
-		var ret float64
+		var ret int64
 		return ret
 	}
 
-	return o.MinRatio
+	return o.MaxSteps
 }
 
-// GetMinRatioOk returns a tuple with the MinRatio field value
+// GetMaxStepsOk returns a tuple with the MaxSteps field value
 // and a boolean to check if the value has been set.
-func (o *EvaluatorKindOneOf8) GetMinRatioOk() (*float64, bool) {
+func (o *EvaluatorKindOneOf8) GetMaxStepsOk() (*int64, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.MinRatio, true
+	return &o.MaxSteps, true
 }
 
-// SetMinRatio sets field value
-func (o *EvaluatorKindOneOf8) SetMinRatio(v float64) {
-	o.MinRatio = v
+// SetMaxSteps sets field value
+func (o *EvaluatorKindOneOf8) SetMaxSteps(v int64) {
+	o.MaxSteps = v
 }
 
 // GetType returns the Type field value
@@ -104,7 +104,7 @@ func (o EvaluatorKindOneOf8) MarshalJSON() ([]byte, error) {
 
 func (o EvaluatorKindOneOf8) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["min_ratio"] = o.MinRatio
+	toSerialize["max_steps"] = o.MaxSteps
 	toSerialize["type"] = o.Type
 	return toSerialize, nil
 }
@@ -114,7 +114,7 @@ func (o *EvaluatorKindOneOf8) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"min_ratio",
+		"max_steps",
 		"type",
 	}
 

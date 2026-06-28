@@ -14,12 +14,18 @@
 
 import { mapValues } from '../runtime';
 /**
- * Browser recovery: passes when the run either hit no errors or recovered
- * to a successful final step (catches death spirals after a failed action).
+ * Browser grounding: fraction of element-targeted steps that resolved to
+ * their intended element; score is the ratio, passes at `min_ratio`.
  * @export
  * @interface EvaluatorKindOneOf9
  */
 export interface EvaluatorKindOneOf9 {
+    /**
+     * 
+     * @type {number}
+     * @memberof EvaluatorKindOneOf9
+     */
+    minRatio: number;
     /**
      * 
      * @type {string}
@@ -33,7 +39,7 @@ export interface EvaluatorKindOneOf9 {
  * @export
  */
 export const EvaluatorKindOneOf9TypeEnum = {
-    BrowserRecovery: 'browser_recovery'
+    BrowserGrounding: 'browser_grounding'
 } as const;
 export type EvaluatorKindOneOf9TypeEnum = typeof EvaluatorKindOneOf9TypeEnum[keyof typeof EvaluatorKindOneOf9TypeEnum];
 
@@ -42,6 +48,7 @@ export type EvaluatorKindOneOf9TypeEnum = typeof EvaluatorKindOneOf9TypeEnum[key
  * Check if a given object implements the EvaluatorKindOneOf9 interface.
  */
 export function instanceOfEvaluatorKindOneOf9(value: object): value is EvaluatorKindOneOf9 {
+    if (!('minRatio' in value) || value['minRatio'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
     return true;
 }
@@ -56,6 +63,7 @@ export function EvaluatorKindOneOf9FromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
+        'minRatio': json['min_ratio'],
         'type': json['type'],
     };
 }
@@ -71,6 +79,7 @@ export function EvaluatorKindOneOf9ToJSONTyped(value?: EvaluatorKindOneOf9 | nul
 
     return {
         
+        'min_ratio': value['minRatio'],
         'type': value['type'],
     };
 }

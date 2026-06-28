@@ -22,13 +22,13 @@ evaluator_kind_one_of_4_t* instantiate_evaluator_kind_one_of_4(int include_optio
   evaluator_kind_one_of_4_t* evaluator_kind_one_of_4 = NULL;
   if (include_optional) {
     evaluator_kind_one_of_4 = evaluator_kind_one_of_4_create(
-      0,
-      beater_api_evaluator_kind_one_of_4_TYPE_latency_budget_ms
+      56,
+      beater_api_evaluator_kind_one_of_4_TYPE_cost_budget
     );
   } else {
     evaluator_kind_one_of_4 = evaluator_kind_one_of_4_create(
-      0,
-      beater_api_evaluator_kind_one_of_4_TYPE_latency_budget_ms
+      56,
+      beater_api_evaluator_kind_one_of_4_TYPE_cost_budget
     );
   }
 

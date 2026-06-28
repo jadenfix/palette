@@ -21,7 +21,7 @@ var _ MappedNullable = &EvaluatorKindOneOf4{}
 
 // EvaluatorKindOneOf4 struct for EvaluatorKindOneOf4
 type EvaluatorKindOneOf4 struct {
-	MaxMs int64 `json:"max_ms"`
+	MaxMicros int64 `json:"max_micros"`
 	Type string `json:"type"`
 }
 
@@ -31,9 +31,9 @@ type _EvaluatorKindOneOf4 EvaluatorKindOneOf4
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewEvaluatorKindOneOf4(maxMs int64, type_ string) *EvaluatorKindOneOf4 {
+func NewEvaluatorKindOneOf4(maxMicros int64, type_ string) *EvaluatorKindOneOf4 {
 	this := EvaluatorKindOneOf4{}
-	this.MaxMs = maxMs
+	this.MaxMicros = maxMicros
 	this.Type = type_
 	return &this
 }
@@ -46,28 +46,28 @@ func NewEvaluatorKindOneOf4WithDefaults() *EvaluatorKindOneOf4 {
 	return &this
 }
 
-// GetMaxMs returns the MaxMs field value
-func (o *EvaluatorKindOneOf4) GetMaxMs() int64 {
+// GetMaxMicros returns the MaxMicros field value
+func (o *EvaluatorKindOneOf4) GetMaxMicros() int64 {
 	if o == nil {
 		var ret int64
 		return ret
 	}
 
-	return o.MaxMs
+	return o.MaxMicros
 }
 
-// GetMaxMsOk returns a tuple with the MaxMs field value
+// GetMaxMicrosOk returns a tuple with the MaxMicros field value
 // and a boolean to check if the value has been set.
-func (o *EvaluatorKindOneOf4) GetMaxMsOk() (*int64, bool) {
+func (o *EvaluatorKindOneOf4) GetMaxMicrosOk() (*int64, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.MaxMs, true
+	return &o.MaxMicros, true
 }
 
-// SetMaxMs sets field value
-func (o *EvaluatorKindOneOf4) SetMaxMs(v int64) {
-	o.MaxMs = v
+// SetMaxMicros sets field value
+func (o *EvaluatorKindOneOf4) SetMaxMicros(v int64) {
+	o.MaxMicros = v
 }
 
 // GetType returns the Type field value
@@ -104,7 +104,7 @@ func (o EvaluatorKindOneOf4) MarshalJSON() ([]byte, error) {
 
 func (o EvaluatorKindOneOf4) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["max_ms"] = o.MaxMs
+	toSerialize["max_micros"] = o.MaxMicros
 	toSerialize["type"] = o.Type
 	return toSerialize, nil
 }
@@ -114,7 +114,7 @@ func (o *EvaluatorKindOneOf4) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"max_ms",
+		"max_micros",
 		"type",
 	}
 

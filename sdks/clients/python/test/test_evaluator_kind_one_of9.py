@@ -35,11 +35,13 @@ class TestEvaluatorKindOneOf9(unittest.TestCase):
         model = EvaluatorKindOneOf9()
         if include_optional:
             return EvaluatorKindOneOf9(
-                type = 'browser_recovery'
+                min_ratio = 1.337,
+                type = 'browser_grounding'
             )
         else:
             return EvaluatorKindOneOf9(
-                type = 'browser_recovery',
+                min_ratio = 1.337,
+                type = 'browser_grounding',
         )
         """
 

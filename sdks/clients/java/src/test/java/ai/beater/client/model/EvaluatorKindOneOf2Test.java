@@ -38,6 +38,22 @@ class EvaluatorKindOneOf2Test {
     }
 
     /**
+     * Test the property 'abs'
+     */
+    @Test
+    void absTest() {
+        // TODO: test abs
+    }
+
+    /**
+     * Test the property 'rel'
+     */
+    @Test
+    void relTest() {
+        // TODO: test rel
+    }
+
+    /**
      * Test the property 'type'
      */
     @Test

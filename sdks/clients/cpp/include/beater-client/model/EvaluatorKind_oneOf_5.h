@@ -55,7 +55,7 @@ public:
 
     enum class TypeEnum
     {
-        llm_judge,
+        latency_budget_ms,
         
     };
 
@@ -63,15 +63,10 @@ public:
     const utility::string_t fromTypeEnum(const TypeEnum value) const;
 
 
-    utility::string_t getModel() const;
-    bool modelIsSet() const;
-    void unsetModel();
-    void setModel(const utility::string_t& value);
-
-    utility::string_t getRubric() const;
-    bool rubricIsSet() const;
-    void unsetRubric();
-    void setRubric(const utility::string_t& value);
+    int64_t getMaxMs() const;
+    bool maxMsIsSet() const;
+    void unsetMax_ms();
+    void setMaxMs(int64_t value);
 
     TypeEnum getType() const;
     bool typeIsSet() const;
@@ -80,11 +75,8 @@ public:
 
 
 protected:
-    utility::string_t m_Model;
-    bool m_ModelIsSet;
-
-    utility::string_t m_Rubric;
-    bool m_RubricIsSet;
+    int64_t m_Max_ms;
+    bool m_Max_msIsSet;
 
     TypeEnum m_Type;
     bool m_TypeIsSet;

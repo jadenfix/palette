@@ -21,6 +21,8 @@ var _ MappedNullable = &EvaluatorKindOneOf2{}
 
 // EvaluatorKindOneOf2 struct for EvaluatorKindOneOf2
 type EvaluatorKindOneOf2 struct {
+	Abs float64 `json:"abs"`
+	Rel float64 `json:"rel"`
 	Type string `json:"type"`
 }
 
@@ -30,8 +32,10 @@ type _EvaluatorKindOneOf2 EvaluatorKindOneOf2
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewEvaluatorKindOneOf2(type_ string) *EvaluatorKindOneOf2 {
+func NewEvaluatorKindOneOf2(abs float64, rel float64, type_ string) *EvaluatorKindOneOf2 {
 	this := EvaluatorKindOneOf2{}
+	this.Abs = abs
+	this.Rel = rel
 	this.Type = type_
 	return &this
 }
@@ -42,6 +46,54 @@ func NewEvaluatorKindOneOf2(type_ string) *EvaluatorKindOneOf2 {
 func NewEvaluatorKindOneOf2WithDefaults() *EvaluatorKindOneOf2 {
 	this := EvaluatorKindOneOf2{}
 	return &this
+}
+
+// GetAbs returns the Abs field value
+func (o *EvaluatorKindOneOf2) GetAbs() float64 {
+	if o == nil {
+		var ret float64
+		return ret
+	}
+
+	return o.Abs
+}
+
+// GetAbsOk returns a tuple with the Abs field value
+// and a boolean to check if the value has been set.
+func (o *EvaluatorKindOneOf2) GetAbsOk() (*float64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Abs, true
+}
+
+// SetAbs sets field value
+func (o *EvaluatorKindOneOf2) SetAbs(v float64) {
+	o.Abs = v
+}
+
+// GetRel returns the Rel field value
+func (o *EvaluatorKindOneOf2) GetRel() float64 {
+	if o == nil {
+		var ret float64
+		return ret
+	}
+
+	return o.Rel
+}
+
+// GetRelOk returns a tuple with the Rel field value
+// and a boolean to check if the value has been set.
+func (o *EvaluatorKindOneOf2) GetRelOk() (*float64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Rel, true
+}
+
+// SetRel sets field value
+func (o *EvaluatorKindOneOf2) SetRel(v float64) {
+	o.Rel = v
 }
 
 // GetType returns the Type field value
@@ -78,6 +130,8 @@ func (o EvaluatorKindOneOf2) MarshalJSON() ([]byte, error) {
 
 func (o EvaluatorKindOneOf2) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	toSerialize["abs"] = o.Abs
+	toSerialize["rel"] = o.Rel
 	toSerialize["type"] = o.Type
 	return toSerialize, nil
 }
@@ -87,6 +141,8 @@ func (o *EvaluatorKindOneOf2) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
+		"abs",
+		"rel",
 		"type",
 	}
 

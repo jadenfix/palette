@@ -17,8 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
+from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List, Union
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -26,14 +26,16 @@ class EvaluatorKindOneOf2(BaseModel):
     """
     EvaluatorKindOneOf2
     """ # noqa: E501
+    abs: Union[StrictFloat, StrictInt]
+    rel: Union[StrictFloat, StrictInt]
     type: StrictStr
-    __properties: ClassVar[List[str]] = ["type"]
+    __properties: ClassVar[List[str]] = ["abs", "rel", "type"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['json_object']):
-            raise ValueError("must be one of enum values ('json_object')")
+        if value not in set(['numeric_tolerance']):
+            raise ValueError("must be one of enum values ('numeric_tolerance')")
         return value
 
     model_config = ConfigDict(
@@ -87,6 +89,8 @@ class EvaluatorKindOneOf2(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "abs": obj.get("abs"),
+            "rel": obj.get("rel"),
             "type": obj.get("type")
         })
         return _obj

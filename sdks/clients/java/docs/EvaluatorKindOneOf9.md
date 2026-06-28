@@ -2,12 +2,13 @@
 
 # EvaluatorKindOneOf9
 
-Browser recovery: passes when the run either hit no errors or recovered to a successful final step (catches death spirals after a failed action).
+Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
 
 ## Properties
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
+|**minRatio** | **Double** |  |  |
 |**type** | [**TypeEnum**](#TypeEnum) |  |  |
 
 
@@ -16,7 +17,7 @@ Browser recovery: passes when the run either hit no errors or recovered to a suc
 
 | Name | Value |
 |---- | -----|
-| BROWSER_RECOVERY | &quot;browser_recovery&quot; |
+| BROWSER_GROUNDING | &quot;browser_grounding&quot; |
 
 
 

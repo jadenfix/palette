@@ -20,10 +20,8 @@ namespace model {
 
 EvaluatorKind_oneOf_5::EvaluatorKind_oneOf_5()
 {
-    m_Model = utility::conversions::to_string_t("");
-    m_ModelIsSet = false;
-    m_Rubric = utility::conversions::to_string_t("");
-    m_RubricIsSet = false;
+    m_Max_ms = 0L;
+    m_Max_msIsSet = false;
     m_TypeIsSet = false;
 }
 
@@ -39,15 +37,10 @@ void EvaluatorKind_oneOf_5::validate()
 web::json::value EvaluatorKind_oneOf_5::toJson() const
 {
     web::json::value val = web::json::value::object();
-    if(m_ModelIsSet)
+    if(m_Max_msIsSet)
     {   
         
-        val[utility::conversions::to_string_t(U("model"))] = ModelBase::toJson(m_Model);
-    }
-    if(m_RubricIsSet)
-    {   
-        
-        val[utility::conversions::to_string_t(U("rubric"))] = ModelBase::toJson(m_Rubric);
+        val[utility::conversions::to_string_t(U("max_ms"))] = ModelBase::toJson(m_Max_ms);
     }
     if(m_TypeIsSet)
     {   
@@ -63,25 +56,14 @@ web::json::value EvaluatorKind_oneOf_5::toJson() const
 bool EvaluatorKind_oneOf_5::fromJson(const web::json::value& val)
 {
     bool ok = true;
-    if(val.has_field(utility::conversions::to_string_t(U("model"))))
+    if(val.has_field(utility::conversions::to_string_t(U("max_ms"))))
     {
-        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("model")));
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("max_ms")));
         if(!fieldValue.is_null())
         {
-            utility::string_t refVal_setModel;
-            ok &= ModelBase::fromJson(fieldValue, refVal_setModel);
-            setModel(refVal_setModel);
-            
-        }
-    }
-    if(val.has_field(utility::conversions::to_string_t(U("rubric"))))
-    {
-        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("rubric")));
-        if(!fieldValue.is_null())
-        {
-            utility::string_t refVal_setRubric;
-            ok &= ModelBase::fromJson(fieldValue, refVal_setRubric);
-            setRubric(refVal_setRubric);
+            int64_t refVal_setMaxMs;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setMaxMs);
+            setMaxMs(refVal_setMaxMs);
             
         }
     }
@@ -107,13 +89,9 @@ void EvaluatorKind_oneOf_5::toMultipart(std::shared_ptr<MultipartFormData> multi
     {
         namePrefix += utility::conversions::to_string_t(U("."));
     }
-    if(m_ModelIsSet)
+    if(m_Max_msIsSet)
     {
-        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("model")), m_Model));
-    }
-    if(m_RubricIsSet)
-    {
-        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("rubric")), m_Rubric));
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("max_ms")), m_Max_ms));
     }
     if(m_TypeIsSet)
     {
@@ -130,17 +108,11 @@ bool EvaluatorKind_oneOf_5::fromMultiPart(std::shared_ptr<MultipartFormData> mul
         namePrefix += utility::conversions::to_string_t(U("."));
     }
 
-    if(multipart->hasContent(utility::conversions::to_string_t(U("model"))))
+    if(multipart->hasContent(utility::conversions::to_string_t(U("max_ms"))))
     {
-        utility::string_t refVal_setModel;
-        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("model"))), refVal_setModel );
-        setModel(refVal_setModel);
-    }
-    if(multipart->hasContent(utility::conversions::to_string_t(U("rubric"))))
-    {
-        utility::string_t refVal_setRubric;
-        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("rubric"))), refVal_setRubric );
-        setRubric(refVal_setRubric);
+        int64_t refVal_setMaxMs;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("max_ms"))), refVal_setMaxMs );
+        setMaxMs(refVal_setMaxMs);
     }
     if(multipart->hasContent(utility::conversions::to_string_t(U("type"))))
     {
@@ -154,8 +126,8 @@ bool EvaluatorKind_oneOf_5::fromMultiPart(std::shared_ptr<MultipartFormData> mul
 EvaluatorKind_oneOf_5::TypeEnum EvaluatorKind_oneOf_5::toTypeEnum(const utility::string_t& value) const
 {
     
-    if (value == utility::conversions::to_string_t("llm_judge")) {
-        return TypeEnum::llm_judge;
+    if (value == utility::conversions::to_string_t("latency_budget_ms")) {
+        return TypeEnum::latency_budget_ms;
     }
     
     throw std::invalid_argument("Invalid value for conversion to TypeEnum");
@@ -167,53 +139,31 @@ const utility::string_t EvaluatorKind_oneOf_5::fromTypeEnum(const TypeEnum value
     switch(value)
     {
         
-        case TypeEnum::llm_judge: return utility::conversions::to_string_t("llm_judge");
+        case TypeEnum::latency_budget_ms: return utility::conversions::to_string_t("latency_budget_ms");
         
     }
 }
 
 
-utility::string_t EvaluatorKind_oneOf_5::getModel() const
+int64_t EvaluatorKind_oneOf_5::getMaxMs() const
 {
-    return m_Model;
+    return m_Max_ms;
 }
 
-
-void EvaluatorKind_oneOf_5::setModel(const utility::string_t& value)
+void EvaluatorKind_oneOf_5::setMaxMs(int64_t value)
 {
-    m_Model = value;
-    m_ModelIsSet = true;
+    m_Max_ms = value;
+    m_Max_msIsSet = true;
 }
 
-bool EvaluatorKind_oneOf_5::modelIsSet() const
+bool EvaluatorKind_oneOf_5::maxMsIsSet() const
 {
-    return m_ModelIsSet;
+    return m_Max_msIsSet;
 }
 
-void EvaluatorKind_oneOf_5::unsetModel()
+void EvaluatorKind_oneOf_5::unsetMax_ms()
 {
-    m_ModelIsSet = false;
-}
-utility::string_t EvaluatorKind_oneOf_5::getRubric() const
-{
-    return m_Rubric;
-}
-
-
-void EvaluatorKind_oneOf_5::setRubric(const utility::string_t& value)
-{
-    m_Rubric = value;
-    m_RubricIsSet = true;
-}
-
-bool EvaluatorKind_oneOf_5::rubricIsSet() const
-{
-    return m_RubricIsSet;
-}
-
-void EvaluatorKind_oneOf_5::unsetRubric()
-{
-    m_RubricIsSet = false;
+    m_Max_msIsSet = false;
 }
 EvaluatorKind_oneOf_5::TypeEnum EvaluatorKind_oneOf_5::getType() const
 {

@@ -21,7 +21,6 @@ var _ MappedNullable = &EvaluatorKindOneOf3{}
 
 // EvaluatorKindOneOf3 struct for EvaluatorKindOneOf3
 type EvaluatorKindOneOf3 struct {
-	MaxMicros int64 `json:"max_micros"`
 	Type string `json:"type"`
 }
 
@@ -31,9 +30,8 @@ type _EvaluatorKindOneOf3 EvaluatorKindOneOf3
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewEvaluatorKindOneOf3(maxMicros int64, type_ string) *EvaluatorKindOneOf3 {
+func NewEvaluatorKindOneOf3(type_ string) *EvaluatorKindOneOf3 {
 	this := EvaluatorKindOneOf3{}
-	this.MaxMicros = maxMicros
 	this.Type = type_
 	return &this
 }
@@ -44,30 +42,6 @@ func NewEvaluatorKindOneOf3(maxMicros int64, type_ string) *EvaluatorKindOneOf3 
 func NewEvaluatorKindOneOf3WithDefaults() *EvaluatorKindOneOf3 {
 	this := EvaluatorKindOneOf3{}
 	return &this
-}
-
-// GetMaxMicros returns the MaxMicros field value
-func (o *EvaluatorKindOneOf3) GetMaxMicros() int64 {
-	if o == nil {
-		var ret int64
-		return ret
-	}
-
-	return o.MaxMicros
-}
-
-// GetMaxMicrosOk returns a tuple with the MaxMicros field value
-// and a boolean to check if the value has been set.
-func (o *EvaluatorKindOneOf3) GetMaxMicrosOk() (*int64, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.MaxMicros, true
-}
-
-// SetMaxMicros sets field value
-func (o *EvaluatorKindOneOf3) SetMaxMicros(v int64) {
-	o.MaxMicros = v
 }
 
 // GetType returns the Type field value
@@ -104,7 +78,6 @@ func (o EvaluatorKindOneOf3) MarshalJSON() ([]byte, error) {
 
 func (o EvaluatorKindOneOf3) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["max_micros"] = o.MaxMicros
 	toSerialize["type"] = o.Type
 	return toSerialize, nil
 }
@@ -114,7 +87,6 @@ func (o *EvaluatorKindOneOf3) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"max_micros",
 		"type",
 	}
 

@@ -223,7 +223,7 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(frontend_workflow.contains("CARGO_NET_RETRY: \"10\""));
     assert!(frontend_workflow.contains("CARGO_HTTP_MULTIPLEXING: \"false\""));
     assert!(frontend_workflow.contains("timeout-minutes: 20"));
-    assert!(frontend_workflow.contains("actions/setup-node@v4"));
+    assert!(frontend_workflow.contains("actions/setup-node@v6"));
     assert!(frontend_workflow.contains("node-version: 24"));
     assert!(frontend_workflow.contains("cache: npm"));
     assert!(frontend_workflow.contains("cache-dependency-path: web/dashboard/package-lock.json"));
@@ -247,8 +247,8 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(browser_proof_workflow.contains("timeout-minutes: 25"));
     assert!(browser_proof_workflow.contains("container:"));
     assert!(browser_proof_workflow.contains("image: mcr.microsoft.com/playwright:v1.57.0-noble"));
-    assert!(browser_proof_workflow.contains("actions/setup-node@v4"));
-    assert!(browser_proof_workflow.contains("actions/setup-python@v5"));
+    assert!(browser_proof_workflow.contains("actions/setup-node@v6"));
+    assert!(browser_proof_workflow.contains("actions/setup-python@v6"));
     assert!(browser_proof_workflow.contains("node-version: 24"));
     assert!(browser_proof_workflow.contains("python-version: \"3.12\""));
     assert!(browser_proof_workflow.contains("build-essential"));
@@ -622,7 +622,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     );
     let recording_pass_marker = stopwatch_script
         .rfind("record_demo_status=\"passed\"")
-        .expect("expected recording pass marker");
+        .unwrap_or_else(|| panic!("expected recording pass marker"));
     assert!(
         reviewable_recording_check < recording_pass_marker,
         "recording duration must be validated before marking browser recording passed"
@@ -1051,10 +1051,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(gate2_proof_contract.contains("GATE2_OUTSIDE_ENV_PREFIXES = [\"GIT_CONFIG_\"]"));
     let raw_preflight_idx = public_handoff
         .find("run_raw_public_preflight(args, expected_commit)")
-        .expect("raw public preflight call in public handoff verifier");
+        .unwrap_or_else(|| panic!("raw public preflight call in public handoff verifier"));
     let clone_idx = public_handoff
         .find("clone_dir, temp_owner, clone_started_epoch = clone_repo")
-        .expect("first clone call in public handoff verifier");
+        .unwrap_or_else(|| panic!("first clone call in public handoff verifier"));
     assert!(
         raw_preflight_idx < clone_idx,
         "public handoff verifier must run the raw public preflight before cloning"

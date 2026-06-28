@@ -38,11 +38,11 @@ class EvaluatorKindOneOf4Test {
     }
 
     /**
-     * Test the property 'maxMs'
+     * Test the property 'maxMicros'
      */
     @Test
-    void maxMsTest() {
-        // TODO: test maxMs
+    void maxMicrosTest() {
+        // TODO: test maxMicros
     }
 
     /**

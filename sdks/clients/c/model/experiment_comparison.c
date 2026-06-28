@@ -13,7 +13,9 @@ static experiment_comparison_t *experiment_comparison_create_internal(
     double ci_low,
     beater_api_gate_decision__e decision,
     double delta,
+    double mde,
     double p_value,
+    int required_n,
     int sample_size,
     beater_api_statistical_test__e test
     ) {
@@ -28,7 +30,9 @@ static experiment_comparison_t *experiment_comparison_create_internal(
     experiment_comparison_local_var->ci_low = ci_low;
     experiment_comparison_local_var->decision = decision;
     experiment_comparison_local_var->delta = delta;
+    experiment_comparison_local_var->mde = mde;
     experiment_comparison_local_var->p_value = p_value;
+    experiment_comparison_local_var->required_n = required_n;
     experiment_comparison_local_var->sample_size = sample_size;
     experiment_comparison_local_var->test = test;
 
@@ -44,7 +48,9 @@ __attribute__((deprecated)) experiment_comparison_t *experiment_comparison_creat
     double ci_low,
     beater_api_gate_decision__e decision,
     double delta,
+    double mde,
     double p_value,
+    int required_n,
     int sample_size,
     beater_api_statistical_test__e test
     ) {
@@ -56,7 +62,9 @@ __attribute__((deprecated)) experiment_comparison_t *experiment_comparison_creat
         ci_low,
         decision,
         delta,
+        mde,
         p_value,
+        required_n,
         sample_size,
         test
         );
@@ -145,12 +153,28 @@ cJSON *experiment_comparison_convertToJSON(experiment_comparison_t *experiment_c
     }
 
 
+    // experiment_comparison->mde
+    if(experiment_comparison->mde) {
+    if(cJSON_AddNumberToObject(item, "mde", experiment_comparison->mde) == NULL) {
+    goto fail; //Numeric
+    }
+    }
+
+
     // experiment_comparison->p_value
     if (!experiment_comparison->p_value) {
         goto fail;
     }
     if(cJSON_AddNumberToObject(item, "p_value", experiment_comparison->p_value) == NULL) {
     goto fail; //Numeric
+    }
+
+
+    // experiment_comparison->required_n
+    if(experiment_comparison->required_n) {
+    if(cJSON_AddNumberToObject(item, "required_n", experiment_comparison->required_n) == NULL) {
+    goto fail; //Numeric
+    }
     }
 
 
@@ -296,6 +320,18 @@ experiment_comparison_t *experiment_comparison_parseFromJSON(cJSON *experiment_c
     goto end; //Numeric
     }
 
+    // experiment_comparison->mde
+    cJSON *mde = cJSON_GetObjectItemCaseSensitive(experiment_comparisonJSON, "mde");
+    if (cJSON_IsNull(mde)) {
+        mde = NULL;
+    }
+    if (mde) { 
+    if(!cJSON_IsNumber(mde))
+    {
+    goto end; //Numeric
+    }
+    }
+
     // experiment_comparison->p_value
     cJSON *p_value = cJSON_GetObjectItemCaseSensitive(experiment_comparisonJSON, "p_value");
     if (cJSON_IsNull(p_value)) {
@@ -309,6 +345,18 @@ experiment_comparison_t *experiment_comparison_parseFromJSON(cJSON *experiment_c
     if(!cJSON_IsNumber(p_value))
     {
     goto end; //Numeric
+    }
+
+    // experiment_comparison->required_n
+    cJSON *required_n = cJSON_GetObjectItemCaseSensitive(experiment_comparisonJSON, "required_n");
+    if (cJSON_IsNull(required_n)) {
+        required_n = NULL;
+    }
+    if (required_n) { 
+    if(!cJSON_IsNumber(required_n))
+    {
+    goto end; //Numeric
+    }
     }
 
     // experiment_comparison->sample_size
@@ -347,7 +395,9 @@ experiment_comparison_t *experiment_comparison_parseFromJSON(cJSON *experiment_c
         ci_low->valuedouble,
         decision_local_nonprim,
         delta->valuedouble,
+        mde ? mde->valuedouble : 0,
         p_value->valuedouble,
+        required_n ? required_n->valuedouble : 0,
         sample_size->valuedouble,
         test_local_nonprim
         );

@@ -18,7 +18,7 @@ typedef struct evaluator_kind_one_of_3_t evaluator_kind_one_of_3_t;
 
 // Enum TYPE for evaluator_kind_one_of_3
 
-typedef enum  { beater_api_evaluator_kind_one_of_3_TYPE_NULL = 0, beater_api_evaluator_kind_one_of_3_TYPE_cost_budget } beater_api_evaluator_kind_one_of_3_TYPE_e;
+typedef enum  { beater_api_evaluator_kind_one_of_3_TYPE_NULL = 0, beater_api_evaluator_kind_one_of_3_TYPE_json_object } beater_api_evaluator_kind_one_of_3_TYPE_e;
 
 char* evaluator_kind_one_of_3_type_ToString(beater_api_evaluator_kind_one_of_3_TYPE_e type);
 
@@ -27,14 +27,12 @@ beater_api_evaluator_kind_one_of_3_TYPE_e evaluator_kind_one_of_3_type_FromStrin
 
 
 typedef struct evaluator_kind_one_of_3_t {
-    long max_micros; //numeric
     beater_api_evaluator_kind_one_of_3_TYPE_e type; //enum
 
     int _library_owned; // Is the library responsible for freeing this object?
 } evaluator_kind_one_of_3_t;
 
 __attribute__((deprecated)) evaluator_kind_one_of_3_t *evaluator_kind_one_of_3_create(
-    long max_micros,
     beater_api_evaluator_kind_one_of_3_TYPE_e type
 );
 

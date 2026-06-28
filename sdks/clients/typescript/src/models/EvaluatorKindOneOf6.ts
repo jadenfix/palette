@@ -14,9 +14,7 @@
 
 import { mapValues } from '../runtime';
 /**
- * Browser world-state success: asserts the final step's observed page
- * (url and/or DOM) matches the configured target — NOT the agent's
- * self-reported "done". Reads `trace.browser_steps`.
+ * 
  * @export
  * @interface EvaluatorKindOneOf6
  */
@@ -26,19 +24,19 @@ export interface EvaluatorKindOneOf6 {
      * @type {string}
      * @memberof EvaluatorKindOneOf6
      */
-    domContains?: string | null;
+    model: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof EvaluatorKindOneOf6
+     */
+    rubric: string;
     /**
      * 
      * @type {string}
      * @memberof EvaluatorKindOneOf6
      */
     type: EvaluatorKindOneOf6TypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof EvaluatorKindOneOf6
-     */
-    urlContains?: string | null;
 }
 
 
@@ -46,7 +44,7 @@ export interface EvaluatorKindOneOf6 {
  * @export
  */
 export const EvaluatorKindOneOf6TypeEnum = {
-    BrowserTaskSuccess: 'browser_task_success'
+    LlmJudge: 'llm_judge'
 } as const;
 export type EvaluatorKindOneOf6TypeEnum = typeof EvaluatorKindOneOf6TypeEnum[keyof typeof EvaluatorKindOneOf6TypeEnum];
 
@@ -55,6 +53,8 @@ export type EvaluatorKindOneOf6TypeEnum = typeof EvaluatorKindOneOf6TypeEnum[key
  * Check if a given object implements the EvaluatorKindOneOf6 interface.
  */
 export function instanceOfEvaluatorKindOneOf6(value: object): value is EvaluatorKindOneOf6 {
+    if (!('model' in value) || value['model'] === undefined) return false;
+    if (!('rubric' in value) || value['rubric'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
     return true;
 }
@@ -69,9 +69,9 @@ export function EvaluatorKindOneOf6FromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
-        'domContains': json['dom_contains'] == null ? undefined : json['dom_contains'],
+        'model': json['model'],
+        'rubric': json['rubric'],
         'type': json['type'],
-        'urlContains': json['url_contains'] == null ? undefined : json['url_contains'],
     };
 }
 
@@ -86,9 +86,9 @@ export function EvaluatorKindOneOf6ToJSONTyped(value?: EvaluatorKindOneOf6 | nul
 
     return {
         
-        'dom_contains': value['domContains'],
+        'model': value['model'],
+        'rubric': value['rubric'],
         'type': value['type'],
-        'url_contains': value['urlContains'],
     };
 }
 

@@ -38,11 +38,11 @@ class EvaluatorKindOneOf8Test {
     }
 
     /**
-     * Test the property 'minRatio'
+     * Test the property 'maxSteps'
      */
     @Test
-    void minRatioTest() {
-        // TODO: test minRatio
+    void maxStepsTest() {
+        // TODO: test maxSteps
     }
 
     /**

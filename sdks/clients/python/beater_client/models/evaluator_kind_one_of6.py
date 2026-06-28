@@ -18,24 +18,24 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 
 class EvaluatorKindOneOf6(BaseModel):
     """
-    Browser world-state success: asserts the final step's observed page (url and/or DOM) matches the configured target — NOT the agent's self-reported \"done\". Reads `trace.browser_steps`.
+    EvaluatorKindOneOf6
     """ # noqa: E501
-    dom_contains: Optional[StrictStr] = None
+    model: StrictStr
+    rubric: StrictStr
     type: StrictStr
-    url_contains: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["dom_contains", "type", "url_contains"]
+    __properties: ClassVar[List[str]] = ["model", "rubric", "type"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['browser_task_success']):
-            raise ValueError("must be one of enum values ('browser_task_success')")
+        if value not in set(['llm_judge']):
+            raise ValueError("must be one of enum values ('llm_judge')")
         return value
 
     model_config = ConfigDict(
@@ -77,16 +77,6 @@ class EvaluatorKindOneOf6(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if dom_contains (nullable) is None
-        # and model_fields_set contains the field
-        if self.dom_contains is None and "dom_contains" in self.model_fields_set:
-            _dict['dom_contains'] = None
-
-        # set to None if url_contains (nullable) is None
-        # and model_fields_set contains the field
-        if self.url_contains is None and "url_contains" in self.model_fields_set:
-            _dict['url_contains'] = None
-
         return _dict
 
     @classmethod
@@ -99,9 +89,9 @@ class EvaluatorKindOneOf6(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "dom_contains": obj.get("dom_contains"),
-            "type": obj.get("type"),
-            "url_contains": obj.get("url_contains")
+            "model": obj.get("model"),
+            "rubric": obj.get("rubric"),
+            "type": obj.get("type")
         })
         return _obj
 

@@ -11,20 +11,20 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// EvaluatorKindOneOf8 : Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
+/// EvaluatorKindOneOf8 : Browser step efficiency: passes when the run used at most `max_steps` browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EvaluatorKindOneOf8 {
-    #[serde(rename = "min_ratio")]
-    pub min_ratio: f64,
+    #[serde(rename = "max_steps")]
+    pub max_steps: i64,
     #[serde(rename = "type")]
     pub r#type: Type,
 }
 
 impl EvaluatorKindOneOf8 {
-    /// Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
-    pub fn new(min_ratio: f64, r#type: Type) -> EvaluatorKindOneOf8 {
+    /// Browser step efficiency: passes when the run used at most `max_steps` browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
+    pub fn new(max_steps: i64, r#type: Type) -> EvaluatorKindOneOf8 {
         EvaluatorKindOneOf8 {
-            min_ratio,
+            max_steps,
             r#type,
         }
     }
@@ -32,13 +32,13 @@ impl EvaluatorKindOneOf8 {
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum Type {
-    #[serde(rename = "browser_grounding")]
-    BrowserGrounding,
+    #[serde(rename = "browser_step_efficiency")]
+    BrowserStepEfficiency,
 }
 
 impl Default for Type {
     fn default() -> Type {
-        Self::BrowserGrounding
+        Self::BrowserStepEfficiency
     }
 }
 

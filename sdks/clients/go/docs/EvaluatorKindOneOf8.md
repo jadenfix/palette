@@ -4,14 +4,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**MinRatio** | **float64** |  | 
+**MaxSteps** | **int64** |  | 
 **Type** | **string** |  | 
 
 ## Methods
 
 ### NewEvaluatorKindOneOf8
 
-`func NewEvaluatorKindOneOf8(minRatio float64, type_ string, ) *EvaluatorKindOneOf8`
+`func NewEvaluatorKindOneOf8(maxSteps int64, type_ string, ) *EvaluatorKindOneOf8`
 
 NewEvaluatorKindOneOf8 instantiates a new EvaluatorKindOneOf8 object
 This constructor will assign default values to properties that have it defined,
@@ -26,24 +26,24 @@ NewEvaluatorKindOneOf8WithDefaults instantiates a new EvaluatorKindOneOf8 object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
-### GetMinRatio
+### GetMaxSteps
 
-`func (o *EvaluatorKindOneOf8) GetMinRatio() float64`
+`func (o *EvaluatorKindOneOf8) GetMaxSteps() int64`
 
-GetMinRatio returns the MinRatio field if non-nil, zero value otherwise.
+GetMaxSteps returns the MaxSteps field if non-nil, zero value otherwise.
 
-### GetMinRatioOk
+### GetMaxStepsOk
 
-`func (o *EvaluatorKindOneOf8) GetMinRatioOk() (*float64, bool)`
+`func (o *EvaluatorKindOneOf8) GetMaxStepsOk() (*int64, bool)`
 
-GetMinRatioOk returns a tuple with the MinRatio field if it's non-nil, zero value otherwise
+GetMaxStepsOk returns a tuple with the MaxSteps field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetMinRatio
+### SetMaxSteps
 
-`func (o *EvaluatorKindOneOf8) SetMinRatio(v float64)`
+`func (o *EvaluatorKindOneOf8) SetMaxSteps(v int64)`
 
-SetMinRatio sets MinRatio field to given value.
+SetMaxSteps sets MaxSteps field to given value.
 
 
 ### GetType

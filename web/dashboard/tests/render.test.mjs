@@ -72,11 +72,19 @@ function loadSpanKindsModule(context = {}) {
   return loadTsModule("lib/span-kinds.ts", { context });
 }
 
+function loadDashboardQueryModule(context = {}) {
+  return loadTsModule("lib/dashboard-query.ts", {
+    context: { URLSearchParams, ...context },
+    requireMap: {}
+  });
+}
+
 function loadDashboardApiModule(context = {}) {
   return loadTsModule("lib/api.ts", {
     context: { process, URLSearchParams, ...context },
     requireMap: {
-      "./span-kinds": () => loadSpanKindsModule(context)
+      "./span-kinds": () => loadSpanKindsModule(context),
+      "./dashboard-query": () => loadDashboardQueryModule(context)
     }
   });
 }
@@ -349,7 +357,8 @@ test("dashboard client uses public beater read endpoints", () => {
   assert.match(api, /\/v1\/spans\//);
   assert.match(api, /\/io/);
   assert.match(api, /const activeRun = query\.traceId/);
-  assert.match(api, /activeRun\?\.project_id && !query\.projectId/);
+  assert.match(api, /const activeRunMatchesTrace = activeRun !== undefined && activeRun\.trace_id === activeTraceId/);
+  assert.match(api, /activeRunMatchesTrace && activeRun\.project_id && !query\.projectId/);
   assert.match(api, /tracePath\(traceQuery, activeTraceId\)/);
   assert.match(api, /spanPath\(traceQuery, trace\.trace_id, activeSpanId\)/);
   assert.match(api, /query,\n\s+runs,/);
@@ -693,6 +702,53 @@ test("dashboard loader scopes tenant-wide trace details to the selected run proj
   );
 });
 
+test("dashboard loader does not scope explicit trace details to an unrelated fallback run", async () => {
+  const runs = {
+    items: [
+      {
+        tenant_id: "demo",
+        project_id: "project-b",
+        trace_id: "trace-2",
+        first_span_name: "other-run",
+        span_count: 1
+      }
+    ],
+    next_cursor: null
+  };
+  const span = {
+    ...spanFixture("span-1", null, "2026-01-01T00:00:00Z", 1),
+    project_id: "project-a",
+    trace_id: "trace-1",
+    kind: "llm.call"
+  };
+  const trace = { tenant_id: "demo", trace_id: "trace-1", spans: [span] };
+  const requests = [];
+  const { loadDashboardData } = loadDashboardApiModule({
+    fetch: async (url, init) => {
+      const href = String(url);
+      requests.push({ href, headers: init?.headers ?? {} });
+      if (href.includes("/v1/traces/demo?")) return okJson(runs);
+      if (href.includes("/v1/traces/demo/trace-1")) return okJson(trace);
+      if (href.includes("/v1/spans/demo/trace-1/span-1/io")) {
+        return okJson({ input: { kind: "missing" }, output: { kind: "missing" } });
+      }
+      if (href.includes("/v1/spans/demo/trace-1/span-1")) return okJson(span);
+      throw new Error(`unexpected fetch ${href}`);
+    }
+  });
+
+  const data = await loadDashboardData({ tenantId: "demo", traceId: "trace-1" });
+
+  assert.equal(data.selectedSpan?.project_id, "project-a");
+  const detailRequests = requests.filter(({ href }) => href.includes("/v1/traces/demo/trace-1") || href.includes("/v1/spans/demo/trace-1"));
+  assert.equal(detailRequests.length, 3);
+  assert.ok(
+    detailRequests.every(
+      ({ headers }) => headers["x-beater-project-id"] === undefined
+    )
+  );
+});
+
 function okJson(value) {
   return {
     ok: true,
@@ -997,4 +1053,294 @@ test("gate2 recorder confirmation helper matches the app helper", async () => {
     }),
     vector.code
   );
+});
+
+// ── dashboard-query round-trip tests ─────────────────────────────────────────
+
+test("dashboard query field table covers every filter field exactly once", () => {
+  const { FILTER_FIELDS } = loadDashboardQueryModule();
+
+  // Canonical list of all filter fields (URL param name → DashboardQuery key)
+  const expected = [
+    { field: "status",         urlParam: "status" },
+    { field: "kind",           urlParam: "kind" },
+    { field: "model",          urlParam: "model" },
+    { field: "release",        urlParam: "release" },
+    { field: "startedAfter",   urlParam: "started_after" },
+    { field: "startedBefore",  urlParam: "started_before" },
+    { field: "minCostMicros",  urlParam: "min_cost_micros" },
+    { field: "maxCostMicros",  urlParam: "max_cost_micros" },
+    { field: "minLatencyMs",   urlParam: "min_latency_ms" },
+    { field: "maxLatencyMs",   urlParam: "max_latency_ms" },
+  ];
+
+  assert.equal(FILTER_FIELDS.length, expected.length, "FILTER_FIELDS length mismatch");
+  for (const { field, urlParam } of expected) {
+    const d = FILTER_FIELDS.find((d) => d.field === field);
+    assert.ok(d, `missing descriptor for field "${field}"`);
+    assert.equal(d.urlParam, urlParam, `wrong urlParam for field "${field}"`);
+  }
+});
+
+test("dashboard query parse → API params round-trip for every filter field", () => {
+  const { parseQueryFromSearchParams, applyFilterParams } = loadDashboardQueryModule();
+
+  // Build a URL params record with every filter field set
+  const rawParams = {
+    tenant: "acme",
+    project: "myproj",
+    environment: "prod",
+    trace: "trace-abc",
+    span: "span-xyz",
+    status: "error",
+    kind: "agent.run",
+    model: "openai/gpt-4o",
+    release: "v1.2.3",
+    started_after: "2026-01-01T00:00:00Z",
+    started_before: "2026-06-01T00:00:00Z",
+    min_cost_micros: "500",
+    max_cost_micros: "9999",
+    min_latency_ms: "100",
+    max_latency_ms: "5000",
+    unmask: "true",
+    reason: "incident-007",
+  };
+
+  const query = parseQueryFromSearchParams(rawParams);
+
+  // Scope + selection + unmask fields
+  assert.equal(query.tenantId, "acme");
+  assert.equal(query.projectId, "myproj");
+  assert.equal(query.environmentId, "prod");
+  assert.equal(query.traceId, "trace-abc");
+  assert.equal(query.selectedSpanId, "span-xyz");
+  assert.equal(query.unmask, true);
+  assert.equal(query.unmaskReason, "incident-007");
+
+  // Filter fields
+  assert.equal(query.status, "error");
+  assert.equal(query.kind, "agent.run");
+  assert.equal(query.model, "openai/gpt-4o");
+  assert.equal(query.release, "v1.2.3");
+  assert.equal(query.startedAfter, "2026-01-01T00:00:00Z");
+  assert.equal(query.startedBefore, "2026-06-01T00:00:00Z");
+  assert.equal(query.minCostMicros, 500);
+  assert.equal(query.maxCostMicros, 9999);
+  assert.equal(query.minLatencyMs, 100);
+  assert.equal(query.maxLatencyMs, 5000);
+
+  // Serialize back to API params (applyFilterParams only touches filter fields)
+  const apiParams = new URLSearchParams();
+  applyFilterParams(query, apiParams);
+
+  assert.equal(apiParams.get("status"), "error");
+  assert.equal(apiParams.get("kind"), "agent.run");
+  assert.equal(apiParams.get("model"), "openai/gpt-4o");
+  assert.equal(apiParams.get("release"), "v1.2.3");
+  assert.equal(apiParams.get("started_after"), "2026-01-01T00:00:00Z");
+  assert.equal(apiParams.get("started_before"), "2026-06-01T00:00:00Z");
+  assert.equal(apiParams.get("min_cost_micros"), "500");
+  assert.equal(apiParams.get("max_cost_micros"), "9999");
+  assert.equal(apiParams.get("min_latency_ms"), "100");
+  assert.equal(apiParams.get("max_latency_ms"), "5000");
+});
+
+test("dashboard query parse → href params round-trip for every filter field", () => {
+  const { parseQueryFromSearchParams, applyFilterParams } = loadDashboardQueryModule();
+
+  const rawParams = {
+    tenant: "t1",
+    project: "p1",
+    environment: "staging",
+    status: "ok",
+    kind: "llm.call",
+    model: "anthropic/claude-3-5-sonnet",
+    release: "r42",
+    started_after: "2026-03-01T00:00:00Z",
+    started_before: "2026-03-31T00:00:00Z",
+    min_cost_micros: "0",
+    max_cost_micros: "1000000",
+    min_latency_ms: "50",
+    max_latency_ms: "2000",
+  };
+
+  const query = parseQueryFromSearchParams(rawParams);
+
+  // Simulate hrefFor: scope fields first, then applyFilterParams
+  const hrefParams = new URLSearchParams();
+  hrefParams.set("tenant", query.tenantId);
+  if (query.projectId) hrefParams.set("project", query.projectId);
+  if (query.environmentId) hrefParams.set("environment", query.environmentId);
+  applyFilterParams(query, hrefParams);
+
+  assert.equal(hrefParams.get("tenant"), "t1");
+  assert.equal(hrefParams.get("project"), "p1");
+  assert.equal(hrefParams.get("environment"), "staging");
+  assert.equal(hrefParams.get("status"), "ok");
+  assert.equal(hrefParams.get("kind"), "llm.call");
+  assert.equal(hrefParams.get("model"), "anthropic/claude-3-5-sonnet");
+  assert.equal(hrefParams.get("release"), "r42");
+  assert.equal(hrefParams.get("started_after"), "2026-03-01T00:00:00Z");
+  assert.equal(hrefParams.get("started_before"), "2026-03-31T00:00:00Z");
+  assert.equal(hrefParams.get("min_cost_micros"), "0");
+  assert.equal(hrefParams.get("max_cost_micros"), "1000000");
+  assert.equal(hrefParams.get("min_latency_ms"), "50");
+  assert.equal(hrefParams.get("max_latency_ms"), "2000");
+});
+
+test("dashboard query filterChips returns correct labels and display values", () => {
+  const { parseQueryFromSearchParams, filterChips } = loadDashboardQueryModule();
+
+  const query = parseQueryFromSearchParams({
+    trace: "abcdef123456789012345678",
+    status: "error",
+    kind: "llm.call",
+    model: "gpt-4o",
+    release: "v1",
+    started_after: "2026-01-01T00:00:00Z",
+    started_before: "2026-06-01T00:00:00Z",
+    min_cost_micros: "100",
+    max_cost_micros: "200",
+    min_latency_ms: "50",
+    max_latency_ms: "2000",
+  });
+
+  const chips = filterChips(query);
+  const byLabel = Object.fromEntries(chips.map((c) => [c.label, c.value]));
+
+  // traceId uses shortHash
+  assert.ok(byLabel["Trace"].includes("..."), "traceId chip uses shortHash");
+  // plain string fields
+  assert.equal(byLabel["Status"], "error");
+  assert.equal(byLabel["Kind"], "llm.call");
+  assert.equal(byLabel["Model"], "gpt-4o");
+  assert.equal(byLabel["Release"], "v1");
+  assert.equal(byLabel["After"], "2026-01-01T00:00:00Z");
+  assert.equal(byLabel["Before"], "2026-06-01T00:00:00Z");
+  // numeric fields: raw string for cost, " ms" suffix for latency
+  assert.equal(byLabel["Min cost"], "100");
+  assert.equal(byLabel["Max cost"], "200");
+  assert.equal(byLabel["Min latency"], "50 ms");
+  assert.equal(byLabel["Max latency"], "2000 ms");
+  assert.equal(chips.length, 11, "one chip per active filter field + traceId");
+});
+
+test("dashboard query filterChips returns empty when no filters set", () => {
+  const { parseQueryFromSearchParams, filterChips } = loadDashboardQueryModule();
+  const query = parseQueryFromSearchParams({ tenant: "demo", project: "demo", environment: "local" });
+  const chips = filterChips(query);
+  // Use .length check rather than deepEqual — chips is a VM-context array
+  // (cross-realm Array prototype), so deepStrictEqual would fail.
+  assert.equal(chips.length, 0, "no chips when no filters set");
+});
+
+test("dashboard query advancedFilterCount counts only advanced fields", () => {
+  const { parseQueryFromSearchParams, advancedFilterCount } = loadDashboardQueryModule();
+
+  // status and kind are primary (not advanced), so they should not be counted
+  const primaryOnly = parseQueryFromSearchParams({ status: "error", kind: "llm.call" });
+  assert.equal(advancedFilterCount(primaryOnly), 0);
+
+  // All 8 advanced filter fields set
+  const allAdvanced = parseQueryFromSearchParams({
+    model: "gpt-4o",
+    release: "v1",
+    started_after: "2026-01-01T00:00:00Z",
+    started_before: "2026-06-01T00:00:00Z",
+    min_cost_micros: "100",
+    max_cost_micros: "200",
+    min_latency_ms: "50",
+    max_latency_ms: "2000",
+  });
+  assert.equal(advancedFilterCount(allAdvanced), 8);
+
+  // Empty query
+  const empty = parseQueryFromSearchParams({});
+  assert.equal(advancedFilterCount(empty), 0);
+});
+
+test("dashboard query parseQueryFromSearchParams uses correct defaults", () => {
+  const { parseQueryFromSearchParams } = loadDashboardQueryModule();
+
+  const query = parseQueryFromSearchParams({});
+  assert.equal(query.tenantId, "demo");
+  assert.equal(query.projectId, "demo");
+  assert.equal(query.environmentId, "local");
+  assert.equal(query.traceId, undefined);
+  assert.equal(query.selectedSpanId, undefined);
+  assert.equal(query.unmask, undefined);
+  assert.equal(query.unmaskReason, undefined);
+  assert.equal(query.status, undefined);
+  assert.equal(query.kind, undefined);
+});
+
+test("dashboard query parseQueryFromSearchParams handles string-array params (multi-value)", () => {
+  const { parseQueryFromSearchParams } = loadDashboardQueryModule();
+
+  // Next.js may pass repeated params as string[]; first value wins
+  const query = parseQueryFromSearchParams({
+    tenant: ["acme", "other"],
+    status: ["ok", "error"],
+  });
+  assert.equal(query.tenantId, "acme");
+  assert.equal(query.status, "ok");
+});
+
+test("dashboard query searchParamsForTraceList includes all filter fields", () => {
+  const { searchParamsForTraceList } = loadDashboardApiModule();
+  const query = {
+    tenantId: "demo",
+    projectId: "proj",
+    environmentId: "prod",
+    traceId: "t1",
+    status: "error",
+    kind: "llm.call",
+    model: "gpt-4o",
+    release: "v1",
+    startedAfter: "2026-01-01T00:00:00Z",
+    startedBefore: "2026-06-01T00:00:00Z",
+    minCostMicros: 100,
+    maxCostMicros: 200,
+    minLatencyMs: 50,
+    maxLatencyMs: 2000,
+  };
+  const params = searchParamsForTraceList(query);
+
+  // Scope/selection → different API param names
+  assert.equal(params.get("project_id"), "proj");
+  assert.equal(params.get("environment_id"), "prod");
+  assert.equal(params.get("trace_id"), "t1");
+  // Filter fields → same names in URL and API
+  assert.equal(params.get("status"), "error");
+  assert.equal(params.get("kind"), "llm.call");
+  assert.equal(params.get("model"), "gpt-4o");
+  assert.equal(params.get("release"), "v1");
+  assert.equal(params.get("started_after"), "2026-01-01T00:00:00Z");
+  assert.equal(params.get("started_before"), "2026-06-01T00:00:00Z");
+  assert.equal(params.get("min_cost_micros"), "100");
+  assert.equal(params.get("max_cost_micros"), "200");
+  assert.equal(params.get("min_latency_ms"), "50");
+  assert.equal(params.get("max_latency_ms"), "2000");
+  assert.equal(params.get("limit"), "50");
+});
+
+test("dashboard query module is table-driven and delegates contract to api.ts", () => {
+  const dq = readFileSync(join(root, "lib/dashboard-query.ts"), "utf8");
+  const api = readFileSync(join(root, "lib/api.ts"), "utf8");
+
+  // dashboard-query.ts imports DashboardQuery as a type-only reference from api.ts
+  // so the OpenAPI contract (TraceListQuery / TraceReadQuery) stays in one place.
+  assert.match(dq, /import type \{ DashboardQuery \} from "\.\/api"/, "DashboardQuery sourced from api.ts via type-only import");
+
+  // api.ts delegates filter-field serialization to dashboard-query.ts
+  assert.match(api, /dashboard-query/, "api.ts imports from dashboard-query");
+  assert.match(api, /applyFilterParams/, "api.ts calls applyFilterParams");
+
+  // Table-driven exports are all present
+  assert.match(dq, /FILTER_FIELDS/, "exports FILTER_FIELDS table");
+  assert.match(dq, /parseQueryFromSearchParams/, "exports parseQueryFromSearchParams");
+  assert.match(dq, /applyFilterParams/, "exports applyFilterParams");
+  assert.match(dq, /filterChips/, "exports filterChips");
+  assert.match(dq, /advancedFilterCount/, "exports advancedFilterCount");
+  assert.match(dq, /shortHash/, "exports shortHash");
 });

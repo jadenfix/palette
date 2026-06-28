@@ -20,6 +20,7 @@ import (
 type EvaluatorKind struct {
 	EvaluatorKindOneOf *EvaluatorKindOneOf
 	EvaluatorKindOneOf1 *EvaluatorKindOneOf1
+	EvaluatorKindOneOf10 *EvaluatorKindOneOf10
 	EvaluatorKindOneOf2 *EvaluatorKindOneOf2
 	EvaluatorKindOneOf3 *EvaluatorKindOneOf3
 	EvaluatorKindOneOf4 *EvaluatorKindOneOf4
@@ -41,6 +42,13 @@ func EvaluatorKindOneOfAsEvaluatorKind(v *EvaluatorKindOneOf) EvaluatorKind {
 func EvaluatorKindOneOf1AsEvaluatorKind(v *EvaluatorKindOneOf1) EvaluatorKind {
 	return EvaluatorKind{
 		EvaluatorKindOneOf1: v,
+	}
+}
+
+// EvaluatorKindOneOf10AsEvaluatorKind is a convenience function that returns EvaluatorKindOneOf10 wrapped in EvaluatorKind
+func EvaluatorKindOneOf10AsEvaluatorKind(v *EvaluatorKindOneOf10) EvaluatorKind {
+	return EvaluatorKind{
+		EvaluatorKindOneOf10: v,
 	}
 }
 
@@ -137,6 +145,23 @@ func (dst *EvaluatorKind) UnmarshalJSON(data []byte) error {
 		}
 	} else {
 		dst.EvaluatorKindOneOf1 = nil
+	}
+
+	// try to unmarshal data into EvaluatorKindOneOf10
+	err = newStrictDecoder(data).Decode(&dst.EvaluatorKindOneOf10)
+	if err == nil {
+		jsonEvaluatorKindOneOf10, _ := json.Marshal(dst.EvaluatorKindOneOf10)
+		if string(jsonEvaluatorKindOneOf10) == "{}" { // empty struct
+			dst.EvaluatorKindOneOf10 = nil
+		} else {
+			if err = validator.Validate(dst.EvaluatorKindOneOf10); err != nil {
+				dst.EvaluatorKindOneOf10 = nil
+			} else {
+				match++
+			}
+		}
+	} else {
+		dst.EvaluatorKindOneOf10 = nil
 	}
 
 	// try to unmarshal data into EvaluatorKindOneOf2
@@ -279,6 +304,7 @@ func (dst *EvaluatorKind) UnmarshalJSON(data []byte) error {
 		// reset to nil
 		dst.EvaluatorKindOneOf = nil
 		dst.EvaluatorKindOneOf1 = nil
+		dst.EvaluatorKindOneOf10 = nil
 		dst.EvaluatorKindOneOf2 = nil
 		dst.EvaluatorKindOneOf3 = nil
 		dst.EvaluatorKindOneOf4 = nil
@@ -304,6 +330,10 @@ func (src EvaluatorKind) MarshalJSON() ([]byte, error) {
 
 	if src.EvaluatorKindOneOf1 != nil {
 		return json.Marshal(&src.EvaluatorKindOneOf1)
+	}
+
+	if src.EvaluatorKindOneOf10 != nil {
+		return json.Marshal(&src.EvaluatorKindOneOf10)
 	}
 
 	if src.EvaluatorKindOneOf2 != nil {
@@ -352,6 +382,10 @@ func (obj *EvaluatorKind) GetActualInstance() (interface{}) {
 
 	if obj.EvaluatorKindOneOf1 != nil {
 		return obj.EvaluatorKindOneOf1
+	}
+
+	if obj.EvaluatorKindOneOf10 != nil {
+		return obj.EvaluatorKindOneOf10
 	}
 
 	if obj.EvaluatorKindOneOf2 != nil {

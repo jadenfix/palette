@@ -1,12 +1,12 @@
 # EvaluatorKindOneOf8
 
-Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
+Browser step efficiency: passes when the run used at most `max_steps` browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**min_ratio** | **float** |  | 
+**max_steps** | **int** |  | 
 **type** | **str** |  | 
 
 ## Example

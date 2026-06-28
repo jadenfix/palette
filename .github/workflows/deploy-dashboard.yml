@@ -45,7 +45,7 @@ jobs:
       # subsequent step. The guard runs from the repo root (it only reads an env
       # var) and is the gate for the actual deploy steps below.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Guard on VERCEL_TOKEN
         id: guard
         working-directory: ${{ github.workspace }}
@@ -56,7 +56,7 @@ jobs:
           fi
       - name: Set up Node
         if: steps.guard.outputs.skip != 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
       - name: Install Vercel CLI

@@ -7,7 +7,7 @@
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
-|**maxMs** | **Long** |  |  |
+|**maxMicros** | **Long** |  |  |
 |**type** | [**TypeEnum**](#TypeEnum) |  |  |
 
 
@@ -16,7 +16,7 @@
 
 | Name | Value |
 |---- | -----|
-| LATENCY_BUDGET_MS | &quot;latency_budget_ms&quot; |
+| COST_BUDGET | &quot;cost_budget&quot; |
 
 
 

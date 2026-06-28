@@ -4,13 +4,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**MinRatio** | **float64** |  | 
 **Type** | **string** |  | 
 
 ## Methods
 
 ### NewEvaluatorKindOneOf9
 
-`func NewEvaluatorKindOneOf9(type_ string, ) *EvaluatorKindOneOf9`
+`func NewEvaluatorKindOneOf9(minRatio float64, type_ string, ) *EvaluatorKindOneOf9`
 
 NewEvaluatorKindOneOf9 instantiates a new EvaluatorKindOneOf9 object
 This constructor will assign default values to properties that have it defined,
@@ -24,6 +25,26 @@ will change when the set of required properties is changed
 NewEvaluatorKindOneOf9WithDefaults instantiates a new EvaluatorKindOneOf9 object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
+
+### GetMinRatio
+
+`func (o *EvaluatorKindOneOf9) GetMinRatio() float64`
+
+GetMinRatio returns the MinRatio field if non-nil, zero value otherwise.
+
+### GetMinRatioOk
+
+`func (o *EvaluatorKindOneOf9) GetMinRatioOk() (*float64, bool)`
+
+GetMinRatioOk returns a tuple with the MinRatio field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetMinRatio
+
+`func (o *EvaluatorKindOneOf9) SetMinRatio(v float64)`
+
+SetMinRatio sets MinRatio field to given value.
+
 
 ### GetType
 

@@ -55,13 +55,23 @@ public:
 
     enum class TypeEnum
     {
-        json_object,
+        numeric_tolerance,
         
     };
 
     TypeEnum toTypeEnum(const utility::string_t& value) const;
     const utility::string_t fromTypeEnum(const TypeEnum value) const;
 
+
+    double getAbs() const;
+    bool absIsSet() const;
+    void unsetAbs();
+    void setAbs(double value);
+
+    double getRel() const;
+    bool relIsSet() const;
+    void unsetRel();
+    void setRel(double value);
 
     TypeEnum getType() const;
     bool typeIsSet() const;
@@ -70,6 +80,12 @@ public:
 
 
 protected:
+    double m_Abs;
+    bool m_AbsIsSet;
+
+    double m_Rel;
+    bool m_RelIsSet;
+
     TypeEnum m_Type;
     bool m_TypeIsSet;
 

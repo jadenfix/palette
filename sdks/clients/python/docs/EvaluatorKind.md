@@ -7,6 +7,8 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | **str** |  | 
 **pattern** | **str** |  | 
+**abs** | **float** |  | 
+**rel** | **float** |  | 
 **max_micros** | **int** |  | 
 **max_ms** | **int** |  | 
 **model** | **str** |  | 

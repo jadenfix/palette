@@ -1,5 +1,6 @@
 import type { components, operations } from "./generated/api-types";
 import { apiSpanIoLabels } from "./span-kinds";
+import { applyFilterParams } from "./dashboard-query";
 
 type TraceListOperation = operations["listTraces"];
 type TraceOperation = operations["getTrace"];
@@ -79,16 +80,7 @@ export function searchParamsForTraceList(query: DashboardQuery): URLSearchParams
   if (query.projectId) params.set("project_id", query.projectId);
   if (query.environmentId) params.set("environment_id", query.environmentId);
   if (query.traceId) params.set("trace_id", query.traceId);
-  if (query.status) params.set("status", query.status);
-  if (query.kind) params.set("kind", query.kind);
-  if (query.startedAfter) params.set("started_after", query.startedAfter);
-  if (query.startedBefore) params.set("started_before", query.startedBefore);
-  if (query.model) params.set("model", query.model);
-  if (query.release) params.set("release", query.release);
-  if (query.minCostMicros !== undefined) params.set("min_cost_micros", String(query.minCostMicros));
-  if (query.maxCostMicros !== undefined) params.set("max_cost_micros", String(query.maxCostMicros));
-  if (query.minLatencyMs !== undefined) params.set("min_latency_ms", String(query.minLatencyMs));
-  if (query.maxLatencyMs !== undefined) params.set("max_latency_ms", String(query.maxLatencyMs));
+  applyFilterParams(query, params);
   params.set("limit", "50");
   return params;
 }
@@ -165,8 +157,11 @@ export async function loadDashboardData(query: DashboardQuery): Promise<Dashboar
     ? runs.items.find((run) => run.trace_id === query.traceId) ?? runs.items[0]
     : runs.items[0];
   const activeTraceId = query.traceId || activeRun?.trace_id;
+  const activeRunMatchesTrace = activeRun !== undefined && activeRun.trace_id === activeTraceId;
   const traceQuery =
-    activeRun?.project_id && !query.projectId ? { ...query, projectId: activeRun.project_id } : query;
+    activeRunMatchesTrace && activeRun.project_id && !query.projectId
+      ? { ...query, projectId: activeRun.project_id }
+      : query;
   let trace: TraceView | null = null;
   let selectedSpan: CanonicalSpan | null = null;
   let selectedIo: SpanIoResponse | null = null;

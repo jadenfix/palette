@@ -79,6 +79,7 @@ include/beater-client/model/EvaluationCase.h
 include/beater-client/model/EvaluatorKind.h
 include/beater-client/model/EvaluatorKind_oneOf.h
 include/beater-client/model/EvaluatorKind_oneOf_1.h
+include/beater-client/model/EvaluatorKind_oneOf_10.h
 include/beater-client/model/EvaluatorKind_oneOf_2.h
 include/beater-client/model/EvaluatorKind_oneOf_3.h
 include/beater-client/model/EvaluatorKind_oneOf_4.h
@@ -230,6 +231,7 @@ src/model/EvaluationCase.cpp
 src/model/EvaluatorKind.cpp
 src/model/EvaluatorKind_oneOf.cpp
 src/model/EvaluatorKind_oneOf_1.cpp
+src/model/EvaluatorKind_oneOf_10.cpp
 src/model/EvaluatorKind_oneOf_2.cpp
 src/model/EvaluatorKind_oneOf_3.cpp
 src/model/EvaluatorKind_oneOf_4.cpp

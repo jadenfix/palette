@@ -13,19 +13,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EvaluatorKindOneOf5 {
-    #[serde(rename = "model")]
-    pub model: String,
-    #[serde(rename = "rubric")]
-    pub rubric: String,
+    #[serde(rename = "max_ms")]
+    pub max_ms: i64,
     #[serde(rename = "type")]
     pub r#type: Type,
 }
 
 impl EvaluatorKindOneOf5 {
-    pub fn new(model: String, rubric: String, r#type: Type) -> EvaluatorKindOneOf5 {
+    pub fn new(max_ms: i64, r#type: Type) -> EvaluatorKindOneOf5 {
         EvaluatorKindOneOf5 {
-            model,
-            rubric,
+            max_ms,
             r#type,
         }
     }
@@ -33,13 +30,13 @@ impl EvaluatorKindOneOf5 {
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum Type {
-    #[serde(rename = "llm_judge")]
-    LlmJudge,
+    #[serde(rename = "latency_budget_ms")]
+    LatencyBudgetMs,
 }
 
 impl Default for Type {
     fn default() -> Type {
-        Self::LlmJudge
+        Self::LatencyBudgetMs
     }
 }
 

@@ -30,23 +30,23 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import ai.beater.client.ApiClient;
 /**
- * Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at &#x60;min_ratio&#x60;.
+ * Browser step efficiency: passes when the run used at most &#x60;max_steps&#x60; browser steps (catches looping/backtracking). Reads &#x60;trace.browser_steps&#x60;.
  */
 @JsonPropertyOrder({
-  EvaluatorKindOneOf8.JSON_PROPERTY_MIN_RATIO,
+  EvaluatorKindOneOf8.JSON_PROPERTY_MAX_STEPS,
   EvaluatorKindOneOf8.JSON_PROPERTY_TYPE
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class EvaluatorKindOneOf8 {
-  public static final String JSON_PROPERTY_MIN_RATIO = "min_ratio";
+  public static final String JSON_PROPERTY_MAX_STEPS = "max_steps";
   @javax.annotation.Nonnull
-  private Double minRatio;
+  private Long maxSteps;
 
   /**
    * Gets or Sets type
    */
   public enum TypeEnum {
-    BROWSER_GROUNDING(String.valueOf("browser_grounding"));
+    BROWSER_STEP_EFFICIENCY(String.valueOf("browser_step_efficiency"));
 
     private String value;
 
@@ -82,27 +82,28 @@ public class EvaluatorKindOneOf8 {
   public EvaluatorKindOneOf8() { 
   }
 
-  public EvaluatorKindOneOf8 minRatio(@javax.annotation.Nonnull Double minRatio) {
-    this.minRatio = minRatio;
+  public EvaluatorKindOneOf8 maxSteps(@javax.annotation.Nonnull Long maxSteps) {
+    this.maxSteps = maxSteps;
     return this;
   }
 
   /**
-   * Get minRatio
-   * @return minRatio
+   * Get maxSteps
+   * minimum: 0
+   * @return maxSteps
    */
   @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_MIN_RATIO)
+  @JsonProperty(JSON_PROPERTY_MAX_STEPS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public Double getMinRatio() {
-    return minRatio;
+  public Long getMaxSteps() {
+    return maxSteps;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MIN_RATIO)
+  @JsonProperty(JSON_PROPERTY_MAX_STEPS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMinRatio(@javax.annotation.Nonnull Double minRatio) {
-    this.minRatio = minRatio;
+  public void setMaxSteps(@javax.annotation.Nonnull Long maxSteps) {
+    this.maxSteps = maxSteps;
   }
 
 
@@ -142,20 +143,20 @@ public class EvaluatorKindOneOf8 {
       return false;
     }
     EvaluatorKindOneOf8 evaluatorKindOneOf8 = (EvaluatorKindOneOf8) o;
-    return Objects.equals(this.minRatio, evaluatorKindOneOf8.minRatio) &&
+    return Objects.equals(this.maxSteps, evaluatorKindOneOf8.maxSteps) &&
         Objects.equals(this.type, evaluatorKindOneOf8.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(minRatio, type);
+    return Objects.hash(maxSteps, type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EvaluatorKindOneOf8 {\n");
-    sb.append("    minRatio: ").append(toIndentedString(minRatio)).append("\n");
+    sb.append("    maxSteps: ").append(toIndentedString(maxSteps)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -204,9 +205,9 @@ public class EvaluatorKindOneOf8 {
 
     StringJoiner joiner = new StringJoiner("&");
 
-    // add `min_ratio` to the URL query string
-    if (getMinRatio() != null) {
-      joiner.add(String.format("%smin_ratio%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getMinRatio()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    // add `max_steps` to the URL query string
+    if (getMaxSteps() != null) {
+      joiner.add(String.format("%smax_steps%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getMaxSteps()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `type` to the URL query string

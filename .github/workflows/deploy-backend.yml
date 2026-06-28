@@ -44,7 +44,7 @@ jobs:
           fi
       - name: Checkout
         if: steps.guard.outputs.skip != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Set up flyctl
         if: steps.guard.outputs.skip != 'true'
         uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1.6

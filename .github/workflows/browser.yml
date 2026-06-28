@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal && rustup default stable
       - name: Test the browser crates
@@ -55,19 +55,19 @@ jobs:
     timeout-minutes: 35
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal && rustup default stable
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Install Chrome (CDP backend)
-        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1
+        uses: browser-actions/setup-chrome@2e1d749697dd1612b833dba4a722266286fbefcd # v2.1.2
         with:
           chrome-version: stable
       - name: Install browser-use SDK test deps

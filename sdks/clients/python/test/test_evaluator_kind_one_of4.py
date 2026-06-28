@@ -35,13 +35,13 @@ class TestEvaluatorKindOneOf4(unittest.TestCase):
         model = EvaluatorKindOneOf4()
         if include_optional:
             return EvaluatorKindOneOf4(
-                max_ms = 0,
-                type = 'latency_budget_ms'
+                max_micros = 56,
+                type = 'cost_budget'
             )
         else:
             return EvaluatorKindOneOf4(
-                max_ms = 0,
-                type = 'latency_budget_ms',
+                max_micros = 56,
+                type = 'cost_budget',
         )
         """
 

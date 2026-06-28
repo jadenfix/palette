@@ -17,6 +17,8 @@
 //! | [`compare_paired`] | §10.3 | paired deploy-gate selector |
 //! | [`paired_t_test`] | §10.3 | continuous paired metric |
 //! | [`mcnemar_exact_p`] | §10.3 | paired binary outcome |
+//! | [`required_sample_size`] / [`minimum_detectable_effect`] / [`achieved_power`] | §10.3 #5 | power / MDE / minimum-sample planning |
+//! | [`holm_bonferroni`] / [`benjamini_hochberg`] | §10.3 #4 | multiple-comparison corrections |
 //!
 //! The paired layer ([`compare_paired`]) is what the **experiment gate** calls
 //! today: it picks **Student's paired t** for continuous metrics and the **exact
@@ -39,11 +41,15 @@
 //!   helpers below) so the crate pulls in only `thiserror`.
 
 mod mcnemar;
+mod multiplicity;
 mod numerics;
 mod paired;
+mod power;
 
 pub use mcnemar::mcnemar_exact_p;
+pub use multiplicity::{benjamini_hochberg, holm_bonferroni, MultiplicityDecision};
 pub use paired::paired_t_test;
+pub use power::{achieved_power, minimum_detectable_effect, required_sample_size, DEFAULT_POWER};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error type
@@ -203,10 +209,11 @@ pub const Z_99: f64 = 2.575_829_303_548_901;
 /// ```
 /// use beater_stats::{wilson_interval, Z_95};
 ///
-/// let ci = wilson_interval(8, 10, Z_95).unwrap();
+/// let ci = wilson_interval(8, 10, Z_95)?;
 /// // 95 % Wilson CI for 8/10 ≈ [0.490, 0.943]
 /// assert!((ci.lower - 0.490).abs() < 1e-3);
 /// assert!((ci.upper - 0.943).abs() < 1e-3);
+/// # Ok::<(), beater_stats::StatsError>(())
 /// ```
 pub fn wilson_interval(successes: u64, trials: u64, z: f64) -> Result<Interval, StatsError> {
     if trials == 0 {
@@ -275,9 +282,10 @@ pub fn wilson_interval(successes: u64, trials: u64, z: f64) -> Result<Interval, 
 /// use beater_stats::two_proportion_z_test;
 ///
 /// // candidate: 85/100, baseline: 70/100 → should be significant at 95 %
-/// let res = two_proportion_z_test(85, 100, 70, 100).unwrap();
+/// let res = two_proportion_z_test(85, 100, 70, 100)?;
 /// assert!(res.p_value < 0.05);
 /// assert!(res.z_stat > 0.0); // candidate is better
+/// # Ok::<(), beater_stats::StatsError>(())
 /// ```
 pub fn two_proportion_z_test(
     k1: u64,
@@ -371,10 +379,11 @@ pub fn two_proportion_z_test(
 ///
 /// let a = vec![0.9, 0.8, 0.95, 0.85, 0.88];
 /// let b = vec![0.6, 0.7, 0.65, 0.62, 0.68];
-/// let ci = bootstrap_diff_ci(&a, &b, 0.95, 10_000, 42).unwrap();
+/// let ci = bootstrap_diff_ci(&a, &b, 0.95, 10_000, 42)?;
 /// // candidate is better by ~0.25; CI should be entirely positive
 /// assert!(ci.lower > 0.0);
 /// assert!(ci.estimate > 0.0);
+/// # Ok::<(), beater_stats::StatsError>(())
 /// ```
 pub fn bootstrap_diff_ci(
     sample_a: &[f64],

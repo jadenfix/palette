@@ -60,6 +60,7 @@ from beater_client.models.evaluation_case import EvaluationCase
 from beater_client.models.evaluator_kind import EvaluatorKind
 from beater_client.models.evaluator_kind_one_of import EvaluatorKindOneOf
 from beater_client.models.evaluator_kind_one_of1 import EvaluatorKindOneOf1
+from beater_client.models.evaluator_kind_one_of10 import EvaluatorKindOneOf10
 from beater_client.models.evaluator_kind_one_of2 import EvaluatorKindOneOf2
 from beater_client.models.evaluator_kind_one_of3 import EvaluatorKindOneOf3
 from beater_client.models.evaluator_kind_one_of4 import EvaluatorKindOneOf4

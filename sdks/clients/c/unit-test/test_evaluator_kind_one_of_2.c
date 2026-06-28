@@ -22,11 +22,15 @@ evaluator_kind_one_of_2_t* instantiate_evaluator_kind_one_of_2(int include_optio
   evaluator_kind_one_of_2_t* evaluator_kind_one_of_2 = NULL;
   if (include_optional) {
     evaluator_kind_one_of_2 = evaluator_kind_one_of_2_create(
-      beater_api_evaluator_kind_one_of_2_TYPE_json_object
+      1.337,
+      1.337,
+      beater_api_evaluator_kind_one_of_2_TYPE_numeric_tolerance
     );
   } else {
     evaluator_kind_one_of_2 = evaluator_kind_one_of_2_create(
-      beater_api_evaluator_kind_one_of_2_TYPE_json_object
+      1.337,
+      1.337,
+      beater_api_evaluator_kind_one_of_2_TYPE_numeric_tolerance
     );
   }
 

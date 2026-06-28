@@ -21,8 +21,7 @@ var _ MappedNullable = &EvaluatorKindOneOf5{}
 
 // EvaluatorKindOneOf5 struct for EvaluatorKindOneOf5
 type EvaluatorKindOneOf5 struct {
-	Model string `json:"model"`
-	Rubric string `json:"rubric"`
+	MaxMs int64 `json:"max_ms"`
 	Type string `json:"type"`
 }
 
@@ -32,10 +31,9 @@ type _EvaluatorKindOneOf5 EvaluatorKindOneOf5
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewEvaluatorKindOneOf5(model string, rubric string, type_ string) *EvaluatorKindOneOf5 {
+func NewEvaluatorKindOneOf5(maxMs int64, type_ string) *EvaluatorKindOneOf5 {
 	this := EvaluatorKindOneOf5{}
-	this.Model = model
-	this.Rubric = rubric
+	this.MaxMs = maxMs
 	this.Type = type_
 	return &this
 }
@@ -48,52 +46,28 @@ func NewEvaluatorKindOneOf5WithDefaults() *EvaluatorKindOneOf5 {
 	return &this
 }
 
-// GetModel returns the Model field value
-func (o *EvaluatorKindOneOf5) GetModel() string {
+// GetMaxMs returns the MaxMs field value
+func (o *EvaluatorKindOneOf5) GetMaxMs() int64 {
 	if o == nil {
-		var ret string
+		var ret int64
 		return ret
 	}
 
-	return o.Model
+	return o.MaxMs
 }
 
-// GetModelOk returns a tuple with the Model field value
+// GetMaxMsOk returns a tuple with the MaxMs field value
 // and a boolean to check if the value has been set.
-func (o *EvaluatorKindOneOf5) GetModelOk() (*string, bool) {
+func (o *EvaluatorKindOneOf5) GetMaxMsOk() (*int64, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Model, true
+	return &o.MaxMs, true
 }
 
-// SetModel sets field value
-func (o *EvaluatorKindOneOf5) SetModel(v string) {
-	o.Model = v
-}
-
-// GetRubric returns the Rubric field value
-func (o *EvaluatorKindOneOf5) GetRubric() string {
-	if o == nil {
-		var ret string
-		return ret
-	}
-
-	return o.Rubric
-}
-
-// GetRubricOk returns a tuple with the Rubric field value
-// and a boolean to check if the value has been set.
-func (o *EvaluatorKindOneOf5) GetRubricOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.Rubric, true
-}
-
-// SetRubric sets field value
-func (o *EvaluatorKindOneOf5) SetRubric(v string) {
-	o.Rubric = v
+// SetMaxMs sets field value
+func (o *EvaluatorKindOneOf5) SetMaxMs(v int64) {
+	o.MaxMs = v
 }
 
 // GetType returns the Type field value
@@ -130,8 +104,7 @@ func (o EvaluatorKindOneOf5) MarshalJSON() ([]byte, error) {
 
 func (o EvaluatorKindOneOf5) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["model"] = o.Model
-	toSerialize["rubric"] = o.Rubric
+	toSerialize["max_ms"] = o.MaxMs
 	toSerialize["type"] = o.Type
 	return toSerialize, nil
 }
@@ -141,8 +114,7 @@ func (o *EvaluatorKindOneOf5) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"model",
-		"rubric",
+		"max_ms",
 		"type",
 	}
 

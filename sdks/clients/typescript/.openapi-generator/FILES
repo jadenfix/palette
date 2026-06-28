@@ -70,6 +70,7 @@ src/models/EvaluationCase.ts
 src/models/EvaluatorKind.ts
 src/models/EvaluatorKindOneOf.ts
 src/models/EvaluatorKindOneOf1.ts
+src/models/EvaluatorKindOneOf10.ts
 src/models/EvaluatorKindOneOf2.ts
 src/models/EvaluatorKindOneOf3.ts
 src/models/EvaluatorKindOneOf4.ts

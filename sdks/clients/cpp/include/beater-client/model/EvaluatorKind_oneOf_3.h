@@ -55,18 +55,13 @@ public:
 
     enum class TypeEnum
     {
-        cost_budget,
+        json_object,
         
     };
 
     TypeEnum toTypeEnum(const utility::string_t& value) const;
     const utility::string_t fromTypeEnum(const TypeEnum value) const;
 
-
-    int64_t getMaxMicros() const;
-    bool maxMicrosIsSet() const;
-    void unsetMax_micros();
-    void setMaxMicros(int64_t value);
 
     TypeEnum getType() const;
     bool typeIsSet() const;
@@ -75,9 +70,6 @@ public:
 
 
 protected:
-    int64_t m_Max_micros;
-    bool m_Max_microsIsSet;
-
     TypeEnum m_Type;
     bool m_TypeIsSet;
 

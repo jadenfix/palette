@@ -5,13 +5,13 @@
 
 
 char* evaluator_kind_type_ToString(beater_api_evaluator_kind_TYPE_e type) {
-    char* typeArray[] =  { "NULL", "exact_match", "regex_match", "json_object", "cost_budget", "latency_budget_ms", "llm_judge", "browser_task_success", "browser_step_efficiency", "browser_grounding", "browser_recovery" };
+    char* typeArray[] =  { "NULL", "exact_match", "regex_match", "numeric_tolerance", "json_object", "cost_budget", "latency_budget_ms", "llm_judge", "browser_task_success", "browser_step_efficiency", "browser_grounding", "browser_recovery" };
     return typeArray[type];
 }
 
 beater_api_evaluator_kind_TYPE_e evaluator_kind_type_FromString(char* type){
     int stringToReturn = 0;
-    char *typeArray[] =  { "NULL", "exact_match", "regex_match", "json_object", "cost_budget", "latency_budget_ms", "llm_judge", "browser_task_success", "browser_step_efficiency", "browser_grounding", "browser_recovery" };
+    char *typeArray[] =  { "NULL", "exact_match", "regex_match", "numeric_tolerance", "json_object", "cost_budget", "latency_budget_ms", "llm_judge", "browser_task_success", "browser_step_efficiency", "browser_grounding", "browser_recovery" };
     size_t sizeofArray = sizeof(typeArray) / sizeof(typeArray[0]);
     while(stringToReturn < sizeofArray) {
         if(strcmp(type, typeArray[stringToReturn]) == 0) {
@@ -25,6 +25,8 @@ beater_api_evaluator_kind_TYPE_e evaluator_kind_type_FromString(char* type){
 static evaluator_kind_t *evaluator_kind_create_internal(
     beater_api_evaluator_kind_TYPE_e type,
     char *pattern,
+    double abs,
+    double rel,
     long max_micros,
     long max_ms,
     char *model,
@@ -40,6 +42,8 @@ static evaluator_kind_t *evaluator_kind_create_internal(
     }
     evaluator_kind_local_var->type = type;
     evaluator_kind_local_var->pattern = pattern;
+    evaluator_kind_local_var->abs = abs;
+    evaluator_kind_local_var->rel = rel;
     evaluator_kind_local_var->max_micros = max_micros;
     evaluator_kind_local_var->max_ms = max_ms;
     evaluator_kind_local_var->model = model;
@@ -56,6 +60,8 @@ static evaluator_kind_t *evaluator_kind_create_internal(
 __attribute__((deprecated)) evaluator_kind_t *evaluator_kind_create(
     beater_api_evaluator_kind_TYPE_e type,
     char *pattern,
+    double abs,
+    double rel,
     long max_micros,
     long max_ms,
     char *model,
@@ -68,6 +74,8 @@ __attribute__((deprecated)) evaluator_kind_t *evaluator_kind_create(
     return evaluator_kind_create_internal (
         type,
         pattern,
+        abs,
+        rel,
         max_micros,
         max_ms,
         model,
@@ -130,6 +138,24 @@ cJSON *evaluator_kind_convertToJSON(evaluator_kind_t *evaluator_kind) {
     }
     if(cJSON_AddStringToObject(item, "pattern", evaluator_kind->pattern) == NULL) {
     goto fail; //String
+    }
+
+
+    // evaluator_kind->abs
+    if (!evaluator_kind->abs) {
+        goto fail;
+    }
+    if(cJSON_AddNumberToObject(item, "abs", evaluator_kind->abs) == NULL) {
+    goto fail; //Numeric
+    }
+
+
+    // evaluator_kind->rel
+    if (!evaluator_kind->rel) {
+        goto fail;
+    }
+    if(cJSON_AddNumberToObject(item, "rel", evaluator_kind->rel) == NULL) {
+    goto fail; //Numeric
     }
 
 
@@ -244,6 +270,36 @@ evaluator_kind_t *evaluator_kind_parseFromJSON(cJSON *evaluator_kindJSON){
     if(!cJSON_IsString(pattern))
     {
     goto end; //String
+    }
+
+    // evaluator_kind->abs
+    cJSON *abs = cJSON_GetObjectItemCaseSensitive(evaluator_kindJSON, "abs");
+    if (cJSON_IsNull(abs)) {
+        abs = NULL;
+    }
+    if (!abs) {
+        goto end;
+    }
+
+    
+    if(!cJSON_IsNumber(abs))
+    {
+    goto end; //Numeric
+    }
+
+    // evaluator_kind->rel
+    cJSON *rel = cJSON_GetObjectItemCaseSensitive(evaluator_kindJSON, "rel");
+    if (cJSON_IsNull(rel)) {
+        rel = NULL;
+    }
+    if (!rel) {
+        goto end;
+    }
+
+    
+    if(!cJSON_IsNumber(rel))
+    {
+    goto end; //Numeric
     }
 
     // evaluator_kind->max_micros
@@ -364,6 +420,8 @@ evaluator_kind_t *evaluator_kind_parseFromJSON(cJSON *evaluator_kindJSON){
     evaluator_kind_local_var = evaluator_kind_create_internal (
         typeVariable,
         strdup(pattern->valuestring),
+        abs->valuedouble,
+        rel->valuedouble,
         max_micros->valuedouble,
         max_ms->valuedouble,
         strdup(model->valuestring),

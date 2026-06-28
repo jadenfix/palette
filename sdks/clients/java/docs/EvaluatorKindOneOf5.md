@@ -7,8 +7,7 @@
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
-|**model** | **String** |  |  |
-|**rubric** | **String** |  |  |
+|**maxMs** | **Long** |  |  |
 |**type** | [**TypeEnum**](#TypeEnum) |  |  |
 
 
@@ -17,7 +16,7 @@
 
 | Name | Value |
 |---- | -----|
-| LLM_JUDGE | &quot;llm_judge&quot; |
+| LATENCY_BUDGET_MS | &quot;latency_budget_ms&quot; |
 
 
 

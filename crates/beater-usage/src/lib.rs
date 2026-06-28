@@ -19,12 +19,20 @@ use uuid::Uuid;
 #[serde(rename_all = "snake_case")]
 pub enum UsageMeter {
     JudgeCostMicros,
+    IngestSpans,
+    IngestBytes,
+    StoredArtifactBytes,
+    EvalCasesScored,
 }
 
 impl UsageMeter {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::JudgeCostMicros => "judge_cost_micros",
+            Self::IngestSpans => "ingest_spans",
+            Self::IngestBytes => "ingest_bytes",
+            Self::StoredArtifactBytes => "stored_artifact_bytes",
+            Self::EvalCasesScored => "eval_cases_scored",
         }
     }
 }
@@ -33,6 +41,8 @@ impl UsageMeter {
 #[serde(rename_all = "snake_case")]
 pub enum UsageRecordSourceKind {
     JudgeCall,
+    TraceIngest,
+    ArtifactStore,
     DatasetEvalReport,
     ExperimentRun,
     Manual,
@@ -50,6 +60,8 @@ impl UsageRecordSourceKind {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::JudgeCall => "judge_call",
+            Self::TraceIngest => "trace_ingest",
+            Self::ArtifactStore => "artifact_store",
             Self::DatasetEvalReport => "dataset_eval_report",
             Self::ExperimentRun => "experiment_run",
             Self::Manual => "manual",
@@ -692,6 +704,8 @@ mod tests {
                 decision: beater_eval::GateDecision::Pass,
                 test: beater_eval::StatisticalTest::PairedT,
                 adjusted_alpha: 0.05,
+                mde: None,
+                required_n: None,
             },
             decision: beater_eval::GateDecision::Pass,
             gate_policy: beater_eval::GatePolicy::default(),
@@ -724,6 +738,90 @@ mod tests {
             .totals
             .get(UsageMeter::JudgeCostMicros.as_str())
             .map(|total| total.quantity)
+    }
+
+    #[tokio::test]
+    async fn sqlite_usage_summarizes_ingest_storage_and_eval_meters() -> anyhow::Result<()> {
+        let store = SqliteUsageLedger::in_memory()?;
+        let tenant = TenantId::new("tenant")?;
+        let project = ProjectId::new("project")?;
+        let inserts = [
+            UsageRecordInsert {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                meter: UsageMeter::IngestSpans,
+                quantity: 7,
+                unit: "spans".to_string(),
+                source_kind: UsageRecordSourceKind::TraceIngest,
+                source_id: "trace-a".to_string(),
+                attributes: json!({"environment_id": "prod"}),
+            },
+            UsageRecordInsert {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                meter: UsageMeter::IngestBytes,
+                quantity: 2048,
+                unit: "bytes".to_string(),
+                source_kind: UsageRecordSourceKind::TraceIngest,
+                source_id: "raw-envelope-a".to_string(),
+                attributes: json!({"content_type": "application/x-protobuf"}),
+            },
+            UsageRecordInsert {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                meter: UsageMeter::StoredArtifactBytes,
+                quantity: 4096,
+                unit: "bytes".to_string(),
+                source_kind: UsageRecordSourceKind::ArtifactStore,
+                source_id: "artifact-a".to_string(),
+                attributes: json!({"redaction_class": "sensitive"}),
+            },
+            UsageRecordInsert {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                meter: UsageMeter::EvalCasesScored,
+                quantity: 3,
+                unit: "cases".to_string(),
+                source_kind: UsageRecordSourceKind::DatasetEvalReport,
+                source_id: "report-a".to_string(),
+                attributes: json!({"dataset_id": "dataset-a"}),
+            },
+        ];
+
+        for insert in inserts {
+            store.record_usage(insert).await?;
+        }
+
+        let summary = store.summarize_usage(tenant, project).await?;
+        assert_eq!(
+            summary.totals.get(UsageMeter::IngestSpans.as_str()),
+            Some(&UsageTotal {
+                quantity: 7,
+                unit: "spans".to_string(),
+            })
+        );
+        assert_eq!(
+            summary.totals.get(UsageMeter::IngestBytes.as_str()),
+            Some(&UsageTotal {
+                quantity: 2048,
+                unit: "bytes".to_string(),
+            })
+        );
+        assert_eq!(
+            summary.totals.get(UsageMeter::StoredArtifactBytes.as_str()),
+            Some(&UsageTotal {
+                quantity: 4096,
+                unit: "bytes".to_string(),
+            })
+        );
+        assert_eq!(
+            summary.totals.get(UsageMeter::EvalCasesScored.as_str()),
+            Some(&UsageTotal {
+                quantity: 3,
+                unit: "cases".to_string(),
+            })
+        );
+        Ok(())
     }
 
     #[tokio::test]

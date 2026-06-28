@@ -19,6 +19,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
+import org.openapitools.jackson.nullable.JsonNullable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -38,11 +42,11 @@ class EvaluatorKindOneOf7Test {
     }
 
     /**
-     * Test the property 'maxSteps'
+     * Test the property 'domContains'
      */
     @Test
-    void maxStepsTest() {
-        // TODO: test maxSteps
+    void domContainsTest() {
+        // TODO: test domContains
     }
 
     /**
@@ -51,6 +55,14 @@ class EvaluatorKindOneOf7Test {
     @Test
     void typeTest() {
         // TODO: test type
+    }
+
+    /**
+     * Test the property 'urlContains'
+     */
+    @Test
+    void urlContainsTest() {
+        // TODO: test urlContains
     }
 
 }

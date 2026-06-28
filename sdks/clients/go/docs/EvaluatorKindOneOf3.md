@@ -4,14 +4,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**MaxMicros** | **int64** |  | 
 **Type** | **string** |  | 
 
 ## Methods
 
 ### NewEvaluatorKindOneOf3
 
-`func NewEvaluatorKindOneOf3(maxMicros int64, type_ string, ) *EvaluatorKindOneOf3`
+`func NewEvaluatorKindOneOf3(type_ string, ) *EvaluatorKindOneOf3`
 
 NewEvaluatorKindOneOf3 instantiates a new EvaluatorKindOneOf3 object
 This constructor will assign default values to properties that have it defined,
@@ -25,26 +24,6 @@ will change when the set of required properties is changed
 NewEvaluatorKindOneOf3WithDefaults instantiates a new EvaluatorKindOneOf3 object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
-
-### GetMaxMicros
-
-`func (o *EvaluatorKindOneOf3) GetMaxMicros() int64`
-
-GetMaxMicros returns the MaxMicros field if non-nil, zero value otherwise.
-
-### GetMaxMicrosOk
-
-`func (o *EvaluatorKindOneOf3) GetMaxMicrosOk() (*int64, bool)`
-
-GetMaxMicrosOk returns a tuple with the MaxMicros field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetMaxMicros
-
-`func (o *EvaluatorKindOneOf3) SetMaxMicros(v int64)`
-
-SetMaxMicros sets MaxMicros field to given value.
-
 
 ### GetType
 

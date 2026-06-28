@@ -5,8 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**model** | **str** |  | 
-**rubric** | **str** |  | 
+**max_ms** | **int** |  | 
 **type** | **str** |  | 
 
 ## Example

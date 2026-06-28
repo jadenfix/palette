@@ -157,6 +157,7 @@ Category | Method | HTTP request | Description
  - [evaluator_kind_t](docs/evaluator_kind.md)
  - [evaluator_kind_one_of_t](docs/evaluator_kind_one_of.md)
  - [evaluator_kind_one_of_1_t](docs/evaluator_kind_one_of_1.md)
+ - [evaluator_kind_one_of_10_t](docs/evaluator_kind_one_of_10.md)
  - [evaluator_kind_one_of_2_t](docs/evaluator_kind_one_of_2.md)
  - [evaluator_kind_one_of_3_t](docs/evaluator_kind_one_of_3.md)
  - [evaluator_kind_one_of_4_t](docs/evaluator_kind_one_of_4.md)

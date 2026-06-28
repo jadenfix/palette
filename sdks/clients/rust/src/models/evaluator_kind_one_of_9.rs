@@ -11,17 +11,20 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// EvaluatorKindOneOf9 : Browser recovery: passes when the run either hit no errors or recovered to a successful final step (catches death spirals after a failed action).
+/// EvaluatorKindOneOf9 : Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EvaluatorKindOneOf9 {
+    #[serde(rename = "min_ratio")]
+    pub min_ratio: f64,
     #[serde(rename = "type")]
     pub r#type: Type,
 }
 
 impl EvaluatorKindOneOf9 {
-    /// Browser recovery: passes when the run either hit no errors or recovered to a successful final step (catches death spirals after a failed action).
-    pub fn new(r#type: Type) -> EvaluatorKindOneOf9 {
+    /// Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
+    pub fn new(min_ratio: f64, r#type: Type) -> EvaluatorKindOneOf9 {
         EvaluatorKindOneOf9 {
+            min_ratio,
             r#type,
         }
     }
@@ -29,13 +32,13 @@ impl EvaluatorKindOneOf9 {
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum Type {
-    #[serde(rename = "browser_recovery")]
-    BrowserRecovery,
+    #[serde(rename = "browser_grounding")]
+    BrowserGrounding,
 }
 
 impl Default for Type {
     fn default() -> Type {
-        Self::BrowserRecovery
+        Self::BrowserGrounding
     }
 }
 

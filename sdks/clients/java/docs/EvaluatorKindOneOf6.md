@@ -2,15 +2,14 @@
 
 # EvaluatorKindOneOf6
 
-Browser world-state success: asserts the final step's observed page (url and/or DOM) matches the configured target — NOT the agent's self-reported \"done\". Reads `trace.browser_steps`.
 
 ## Properties
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
-|**domContains** | **String** |  |  [optional] |
+|**model** | **String** |  |  |
+|**rubric** | **String** |  |  |
 |**type** | [**TypeEnum**](#TypeEnum) |  |  |
-|**urlContains** | **String** |  |  [optional] |
 
 
 
@@ -18,7 +17,7 @@ Browser world-state success: asserts the final step's observed page (url and/or 
 
 | Name | Value |
 |---- | -----|
-| BROWSER_TASK_SUCCESS | &quot;browser_task_success&quot; |
+| LLM_JUDGE | &quot;llm_judge&quot; |
 
 
 

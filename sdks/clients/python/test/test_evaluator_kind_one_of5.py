@@ -35,15 +35,13 @@ class TestEvaluatorKindOneOf5(unittest.TestCase):
         model = EvaluatorKindOneOf5()
         if include_optional:
             return EvaluatorKindOneOf5(
-                model = '',
-                rubric = '',
-                type = 'llm_judge'
+                max_ms = 0,
+                type = 'latency_budget_ms'
             )
         else:
             return EvaluatorKindOneOf5(
-                model = '',
-                rubric = '',
-                type = 'llm_judge',
+                max_ms = 0,
+                type = 'latency_budget_ms',
         )
         """
 

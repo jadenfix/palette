@@ -33,20 +33,15 @@ import ai.beater.client.ApiClient;
  * EvaluatorKindOneOf3
  */
 @JsonPropertyOrder({
-  EvaluatorKindOneOf3.JSON_PROPERTY_MAX_MICROS,
   EvaluatorKindOneOf3.JSON_PROPERTY_TYPE
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class EvaluatorKindOneOf3 {
-  public static final String JSON_PROPERTY_MAX_MICROS = "max_micros";
-  @javax.annotation.Nonnull
-  private Long maxMicros;
-
   /**
    * Gets or Sets type
    */
   public enum TypeEnum {
-    COST_BUDGET(String.valueOf("cost_budget"));
+    JSON_OBJECT(String.valueOf("json_object"));
 
     private String value;
 
@@ -81,30 +76,6 @@ public class EvaluatorKindOneOf3 {
 
   public EvaluatorKindOneOf3() { 
   }
-
-  public EvaluatorKindOneOf3 maxMicros(@javax.annotation.Nonnull Long maxMicros) {
-    this.maxMicros = maxMicros;
-    return this;
-  }
-
-  /**
-   * Get maxMicros
-   * @return maxMicros
-   */
-  @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_MAX_MICROS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public Long getMaxMicros() {
-    return maxMicros;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_MAX_MICROS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMaxMicros(@javax.annotation.Nonnull Long maxMicros) {
-    this.maxMicros = maxMicros;
-  }
-
 
   public EvaluatorKindOneOf3 type(@javax.annotation.Nonnull TypeEnum type) {
     this.type = type;
@@ -142,20 +113,18 @@ public class EvaluatorKindOneOf3 {
       return false;
     }
     EvaluatorKindOneOf3 evaluatorKindOneOf3 = (EvaluatorKindOneOf3) o;
-    return Objects.equals(this.maxMicros, evaluatorKindOneOf3.maxMicros) &&
-        Objects.equals(this.type, evaluatorKindOneOf3.type);
+    return Objects.equals(this.type, evaluatorKindOneOf3.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(maxMicros, type);
+    return Objects.hash(type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EvaluatorKindOneOf3 {\n");
-    sb.append("    maxMicros: ").append(toIndentedString(maxMicros)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -203,11 +172,6 @@ public class EvaluatorKindOneOf3 {
     }
 
     StringJoiner joiner = new StringJoiner("&");
-
-    // add `max_micros` to the URL query string
-    if (getMaxMicros() != null) {
-      joiner.add(String.format("%smax_micros%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getMaxMicros()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
-    }
 
     // add `type` to the URL query string
     if (getType() != null) {

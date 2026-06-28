@@ -7,7 +7,6 @@
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
-|**maxMicros** | **Long** |  |  |
 |**type** | [**TypeEnum**](#TypeEnum) |  |  |
 
 
@@ -16,7 +15,7 @@
 
 | Name | Value |
 |---- | -----|
-| COST_BUDGET | &quot;cost_budget&quot; |
+| JSON_OBJECT | &quot;json_object&quot; |
 
 
 

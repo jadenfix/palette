@@ -94,6 +94,7 @@ set(SRCS
     model/evaluator_kind.c
     model/evaluator_kind_one_of.c
     model/evaluator_kind_one_of_1.c
+    model/evaluator_kind_one_of_10.c
     model/evaluator_kind_one_of_2.c
     model/evaluator_kind_one_of_3.c
     model/evaluator_kind_one_of_4.c
@@ -247,6 +248,7 @@ set(HDRS
     model/evaluator_kind.h
     model/evaluator_kind_one_of.h
     model/evaluator_kind_one_of_1.h
+    model/evaluator_kind_one_of_10.h
     model/evaluator_kind_one_of_2.h
     model/evaluator_kind_one_of_3.h
     model/evaluator_kind_one_of_4.h

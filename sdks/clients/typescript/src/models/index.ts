@@ -46,6 +46,7 @@ export * from './EvaluationCase';
 export * from './EvaluatorKind';
 export * from './EvaluatorKindOneOf';
 export * from './EvaluatorKindOneOf1';
+export * from './EvaluatorKindOneOf10';
 export * from './EvaluatorKindOneOf2';
 export * from './EvaluatorKindOneOf3';
 export * from './EvaluatorKindOneOf4';

@@ -27,6 +27,6 @@ jobs:
   check-action-pins:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify all third-party actions are pinned to commit SHAs
         run: scripts/check-action-pins.sh

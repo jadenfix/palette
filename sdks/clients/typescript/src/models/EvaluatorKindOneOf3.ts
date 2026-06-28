@@ -21,12 +21,6 @@ import { mapValues } from '../runtime';
 export interface EvaluatorKindOneOf3 {
     /**
      * 
-     * @type {number}
-     * @memberof EvaluatorKindOneOf3
-     */
-    maxMicros: number;
-    /**
-     * 
      * @type {string}
      * @memberof EvaluatorKindOneOf3
      */
@@ -38,7 +32,7 @@ export interface EvaluatorKindOneOf3 {
  * @export
  */
 export const EvaluatorKindOneOf3TypeEnum = {
-    CostBudget: 'cost_budget'
+    JsonObject: 'json_object'
 } as const;
 export type EvaluatorKindOneOf3TypeEnum = typeof EvaluatorKindOneOf3TypeEnum[keyof typeof EvaluatorKindOneOf3TypeEnum];
 
@@ -47,7 +41,6 @@ export type EvaluatorKindOneOf3TypeEnum = typeof EvaluatorKindOneOf3TypeEnum[key
  * Check if a given object implements the EvaluatorKindOneOf3 interface.
  */
 export function instanceOfEvaluatorKindOneOf3(value: object): value is EvaluatorKindOneOf3 {
-    if (!('maxMicros' in value) || value['maxMicros'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
     return true;
 }
@@ -62,7 +55,6 @@ export function EvaluatorKindOneOf3FromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
-        'maxMicros': json['max_micros'],
         'type': json['type'],
     };
 }
@@ -78,7 +70,6 @@ export function EvaluatorKindOneOf3ToJSONTyped(value?: EvaluatorKindOneOf3 | nul
 
     return {
         
-        'max_micros': value['maxMicros'],
         'type': value['type'],
     };
 }

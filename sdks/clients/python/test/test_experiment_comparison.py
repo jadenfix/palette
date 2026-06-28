@@ -42,7 +42,9 @@ class TestExperimentComparison(unittest.TestCase):
                 ci_low = 1.337,
                 decision = 'pass',
                 delta = 1.337,
+                mde = 1.337,
                 p_value = 1.337,
+                required_n = 0,
                 sample_size = 0,
                 test = 'paired_t'
             )

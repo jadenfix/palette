@@ -17,6 +17,7 @@ typedef struct evaluator_kind_t evaluator_kind_t;
 
 #include "evaluator_kind_one_of.h"
 #include "evaluator_kind_one_of_1.h"
+#include "evaluator_kind_one_of_10.h"
 #include "evaluator_kind_one_of_2.h"
 #include "evaluator_kind_one_of_3.h"
 #include "evaluator_kind_one_of_4.h"
@@ -28,7 +29,7 @@ typedef struct evaluator_kind_t evaluator_kind_t;
 
 // Enum TYPE for evaluator_kind
 
-typedef enum  { beater_api_evaluator_kind_TYPE_NULL = 0, beater_api_evaluator_kind_TYPE_exact_match, beater_api_evaluator_kind_TYPE_regex_match, beater_api_evaluator_kind_TYPE_json_object, beater_api_evaluator_kind_TYPE_cost_budget, beater_api_evaluator_kind_TYPE_latency_budget_ms, beater_api_evaluator_kind_TYPE_llm_judge, beater_api_evaluator_kind_TYPE_browser_task_success, beater_api_evaluator_kind_TYPE_browser_step_efficiency, beater_api_evaluator_kind_TYPE_browser_grounding, beater_api_evaluator_kind_TYPE_browser_recovery } beater_api_evaluator_kind_TYPE_e;
+typedef enum  { beater_api_evaluator_kind_TYPE_NULL = 0, beater_api_evaluator_kind_TYPE_exact_match, beater_api_evaluator_kind_TYPE_regex_match, beater_api_evaluator_kind_TYPE_numeric_tolerance, beater_api_evaluator_kind_TYPE_json_object, beater_api_evaluator_kind_TYPE_cost_budget, beater_api_evaluator_kind_TYPE_latency_budget_ms, beater_api_evaluator_kind_TYPE_llm_judge, beater_api_evaluator_kind_TYPE_browser_task_success, beater_api_evaluator_kind_TYPE_browser_step_efficiency, beater_api_evaluator_kind_TYPE_browser_grounding, beater_api_evaluator_kind_TYPE_browser_recovery } beater_api_evaluator_kind_TYPE_e;
 
 char* evaluator_kind_type_ToString(beater_api_evaluator_kind_TYPE_e type);
 
@@ -39,6 +40,8 @@ beater_api_evaluator_kind_TYPE_e evaluator_kind_type_FromString(char* type);
 typedef struct evaluator_kind_t {
     beater_api_evaluator_kind_TYPE_e type; //enum
     char *pattern; // string
+    double abs; //numeric
+    double rel; //numeric
     long max_micros; //numeric
     long max_ms; //numeric
     char *model; // string
@@ -54,6 +57,8 @@ typedef struct evaluator_kind_t {
 __attribute__((deprecated)) evaluator_kind_t *evaluator_kind_create(
     beater_api_evaluator_kind_TYPE_e type,
     char *pattern,
+    double abs,
+    double rel,
     long max_micros,
     long max_ms,
     char *model,

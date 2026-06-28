@@ -26,6 +26,13 @@ import {
     EvaluatorKindOneOf1FromJSONTyped,
     EvaluatorKindOneOf1ToJSON,
 } from './EvaluatorKindOneOf1';
+import type { EvaluatorKindOneOf10 } from './EvaluatorKindOneOf10';
+import {
+    instanceOfEvaluatorKindOneOf10,
+    EvaluatorKindOneOf10FromJSON,
+    EvaluatorKindOneOf10FromJSONTyped,
+    EvaluatorKindOneOf10ToJSON,
+} from './EvaluatorKindOneOf10';
 import type { EvaluatorKindOneOf2 } from './EvaluatorKindOneOf2';
 import {
     instanceOfEvaluatorKindOneOf2,
@@ -88,7 +95,7 @@ import {
  * 
  * @export
  */
-export type EvaluatorKind = EvaluatorKindOneOf | EvaluatorKindOneOf1 | EvaluatorKindOneOf2 | EvaluatorKindOneOf3 | EvaluatorKindOneOf4 | EvaluatorKindOneOf5 | EvaluatorKindOneOf6 | EvaluatorKindOneOf7 | EvaluatorKindOneOf8 | EvaluatorKindOneOf9;
+export type EvaluatorKind = EvaluatorKindOneOf | EvaluatorKindOneOf1 | EvaluatorKindOneOf10 | EvaluatorKindOneOf2 | EvaluatorKindOneOf3 | EvaluatorKindOneOf4 | EvaluatorKindOneOf5 | EvaluatorKindOneOf6 | EvaluatorKindOneOf7 | EvaluatorKindOneOf8 | EvaluatorKindOneOf9;
 
 export function EvaluatorKindFromJSON(json: any): EvaluatorKind {
     return EvaluatorKindFromJSONTyped(json, false);
@@ -103,6 +110,9 @@ export function EvaluatorKindFromJSONTyped(json: any, ignoreDiscriminator: boole
     }
     if (instanceOfEvaluatorKindOneOf1(json)) {
         return EvaluatorKindOneOf1FromJSONTyped(json, true);
+    }
+    if (instanceOfEvaluatorKindOneOf10(json)) {
+        return EvaluatorKindOneOf10FromJSONTyped(json, true);
     }
     if (instanceOfEvaluatorKindOneOf2(json)) {
         return EvaluatorKindOneOf2FromJSONTyped(json, true);
@@ -146,6 +156,9 @@ export function EvaluatorKindToJSONTyped(value?: EvaluatorKind | null, ignoreDis
     }
     if (instanceOfEvaluatorKindOneOf1(value)) {
         return EvaluatorKindOneOf1ToJSON(value as EvaluatorKindOneOf1);
+    }
+    if (instanceOfEvaluatorKindOneOf10(value)) {
+        return EvaluatorKindOneOf10ToJSON(value as EvaluatorKindOneOf10);
     }
     if (instanceOfEvaluatorKindOneOf2(value)) {
         return EvaluatorKindOneOf2ToJSON(value as EvaluatorKindOneOf2);

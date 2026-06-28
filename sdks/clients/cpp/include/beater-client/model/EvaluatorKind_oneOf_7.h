@@ -12,7 +12,7 @@
 /*
  * EvaluatorKind_oneOf_7.h
  *
- * Browser step efficiency: passes when the run used at most &#x60;max_steps&#x60; browser steps (catches looping/backtracking). Reads &#x60;trace.browser_steps&#x60;.
+ * Browser world-state success: asserts the final step&#39;s observed page (url and/or DOM) matches the configured target — NOT the agent&#39;s self-reported \&quot;done\&quot;. Reads &#x60;trace.browser_steps&#x60;.
  */
 
 #ifndef ORG_OPENAPITOOLS_CLIENT_MODEL_EvaluatorKind_oneOf_7_H_
@@ -32,7 +32,7 @@ namespace model {
 
 
 /// <summary>
-/// Browser step efficiency: passes when the run used at most &#x60;max_steps&#x60; browser steps (catches looping/backtracking). Reads &#x60;trace.browser_steps&#x60;.
+/// Browser world-state success: asserts the final step&#39;s observed page (url and/or DOM) matches the configured target — NOT the agent&#39;s self-reported \&quot;done\&quot;. Reads &#x60;trace.browser_steps&#x60;.
 /// </summary>
 class  EvaluatorKind_oneOf_7
     : public ModelBase
@@ -58,7 +58,7 @@ public:
 
     enum class TypeEnum
     {
-        browser_step_efficiency,
+        browser_task_success,
         
     };
 
@@ -66,23 +66,31 @@ public:
     const utility::string_t fromTypeEnum(const TypeEnum value) const;
 
 
-    int64_t getMaxSteps() const;
-    bool maxStepsIsSet() const;
-    void unsetMax_steps();
-    void setMaxSteps(int64_t value);
+    utility::string_t getDomContains() const;
+    bool domContainsIsSet() const;
+    void unsetDom_contains();
+    void setDomContains(const utility::string_t& value);
 
     TypeEnum getType() const;
     bool typeIsSet() const;
     void unsetType();
     void setType(const TypeEnum value);
 
+    utility::string_t getUrlContains() const;
+    bool urlContainsIsSet() const;
+    void unsetUrl_contains();
+    void setUrlContains(const utility::string_t& value);
+
 
 protected:
-    int64_t m_Max_steps;
-    bool m_Max_stepsIsSet;
+    utility::string_t m_Dom_contains;
+    bool m_Dom_containsIsSet;
 
     TypeEnum m_Type;
     bool m_TypeIsSet;
+
+    utility::string_t m_Url_contains;
+    bool m_Url_containsIsSet;
 
 };
 

@@ -1,14 +1,13 @@
 # EvaluatorKindOneOf6
 
-Browser world-state success: asserts the final step's observed page (url and/or DOM) matches the configured target — NOT the agent's self-reported \"done\". Reads `trace.browser_steps`.
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**dom_contains** | **str** |  | [optional] 
+**model** | **str** |  | 
+**rubric** | **str** |  | 
 **type** | **str** |  | 
-**url_contains** | **str** |  | [optional] 
 
 ## Example
 

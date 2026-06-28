@@ -17,23 +17,24 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
+from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List, Union
 from typing import Optional, Set
 from typing_extensions import Self
 
 class EvaluatorKindOneOf9(BaseModel):
     """
-    Browser recovery: passes when the run either hit no errors or recovered to a successful final step (catches death spirals after a failed action).
+    Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
     """ # noqa: E501
+    min_ratio: Union[StrictFloat, StrictInt]
     type: StrictStr
-    __properties: ClassVar[List[str]] = ["type"]
+    __properties: ClassVar[List[str]] = ["min_ratio", "type"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['browser_recovery']):
-            raise ValueError("must be one of enum values ('browser_recovery')")
+        if value not in set(['browser_grounding']):
+            raise ValueError("must be one of enum values ('browser_grounding')")
         return value
 
     model_config = ConfigDict(
@@ -87,6 +88,7 @@ class EvaluatorKindOneOf9(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "min_ratio": obj.get("min_ratio"),
             "type": obj.get("type")
         })
         return _obj

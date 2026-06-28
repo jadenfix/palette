@@ -106,6 +106,7 @@ docs/evaluation_case.md
 docs/evaluator_kind.md
 docs/evaluator_kind_one_of.md
 docs/evaluator_kind_one_of_1.md
+docs/evaluator_kind_one_of_10.md
 docs/evaluator_kind_one_of_2.md
 docs/evaluator_kind_one_of_3.md
 docs/evaluator_kind_one_of_4.md
@@ -284,6 +285,8 @@ model/evaluator_kind_one_of.c
 model/evaluator_kind_one_of.h
 model/evaluator_kind_one_of_1.c
 model/evaluator_kind_one_of_1.h
+model/evaluator_kind_one_of_10.c
+model/evaluator_kind_one_of_10.h
 model/evaluator_kind_one_of_2.c
 model/evaluator_kind_one_of_2.h
 model/evaluator_kind_one_of_3.c
@@ -491,6 +494,7 @@ unit-test/test_evaluation_case.c
 unit-test/test_evaluator_kind.c
 unit-test/test_evaluator_kind_one_of.c
 unit-test/test_evaluator_kind_one_of_1.c
+unit-test/test_evaluator_kind_one_of_10.c
 unit-test/test_evaluator_kind_one_of_2.c
 unit-test/test_evaluator_kind_one_of_3.c
 unit-test/test_evaluator_kind_one_of_4.c

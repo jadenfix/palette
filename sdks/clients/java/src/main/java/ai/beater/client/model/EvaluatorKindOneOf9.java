@@ -30,18 +30,23 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import ai.beater.client.ApiClient;
 /**
- * Browser recovery: passes when the run either hit no errors or recovered to a successful final step (catches death spirals after a failed action).
+ * Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at &#x60;min_ratio&#x60;.
  */
 @JsonPropertyOrder({
+  EvaluatorKindOneOf9.JSON_PROPERTY_MIN_RATIO,
   EvaluatorKindOneOf9.JSON_PROPERTY_TYPE
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class EvaluatorKindOneOf9 {
+  public static final String JSON_PROPERTY_MIN_RATIO = "min_ratio";
+  @javax.annotation.Nonnull
+  private Double minRatio;
+
   /**
    * Gets or Sets type
    */
   public enum TypeEnum {
-    BROWSER_RECOVERY(String.valueOf("browser_recovery"));
+    BROWSER_GROUNDING(String.valueOf("browser_grounding"));
 
     private String value;
 
@@ -76,6 +81,30 @@ public class EvaluatorKindOneOf9 {
 
   public EvaluatorKindOneOf9() { 
   }
+
+  public EvaluatorKindOneOf9 minRatio(@javax.annotation.Nonnull Double minRatio) {
+    this.minRatio = minRatio;
+    return this;
+  }
+
+  /**
+   * Get minRatio
+   * @return minRatio
+   */
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_MIN_RATIO)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public Double getMinRatio() {
+    return minRatio;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MIN_RATIO)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMinRatio(@javax.annotation.Nonnull Double minRatio) {
+    this.minRatio = minRatio;
+  }
+
 
   public EvaluatorKindOneOf9 type(@javax.annotation.Nonnull TypeEnum type) {
     this.type = type;
@@ -113,18 +142,20 @@ public class EvaluatorKindOneOf9 {
       return false;
     }
     EvaluatorKindOneOf9 evaluatorKindOneOf9 = (EvaluatorKindOneOf9) o;
-    return Objects.equals(this.type, evaluatorKindOneOf9.type);
+    return Objects.equals(this.minRatio, evaluatorKindOneOf9.minRatio) &&
+        Objects.equals(this.type, evaluatorKindOneOf9.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(minRatio, type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EvaluatorKindOneOf9 {\n");
+    sb.append("    minRatio: ").append(toIndentedString(minRatio)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -172,6 +203,11 @@ public class EvaluatorKindOneOf9 {
     }
 
     StringJoiner joiner = new StringJoiner("&");
+
+    // add `min_ratio` to the URL query string
+    if (getMinRatio() != null) {
+      joiner.add(String.format("%smin_ratio%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getMinRatio()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
 
     // add `type` to the URL query string
     if (getType() != null) {

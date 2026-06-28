@@ -1,13 +1,14 @@
 # EvaluatorKindOneOf7
 
-Browser step efficiency: passes when the run used at most `max_steps` browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
+Browser world-state success: asserts the final step's observed page (url and/or DOM) matches the configured target — NOT the agent's self-reported \"done\". Reads `trace.browser_steps`.
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**max_steps** | **int** |  | 
+**dom_contains** | **str** |  | [optional] 
 **type** | **str** |  | 
+**url_contains** | **str** |  | [optional] 
 
 ## Example
 

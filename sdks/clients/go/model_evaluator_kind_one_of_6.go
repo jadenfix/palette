@@ -19,11 +19,11 @@ import (
 // checks if the EvaluatorKindOneOf6 type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &EvaluatorKindOneOf6{}
 
-// EvaluatorKindOneOf6 Browser world-state success: asserts the final step's observed page (url and/or DOM) matches the configured target — NOT the agent's self-reported \"done\". Reads `trace.browser_steps`.
+// EvaluatorKindOneOf6 struct for EvaluatorKindOneOf6
 type EvaluatorKindOneOf6 struct {
-	DomContains NullableString `json:"dom_contains,omitempty"`
+	Model string `json:"model"`
+	Rubric string `json:"rubric"`
 	Type string `json:"type"`
-	UrlContains NullableString `json:"url_contains,omitempty"`
 }
 
 type _EvaluatorKindOneOf6 EvaluatorKindOneOf6
@@ -32,8 +32,10 @@ type _EvaluatorKindOneOf6 EvaluatorKindOneOf6
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewEvaluatorKindOneOf6(type_ string) *EvaluatorKindOneOf6 {
+func NewEvaluatorKindOneOf6(model string, rubric string, type_ string) *EvaluatorKindOneOf6 {
 	this := EvaluatorKindOneOf6{}
+	this.Model = model
+	this.Rubric = rubric
 	this.Type = type_
 	return &this
 }
@@ -46,46 +48,52 @@ func NewEvaluatorKindOneOf6WithDefaults() *EvaluatorKindOneOf6 {
 	return &this
 }
 
-// GetDomContains returns the DomContains field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *EvaluatorKindOneOf6) GetDomContains() string {
-	if o == nil || IsNil(o.DomContains.Get()) {
+// GetModel returns the Model field value
+func (o *EvaluatorKindOneOf6) GetModel() string {
+	if o == nil {
 		var ret string
 		return ret
 	}
-	return *o.DomContains.Get()
+
+	return o.Model
 }
 
-// GetDomContainsOk returns a tuple with the DomContains field value if set, nil otherwise
+// GetModelOk returns a tuple with the Model field value
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *EvaluatorKindOneOf6) GetDomContainsOk() (*string, bool) {
+func (o *EvaluatorKindOneOf6) GetModelOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return o.DomContains.Get(), o.DomContains.IsSet()
+	return &o.Model, true
 }
 
-// HasDomContains returns a boolean if a field has been set.
-func (o *EvaluatorKindOneOf6) HasDomContains() bool {
-	if o != nil && o.DomContains.IsSet() {
-		return true
+// SetModel sets field value
+func (o *EvaluatorKindOneOf6) SetModel(v string) {
+	o.Model = v
+}
+
+// GetRubric returns the Rubric field value
+func (o *EvaluatorKindOneOf6) GetRubric() string {
+	if o == nil {
+		var ret string
+		return ret
 	}
 
-	return false
+	return o.Rubric
 }
 
-// SetDomContains gets a reference to the given NullableString and assigns it to the DomContains field.
-func (o *EvaluatorKindOneOf6) SetDomContains(v string) {
-	o.DomContains.Set(&v)
-}
-// SetDomContainsNil sets the value for DomContains to be an explicit nil
-func (o *EvaluatorKindOneOf6) SetDomContainsNil() {
-	o.DomContains.Set(nil)
+// GetRubricOk returns a tuple with the Rubric field value
+// and a boolean to check if the value has been set.
+func (o *EvaluatorKindOneOf6) GetRubricOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Rubric, true
 }
 
-// UnsetDomContains ensures that no value is present for DomContains, not even an explicit nil
-func (o *EvaluatorKindOneOf6) UnsetDomContains() {
-	o.DomContains.Unset()
+// SetRubric sets field value
+func (o *EvaluatorKindOneOf6) SetRubric(v string) {
+	o.Rubric = v
 }
 
 // GetType returns the Type field value
@@ -112,48 +120,6 @@ func (o *EvaluatorKindOneOf6) SetType(v string) {
 	o.Type = v
 }
 
-// GetUrlContains returns the UrlContains field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *EvaluatorKindOneOf6) GetUrlContains() string {
-	if o == nil || IsNil(o.UrlContains.Get()) {
-		var ret string
-		return ret
-	}
-	return *o.UrlContains.Get()
-}
-
-// GetUrlContainsOk returns a tuple with the UrlContains field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *EvaluatorKindOneOf6) GetUrlContainsOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return o.UrlContains.Get(), o.UrlContains.IsSet()
-}
-
-// HasUrlContains returns a boolean if a field has been set.
-func (o *EvaluatorKindOneOf6) HasUrlContains() bool {
-	if o != nil && o.UrlContains.IsSet() {
-		return true
-	}
-
-	return false
-}
-
-// SetUrlContains gets a reference to the given NullableString and assigns it to the UrlContains field.
-func (o *EvaluatorKindOneOf6) SetUrlContains(v string) {
-	o.UrlContains.Set(&v)
-}
-// SetUrlContainsNil sets the value for UrlContains to be an explicit nil
-func (o *EvaluatorKindOneOf6) SetUrlContainsNil() {
-	o.UrlContains.Set(nil)
-}
-
-// UnsetUrlContains ensures that no value is present for UrlContains, not even an explicit nil
-func (o *EvaluatorKindOneOf6) UnsetUrlContains() {
-	o.UrlContains.Unset()
-}
-
 func (o EvaluatorKindOneOf6) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -164,13 +130,9 @@ func (o EvaluatorKindOneOf6) MarshalJSON() ([]byte, error) {
 
 func (o EvaluatorKindOneOf6) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	if o.DomContains.IsSet() {
-		toSerialize["dom_contains"] = o.DomContains.Get()
-	}
+	toSerialize["model"] = o.Model
+	toSerialize["rubric"] = o.Rubric
 	toSerialize["type"] = o.Type
-	if o.UrlContains.IsSet() {
-		toSerialize["url_contains"] = o.UrlContains.Get()
-	}
 	return toSerialize, nil
 }
 
@@ -179,6 +141,8 @@ func (o *EvaluatorKindOneOf6) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
+		"model",
+		"rubric",
 		"type",
 	}
 

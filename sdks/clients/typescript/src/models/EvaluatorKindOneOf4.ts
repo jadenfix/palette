@@ -24,7 +24,7 @@ export interface EvaluatorKindOneOf4 {
      * @type {number}
      * @memberof EvaluatorKindOneOf4
      */
-    maxMs: number;
+    maxMicros: number;
     /**
      * 
      * @type {string}
@@ -38,7 +38,7 @@ export interface EvaluatorKindOneOf4 {
  * @export
  */
 export const EvaluatorKindOneOf4TypeEnum = {
-    LatencyBudgetMs: 'latency_budget_ms'
+    CostBudget: 'cost_budget'
 } as const;
 export type EvaluatorKindOneOf4TypeEnum = typeof EvaluatorKindOneOf4TypeEnum[keyof typeof EvaluatorKindOneOf4TypeEnum];
 
@@ -47,7 +47,7 @@ export type EvaluatorKindOneOf4TypeEnum = typeof EvaluatorKindOneOf4TypeEnum[key
  * Check if a given object implements the EvaluatorKindOneOf4 interface.
  */
 export function instanceOfEvaluatorKindOneOf4(value: object): value is EvaluatorKindOneOf4 {
-    if (!('maxMs' in value) || value['maxMs'] === undefined) return false;
+    if (!('maxMicros' in value) || value['maxMicros'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
     return true;
 }
@@ -62,7 +62,7 @@ export function EvaluatorKindOneOf4FromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
-        'maxMs': json['max_ms'],
+        'maxMicros': json['max_micros'],
         'type': json['type'],
     };
 }
@@ -78,7 +78,7 @@ export function EvaluatorKindOneOf4ToJSONTyped(value?: EvaluatorKindOneOf4 | nul
 
     return {
         
-        'max_ms': value['maxMs'],
+        'max_micros': value['maxMicros'],
         'type': value['type'],
     };
 }

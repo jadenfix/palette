@@ -35,11 +35,15 @@ class TestEvaluatorKindOneOf2(unittest.TestCase):
         model = EvaluatorKindOneOf2()
         if include_optional:
             return EvaluatorKindOneOf2(
-                type = 'json_object'
+                abs = 1.337,
+                rel = 1.337,
+                type = 'numeric_tolerance'
             )
         else:
             return EvaluatorKindOneOf2(
-                type = 'json_object',
+                abs = 1.337,
+                rel = 1.337,
+                type = 'numeric_tolerance',
         )
         """
 

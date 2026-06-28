@@ -21,16 +21,10 @@ import { mapValues } from '../runtime';
 export interface EvaluatorKindOneOf5 {
     /**
      * 
-     * @type {string}
+     * @type {number}
      * @memberof EvaluatorKindOneOf5
      */
-    model: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof EvaluatorKindOneOf5
-     */
-    rubric: string;
+    maxMs: number;
     /**
      * 
      * @type {string}
@@ -44,7 +38,7 @@ export interface EvaluatorKindOneOf5 {
  * @export
  */
 export const EvaluatorKindOneOf5TypeEnum = {
-    LlmJudge: 'llm_judge'
+    LatencyBudgetMs: 'latency_budget_ms'
 } as const;
 export type EvaluatorKindOneOf5TypeEnum = typeof EvaluatorKindOneOf5TypeEnum[keyof typeof EvaluatorKindOneOf5TypeEnum];
 
@@ -53,8 +47,7 @@ export type EvaluatorKindOneOf5TypeEnum = typeof EvaluatorKindOneOf5TypeEnum[key
  * Check if a given object implements the EvaluatorKindOneOf5 interface.
  */
 export function instanceOfEvaluatorKindOneOf5(value: object): value is EvaluatorKindOneOf5 {
-    if (!('model' in value) || value['model'] === undefined) return false;
-    if (!('rubric' in value) || value['rubric'] === undefined) return false;
+    if (!('maxMs' in value) || value['maxMs'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
     return true;
 }
@@ -69,8 +62,7 @@ export function EvaluatorKindOneOf5FromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
-        'model': json['model'],
-        'rubric': json['rubric'],
+        'maxMs': json['max_ms'],
         'type': json['type'],
     };
 }
@@ -86,8 +78,7 @@ export function EvaluatorKindOneOf5ToJSONTyped(value?: EvaluatorKindOneOf5 | nul
 
     return {
         
-        'model': value['model'],
-        'rubric': value['rubric'],
+        'max_ms': value['maxMs'],
         'type': value['type'],
     };
 }

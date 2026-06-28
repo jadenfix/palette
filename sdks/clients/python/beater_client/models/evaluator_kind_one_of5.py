@@ -17,8 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -26,16 +27,15 @@ class EvaluatorKindOneOf5(BaseModel):
     """
     EvaluatorKindOneOf5
     """ # noqa: E501
-    model: StrictStr
-    rubric: StrictStr
+    max_ms: Annotated[int, Field(strict=True, ge=0)]
     type: StrictStr
-    __properties: ClassVar[List[str]] = ["model", "rubric", "type"]
+    __properties: ClassVar[List[str]] = ["max_ms", "type"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['llm_judge']):
-            raise ValueError("must be one of enum values ('llm_judge')")
+        if value not in set(['latency_budget_ms']):
+            raise ValueError("must be one of enum values ('latency_budget_ms')")
         return value
 
     model_config = ConfigDict(
@@ -89,8 +89,7 @@ class EvaluatorKindOneOf5(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "model": obj.get("model"),
-            "rubric": obj.get("rubric"),
+            "max_ms": obj.get("max_ms"),
             "type": obj.get("type")
         })
         return _obj

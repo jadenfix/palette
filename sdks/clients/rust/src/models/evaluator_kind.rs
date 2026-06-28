@@ -24,6 +24,7 @@ pub enum EvaluatorKind {
     EvaluatorKindOneOf7(Box<models::EvaluatorKindOneOf7>),
     EvaluatorKindOneOf8(Box<models::EvaluatorKindOneOf8>),
     EvaluatorKindOneOf9(Box<models::EvaluatorKindOneOf9>),
+    EvaluatorKindOneOf10(Box<models::EvaluatorKindOneOf10>),
 }
 
 impl Default for EvaluatorKind {
@@ -38,6 +39,8 @@ pub enum Type {
     ExactMatch,
     #[serde(rename = "regex_match")]
     RegexMatch,
+    #[serde(rename = "numeric_tolerance")]
+    NumericTolerance,
     #[serde(rename = "json_object")]
     JsonObject,
     #[serde(rename = "cost_budget")]

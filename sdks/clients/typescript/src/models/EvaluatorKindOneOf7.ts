@@ -14,24 +14,31 @@
 
 import { mapValues } from '../runtime';
 /**
- * Browser step efficiency: passes when the run used at most `max_steps`
- * browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
+ * Browser world-state success: asserts the final step's observed page
+ * (url and/or DOM) matches the configured target — NOT the agent's
+ * self-reported "done". Reads `trace.browser_steps`.
  * @export
  * @interface EvaluatorKindOneOf7
  */
 export interface EvaluatorKindOneOf7 {
     /**
      * 
-     * @type {number}
+     * @type {string}
      * @memberof EvaluatorKindOneOf7
      */
-    maxSteps: number;
+    domContains?: string | null;
     /**
      * 
      * @type {string}
      * @memberof EvaluatorKindOneOf7
      */
     type: EvaluatorKindOneOf7TypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof EvaluatorKindOneOf7
+     */
+    urlContains?: string | null;
 }
 
 
@@ -39,7 +46,7 @@ export interface EvaluatorKindOneOf7 {
  * @export
  */
 export const EvaluatorKindOneOf7TypeEnum = {
-    BrowserStepEfficiency: 'browser_step_efficiency'
+    BrowserTaskSuccess: 'browser_task_success'
 } as const;
 export type EvaluatorKindOneOf7TypeEnum = typeof EvaluatorKindOneOf7TypeEnum[keyof typeof EvaluatorKindOneOf7TypeEnum];
 
@@ -48,7 +55,6 @@ export type EvaluatorKindOneOf7TypeEnum = typeof EvaluatorKindOneOf7TypeEnum[key
  * Check if a given object implements the EvaluatorKindOneOf7 interface.
  */
 export function instanceOfEvaluatorKindOneOf7(value: object): value is EvaluatorKindOneOf7 {
-    if (!('maxSteps' in value) || value['maxSteps'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
     return true;
 }
@@ -63,8 +69,9 @@ export function EvaluatorKindOneOf7FromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
-        'maxSteps': json['max_steps'],
+        'domContains': json['dom_contains'] == null ? undefined : json['dom_contains'],
         'type': json['type'],
+        'urlContains': json['url_contains'] == null ? undefined : json['url_contains'],
     };
 }
 
@@ -79,8 +86,9 @@ export function EvaluatorKindOneOf7ToJSONTyped(value?: EvaluatorKindOneOf7 | nul
 
     return {
         
-        'max_steps': value['maxSteps'],
+        'dom_contains': value['domContains'],
         'type': value['type'],
+        'url_contains': value['urlContains'],
     };
 }
 

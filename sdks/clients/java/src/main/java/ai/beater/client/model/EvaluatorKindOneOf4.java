@@ -33,20 +33,20 @@ import ai.beater.client.ApiClient;
  * EvaluatorKindOneOf4
  */
 @JsonPropertyOrder({
-  EvaluatorKindOneOf4.JSON_PROPERTY_MAX_MS,
+  EvaluatorKindOneOf4.JSON_PROPERTY_MAX_MICROS,
   EvaluatorKindOneOf4.JSON_PROPERTY_TYPE
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class EvaluatorKindOneOf4 {
-  public static final String JSON_PROPERTY_MAX_MS = "max_ms";
+  public static final String JSON_PROPERTY_MAX_MICROS = "max_micros";
   @javax.annotation.Nonnull
-  private Long maxMs;
+  private Long maxMicros;
 
   /**
    * Gets or Sets type
    */
   public enum TypeEnum {
-    LATENCY_BUDGET_MS(String.valueOf("latency_budget_ms"));
+    COST_BUDGET(String.valueOf("cost_budget"));
 
     private String value;
 
@@ -82,28 +82,27 @@ public class EvaluatorKindOneOf4 {
   public EvaluatorKindOneOf4() { 
   }
 
-  public EvaluatorKindOneOf4 maxMs(@javax.annotation.Nonnull Long maxMs) {
-    this.maxMs = maxMs;
+  public EvaluatorKindOneOf4 maxMicros(@javax.annotation.Nonnull Long maxMicros) {
+    this.maxMicros = maxMicros;
     return this;
   }
 
   /**
-   * Get maxMs
-   * minimum: 0
-   * @return maxMs
+   * Get maxMicros
+   * @return maxMicros
    */
   @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_MAX_MS)
+  @JsonProperty(JSON_PROPERTY_MAX_MICROS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public Long getMaxMs() {
-    return maxMs;
+  public Long getMaxMicros() {
+    return maxMicros;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MAX_MS)
+  @JsonProperty(JSON_PROPERTY_MAX_MICROS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMaxMs(@javax.annotation.Nonnull Long maxMs) {
-    this.maxMs = maxMs;
+  public void setMaxMicros(@javax.annotation.Nonnull Long maxMicros) {
+    this.maxMicros = maxMicros;
   }
 
 
@@ -143,20 +142,20 @@ public class EvaluatorKindOneOf4 {
       return false;
     }
     EvaluatorKindOneOf4 evaluatorKindOneOf4 = (EvaluatorKindOneOf4) o;
-    return Objects.equals(this.maxMs, evaluatorKindOneOf4.maxMs) &&
+    return Objects.equals(this.maxMicros, evaluatorKindOneOf4.maxMicros) &&
         Objects.equals(this.type, evaluatorKindOneOf4.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(maxMs, type);
+    return Objects.hash(maxMicros, type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EvaluatorKindOneOf4 {\n");
-    sb.append("    maxMs: ").append(toIndentedString(maxMs)).append("\n");
+    sb.append("    maxMicros: ").append(toIndentedString(maxMicros)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -205,9 +204,9 @@ public class EvaluatorKindOneOf4 {
 
     StringJoiner joiner = new StringJoiner("&");
 
-    // add `max_ms` to the URL query string
-    if (getMaxMs() != null) {
-      joiner.add(String.format("%smax_ms%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getMaxMs()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    // add `max_micros` to the URL query string
+    if (getMaxMicros() != null) {
+      joiner.add(String.format("%smax_micros%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getMaxMicros()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `type` to the URL query string

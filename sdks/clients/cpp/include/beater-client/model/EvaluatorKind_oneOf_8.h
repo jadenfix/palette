@@ -12,7 +12,7 @@
 /*
  * EvaluatorKind_oneOf_8.h
  *
- * Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at &#x60;min_ratio&#x60;.
+ * Browser step efficiency: passes when the run used at most &#x60;max_steps&#x60; browser steps (catches looping/backtracking). Reads &#x60;trace.browser_steps&#x60;.
  */
 
 #ifndef ORG_OPENAPITOOLS_CLIENT_MODEL_EvaluatorKind_oneOf_8_H_
@@ -32,7 +32,7 @@ namespace model {
 
 
 /// <summary>
-/// Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at &#x60;min_ratio&#x60;.
+/// Browser step efficiency: passes when the run used at most &#x60;max_steps&#x60; browser steps (catches looping/backtracking). Reads &#x60;trace.browser_steps&#x60;.
 /// </summary>
 class  EvaluatorKind_oneOf_8
     : public ModelBase
@@ -58,7 +58,7 @@ public:
 
     enum class TypeEnum
     {
-        browser_grounding,
+        browser_step_efficiency,
         
     };
 
@@ -66,10 +66,10 @@ public:
     const utility::string_t fromTypeEnum(const TypeEnum value) const;
 
 
-    double getMinRatio() const;
-    bool minRatioIsSet() const;
-    void unsetMin_ratio();
-    void setMinRatio(double value);
+    int64_t getMaxSteps() const;
+    bool maxStepsIsSet() const;
+    void unsetMax_steps();
+    void setMaxSteps(int64_t value);
 
     TypeEnum getType() const;
     bool typeIsSet() const;
@@ -78,8 +78,8 @@ public:
 
 
 protected:
-    double m_Min_ratio;
-    bool m_Min_ratioIsSet;
+    int64_t m_Max_steps;
+    bool m_Max_stepsIsSet;
 
     TypeEnum m_Type;
     bool m_TypeIsSet;

@@ -12,7 +12,7 @@
 /*
  * EvaluatorKind_oneOf_9.h
  *
- * Browser recovery: passes when the run either hit no errors or recovered to a successful final step (catches death spirals after a failed action).
+ * Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at &#x60;min_ratio&#x60;.
  */
 
 #ifndef ORG_OPENAPITOOLS_CLIENT_MODEL_EvaluatorKind_oneOf_9_H_
@@ -32,7 +32,7 @@ namespace model {
 
 
 /// <summary>
-/// Browser recovery: passes when the run either hit no errors or recovered to a successful final step (catches death spirals after a failed action).
+/// Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at &#x60;min_ratio&#x60;.
 /// </summary>
 class  EvaluatorKind_oneOf_9
     : public ModelBase
@@ -58,13 +58,18 @@ public:
 
     enum class TypeEnum
     {
-        browser_recovery,
+        browser_grounding,
         
     };
 
     TypeEnum toTypeEnum(const utility::string_t& value) const;
     const utility::string_t fromTypeEnum(const TypeEnum value) const;
 
+
+    double getMinRatio() const;
+    bool minRatioIsSet() const;
+    void unsetMin_ratio();
+    void setMinRatio(double value);
 
     TypeEnum getType() const;
     bool typeIsSet() const;
@@ -73,6 +78,9 @@ public:
 
 
 protected:
+    double m_Min_ratio;
+    bool m_Min_ratioIsSet;
+
     TypeEnum m_Type;
     bool m_TypeIsSet;
 

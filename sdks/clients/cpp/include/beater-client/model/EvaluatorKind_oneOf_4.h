@@ -55,7 +55,7 @@ public:
 
     enum class TypeEnum
     {
-        latency_budget_ms,
+        cost_budget,
         
     };
 
@@ -63,10 +63,10 @@ public:
     const utility::string_t fromTypeEnum(const TypeEnum value) const;
 
 
-    int64_t getMaxMs() const;
-    bool maxMsIsSet() const;
-    void unsetMax_ms();
-    void setMaxMs(int64_t value);
+    int64_t getMaxMicros() const;
+    bool maxMicrosIsSet() const;
+    void unsetMax_micros();
+    void setMaxMicros(int64_t value);
 
     TypeEnum getType() const;
     bool typeIsSet() const;
@@ -75,8 +75,8 @@ public:
 
 
 protected:
-    int64_t m_Max_ms;
-    bool m_Max_msIsSet;
+    int64_t m_Max_micros;
+    bool m_Max_microsIsSet;
 
     TypeEnum m_Type;
     bool m_TypeIsSet;

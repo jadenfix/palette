@@ -22,15 +22,13 @@ evaluator_kind_one_of_5_t* instantiate_evaluator_kind_one_of_5(int include_optio
   evaluator_kind_one_of_5_t* evaluator_kind_one_of_5 = NULL;
   if (include_optional) {
     evaluator_kind_one_of_5 = evaluator_kind_one_of_5_create(
-      "0",
-      "0",
-      beater_api_evaluator_kind_one_of_5_TYPE_llm_judge
+      0,
+      beater_api_evaluator_kind_one_of_5_TYPE_latency_budget_ms
     );
   } else {
     evaluator_kind_one_of_5 = evaluator_kind_one_of_5_create(
-      "0",
-      "0",
-      beater_api_evaluator_kind_one_of_5_TYPE_llm_judge
+      0,
+      beater_api_evaluator_kind_one_of_5_TYPE_latency_budget_ms
     );
   }
 

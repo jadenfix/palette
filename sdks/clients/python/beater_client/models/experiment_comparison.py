@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Annotated
 from beater_client.models.gate_decision import GateDecision
 from beater_client.models.statistical_test import StatisticalTest
@@ -36,10 +36,12 @@ class ExperimentComparison(BaseModel):
     ci_low: Union[StrictFloat, StrictInt]
     decision: GateDecision
     delta: Union[StrictFloat, StrictInt]
+    mde: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, description="Minimum detectable effect at the current sample size, in the metric's own units, at the gate's (adjusted) alpha and the standard power of 0.8 (§10.3 #5). Populated only when `decision` is `Inconclusive` — the comparison lacked the power to resolve the regression bound, and regressions smaller than this are invisible at this N. `None` on a conclusive decision (or when the paired differences have zero spread, so no effect-scale is defined). This replaces a bare \"underpowered\" flag with the actionable \"how small an effect could we even have seen\" number.")
     p_value: Union[StrictFloat, StrictInt] = Field(description="Real two-sided p-value from `test`. The previous normal-approximation path reported no p-value at all.")
+    required_n: Optional[Annotated[int, Field(strict=True, ge=0)]] = Field(default=None, description="Number of paired observations that would be required to detect the *observed* effect at the gate's (adjusted) alpha and power 0.8 (§10.3 #5). Populated only when `decision` is `Inconclusive` and the observed effect is non-degenerate (non-zero delta over non-zero difference spread). `None` otherwise. This answers \"how many more cases would have made this conclusive?\".")
     sample_size: Annotated[int, Field(strict=True, ge=0)]
     test: StatisticalTest
-    __properties: ClassVar[List[str]] = ["adjusted_alpha", "baseline_mean", "candidate_mean", "ci_high", "ci_low", "decision", "delta", "p_value", "sample_size", "test"]
+    __properties: ClassVar[List[str]] = ["adjusted_alpha", "baseline_mean", "candidate_mean", "ci_high", "ci_low", "decision", "delta", "mde", "p_value", "required_n", "sample_size", "test"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -80,6 +82,16 @@ class ExperimentComparison(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if mde (nullable) is None
+        # and model_fields_set contains the field
+        if self.mde is None and "mde" in self.model_fields_set:
+            _dict['mde'] = None
+
+        # set to None if required_n (nullable) is None
+        # and model_fields_set contains the field
+        if self.required_n is None and "required_n" in self.model_fields_set:
+            _dict['required_n'] = None
+
         return _dict
 
     @classmethod
@@ -99,7 +111,9 @@ class ExperimentComparison(BaseModel):
             "ci_low": obj.get("ci_low"),
             "decision": obj.get("decision"),
             "delta": obj.get("delta"),
+            "mde": obj.get("mde"),
             "p_value": obj.get("p_value"),
+            "required_n": obj.get("required_n"),
             "sample_size": obj.get("sample_size"),
             "test": obj.get("test")
         })

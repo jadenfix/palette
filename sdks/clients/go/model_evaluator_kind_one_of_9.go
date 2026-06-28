@@ -19,8 +19,9 @@ import (
 // checks if the EvaluatorKindOneOf9 type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &EvaluatorKindOneOf9{}
 
-// EvaluatorKindOneOf9 Browser recovery: passes when the run either hit no errors or recovered to a successful final step (catches death spirals after a failed action).
+// EvaluatorKindOneOf9 Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
 type EvaluatorKindOneOf9 struct {
+	MinRatio float64 `json:"min_ratio"`
 	Type string `json:"type"`
 }
 
@@ -30,8 +31,9 @@ type _EvaluatorKindOneOf9 EvaluatorKindOneOf9
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewEvaluatorKindOneOf9(type_ string) *EvaluatorKindOneOf9 {
+func NewEvaluatorKindOneOf9(minRatio float64, type_ string) *EvaluatorKindOneOf9 {
 	this := EvaluatorKindOneOf9{}
+	this.MinRatio = minRatio
 	this.Type = type_
 	return &this
 }
@@ -42,6 +44,30 @@ func NewEvaluatorKindOneOf9(type_ string) *EvaluatorKindOneOf9 {
 func NewEvaluatorKindOneOf9WithDefaults() *EvaluatorKindOneOf9 {
 	this := EvaluatorKindOneOf9{}
 	return &this
+}
+
+// GetMinRatio returns the MinRatio field value
+func (o *EvaluatorKindOneOf9) GetMinRatio() float64 {
+	if o == nil {
+		var ret float64
+		return ret
+	}
+
+	return o.MinRatio
+}
+
+// GetMinRatioOk returns a tuple with the MinRatio field value
+// and a boolean to check if the value has been set.
+func (o *EvaluatorKindOneOf9) GetMinRatioOk() (*float64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.MinRatio, true
+}
+
+// SetMinRatio sets field value
+func (o *EvaluatorKindOneOf9) SetMinRatio(v float64) {
+	o.MinRatio = v
 }
 
 // GetType returns the Type field value
@@ -78,6 +104,7 @@ func (o EvaluatorKindOneOf9) MarshalJSON() ([]byte, error) {
 
 func (o EvaluatorKindOneOf9) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	toSerialize["min_ratio"] = o.MinRatio
 	toSerialize["type"] = o.Type
 	return toSerialize, nil
 }
@@ -87,6 +114,7 @@ func (o *EvaluatorKindOneOf9) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
+		"min_ratio",
 		"type",
 	}
 

@@ -17,9 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, StrictInt, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List
-from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,15 +26,15 @@ class EvaluatorKindOneOf4(BaseModel):
     """
     EvaluatorKindOneOf4
     """ # noqa: E501
-    max_ms: Annotated[int, Field(strict=True, ge=0)]
+    max_micros: StrictInt
     type: StrictStr
-    __properties: ClassVar[List[str]] = ["max_ms", "type"]
+    __properties: ClassVar[List[str]] = ["max_micros", "type"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['latency_budget_ms']):
-            raise ValueError("must be one of enum values ('latency_budget_ms')")
+        if value not in set(['cost_budget']):
+            raise ValueError("must be one of enum values ('cost_budget')")
         return value
 
     model_config = ConfigDict(
@@ -89,7 +88,7 @@ class EvaluatorKindOneOf4(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "max_ms": obj.get("max_ms"),
+            "max_micros": obj.get("max_micros"),
             "type": obj.get("type")
         })
         return _obj

@@ -5,13 +5,13 @@
 
 
 char* evaluator_kind_one_of_6_type_ToString(beater_api_evaluator_kind_one_of_6_TYPE_e type) {
-    char* typeArray[] =  { "NULL", "browser_task_success" };
+    char* typeArray[] =  { "NULL", "llm_judge" };
     return typeArray[type];
 }
 
 beater_api_evaluator_kind_one_of_6_TYPE_e evaluator_kind_one_of_6_type_FromString(char* type){
     int stringToReturn = 0;
-    char *typeArray[] =  { "NULL", "browser_task_success" };
+    char *typeArray[] =  { "NULL", "llm_judge" };
     size_t sizeofArray = sizeof(typeArray) / sizeof(typeArray[0]);
     while(stringToReturn < sizeofArray) {
         if(strcmp(type, typeArray[stringToReturn]) == 0) {
@@ -23,31 +23,31 @@ beater_api_evaluator_kind_one_of_6_TYPE_e evaluator_kind_one_of_6_type_FromStrin
 }
 
 static evaluator_kind_one_of_6_t *evaluator_kind_one_of_6_create_internal(
-    char *dom_contains,
-    beater_api_evaluator_kind_one_of_6_TYPE_e type,
-    char *url_contains
+    char *model,
+    char *rubric,
+    beater_api_evaluator_kind_one_of_6_TYPE_e type
     ) {
     evaluator_kind_one_of_6_t *evaluator_kind_one_of_6_local_var = malloc(sizeof(evaluator_kind_one_of_6_t));
     if (!evaluator_kind_one_of_6_local_var) {
         return NULL;
     }
-    evaluator_kind_one_of_6_local_var->dom_contains = dom_contains;
+    evaluator_kind_one_of_6_local_var->model = model;
+    evaluator_kind_one_of_6_local_var->rubric = rubric;
     evaluator_kind_one_of_6_local_var->type = type;
-    evaluator_kind_one_of_6_local_var->url_contains = url_contains;
 
     evaluator_kind_one_of_6_local_var->_library_owned = 1;
     return evaluator_kind_one_of_6_local_var;
 }
 
 __attribute__((deprecated)) evaluator_kind_one_of_6_t *evaluator_kind_one_of_6_create(
-    char *dom_contains,
-    beater_api_evaluator_kind_one_of_6_TYPE_e type,
-    char *url_contains
+    char *model,
+    char *rubric,
+    beater_api_evaluator_kind_one_of_6_TYPE_e type
     ) {
     return evaluator_kind_one_of_6_create_internal (
-        dom_contains,
-        type,
-        url_contains
+        model,
+        rubric,
+        type
         );
 }
 
@@ -60,13 +60,13 @@ void evaluator_kind_one_of_6_free(evaluator_kind_one_of_6_t *evaluator_kind_one_
         return ;
     }
     listEntry_t *listEntry;
-    if (evaluator_kind_one_of_6->dom_contains) {
-        free(evaluator_kind_one_of_6->dom_contains);
-        evaluator_kind_one_of_6->dom_contains = NULL;
+    if (evaluator_kind_one_of_6->model) {
+        free(evaluator_kind_one_of_6->model);
+        evaluator_kind_one_of_6->model = NULL;
     }
-    if (evaluator_kind_one_of_6->url_contains) {
-        free(evaluator_kind_one_of_6->url_contains);
-        evaluator_kind_one_of_6->url_contains = NULL;
+    if (evaluator_kind_one_of_6->rubric) {
+        free(evaluator_kind_one_of_6->rubric);
+        evaluator_kind_one_of_6->rubric = NULL;
     }
     free(evaluator_kind_one_of_6);
 }
@@ -74,11 +74,21 @@ void evaluator_kind_one_of_6_free(evaluator_kind_one_of_6_t *evaluator_kind_one_
 cJSON *evaluator_kind_one_of_6_convertToJSON(evaluator_kind_one_of_6_t *evaluator_kind_one_of_6) {
     cJSON *item = cJSON_CreateObject();
 
-    // evaluator_kind_one_of_6->dom_contains
-    if(evaluator_kind_one_of_6->dom_contains) {
-    if(cJSON_AddStringToObject(item, "dom_contains", evaluator_kind_one_of_6->dom_contains) == NULL) {
+    // evaluator_kind_one_of_6->model
+    if (!evaluator_kind_one_of_6->model) {
+        goto fail;
+    }
+    if(cJSON_AddStringToObject(item, "model", evaluator_kind_one_of_6->model) == NULL) {
     goto fail; //String
     }
+
+
+    // evaluator_kind_one_of_6->rubric
+    if (!evaluator_kind_one_of_6->rubric) {
+        goto fail;
+    }
+    if(cJSON_AddStringToObject(item, "rubric", evaluator_kind_one_of_6->rubric) == NULL) {
+    goto fail; //String
     }
 
 
@@ -89,14 +99,6 @@ cJSON *evaluator_kind_one_of_6_convertToJSON(evaluator_kind_one_of_6_t *evaluato
     if(cJSON_AddStringToObject(item, "type", evaluator_kind_one_of_6_type_ToString(evaluator_kind_one_of_6->type)) == NULL)
     {
     goto fail; //Enum
-    }
-
-
-    // evaluator_kind_one_of_6->url_contains
-    if(evaluator_kind_one_of_6->url_contains) {
-    if(cJSON_AddStringToObject(item, "url_contains", evaluator_kind_one_of_6->url_contains) == NULL) {
-    goto fail; //String
-    }
     }
 
     return item;
@@ -111,16 +113,34 @@ evaluator_kind_one_of_6_t *evaluator_kind_one_of_6_parseFromJSON(cJSON *evaluato
 
     evaluator_kind_one_of_6_t *evaluator_kind_one_of_6_local_var = NULL;
 
-    // evaluator_kind_one_of_6->dom_contains
-    cJSON *dom_contains = cJSON_GetObjectItemCaseSensitive(evaluator_kind_one_of_6JSON, "dom_contains");
-    if (cJSON_IsNull(dom_contains)) {
-        dom_contains = NULL;
+    // evaluator_kind_one_of_6->model
+    cJSON *model = cJSON_GetObjectItemCaseSensitive(evaluator_kind_one_of_6JSON, "model");
+    if (cJSON_IsNull(model)) {
+        model = NULL;
     }
-    if (dom_contains) { 
-    if(!cJSON_IsString(dom_contains) && !cJSON_IsNull(dom_contains))
+    if (!model) {
+        goto end;
+    }
+
+    
+    if(!cJSON_IsString(model))
     {
     goto end; //String
     }
+
+    // evaluator_kind_one_of_6->rubric
+    cJSON *rubric = cJSON_GetObjectItemCaseSensitive(evaluator_kind_one_of_6JSON, "rubric");
+    if (cJSON_IsNull(rubric)) {
+        rubric = NULL;
+    }
+    if (!rubric) {
+        goto end;
+    }
+
+    
+    if(!cJSON_IsString(rubric))
+    {
+    goto end; //String
     }
 
     // evaluator_kind_one_of_6->type
@@ -140,23 +160,11 @@ evaluator_kind_one_of_6_t *evaluator_kind_one_of_6_parseFromJSON(cJSON *evaluato
     }
     typeVariable = evaluator_kind_one_of_6_type_FromString(type->valuestring);
 
-    // evaluator_kind_one_of_6->url_contains
-    cJSON *url_contains = cJSON_GetObjectItemCaseSensitive(evaluator_kind_one_of_6JSON, "url_contains");
-    if (cJSON_IsNull(url_contains)) {
-        url_contains = NULL;
-    }
-    if (url_contains) { 
-    if(!cJSON_IsString(url_contains) && !cJSON_IsNull(url_contains))
-    {
-    goto end; //String
-    }
-    }
-
 
     evaluator_kind_one_of_6_local_var = evaluator_kind_one_of_6_create_internal (
-        dom_contains && !cJSON_IsNull(dom_contains) ? strdup(dom_contains->valuestring) : NULL,
-        typeVariable,
-        url_contains && !cJSON_IsNull(url_contains) ? strdup(url_contains->valuestring) : NULL
+        strdup(model->valuestring),
+        strdup(rubric->valuestring),
+        typeVariable
         );
 
     return evaluator_kind_one_of_6_local_var;

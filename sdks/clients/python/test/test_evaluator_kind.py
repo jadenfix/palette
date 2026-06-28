@@ -37,6 +37,8 @@ class TestEvaluatorKind(unittest.TestCase):
             return EvaluatorKind(
                 type = 'exact_match',
                 pattern = '',
+                abs = 1.337,
+                rel = 1.337,
                 max_micros = 56,
                 max_ms = 0,
                 model = '',
@@ -50,6 +52,8 @@ class TestEvaluatorKind(unittest.TestCase):
             return EvaluatorKind(
                 type = 'exact_match',
                 pattern = '',
+                abs = 1.337,
+                rel = 1.337,
                 max_micros = 56,
                 max_ms = 0,
                 model = '',

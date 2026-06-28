@@ -5,13 +5,13 @@
 
 
 char* evaluator_kind_one_of_9_type_ToString(beater_api_evaluator_kind_one_of_9_TYPE_e type) {
-    char* typeArray[] =  { "NULL", "browser_recovery" };
+    char* typeArray[] =  { "NULL", "browser_grounding" };
     return typeArray[type];
 }
 
 beater_api_evaluator_kind_one_of_9_TYPE_e evaluator_kind_one_of_9_type_FromString(char* type){
     int stringToReturn = 0;
-    char *typeArray[] =  { "NULL", "browser_recovery" };
+    char *typeArray[] =  { "NULL", "browser_grounding" };
     size_t sizeofArray = sizeof(typeArray) / sizeof(typeArray[0]);
     while(stringToReturn < sizeofArray) {
         if(strcmp(type, typeArray[stringToReturn]) == 0) {
@@ -23,12 +23,14 @@ beater_api_evaluator_kind_one_of_9_TYPE_e evaluator_kind_one_of_9_type_FromStrin
 }
 
 static evaluator_kind_one_of_9_t *evaluator_kind_one_of_9_create_internal(
+    double min_ratio,
     beater_api_evaluator_kind_one_of_9_TYPE_e type
     ) {
     evaluator_kind_one_of_9_t *evaluator_kind_one_of_9_local_var = malloc(sizeof(evaluator_kind_one_of_9_t));
     if (!evaluator_kind_one_of_9_local_var) {
         return NULL;
     }
+    evaluator_kind_one_of_9_local_var->min_ratio = min_ratio;
     evaluator_kind_one_of_9_local_var->type = type;
 
     evaluator_kind_one_of_9_local_var->_library_owned = 1;
@@ -36,9 +38,11 @@ static evaluator_kind_one_of_9_t *evaluator_kind_one_of_9_create_internal(
 }
 
 __attribute__((deprecated)) evaluator_kind_one_of_9_t *evaluator_kind_one_of_9_create(
+    double min_ratio,
     beater_api_evaluator_kind_one_of_9_TYPE_e type
     ) {
     return evaluator_kind_one_of_9_create_internal (
+        min_ratio,
         type
         );
 }
@@ -57,6 +61,15 @@ void evaluator_kind_one_of_9_free(evaluator_kind_one_of_9_t *evaluator_kind_one_
 
 cJSON *evaluator_kind_one_of_9_convertToJSON(evaluator_kind_one_of_9_t *evaluator_kind_one_of_9) {
     cJSON *item = cJSON_CreateObject();
+
+    // evaluator_kind_one_of_9->min_ratio
+    if (!evaluator_kind_one_of_9->min_ratio) {
+        goto fail;
+    }
+    if(cJSON_AddNumberToObject(item, "min_ratio", evaluator_kind_one_of_9->min_ratio) == NULL) {
+    goto fail; //Numeric
+    }
+
 
     // evaluator_kind_one_of_9->type
     if (beater_api_evaluator_kind_one_of_9_TYPE_NULL == evaluator_kind_one_of_9->type) {
@@ -79,6 +92,21 @@ evaluator_kind_one_of_9_t *evaluator_kind_one_of_9_parseFromJSON(cJSON *evaluato
 
     evaluator_kind_one_of_9_t *evaluator_kind_one_of_9_local_var = NULL;
 
+    // evaluator_kind_one_of_9->min_ratio
+    cJSON *min_ratio = cJSON_GetObjectItemCaseSensitive(evaluator_kind_one_of_9JSON, "min_ratio");
+    if (cJSON_IsNull(min_ratio)) {
+        min_ratio = NULL;
+    }
+    if (!min_ratio) {
+        goto end;
+    }
+
+    
+    if(!cJSON_IsNumber(min_ratio))
+    {
+    goto end; //Numeric
+    }
+
     // evaluator_kind_one_of_9->type
     cJSON *type = cJSON_GetObjectItemCaseSensitive(evaluator_kind_one_of_9JSON, "type");
     if (cJSON_IsNull(type)) {
@@ -98,6 +126,7 @@ evaluator_kind_one_of_9_t *evaluator_kind_one_of_9_parseFromJSON(cJSON *evaluato
 
 
     evaluator_kind_one_of_9_local_var = evaluator_kind_one_of_9_create_internal (
+        min_ratio->valuedouble,
         typeVariable
         );
 

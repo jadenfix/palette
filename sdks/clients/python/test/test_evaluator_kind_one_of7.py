@@ -35,13 +35,13 @@ class TestEvaluatorKindOneOf7(unittest.TestCase):
         model = EvaluatorKindOneOf7()
         if include_optional:
             return EvaluatorKindOneOf7(
-                max_steps = 0,
-                type = 'browser_step_efficiency'
+                dom_contains = '',
+                type = 'browser_task_success',
+                url_contains = ''
             )
         else:
             return EvaluatorKindOneOf7(
-                max_steps = 0,
-                type = 'browser_step_efficiency',
+                type = 'browser_task_success',
         )
         """
 

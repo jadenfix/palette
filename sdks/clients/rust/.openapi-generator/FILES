@@ -56,6 +56,7 @@ docs/EvaluationCase.md
 docs/EvaluatorKind.md
 docs/EvaluatorKindOneOf.md
 docs/EvaluatorKindOneOf1.md
+docs/EvaluatorKindOneOf10.md
 docs/EvaluatorKindOneOf2.md
 docs/EvaluatorKindOneOf3.md
 docs/EvaluatorKindOneOf4.md
@@ -214,6 +215,7 @@ src/models/evaluation_case.rs
 src/models/evaluator_kind.rs
 src/models/evaluator_kind_one_of.rs
 src/models/evaluator_kind_one_of_1.rs
+src/models/evaluator_kind_one_of_10.rs
 src/models/evaluator_kind_one_of_2.rs
 src/models/evaluator_kind_one_of_3.rs
 src/models/evaluator_kind_one_of_4.rs

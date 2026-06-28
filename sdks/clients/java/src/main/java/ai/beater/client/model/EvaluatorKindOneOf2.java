@@ -33,15 +33,25 @@ import ai.beater.client.ApiClient;
  * EvaluatorKindOneOf2
  */
 @JsonPropertyOrder({
+  EvaluatorKindOneOf2.JSON_PROPERTY_ABS,
+  EvaluatorKindOneOf2.JSON_PROPERTY_REL,
   EvaluatorKindOneOf2.JSON_PROPERTY_TYPE
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class EvaluatorKindOneOf2 {
+  public static final String JSON_PROPERTY_ABS = "abs";
+  @javax.annotation.Nonnull
+  private Double abs;
+
+  public static final String JSON_PROPERTY_REL = "rel";
+  @javax.annotation.Nonnull
+  private Double rel;
+
   /**
    * Gets or Sets type
    */
   public enum TypeEnum {
-    JSON_OBJECT(String.valueOf("json_object"));
+    NUMERIC_TOLERANCE(String.valueOf("numeric_tolerance"));
 
     private String value;
 
@@ -76,6 +86,54 @@ public class EvaluatorKindOneOf2 {
 
   public EvaluatorKindOneOf2() { 
   }
+
+  public EvaluatorKindOneOf2 abs(@javax.annotation.Nonnull Double abs) {
+    this.abs = abs;
+    return this;
+  }
+
+  /**
+   * Get abs
+   * @return abs
+   */
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_ABS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public Double getAbs() {
+    return abs;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ABS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAbs(@javax.annotation.Nonnull Double abs) {
+    this.abs = abs;
+  }
+
+
+  public EvaluatorKindOneOf2 rel(@javax.annotation.Nonnull Double rel) {
+    this.rel = rel;
+    return this;
+  }
+
+  /**
+   * Get rel
+   * @return rel
+   */
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_REL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public Double getRel() {
+    return rel;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_REL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRel(@javax.annotation.Nonnull Double rel) {
+    this.rel = rel;
+  }
+
 
   public EvaluatorKindOneOf2 type(@javax.annotation.Nonnull TypeEnum type) {
     this.type = type;
@@ -113,18 +171,22 @@ public class EvaluatorKindOneOf2 {
       return false;
     }
     EvaluatorKindOneOf2 evaluatorKindOneOf2 = (EvaluatorKindOneOf2) o;
-    return Objects.equals(this.type, evaluatorKindOneOf2.type);
+    return Objects.equals(this.abs, evaluatorKindOneOf2.abs) &&
+        Objects.equals(this.rel, evaluatorKindOneOf2.rel) &&
+        Objects.equals(this.type, evaluatorKindOneOf2.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(abs, rel, type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EvaluatorKindOneOf2 {\n");
+    sb.append("    abs: ").append(toIndentedString(abs)).append("\n");
+    sb.append("    rel: ").append(toIndentedString(rel)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -172,6 +234,16 @@ public class EvaluatorKindOneOf2 {
     }
 
     StringJoiner joiner = new StringJoiner("&");
+
+    // add `abs` to the URL query string
+    if (getAbs() != null) {
+      joiner.add(String.format("%sabs%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getAbs()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `rel` to the URL query string
+    if (getRel() != null) {
+      joiner.add(String.format("%srel%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getRel()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
 
     // add `type` to the URL query string
     if (getType() != null) {

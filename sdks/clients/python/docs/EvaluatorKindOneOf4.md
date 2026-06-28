@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**max_ms** | **int** |  | 
+**max_micros** | **int** |  | 
 **type** | **str** |  | 
 
 ## Example

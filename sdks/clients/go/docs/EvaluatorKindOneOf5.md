@@ -4,15 +4,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Model** | **string** |  | 
-**Rubric** | **string** |  | 
+**MaxMs** | **int64** |  | 
 **Type** | **string** |  | 
 
 ## Methods
 
 ### NewEvaluatorKindOneOf5
 
-`func NewEvaluatorKindOneOf5(model string, rubric string, type_ string, ) *EvaluatorKindOneOf5`
+`func NewEvaluatorKindOneOf5(maxMs int64, type_ string, ) *EvaluatorKindOneOf5`
 
 NewEvaluatorKindOneOf5 instantiates a new EvaluatorKindOneOf5 object
 This constructor will assign default values to properties that have it defined,
@@ -27,44 +26,24 @@ NewEvaluatorKindOneOf5WithDefaults instantiates a new EvaluatorKindOneOf5 object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
-### GetModel
+### GetMaxMs
 
-`func (o *EvaluatorKindOneOf5) GetModel() string`
+`func (o *EvaluatorKindOneOf5) GetMaxMs() int64`
 
-GetModel returns the Model field if non-nil, zero value otherwise.
+GetMaxMs returns the MaxMs field if non-nil, zero value otherwise.
 
-### GetModelOk
+### GetMaxMsOk
 
-`func (o *EvaluatorKindOneOf5) GetModelOk() (*string, bool)`
+`func (o *EvaluatorKindOneOf5) GetMaxMsOk() (*int64, bool)`
 
-GetModelOk returns a tuple with the Model field if it's non-nil, zero value otherwise
+GetMaxMsOk returns a tuple with the MaxMs field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetModel
+### SetMaxMs
 
-`func (o *EvaluatorKindOneOf5) SetModel(v string)`
+`func (o *EvaluatorKindOneOf5) SetMaxMs(v int64)`
 
-SetModel sets Model field to given value.
-
-
-### GetRubric
-
-`func (o *EvaluatorKindOneOf5) GetRubric() string`
-
-GetRubric returns the Rubric field if non-nil, zero value otherwise.
-
-### GetRubricOk
-
-`func (o *EvaluatorKindOneOf5) GetRubricOk() (*string, bool)`
-
-GetRubricOk returns a tuple with the Rubric field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetRubric
-
-`func (o *EvaluatorKindOneOf5) SetRubric(v string)`
-
-SetRubric sets Rubric field to given value.
+SetMaxMs sets MaxMs field to given value.
 
 
 ### GetType

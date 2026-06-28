@@ -20,6 +20,10 @@ namespace model {
 
 EvaluatorKind_oneOf_2::EvaluatorKind_oneOf_2()
 {
+    m_Abs = 0.0;
+    m_AbsIsSet = false;
+    m_Rel = 0.0;
+    m_RelIsSet = false;
     m_TypeIsSet = false;
 }
 
@@ -35,6 +39,16 @@ void EvaluatorKind_oneOf_2::validate()
 web::json::value EvaluatorKind_oneOf_2::toJson() const
 {
     web::json::value val = web::json::value::object();
+    if(m_AbsIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("abs"))] = ModelBase::toJson(m_Abs);
+    }
+    if(m_RelIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("rel"))] = ModelBase::toJson(m_Rel);
+    }
     if(m_TypeIsSet)
     {   
         
@@ -49,6 +63,28 @@ web::json::value EvaluatorKind_oneOf_2::toJson() const
 bool EvaluatorKind_oneOf_2::fromJson(const web::json::value& val)
 {
     bool ok = true;
+    if(val.has_field(utility::conversions::to_string_t(U("abs"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("abs")));
+        if(!fieldValue.is_null())
+        {
+            double refVal_setAbs;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setAbs);
+            setAbs(refVal_setAbs);
+            
+        }
+    }
+    if(val.has_field(utility::conversions::to_string_t(U("rel"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("rel")));
+        if(!fieldValue.is_null())
+        {
+            double refVal_setRel;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setRel);
+            setRel(refVal_setRel);
+            
+        }
+    }
     if(val.has_field(utility::conversions::to_string_t(U("type"))))
     {
         const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("type")));
@@ -71,6 +107,14 @@ void EvaluatorKind_oneOf_2::toMultipart(std::shared_ptr<MultipartFormData> multi
     {
         namePrefix += utility::conversions::to_string_t(U("."));
     }
+    if(m_AbsIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("abs")), m_Abs));
+    }
+    if(m_RelIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("rel")), m_Rel));
+    }
     if(m_TypeIsSet)
     {
         multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("type")), fromTypeEnum(m_Type)));
@@ -86,6 +130,18 @@ bool EvaluatorKind_oneOf_2::fromMultiPart(std::shared_ptr<MultipartFormData> mul
         namePrefix += utility::conversions::to_string_t(U("."));
     }
 
+    if(multipart->hasContent(utility::conversions::to_string_t(U("abs"))))
+    {
+        double refVal_setAbs;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("abs"))), refVal_setAbs );
+        setAbs(refVal_setAbs);
+    }
+    if(multipart->hasContent(utility::conversions::to_string_t(U("rel"))))
+    {
+        double refVal_setRel;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("rel"))), refVal_setRel );
+        setRel(refVal_setRel);
+    }
     if(multipart->hasContent(utility::conversions::to_string_t(U("type"))))
     {
         utility::string_t refVal_setType;
@@ -98,8 +154,8 @@ bool EvaluatorKind_oneOf_2::fromMultiPart(std::shared_ptr<MultipartFormData> mul
 EvaluatorKind_oneOf_2::TypeEnum EvaluatorKind_oneOf_2::toTypeEnum(const utility::string_t& value) const
 {
     
-    if (value == utility::conversions::to_string_t("json_object")) {
-        return TypeEnum::json_object;
+    if (value == utility::conversions::to_string_t("numeric_tolerance")) {
+        return TypeEnum::numeric_tolerance;
     }
     
     throw std::invalid_argument("Invalid value for conversion to TypeEnum");
@@ -111,12 +167,52 @@ const utility::string_t EvaluatorKind_oneOf_2::fromTypeEnum(const TypeEnum value
     switch(value)
     {
         
-        case TypeEnum::json_object: return utility::conversions::to_string_t("json_object");
+        case TypeEnum::numeric_tolerance: return utility::conversions::to_string_t("numeric_tolerance");
         
     }
 }
 
 
+double EvaluatorKind_oneOf_2::getAbs() const
+{
+    return m_Abs;
+}
+
+void EvaluatorKind_oneOf_2::setAbs(double value)
+{
+    m_Abs = value;
+    m_AbsIsSet = true;
+}
+
+bool EvaluatorKind_oneOf_2::absIsSet() const
+{
+    return m_AbsIsSet;
+}
+
+void EvaluatorKind_oneOf_2::unsetAbs()
+{
+    m_AbsIsSet = false;
+}
+double EvaluatorKind_oneOf_2::getRel() const
+{
+    return m_Rel;
+}
+
+void EvaluatorKind_oneOf_2::setRel(double value)
+{
+    m_Rel = value;
+    m_RelIsSet = true;
+}
+
+bool EvaluatorKind_oneOf_2::relIsSet() const
+{
+    return m_RelIsSet;
+}
+
+void EvaluatorKind_oneOf_2::unsetRel()
+{
+    m_RelIsSet = false;
+}
 EvaluatorKind_oneOf_2::TypeEnum EvaluatorKind_oneOf_2::getType() const
 {
     return m_Type;

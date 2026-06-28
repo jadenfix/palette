@@ -25,28 +25,32 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
+import org.openapitools.jackson.nullable.JsonNullable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.util.NoSuchElementException;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import ai.beater.client.ApiClient;
 /**
- * Browser step efficiency: passes when the run used at most &#x60;max_steps&#x60; browser steps (catches looping/backtracking). Reads &#x60;trace.browser_steps&#x60;.
+ * Browser world-state success: asserts the final step&#39;s observed page (url and/or DOM) matches the configured target — NOT the agent&#39;s self-reported \&quot;done\&quot;. Reads &#x60;trace.browser_steps&#x60;.
  */
 @JsonPropertyOrder({
-  EvaluatorKindOneOf7.JSON_PROPERTY_MAX_STEPS,
-  EvaluatorKindOneOf7.JSON_PROPERTY_TYPE
+  EvaluatorKindOneOf7.JSON_PROPERTY_DOM_CONTAINS,
+  EvaluatorKindOneOf7.JSON_PROPERTY_TYPE,
+  EvaluatorKindOneOf7.JSON_PROPERTY_URL_CONTAINS
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class EvaluatorKindOneOf7 {
-  public static final String JSON_PROPERTY_MAX_STEPS = "max_steps";
-  @javax.annotation.Nonnull
-  private Long maxSteps;
+  public static final String JSON_PROPERTY_DOM_CONTAINS = "dom_contains";
+  private JsonNullable<String> domContains = JsonNullable.<String>undefined();
 
   /**
    * Gets or Sets type
    */
   public enum TypeEnum {
-    BROWSER_STEP_EFFICIENCY(String.valueOf("browser_step_efficiency"));
+    BROWSER_TASK_SUCCESS(String.valueOf("browser_task_success"));
 
     private String value;
 
@@ -79,31 +83,41 @@ public class EvaluatorKindOneOf7 {
   @javax.annotation.Nonnull
   private TypeEnum type;
 
+  public static final String JSON_PROPERTY_URL_CONTAINS = "url_contains";
+  private JsonNullable<String> urlContains = JsonNullable.<String>undefined();
+
   public EvaluatorKindOneOf7() { 
   }
 
-  public EvaluatorKindOneOf7 maxSteps(@javax.annotation.Nonnull Long maxSteps) {
-    this.maxSteps = maxSteps;
+  public EvaluatorKindOneOf7 domContains(@javax.annotation.Nullable String domContains) {
+    this.domContains = JsonNullable.<String>of(domContains);
     return this;
   }
 
   /**
-   * Get maxSteps
-   * minimum: 0
-   * @return maxSteps
+   * Get domContains
+   * @return domContains
    */
-  @javax.annotation.Nonnull
-  @JsonProperty(JSON_PROPERTY_MAX_STEPS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public Long getMaxSteps() {
-    return maxSteps;
+  @javax.annotation.Nullable
+  @JsonIgnore
+  public String getDomContains() {
+        return domContains.orElse(null);
   }
 
+  @JsonProperty(JSON_PROPERTY_DOM_CONTAINS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  @JsonProperty(JSON_PROPERTY_MAX_STEPS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMaxSteps(@javax.annotation.Nonnull Long maxSteps) {
-    this.maxSteps = maxSteps;
+  public JsonNullable<String> getDomContains_JsonNullable() {
+    return domContains;
+  }
+  
+  @JsonProperty(JSON_PROPERTY_DOM_CONTAINS)
+  public void setDomContains_JsonNullable(JsonNullable<String> domContains) {
+    this.domContains = domContains;
+  }
+
+  public void setDomContains(@javax.annotation.Nullable String domContains) {
+    this.domContains = JsonNullable.<String>of(domContains);
   }
 
 
@@ -131,6 +145,38 @@ public class EvaluatorKindOneOf7 {
   }
 
 
+  public EvaluatorKindOneOf7 urlContains(@javax.annotation.Nullable String urlContains) {
+    this.urlContains = JsonNullable.<String>of(urlContains);
+    return this;
+  }
+
+  /**
+   * Get urlContains
+   * @return urlContains
+   */
+  @javax.annotation.Nullable
+  @JsonIgnore
+  public String getUrlContains() {
+        return urlContains.orElse(null);
+  }
+
+  @JsonProperty(JSON_PROPERTY_URL_CONTAINS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public JsonNullable<String> getUrlContains_JsonNullable() {
+    return urlContains;
+  }
+  
+  @JsonProperty(JSON_PROPERTY_URL_CONTAINS)
+  public void setUrlContains_JsonNullable(JsonNullable<String> urlContains) {
+    this.urlContains = urlContains;
+  }
+
+  public void setUrlContains(@javax.annotation.Nullable String urlContains) {
+    this.urlContains = JsonNullable.<String>of(urlContains);
+  }
+
+
   /**
    * Return true if this EvaluatorKind_oneOf_7 object is equal to o.
    */
@@ -143,21 +189,34 @@ public class EvaluatorKindOneOf7 {
       return false;
     }
     EvaluatorKindOneOf7 evaluatorKindOneOf7 = (EvaluatorKindOneOf7) o;
-    return Objects.equals(this.maxSteps, evaluatorKindOneOf7.maxSteps) &&
-        Objects.equals(this.type, evaluatorKindOneOf7.type);
+    return equalsNullable(this.domContains, evaluatorKindOneOf7.domContains) &&
+        Objects.equals(this.type, evaluatorKindOneOf7.type) &&
+        equalsNullable(this.urlContains, evaluatorKindOneOf7.urlContains);
+  }
+
+  private static <T> boolean equalsNullable(JsonNullable<T> a, JsonNullable<T> b) {
+    return a == b || (a != null && b != null && a.isPresent() && b.isPresent() && Objects.deepEquals(a.get(), b.get()));
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(maxSteps, type);
+    return Objects.hash(hashCodeNullable(domContains), type, hashCodeNullable(urlContains));
+  }
+
+  private static <T> int hashCodeNullable(JsonNullable<T> a) {
+    if (a == null) {
+      return 1;
+    }
+    return a.isPresent() ? Arrays.deepHashCode(new Object[]{a.get()}) : 31;
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EvaluatorKindOneOf7 {\n");
-    sb.append("    maxSteps: ").append(toIndentedString(maxSteps)).append("\n");
+    sb.append("    domContains: ").append(toIndentedString(domContains)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("    urlContains: ").append(toIndentedString(urlContains)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -205,14 +264,19 @@ public class EvaluatorKindOneOf7 {
 
     StringJoiner joiner = new StringJoiner("&");
 
-    // add `max_steps` to the URL query string
-    if (getMaxSteps() != null) {
-      joiner.add(String.format("%smax_steps%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getMaxSteps()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    // add `dom_contains` to the URL query string
+    if (getDomContains() != null) {
+      joiner.add(String.format("%sdom_contains%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getDomContains()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `type` to the URL query string
     if (getType() != null) {
       joiner.add(String.format("%stype%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getType()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `url_contains` to the URL query string
+    if (getUrlContains() != null) {
+      joiner.add(String.format("%surl_contains%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getUrlContains()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     return joiner.toString();

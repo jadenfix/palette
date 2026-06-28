@@ -14,8 +14,8 @@
 
 import { mapValues } from '../runtime';
 /**
- * Browser grounding: fraction of element-targeted steps that resolved to
- * their intended element; score is the ratio, passes at `min_ratio`.
+ * Browser step efficiency: passes when the run used at most `max_steps`
+ * browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
  * @export
  * @interface EvaluatorKindOneOf8
  */
@@ -25,7 +25,7 @@ export interface EvaluatorKindOneOf8 {
      * @type {number}
      * @memberof EvaluatorKindOneOf8
      */
-    minRatio: number;
+    maxSteps: number;
     /**
      * 
      * @type {string}
@@ -39,7 +39,7 @@ export interface EvaluatorKindOneOf8 {
  * @export
  */
 export const EvaluatorKindOneOf8TypeEnum = {
-    BrowserGrounding: 'browser_grounding'
+    BrowserStepEfficiency: 'browser_step_efficiency'
 } as const;
 export type EvaluatorKindOneOf8TypeEnum = typeof EvaluatorKindOneOf8TypeEnum[keyof typeof EvaluatorKindOneOf8TypeEnum];
 
@@ -48,7 +48,7 @@ export type EvaluatorKindOneOf8TypeEnum = typeof EvaluatorKindOneOf8TypeEnum[key
  * Check if a given object implements the EvaluatorKindOneOf8 interface.
  */
 export function instanceOfEvaluatorKindOneOf8(value: object): value is EvaluatorKindOneOf8 {
-    if (!('minRatio' in value) || value['minRatio'] === undefined) return false;
+    if (!('maxSteps' in value) || value['maxSteps'] === undefined) return false;
     if (!('type' in value) || value['type'] === undefined) return false;
     return true;
 }
@@ -63,7 +63,7 @@ export function EvaluatorKindOneOf8FromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
-        'minRatio': json['min_ratio'],
+        'maxSteps': json['max_steps'],
         'type': json['type'],
     };
 }
@@ -79,7 +79,7 @@ export function EvaluatorKindOneOf8ToJSONTyped(value?: EvaluatorKindOneOf8 | nul
 
     return {
         
-        'min_ratio': value['minRatio'],
+        'max_steps': value['maxSteps'],
         'type': value['type'],
     };
 }

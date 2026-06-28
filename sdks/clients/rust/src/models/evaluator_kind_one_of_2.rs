@@ -13,13 +13,19 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EvaluatorKindOneOf2 {
+    #[serde(rename = "abs")]
+    pub abs: f64,
+    #[serde(rename = "rel")]
+    pub rel: f64,
     #[serde(rename = "type")]
     pub r#type: Type,
 }
 
 impl EvaluatorKindOneOf2 {
-    pub fn new(r#type: Type) -> EvaluatorKindOneOf2 {
+    pub fn new(abs: f64, rel: f64, r#type: Type) -> EvaluatorKindOneOf2 {
         EvaluatorKindOneOf2 {
+            abs,
+            rel,
             r#type,
         }
     }
@@ -27,13 +33,13 @@ impl EvaluatorKindOneOf2 {
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum Type {
-    #[serde(rename = "json_object")]
-    JsonObject,
+    #[serde(rename = "numeric_tolerance")]
+    NumericTolerance,
 }
 
 impl Default for Type {
     fn default() -> Type {
-        Self::JsonObject
+        Self::NumericTolerance
     }
 }
 

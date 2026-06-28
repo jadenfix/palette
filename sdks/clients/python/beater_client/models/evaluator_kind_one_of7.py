@@ -17,25 +17,25 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
-from typing_extensions import Annotated
+from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
 class EvaluatorKindOneOf7(BaseModel):
     """
-    Browser step efficiency: passes when the run used at most `max_steps` browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
+    Browser world-state success: asserts the final step's observed page (url and/or DOM) matches the configured target — NOT the agent's self-reported \"done\". Reads `trace.browser_steps`.
     """ # noqa: E501
-    max_steps: Annotated[int, Field(strict=True, ge=0)]
+    dom_contains: Optional[StrictStr] = None
     type: StrictStr
-    __properties: ClassVar[List[str]] = ["max_steps", "type"]
+    url_contains: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["dom_contains", "type", "url_contains"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['browser_step_efficiency']):
-            raise ValueError("must be one of enum values ('browser_step_efficiency')")
+        if value not in set(['browser_task_success']):
+            raise ValueError("must be one of enum values ('browser_task_success')")
         return value
 
     model_config = ConfigDict(
@@ -77,6 +77,16 @@ class EvaluatorKindOneOf7(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if dom_contains (nullable) is None
+        # and model_fields_set contains the field
+        if self.dom_contains is None and "dom_contains" in self.model_fields_set:
+            _dict['dom_contains'] = None
+
+        # set to None if url_contains (nullable) is None
+        # and model_fields_set contains the field
+        if self.url_contains is None and "url_contains" in self.model_fields_set:
+            _dict['url_contains'] = None
+
         return _dict
 
     @classmethod
@@ -89,8 +99,9 @@ class EvaluatorKindOneOf7(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "max_steps": obj.get("max_steps"),
-            "type": obj.get("type")
+            "dom_contains": obj.get("dom_contains"),
+            "type": obj.get("type"),
+            "url_contains": obj.get("url_contains")
         })
         return _obj
 

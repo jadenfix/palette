@@ -35,13 +35,13 @@ class TestEvaluatorKindOneOf8(unittest.TestCase):
         model = EvaluatorKindOneOf8()
         if include_optional:
             return EvaluatorKindOneOf8(
-                min_ratio = 1.337,
-                type = 'browser_grounding'
+                max_steps = 0,
+                type = 'browser_step_efficiency'
             )
         else:
             return EvaluatorKindOneOf8(
-                min_ratio = 1.337,
-                type = 'browser_grounding',
+                max_steps = 0,
+                type = 'browser_step_efficiency',
         )
         """
 

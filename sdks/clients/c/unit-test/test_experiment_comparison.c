@@ -30,6 +30,8 @@ experiment_comparison_t* instantiate_experiment_comparison(int include_optional)
       beater_api_experiment_comparison__pass,
       1.337,
       1.337,
+      1.337,
+      0,
       0,
       beater_api_experiment_comparison__paired_t
     );
@@ -43,6 +45,8 @@ experiment_comparison_t* instantiate_experiment_comparison(int include_optional)
       beater_api_experiment_comparison__pass,
       1.337,
       1.337,
+      1.337,
+      0,
       0,
       beater_api_experiment_comparison__paired_t
     );

@@ -1292,6 +1292,164 @@ mod tests {
         Ok(())
     }
 
+    #[tokio::test]
+    async fn experiment_store_scopes_get_run_by_tenant_and_project() -> anyhow::Result<()> {
+        let store = SqliteExperimentStore::in_memory()?;
+        let tenant = TenantId::new("tenant")?;
+        let project = ProjectId::new("project")?;
+        let other_tenant = TenantId::new("other-tenant")?;
+        let other_project = ProjectId::new("other-project")?;
+        let dataset = DatasetId::new("dataset")?;
+        let other_tenant_dataset = DatasetId::new("other-tenant-dataset")?;
+        let other_project_dataset = DatasetId::new("other-project-dataset")?;
+        let evaluator = EvaluatorVersionId::new("exact-v1")?;
+        let run_id = ExperimentRunId::new("shared-run")?;
+
+        let target = report_with_created_at(
+            tenant.clone(),
+            project.clone(),
+            run_id.as_str(),
+            dataset.clone(),
+            evaluator.clone(),
+            "2026-06-19T10:00:00Z",
+        )?;
+        let tenant_neighbor = report_with_created_at(
+            other_tenant.clone(),
+            project.clone(),
+            run_id.as_str(),
+            other_tenant_dataset.clone(),
+            evaluator.clone(),
+            "2026-06-19T11:00:00Z",
+        )?;
+        let project_neighbor = report_with_created_at(
+            tenant.clone(),
+            other_project.clone(),
+            run_id.as_str(),
+            other_project_dataset.clone(),
+            evaluator,
+            "2026-06-19T12:00:00Z",
+        )?;
+        store.write_run(target).await?;
+        store.write_run(tenant_neighbor).await?;
+        store.write_run(project_neighbor).await?;
+
+        let loaded = store
+            .get_run(tenant.clone(), project.clone(), run_id.clone())
+            .await?;
+        assert_eq!(loaded.tenant_id, tenant.clone());
+        assert_eq!(loaded.project_id, project.clone());
+        assert_eq!(loaded.dataset_id, dataset);
+
+        let loaded_tenant_neighbor = store
+            .get_run(other_tenant.clone(), project.clone(), run_id.clone())
+            .await?;
+        assert_eq!(loaded_tenant_neighbor.tenant_id, other_tenant);
+        assert_eq!(loaded_tenant_neighbor.project_id, project.clone());
+        assert_eq!(loaded_tenant_neighbor.dataset_id, other_tenant_dataset);
+
+        let loaded_project_neighbor = store
+            .get_run(tenant.clone(), other_project.clone(), run_id.clone())
+            .await?;
+        assert_eq!(loaded_project_neighbor.tenant_id, tenant.clone());
+        assert_eq!(loaded_project_neighbor.project_id, other_project);
+        assert_eq!(loaded_project_neighbor.dataset_id, other_project_dataset);
+
+        let result = store
+            .get_run(tenant, ProjectId::new("missing-project")?, run_id)
+            .await;
+        assert!(matches!(result, Err(StoreError::NotFound(_))));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn experiment_store_scopes_latest_run_by_tenant_and_project() -> anyhow::Result<()> {
+        let store = SqliteExperimentStore::in_memory()?;
+        let tenant = TenantId::new("tenant")?;
+        let project = ProjectId::new("project")?;
+        let other_tenant = TenantId::new("other-tenant")?;
+        let other_project = ProjectId::new("other-project")?;
+        let dataset = DatasetId::new("dataset")?;
+        let evaluator = EvaluatorVersionId::new("exact-v1")?;
+
+        let target = report_with_created_at(
+            tenant.clone(),
+            project.clone(),
+            "target-run",
+            dataset.clone(),
+            evaluator.clone(),
+            "2026-06-19T10:00:00Z",
+        )?;
+        let tenant_neighbor = report_with_created_at(
+            other_tenant.clone(),
+            project.clone(),
+            "other-tenant-run",
+            dataset.clone(),
+            evaluator.clone(),
+            "2026-06-19T11:00:00Z",
+        )?;
+        let project_neighbor = report_with_created_at(
+            tenant.clone(),
+            other_project.clone(),
+            "other-project-run",
+            dataset.clone(),
+            evaluator.clone(),
+            "2026-06-19T12:00:00Z",
+        )?;
+        store.write_run(target.clone()).await?;
+        store.write_run(tenant_neighbor.clone()).await?;
+        store.write_run(project_neighbor.clone()).await?;
+
+        let latest = store
+            .latest_run(
+                tenant.clone(),
+                project.clone(),
+                Some(dataset.clone()),
+                Some(evaluator.clone()),
+            )
+            .await?
+            .ok_or_else(|| anyhow!("expected scoped latest report"))?;
+        assert_eq!(latest.experiment_run_id, target.experiment_run_id);
+
+        let latest_tenant_neighbor = store
+            .latest_run(
+                other_tenant,
+                project.clone(),
+                Some(dataset.clone()),
+                Some(evaluator.clone()),
+            )
+            .await?
+            .ok_or_else(|| anyhow!("expected tenant-neighbor latest report"))?;
+        assert_eq!(
+            latest_tenant_neighbor.experiment_run_id,
+            tenant_neighbor.experiment_run_id
+        );
+
+        let latest_project_neighbor = store
+            .latest_run(
+                tenant.clone(),
+                other_project,
+                Some(dataset.clone()),
+                Some(evaluator.clone()),
+            )
+            .await?
+            .ok_or_else(|| anyhow!("expected project-neighbor latest report"))?;
+        assert_eq!(
+            latest_project_neighbor.experiment_run_id,
+            project_neighbor.experiment_run_id
+        );
+
+        let missing_scope = store
+            .latest_run(
+                TenantId::new("missing-tenant")?,
+                project,
+                Some(dataset),
+                Some(evaluator),
+            )
+            .await?;
+        assert!(missing_scope.is_none());
+        Ok(())
+    }
+
     #[test]
     fn experiment_refuses_underpowered_gate_policy() {
         let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
@@ -1399,6 +1557,8 @@ mod tests {
                 decision: GateDecision::Pass,
                 test: StatisticalTest::PairedT,
                 adjusted_alpha: 0.05,
+                mde: None,
+                required_n: None,
             },
             decision: GateDecision::Pass,
             gate_policy: GatePolicy {

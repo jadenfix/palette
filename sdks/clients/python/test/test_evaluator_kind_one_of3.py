@@ -35,13 +35,11 @@ class TestEvaluatorKindOneOf3(unittest.TestCase):
         model = EvaluatorKindOneOf3()
         if include_optional:
             return EvaluatorKindOneOf3(
-                max_micros = 56,
-                type = 'cost_budget'
+                type = 'json_object'
             )
         else:
             return EvaluatorKindOneOf3(
-                max_micros = 56,
-                type = 'cost_budget',
+                type = 'json_object',
         )
         """
 

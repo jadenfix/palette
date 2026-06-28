@@ -165,7 +165,8 @@ impl UrlPolicy {
 
         // --- hostname checks ---
         let host_lower = host.to_ascii_lowercase();
-        if host_lower == "localhost" || host_lower.ends_with(".localhost") {
+        let host_for_name_checks = host_lower.trim_end_matches('.');
+        if host_for_name_checks == "localhost" || host_for_name_checks.ends_with(".localhost") {
             return PolicyVerdict::Block(format!(
                 "rejected: 'localhost' hostname resolves to loopback: {url}"
             ));
@@ -449,6 +450,11 @@ mod tests {
         // Subdomains of localhost
         blocks(&p, "http://api.localhost");
         blocks(&p, "http://db.localhost:5432");
+        // DNS absolute-name form must not bypass the localhost guard.
+        blocks(&p, "http://localhost.");
+        blocks(&p, "http://localhost.:3000");
+        blocks(&p, "http://api.localhost.");
+        blocks(&p, "http://LOCALHOST.");
     }
 
     #[test]

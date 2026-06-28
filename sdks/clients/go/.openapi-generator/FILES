@@ -77,6 +77,7 @@ docs/EvaluationCase.md
 docs/EvaluatorKind.md
 docs/EvaluatorKindOneOf.md
 docs/EvaluatorKindOneOf1.md
+docs/EvaluatorKindOneOf10.md
 docs/EvaluatorKindOneOf2.md
 docs/EvaluatorKindOneOf3.md
 docs/EvaluatorKindOneOf4.md
@@ -215,6 +216,7 @@ model_evaluation_case.go
 model_evaluator_kind.go
 model_evaluator_kind_one_of.go
 model_evaluator_kind_one_of_1.go
+model_evaluator_kind_one_of_10.go
 model_evaluator_kind_one_of_2.go
 model_evaluator_kind_one_of_3.go
 model_evaluator_kind_one_of_4.go
