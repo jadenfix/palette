@@ -186,6 +186,14 @@ fn sha256_hex(input: &[u8]) -> String {
     to_hex(&hasher.finalize())
 }
 
+fn is_session_secret(secret: &str) -> bool {
+    secret.len() == 64
+        && secret
+            .as_bytes()
+            .iter()
+            .all(|byte| byte.is_ascii_hexdigit())
+}
+
 /// Mint a new session token for `user_id`. The returned plaintext token is the
 /// only time the secret is available; only its hash is persisted.
 pub fn mint_session(user_id: UserId, ttl: Duration, now: Timestamp) -> MintedSession {
@@ -218,7 +226,7 @@ pub fn parse_session_token(token: &str) -> Result<(SessionId, &str)> {
         .strip_prefix("bs_")
         .ok_or(AccountError::MalformedSession)?;
     let (id, secret) = rest.split_once('_').ok_or(AccountError::MalformedSession)?;
-    if id.is_empty() || secret.is_empty() {
+    if id.is_empty() || !is_session_secret(secret) {
         return Err(AccountError::MalformedSession);
     }
     let session_id = SessionId::new(id.to_string()).map_err(|_| AccountError::MalformedSession)?;
@@ -748,7 +756,10 @@ mod tests {
         assert_eq!(validated_user.user_id, user.user_id);
 
         // Tampered secret is rejected.
-        let tampered = format!("{}x", minted.token);
+        let mut tampered = minted.token.clone();
+        let replacement = if tampered.ends_with('0') { '1' } else { '0' };
+        tampered.pop();
+        tampered.push(replacement);
         assert!(matches!(
             store.validate_session(&tampered, now).await,
             Err(AccountError::SessionInvalid)
@@ -780,14 +791,61 @@ mod tests {
         assert!(ok(store.get_session(&minted.session.session_id).await).is_none());
     }
 
+    #[test]
+    fn minted_session_token_parses() {
+        let user_id = ok(UserId::new(Uuid::new_v4().to_string()));
+        let minted = mint_session(user_id, default_session_ttl(), Utc::now());
+
+        let (session_id, secret) = ok(parse_session_token(&minted.token));
+
+        assert_eq!(session_id, minted.session.session_id);
+        assert_eq!(secret.len(), 64);
+        assert!(secret
+            .as_bytes()
+            .iter()
+            .all(|byte| byte.is_ascii_hexdigit()));
+        assert_eq!(minted.session.secret_hash, sha256_hex(secret.as_bytes()));
+    }
+
+    #[test]
+    fn parse_session_token_rejects_bad_secret_format() {
+        let id = Uuid::new_v4();
+        let short_secret = "a".repeat(63);
+        let long_secret = "a".repeat(65);
+        let non_hex_secret = format!("{}g", "a".repeat(63));
+
+        for secret in [short_secret, long_secret, non_hex_secret] {
+            let token = format!("bs_{id}_{secret}");
+            assert!(matches!(
+                parse_session_token(&token),
+                Err(AccountError::MalformedSession)
+            ));
+        }
+    }
+
     #[tokio::test]
     async fn malformed_session_tokens() {
         let store = store();
         let now = Utc::now();
-        for bad in ["", "nope", "bs_", "bs_only", "bs__secret", "bs_id_"] {
+        let id = Uuid::new_v4();
+        let short_secret = "a".repeat(63);
+        let long_secret = "a".repeat(65);
+        let non_hex_secret = format!("{}g", "a".repeat(63));
+        let bad_tokens = [
+            String::new(),
+            "nope".to_string(),
+            "bs_".to_string(),
+            "bs_only".to_string(),
+            "bs__secret".to_string(),
+            "bs_id_".to_string(),
+            format!("bs_{id}_{short_secret}"),
+            format!("bs_{id}_{long_secret}"),
+            format!("bs_{id}_{non_hex_secret}"),
+        ];
+        for bad in bad_tokens {
             assert!(matches!(
-                store.validate_session(bad, now).await,
-                Err(AccountError::MalformedSession | AccountError::SessionInvalid)
+                store.validate_session(&bad, now).await,
+                Err(AccountError::MalformedSession)
             ));
         }
     }
