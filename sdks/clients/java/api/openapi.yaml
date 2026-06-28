@@ -6051,7 +6051,7 @@ components:
       type: string
     ExperimentComparison:
       example:
-        p_value: 2.027123023002322
+        p_value: 4.145608029883936
         baseline_mean: 5.637376656633329
         decision: pass
         sample_size: 0
@@ -6059,8 +6059,10 @@ components:
         adjusted_alpha: 5.962133916683182
         delta: 3.616076749251911
         ci_high: 7.061401241503109
+        required_n: 0
         candidate_mean: 2.3021358869347655
         ci_low: 9.301444243932576
+        mde: 2.027123023002322
       properties:
         adjusted_alpha:
           format: double
@@ -6082,12 +6084,36 @@ components:
         delta:
           format: double
           type: number
+        mde:
+          description: |-
+            Minimum detectable effect at the current sample size, in the metric's own
+            units, at the gate's (adjusted) alpha and the standard power of 0.8
+            (§10.3 #5). Populated only when `decision` is `Inconclusive` — the
+            comparison lacked the power to resolve the regression bound, and
+            regressions smaller than this are invisible at this N. `None` on a
+            conclusive decision (or when the paired differences have zero spread, so
+            no effect-scale is defined). This replaces a bare "underpowered" flag with
+            the actionable "how small an effect could we even have seen" number.
+          format: double
+          nullable: true
+          type: number
         p_value:
           description: |-
             Real two-sided p-value from `test`. The previous normal-approximation path
             reported no p-value at all.
           format: double
           type: number
+        required_n:
+          description: |-
+            Number of paired observations that would be required to detect the
+            *observed* effect at the gate's (adjusted) alpha and power 0.8 (§10.3 #5).
+            Populated only when `decision` is `Inconclusive` and the observed effect is
+            non-degenerate (non-zero delta over non-zero difference spread). `None`
+            otherwise. This answers "how many more cases would have made this
+            conclusive?".
+          minimum: 0
+          nullable: true
+          type: integer
         sample_size:
           minimum: 0
           type: integer
@@ -6111,7 +6137,7 @@ components:
         evaluator_version_id: evaluator_version_id
         tenant_id: tenant_id
         comparison:
-          p_value: 2.027123023002322
+          p_value: 4.145608029883936
           baseline_mean: 5.637376656633329
           decision: pass
           sample_size: 0
@@ -6119,16 +6145,18 @@ components:
           adjusted_alpha: 5.962133916683182
           delta: 3.616076749251911
           ci_high: 7.061401241503109
+          required_n: 0
           candidate_mean: 2.3021358869347655
           ci_low: 9.301444243932576
+          mde: 2.027123023002322
         decision: null
         dataset_id: dataset_id
         dataset_version_id: dataset_version_id
         candidate_release_id: candidate_release_id
         gate_policy:
-          max_regression: 1.0246457001441578
+          max_regression: 6.84685269835264
           min_sample_size: 0
-          alpha: 7.386281948385884
+          alpha: 1.0246457001441578
           comparison_count: 0
         created_at: 2000-01-23T04:56:07.000+00:00
         experiment_run_id: experiment_run_id
@@ -6264,9 +6292,9 @@ components:
       type: string
     GatePolicy:
       example:
-        max_regression: 1.0246457001441578
+        max_regression: 6.84685269835264
         min_sample_size: 0
-        alpha: 7.386281948385884
+        alpha: 1.0246457001441578
         comparison_count: 0
       properties:
         alpha:
@@ -6294,7 +6322,7 @@ components:
         tenant_id: tenant_id
         reason: reason
         comparison:
-          p_value: 2.027123023002322
+          p_value: 4.145608029883936
           baseline_mean: 5.637376656633329
           decision: pass
           sample_size: 0
@@ -6302,8 +6330,10 @@ components:
           adjusted_alpha: 5.962133916683182
           delta: 3.616076749251911
           ci_high: 7.061401241503109
+          required_n: 0
           candidate_mean: 2.3021358869347655
           ci_low: 9.301444243932576
+          mde: 2.027123023002322
         dataset_id: dataset_id
         candidate_release_id: candidate_release_id
         created_at: 2000-01-23T04:56:07.000+00:00
@@ -6313,9 +6343,9 @@ components:
         gate_run_id: gate_run_id
         experiment_decision: pass
         experiment_gate_policy:
-          max_regression: 1.0246457001441578
+          max_regression: 6.84685269835264
           min_sample_size: 0
-          alpha: 7.386281948385884
+          alpha: 1.0246457001441578
           comparison_count: 0
         project_id: project_id
         gate_id: gate_id
@@ -7223,9 +7253,9 @@ components:
         evaluator_id: evaluator_id
         candidate_release_id: candidate_release_id
         gate_policy:
-          max_regression: 1.0246457001441578
+          max_regression: 6.84685269835264
           min_sample_size: 0
-          alpha: 7.386281948385884
+          alpha: 1.0246457001441578
           comparison_count: 0
         baseline_release_id: baseline_release_id
       properties:
@@ -7344,9 +7374,9 @@ components:
         evaluator_id: evaluator_id
         candidate_release_id: candidate_release_id
         gate_policy:
-          max_regression: 1.0246457001441578
+          max_regression: 6.84685269835264
           min_sample_size: 0
-          alpha: 7.386281948385884
+          alpha: 1.0246457001441578
           comparison_count: 0
         baseline_release_id: baseline_release_id
       properties:

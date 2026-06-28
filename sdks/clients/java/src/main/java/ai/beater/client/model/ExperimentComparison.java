@@ -27,6 +27,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
+import org.openapitools.jackson.nullable.JsonNullable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.util.NoSuchElementException;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -42,7 +46,9 @@ import ai.beater.client.ApiClient;
   ExperimentComparison.JSON_PROPERTY_CI_LOW,
   ExperimentComparison.JSON_PROPERTY_DECISION,
   ExperimentComparison.JSON_PROPERTY_DELTA,
+  ExperimentComparison.JSON_PROPERTY_MDE,
   ExperimentComparison.JSON_PROPERTY_P_VALUE,
+  ExperimentComparison.JSON_PROPERTY_REQUIRED_N,
   ExperimentComparison.JSON_PROPERTY_SAMPLE_SIZE,
   ExperimentComparison.JSON_PROPERTY_TEST
 })
@@ -76,9 +82,15 @@ public class ExperimentComparison {
   @javax.annotation.Nonnull
   private Double delta;
 
+  public static final String JSON_PROPERTY_MDE = "mde";
+  private JsonNullable<Double> mde = JsonNullable.<Double>undefined();
+
   public static final String JSON_PROPERTY_P_VALUE = "p_value";
   @javax.annotation.Nonnull
   private Double pValue;
+
+  public static final String JSON_PROPERTY_REQUIRED_N = "required_n";
+  private JsonNullable<Integer> requiredN = JsonNullable.<Integer>undefined();
 
   public static final String JSON_PROPERTY_SAMPLE_SIZE = "sample_size";
   @javax.annotation.Nonnull
@@ -259,6 +271,38 @@ public class ExperimentComparison {
   }
 
 
+  public ExperimentComparison mde(@javax.annotation.Nullable Double mde) {
+    this.mde = JsonNullable.<Double>of(mde);
+    return this;
+  }
+
+  /**
+   * Minimum detectable effect at the current sample size, in the metric&#39;s own units, at the gate&#39;s (adjusted) alpha and the standard power of 0.8 (§10.3 #5). Populated only when &#x60;decision&#x60; is &#x60;Inconclusive&#x60; — the comparison lacked the power to resolve the regression bound, and regressions smaller than this are invisible at this N. &#x60;None&#x60; on a conclusive decision (or when the paired differences have zero spread, so no effect-scale is defined). This replaces a bare \&quot;underpowered\&quot; flag with the actionable \&quot;how small an effect could we even have seen\&quot; number.
+   * @return mde
+   */
+  @javax.annotation.Nullable
+  @JsonIgnore
+  public Double getMde() {
+        return mde.orElse(null);
+  }
+
+  @JsonProperty(JSON_PROPERTY_MDE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public JsonNullable<Double> getMde_JsonNullable() {
+    return mde;
+  }
+  
+  @JsonProperty(JSON_PROPERTY_MDE)
+  public void setMde_JsonNullable(JsonNullable<Double> mde) {
+    this.mde = mde;
+  }
+
+  public void setMde(@javax.annotation.Nullable Double mde) {
+    this.mde = JsonNullable.<Double>of(mde);
+  }
+
+
   public ExperimentComparison pValue(@javax.annotation.Nonnull Double pValue) {
     this.pValue = pValue;
     return this;
@@ -280,6 +324,39 @@ public class ExperimentComparison {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setpValue(@javax.annotation.Nonnull Double pValue) {
     this.pValue = pValue;
+  }
+
+
+  public ExperimentComparison requiredN(@javax.annotation.Nullable Integer requiredN) {
+    this.requiredN = JsonNullable.<Integer>of(requiredN);
+    return this;
+  }
+
+  /**
+   * Number of paired observations that would be required to detect the *observed* effect at the gate&#39;s (adjusted) alpha and power 0.8 (§10.3 #5). Populated only when &#x60;decision&#x60; is &#x60;Inconclusive&#x60; and the observed effect is non-degenerate (non-zero delta over non-zero difference spread). &#x60;None&#x60; otherwise. This answers \&quot;how many more cases would have made this conclusive?\&quot;.
+   * minimum: 0
+   * @return requiredN
+   */
+  @javax.annotation.Nullable
+  @JsonIgnore
+  public Integer getRequiredN() {
+        return requiredN.orElse(null);
+  }
+
+  @JsonProperty(JSON_PROPERTY_REQUIRED_N)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public JsonNullable<Integer> getRequiredN_JsonNullable() {
+    return requiredN;
+  }
+  
+  @JsonProperty(JSON_PROPERTY_REQUIRED_N)
+  public void setRequiredN_JsonNullable(JsonNullable<Integer> requiredN) {
+    this.requiredN = requiredN;
+  }
+
+  public void setRequiredN(@javax.annotation.Nullable Integer requiredN) {
+    this.requiredN = JsonNullable.<Integer>of(requiredN);
   }
 
 
@@ -351,14 +428,27 @@ public class ExperimentComparison {
         Objects.equals(this.ciLow, experimentComparison.ciLow) &&
         Objects.equals(this.decision, experimentComparison.decision) &&
         Objects.equals(this.delta, experimentComparison.delta) &&
+        equalsNullable(this.mde, experimentComparison.mde) &&
         Objects.equals(this.pValue, experimentComparison.pValue) &&
+        equalsNullable(this.requiredN, experimentComparison.requiredN) &&
         Objects.equals(this.sampleSize, experimentComparison.sampleSize) &&
         Objects.equals(this.test, experimentComparison.test);
   }
 
+  private static <T> boolean equalsNullable(JsonNullable<T> a, JsonNullable<T> b) {
+    return a == b || (a != null && b != null && a.isPresent() && b.isPresent() && Objects.deepEquals(a.get(), b.get()));
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(adjustedAlpha, baselineMean, candidateMean, ciHigh, ciLow, decision, delta, pValue, sampleSize, test);
+    return Objects.hash(adjustedAlpha, baselineMean, candidateMean, ciHigh, ciLow, decision, delta, hashCodeNullable(mde), pValue, hashCodeNullable(requiredN), sampleSize, test);
+  }
+
+  private static <T> int hashCodeNullable(JsonNullable<T> a) {
+    if (a == null) {
+      return 1;
+    }
+    return a.isPresent() ? Arrays.deepHashCode(new Object[]{a.get()}) : 31;
   }
 
   @Override
@@ -372,7 +462,9 @@ public class ExperimentComparison {
     sb.append("    ciLow: ").append(toIndentedString(ciLow)).append("\n");
     sb.append("    decision: ").append(toIndentedString(decision)).append("\n");
     sb.append("    delta: ").append(toIndentedString(delta)).append("\n");
+    sb.append("    mde: ").append(toIndentedString(mde)).append("\n");
     sb.append("    pValue: ").append(toIndentedString(pValue)).append("\n");
+    sb.append("    requiredN: ").append(toIndentedString(requiredN)).append("\n");
     sb.append("    sampleSize: ").append(toIndentedString(sampleSize)).append("\n");
     sb.append("    test: ").append(toIndentedString(test)).append("\n");
     sb.append("}");
@@ -457,9 +549,19 @@ public class ExperimentComparison {
       joiner.add(String.format("%sdelta%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getDelta()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
+    // add `mde` to the URL query string
+    if (getMde() != null) {
+      joiner.add(String.format("%smde%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getMde()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
     // add `p_value` to the URL query string
     if (getpValue() != null) {
       joiner.add(String.format("%sp_value%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getpValue()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `required_n` to the URL query string
+    if (getRequiredN() != null) {
+      joiner.add(String.format("%srequired_n%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getRequiredN()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `sample_size` to the URL query string

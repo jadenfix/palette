@@ -17,6 +17,7 @@
 //! | [`compare_paired`] | §10.3 | paired deploy-gate selector |
 //! | [`paired_t_test`] | §10.3 | continuous paired metric |
 //! | [`mcnemar_exact_p`] | §10.3 | paired binary outcome |
+//! | [`required_sample_size`] / [`minimum_detectable_effect`] / [`achieved_power`] | §10.3 #5 | power / MDE / minimum-sample planning |
 //! | [`holm_bonferroni`] / [`benjamini_hochberg`] | §10.3 #4 | multiple-comparison corrections |
 //!
 //! The paired layer ([`compare_paired`]) is what the **experiment gate** calls
@@ -43,10 +44,12 @@ mod mcnemar;
 mod multiplicity;
 mod numerics;
 mod paired;
+mod power;
 
 pub use mcnemar::mcnemar_exact_p;
 pub use multiplicity::{benjamini_hochberg, holm_bonferroni, MultiplicityDecision};
 pub use paired::paired_t_test;
+pub use power::{achieved_power, minimum_detectable_effect, required_sample_size, DEFAULT_POWER};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error type
