@@ -1153,6 +1153,99 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn dataset_versions_are_project_scoped() {
+        let store = SqliteDatasetStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project-a").unwrap_or_else(|err| panic!("{err}"));
+        let other_project = ProjectId::new("project-b").unwrap_or_else(|err| panic!("{err}"));
+        let dataset = store
+            .create_dataset(tenant.clone(), project.clone(), "failures".to_string())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let trace = fixture_trace(&tenant, &project);
+        let case = promote_trace_span_to_case(
+            tenant.clone(),
+            project.clone(),
+            dataset.dataset_id.clone(),
+            &trace,
+            None,
+            Some(json!("answer")),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        let case = store
+            .put_case(case)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let version = store
+            .create_version(
+                tenant.clone(),
+                project.clone(),
+                dataset.dataset_id.clone(),
+                Some(vec![case.case_id]),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let wrong_project_cases = store
+            .list_cases(
+                tenant.clone(),
+                other_project.clone(),
+                dataset.dataset_id.clone(),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(wrong_project_cases.is_empty());
+
+        let err = match store
+            .create_version(
+                tenant.clone(),
+                other_project.clone(),
+                dataset.dataset_id.clone(),
+                None,
+            )
+            .await
+        {
+            Ok(version) => panic!("wrong-project version should be rejected, got {version:?}"),
+            Err(err) => err,
+        };
+        assert!(matches!(
+            err,
+            StoreError::NotFound(message) if message.contains(dataset.dataset_id.as_str())
+        ));
+
+        let err = match store
+            .get_version(
+                tenant.clone(),
+                other_project.clone(),
+                dataset.dataset_id.clone(),
+                version.version_id,
+            )
+            .await
+        {
+            Ok(version) => panic!("wrong-project version should not load, got {version:?}"),
+            Err(err) => err,
+        };
+        assert!(matches!(
+            err,
+            StoreError::NotFound(message) if message.contains("dataset version")
+        ));
+
+        let err = match promote_trace_span_to_case(
+            tenant,
+            other_project,
+            dataset.dataset_id,
+            &trace,
+            None,
+            Some(json!("answer")),
+        ) {
+            Ok(case) => panic!("cross-project promotion should be rejected, got {case:?}"),
+            Err(err) => err,
+        };
+        assert!(err.to_string().contains("crosses project boundary"));
+    }
+
+    #[tokio::test]
     async fn dataset_store_rejects_orphan_cases_and_versions() {
         let store = SqliteDatasetStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
         let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
