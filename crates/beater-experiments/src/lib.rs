@@ -1399,6 +1399,8 @@ mod tests {
                 decision: GateDecision::Pass,
                 test: StatisticalTest::PairedT,
                 adjusted_alpha: 0.05,
+                mde: None,
+                required_n: None,
             },
             decision: GateDecision::Pass,
             gate_policy: GatePolicy {
