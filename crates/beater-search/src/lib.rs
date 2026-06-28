@@ -84,6 +84,9 @@ fn context_store_error(error: StoreError, context: String) -> StoreError {
         StoreError::Backpressure(message) => {
             StoreError::Backpressure(format!("{context}: {message}"))
         }
+        StoreError::LimitExceeded(message) => {
+            StoreError::LimitExceeded(format!("{context}: {message}"))
+        }
         StoreError::Integrity(message) => StoreError::Integrity(format!("{context}: {message}")),
         StoreError::Backend(message) => StoreError::Backend(format!("{context}: {message}")),
     }

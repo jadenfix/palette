@@ -3707,6 +3707,9 @@ impl From<StoreError> for ApiError {
             StoreError::Backpressure(_) => {
                 Self::with_status(StatusCode::SERVICE_UNAVAILABLE, error.to_string())
             }
+            StoreError::LimitExceeded(_) => {
+                Self::with_status(StatusCode::PAYLOAD_TOO_LARGE, error.to_string())
+            }
             StoreError::Integrity(_) | StoreError::Backend(_) => Self::internal(error.to_string()),
         }
     }

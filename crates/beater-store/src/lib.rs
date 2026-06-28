@@ -19,6 +19,8 @@ pub enum StoreError {
     Conflict(String),
     #[error("backpressure: {0}")]
     Backpressure(String),
+    #[error("limit exceeded: {0}")]
+    LimitExceeded(String),
     #[error("integrity error: {0}")]
     Integrity(String),
     #[error("backend error: {0}")]
