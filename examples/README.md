@@ -35,6 +35,7 @@ OTLP from common web frameworks, no Beater SDK required:
 | `python/frameworks/flask_app.py` | Flask |
 | `typescript/frameworks/express-otlp.mjs` | Express |
 | `typescript/frameworks/llamaindex-otlp.mjs` | LlamaIndex.TS |
+| `typescript/frameworks/vercel-ai-sdk-otlp.mjs` | Vercel AI SDK |
 
 ## Workflow import examples (Temporal)
 

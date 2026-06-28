@@ -52,10 +52,13 @@ jobs:
           python3 -m py_compile scripts/check-gate2-outside-readiness.py
           python3 -m py_compile scripts/check-gate2-public-handoff.py
           python3 -m py_compile scripts/check-gate0-foundations.py
+          python3 -m py_compile scripts/check-framework-examples.py
           python3 -m py_compile scripts/generate-gate2-outside-proof.py
           python3 -m py_compile scripts/gate2_proof_contract.py
           python3 -m py_compile scripts/seed-gate2-redaction-trace.py
+          python3 -m py_compile scripts/tests/test_check_framework_examples.py
           python3 -m py_compile scripts/tests/test_check_gate2_outside_readiness.py
+          python3 scripts/tests/test_check_framework_examples.py
           python3 scripts/tests/test_check_gate2_outside_readiness.py
           scripts/validate-gate2-outside-proof.sh --allow-pending
 
