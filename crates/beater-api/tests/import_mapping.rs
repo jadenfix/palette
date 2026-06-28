@@ -3,8 +3,10 @@ use std::sync::Arc;
 use axum::body::{to_bytes, Body};
 use beater_api::{router, ApiState};
 use beater_bus::InMemoryBus;
+use beater_core::{TenantId, TraceId};
 use beater_ingest::{IngestOutcome, IngestPolicy, IngestService};
 use beater_schema::{AgentSpanKind, SpanStatus, TraceView};
+use beater_store::TraceStore;
 use beater_store_obj::FsArtifactStore;
 use beater_store_sql::SqliteTraceStore;
 use http::{Request, StatusCode};
@@ -19,6 +21,7 @@ async fn import_source_mapping_projects_foreign_trace() {
             .unwrap_or_else(|err| panic!("{err}")),
     );
     let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+    let traces_for_assert = traces.clone();
     let bus = Arc::new(InMemoryBus::new(16));
     let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
     let app = router(ApiState::new(ingest, traces));
@@ -109,7 +112,22 @@ async fn import_source_mapping_projects_foreign_trace() {
     assert_eq!(span.name, "mapped chat");
     assert_eq!(span.status, SpanStatus::Ok);
     assert_eq!(span.normalizer_version, "beater-mapping-import-v1");
-    assert_eq!(span.attributes["dataset.case_id"], json!("case-1"));
-    assert_eq!(span.attributes["vendor.score"], json!(0.9));
+    assert_eq!(span.attributes["dataset.case_id"], json!("[redacted]"));
+    assert_eq!(span.attributes["vendor.score"], json!("[redacted]"));
     assert_eq!(span.attributes["output.value"], json!("[redacted]"));
+
+    let stored_trace = traces_for_assert
+        .get_trace(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            TraceId::new("api-mapped-trace").unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let stored_span = &stored_trace.spans[0];
+    assert_eq!(stored_span.attributes["dataset.case_id"], json!("case-1"));
+    assert_eq!(stored_span.attributes["vendor.score"], json!(0.9));
+    assert_eq!(
+        stored_span.attributes["output.value"],
+        json!({"answer": "mapped"})
+    );
 }

@@ -1547,7 +1547,7 @@ impl IngestService {
             }
             if let Some(allowed) = &self.policy.allowed_attributes {
                 if !allowed.contains(&key) {
-                    dropped.insert(key, value);
+                    dropped.insert(key, json!("[redacted]"));
                     continue;
                 }
             }
@@ -3687,7 +3687,7 @@ mod tests {
         // Deny wins over allow.
         assert!(!span.attributes.contains_key("secret"));
         let dropped = &span.unmapped_attrs["dropped_attributes"];
-        assert_eq!(dropped["drop_me"], json!("unlisted"));
+        assert_eq!(dropped["drop_me"], json!("[redacted]"));
         assert_eq!(dropped["secret"], json!("[redacted]"));
         assert!(dropped.get("keep").is_none());
     }
