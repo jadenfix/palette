@@ -1425,4 +1425,68 @@ mod tests {
             ))
             .unwrap_or_else(|err| panic!("{err}"));
     }
+
+    // ---------------------------------------------------------------------------
+    // Pluggability proof: the same round-trip test runs through any DurableBus
+    // implementation, proving the trait is the correct seam.
+    // ---------------------------------------------------------------------------
+
+    /// Shared publish → consume → ack round-trip exercised via the trait object.
+    ///
+    /// A second backend that implements `DurableBus` passes with zero changes to
+    /// the callers; only this helper needs a new call-site.
+    async fn trait_round_trip(bus: std::sync::Arc<dyn DurableBus>) {
+        let msg = fixture_message("kind.alpha");
+
+        // publish is accepted and message appears in depth counts
+        let ack = bus
+            .publish(msg.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(ack, PublishAck::accepted());
+        assert_eq!(bus.depth().await.unwrap(), 1);
+        assert_eq!(bus.depth_for_kind("kind.alpha").await.unwrap(), 1);
+
+        // kind filter does not bleed into unrelated lanes
+        assert_eq!(bus.depth_for_kind("kind.beta").await.unwrap(), 0);
+
+        // consume moves the message to inflight — depth still 1 (queue+inflight)
+        let batch = bus
+            .consume_batch(10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(batch.len(), 1);
+        assert_eq!(batch[0].message_id, msg.message_id);
+        assert_eq!(bus.depth().await.unwrap(), 1);
+
+        // ack removes from inflight — depth drops to zero, DLQ empty
+        bus.ack(batch[0].clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(bus.depth().await.unwrap(), 0);
+        assert!(bus
+            .dlq()
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .is_empty());
+    }
+
+    /// The in-memory backend satisfies the `DurableBus` trait object.
+    #[tokio::test]
+    async fn backend_pluggability_in_memory_bus() {
+        let bus: std::sync::Arc<dyn DurableBus> = std::sync::Arc::new(InMemoryBus::new(8));
+        trait_round_trip(bus).await;
+    }
+
+    /// The SQLite-backed durable bus satisfies the same `DurableBus` trait object,
+    /// proving that a second backend (NATS, Kafka, …) can be wired without touching
+    /// any caller.
+    #[tokio::test]
+    async fn backend_pluggability_sqlite_durable_bus() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let path = tempdir.path().join("bus.sqlite");
+        let bus: std::sync::Arc<dyn DurableBus> =
+            std::sync::Arc::new(SqliteDurableBus::open(&path, 8).unwrap_or_else(|err| panic!("{err}")));
+        trait_round_trip(bus).await;
+    }
 }
