@@ -1253,8 +1253,16 @@ async fn search_spans(
         environment_id: params.environment_id,
         trace_id: params.trace_id.map(TraceId::new).transpose()?,
         span_id: params.span_id.map(beater_core::SpanId::new).transpose()?,
-        kind: params.kind,
-        status: params.status,
+        kind: params
+            .kind
+            .map(parse_span_kind)
+            .transpose()?
+            .map(|kind| kind.as_str().to_string()),
+        status: params
+            .status
+            .map(parse_span_status)
+            .transpose()?
+            .map(|status| status.as_str().to_string()),
         model: params.model,
         tool: params.tool,
         limit: params.limit,
@@ -4022,6 +4030,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         let response = app
+            .clone()
             .oneshot(
                 Request::builder()
                     .method("GET")
@@ -4039,6 +4048,51 @@ mod tests {
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(search.hits.len(), 1);
         assert_eq!(search.hits[0].trace_id, "trace");
+
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/search/tenant/spans?q=hello&status=ok&kind=agent_run")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let search: SearchResponse =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(search.hits.len(), 1);
+        assert_eq!(search.hits[0].trace_id, "trace");
+
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/search/tenant/spans?q=hello&kind=not.a.kind")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/search/tenant/spans?q=hello&status=passed")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     }
 
     #[tokio::test]
