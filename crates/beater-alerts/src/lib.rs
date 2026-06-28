@@ -97,7 +97,7 @@ pub enum AlertSeverity {
     Critical,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[derive(Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct AlertPolicy {
     pub policy_id: String,
     pub endpoint_url: String,
@@ -106,6 +106,24 @@ pub struct AlertPolicy {
     pub fire_when_score_at_or_below: f64,
     pub dedupe_window_seconds: i64,
     pub maintenance_windows: Vec<MaintenanceWindow>,
+}
+
+impl std::fmt::Debug for AlertPolicy {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("AlertPolicy")
+            .field("policy_id", &self.policy_id)
+            .field("endpoint_url", &self.endpoint_url)
+            .field("signing_secret", &"[redacted]")
+            .field("severity", &self.severity)
+            .field(
+                "fire_when_score_at_or_below",
+                &self.fire_when_score_at_or_below,
+            )
+            .field("dedupe_window_seconds", &self.dedupe_window_seconds)
+            .field("maintenance_windows", &self.maintenance_windows)
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -615,6 +633,24 @@ mod tests {
             suppressed.suppressed_reason.as_deref(),
             Some("maintenance_window")
         );
+    }
+
+    #[test]
+    fn alert_policy_debug_redacts_signing_secret() {
+        let policy = AlertPolicy {
+            policy_id: "low-score".to_string(),
+            endpoint_url: "https://example.test/webhook".to_string(),
+            signing_secret: "super-secret-signing-key".to_string(),
+            severity: AlertSeverity::Critical,
+            fire_when_score_at_or_below: 0.5,
+            dedupe_window_seconds: 60,
+            maintenance_windows: Vec::new(),
+        };
+
+        let debug = format!("{policy:?}");
+        assert!(debug.contains("AlertPolicy"));
+        assert!(debug.contains("signing_secret: \"[redacted]\""));
+        assert!(!debug.contains("super-secret-signing-key"));
     }
 
     #[test]

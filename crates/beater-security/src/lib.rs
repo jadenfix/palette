@@ -76,10 +76,20 @@ pub struct ApiKeyRecord {
     pub last_used_at: Option<Timestamp>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreatedApiKey {
     pub record: ApiKeyRecord,
     pub secret: String,
+}
+
+impl std::fmt::Debug for CreatedApiKey {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("CreatedApiKey")
+            .field("record", &self.record)
+            .field("secret", &"[redacted]")
+            .finish()
+    }
 }
 
 pub fn create_api_key(
@@ -324,6 +334,24 @@ mod tests {
             ),
             Err(SecurityError::MissingScope(scope)) if scope == "pii:unmask"
         ));
+    }
+
+    #[test]
+    fn created_api_key_debug_redacts_secret() {
+        let mut scopes = BTreeSet::new();
+        scopes.insert(ApiScope::TraceWrite);
+        let created = create_api_key(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            scopes,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        let debug = format!("{created:?}");
+        assert!(debug.contains("CreatedApiKey"));
+        assert!(debug.contains("secret: \"[redacted]\""));
+        assert!(!debug.contains(&created.secret));
     }
 
     #[test]
