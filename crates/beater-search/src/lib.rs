@@ -165,7 +165,7 @@ impl SearchIndex for TantivySearchIndex {
                     self.fields.tool => tool_text(span).unwrap_or_default(),
                     self.fields.input_body => input_body_text(span),
                     self.fields.output_body => output_body_text(span),
-                    self.fields.error_body => error_body_text(span),
+                    self.fields.error => error_text(span),
                     self.fields.text => searchable_text(span),
                 ))
                 .map_err(StoreError::backend)?;
@@ -193,7 +193,7 @@ impl SearchIndex for TantivySearchIndex {
                 self.fields.tool,
                 self.fields.input_body,
                 self.fields.output_body,
-                self.fields.error_body,
+                self.fields.error,
             ],
         );
         let parsed = self.filtered_query(&query, &parser)?;
@@ -329,7 +329,7 @@ struct SearchFields {
     tool: tantivy::schema::Field,
     input_body: tantivy::schema::Field,
     output_body: tantivy::schema::Field,
-    error_body: tantivy::schema::Field,
+    error: tantivy::schema::Field,
     text: tantivy::schema::Field,
 }
 
@@ -348,7 +348,7 @@ fn build_schema() -> (Schema, SearchFields) {
     let tool = builder.add_text_field("tool", TEXT | STORED);
     let input_body = builder.add_text_field("input_body", TEXT | STORED);
     let output_body = builder.add_text_field("output_body", TEXT | STORED);
-    let error_body = builder.add_text_field("error_body", TEXT | STORED);
+    let error = builder.add_text_field("error", TEXT | STORED);
     let text = builder.add_text_field("text", TEXT | STORED);
     (
         builder.build(),
@@ -366,7 +366,7 @@ fn build_schema() -> (Schema, SearchFields) {
             tool,
             input_body,
             output_body,
-            error_body,
+            error,
             text,
         },
     )
@@ -479,7 +479,7 @@ fn output_body_text(span: &CanonicalSpan) -> String {
     canonical_body_text(span, OUTPUT_BODY_ATTRS)
 }
 
-fn error_body_text(span: &CanonicalSpan) -> String {
+fn error_text(span: &CanonicalSpan) -> String {
     canonical_body_text(span, ERROR_BODY_ATTRS)
 }
 
@@ -509,7 +509,7 @@ fn searchable_text(span: &CanonicalSpan) -> String {
         tool_text(span).unwrap_or_default(),
         input_body_text(span),
         output_body_text(span),
-        error_body_text(span),
+        error_text(span),
     ];
     for (key, value) in &span.attributes {
         pieces.push(key.clone());
@@ -919,7 +919,7 @@ mod tests {
         let error = index
             .search(SearchRequest {
                 tenant_id: tenant.clone(),
-                text: "error_body:cardboom".to_string(),
+                text: "error:cardboom".to_string(),
                 limit: Some(10),
                 ..SearchRequest::default_for_tenant(tenant)
             })
@@ -948,7 +948,7 @@ mod tests {
 
         assert_eq!(input_body_text(&span), "inline prompt body");
         assert_eq!(output_body_text(&span), "inline output body");
-        assert_eq!(error_body_text(&span), "inline error body");
+        assert_eq!(error_text(&span), "inline error body");
     }
 
     #[tokio::test]
