@@ -535,6 +535,7 @@ where
             snapshot,
             &spec.experiment.evaluator,
             &spec.provider_secret_id,
+            spec.experiment.evaluator_version_id.as_str(),
             case,
             &baseline,
             judge_broker,
@@ -545,6 +546,7 @@ where
             snapshot,
             &spec.experiment.evaluator,
             &spec.provider_secret_id,
+            spec.experiment.evaluator_version_id.as_str(),
             case,
             &candidate,
             judge_broker,
@@ -716,6 +718,7 @@ async fn score_output_with_judge<B>(
     snapshot: &DatasetVersionSnapshot,
     evaluator: &EvaluatorSpec,
     provider_secret_id: &ProviderSecretId,
+    cache_namespace: &str,
     case: &beater_datasets::DatasetCase,
     output: &AgentRunOutput,
     judge_broker: &B,
@@ -741,6 +744,7 @@ where
                 trace: output.trace.clone().or_else(|| Some(case.trace.clone())),
             },
             provider_secret_id: provider_secret_id.clone(),
+            cache_namespace: Some(cache_namespace.to_string()),
         })
         .await
         .map_err(|err| anyhow!(err))

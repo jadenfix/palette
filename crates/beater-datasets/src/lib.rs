@@ -706,6 +706,7 @@ where
                 evaluator: spec.eval.evaluator.clone(),
                 case: eval_case,
                 provider_secret_id: spec.provider_secret_id.clone(),
+                cache_namespace: Some(spec.eval.evaluator_version_id.as_str().to_string()),
             })
             .await
             .with_context(|| format!("judge dataset case {}", case.case_id.as_str()))?;
