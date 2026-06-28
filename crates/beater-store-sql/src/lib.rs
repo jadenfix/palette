@@ -837,17 +837,30 @@ impl TraceStore for SqliteTraceStore {
         page: PageRequest,
     ) -> StoreResult<Page<SpanSummary>> {
         let limit = page.limit.max(1) as usize;
-        let offset = page
+        // Keyset (seek) cursor on `(start_time, span_id)` per ARCHITECTURE.md
+        // §20.2 #0.2: the cursor carries the last row of the previous page, so
+        // the scan resumes from that point instead of counting rows with
+        // OFFSET. This fixes scan cost at depth and keeps pages stable under
+        // concurrent inserts. A malformed cursor decodes to `None` and is
+        // treated as "start from the beginning" rather than panicking.
+        let (cursor_start_time, cursor_span_id) = match page
             .cursor
             .as_deref()
-            .and_then(|cursor| cursor.parse::<usize>().ok())
-            .unwrap_or(0);
+            .and_then(decode_span_cursor)
+        {
+            Some((start_time, span_id)) => (Some(start_time), Some(span_id)),
+            None => (None, None),
+        };
         let fetch_limit = limit.saturating_add(1);
         let fetch_limit_i64 = i64::try_from(fetch_limit).unwrap_or(i64::MAX);
-        let offset_i64 = i64::try_from(offset).unwrap_or(i64::MAX);
         let connection = self.lock()?;
         let mut statement = connection
             .prepare(
+                // The rows are ordered newest-first (`start_time DESC`), so the
+                // keyset predicate seeks to rows that sort strictly *after* the
+                // cursor in that order: `(start_time, span_id) < (cursor)`. The
+                // tenant filter leads the predicate per §8.3. `span_id` is the
+                // deterministic tiebreaker that matches the cursor key.
                 r#"
                 SELECT span_json
                 FROM spans
@@ -858,8 +871,11 @@ impl TraceStore for SqliteTraceStore {
                   AND (?5 IS NULL OR span_id = ?5)
                   AND (?6 IS NULL OR kind = ?6)
                   AND (?7 IS NULL OR status = ?7)
-                ORDER BY start_time DESC, seq ASC
-                LIMIT ?8 OFFSET ?9
+                  AND (?8 IS NULL
+                       OR start_time < ?8
+                       OR (start_time = ?8 AND span_id < ?9))
+                ORDER BY start_time DESC, span_id DESC
+                LIMIT ?10
                 "#,
             )
             .map_err(StoreError::backend)?;
@@ -879,8 +895,9 @@ impl TraceStore for SqliteTraceStore {
                     filter.span_id.as_ref().map(|span_id| span_id.as_str()),
                     filter.kind.as_ref().map(|kind| kind.as_str()),
                     filter.status.as_ref().map(|status| status.as_str()),
+                    cursor_start_time.as_deref(),
+                    cursor_span_id.as_deref(),
                     fetch_limit_i64,
-                    offset_i64,
                 ],
                 |row| row.get::<_, String>(0),
             )
@@ -899,13 +916,44 @@ impl TraceStore for SqliteTraceStore {
         }
 
         let next_cursor = if has_more {
-            Some(offset.saturating_add(limit).to_string())
+            spans.last().map(encode_span_cursor)
         } else {
             None
         };
 
         Ok(Page::new(spans, next_cursor))
     }
+}
+
+/// Encode an opaque keyset cursor from the last span of a page.
+///
+/// The cursor is the base64 of `<start_time RFC3339>|<span_id>`. The start time
+/// is rendered with the same `to_rfc3339()` representation that is stored in the
+/// `start_time` column, so the seek predicate compares like-for-like. The `|`
+/// separator is unambiguous because an RFC3339 timestamp never contains it, so
+/// `split_once('|')` recovers the two fields even if a span id contained one.
+fn encode_span_cursor(summary: &SpanSummary) -> String {
+    use base64::Engine as _;
+    let raw = format!(
+        "{}|{}",
+        summary.started_at.to_rfc3339(),
+        summary.span_id.as_str()
+    );
+    base64::engine::general_purpose::STANDARD.encode(raw)
+}
+
+/// Decode a keyset cursor into its `(start_time, span_id)` components.
+///
+/// Returns `None` for any malformed cursor (bad base64, non-UTF-8, or a missing
+/// separator). Callers treat `None` as "no cursor" so a corrupt token degrades
+/// to the first page rather than panicking — the workspace denies
+/// `unwrap`/`expect`, including in tests.
+fn decode_span_cursor(cursor: &str) -> Option<(String, String)> {
+    use base64::Engine as _;
+    let bytes = base64::engine::general_purpose::STANDARD.decode(cursor).ok()?;
+    let text = String::from_utf8(bytes).ok()?;
+    let (start_time, span_id) = text.split_once('|')?;
+    Some((start_time.to_string(), span_id.to_string()))
 }
 
 fn decode_organization(row: &rusqlite::Row<'_>) -> rusqlite::Result<OrganizationMetadata> {
@@ -990,7 +1038,7 @@ mod tests {
     use beater_core::FixedClock;
     use beater_store_conformance::{
         assert_metadata_store_conformance, assert_quota_limiter_conformance,
-        assert_trace_store_conformance,
+        assert_span_pagination_keyset_stability, assert_trace_store_conformance,
     };
     use beater_store_memory::{InMemoryMetadataStore, InMemoryQuotaLimiter, InMemoryTraceStore};
     use chrono::{TimeZone, Utc};
@@ -1072,6 +1120,17 @@ mod tests {
     #[tokio::test]
     async fn in_memory_trace_store_conforms() {
         assert_trace_store_conformance(InMemoryTraceStore::new()).await;
+    }
+
+    #[tokio::test]
+    async fn sqlite_span_pagination_is_keyset_stable() {
+        // The keyset (seek) cursor keeps pages stable under concurrent inserts,
+        // the property the previous OFFSET cursor violated (ARCHITECTURE.md
+        // §20.2 #0.2). The in-memory store paginates by offset and is exempt.
+        assert_span_pagination_keyset_stability(
+            SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await;
     }
 
     #[tokio::test]

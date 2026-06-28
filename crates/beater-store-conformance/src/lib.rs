@@ -107,7 +107,13 @@ where
         .unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(first_span_page.items.len(), 1);
     assert_eq!(first_span_page.items[0].span_id.as_str(), "child");
-    assert_eq!(first_span_page.next_cursor.as_deref(), Some("1"));
+    // The cursor is an opaque token: in-memory uses an offset, SQLite a keyset
+    // seek key (ARCHITECTURE.md §20.2 #0.2). Conformance only requires that a
+    // next page is advertised and that feeding the token back resumes cleanly.
+    assert!(
+        first_span_page.next_cursor.is_some(),
+        "first span page should advertise a next cursor"
+    );
 
     let second_span_page = store
         .query_spans(
@@ -263,6 +269,137 @@ where
         scoped_other_project.spans[0].project_id.as_str(),
         "other-project"
     );
+}
+
+/// Conformance for **keyset (seek) span pagination** (ARCHITECTURE.md §20.2
+/// #0.2): pages must stay stable when a row is inserted into an
+/// already-returned page between page fetches.
+///
+/// This is the property an OFFSET cursor violates — a new high-sorting row
+/// shifts every subsequent offset down by one, so the next page re-returns the
+/// previous page's last row (a duplicate) and skips a row that should appear.
+/// A keyset cursor seeks past the last row actually returned, so the in-flight
+/// insert can neither duplicate nor skip an already-paginated row.
+///
+/// Only call this against backends whose `query_spans` is keyset-based; the
+/// in-memory store paginates by offset and is exempt by design.
+pub async fn assert_span_pagination_keyset_stability<S>(store: S)
+where
+    S: TraceStore,
+{
+    let tenant = TenantId::new("keyset-tenant").unwrap_or_else(|err| panic!("{err}"));
+    let project = ProjectId::new("keyset-project").unwrap_or_else(|err| panic!("{err}"));
+
+    // Seed four spans. `seq` drives `start_time` (base + seq seconds), so the
+    // newest-first order is seq 4, 3, 2, 1.
+    for seq in 1..=4u64 {
+        let trace = TraceId::new(format!("keyset-trace-{seq}")).unwrap_or_else(|err| panic!("{err}"));
+        let ack = store
+            .write_batch(fixture_project_batch(
+                &tenant,
+                &project,
+                &trace,
+                &format!("keyset-span-{seq}"),
+                seq,
+            ))
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(ack.accepted_spans, 1);
+    }
+
+    let filter = || SpanFilter {
+        project_id: Some(project.clone()),
+        ..SpanFilter::default()
+    };
+
+    // Page 1 (newest two): keyset-span-4, keyset-span-3.
+    let first_page = store
+        .query_spans(
+            tenant.clone(),
+            filter(),
+            PageRequest {
+                limit: 2,
+                cursor: None,
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let first_ids: Vec<String> = first_page
+        .items
+        .iter()
+        .map(|span| span.span_id.as_str().to_string())
+        .collect();
+    assert_eq!(
+        first_ids,
+        vec!["keyset-span-4".to_string(), "keyset-span-3".to_string()],
+        "page 1 should return the two newest spans newest-first"
+    );
+    let cursor = first_page
+        .next_cursor
+        .unwrap_or_else(|| panic!("page 1 should advertise a next cursor"));
+
+    // Concurrent insert: a new span (seq 9) that sorts to the *top* — i.e. into
+    // the already-returned page-1 region, ahead of the cursor.
+    let hot_trace = TraceId::new("keyset-trace-hot").unwrap_or_else(|err| panic!("{err}"));
+    let hot_ack = store
+        .write_batch(fixture_project_batch(
+            &tenant,
+            &project,
+            &hot_trace,
+            "keyset-span-hot",
+            9,
+        ))
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(hot_ack.accepted_spans, 1);
+
+    // Page 2 resumes from the cursor. With a keyset cursor this is exactly the
+    // remaining tail (keyset-span-2, keyset-span-1) regardless of the insert.
+    let second_page = store
+        .query_spans(
+            tenant.clone(),
+            filter(),
+            PageRequest {
+                limit: 2,
+                cursor: Some(cursor),
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let second_ids: Vec<String> = second_page
+        .items
+        .iter()
+        .map(|span| span.span_id.as_str().to_string())
+        .collect();
+
+    assert_eq!(
+        second_ids,
+        vec!["keyset-span-2".to_string(), "keyset-span-1".to_string()],
+        "page 2 must be the stable tail, unaffected by the concurrent insert"
+    );
+    // No row appears on both pages (OFFSET would duplicate keyset-span-3 here).
+    assert!(
+        second_ids.iter().all(|id| !first_ids.contains(id)),
+        "keyset pagination must not duplicate an already-returned row"
+    );
+    // The concurrently inserted high-sorting row is not surfaced mid-stream on a
+    // page it does not belong to.
+    assert!(
+        !second_ids.iter().any(|id| id == "keyset-span-hot"),
+        "the concurrently inserted row must not leak into a later page"
+    );
+    // Nothing was skipped: every originally-visible span past the cursor is
+    // still returned exactly once across the two pages.
+    let mut seen: Vec<String> = first_ids;
+    seen.extend(second_ids);
+    for seq in 1..=4u64 {
+        let id = format!("keyset-span-{seq}");
+        assert_eq!(
+            seen.iter().filter(|seen_id| **seen_id == id).count(),
+            1,
+            "{id} should appear exactly once across the paginated stream"
+        );
+    }
 }
 
 pub async fn assert_metadata_store_conformance<S>(store: S)
