@@ -28,6 +28,7 @@ use beater_core::{
 };
 use beater_store::StoreError;
 use chrono::{DateTime, Duration, Utc};
+use http::Uri;
 use rand_core::{OsRng, RngCore};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -174,6 +175,48 @@ pub struct ClientRegistration {
     pub grant_types: BTreeSet<GrantType>,
     pub scopes: BTreeSet<String>,
     pub token_endpoint_auth_method: ClientAuthMethod,
+}
+
+/// Validate an OAuth redirect URI before it can be registered or used to issue
+/// a code. Hosted clients must use HTTPS; native/local clients may use HTTP only
+/// on the loopback hosts used by OAuth 2.1 development flows.
+pub fn validate_redirect_uri(redirect_uri: &str) -> std::result::Result<(), OAuthError> {
+    if redirect_uri.is_empty() || redirect_uri.contains('#') {
+        return Err(invalid_redirect_uri());
+    }
+
+    let uri = redirect_uri
+        .parse::<Uri>()
+        .map_err(|_| invalid_redirect_uri())?;
+    let Some(scheme) = uri.scheme_str() else {
+        return Err(invalid_redirect_uri());
+    };
+    let Some(host) = uri.host().filter(|host| !host.is_empty()) else {
+        return Err(invalid_redirect_uri());
+    };
+
+    if scheme.eq_ignore_ascii_case("https") {
+        return Ok(());
+    }
+    if scheme.eq_ignore_ascii_case("http") && is_loopback_redirect_host(host) {
+        return Ok(());
+    }
+
+    Err(invalid_redirect_uri())
+}
+
+fn invalid_redirect_uri() -> OAuthError {
+    OAuthError::InvalidRequest(
+        "redirect_uri must use https or loopback http and must not contain a fragment".to_string(),
+    )
+}
+
+fn is_loopback_redirect_host(host: &str) -> bool {
+    let host = host
+        .strip_prefix('[')
+        .and_then(|value| value.strip_suffix(']'))
+        .unwrap_or(host);
+    host.eq_ignore_ascii_case("localhost") || host == "127.0.0.1" || host == "::1"
 }
 
 /// The result of registering a client. `client_secret` is `Some` only for
@@ -419,6 +462,9 @@ pub trait OAuthStore: Send + Sync {
                 "at least one redirect_uri is required".to_string(),
             ));
         }
+        for redirect_uri in &registration.redirect_uris {
+            validate_redirect_uri(redirect_uri)?;
+        }
         let client_id = new_uuid_id(OAuthClientId::new);
         let (client_secret, client_secret_hash) =
             if registration.token_endpoint_auth_method.is_public() {
@@ -480,6 +526,7 @@ pub trait OAuthStore: Send + Sync {
                 "redirect_uri not registered for client".to_string(),
             ));
         }
+        validate_redirect_uri(&grant.redirect_uri)?;
         if !is_valid_code_challenge(&grant.code_challenge) {
             return Err(OAuthError::InvalidRequest(
                 "PKCE code_challenge must be a base64url SHA-256 (S256) digest".to_string(),
@@ -1190,6 +1237,87 @@ mod tests {
         assert!(!verify_pkce_s256(
             "wrong-verifier",
             &challenge_for(VERIFIER)
+        ));
+    }
+
+    #[tokio::test]
+    async fn register_client_accepts_https_and_loopback_http_redirects() {
+        let cases = [
+            "https://app.example.com/cb",
+            "http://localhost:8765/callback",
+            "http://127.0.0.1:8765/callback",
+            "http://[::1]:8765/callback",
+        ];
+
+        for redirect_uri in cases {
+            let store = store();
+            let mut registration = public_client_registration();
+            registration.redirect_uris = vec![redirect_uri.to_string()];
+
+            let registered = ok(store.register_client(registration, Utc::now()).await);
+            assert_eq!(registered.client.redirect_uris, vec![redirect_uri]);
+        }
+    }
+
+    #[tokio::test]
+    async fn register_client_rejects_unsafe_redirect_uris() {
+        let cases = [
+            "",
+            "not a uri",
+            "https://app.example.com/cb#fragment",
+            "http://app.example.com/cb",
+            "ftp://app.example.com/cb",
+            "javascript:alert(1)",
+        ];
+
+        for redirect_uri in cases {
+            let store = store();
+            let mut registration = public_client_registration();
+            registration.redirect_uris = vec![redirect_uri.to_string()];
+
+            assert!(
+                matches!(
+                    store.register_client(registration, Utc::now()).await,
+                    Err(OAuthError::InvalidRequest(_))
+                ),
+                "expected {redirect_uri:?} to be rejected"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn issue_authorization_code_rejects_unsafe_registered_redirect_uri() {
+        let store = store();
+        let now = Utc::now();
+        let client_id = ok(OAuthClientId::new("unsafe-client"));
+        ok(store
+            .put_client(OAuthClient {
+                client_id: client_id.clone(),
+                client_secret_hash: None,
+                client_name: "legacy-client".to_string(),
+                redirect_uris: vec!["http://app.example.com/cb".to_string()],
+                grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
+                scopes: BTreeSet::from(["traces:read".to_string()]),
+                token_endpoint_auth_method: ClientAuthMethod::None,
+                created_at: now,
+            })
+            .await);
+
+        assert!(matches!(
+            store
+                .issue_authorization_code(
+                    AuthorizationGrant {
+                        client_id,
+                        user_id: ok(UserId::new("user-1")),
+                        redirect_uri: "http://app.example.com/cb".to_string(),
+                        scope: BTreeSet::from(["traces:read".to_string()]),
+                        tenant_scope: test_tenant_scope(),
+                        code_challenge: challenge_for(VERIFIER),
+                    },
+                    now,
+                )
+                .await,
+            Err(OAuthError::InvalidRequest(_))
         ));
     }
 

@@ -12,6 +12,7 @@ base64.workspace = true
 beater-core = { path = "../beater-core" }
 beater-store = { path = "../beater-store" }
 chrono.workspace = true
+http.workspace = true
 rand_core.workspace = true
 rusqlite.workspace = true
 serde.workspace = true

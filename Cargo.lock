@@ -1095,6 +1095,7 @@ dependencies = [
  "beater-core",
  "beater-store",
  "chrono",
+ "http 1.4.2",
  "rand_core 0.6.4",
  "rusqlite",
  "serde",
