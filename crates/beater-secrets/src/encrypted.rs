@@ -887,7 +887,8 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
 
         let error = SecretKeyring::load_or_create_local_file(&path, "local-v1")
-            .expect_err("group/world-readable key file should be rejected");
+            .err()
+            .unwrap_or_else(|| panic!("group/world-readable key file should be rejected"));
         assert!(
             format!("{error:?}").contains("must not be accessible by group or other users"),
             "unexpected error: {error:?}"
