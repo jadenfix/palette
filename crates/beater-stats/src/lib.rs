@@ -386,6 +386,15 @@ pub fn bootstrap_diff_ci(
     if sample_a.is_empty() || sample_b.is_empty() {
         return Err(StatsError::EmptySample);
     }
+    // Honor the crate-wide "validate every input" invariant: a NaN/inf here would
+    // otherwise propagate silently into an unstable sort and a NaN CI returned as Ok.
+    if sample_a
+        .iter()
+        .chain(sample_b.iter())
+        .any(|v| !v.is_finite())
+    {
+        return Err(StatsError::NonFinite);
+    }
     if !(0.0 < confidence && confidence < 1.0) {
         return Err(StatsError::InvalidParameter {
             name: "confidence",
@@ -490,10 +499,15 @@ fn mcnemar_outcome(
     let p_value = mcnemar_exact_p(b, c)?;
     let n = total as f64;
     let diff = (b as f64 - c as f64) / n;
-    // Standard McNemar large-sample SE for the difference of paired proportions.
-    let discordant = b as f64 + c as f64;
-    let variance = (discordant - (b as f64 - c as f64).powi(2) / n) / (n * n);
-    let ci = if variance <= 0.0 {
+    let discordant = b + c;
+    // CI for the paired difference (b-c)/n. Only the discordant pairs are
+    // informative: b | (b+c) ~ Binomial(b+c, π), and the difference equals
+    // (m/n)·(2π − 1) with m = b+c. Build a *score* (Wilson) interval for π and map
+    // it through, rather than a Wald normal-approximation SE — the Wald interval is
+    // anti-conservative for small discordant counts and can disagree with the exact
+    // sign test (e.g. b=0, c=3, n=10 → Wald reports a regression while the exact
+    // p = 0.25 does not). The score interval stays consistent with the exact p.
+    let ci = if discordant == 0 {
         ConfidenceInterval {
             low: diff,
             high: diff,
@@ -501,10 +515,11 @@ fn mcnemar_outcome(
         }
     } else {
         let z = numerics::normal_quantile(1.0 - alpha / 2.0);
-        let half = z * variance.sqrt();
+        let pi = wilson_interval(b, discordant, z)?;
+        let scale = discordant as f64 / n;
         ConfidenceInterval {
-            low: diff - half,
-            high: diff + half,
+            low: scale * (2.0 * pi.lower - 1.0),
+            high: scale * (2.0 * pi.upper - 1.0),
             confidence: 1.0 - alpha,
         }
     };
@@ -530,32 +545,18 @@ pub fn normal_cdf(x: f64) -> f64 {
     0.5 * erfc_approx(-x / core::f64::consts::SQRT_2)
 }
 
-/// Inverse normal CDF: Φ⁻¹(p) using the rational approximation from
-/// Abramowitz & Stegun §26.2.17.  Accurate to about 4.5×10⁻⁴.
+/// Inverse normal CDF: Φ⁻¹(p). Delegates to the crate's higher-accuracy Acklam
+/// implementation (~1.2×10⁻⁹) so the public API returns the same value the crate
+/// uses internally (e.g. for the McNemar score interval). Previously this was a
+/// separate Abramowitz & Stegun §26.2.17 rational form accurate only to ~4.5×10⁻⁴,
+/// which silently disagreed with the internal quantile.
 ///
 /// Returns `NaN` for inputs outside `(0, 1)`.
 pub fn normal_quantile(p: f64) -> f64 {
     if !(0.0 < p && p < 1.0) {
         return f64::NAN;
     }
-
-    let c0 = 2.515517_f64;
-    let c1 = 0.802853_f64;
-    let c2 = 0.010328_f64;
-    let d1 = 1.432788_f64;
-    let d2 = 0.189269_f64;
-    let d3 = 0.001308_f64;
-
-    // Halley iteration is not needed for the accuracy we claim.
-    let (t, sign) = if p <= 0.5 {
-        ((-2.0 * p.ln()).sqrt(), -1.0_f64)
-    } else {
-        ((-2.0 * (1.0 - p).ln()).sqrt(), 1.0_f64)
-    };
-
-    let numerator = c0 + c1 * t + c2 * t * t;
-    let denominator = 1.0 + d1 * t + d2 * t * t + d3 * t * t * t;
-    sign * (t - numerator / denominator)
+    numerics::normal_quantile(p)
 }
 
 // Abramowitz & Stegun §7.1.26 — erfc approximation (max |ε| < 1.5×10⁻⁷)
@@ -1020,6 +1021,18 @@ mod tests {
         assert!(bootstrap_diff_ci(&[1.0], &[1.0], 0.0, 100, 1).is_err());
         assert!(bootstrap_diff_ci(&[1.0], &[1.0], 1.0, 100, 1).is_err());
         assert!(bootstrap_diff_ci(&[1.0], &[1.0], -0.5, 100, 1).is_err());
+    }
+
+    #[test]
+    fn bootstrap_error_non_finite() {
+        assert_eq!(
+            bootstrap_diff_ci(&[1.0, f64::NAN], &[1.0, 2.0], 0.95, 100, 1),
+            Err(StatsError::NonFinite)
+        );
+        assert_eq!(
+            bootstrap_diff_ci(&[1.0, 2.0], &[1.0, f64::INFINITY], 0.95, 100, 1),
+            Err(StatsError::NonFinite)
+        );
     }
 
     #[test]

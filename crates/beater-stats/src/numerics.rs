@@ -137,7 +137,15 @@ pub fn students_t_quantile(p: f64, df: f64) -> f64 {
     if p >= 1.0 {
         return f64::INFINITY;
     }
-    let (mut lo, mut hi) = (-1.0e7_f64, 1.0e7_f64);
+    // Expand a symmetric bracket until it straddles the quantile, so extreme
+    // tails (tiny alpha at low df) are not silently clipped, then bisect.
+    let (mut lo, mut hi) = (-1.0_f64, 1.0_f64);
+    while lo > -f64::MAX / 2.0 && students_t_cdf(lo, df) > p {
+        lo *= 2.0;
+    }
+    while hi < f64::MAX / 2.0 && students_t_cdf(hi, df) < p {
+        hi *= 2.0;
+    }
     for _ in 0..200 {
         let mid = 0.5 * (lo + hi);
         if students_t_cdf(mid, df) < p {

@@ -525,21 +525,50 @@ pub fn compare_paired_scores(
     candidate: &[f64],
     policy: &GatePolicy,
 ) -> Result<ExperimentComparison, EvalError> {
-    let n = baseline.len().min(candidate.len());
+    // Pairs must align one-to-one; a length mismatch is a caller bug, not
+    // something to silently paper over by truncating to the shorter prefix.
+    if baseline.len() != candidate.len() {
+        return Err(EvalError::Statistics(format!(
+            "baseline and candidate must be the same length, got {} and {}",
+            baseline.len(),
+            candidate.len()
+        )));
+    }
+    let n = baseline.len();
     if n < policy.min_sample_size {
         return Err(EvalError::Underpowered {
             sample_size: n,
             min_sample_size: policy.min_sample_size,
         });
     }
+    // Reject non-finite scores up front so they cannot slip past the degenerate
+    // single-case branch below and silently produce a Pass on NaN.
+    if baseline
+        .iter()
+        .chain(candidate.iter())
+        .any(|score| !score.is_finite())
+    {
+        return Err(EvalError::Statistics(
+            "scores must be finite (no NaN or infinity)".to_string(),
+        ));
+    }
+    if !(policy.alpha.is_finite() && policy.alpha > 0.0 && policy.alpha < 1.0) {
+        return Err(EvalError::Statistics(format!(
+            "alpha must be in (0, 1), got {}",
+            policy.alpha
+        )));
+    }
 
-    // Bonferroni single-step correction across the comparison family; this becomes
-    // the per-comparison level the CI and decision are computed at. (Holm /
-    // Benjamini-Hochberg over many metrics live in `beater_stats::multiplicity`
-    // for callers that compare more than one metric at once.)
-    let adjusted_alpha = (policy.alpha / policy.comparison_count.max(1) as f64).clamp(0.0001, 0.5);
-    let baseline = &baseline[..n];
-    let candidate = &candidate[..n];
+    // Single-step Bonferroni correction across the comparison family: the
+    // per-comparison level the CI and decision are computed at. No lower clamp — a
+    // large `comparison_count` must genuinely shrink alpha; clamping it up would let
+    // the family-wise error rate exceed the requested level. `compare_paired`
+    // validates the result is a usable alpha in (0, 1).
+    let adjusted_alpha = policy.alpha / policy.comparison_count.max(1) as f64;
+
+    if n == 0 {
+        return Err(EvalError::Statistics("no scores to compare".to_string()));
+    }
 
     // A single paired observation has no sampling variability, so a real
     // variance-based test is undefined — `beater-stats` correctly refuses n < 2.
@@ -802,9 +831,13 @@ mod tests {
         );
         assert!(matches!(underpowered, Err(EvalError::Underpowered { .. })));
 
+        // Ten paired cases that all regress pass->fail. The exact McNemar p
+        // (2 * 0.5^10 ~ 2e-3) clears the 4x-Bonferroni-corrected alpha (0.0125),
+        // so the score-interval upper bound excludes the regression threshold and
+        // the gate fails the candidate.
         let comparison = compare_paired_scores(
-            &[1.0, 1.0, 1.0, 1.0, 1.0],
-            &[0.0, 0.0, 0.0, 0.0, 0.0],
+            &[1.0; 10],
+            &[0.0; 10],
             &GatePolicy {
                 min_sample_size: 5,
                 max_regression: 0.05,
@@ -816,6 +849,51 @@ mod tests {
 
         assert_eq!(comparison.decision, GateDecision::FailRegression);
         assert!(comparison.adjusted_alpha < 0.05);
+    }
+
+    #[test]
+    fn gate_is_inconclusive_when_too_few_discordant_for_exact_significance() {
+        // Five paired cases all regress, but with a 4x correction the exact
+        // McNemar p (2 * 0.5^5 = 0.0625) does NOT clear alpha = 0.0125. The honest
+        // verdict is Inconclusive, not FailRegression: the score interval used for
+        // the decision stays consistent with the exact test (the old Wald-CI path
+        // wrongly reported a regression here).
+        let comparison = compare_paired_scores(
+            &[1.0; 5],
+            &[0.0; 5],
+            &GatePolicy {
+                min_sample_size: 5,
+                max_regression: 0.05,
+                comparison_count: 4,
+                ..GatePolicy::default()
+            },
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(comparison.decision, GateDecision::Inconclusive);
+        assert!(
+            (comparison.p_value - 0.0625).abs() < 1e-9,
+            "p={}",
+            comparison.p_value
+        );
+    }
+
+    #[test]
+    fn mismatched_score_lengths_error() {
+        let result = compare_paired_scores(&[1.0, 1.0, 1.0], &[1.0, 1.0], &GatePolicy::default());
+        assert!(matches!(result, Err(EvalError::Statistics(_))));
+    }
+
+    #[test]
+    fn non_finite_scores_error() {
+        let result = compare_paired_scores(
+            &[1.0, 1.0, 1.0, 1.0, 1.0],
+            &[1.0, f64::NAN, 1.0, 1.0, 1.0],
+            &GatePolicy {
+                min_sample_size: 1,
+                ..GatePolicy::default()
+            },
+        );
+        assert!(matches!(result, Err(EvalError::Statistics(_))));
     }
 
     fn browser_step(action: &str, selector: Option<&str>, matched: bool, status: &str) -> Value {
