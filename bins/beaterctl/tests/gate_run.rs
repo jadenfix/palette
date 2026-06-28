@@ -72,14 +72,14 @@ fn gate_run_exits_nonzero_for_explicit_inconclusive() -> anyhow::Result<()> {
 
     assert!(
         !gate_run.status.success(),
-        "gate run should fail when inconclusive policy rejects inconclusive results"
+        "gate run should fail when an experiment is inconclusive"
     );
     let stdout: serde_json::Value = serde_json::from_slice(&gate_run.stdout)?;
     assert_eq!(stdout["passed"], false);
     assert_eq!(stdout["experiment_decision"], "inconclusive");
     assert_eq!(
         stdout["reason"],
-        "experiment gate-explicit-inconclusive was inconclusive and gate policy fails inconclusive results"
+        "experiment gate-explicit-inconclusive was inconclusive; deploy gates never pass inconclusive results"
     );
     Ok(())
 }

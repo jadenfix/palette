@@ -383,7 +383,7 @@ pub fn evaluate_gate(
 
 fn gate_result(
     decision: &GateDecision,
-    inconclusive_policy: &InconclusivePolicy,
+    _inconclusive_policy: &InconclusivePolicy,
     experiment: &ExperimentRunReport,
 ) -> (bool, String) {
     match decision {
@@ -403,22 +403,13 @@ fn gate_result(
                 experiment.comparison.delta
             ),
         ),
-        GateDecision::Inconclusive => match inconclusive_policy {
-            InconclusivePolicy::Pass => (
-                true,
-                format!(
-                    "experiment {} was inconclusive and gate policy allows it",
-                    experiment.experiment_run_id.as_str()
-                ),
+        GateDecision::Inconclusive => (
+            false,
+            format!(
+                "experiment {} was inconclusive; deploy gates never pass inconclusive results",
+                experiment.experiment_run_id.as_str()
             ),
-            InconclusivePolicy::Fail => (
-                false,
-                format!(
-                    "experiment {} was inconclusive and gate policy fails inconclusive results",
-                    experiment.experiment_run_id.as_str()
-                ),
-            ),
-        },
+        ),
     }
 }
 
@@ -534,6 +525,42 @@ mod tests {
         .ok_or_else(|| anyhow!("expected gate mismatch to fail"))?;
 
         assert!(error.to_string().contains("expected dataset"));
+        Ok(())
+    }
+
+    #[test]
+    fn gate_never_passes_inconclusive_even_if_policy_allows_it() -> anyhow::Result<()> {
+        let tenant = TenantId::new("tenant")?;
+        let project = ProjectId::new("project")?;
+        let gate = GateDefinition {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            gate_id: GateId::new("main")?,
+            name: "main".to_string(),
+            dataset_id: Some(DatasetId::new("dataset")?),
+            evaluator_version_id: Some(EvaluatorVersionId::new("exact-v1")?),
+            inconclusive_policy: InconclusivePolicy::Pass,
+            created_at: Utc::now(),
+        };
+        let experiment = experiment_report(
+            tenant,
+            project,
+            "exp-inconclusive",
+            DatasetId::new("dataset")?,
+            EvaluatorVersionId::new("exact-v1")?,
+            GateDecision::Inconclusive,
+            0.01,
+        )?;
+
+        let report = evaluate_gate(&gate, &experiment)?;
+
+        assert_eq!(report.inconclusive_policy, InconclusivePolicy::Pass);
+        assert_eq!(report.experiment_decision, GateDecision::Inconclusive);
+        assert!(!report.passed);
+        assert_eq!(
+            report.reason,
+            "experiment exp-inconclusive was inconclusive; deploy gates never pass inconclusive results"
+        );
         Ok(())
     }
 
