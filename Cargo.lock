@@ -953,6 +953,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-guardrails"
+version = "0.1.0"
+dependencies = [
+ "regex",
+ "serde",
+ "thiserror 1.0.69",
+ "utoipa",
+]
+
+[[package]]
 name = "beater-human"
 version = "0.1.0"
 dependencies = [
