@@ -27,5 +27,21 @@ export type {
   LlamaIndexEventName,
   LlamaIndexInstrumentation,
 } from "./integrations/llamaindex";
+export {
+  INTEGRATION_AVAILABLE,
+  INTEGRATION_PLANNED,
+  availableIntegrations,
+  findIntegration,
+  integrationCatalog,
+  plannedIntegrations,
+} from "./integrations/registry";
+export type { IntegrationKind, IntegrationSpec, IntegrationStatus } from "./integrations/registry";
+export { vercelAiTelemetry, withVercelAiTelemetry } from "./integrations/vercel-ai";
+export type {
+  BeaterVercelAiTelemetryOptions,
+  VercelAiTelemetryConfig,
+  VercelAiTelemetryOptionName,
+  WithVercelAiTelemetryOptions,
+} from "./integrations/vercel-ai";
 
 export const VERSION = "0.1.0";
