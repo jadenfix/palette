@@ -92,7 +92,7 @@ impl OrgRole {
 /// `skip_serializing` so it can never leak into a JSON response/log/event even
 /// if a `User` is accidentally serialized. The SQLite store binds columns
 /// explicitly (not via serde), so skipping it is safe.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct User {
     pub user_id: UserId,
     pub email: String,
@@ -102,9 +102,21 @@ pub struct User {
     pub created_at: Timestamp,
 }
 
+impl std::fmt::Debug for User {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("User")
+            .field("user_id", &self.user_id)
+            .field("email", &self.email)
+            .field("password_hash", &"<redacted>")
+            .field("active", &self.active)
+            .field("created_at", &self.created_at)
+            .finish()
+    }
+}
+
 /// A browser session. `secret_hash` is the SHA-256 hex of the random token
 /// secret; the plaintext token is shown only once at mint time.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Session {
     pub session_id: SessionId,
     pub user_id: UserId,
@@ -115,6 +127,19 @@ pub struct Session {
     pub last_seen_at: Timestamp,
 }
 
+impl std::fmt::Debug for Session {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Session")
+            .field("session_id", &self.session_id)
+            .field("user_id", &self.user_id)
+            .field("secret_hash", &"<redacted>")
+            .field("created_at", &self.created_at)
+            .field("expires_at", &self.expires_at)
+            .field("last_seen_at", &self.last_seen_at)
+            .finish()
+    }
+}
+
 impl Session {
     pub fn is_expired(&self, now: Timestamp) -> bool {
         now >= self.expires_at
@@ -122,10 +147,19 @@ impl Session {
 }
 
 /// A freshly minted session plus its one-time plaintext token (`bs_<id>_<secret>`).
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct MintedSession {
     pub session: Session,
     pub token: String,
+}
+
+impl std::fmt::Debug for MintedSession {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MintedSession")
+            .field("session", &self.session)
+            .field("token", &"<redacted>")
+            .finish()
+    }
 }
 
 /// Membership of a user in an organization.
@@ -790,6 +824,31 @@ mod tests {
         assert!(!session_json.contains("secret_hash"));
         assert!(!session_json.contains(&minted.session.secret_hash));
         assert!(!session_json.contains(&minted.token));
+    }
+
+    #[tokio::test]
+    async fn debug_user_and_session_surfaces_redact_secrets() {
+        let store = store();
+        let now = Utc::now();
+        let user = ok(store.register("debug-privacy@example.com", "pw", now).await);
+        let minted = ok(store
+            .start_session(user.user_id.clone(), default_session_ttl(), now)
+            .await);
+        let (_session_id, token_secret) = ok(parse_session_token(&minted.token));
+
+        let user_debug = format!("{user:?}");
+        assert!(!user_debug.contains(&user.password_hash));
+        assert!(user_debug.contains("<redacted>"));
+
+        let session_debug = format!("{:?}", minted.session);
+        assert!(!session_debug.contains(&minted.session.secret_hash));
+        assert!(session_debug.contains("<redacted>"));
+
+        let minted_debug = format!("{minted:?}");
+        assert!(!minted_debug.contains(&minted.token));
+        assert!(!minted_debug.contains(token_secret));
+        assert!(!minted_debug.contains(&minted.session.secret_hash));
+        assert!(minted_debug.contains("<redacted>"));
     }
 
     #[tokio::test]
