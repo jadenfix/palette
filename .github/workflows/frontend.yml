@@ -1,5 +1,12 @@
 name: frontend
 
+# Supersede an in-flight run when a PR branch is pushed again, so the shared CI
+# runner pool is not starved by stacked redundant runs. main pushes are never
+# cancelled (their CI history must stay complete).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # The dashboard (web/dashboard), split into tests and lint.
 #   frontend-tests: the render/read-client test suite + the production build.
 #   frontend-lint:  TypeScript type-check + the generated API client drift check

@@ -1,5 +1,12 @@
 name: backend
 
+# Supersede an in-flight run when a PR branch is pushed again, so the shared CI
+# runner pool is not starved by stacked redundant runs. main pushes are never
+# cancelled (their CI history must stay complete).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # The Rust workspace, split into tests and lint.
 #
 # `backend-tests` runs every crate's unit/integration tests EXCEPT:

@@ -1,5 +1,12 @@
 name: sdk-contract
 
+# Supersede an in-flight run when a PR branch is pushed again, so the shared CI
+# runner pool is not starved by stacked redundant runs. main pushes are never
+# cancelled (their CI history must stay complete).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Zero-drift gate (one combined check): a handler change that isn't regenerated
 # into the spec + every SDK client cannot merge, and breaking contract changes
 # are flagged. The route-coverage test (`beater-api --test openapi_coverage`)
