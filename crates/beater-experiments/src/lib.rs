@@ -746,6 +746,170 @@ where
         .map_err(|err| anyhow!(err))
 }
 
+/// Pluggable optimizer strategies for the recursive self-improvement loop.
+///
+/// Each variant names a concrete prompt/agent optimizer family called for by
+/// ARCHITECTURE §20.10 #7.6 ("named prompt/agent optimizer strategies, gated by
+/// held-out statistics") and REQUIREMENTS R18.6. The names mirror the
+/// reflective-proposal direction of §21.3 and the deferred population search of
+/// §21.6c.
+///
+/// **Gating invariant — the differentiator vs. un-gated optimizers.** A strategy
+/// only *proposes* [`CandidateChange`]s; it never *accepts* one. Every candidate
+/// from every strategy MUST flow through the existing held-out **Test** gate plus
+/// the `beater-stats` confidence interval already implemented here
+/// (`run_deterministic_experiment` / `run_judge_experiment` / `run_agent_experiment`
+/// → [`compare_paired_scores`] → [`GateDecision`], §21.3) and the planned §21.4
+/// anti-overfitting guardrail before it can be accepted. Proposal is not
+/// acceptance: the strategy emits candidates, the gate decides.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OptimizerStrategy {
+    /// Reflective single-shot LLM rewrite of a prompt lever of π (§6.1) — the
+    /// reflective-proposal baseline of §21.3. Implemented (minimally) below.
+    LlmRewrite,
+    /// Few-shot exemplar selection driven by a Bayesian acquisition function.
+    FewShotBayesian,
+    /// MIPRO-style joint optimization of instructions and few-shot exemplars.
+    Mipro,
+    /// Population / evolutionary search over agent configs (deferred, §21.6c).
+    Evolutionary,
+    /// GEPA-style reflective evolutionary prompt optimization.
+    Gepa,
+    /// Hyperparameter / model-params search over the model-params lever of π (§6.1).
+    ParamSearch,
+}
+
+/// The policy-π (§6.1) lever a [`CandidateChange`] targets, mirroring the planned
+/// §21.1 `ChangeKind` taxonomy. Kept internal to this crate; intentionally not a
+/// `/v1` contract type.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChangeKind {
+    /// The system-prompt lever of π (§6.1).
+    SystemPrompt,
+    /// The customer-prompt lever of π (§6.1).
+    CustomerPrompt,
+    /// Agent code.
+    Code,
+    /// Add a tool — the tool_set lever of π (§6.1).
+    ToolAdd,
+    /// Remove a tool — the tool_set lever of π (§6.1).
+    ToolRemove,
+    /// The memory lever of π (§6.1).
+    MemoryConfig,
+    /// The model-params lever of π (§6.1).
+    ModelParams,
+    /// Not a π lever — challenges a dataset label (§21.1 `challenge_labels`).
+    DataLabel,
+}
+
+/// A single proposed change to the target agent's policy π (§6.1).
+///
+/// This is the *proposal* a strategy emits — never an applied edit. It carries a
+/// rationale and the exact target (§21.1: "the exact file/symbol/span it
+/// targets") so the held-out gate has full provenance for the audit trail.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CandidateChange {
+    /// Which policy lever this change touches.
+    pub kind: ChangeKind,
+    /// The file / symbol / prompt the change targets (§21.1).
+    pub target: String,
+    /// Human-readable description of the proposed change.
+    pub description: String,
+    /// Why the strategy believes this change helps — carried to the gate for audit.
+    pub rationale: String,
+    /// Which strategy emitted this candidate.
+    pub proposed_by: OptimizerStrategy,
+}
+
+/// Read-only context handed to a [`ProposalStrategy`].
+///
+/// The strategy reflects on the optimization goal and the indexed agent surface
+/// (§21.1 `index_agent`) to emit candidates; it has no ability to accept them.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProposalContext {
+    /// The improvement goal in natural language (§21.3 "goal + params").
+    pub goal: String,
+    /// The current prompt (or other lever text) the optimizer may rewrite.
+    pub current_prompt: String,
+}
+
+/// Errors a [`ProposalStrategy`] or [`propose_with`] can return.
+///
+/// Unimplemented strategies return [`OptimizerError::NotYetImplemented`] rather
+/// than panicking, so the dispatch never aborts the process.
+#[derive(Debug, thiserror::Error, Clone, PartialEq, Eq)]
+pub enum OptimizerError {
+    /// The strategy is named in the architecture (§20.10 #7.6) but not yet
+    /// implemented. Returned as a typed error — never a panic / `unimplemented!()`.
+    #[error("optimizer strategy {0:?} is not yet implemented")]
+    NotYetImplemented(OptimizerStrategy),
+    /// The proposal context was insufficient to produce a candidate.
+    #[error("invalid proposal context: {0}")]
+    InvalidContext(String),
+}
+
+/// A strategy that *proposes* candidate changes for the held-out gate to judge.
+///
+/// Implementations never accept a change; see [`OptimizerStrategy`] for the
+/// gating invariant.
+pub trait ProposalStrategy {
+    /// Emit zero or more candidate changes from the given context.
+    fn propose(&self, ctx: &ProposalContext) -> Result<Vec<CandidateChange>, OptimizerError>;
+}
+
+/// Reflective single-shot LLM rewrite of a prompt lever (§21.3).
+///
+/// Minimal implementation: emits a single placeholder candidate derived from the
+/// context. A future revision will delegate to the judge/LLM broker; the
+/// candidate it returns still only earns acceptance via the held-out gate.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct LlmRewrite;
+
+impl ProposalStrategy for LlmRewrite {
+    fn propose(&self, ctx: &ProposalContext) -> Result<Vec<CandidateChange>, OptimizerError> {
+        if ctx.goal.trim().is_empty() {
+            return Err(OptimizerError::InvalidContext(
+                "goal must not be empty".to_string(),
+            ));
+        }
+        Ok(vec![CandidateChange {
+            kind: ChangeKind::SystemPrompt,
+            target: "system_prompt".to_string(),
+            description: format!(
+                "Rewrite the system prompt to better satisfy goal: {}",
+                ctx.goal
+            ),
+            rationale:
+                "reflective LLM rewrite placeholder candidate (§21.3); must clear the held-out \
+                 Test gate + beater-stats CI before acceptance"
+                    .to_string(),
+            proposed_by: OptimizerStrategy::LlmRewrite,
+        }])
+    }
+}
+
+/// Dispatch to the named [`OptimizerStrategy`], returning its proposed candidates.
+///
+/// Only [`OptimizerStrategy::LlmRewrite`] is implemented; the other variants
+/// return a typed [`OptimizerError::NotYetImplemented`]. Whatever a strategy
+/// proposes is *only* a proposal — acceptance still requires clearing the
+/// held-out Test gate (§21.3) and the planned §21.4 guardrail.
+pub fn propose_with(
+    strategy: OptimizerStrategy,
+    ctx: &ProposalContext,
+) -> Result<Vec<CandidateChange>, OptimizerError> {
+    match strategy {
+        OptimizerStrategy::LlmRewrite => LlmRewrite.propose(ctx),
+        OptimizerStrategy::FewShotBayesian
+        | OptimizerStrategy::Mipro
+        | OptimizerStrategy::Evolutionary
+        | OptimizerStrategy::Gepa
+        | OptimizerStrategy::ParamSearch => Err(OptimizerError::NotYetImplemented(strategy)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -757,6 +921,62 @@ mod tests {
     use beater_eval::{EvalError, EvaluatorKind, StatisticalTest};
     use beater_judge::{JudgeAuditRecord, JudgeBrokerError};
     use serde_json::json;
+
+    fn proposal_context() -> ProposalContext {
+        ProposalContext {
+            goal: "reduce hallucinations on factual lookups".to_string(),
+            current_prompt: "You are a helpful assistant.".to_string(),
+        }
+    }
+
+    #[test]
+    fn llm_rewrite_proposes_at_least_one_candidate() {
+        let candidates = LlmRewrite
+            .propose(&proposal_context())
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(!candidates.is_empty());
+        assert_eq!(candidates[0].proposed_by, OptimizerStrategy::LlmRewrite);
+        assert_eq!(candidates[0].kind, ChangeKind::SystemPrompt);
+        assert!(!candidates[0].rationale.is_empty());
+    }
+
+    #[test]
+    fn llm_rewrite_rejects_empty_goal() {
+        let ctx = ProposalContext {
+            goal: "   ".to_string(),
+            current_prompt: "x".to_string(),
+        };
+        let err = LlmRewrite
+            .propose(&ctx)
+            .err()
+            .unwrap_or_else(|| panic!("expected invalid-context error"));
+        assert!(matches!(err, OptimizerError::InvalidContext(_)));
+    }
+
+    #[test]
+    fn dispatch_routes_llm_rewrite_to_implementation() {
+        let candidates = propose_with(OptimizerStrategy::LlmRewrite, &proposal_context())
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].proposed_by, OptimizerStrategy::LlmRewrite);
+    }
+
+    #[test]
+    fn unimplemented_strategies_return_typed_not_yet_implemented() {
+        let ctx = proposal_context();
+        for strategy in [
+            OptimizerStrategy::FewShotBayesian,
+            OptimizerStrategy::Mipro,
+            OptimizerStrategy::Evolutionary,
+            OptimizerStrategy::Gepa,
+            OptimizerStrategy::ParamSearch,
+        ] {
+            let err = propose_with(strategy, &ctx)
+                .err()
+                .unwrap_or_else(|| panic!("expected NotYetImplemented for {strategy:?}"));
+            assert_eq!(err, OptimizerError::NotYetImplemented(strategy));
+        }
+    }
 
     #[tokio::test]
     async fn experiment_scores_each_case_and_persists_gate_decision() {
