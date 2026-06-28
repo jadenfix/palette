@@ -11,12 +11,14 @@ Exit 1 on any mismatch.
 
 import json
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 conv = json.loads((ROOT / "sdks/semconv/conventions.json").read_text())
 required_strings = set(conv["span_kinds"]) | set(conv["attributes"].values())
 required_config = set(conv["defaults"].values()) | set(conv["env"].values())
+SEMCONV_WIRE_RE = re.compile(r"^(?:[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+|x-beater-[a-z0-9-]+)$")
 
 # (semconv file, config file, line-comment marker) per SDK.
 SDKS = {
@@ -62,22 +64,29 @@ def assigned_values(path: pathlib.Path, comment: str) -> set:
                 i += 1
     return values
 
+def semconv_wire_values(values: set) -> set:
+    """Assigned strings that look like semantic-convention wire values."""
+    return {value for value in values if SEMCONV_WIRE_RE.fullmatch(value)}
+
 
 failed = False
 for lang, (semconv_rel, config_rel, comment) in SDKS.items():
-    sem_vals = assigned_values(ROOT / semconv_rel, comment)
+    sem_vals = semconv_wire_values(assigned_values(ROOT / semconv_rel, comment))
     cfg_vals = assigned_values(ROOT / config_rel, comment)
     missing_sem = sorted(required_strings - sem_vals)
+    extra_sem = sorted(sem_vals - required_strings)
     missing_cfg = sorted(required_config - cfg_vals)
-    if missing_sem or missing_cfg:
+    if missing_sem or extra_sem or missing_cfg:
         failed = True
         print(f"FAIL {lang}:")
         if missing_sem:
             print(f"  semconv ({semconv_rel}) missing assigned values: {missing_sem}")
+        if extra_sem:
+            print(f"  semconv ({semconv_rel}) has extra assigned values: {extra_sem}")
         if missing_cfg:
             print(f"  config ({config_rel}) missing defaults/env values: {missing_cfg}")
     else:
-        print(f"PASS {lang}: {len(required_strings)} conventions + {len(required_config)} config values present")
+        print(f"PASS {lang}: {len(sem_vals)} exact conventions + {len(required_config)} config values present")
 
 if failed:
     print("\nSemconv drift detected. Update the SDK to match sdks/semconv/conventions.json "
