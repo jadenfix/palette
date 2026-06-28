@@ -9,6 +9,15 @@ One `instrumentStagehand(stagehand)` call turns every AI primitive into a
 carrying `browser.reasoning`. Spans are exported to Beater's OTLP gRPC ingest on
 `localhost:4317` (configurable).
 
+## Architecture fit
+
+Generic OTLP/OpenInference/OpenLLMetry ingest remains Beater's zero-code floor:
+any already-instrumented app should export to Beater without this package. Use
+`@beater/stagehand-instrumentation` when you need the first-class Stagehand
+vertical from `ARCHITECTURE.md` §28.1: Playwright-backed browser action hooks,
+grounded action metadata, and canonical `browser.*` spans that generic LLM-only
+exporters usually cannot see.
+
 ## Install
 
 ```bash
