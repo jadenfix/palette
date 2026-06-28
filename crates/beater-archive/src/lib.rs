@@ -105,10 +105,7 @@ impl ParquetTraceArchive {
         ctx.register_parquet(TABLE_NAME, path_str, ParquetReadOptions::default())
             .await
             .with_context(|| format!("register parquet archive {}", path.display()))?;
-        let dataframe = ctx
-            .table(TABLE_NAME)
-            .await
-            .context("load archive table")?;
+        let dataframe = ctx.table(TABLE_NAME).await.context("load archive table")?;
         let dataframe = build_query_dataframe(dataframe, &query)?;
         let batches = dataframe.collect().await.context("run archive query")?;
         rows_from_batches(&batches)
@@ -401,7 +398,9 @@ fn build_query_dataframe(dataframe: DataFrame, query: &ArchiveQuery) -> anyhow::
         .context("sort archive rows")?;
 
     let limit = query.limit.unwrap_or(100).clamp(1, 1000);
-    dataframe.limit(0, Some(limit)).context("limit archive rows")
+    dataframe
+        .limit(0, Some(limit))
+        .context("limit archive rows")
 }
 
 fn archive_columns() -> Vec<String> {

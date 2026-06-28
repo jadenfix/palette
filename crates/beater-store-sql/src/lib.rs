@@ -1069,9 +1069,15 @@ mod tests {
     use super::*;
     use beater_core::FixedClock;
     use beater_store_conformance::{
+<<<<<<< HEAD
         assert_metadata_store_conformance, assert_quota_limiter_conformance,
         assert_span_pagination_keyset_stability, assert_span_pagination_seq_tiebreak,
         assert_span_pagination_tenant_wide_tiebreak, assert_trace_store_conformance,
+=======
+        assert_metadata_store_conformance, assert_quota_limiter_concurrency_conformance,
+        assert_quota_limiter_conformance, assert_span_pagination_keyset_stability,
+        assert_span_pagination_seq_tiebreak, assert_trace_store_conformance,
+>>>>>>> 3d04a56 ([billing] test(quota): deep concurrency tests for atomic reserve_quota)
     };
     use beater_store_memory::{InMemoryMetadataStore, InMemoryQuotaLimiter, InMemoryTraceStore};
     use chrono::{TimeZone, Utc};
@@ -1305,6 +1311,165 @@ mod tests {
     #[tokio::test]
     async fn in_memory_quota_limiter_conforms() {
         assert_quota_limiter_conformance(InMemoryQuotaLimiter::new()).await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+    async fn sqlite_quota_limiter_concurrency_conforms() {
+        assert_quota_limiter_concurrency_conformance(
+            SqliteQuotaLimiter::in_memory().unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await;
+    }
+
+    /// Billing-critical: a storm of reservations arriving over *independent*
+    /// connections to the same database file must not overcommit the window.
+    /// Independent connections defeat the per-process `Mutex<Connection>`, so the
+    /// only thing keeping the read-modify-write atomic is the `BEGIN IMMEDIATE`
+    /// write lock (plus the busy-timeout so contenders serialize instead of
+    /// erroring). With the historical lock-free `SELECT`-then-`UPSERT` (a plain
+    /// deferred transaction) two reservers could both read `used` before either
+    /// wrote, and both grant — overcommitting. This asserts exactly `limit`
+    /// reservations of size 1 are granted out of 50, the rest denied, and the
+    /// persisted counter settles at exactly `limit`.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+    async fn sqlite_quota_limiter_atomic_across_independent_connections() {
+        const RESERVERS: usize = 50;
+        const LIMIT: u64 = 10;
+
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let path = tempdir.path().join("quotas.sqlite");
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let window_start = Utc
+            .with_ymd_and_hms(2026, 1, 1, 0, 0, 0)
+            .single()
+            .unwrap_or_else(|| panic!("valid timestamp"));
+        let reset_at = Utc
+            .with_ymd_and_hms(2026, 1, 1, 0, 1, 0)
+            .single()
+            .unwrap_or_else(|| panic!("valid timestamp"));
+
+        let mut handles = Vec::with_capacity(RESERVERS);
+        for _ in 0..RESERVERS {
+            let limiter = SqliteQuotaLimiter::open(&path).unwrap_or_else(|err| panic!("{err}"));
+            let request = QuotaReservationRequest {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                amount: 1,
+                limit: LIMIT,
+                window_start,
+                reset_at,
+            };
+            handles.push(tokio::spawn(
+                async move { limiter.reserve_quota(request).await },
+            ));
+        }
+
+        let mut accepted = 0u64;
+        let mut denied = 0u64;
+        for handle in handles {
+            let decision = handle
+                .await
+                .unwrap_or_else(|err| panic!("reservation task panicked: {err}"))
+                .unwrap_or_else(|err| panic!("reserve_quota failed: {err}"));
+            assert!(
+                decision.used <= LIMIT,
+                "observed used {} exceeding limit {LIMIT}",
+                decision.used
+            );
+            if decision.accepted {
+                accepted += 1;
+            } else {
+                denied += 1;
+            }
+        }
+
+        assert_eq!(accepted, LIMIT, "expected exactly {LIMIT} reservations granted");
+        assert_eq!(denied, RESERVERS as u64 - LIMIT, "unexpected denied count");
+
+        // The persisted counter must settle at exactly the limit, never above.
+        let reader = SqliteQuotaLimiter::open(&path).unwrap_or_else(|err| panic!("{err}"));
+        let used = reader
+            .lock()
+            .unwrap_or_else(|err| panic!("{err}"))
+            .query_row(
+                "SELECT used_events FROM quota_counters",
+                [],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(used, LIMIT as i64, "persisted counter overcommitted the window");
+    }
+
+    /// Same race, with reservation size > 1: 50 reservers each asking for 3
+    /// against a limit of 10 may grant at most 3 (9 used) — a 4th would push the
+    /// counter to 12 > 10. Proves the atomic check-then-act holds when a single
+    /// reservation can leave the window partially full.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+    async fn sqlite_quota_limiter_atomic_with_multi_unit_reservations() {
+        const RESERVERS: usize = 50;
+        const LIMIT: u64 = 10;
+        const AMOUNT: u64 = 3;
+
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let path = tempdir.path().join("quotas.sqlite");
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let window_start = Utc
+            .with_ymd_and_hms(2026, 1, 1, 0, 0, 0)
+            .single()
+            .unwrap_or_else(|| panic!("valid timestamp"));
+        let reset_at = Utc
+            .with_ymd_and_hms(2026, 1, 1, 0, 1, 0)
+            .single()
+            .unwrap_or_else(|| panic!("valid timestamp"));
+
+        let mut handles = Vec::with_capacity(RESERVERS);
+        for _ in 0..RESERVERS {
+            let limiter = SqliteQuotaLimiter::open(&path).unwrap_or_else(|err| panic!("{err}"));
+            let request = QuotaReservationRequest {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                amount: AMOUNT,
+                limit: LIMIT,
+                window_start,
+                reset_at,
+            };
+            handles.push(tokio::spawn(
+                async move { limiter.reserve_quota(request).await },
+            ));
+        }
+
+        let mut accepted = 0u64;
+        for handle in handles {
+            let decision = handle
+                .await
+                .unwrap_or_else(|err| panic!("reservation task panicked: {err}"))
+                .unwrap_or_else(|err| panic!("reserve_quota failed: {err}"));
+            assert!(
+                decision.used <= LIMIT,
+                "observed used {} exceeding limit {LIMIT}",
+                decision.used
+            );
+            if decision.accepted {
+                accepted += 1;
+            }
+        }
+
+        assert_eq!(accepted, LIMIT / AMOUNT, "expected exactly 3 reservations granted");
+
+        let reader = SqliteQuotaLimiter::open(&path).unwrap_or_else(|err| panic!("{err}"));
+        let used = reader
+            .lock()
+            .unwrap_or_else(|err| panic!("{err}"))
+            .query_row(
+                "SELECT used_events FROM quota_counters",
+                [],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(used, (LIMIT / AMOUNT * AMOUNT) as i64, "counter settled incorrectly");
+        assert!(used <= LIMIT as i64, "counter overcommitted the window");
     }
 
     fn sqlite_object_exists(connection: &Connection, object_type: &str, name: &str) -> bool {

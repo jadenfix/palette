@@ -10,6 +10,7 @@ beater-schema = { path = "../beater-schema" }
 beater-store = { path = "../beater-store" }
 chrono.workspace = true
 serde_json.workspace = true
+tokio.workspace = true
 
 [lints]
 workspace = true

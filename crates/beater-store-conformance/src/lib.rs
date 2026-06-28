@@ -13,6 +13,7 @@ use beater_store::{
 use chrono::{DateTime, Duration, TimeZone, Utc};
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 /// Base timestamp for the trace-store fixtures, anchored to *today* (midnight
 /// UTC) rather than a hardcoded calendar date.
@@ -861,6 +862,147 @@ where
         .unwrap_or_else(|err| panic!("{err}"));
     assert!(after_reset.accepted);
     assert_eq!(after_reset.used, 3);
+}
+
+/// Concurrency invariant for any [`QuotaLimiter`]: under a storm of simultaneous
+/// reservations against a *shared* limiter the counter must never overcommit the
+/// window. Concretely, for `limit` and per-reservation `amount`:
+///
+/// * the number of *granted* reservations is exactly `limit / amount`
+///   (integer division) — never more, even if many reservers read the counter
+///   at the same instant;
+/// * `used` is `<= limit` in *every* decision the limiter ever returns;
+/// * a denied reservation never advances the counter (the settled `used` equals
+///   `granted * amount`).
+///
+/// This is the billing-critical guard against the classic check-then-act race:
+/// two reservers both read a stale `used`, each decide they fit, and both
+/// commit — overcommitting the window. A correct limiter makes the
+/// read-modify-write atomic so the reservations serialize.
+///
+/// Runs cleanly against both the in-memory and SQLite backends, so it lives in
+/// the shared conformance suite.
+pub async fn assert_quota_limiter_concurrency_conformance<L>(limiter: L)
+where
+    L: QuotaLimiter + 'static,
+{
+    let limiter = Arc::new(limiter);
+    let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+    let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+
+    // 50 reservers each asking for 1 against a limit of 10 -> exactly 10 granted.
+    let window_one = Utc
+        .with_ymd_and_hms(2026, 1, 1, 0, 0, 0)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+    let reset_one = Utc
+        .with_ymd_and_hms(2026, 1, 1, 0, 1, 0)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+    assert_reservation_storm(
+        &limiter, &tenant, &project, window_one, reset_one, 50, 1, 10,
+    )
+    .await;
+
+    // amount > 1: 50 reservers each asking for 3 against a limit of 10. At most
+    // 3 may be granted (9 used); a 4th would push used to 12 > 10 and must be
+    // denied. A fresh window keeps this independent from the first storm.
+    let window_two = Utc
+        .with_ymd_and_hms(2026, 1, 1, 0, 1, 0)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+    let reset_two = Utc
+        .with_ymd_and_hms(2026, 1, 1, 0, 2, 0)
+        .single()
+        .unwrap_or_else(|| panic!("valid timestamp"));
+    assert_reservation_storm(
+        &limiter, &tenant, &project, window_two, reset_two, 50, 3, 10,
+    )
+    .await;
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn assert_reservation_storm<L>(
+    limiter: &Arc<L>,
+    tenant: &TenantId,
+    project: &ProjectId,
+    window_start: DateTime<Utc>,
+    reset_at: DateTime<Utc>,
+    reservers: usize,
+    amount: u64,
+    limit: u64,
+) where
+    L: QuotaLimiter + 'static,
+{
+    let mut handles = Vec::with_capacity(reservers);
+    for _ in 0..reservers {
+        let limiter = Arc::clone(limiter);
+        let request = QuotaReservationRequest {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            amount,
+            limit,
+            window_start,
+            reset_at,
+        };
+        handles.push(tokio::spawn(
+            async move { limiter.reserve_quota(request).await },
+        ));
+    }
+
+    let mut decisions = Vec::with_capacity(reservers);
+    for handle in handles {
+        let decision = handle
+            .await
+            .unwrap_or_else(|err| panic!("reservation task panicked: {err}"))
+            .unwrap_or_else(|err| panic!("reserve_quota failed: {err}"));
+        decisions.push(decision);
+    }
+
+    // Invariant: the limiter never reports a counter past the limit, in any
+    // interleaving, in any decision.
+    for decision in &decisions {
+        assert!(
+            decision.used <= limit,
+            "observed used {} exceeding limit {}",
+            decision.used,
+            limit
+        );
+    }
+
+    // Invariant: exactly floor(limit / amount) reservations are granted.
+    let granted = decisions
+        .iter()
+        .filter(|decision| decision.accepted)
+        .count() as u64;
+    let expected = limit / amount;
+    assert_eq!(
+        granted, expected,
+        "granted {granted} reservations against limit {limit} amount {amount}, expected {expected}"
+    );
+
+    // Invariant: the settled counter equals granted * amount and never exceeds
+    // the limit. A reservation that is guaranteed to overflow is denied and
+    // reports the true settled `used`.
+    let settle = limiter
+        .reserve_quota(QuotaReservationRequest {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            amount: limit + 1,
+            limit,
+            window_start,
+            reset_at,
+        })
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert!(!settle.accepted);
+    assert_eq!(
+        settle.used,
+        granted * amount,
+        "settled used {} did not match granted {granted} * amount {amount}",
+        settle.used
+    );
+    assert!(settle.used <= limit);
 }
 
 fn fixture_batch() -> (

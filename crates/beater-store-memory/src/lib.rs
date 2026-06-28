@@ -396,8 +396,8 @@ impl QuotaLimiter for InMemoryQuotaLimiter {
 mod tests {
     use super::*;
     use beater_store_conformance::{
-        assert_metadata_store_conformance, assert_quota_limiter_conformance,
-        assert_trace_store_conformance,
+        assert_metadata_store_conformance, assert_quota_limiter_concurrency_conformance,
+        assert_quota_limiter_conformance, assert_trace_store_conformance,
     };
 
     #[tokio::test]
@@ -413,5 +413,10 @@ mod tests {
     #[tokio::test]
     async fn in_memory_quota_limiter_conforms() {
         assert_quota_limiter_conformance(InMemoryQuotaLimiter::new()).await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+    async fn in_memory_quota_limiter_concurrency_conforms() {
+        assert_quota_limiter_concurrency_conformance(InMemoryQuotaLimiter::new()).await;
     }
 }

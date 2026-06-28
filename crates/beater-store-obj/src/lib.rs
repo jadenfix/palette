@@ -302,9 +302,9 @@ mod tests {
         for uri in cases {
             match store.get_bytes(&make_ref(uri)).await {
                 Err(StoreError::Integrity(_)) => {}
-                other => panic!(
-                    "get_bytes: expected StoreError::Integrity for {uri:?}, got {other:?}"
-                ),
+                other => {
+                    panic!("get_bytes: expected StoreError::Integrity for {uri:?}, got {other:?}")
+                }
             }
             match store.delete_bytes(&make_ref(uri)).await {
                 Err(StoreError::Integrity(_)) => {}

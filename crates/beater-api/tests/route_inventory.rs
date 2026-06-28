@@ -19,8 +19,7 @@ fn spec_path() -> PathBuf {
 }
 
 fn golden_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/route_inventory.golden.txt")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/route_inventory.golden.txt")
 }
 
 /// Read the spec and return sorted "METHOD /v1/path" strings.
@@ -52,7 +51,12 @@ fn collect_routes() -> BTreeSet<String> {
 #[test]
 fn route_inventory_matches_golden() {
     let routes = collect_routes();
-    let actual: String = routes.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n") + "\n";
+    let actual: String = routes
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n";
 
     let golden_path = golden_path();
     let golden = std::fs::read_to_string(&golden_path).unwrap_or_else(|e| {
@@ -92,7 +96,12 @@ fn route_inventory_matches_golden() {
 #[ignore]
 fn update_golden() {
     let routes = collect_routes();
-    let content: String = routes.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n") + "\n";
+    let content: String = routes
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n";
     let path = golden_path();
     std::fs::write(&path, &content)
         .unwrap_or_else(|e| panic!("cannot write {}: {e}", path.display()));

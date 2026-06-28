@@ -772,7 +772,10 @@ mod tests {
             .cloned()
             .ok_or_else(|| anyhow!("expected at least one result"))?;
         for record in &results {
-            assert_eq!(record, &canonical, "all concurrent winners must be identical");
+            assert_eq!(
+                record, &canonical,
+                "all concurrent winners must be identical"
+            );
         }
 
         let records = store
@@ -873,9 +876,7 @@ mod tests {
     #[tokio::test]
     async fn rollup_overflow_returns_typed_error_not_panic() -> anyhow::Result<()> {
         let store = SqliteUsageLedger::in_memory()?;
-        store
-            .record_usage(charge("near-max", i64::MAX)?)
-            .await?;
+        store.record_usage(charge("near-max", i64::MAX)?).await?;
         store.record_usage(charge("one-more", 1)?).await?;
 
         let error = store
@@ -935,9 +936,7 @@ mod tests {
             for _ in 0..ops {
                 let source_id = format!("src-{}", next() % 7);
                 let quantity = (next() % 1_000) as i64;
-                store
-                    .record_usage(charge(&source_id, quantity)?)
-                    .await?;
+                store.record_usage(charge(&source_id, quantity)?).await?;
                 first_quantity.entry(source_id).or_insert(quantity);
             }
 
