@@ -1,0 +1,22 @@
+[package]
+name = "beater-design"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Pre-registration manifest for statistically valid Beater evals: the EvalDesign that pins hypothesis, estimand, metric family, clustering, multiplicity, sampling/weighting, stopping rule, and split BEFORE scoring (ARCHITECTURE.md §10.3, §1 #9-#11)."
+
+# This crate is a pure, serialisable, dependency-light primitive in the same
+# spirit as `beater-stats`: it does no I/O, allocates no runtime, and never
+# panics on bad input. It sits BELOW the consumers that must not depend on each
+# other (`beater-datasets`, `beater-experiments`/`beater-gates`, and the RSI
+# loop) so the same design contract can be attached at every layer.
+
+[dependencies]
+beater-core = { path = "../beater-core" }
+serde = { workspace = true }
+utoipa = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
