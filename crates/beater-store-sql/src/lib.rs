@@ -1069,15 +1069,10 @@ mod tests {
     use super::*;
     use beater_core::FixedClock;
     use beater_store_conformance::{
-<<<<<<< HEAD
-        assert_metadata_store_conformance, assert_quota_limiter_conformance,
-        assert_span_pagination_keyset_stability, assert_span_pagination_seq_tiebreak,
-        assert_span_pagination_tenant_wide_tiebreak, assert_trace_store_conformance,
-=======
         assert_metadata_store_conformance, assert_quota_limiter_concurrency_conformance,
         assert_quota_limiter_conformance, assert_span_pagination_keyset_stability,
-        assert_span_pagination_seq_tiebreak, assert_trace_store_conformance,
->>>>>>> 3d04a56 ([billing] test(quota): deep concurrency tests for atomic reserve_quota)
+        assert_span_pagination_seq_tiebreak, assert_span_pagination_tenant_wide_tiebreak,
+        assert_trace_store_conformance,
     };
     use beater_store_memory::{InMemoryMetadataStore, InMemoryQuotaLimiter, InMemoryTraceStore};
     use chrono::{TimeZone, Utc};
@@ -1384,7 +1379,10 @@ mod tests {
             }
         }
 
-        assert_eq!(accepted, LIMIT, "expected exactly {LIMIT} reservations granted");
+        assert_eq!(
+            accepted, LIMIT,
+            "expected exactly {LIMIT} reservations granted"
+        );
         assert_eq!(denied, RESERVERS as u64 - LIMIT, "unexpected denied count");
 
         // The persisted counter must settle at exactly the limit, never above.
@@ -1392,13 +1390,14 @@ mod tests {
         let used = reader
             .lock()
             .unwrap_or_else(|err| panic!("{err}"))
-            .query_row(
-                "SELECT used_events FROM quota_counters",
-                [],
-                |row| row.get::<_, i64>(0),
-            )
+            .query_row("SELECT used_events FROM quota_counters", [], |row| {
+                row.get::<_, i64>(0)
+            })
             .unwrap_or_else(|err| panic!("{err}"));
-        assert_eq!(used, LIMIT as i64, "persisted counter overcommitted the window");
+        assert_eq!(
+            used, LIMIT as i64,
+            "persisted counter overcommitted the window"
+        );
     }
 
     /// Same race, with reservation size > 1: 50 reservers each asking for 3
@@ -1456,19 +1455,25 @@ mod tests {
             }
         }
 
-        assert_eq!(accepted, LIMIT / AMOUNT, "expected exactly 3 reservations granted");
+        assert_eq!(
+            accepted,
+            LIMIT / AMOUNT,
+            "expected exactly 3 reservations granted"
+        );
 
         let reader = SqliteQuotaLimiter::open(&path).unwrap_or_else(|err| panic!("{err}"));
         let used = reader
             .lock()
             .unwrap_or_else(|err| panic!("{err}"))
-            .query_row(
-                "SELECT used_events FROM quota_counters",
-                [],
-                |row| row.get::<_, i64>(0),
-            )
+            .query_row("SELECT used_events FROM quota_counters", [], |row| {
+                row.get::<_, i64>(0)
+            })
             .unwrap_or_else(|err| panic!("{err}"));
-        assert_eq!(used, (LIMIT / AMOUNT * AMOUNT) as i64, "counter settled incorrectly");
+        assert_eq!(
+            used,
+            (LIMIT / AMOUNT * AMOUNT) as i64,
+            "counter settled incorrectly"
+        );
         assert!(used <= LIMIT as i64, "counter overcommitted the window");
     }
 
