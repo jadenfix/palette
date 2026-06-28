@@ -4398,7 +4398,7 @@ mod tests {
             inline_payload_bytes: 200,
             ..IngestPolicy::default()
         };
-        let err = policy.validate().unwrap_err();
+        let err = policy.validate().err().unwrap_or_else(|| panic!("expected validation error"));
         assert!(
             err.to_string().contains("inline_payload_bytes"),
             "expected mention of inline_payload_bytes in: {err}"
@@ -4412,7 +4412,7 @@ mod tests {
             inline_payload_bytes: 0,
             ..IngestPolicy::default()
         };
-        let err = policy.validate().unwrap_err();
+        let err = policy.validate().err().unwrap_or_else(|| panic!("expected validation error"));
         assert!(
             err.to_string().contains("max_raw_payload_bytes"),
             "expected mention of max_raw_payload_bytes in: {err}"
@@ -4425,7 +4425,7 @@ mod tests {
             max_attributes: 0,
             ..IngestPolicy::default()
         };
-        let err = policy.validate().unwrap_err();
+        let err = policy.validate().err().unwrap_or_else(|| panic!("expected validation error"));
         assert!(
             err.to_string().contains("max_attributes"),
             "expected mention of max_attributes in: {err}"
@@ -4441,7 +4441,7 @@ mod tests {
             },
             ..IngestPolicy::default()
         };
-        let err = policy.validate().unwrap_err();
+        let err = policy.validate().err().unwrap_or_else(|| panic!("expected validation error"));
         assert!(
             err.to_string().contains("trace_idle_timeout"),
             "expected mention of trace_idle_timeout in: {err}"
@@ -4457,7 +4457,7 @@ mod tests {
             },
             ..IngestPolicy::default()
         };
-        let err = policy.validate().unwrap_err();
+        let err = policy.validate().err().unwrap_or_else(|| panic!("expected validation error"));
         assert!(
             err.to_string().contains("trace_late_window"),
             "expected mention of trace_late_window in: {err}"
