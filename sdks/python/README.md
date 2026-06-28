@@ -35,7 +35,52 @@ All `init()` arguments fall back to `BEATER_*` env vars
 `BEATER_ENVIRONMENT_ID`, `BEATER_API_KEY`), so `beater.init()` works with no args
 when the environment is configured.
 
+## Zero-code env bootstrap
+
+For apps launched with OpenTelemetry Python auto-instrumentation, select the
+Beater configurator and provide only environment variables. No application code
+edits are required. Install the OpenTelemetry launcher and instrumentors
+separately for the libraries your app uses.
+
+```bash
+export BEATER_BASE_URL=http://127.0.0.1:8080
+export BEATER_TENANT_ID=demo
+export BEATER_PROJECT_ID=demo
+export BEATER_ENVIRONMENT_ID=local
+export BEATER_SERVICE_NAME=my-agent
+export OTEL_PYTHON_CONFIGURATOR=beater
+
+opentelemetry-instrument python app.py
+```
+
+If provider constructor auto-instrumentation is installed, enable it explicitly:
+
+```bash
+export BEATER_AUTO_INSTRUMENT=openai,anthropic
+```
+
+The bootstrap module is safe to import; it initializes tracing only when the
+`beater` OpenTelemetry configurator runs or `beater.bootstrap.bootstrap_from_env()`
+is called directly.
+
 ## Drop-in provider wrappers
+
+Auto-instrument installed provider clients:
+
+```python
+import beater
+
+beater.init()
+beater.instrument(providers=["openai", "anthropic"])
+
+from openai import OpenAI
+
+client = OpenAI()
+# every client.chat.completions.create(...) is now an llm.call span
+# with model + token counts
+```
+
+Or wrap one client explicitly:
 
 ```python
 from openai import OpenAI

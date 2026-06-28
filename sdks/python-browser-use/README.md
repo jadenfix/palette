@@ -5,6 +5,15 @@ agent framework. It hooks an `Agent` and emits **canonical `browser.*` browser-s
 spans** over OTLP/gRPC into Beater, so browser-agent runs land in the same
 observability/eval pipeline as everything else.
 
+## Architecture fit
+
+Generic OTLP/OpenInference/OpenLLMetry ingest remains Beater's zero-code floor:
+any already-instrumented app should export to Beater without this package. Use
+`beater-browser-use` when you need the first-class browser-use vertical from
+`ARCHITECTURE.md` §28.1: browser step lifecycle hooks, grounded action metadata,
+and canonical `browser.*` spans that generic LLM-only exporters usually cannot
+see.
+
 Per browser step it emits a span pair:
 
 - **`llm.call`** — the decision: `browser.reasoning` (from `model_thoughts`), an

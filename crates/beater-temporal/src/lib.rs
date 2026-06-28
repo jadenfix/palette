@@ -969,6 +969,10 @@ mod tests {
             root.attributes.get("temporal.unmapped_event_count"),
             Some(&json!(1u64))
         );
+        assert_eq!(
+            root.attributes.get("temporal.unmapped_event_types"),
+            Some(&json!(["SOME_FUTURE_TEMPORAL_EVENT"]))
+        );
     }
 
     #[test]

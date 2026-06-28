@@ -487,17 +487,64 @@ mod tests {
     }
 
     #[test]
-    fn action_maps_to_command() {
-        let cmd = PlaywrightDriver::action_to_command(&BrowserAction::Type {
-            selector: "#a".to_string(),
-            text: "hi".to_string(),
-        });
-        match cmd {
-            CommandPayload::Type { selector, text } => {
-                assert_eq!(selector, "#a");
-                assert_eq!(text, "hi");
-            }
-            other => panic!("expected type command, got {other:?}"),
+    fn action_maps_each_variant_to_runner_command() {
+        let cases = [
+            (
+                BrowserAction::Goto {
+                    url: "https://example.test".to_string(),
+                },
+                CommandPayload::Goto {
+                    url: "https://example.test".to_string(),
+                },
+            ),
+            (
+                BrowserAction::Click {
+                    selector: "#button".to_string(),
+                },
+                CommandPayload::Click {
+                    selector: "#button".to_string(),
+                },
+            ),
+            (
+                BrowserAction::Type {
+                    selector: "#a".to_string(),
+                    text: "hi".to_string(),
+                },
+                CommandPayload::Type {
+                    selector: "#a".to_string(),
+                    text: "hi".to_string(),
+                },
+            ),
+            (
+                BrowserAction::Scroll { x: 10, y: 20 },
+                CommandPayload::Scroll { x: 10, y: 20 },
+            ),
+            (
+                BrowserAction::Select {
+                    selector: "#choice".to_string(),
+                    value: "b".to_string(),
+                },
+                CommandPayload::Select {
+                    selector: "#choice".to_string(),
+                    value: "b".to_string(),
+                },
+            ),
+            (
+                BrowserAction::Wait { millis: 250 },
+                CommandPayload::Wait { millis: 250 },
+            ),
+            (
+                BrowserAction::Extract {
+                    selector: "#output".to_string(),
+                },
+                CommandPayload::Extract {
+                    selector: "#output".to_string(),
+                },
+            ),
+        ];
+
+        for (action, expected) in cases {
+            assert_eq!(PlaywrightDriver::action_to_command(&action), expected);
         }
     }
 

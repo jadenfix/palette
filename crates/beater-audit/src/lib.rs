@@ -18,12 +18,20 @@ use uuid::Uuid;
 #[serde(rename_all = "snake_case")]
 pub enum AuditAction {
     PiiUnmask,
+    ApiKeyCreate,
+    ApiKeyRevoke,
+    ProviderSecretCreate,
+    ProviderSecretRevoke,
 }
 
 impl AuditAction {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::PiiUnmask => "pii_unmask",
+            Self::ApiKeyCreate => "api_key_create",
+            Self::ApiKeyRevoke => "api_key_revoke",
+            Self::ProviderSecretCreate => "provider_secret_create",
+            Self::ProviderSecretRevoke => "provider_secret_revoke",
         }
     }
 }
@@ -507,6 +515,21 @@ pub fn pii_unmask_event(input: PiiUnmaskAuditInput) -> AuditEventInsert {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn audit_action_names_cover_admin_lifecycle_events() {
+        assert_eq!(AuditAction::PiiUnmask.as_str(), "pii_unmask");
+        assert_eq!(AuditAction::ApiKeyCreate.as_str(), "api_key_create");
+        assert_eq!(AuditAction::ApiKeyRevoke.as_str(), "api_key_revoke");
+        assert_eq!(
+            AuditAction::ProviderSecretCreate.as_str(),
+            "provider_secret_create"
+        );
+        assert_eq!(
+            AuditAction::ProviderSecretRevoke.as_str(),
+            "provider_secret_revoke"
+        );
+    }
 
     #[tokio::test]
     async fn sqlite_audit_store_persists_privileged_unmask_events() -> anyhow::Result<()> {

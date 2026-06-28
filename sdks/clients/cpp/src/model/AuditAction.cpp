@@ -26,6 +26,14 @@ AuditAction::eAuditAction toEnum(const EnumUnderlyingType& val)
 {
     if (val == utility::conversions::to_string_t(U("pii_unmask")))
         return AuditAction::eAuditAction::AuditAction_PII_UNMASK;
+    if (val == utility::conversions::to_string_t(U("api_key_create")))
+        return AuditAction::eAuditAction::AuditAction_API_KEY_CREATE;
+    if (val == utility::conversions::to_string_t(U("api_key_revoke")))
+        return AuditAction::eAuditAction::AuditAction_API_KEY_REVOKE;
+    if (val == utility::conversions::to_string_t(U("provider_secret_create")))
+        return AuditAction::eAuditAction::AuditAction_PROVIDER_SECRET_CREATE;
+    if (val == utility::conversions::to_string_t(U("provider_secret_revoke")))
+        return AuditAction::eAuditAction::AuditAction_PROVIDER_SECRET_REVOKE;
     return {};
 }
 
@@ -35,6 +43,14 @@ EnumUnderlyingType fromEnum(AuditAction::eAuditAction e)
     {
     case AuditAction::eAuditAction::AuditAction_PII_UNMASK:
         return U("pii_unmask");
+    case AuditAction::eAuditAction::AuditAction_API_KEY_CREATE:
+        return U("api_key_create");
+    case AuditAction::eAuditAction::AuditAction_API_KEY_REVOKE:
+        return U("api_key_revoke");
+    case AuditAction::eAuditAction::AuditAction_PROVIDER_SECRET_CREATE:
+        return U("provider_secret_create");
+    case AuditAction::eAuditAction::AuditAction_PROVIDER_SECRET_REVOKE:
+        return U("provider_secret_revoke");
     default:
         break;
     }

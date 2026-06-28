@@ -36,6 +36,15 @@ OTLP from common web frameworks, no Beater SDK required:
 | `typescript/frameworks/express-otlp.mjs` | Express |
 | `typescript/frameworks/llamaindex-otlp.mjs` | LlamaIndex.TS |
 
+## Workflow import examples (Temporal)
+
+Temporal users have two no-Beater-SDK paths in `temporal/README.md`: live
+capture through Temporal's OpenTelemetry tracing interceptor pointed at Beater's
+OTLP endpoint, and history import through `/v1/import/...` with
+`source: temporal_history`. Both project into canonical spans: workflow run ->
+`agent.run`, activity -> `tool.call`, child workflow -> nested `agent.run`, and
+timer/signal -> `agent.step`.
+
 ## Rust SDK examples (R11.3)
 
 First-class Rust adoption via the `beater` SDK (`sdks/rust`):

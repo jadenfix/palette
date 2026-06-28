@@ -7,14 +7,14 @@
 use std::sync::Arc;
 
 use beater_bus::{DurableBus, InMemoryBus};
-use beater_core::{EnvironmentId, ProjectId, TenantId, TenantScope};
+use beater_core::{EnvironmentId, PageRequest, ProjectId, TenantId, TenantScope};
 use beater_ingest::{IngestPolicy, IngestService};
 use beater_langfuse::LangfuseImporter;
-use beater_schema::AgentSpanKind;
+use beater_schema::{conventions::attr, AgentSpanKind, RunFilter};
 use beater_store::{ArtifactStore, TraceStore};
 use beater_store_memory::InMemoryTraceStore;
 use beater_store_obj::FsArtifactStore;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 const FIXTURE: &str = include_str!("fixtures/langfuse_trace_export.json");
 
@@ -77,6 +77,14 @@ async fn import_langfuse_export_end_to_end() {
     let root = find("lf-trace-trace-001");
     assert_eq!(root.kind, AgentSpanKind::AgentRun);
     assert_eq!(root.parent_span_id, None);
+    assert_eq!(
+        root.attributes.get("langfuse.release"),
+        Some(&json!("v1.4.2"))
+    );
+    assert_eq!(
+        root.attributes.get(attr::RELEASE_ID),
+        Some(&json!("v1.4.2"))
+    );
 
     let generation = find("lf-obs-obs-gen-1");
     assert_eq!(generation.kind, AgentSpanKind::LlmCall);
@@ -108,4 +116,23 @@ async fn import_langfuse_export_end_to_end() {
     let from_raw: Value = serde_json::from_slice(&raw_bytes).unwrap_or_else(|e| panic!("{e}"));
     let from_src: Value = serde_json::from_str(FIXTURE).unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(from_raw, from_src);
+
+    let release_runs = traces
+        .query_runs(
+            scope.tenant_id.clone(),
+            RunFilter {
+                project_id: Some(scope.project_id.clone()),
+                environment_id: Some(scope.environment_id.clone()),
+                release: Some("v1.4.2".to_string()),
+                ..RunFilter::default()
+            },
+            PageRequest::default(),
+        )
+        .await
+        .unwrap_or_else(|e| panic!("query_runs release filter: {e}"));
+    assert_eq!(release_runs.items.len(), 1);
+    assert_eq!(
+        release_runs.items[0].release_ids,
+        vec!["v1.4.2".to_string()]
+    );
 }

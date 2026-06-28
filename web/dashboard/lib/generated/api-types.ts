@@ -772,7 +772,7 @@ export interface components {
             uri: string;
         };
         /** @enum {string} */
-        AuditAction: "pii_unmask";
+        AuditAction: "pii_unmask" | "api_key_create" | "api_key_revoke" | "provider_secret_create" | "provider_secret_revoke";
         AuditEvent: {
             action: components["schemas"]["AuditAction"];
             actor_api_key_id?: null | components["schemas"]["ApiKeyId"];

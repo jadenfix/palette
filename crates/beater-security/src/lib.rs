@@ -542,6 +542,16 @@ mod tests {
         assert!(matches!(
             verify_webhook(
                 b"secret",
+                br#"{"event":"trace.alert","tampered":true}"#,
+                &header,
+                now,
+                Duration::minutes(5)
+            ),
+            Err(SecurityError::WebhookSignatureFailed)
+        ));
+        assert!(matches!(
+            verify_webhook(
+                b"secret",
                 body,
                 &header,
                 now + Duration::minutes(10),

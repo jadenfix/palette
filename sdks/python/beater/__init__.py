@@ -14,6 +14,10 @@ Drop-in provider instrumentation::
     from openai import OpenAI
     client = beater.wrap_openai(OpenAI())
 
+Auto-instrument installed providers::
+
+    beater.instrument(providers=["openai", "anthropic"])
+
 This is the hand-written ergonomic (Layer 2) SDK. The generated control-plane
 client (Layer 1, for datasets/experiments/gates/etc.) lives in the
 ``beater_client`` package generated from the OpenAPI contract.
@@ -21,6 +25,7 @@ client (Layer 1, for datasets/experiments/gates/etc.) lives in the
 
 from __future__ import annotations
 
+from .auto import InstrumentationResult, instrument
 from .config import BeaterConfig
 from .observe import observe, set_input, set_output, span
 from .providers.anthropic import wrap_anthropic
@@ -34,11 +39,13 @@ __all__ = [
     "span",
     "set_input",
     "set_output",
+    "instrument",
     "wrap_openai",
     "wrap_anthropic",
     "flush",
     "shutdown",
     "get_config",
+    "InstrumentationResult",
     "BeaterConfig",
     "SpanKind",
     "Attr",

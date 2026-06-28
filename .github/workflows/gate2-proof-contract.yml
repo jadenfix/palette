@@ -55,7 +55,9 @@ jobs:
           python3 -m py_compile scripts/generate-gate2-outside-proof.py
           python3 -m py_compile scripts/gate2_proof_contract.py
           python3 -m py_compile scripts/seed-gate2-redaction-trace.py
+          python3 -m py_compile scripts/tests/test_gate2_proof_contract.py
           python3 -m py_compile scripts/tests/test_check_gate2_outside_readiness.py
+          python3 scripts/tests/test_gate2_proof_contract.py
           python3 scripts/tests/test_check_gate2_outside_readiness.py
           scripts/validate-gate2-outside-proof.sh --allow-pending
 
