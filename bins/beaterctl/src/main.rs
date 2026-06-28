@@ -430,6 +430,9 @@ async fn main() -> anyhow::Result<()> {
             )
             .context("compare paired scores")?;
             println!("{}", serde_json::to_string_pretty(&comparison)?);
+            if comparison.decision != GateDecision::Pass {
+                std::process::exit(1);
+            }
         }
         Command::JudgeBudget { remaining_micros } => {
             let budget = Money::usd_micros(remaining_micros);
