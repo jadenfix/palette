@@ -451,6 +451,33 @@ pub struct FailureAttribution {
     pub evidence: Vec<SpanEvidence>,
 }
 
+/// The evaluation score below which a span's evidence counts as a failure signal.
+const FAILURE_EVIDENCE_THRESHOLD: f64 = 0.5;
+
+/// Confidence reported when the earliest unrecovered failure is a hard error.
+const ERROR_CONFIDENCE: f64 = 0.8;
+/// Confidence reported when it is only a soft (evidence-only) failure signal.
+const EVIDENCE_CONFIDENCE: f64 = 0.65;
+
+/// Attribute a trace failure to the **earliest span the trace never recovers
+/// from** — the point at which the outcome became committed to failure.
+///
+/// A span carries a *failure signal* when its status is [`SpanStatus::Error`] or
+/// it has evaluation [`SpanEvidence`] scoring below
+/// [`FAILURE_EVIDENCE_THRESHOLD`]. Walking spans in `seq` order, the root cause is
+/// the first failure-signal span in the **trailing region that contains no
+/// recovered (good) span** — i.e. the earliest failure after the last point the
+/// trace was still healthy.
+///
+/// This deliberately differs from a naive "first error" heuristic, which blames
+/// the earliest error even when the agent recovered from it and the trace went
+/// on to fail for an unrelated reason later. Here a failure followed by a later
+/// good span is treated as recovered and skipped.
+///
+/// This is a deterministic analysis of the **recorded** trace. It does not
+/// re-execute the agent: *confirming* a flip by forking the replay and running
+/// the counterfactual suffix (true forked replay) requires the agent harness
+/// (§12) and is intentionally out of scope here.
 pub fn attribute_failure(
     trace_id: TraceId,
     spans: &[CanonicalSpan],
@@ -459,32 +486,49 @@ pub fn attribute_failure(
     let mut sorted_spans = spans.to_vec();
     sorted_spans.sort_by_key(|span| span.seq);
 
-    for span in &sorted_spans {
-        if span.status == SpanStatus::Error {
-            return FailureAttribution {
+    let evidence_score = |span: &CanonicalSpan| -> Option<f64> {
+        evidence
+            .iter()
+            .find(|item| item.span_id == span.span_id)
+            .map(|item| item.score)
+    };
+    let has_failure_signal = |span: &CanonicalSpan| -> bool {
+        span.status == SpanStatus::Error
+            || evidence_score(span).is_some_and(|score| score < FAILURE_EVIDENCE_THRESHOLD)
+    };
+
+    // The committed-failure region is the maximal suffix (in seq order) with no
+    // recovered span; its first span is the earliest unrecovered failure. A
+    // failure with a later good span recovered, so it is excluded.
+    let region_start = sorted_spans
+        .iter()
+        .rposition(|span| !has_failure_signal(span))
+        .map_or(0, |last_good| last_good + 1);
+
+    let root_cause = sorted_spans[region_start..]
+        .iter()
+        .find(|span| has_failure_signal(span));
+
+    match root_cause {
+        Some(span) => {
+            let confidence = if span.status == SpanStatus::Error {
+                ERROR_CONFIDENCE
+            } else {
+                EVIDENCE_CONFIDENCE
+            };
+            FailureAttribution {
                 trace_id,
                 root_cause_span_id: Some(span.span_id.clone()),
-                confidence: 0.8,
+                confidence,
                 evidence: evidence.to_vec(),
-            };
-        }
-        if let Some(score) = evidence.iter().find(|item| item.span_id == span.span_id) {
-            if score.score < 0.5 {
-                return FailureAttribution {
-                    trace_id,
-                    root_cause_span_id: Some(span.span_id.clone()),
-                    confidence: 0.65,
-                    evidence: evidence.to_vec(),
-                };
             }
         }
-    }
-
-    FailureAttribution {
-        trace_id,
-        root_cause_span_id: None,
-        confidence: 0.0,
-        evidence: evidence.to_vec(),
+        None => FailureAttribution {
+            trace_id,
+            root_cause_span_id: None,
+            confidence: 0.0,
+            evidence: evidence.to_vec(),
+        },
     }
 }
 
@@ -672,6 +716,35 @@ mod tests {
 
         assert_eq!(attribution.trace_id, trace_id);
         assert_eq!(attribution.root_cause_span_id, Some(second.span_id));
+    }
+
+    #[test]
+    fn recovered_failure_is_skipped_for_the_later_committed_failure() {
+        let trace_id = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
+        // An early error the agent recovered from (seq 2 is healthy), then a real
+        // failure at seq 3 that the trace never recovers from.
+        let early_error = fixture_span("early", 1, SpanStatus::Error);
+        let recovered = fixture_span("recovered", 2, SpanStatus::Ok);
+        let committed = fixture_span("committed", 3, SpanStatus::Error);
+        let attribution =
+            attribute_failure(trace_id, &[committed.clone(), early_error, recovered], &[]);
+
+        // The naive first-error heuristic would have blamed "early"; the
+        // recovery-aware attribution blames the unrecovered "committed" failure.
+        assert_eq!(attribution.root_cause_span_id, Some(committed.span_id));
+        assert_eq!(attribution.confidence, 0.8);
+    }
+
+    #[test]
+    fn fully_recovered_trace_has_no_committed_root_cause() {
+        let trace_id = TraceId::new("trace").unwrap_or_else(|err| panic!("{err}"));
+        let errored = fixture_span("errored", 1, SpanStatus::Error);
+        let recovered = fixture_span("recovered", 2, SpanStatus::Ok);
+        let attribution = attribute_failure(trace_id, &[errored, recovered], &[]);
+
+        // The last span is healthy, so nothing is committed to failure.
+        assert_eq!(attribution.root_cause_span_id, None);
+        assert_eq!(attribution.confidence, 0.0);
     }
 
     fn fixture_span(span_id: &str, seq: u64, status: SpanStatus) -> CanonicalSpan {
