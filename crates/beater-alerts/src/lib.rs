@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use beater_core::{ProjectId, TenantId, Timestamp, TraceId};
 use beater_schema::{CanonicalSpan, SpanStatus, TraceView};
 use beater_security::{sign_webhook, webhook_idempotency_key, WEBHOOK_IDEMPOTENCY_KEY_HEADER};
@@ -189,13 +189,33 @@ pub enum AlertDedupeDecision {
     Suppressed { last_emitted_at: Timestamp },
 }
 
+pub type AlertDedupeStoreResult<T> = Result<T, AlertDedupeStoreError>;
+
+#[derive(Debug, thiserror::Error, Clone, PartialEq, Eq)]
+pub enum AlertDedupeStoreError {
+    #[error("alert dedupe store backend error: {0}")]
+    Backend(String),
+}
+
+impl AlertDedupeStoreError {
+    pub fn backend(error: impl std::fmt::Display) -> Self {
+        Self::Backend(error.to_string())
+    }
+}
+
+impl From<anyhow::Error> for AlertDedupeStoreError {
+    fn from(error: anyhow::Error) -> Self {
+        Self::backend(error)
+    }
+}
+
 pub trait AlertDedupeStore: std::fmt::Debug + Send + Sync {
     fn check_and_record(
         &self,
         group_key: &str,
         now: Timestamp,
         dedupe_window: Duration,
-    ) -> anyhow::Result<AlertDedupeDecision>;
+    ) -> AlertDedupeStoreResult<AlertDedupeDecision>;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -215,11 +235,10 @@ impl AlertDedupeStore for MemoryAlertDedupeStore {
         group_key: &str,
         now: Timestamp,
         dedupe_window: Duration,
-    ) -> anyhow::Result<AlertDedupeDecision> {
-        let mut state = self
-            .state
-            .lock()
-            .map_err(|err| anyhow!("alert dedupe store mutex poisoned: {err}"))?;
+    ) -> AlertDedupeStoreResult<AlertDedupeDecision> {
+        let mut state = self.state.lock().map_err(|err| {
+            AlertDedupeStoreError::backend(format!("alert dedupe store mutex poisoned: {err}"))
+        })?;
         Ok(check_and_record_in_state(
             &mut state,
             group_key,
@@ -297,11 +316,10 @@ impl AlertDedupeStore for JsonFileAlertDedupeStore {
         group_key: &str,
         now: Timestamp,
         dedupe_window: Duration,
-    ) -> anyhow::Result<AlertDedupeDecision> {
-        let _guard = self
-            .lock
-            .lock()
-            .map_err(|err| anyhow!("alert dedupe file store mutex poisoned: {err}"))?;
+    ) -> AlertDedupeStoreResult<AlertDedupeDecision> {
+        let _guard = self.lock.lock().map_err(|err| {
+            AlertDedupeStoreError::backend(format!("alert dedupe file store mutex poisoned: {err}"))
+        })?;
         let mut state = self.load_state()?;
         let decision = check_and_record_in_state(&mut state, group_key, now, dedupe_window);
         if decision == AlertDedupeDecision::Recorded {
