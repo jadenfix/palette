@@ -3480,8 +3480,8 @@ fn redact_payload_attribute(
     attributes: &mut std::collections::BTreeMap<String, serde_json::Value>,
     key: &str,
 ) {
-    if attributes.contains_key(key) {
-        attributes.insert(key.to_string(), serde_json::json!("[redacted]"));
+    if let Some(value) = attributes.get_mut(key) {
+        *value = serde_json::json!("[redacted]");
     }
 }
 
