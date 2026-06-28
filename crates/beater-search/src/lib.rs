@@ -225,12 +225,28 @@ impl SearchIndex for TantivySearchIndex {
     }
 }
 
+/// Maximum byte length of a user-supplied query string.  Strings longer than
+/// this are rejected before reaching the Tantivy parser, preventing slow or
+/// memory-hungry tokenisation passes on adversarially large inputs.
+const MAX_QUERY_LEN: usize = 1_000;
+
 impl TantivySearchIndex {
     fn filtered_query(
         &self,
         query: &SearchRequest,
         parser: &QueryParser,
     ) -> StoreResult<Box<dyn Query>> {
+        // Guard against pathologically long query strings before they reach
+        // the Tantivy parser.  Parse errors (malformed DSL, unbalanced quotes,
+        // unknown fields, etc.) are already converted to StoreError::Backend
+        // by the .into_store()? below — they do not panic.
+        if query.text.len() > MAX_QUERY_LEN {
+            return Err(StoreError::backend(format!(
+                "search query too long: {} bytes (limit {MAX_QUERY_LEN})",
+                query.text.len(),
+            )));
+        }
+
         let mut clauses: Vec<(Occur, Box<dyn Query>)> = vec![(
             Occur::Must,
             exact_field_query(self.fields.tenant_id, query.tenant_id.as_str()),
@@ -809,6 +825,138 @@ mod tests {
         assert!(old.hits.is_empty());
         assert_eq!(new.hits.len(), 1);
     }
+
+    // ── query-hardening regression tests ──────────────────────────────────────
+
+    /// An unbalanced double-quote is a DSL metacharacter that Tantivy cannot
+    /// parse.  The search method must return a typed error, not panic.
+    #[tokio::test]
+    async fn malformed_query_unbalanced_quote_returns_error() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let result = index
+            .search(SearchRequest {
+                text: "\"unbalanced".to_string(),
+                ..SearchRequest::default_for_tenant(tenant)
+            })
+            .await;
+        assert!(
+            result.is_err(),
+            "expected error for unbalanced quote, got: {result:?}"
+        );
+    }
+
+    /// A raw `"` character (lone double-quote) is the minimal unbalanced-phrase
+    /// trigger — also must not panic.
+    #[tokio::test]
+    async fn malformed_query_lone_quote_returns_error() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let result = index
+            .search(SearchRequest {
+                text: "\"".to_string(),
+                ..SearchRequest::default_for_tenant(tenant)
+            })
+            .await;
+        assert!(
+            result.is_err(),
+            "expected error for lone quote, got: {result:?}"
+        );
+    }
+
+    /// A query string longer than MAX_QUERY_LEN bytes is rejected before it
+    /// reaches the Tantivy parser, preventing slow tokenisation passes.
+    #[tokio::test]
+    async fn oversized_query_returns_error() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let long_query = "a ".repeat(MAX_QUERY_LEN + 1);
+        let result = index
+            .search(SearchRequest {
+                text: long_query,
+                ..SearchRequest::default_for_tenant(tenant)
+            })
+            .await;
+        assert!(
+            result.is_err(),
+            "expected error for oversized query, got: {result:?}"
+        );
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("too long"),
+            "error should mention 'too long', got: {err_msg}"
+        );
+    }
+
+    /// The per-request result limit is clamped to at most 200 regardless of
+    /// what the caller supplies.  Index more than 200 docs and request 9999;
+    /// the response must cap at 200.
+    #[tokio::test]
+    async fn result_limit_is_clamped_to_200() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let spans: Vec<_> = (0..250)
+            .map(|i| {
+                fixture_span(
+                    &tenant,
+                    &format!("trace-{i}"),
+                    &format!("span-{i}"),
+                    "needle",
+                    SpanStatus::Ok,
+                )
+            })
+            .collect();
+        index
+            .index_spans(&spans)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let response = index
+            .search(SearchRequest {
+                text: "needle".to_string(),
+                limit: Some(9_999),
+                ..SearchRequest::default_for_tenant(tenant)
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert!(
+            response.hits.len() <= 200,
+            "expected ≤200 hits (limit clamp), got {}",
+            response.hits.len()
+        );
+    }
+
+    /// A well-formed normal query succeeds as a baseline regression guard.
+    #[tokio::test]
+    async fn normal_query_succeeds() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        index
+            .index_spans(&[fixture_span(
+                &tenant,
+                "trace-ok",
+                "span-ok",
+                "healthy span",
+                SpanStatus::Ok,
+            )])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let response = index
+            .search(SearchRequest {
+                text: "healthy".to_string(),
+                limit: Some(10),
+                ..SearchRequest::default_for_tenant(tenant)
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(response.hits.len(), 1);
+        assert_eq!(response.hits[0].trace_id, "trace-ok");
+    }
+
+    // ── end query-hardening regression tests ──────────────────────────────────
 
     #[tokio::test]
     async fn trace_ingested_processor_reads_project_trace_and_indexes_spans() {
