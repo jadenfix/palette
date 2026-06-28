@@ -14,6 +14,7 @@
 //! | [`wilson_interval`] | §6.3, §10.3 #2, §10.3 #7 | binomial-proportion CI |
 //! | [`two_proportion_z_test`] | §6.3, §10.3 #3 | unpaired candidate-vs-baseline |
 //! | [`bootstrap_diff_ci`] | §6.3, §10.3 #2, §21.4 | bounded/continuous diff CI |
+//! | [`weighted_mean`] / [`weighted_standard_error`] | §9, §10.3 | tail-sampled aggregate estimates |
 //! | [`compare_paired`] | §10.3 | paired deploy-gate selector |
 //! | [`paired_t_test`] | §10.3 | continuous paired metric |
 //! | [`mcnemar_exact_p`] | §10.3 | paired binary outcome |
@@ -45,11 +46,13 @@ mod multiplicity;
 mod numerics;
 mod paired;
 mod power;
+mod weighted;
 
 pub use mcnemar::mcnemar_exact_p;
 pub use multiplicity::{benjamini_hochberg, holm_bonferroni, MultiplicityDecision};
 pub use paired::paired_t_test;
 pub use power::{achieved_power, minimum_detectable_effect, required_sample_size, DEFAULT_POWER};
+pub use weighted::{weighted_mean, weighted_standard_error};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error type
