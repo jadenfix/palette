@@ -13,7 +13,6 @@ use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use chrono::{DateTime, Utc};
 use rand_core::{OsRng, RngCore};
 use rusqlite::{params, Connection, OptionalExtension};
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::fs;
@@ -77,7 +76,7 @@ impl Debug for SecretEncryptionKey {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SecretKeyring {
     active_key_id: String,
     keys: Arc<BTreeMap<String, SecretEncryptionKey>>,
@@ -170,6 +169,16 @@ impl SecretKeyring {
         self.keys
             .get(key_id)
             .ok_or_else(|| anyhow!("provider secret encryption key {key_id} is unavailable"))
+    }
+}
+
+impl Debug for SecretKeyring {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let key_ids = self.keys.keys().collect::<Vec<_>>();
+        f.debug_struct("SecretKeyring")
+            .field("active_key_id", &self.active_key_id)
+            .field("key_ids", &key_ids)
+            .finish()
     }
 }
 
@@ -595,11 +604,23 @@ impl ProviderSecretStore for EncryptedSqliteProviderSecretStore {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+// SQLite persists these fields separately; keep the encrypted payload off serde
+// surfaces so it cannot accidentally become an API/log payload.
+#[derive(Clone, PartialEq, Eq)]
 struct EncryptedSecretValue {
     key_id: String,
     nonce: Vec<u8>,
     ciphertext: Vec<u8>,
+}
+
+impl Debug for EncryptedSecretValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EncryptedSecretValue")
+            .field("key_id", &self.key_id)
+            .field("nonce", &"<redacted>")
+            .field("ciphertext", &"<redacted>")
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -837,6 +858,102 @@ mod tests {
     }
 
     #[test]
+    fn key_debug_surfaces_redact_key_material() {
+        let old_key = SecretEncryptionKey::new("secrets-v1", [1_u8; KEY_BYTES])
+            .unwrap_or_else(|err| panic!("{err}"));
+        let new_key = SecretEncryptionKey::new("secrets-v2", [2_u8; KEY_BYTES])
+            .unwrap_or_else(|err| panic!("{err}"));
+        let old_encoded = old_key.to_base64();
+        let new_encoded = new_key.to_base64();
+        let keyring = SecretKeyring::with_keys("secrets-v2", [old_key.clone(), new_key.clone()])
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let surfaces = [
+            ("old key debug", format!("{old_key:?}")),
+            ("new key debug", format!("{new_key:?}")),
+            ("keyring debug", format!("{keyring:?}")),
+        ];
+        for (surface_name, surface) in surfaces {
+            assert_debug_surface_omits(surface_name, &surface, &old_encoded, "old key bytes");
+            assert_debug_surface_omits(surface_name, &surface, &new_encoded, "new key bytes");
+            assert_debug_surface_omits(surface_name, &surface, "[1, 1", "old raw key bytes");
+            assert_debug_surface_omits(surface_name, &surface, "[2, 2", "new raw key bytes");
+        }
+    }
+
+    #[test]
+    fn encrypted_secret_debug_surfaces_redact_ciphertext_material() {
+        let plaintext_secret = "sk-debug-secret";
+        let keyring = SecretKeyring::single(
+            SecretEncryptionKey::new("debug-key", [7_u8; KEY_BYTES])
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let store = EncryptedSqliteProviderSecretStore::in_memory(keyring)
+            .unwrap_or_else(|err| panic!("{err}"));
+        let metadata = ProviderSecretMetadata {
+            provider_secret_id: ProviderSecretId::new(Uuid::new_v4().to_string())
+                .unwrap_or_else(|err| panic!("{err}")),
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            provider: "openai".to_string(),
+            display_name: "debug judge".to_string(),
+            active: true,
+            created_at: Utc::now(),
+            rotated_at: None,
+        };
+        let encrypted = store
+            .encrypt_secret(&metadata, plaintext_secret)
+            .unwrap_or_else(|err| panic!("{err}"));
+        let nonce_debug = format!("{:?}", encrypted.nonce);
+        let ciphertext_debug = format!("{:?}", encrypted.ciphertext);
+
+        let encrypted_debug = format!("{encrypted:?}");
+        assert_debug_surface_omits(
+            "encrypted secret value debug",
+            &encrypted_debug,
+            plaintext_secret,
+            "plaintext provider secret",
+        );
+        assert_debug_surface_omits(
+            "encrypted secret value debug",
+            &encrypted_debug,
+            &nonce_debug,
+            "nonce bytes",
+        );
+        assert_debug_surface_omits(
+            "encrypted secret value debug",
+            &encrypted_debug,
+            &ciphertext_debug,
+            "ciphertext bytes",
+        );
+        assert!(encrypted_debug.contains("<redacted>"));
+
+        let row = EncryptedSecretRow {
+            metadata,
+            encrypted,
+        };
+        let row_debug = format!("{row:?}");
+        assert_debug_surface_omits(
+            "encrypted secret row debug",
+            &row_debug,
+            plaintext_secret,
+            "plaintext provider secret",
+        );
+        assert_debug_surface_omits(
+            "encrypted secret row debug",
+            &row_debug,
+            &nonce_debug,
+            "nonce bytes",
+        );
+        assert_debug_surface_omits(
+            "encrypted secret row debug",
+            &row_debug,
+            &ciphertext_debug,
+            "ciphertext bytes",
+        );
+    }
+
+    #[test]
     fn local_key_file_is_reused_and_redacted() {
         let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
         let path = tempdir.path().join("provider-secrets.key");
@@ -872,6 +989,19 @@ mod tests {
                 .to_base64()
                 .as_str()
         ));
+    }
+
+    fn assert_debug_surface_omits(
+        surface_name: &str,
+        surface: &str,
+        material: &str,
+        material_name: &str,
+    ) {
+        assert!(!material.is_empty());
+        assert!(
+            !surface.contains(material),
+            "{surface_name} exposed {material_name}"
+        );
     }
 
     #[cfg(unix)]
