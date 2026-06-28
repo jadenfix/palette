@@ -18,5 +18,12 @@ export { SpanKind, Attr, SPAN_KINDS } from "./semconv";
 export type { SpanKindValue } from "./semconv";
 export type { BeaterConfig, BeaterOptions } from "./config";
 export { BeaterCallbackHandler } from "./integrations/langchain";
+export { instrumentLlamaIndex } from "./integrations/llamaindex";
+export type {
+  LlamaIndexCallbackManager,
+  LlamaIndexEventHandler,
+  LlamaIndexEventName,
+  LlamaIndexInstrumentation,
+} from "./integrations/llamaindex";
 
 export const VERSION = "0.1.0";
