@@ -6,7 +6,8 @@ use arrow_schema::{DataType, Field, Schema, SchemaRef};
 use beater_core::{EnvironmentId, ProjectId, SpanId, TenantId, Timestamp, TraceId};
 use beater_schema::{AgentSpanKind, CanonicalSpan, SpanStatus};
 use chrono::Utc;
-use datafusion::prelude::{ParquetReadOptions, SessionContext};
+use datafusion::dataframe::DataFrame;
+use datafusion::prelude::{col, lit, ParquetReadOptions, SessionContext};
 use parquet::arrow::ArrowWriter;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -104,8 +105,11 @@ impl ParquetTraceArchive {
         ctx.register_parquet(TABLE_NAME, path_str, ParquetReadOptions::default())
             .await
             .with_context(|| format!("register parquet archive {}", path.display()))?;
-        let sql = build_query_sql(&query);
-        let dataframe = ctx.sql(&sql).await.context("compile archive query")?;
+        let dataframe = ctx
+            .table(TABLE_NAME)
+            .await
+            .context("load archive table")?;
+        let dataframe = build_query_dataframe(dataframe, &query)?;
         let batches = dataframe.collect().await.context("run archive query")?;
         rows_from_batches(&batches)
     }
@@ -342,43 +346,62 @@ fn archive_schema() -> SchemaRef {
     ]))
 }
 
-fn build_query_sql(query: &ArchiveQuery) -> String {
-    let mut predicates = vec![format!(
-        "tenant_id = '{}'",
-        sql_literal(query.tenant_id.as_str())
-    )];
+/// Build the archive query as a structured DataFusion `DataFrame` instead of
+/// interpolated SQL text. Table and column identifiers are compile-time
+/// constants; only user-supplied VALUES enter the plan, and they do so through
+/// `lit(...)` (a bound `ScalarValue`), never string concatenation. This makes
+/// attacker-influenced tenant/project/environment/trace/span IDs and filters
+/// structurally incapable of altering the query shape.
+fn build_query_dataframe(dataframe: DataFrame, query: &ArchiveQuery) -> anyhow::Result<DataFrame> {
+    let column_names = archive_columns();
+    let columns: Vec<&str> = column_names.iter().map(String::as_str).collect();
+    let mut dataframe = dataframe
+        .select_columns(&columns)
+        .context("select archive columns")?;
+
+    dataframe = dataframe
+        .filter(col("tenant_id").eq(lit(query.tenant_id.as_str())))
+        .context("filter tenant_id")?;
     if let Some(project_id) = &query.project_id {
-        predicates.push(format!(
-            "project_id = '{}'",
-            sql_literal(project_id.as_str())
-        ));
+        dataframe = dataframe
+            .filter(col("project_id").eq(lit(project_id.as_str())))
+            .context("filter project_id")?;
     }
     if let Some(environment_id) = &query.environment_id {
-        predicates.push(format!(
-            "environment_id = '{}'",
-            sql_literal(environment_id.as_str())
-        ));
+        dataframe = dataframe
+            .filter(col("environment_id").eq(lit(environment_id.as_str())))
+            .context("filter environment_id")?;
     }
     if let Some(trace_id) = &query.trace_id {
-        predicates.push(format!("trace_id = '{}'", sql_literal(trace_id.as_str())));
+        dataframe = dataframe
+            .filter(col("trace_id").eq(lit(trace_id.as_str())))
+            .context("filter trace_id")?;
     }
     if let Some(span_id) = &query.span_id {
-        predicates.push(format!("span_id = '{}'", sql_literal(span_id.as_str())));
+        dataframe = dataframe
+            .filter(col("span_id").eq(lit(span_id.as_str())))
+            .context("filter span_id")?;
     }
     if let Some(kind) = &query.kind {
-        predicates.push(format!("kind = '{}'", sql_literal(kind.as_str())));
+        dataframe = dataframe
+            .filter(col("kind").eq(lit(kind.as_str())))
+            .context("filter kind")?;
     }
     if let Some(status) = &query.status {
-        predicates.push(format!("status = '{}'", sql_literal(status.as_str())));
+        dataframe = dataframe
+            .filter(col("status").eq(lit(status.as_str())))
+            .context("filter status")?;
     }
 
-    format!(
-        "SELECT {} FROM {} WHERE {} ORDER BY start_time ASC, seq ASC LIMIT {}",
-        archive_columns().join(", "),
-        TABLE_NAME,
-        predicates.join(" AND "),
-        query.limit.unwrap_or(100).clamp(1, 1000)
-    )
+    let dataframe = dataframe
+        .sort(vec![
+            col("start_time").sort(true, false),
+            col("seq").sort(true, false),
+        ])
+        .context("sort archive rows")?;
+
+    let limit = query.limit.unwrap_or(100).clamp(1, 1000);
+    dataframe.limit(0, Some(limit)).context("limit archive rows")
 }
 
 fn archive_columns() -> Vec<String> {
@@ -595,10 +618,6 @@ fn project_dir_has_parquet(path: &Path) -> anyhow::Result<bool> {
     Ok(false)
 }
 
-fn sql_literal(value: &str) -> String {
-    value.replace('\'', "''")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -744,63 +763,51 @@ mod tests {
 
     // ── SQL-injection regression tests ────────────────────────────────────────
     //
-    // `build_query_sql` assembles DataFusion SQL by string interpolation.
-    // `sql_literal` escapes the only relevant meta-character (`'` → `''`), which
-    // is the standard-SQL string-literal escaping that DataFusion honours.  All
-    // identifier positions (table name, column names, ORDER BY keys) are
-    // compile-time constants and are therefore not user-controlled.
-    // `AgentSpanKind` / `SpanStatus` filters are enums whose `as_str()` returns
-    // `&'static str`; the `limit` is a clamped `usize`.  The only plausible
-    // attack surface is therefore the five ID-typed filter fields, all of which
-    // pass through `sql_literal` before being embedded.
+    // The archive query is now assembled as a structured DataFusion `DataFrame`
+    // (`build_query_dataframe`): table/column identifiers are compile-time
+    // constants and user-supplied filter VALUES enter the plan exclusively via
+    // `lit(...)` as bound `ScalarValue`s. No filter value is ever concatenated
+    // into SQL text, so an attacker-influenced tenant/project/environment/
+    // trace/span ID cannot change the query shape — it can only fail to match.
     //
     // Note: `TenantId::new` / `TraceId::new` etc. already reject whitespace, so
-    // the classic `' OR 1=1 --` form is blocked at construction.  The tests
-    // below use the harder no-whitespace variants (e.g. `'OR'a'='a`) that do
-    // pass the type constructor — sql_literal must then handle them safely.
+    // the classic `' OR 1=1 --` form is blocked at construction. The tests below
+    // use the harder no-whitespace variants (e.g. `'OR'a'='a`) that do pass the
+    // type constructor; the structured path must bind them as opaque literals.
 
-    // --- unit: sql_literal ----------------------------------------------------
+    // --- unit: plan inspection (value bound as literal, not interpolated) ------
 
-    #[test]
-    fn sql_literal_leaves_clean_identifier_unchanged() {
-        assert_eq!(sql_literal("tenant-abc-123"), "tenant-abc-123");
-        assert_eq!(sql_literal("trace_001.v2"), "trace_001.v2");
-    }
+    #[tokio::test]
+    async fn hostile_id_is_bound_as_literal_not_interpolated_into_sql() {
+        // Prove the migration's core invariant directly on the logical plan: a
+        // hostile value containing SQL metacharacters is carried verbatim as a
+        // bound `Utf8` literal, never escaped-and-spliced into SQL text the way
+        // the old string builder required.
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let archive =
+            ParquetTraceArchive::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let real_tenant = TenantId::new("real-tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("proj-lit").unwrap_or_else(|err| panic!("{err}"));
+        let manifest = archive
+            .archive_spans(
+                &real_tenant,
+                &project,
+                &[fixture_span(
+                    &real_tenant,
+                    &project,
+                    "prod",
+                    "trace-l",
+                    "span-l",
+                    1,
+                    SpanStatus::Ok,
+                )],
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
 
-    #[test]
-    fn sql_literal_escapes_a_single_quote() {
-        assert_eq!(sql_literal("it's"), "it''s");
-        assert_eq!(sql_literal("'leading"), "''leading");
-        assert_eq!(sql_literal("trailing'"), "trailing''");
-    }
-
-    #[test]
-    fn sql_literal_escapes_consecutive_and_multiple_quotes() {
-        assert_eq!(sql_literal("''"), "''''");
-        assert_eq!(sql_literal("a'b'c"), "a''b''c");
-    }
-
-    #[test]
-    fn sql_literal_neutralises_or_bypass_without_spaces() {
-        // "'OR'a'='a" passes TenantId::new (no whitespace) but must be fully
-        // escaped so that DataFusion never sees a bare `'` that could close the
-        // surrounding string literal.
-        assert_eq!(sql_literal("'OR'a'='a"), "''OR''a''=''a");
-    }
-
-    #[test]
-    fn sql_literal_neutralises_semicolon_drop_without_spaces() {
-        // "';DROPTABLEspans;--" is the closest no-whitespace SQL-terminator
-        // form.  The leading `'` is doubled; the rest is opaque text.
-        assert_eq!(sql_literal("';DROPTABLEspans;--"), "'';DROPTABLEspans;--");
-    }
-
-    // --- unit: build_query_sql inspections ------------------------------------
-
-    #[test]
-    fn build_query_sql_embeds_hostile_tenant_id_as_escaped_literal() {
+        let hostile_raw = "'OR'1'='1";
         let query = ArchiveQuery {
-            tenant_id: TenantId::new("'OR'a'='a").unwrap_or_else(|err| panic!("{err}")),
+            tenant_id: TenantId::new(hostile_raw).unwrap_or_else(|err| panic!("{err}")),
             project_id: None,
             environment_id: None,
             trace_id: None,
@@ -809,36 +816,97 @@ mod tests {
             status: None,
             limit: Some(10),
         };
-        let sql = build_query_sql(&query);
-        // The escaped value must appear verbatim — no raw `'` escaping out.
+
+        let path_str = manifest
+            .path
+            .to_str()
+            .unwrap_or_else(|| panic!("archive path is not utf-8"));
+        let ctx = SessionContext::new();
+        ctx.register_parquet(TABLE_NAME, path_str, ParquetReadOptions::default())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let dataframe = ctx
+            .table(TABLE_NAME)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let dataframe =
+            build_query_dataframe(dataframe, &query).unwrap_or_else(|err| panic!("{err}"));
+        let plan = format!("{}", dataframe.logical_plan().display_indent());
+
+        // The raw hostile value survives verbatim as a bound literal …
         assert!(
-            sql.contains("tenant_id = '''OR''a''=''a'"),
-            "expected escaped literal in predicate; sql={sql}"
+            plan.contains(hostile_raw),
+            "hostile value must be a bound literal; plan={plan}"
         );
-        // Structural keywords must remain intact (well-formed query produced).
-        assert!(sql.contains("FROM spans"), "sql={sql}");
-        assert!(sql.contains("ORDER BY"), "sql={sql}");
-        assert!(sql.contains("LIMIT 10"), "sql={sql}");
+        // … and is NOT doubled/escaped the way interpolated-SQL would require,
+        // proving no `sql_literal`-style text splicing happens anywhere.
+        assert!(
+            !plan.contains("''OR''1''=''1"),
+            "value must not be SQL-escaped text; plan={plan}"
+        );
+
+        // And end-to-end the hostile tenant matches no real-tenant rows.
+        let rows = archive
+            .query_file(&manifest, query)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            rows.len(),
+            0,
+            "hostile tenant_id must not return real-tenant rows"
+        );
     }
 
-    #[test]
-    fn build_query_sql_escapes_single_quotes_in_all_id_filter_positions() {
-        // Use a single leading quote per field as an unambiguous marker.
-        let query = ArchiveQuery {
-            tenant_id: TenantId::new("t").unwrap_or_else(|err| panic!("{err}")),
-            project_id: Some(ProjectId::new("'proj").unwrap_or_else(|err| panic!("{err}"))),
-            environment_id: Some(EnvironmentId::new("'env").unwrap_or_else(|err| panic!("{err}"))),
-            trace_id: Some(TraceId::new("'tr").unwrap_or_else(|err| panic!("{err}"))),
-            span_id: Some(SpanId::new("'sp").unwrap_or_else(|err| panic!("{err}"))),
-            kind: None,
-            status: None,
-            limit: Some(5),
-        };
-        let sql = build_query_sql(&query);
-        assert!(sql.contains("project_id = '''proj'"), "sql={sql}");
-        assert!(sql.contains("environment_id = '''env'"), "sql={sql}");
-        assert!(sql.contains("trace_id = '''tr'"), "sql={sql}");
-        assert!(sql.contains("span_id = '''sp'"), "sql={sql}");
+    #[tokio::test]
+    async fn hostile_quotes_in_all_id_filter_positions_match_no_rows() {
+        // Exercises every ID-typed filter position with a leading-quote marker;
+        // through the structured path each value is bound as a literal and
+        // matches nothing in the real-tenant archive.
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let archive =
+            ParquetTraceArchive::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant-allpos").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("proj-allpos").unwrap_or_else(|err| panic!("{err}"));
+        let manifest = archive
+            .archive_spans(
+                &tenant,
+                &project,
+                &[fixture_span(
+                    &tenant,
+                    &project,
+                    "prod",
+                    "trace-allpos",
+                    "span-allpos",
+                    1,
+                    SpanStatus::Ok,
+                )],
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let rows = archive
+            .query_file(
+                &manifest,
+                ArchiveQuery {
+                    tenant_id: tenant.clone(),
+                    project_id: Some(ProjectId::new("'proj").unwrap_or_else(|err| panic!("{err}"))),
+                    environment_id: Some(
+                        EnvironmentId::new("'env").unwrap_or_else(|err| panic!("{err}")),
+                    ),
+                    trace_id: Some(TraceId::new("'tr").unwrap_or_else(|err| panic!("{err}"))),
+                    span_id: Some(SpanId::new("'sp").unwrap_or_else(|err| panic!("{err}"))),
+                    kind: None,
+                    status: None,
+                    limit: Some(5),
+                },
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            rows.len(),
+            0,
+            "hostile quotes in any id filter must return no rows"
+        );
     }
 
     // --- integration: hostile values must return zero rows (not all rows) -----
@@ -873,8 +941,7 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
 
         // "'OR'a'='a" has no whitespace so TenantId::new accepts it.
-        // sql_literal doubles the quotes → `tenant_id = '''OR''a''=''a'` which
-        // matches no real row.
+        // Bound through `lit(...)` as an opaque literal, it matches no real row.
         let hostile = TenantId::new("'OR'a'='a").unwrap_or_else(|err| panic!("{err}"));
         let rows = archive
             .query_file(
@@ -1006,7 +1073,7 @@ mod tests {
     #[tokio::test]
     async fn hostile_project_and_environment_ids_match_no_rows() {
         // Covers the two remaining ID-filter positions: project_id and
-        // environment_id.  Both go through the same sql_literal path.
+        // environment_id.  Both are bound through `lit(...)` as literals.
         let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
         let archive =
             ParquetTraceArchive::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
