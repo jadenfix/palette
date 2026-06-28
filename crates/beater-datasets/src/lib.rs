@@ -249,6 +249,36 @@ impl SqliteDatasetStore {
     }
 }
 
+fn require_dataset_exists(
+    connection: &Connection,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+    dataset_id: &DatasetId,
+) -> StoreResult<()> {
+    let exists = connection
+        .query_row(
+            r#"
+            SELECT 1
+            FROM datasets
+            WHERE tenant_id = ?1 AND project_id = ?2 AND dataset_id = ?3
+            "#,
+            params![tenant_id.as_str(), project_id.as_str(), dataset_id.as_str()],
+            |_| Ok(()),
+        )
+        .optional()
+        .context("query dataset existence")
+        .into_store()?
+        .is_some();
+    if exists {
+        Ok(())
+    } else {
+        Err(StoreError::NotFound(format!(
+            "dataset {} not found",
+            dataset_id.as_str()
+        )))
+    }
+}
+
 #[async_trait]
 impl DatasetStore for SqliteDatasetStore {
     async fn create_dataset(
@@ -290,10 +320,16 @@ impl DatasetStore for SqliteDatasetStore {
     }
 
     async fn put_case(&self, case: DatasetCase) -> StoreResult<DatasetCase> {
+        let connection = self.lock().into_store()?;
+        require_dataset_exists(
+            &connection,
+            &case.tenant_id,
+            &case.project_id,
+            &case.dataset_id,
+        )?;
         let case_json = serde_json::to_string(&case)
             .context("serialize dataset case")
             .into_store()?;
-        let connection = self.lock().into_store()?;
         connection
             .execute(
                 r#"
@@ -352,6 +388,10 @@ impl DatasetStore for SqliteDatasetStore {
         dataset_id: DatasetId,
         case_ids: Option<Vec<DatasetCaseId>>,
     ) -> StoreResult<DatasetVersionSnapshot> {
+        {
+            let connection = self.lock().into_store()?;
+            require_dataset_exists(&connection, &tenant_id, &project_id, &dataset_id)?;
+        }
         let all_cases = self
             .list_cases(tenant_id.clone(), project_id.clone(), dataset_id.clone())
             .await?;
@@ -1064,6 +1104,46 @@ mod tests {
             .await
             .unwrap_or_else(|err| panic!("{err}"));
         assert!(cases.is_empty());
+    }
+
+    #[tokio::test]
+    async fn dataset_store_rejects_orphan_cases_and_versions() {
+        let store = SqliteDatasetStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let missing_dataset =
+            DatasetId::new("missing-dataset").unwrap_or_else(|err| panic!("{err}"));
+        let trace = fixture_trace(&tenant, &project);
+        let case = promote_trace_span_to_case(
+            tenant.clone(),
+            project.clone(),
+            missing_dataset.clone(),
+            &trace,
+            None,
+            Some(json!("answer")),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        let err = match store.put_case(case).await {
+            Ok(case) => panic!("orphan case should be rejected, got {case:?}"),
+            Err(err) => err,
+        };
+        assert!(matches!(
+            err,
+            StoreError::NotFound(message) if message.contains(missing_dataset.as_str())
+        ));
+
+        let err = match store
+            .create_version(tenant, project, missing_dataset.clone(), None)
+            .await
+        {
+            Ok(version) => panic!("missing dataset version should be rejected, got {version:?}"),
+            Err(err) => err,
+        };
+        assert!(matches!(
+            err,
+            StoreError::NotFound(message) if message.contains(missing_dataset.as_str())
+        ));
     }
 
     fn fixture_trace(tenant: &TenantId, project: &ProjectId) -> TraceView {
