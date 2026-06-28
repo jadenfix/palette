@@ -2458,11 +2458,16 @@ Goal: lower adoption friction to match the incumbents' framework coverage.
 | 6.2 | Zero-code env-var bootstrap (**DEFAULT onboarding**, §1 #13, §15) | `beaterctl ingest test` verifies live OTLP ingest and prints the exporter env block; env-var-only auto-instrumented app path is still planned | `opentelemetry-distro`/configurator (py) + TS `--require` preload reading `BEATER_*` env, setting OTLP exporter+headers, enabling installed auto-instrumentors; promoted to the documented first path | M | none |
 | 6.3 | Modern framework coverage | LangChain (py+ts), LlamaIndex (py) only | examples + instrumentation for Vercel AI SDK (TS), OpenAI Agents SDK, CrewAI, DSPy, Pydantic AI, AutoGen, Haystack; TS LlamaIndex; token-usage extraction; 3-level span-tree integration tests | XL | evidence |
 | 6.4 | `beaterctl quickstart` (time to first SCORED FAILURE) | manual compose + snippet | one command boots compose, provisions tenant/key, prints exporter snippet + dashboard URL; timed e2e asserting not just a trace but a *scored failing case* visible < the §15 SLO | M | evidence |
+| 6.5 | Cross-SDK behavioral parity conformance (**none drift, all do the same thing**, §3.3, §22.5) | `regen-sdks.sh --check` proves each generated client's *code* matches the spec and `check-semconv-drift.py` proves its constants match, but the **hand-authored ergonomic layer above the generated client** — `observe()/span()`, context propagation, auth-header assembly, retry/backoff, batch flush, `BEATER_*` env-var bootstrap, error→exception mapping, redaction/sampling — and the **native Rust SDK** (`sdks/rust`, excluded from spec generation, §3.3) are written per-language with **no cross-language parity gate**: two SDKs can each be spec- and semconv-conformant yet emit different wire bytes or expose a different method surface | New `sdks/conformance/` golden harness + `scripts/check-sdk-parity.sh` (new `sdk-parity` CI gate, §22.5): (a) one canonical scripted-agent program implemented in all 7 generated SDKs **+ native Rust**, run against a single in-process recorder, asserting **byte-identical canonical OTLP envelopes** (modulo language/runtime-only fields) for the same logical run; (b) a declarative `surface-manifest.json` of the required ergonomic API (method names, params, env vars, defaults) every SDK must expose, failing CI if any SDK adds, omits, or renames a member; (c) folds into Metronome as the **4th (behavioral) drift surface** (§22.5) so behavioral drift — not just structural — is unmergeable | XL | evidence |
 
 Acceptance: an env-var-only Python app produces traces with zero code edits;
 each named framework has a working example emitting a correct agent span tree;
 `beaterctl quickstart` demonstrates **time to first scored failure** under the §15
-SLO (a failing case shown with a score, not merely a trace rendered).
+SLO (a failing case shown with a score, not merely a trace rendered); the
+cross-SDK conformance matrix proves all 7 generated SDKs **plus native Rust** emit
+byte-identical canonical envelopes for the same program and expose the same
+ergonomic surface — no behavioral drift, every API endpoint exercised identically
+across languages.
 
 ### 20.9 New Crates, Contracts & Sequencing
 
@@ -3540,6 +3545,7 @@ required gates are green.
 | --- | --- | --- |
 | **`backend`** | `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets -D warnings` (the workspace denies `unwrap`/`expect`, incl. tests); `cargo test --workspace`; the `sqlite_migrations` test (schema/migration drift, below) | `cargo fmt`, `cargo clippy …`, `cargo test --workspace` |
 | **`sdk-contract`** | the **whole contract chain has zero drift**: spec == served routes, spec == all **7** generated SDK clients (`regen-sdks.sh --check`), API-shape audit, semconv == all **5** semconv-carrying SDKs, and the additive-only `oasdiff` breaking-change check; MCP tools and the CLI resolve operations from the spec at runtime so they stay in sync automatically (drift coverage detailed below) | `scripts/check-contract-sync.sh` |
+| **`sdk-parity`** | **behavioral** parity across SDKs (§20.8 #6.5): all **7** generated SDK clients **plus native Rust** run one canonical scripted-agent program against a single recorder and must emit **byte-identical canonical OTLP envelopes** (modulo language/runtime-only fields), and each must match the declarative `surface-manifest.json` ergonomic API — the 4th (behavioral) drift surface that `sdk-contract`'s structural checks cannot see (drift coverage below) | `scripts/check-sdk-parity.sh` |
 | **`storage-backends`** | the `beater-store-conformance` trait suite runs against every backend (in-memory, SQLite today; Postgres/ClickHouse as wired, §20.2 #0.1), incl. tenant-isolation (A20) and the `#[ignore]`d container-backed store tests | `cargo test -p beater-store-conformance --workspace`; `cargo test -p beater-store-sql -- --ignored` |
 | **`frontend`** | dashboard build/lint/typecheck against the **generated** OpenAPI client, plus `check-openapi-drift.sh` so a UI change cannot silently diverge from the served spec | `scripts/check-openapi-drift.sh` |
 | **`browser`** | the `beater-browser*` family (Liveset) builds and its driver/capture tests pass | `cargo test` over the browser crates |
@@ -3596,6 +3602,18 @@ its single source without a gate going red.** The three drift surfaces of §1 #2
    reprojects the immutable raw envelopes (§1 #3) when the normalizer or canonical
    schema changes, so a schema change is always re-derivable rather than a
    destructive migration.
+
+A fourth, **behavioral** surface (§20.8 #6.5) closes what the three structural
+gates above cannot see. The three surfaces prove generated *code* and *constants*
+match their source, but the hand-authored ergonomic layer above each generated
+client — and the native Rust SDK (`sdks/rust`), which is not spec-generated at all
+(§3.3) — can still diverge while every structural gate stays green: two SDKs can
+each be spec- and semconv-conformant yet emit different wire bytes or expose a
+different method surface. The `sdk-parity` gate (`scripts/check-sdk-parity.sh`)
+runs one canonical scripted-agent program through all 7 generated SDKs plus native
+Rust against a single recorder, asserts **byte-identical canonical OTLP envelopes**
+(modulo language/runtime-only fields), and checks every SDK against a declarative
+`surface-manifest.json`, so behavioral drift — not just structural — is unmergeable.
 
 If any source changes without its generated artifact being regenerated and
 committed, the matching gate is red and the PR is unmergeable — drift cannot merge
