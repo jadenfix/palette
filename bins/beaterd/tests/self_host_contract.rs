@@ -1594,6 +1594,26 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(runner_card.contains("scripts/validate-gate2-outside-proof.sh"));
 }
 
+#[test]
+fn readme_verify_block_covers_architecture_developer_smoke_loop() {
+    let readme = read(repo_root().join("README.md"));
+    let verify = markdown_section(&readme, "## Verify");
+    for command in [
+        "cargo fmt --all",
+        "cargo clippy --workspace --all-targets -- -D warnings",
+        "cargo test --workspace",
+        "cargo run -q -p beaterctl -- smoke --data-dir /tmp/beater-smoke",
+        "cargo run -q -p beaterctl -- judge-fixture --data-dir /tmp/beater-judge",
+        "cargo run -q -p beaterctl -- gate-run-fixture --data-dir /tmp/beater-gate",
+        "scripts/check-contract-sync.sh",
+    ] {
+        assert!(
+            verify.contains(command),
+            "README Verify block must include §22.2 smoke-loop command: {command}"
+        );
+    }
+}
+
 fn repo_root() -> PathBuf {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let Some(root) = manifest.parent().and_then(|path| path.parent()) else {
@@ -1606,6 +1626,16 @@ fn find_required(haystack: &str, needle: &str) -> usize {
     haystack
         .find(needle)
         .unwrap_or_else(|| panic!("expected text not found: {needle:?}"))
+}
+
+fn markdown_section<'a>(source: &'a str, heading: &str) -> &'a str {
+    let start = find_required(source, heading);
+    let body_start = start + heading.len();
+    let next = source[body_start..]
+        .find("\n## ")
+        .map(|offset| body_start + offset)
+        .unwrap_or(source.len());
+    &source[body_start..next]
 }
 
 fn assert_contains_all(source: &str, label: &str, values: &[&str]) {

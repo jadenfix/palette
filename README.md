@@ -207,6 +207,7 @@ cargo run -q -p beaterctl -- gate-run-fixture --data-dir /tmp/beater-gate
 cargo run -q -p beaterctl -- review-fixture --data-dir /tmp/beater-review
 cargo run -q -p beaterctl -- calibration-fixture --data-dir /tmp/beater-calibration
 cargo run -q -p beaterd -- --data-dir /tmp/beaterd --judge-provider http-routing --auth-mode required
+scripts/check-contract-sync.sh
 ```
 
 ## Clean Clone To Browser
