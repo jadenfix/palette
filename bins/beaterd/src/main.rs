@@ -187,6 +187,17 @@ enum AuthModeArg {
     Required,
 }
 
+fn validate_auth_mode_bind(args: &Args) -> anyhow::Result<()> {
+    if matches!(args.auth_mode, AuthModeArg::Local) && !args.addr.ip().is_loopback() {
+        anyhow::bail!(
+            "--auth-mode local may only bind HTTP to loopback addresses; got --addr {}. \
+             Use --auth-mode required for non-loopback binds.",
+            args.addr
+        );
+    }
+    Ok(())
+}
+
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum BusBackendArg {
     Sqlite,
@@ -209,6 +220,7 @@ async fn main() -> anyhow::Result<()> {
     if args.test_http_trace_store_url.is_some() && !cfg!(debug_assertions) {
         anyhow::bail!("--test-http-trace-store-url is only supported in debug/test builds");
     }
+    validate_auth_mode_bind(&args)?;
     // R12.5: self-host telemetry is opt-out. With the flag unset, this resolves
     // to disabled and beaterd makes no outbound telemetry call.
     let telemetry = beater_core::SelfHostTelemetryConfig::new(args.self_host_telemetry);
@@ -1289,5 +1301,40 @@ mod auth_default_tests {
     fn auth_mode_required_parses() {
         let args = Args::parse_from(["beaterd", "--auth-mode", "required"]);
         assert_eq!(args.auth_mode, AuthModeArg::Required);
+    }
+
+    #[test]
+    fn auth_mode_local_allows_loopback_http_bind() {
+        let args = Args::parse_from(["beaterd", "--auth-mode", "local"]);
+        validate_auth_mode_bind(&args).expect("default loopback bind is allowed");
+
+        let args = Args::parse_from(["beaterd", "--auth-mode", "local", "--addr", "[::1]:8080"]);
+        validate_auth_mode_bind(&args).expect("IPv6 loopback bind is allowed");
+    }
+
+    #[test]
+    fn auth_mode_local_rejects_public_http_bind() {
+        for addr in ["0.0.0.0:8080", "[::]:8080", "192.0.2.10:8080"] {
+            let args = Args::parse_from(["beaterd", "--auth-mode", "local", "--addr", addr]);
+            let err = validate_auth_mode_bind(&args)
+                .expect_err("local auth must not bind HTTP publicly")
+                .to_string();
+            assert!(
+                err.contains("--auth-mode local may only bind HTTP to loopback addresses"),
+                "{err}"
+            );
+        }
+    }
+
+    #[test]
+    fn auth_mode_required_allows_public_http_bind() {
+        let args = Args::parse_from([
+            "beaterd",
+            "--auth-mode",
+            "required",
+            "--addr",
+            "0.0.0.0:8080",
+        ]);
+        validate_auth_mode_bind(&args).expect("required auth may bind publicly");
     }
 }

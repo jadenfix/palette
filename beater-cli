@@ -1,0 +1,259 @@
+#!/usr/bin/env bash
+# beater-cli — one local entrypoint that mirrors CI stage-for-stage.
+#
+# The point: run `./beater-cli ci` (or a single bucket) and know, before you
+# push, whether GitHub will be green. Every command below runs the SAME shell
+# command the corresponding workflow runs, so there is no drift between "passes
+# locally" and "passes in CI".
+#
+# CI buckets (see .github/workflows/) and the command that reproduces each:
+#   format        cargo fmt --all                       (autofix; run this first)
+#   lint          rustfmt --check + clippy + tsc + openapi-drift   (backend.yml lint, frontend.yml lint, gate2 validate fmt step)
+#   test backend  cargo test --workspace (minus beaterd gates + browser)         (backend.yml tests)
+#   test frontend npm ci && npm test && npm run build                            (frontend.yml tests)
+#   test agents   cargo test -p beater-browser*          (browser.yml browser-tests)
+#   test algorithms cargo test -p beater-eval/-stats/-experiments/-judge/...     (eval + stats core)
+#   test contract scripts/check-contract-sync.sh         (sdk-contract.yml)
+#   update-schema regen spec + 7 SDKs + semconv, then verify no drift           (the CLAUDE.md contract workflow)
+#   build         docker image build                     (container-images.yml)
+#   dev / down    docker compose up -d / down            (local stack)
+#
+# Usage:
+#   ./beater-cli <command> [args]
+#   ./beater-cli help
+set -uo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$root"
+
+# ---- pretty output -----------------------------------------------------------
+if [ -t 1 ]; then
+  BOLD=$'\033[1m'; RED=$'\033[31m'; GRN=$'\033[32m'; YLW=$'\033[33m'; DIM=$'\033[2m'; RST=$'\033[0m'
+else
+  BOLD=""; RED=""; GRN=""; YLW=""; DIM=""; RST=""
+fi
+
+# Stage tracking for the end-of-run summary table.
+_STAGES=()
+_RESULTS=()
+
+banner() { echo; echo "${BOLD}==> $1${RST}"; }
+note()   { echo "${DIM}    \$ $1${RST}"; }
+
+# run "<label>" <cmd...> — print the command, run it, record pass/fail, keep going.
+run() {
+  local label="$1"; shift
+  banner "$label"
+  note "$*"
+  if "$@"; then
+    _STAGES+=("$label"); _RESULTS+=("pass")
+    echo "${GRN}    ok${RST}"
+    return 0
+  else
+    local rc=$?
+    _STAGES+=("$label"); _RESULTS+=("FAIL")
+    echo "${RED}    FAILED (exit $rc): $label${RST}"
+    return $rc
+  fi
+}
+
+summary() {
+  echo; echo "${BOLD}── summary ───────────────────────────${RST}"
+  local failed=0 i
+  for i in "${!_STAGES[@]}"; do
+    if [ "${_RESULTS[$i]}" = "pass" ]; then
+      printf '  %s%-7s%s %s\n' "$GRN" "pass" "$RST" "${_STAGES[$i]}"
+    else
+      printf '  %s%-7s%s %s\n' "$RED" "FAIL" "$RST" "${_STAGES[$i]}"
+      failed=1
+    fi
+  done
+  echo "${BOLD}──────────────────────────────────────${RST}"
+  if [ "$failed" -ne 0 ]; then
+    echo "${RED}${BOLD}NOT CI-clean — fix the FAIL rows above.${RST}"
+    return 1
+  fi
+  echo "${GRN}${BOLD}all clear — this should pass CI.${RST}"
+  return 0
+}
+
+have_docker() { command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; }
+
+compose() {
+  if docker compose version >/dev/null 2>&1; then docker compose "$@";
+  elif command -v docker-compose >/dev/null 2>&1; then docker-compose "$@";
+  else echo "${RED}docker compose not found${RST}" >&2; return 1; fi
+}
+
+# ---- backend test exclusions (kept identical to backend.yml) -----------------
+BACKEND_TEST_EXCLUDES=(
+  --exclude beaterd
+  --exclude beater-browser
+  --exclude beater-browser-capture
+  --exclude beater-browser-cdp
+  --exclude beater-browser-harness
+  --exclude beater-browser-playwright
+  --exclude beater-browser-webdriver
+)
+
+# crates that hold the "algorithms" (evaluators, statistics, experiments, judge).
+# Only the ones that actually exist in this checkout are run, so the command
+# works on main (no beater-stats yet) and on the feature branch (beater-stats).
+ALGO_CRATES=(beater-eval beater-experiments beater-judge beater-calibration beater-gates beater-datasets beater-stats beater-replay)
+
+algo_args() {
+  local c args=()
+  for c in "${ALGO_CRATES[@]}"; do
+    [ -d "crates/$c" ] && args+=(-p "$c")
+  done
+  printf '%s\n' "${args[@]}"
+}
+
+# ---- commands ----------------------------------------------------------------
+
+cmd_format() {
+  banner "format (autofix)"
+  note "cargo fmt --all"
+  cargo fmt --all
+  echo "${GRN}    rust formatted${RST}"
+  # The dashboard has no formatter wired; type-check is the closest gate.
+  echo "${DIM}    (web/dashboard has no formatter configured; run './beater-cli lint' to type-check)${RST}"
+}
+
+cmd_lint() {
+  run "rustfmt --check"        cargo fmt --all -- --check
+  run "clippy (deny-lints)"    cargo clippy --workspace --all-targets --exclude beaterd
+  if [ -d web/dashboard/node_modules ]; then
+    run "tsc --noEmit"         bash -c 'cd web/dashboard && npx tsc --noEmit -p tsconfig.json'
+  else
+    run "tsc --noEmit"         bash -c 'cd web/dashboard && npm ci && npx tsc --noEmit -p tsconfig.json'
+  fi
+  run "openapi client drift"   scripts/check-openapi-drift.sh
+  summary
+}
+
+cmd_test() {
+  local target="${1:-all}"
+  case "$target" in
+    backend)
+      run "backend: workspace tests" cargo test --workspace "${BACKEND_TEST_EXCLUDES[@]}"
+      run "backend: beaterd migrations" cargo test -p beaterd --test sqlite_migrations
+      run "backend: sdk rust examples" bash -c 'cd sdks/rust && cargo build --examples'
+      summary ;;
+    frontend)
+      run "frontend: npm ci"   bash -c 'cd web/dashboard && npm ci'
+      run "frontend: tests"    bash -c 'cd web/dashboard && npm test'
+      run "frontend: build"    bash -c 'cd web/dashboard && npm run build'
+      summary ;;
+    agents)
+      run "agents: browser crate tests" cargo test \
+        -p beater-browser -p beater-browser-capture -p beater-browser-cdp \
+        -p beater-browser-harness -p beater-browser-playwright -p beater-browser-webdriver
+      echo "${DIM}    (live Chrome/Playwright e2e is heavy; run 'scripts/browser-e2e.sh' for the full gate)${RST}"
+      summary ;;
+    algorithms|algo)
+      mapfile -t _a < <(algo_args)
+      run "algorithms: eval/stats/experiments/judge tests" cargo test "${_a[@]}"
+      summary ;;
+    contract)
+      run "contract: spec == SDKs == semconv" scripts/check-contract-sync.sh
+      summary ;;
+    all)
+      cmd_lint
+      cmd_test backend
+      cmd_test frontend
+      cmd_test agents
+      cmd_test algorithms
+      cmd_test contract
+      ;;
+    *)
+      echo "${RED}unknown test target: $target${RST}" >&2
+      echo "targets: backend | frontend | agents | algorithms | contract | all" >&2
+      return 2 ;;
+  esac
+}
+
+# Full pre-push gate: everything CI checks, fail-aware, with one summary.
+cmd_ci() {
+  cmd_lint
+  cmd_test backend
+  cmd_test frontend
+  cmd_test agents
+  cmd_test algorithms
+  cmd_test contract
+  echo
+  echo "${BOLD}Heavy gates NOT run by 'ci' (need Docker / Chrome / network):${RST}"
+  echo "  - storage-backends  : cargo test -p beater-store-sql -- --ignored   (Docker)"
+  echo "  - gate1 live-smoke  : cargo test -p beaterd --test live_smoke"
+  echo "  - gate2 browser/contract proofs : scripts/gate2-proof.sh"
+}
+
+cmd_update_schema() {
+  banner "update-schema (regenerate the contract)"
+  run "regen spec + dashboard snapshot" cargo xtask regen-spec
+  run "regen 7 SDK clients"             scripts/regen-sdks.sh
+  run "regen semantic conventions"      cargo xtask regen-semconv
+  run "verify no drift"                 scripts/check-contract-sync.sh
+  summary
+}
+
+cmd_build() {
+  local tag="${1:-beaterd:local}"
+  if ! have_docker; then echo "${RED}docker not available${RST}" >&2; return 1; fi
+  run "docker build $tag" scripts/build-image.sh "$tag"
+  summary
+}
+
+cmd_dev() {
+  if ! have_docker; then echo "${RED}docker not available${RST}" >&2; return 1; fi
+  banner "dev (bring the stack up)"
+  note "docker compose up -d ${*:-}"
+  compose up -d "$@"
+  echo "${GRN}    stack up — dashboard on http://localhost:3000, beaterd on :8080${RST}"
+  echo "${DIM}    './beater-cli down' to stop${RST}"
+}
+
+cmd_down() {
+  if ! have_docker; then echo "${RED}docker not available${RST}" >&2; return 1; fi
+  banner "down (stop the stack)"
+  note "docker compose down ${*:-}"
+  compose down "$@"
+}
+
+usage() {
+  cat <<EOF
+${BOLD}beater-cli${RST} — local mirror of CI. Run a command before pushing to know if it'll be green.
+
+${BOLD}Pre-push:${RST}
+  ./beater-cli format            autofix rustfmt (run this first — prevents the #1 CI failure)
+  ./beater-cli lint              rustfmt --check + clippy + tsc + openapi drift
+  ./beater-cli test [target]     target: backend | frontend | agents | algorithms | contract | all
+  ./beater-cli ci                everything CI checks, with one pass/FAIL summary
+  ./beater-cli update-schema     regen spec + 7 SDKs + semconv, then verify no drift
+
+${BOLD}Stack / images:${RST}
+  ./beater-cli dev [svc...]      docker compose up -d
+  ./beater-cli down              docker compose down
+  ./beater-cli build [tag]       docker image build (default beaterd:local)
+
+${BOLD}Notes:${RST}
+  - Buckets map 1:1 to .github/workflows/ so local == CI.
+  - 'ci' skips Docker/Chrome-only gates (storage-backends, live-smoke, gate2);
+    it prints how to run those at the end.
+EOF
+}
+
+# ---- dispatch ----------------------------------------------------------------
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  format)         cmd_format "$@" ;;
+  lint)           cmd_lint "$@" ;;
+  test)           cmd_test "$@" ;;
+  ci)             cmd_ci "$@" ;;
+  update-schema)  cmd_update_schema "$@" ;;
+  build|image)    cmd_build "$@" ;;
+  dev|up)         cmd_dev "$@" ;;
+  down)           cmd_down "$@" ;;
+  help|-h|--help) usage ;;
+  *) echo "${RED}unknown command: $cmd${RST}" >&2; echo; usage; exit 2 ;;
+esac
