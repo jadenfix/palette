@@ -6,6 +6,9 @@ use chrono::Duration;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+use std::fs;
+use std::io::{ErrorKind, Write};
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -180,19 +183,204 @@ impl SlackChannel {
     }
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct AlertEngine {
-    state: Arc<Mutex<AlertState>>,
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum AlertDedupeDecision {
+    Recorded,
+    Suppressed { last_emitted_at: Timestamp },
+}
+
+pub trait AlertDedupeStore: std::fmt::Debug + Send + Sync {
+    fn check_and_record(
+        &self,
+        group_key: &str,
+        now: Timestamp,
+        dedupe_window: Duration,
+    ) -> anyhow::Result<AlertDedupeDecision>;
 }
 
 #[derive(Clone, Debug, Default)]
-struct AlertState {
+pub struct MemoryAlertDedupeStore {
+    state: Arc<Mutex<AlertDedupeState>>,
+}
+
+impl MemoryAlertDedupeStore {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl AlertDedupeStore for MemoryAlertDedupeStore {
+    fn check_and_record(
+        &self,
+        group_key: &str,
+        now: Timestamp,
+        dedupe_window: Duration,
+    ) -> anyhow::Result<AlertDedupeDecision> {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|err| anyhow!("alert dedupe store mutex poisoned: {err}"))?;
+        Ok(check_and_record_in_state(
+            &mut state,
+            group_key,
+            now,
+            dedupe_window,
+        ))
+    }
+}
+
+#[derive(Debug)]
+pub struct JsonFileAlertDedupeStore {
+    path: PathBuf,
+    lock: Mutex<()>,
+}
+
+impl JsonFileAlertDedupeStore {
+    pub fn new(path: impl Into<PathBuf>) -> anyhow::Result<Self> {
+        let path = path.into();
+        ensure_parent_dir(&path)?;
+        Ok(Self {
+            path,
+            lock: Mutex::new(()),
+        })
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    fn load_state(&self) -> anyhow::Result<AlertDedupeState> {
+        match fs::read(&self.path) {
+            Ok(bytes) if bytes.is_empty() => Ok(AlertDedupeState::default()),
+            Ok(bytes) => serde_json::from_slice(&bytes)
+                .with_context(|| format!("parse alert dedupe store from {}", self.path.display())),
+            Err(err) if err.kind() == ErrorKind::NotFound => Ok(AlertDedupeState::default()),
+            Err(err) => Err(err)
+                .with_context(|| format!("read alert dedupe store from {}", self.path.display())),
+        }
+    }
+
+    fn write_state(&self, state: &AlertDedupeState) -> anyhow::Result<()> {
+        ensure_parent_dir(&self.path)?;
+        let bytes = serde_json::to_vec_pretty(state).context("serialize alert dedupe store")?;
+        let tmp_path = temp_path_for(&self.path);
+        let mut tmp_file = fs::File::create(&tmp_path)
+            .with_context(|| format!("create alert dedupe temp file {}", tmp_path.display()))?;
+        tmp_file
+            .write_all(&bytes)
+            .with_context(|| format!("write alert dedupe temp file {}", tmp_path.display()))?;
+        tmp_file
+            .write_all(b"\n")
+            .with_context(|| format!("write alert dedupe temp file {}", tmp_path.display()))?;
+        tmp_file
+            .sync_all()
+            .with_context(|| format!("sync alert dedupe temp file {}", tmp_path.display()))?;
+        drop(tmp_file);
+
+        if let Err(err) = fs::rename(&tmp_path, &self.path) {
+            let _ = fs::remove_file(&tmp_path);
+            return Err(err).with_context(|| {
+                format!(
+                    "replace alert dedupe store {} with {}",
+                    self.path.display(),
+                    tmp_path.display()
+                )
+            });
+        }
+        Ok(())
+    }
+}
+
+impl AlertDedupeStore for JsonFileAlertDedupeStore {
+    fn check_and_record(
+        &self,
+        group_key: &str,
+        now: Timestamp,
+        dedupe_window: Duration,
+    ) -> anyhow::Result<AlertDedupeDecision> {
+        let _guard = self
+            .lock
+            .lock()
+            .map_err(|err| anyhow!("alert dedupe file store mutex poisoned: {err}"))?;
+        let mut state = self.load_state()?;
+        let decision = check_and_record_in_state(&mut state, group_key, now, dedupe_window);
+        if decision == AlertDedupeDecision::Recorded {
+            self.write_state(&state)?;
+        }
+        Ok(decision)
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+struct AlertDedupeState {
+    #[serde(default)]
     last_emitted_by_group: BTreeMap<String, Timestamp>,
+}
+
+fn check_and_record_in_state(
+    state: &mut AlertDedupeState,
+    group_key: &str,
+    now: Timestamp,
+    dedupe_window: Duration,
+) -> AlertDedupeDecision {
+    if let Some(last_emitted) = state.last_emitted_by_group.get(group_key) {
+        if in_dedupe_window(*last_emitted, now, dedupe_window) {
+            return AlertDedupeDecision::Suppressed {
+                last_emitted_at: *last_emitted,
+            };
+        }
+    }
+    state
+        .last_emitted_by_group
+        .insert(group_key.to_string(), now);
+    AlertDedupeDecision::Recorded
+}
+
+fn in_dedupe_window(last_emitted: Timestamp, now: Timestamp, dedupe_window: Duration) -> bool {
+    let age = now.signed_duration_since(last_emitted);
+    age >= Duration::zero() && age < dedupe_window
+}
+
+fn ensure_parent_dir(path: &Path) -> anyhow::Result<()> {
+    if let Some(parent) = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("create alert dedupe store directory {}", parent.display()))?;
+    }
+    Ok(())
+}
+
+fn temp_path_for(path: &Path) -> PathBuf {
+    let mut temp_name = path
+        .file_name()
+        .map(std::ffi::OsString::from)
+        .unwrap_or_else(|| std::ffi::OsString::from("alert-dedupe-store"));
+    temp_name.push(format!(".{}.tmp", std::process::id()));
+    path.with_file_name(temp_name)
+}
+
+#[derive(Clone, Debug)]
+pub struct AlertEngine {
+    dedupe_store: Arc<dyn AlertDedupeStore>,
+}
+
+impl Default for AlertEngine {
+    fn default() -> Self {
+        Self {
+            dedupe_store: Arc::new(MemoryAlertDedupeStore::new()),
+        }
+    }
 }
 
 impl AlertEngine {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn with_dedupe_store(dedupe_store: Arc<dyn AlertDedupeStore>) -> Self {
+        Self { dedupe_store }
     }
 
     pub fn evaluate(
@@ -215,23 +403,6 @@ impl AlertEngine {
             });
         }
         let group_key = dedupe_key(policy, &input);
-        let mut state = self
-            .state
-            .lock()
-            .map_err(|err| anyhow!("alert engine mutex poisoned: {err}"))?;
-        if let Some(last_emitted) = state.last_emitted_by_group.get(&group_key) {
-            let age = input.now.signed_duration_since(*last_emitted);
-            if age >= Duration::zero()
-                && age < Duration::seconds(policy.dedupe_window_seconds.max(0))
-            {
-                return Ok(AlertDecision {
-                    emitted: false,
-                    suppressed_reason: Some("dedupe_window".to_string()),
-                    delivery: None,
-                });
-            }
-        }
-
         let body = alert_payload(policy, &input);
         let body_bytes = serde_json::to_vec(&body).context("serialize alert payload")?;
         let signature = sign_webhook(policy.signing_secret.as_bytes(), &body_bytes, input.now)?;
@@ -253,7 +424,17 @@ impl AlertEngine {
             headers,
             body,
         };
-        state.last_emitted_by_group.insert(group_key, input.now);
+        let dedupe_window = Duration::seconds(policy.dedupe_window_seconds.max(0));
+        if let AlertDedupeDecision::Suppressed { .. } =
+            self.dedupe_store
+                .check_and_record(&group_key, input.now, dedupe_window)?
+        {
+            return Ok(AlertDecision {
+                emitted: false,
+                suppressed_reason: Some("dedupe_window".to_string()),
+                delivery: None,
+            });
+        }
         Ok(AlertDecision {
             emitted: true,
             suppressed_reason: None,
@@ -629,6 +810,7 @@ mod tests {
     use super::*;
     use beater_core::{Money, TokenCounts};
     use std::collections::BTreeSet;
+    use std::sync::Arc;
 
     fn required_link_keys(delivery: &WebhookDelivery) -> BTreeSet<&'static str> {
         let links = &delivery.body["links"];
@@ -720,6 +902,14 @@ mod tests {
         assert!(!second.emitted);
         assert_eq!(second.suppressed_reason.as_deref(), Some("dedupe_window"));
 
+        let later = engine
+            .evaluate(
+                &policy,
+                fixture_alert_input(now + Duration::seconds(policy.dedupe_window_seconds)),
+            )
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(later.emitted);
+
         let maintenance_policy = AlertPolicy {
             maintenance_windows: vec![MaintenanceWindow {
                 starts_at: now - Duration::minutes(1),
@@ -738,15 +928,82 @@ mod tests {
     }
 
     #[test]
+    fn shared_in_memory_dedupe_store_suppresses_across_engines() {
+        let now = Utc::now();
+        let store: Arc<dyn AlertDedupeStore> = Arc::new(MemoryAlertDedupeStore::new());
+        let first_engine = AlertEngine::with_dedupe_store(Arc::clone(&store));
+        let second_engine = AlertEngine::with_dedupe_store(store);
+        let policy = fixture_alert_policy(60);
+
+        let first = first_engine
+            .evaluate(&policy, fixture_alert_input(now))
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(first.emitted);
+
+        let second = second_engine
+            .evaluate(&policy, fixture_alert_input(now + Duration::seconds(10)))
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(!second.emitted);
+        assert_eq!(second.suppressed_reason.as_deref(), Some("dedupe_window"));
+    }
+
+    #[test]
+    fn json_file_dedupe_store_survives_engine_restart() -> anyhow::Result<()> {
+        let temp_dir = tempfile::tempdir()?;
+        let store_path = temp_dir.path().join("alert-dedupe.json");
+        let now = Utc::now();
+        let policy = fixture_alert_policy(60);
+
+        let first_store: Arc<dyn AlertDedupeStore> =
+            Arc::new(JsonFileAlertDedupeStore::new(store_path.clone())?);
+        let first_engine = AlertEngine::with_dedupe_store(first_store);
+        let first = first_engine.evaluate(&policy, fixture_alert_input(now))?;
+        assert!(first.emitted);
+
+        drop(first_engine);
+
+        let restarted_store: Arc<dyn AlertDedupeStore> =
+            Arc::new(JsonFileAlertDedupeStore::new(store_path)?);
+        let restarted_engine = AlertEngine::with_dedupe_store(restarted_store);
+        let second =
+            restarted_engine.evaluate(&policy, fixture_alert_input(now + Duration::seconds(10)))?;
+        assert!(!second.emitted);
+        assert_eq!(second.suppressed_reason.as_deref(), Some("dedupe_window"));
+        Ok(())
+    }
+
+    #[test]
+    fn dedupe_store_allows_emission_after_window() {
+        let now = Utc::now();
+        let store: Arc<dyn AlertDedupeStore> = Arc::new(MemoryAlertDedupeStore::new());
+        let engine = AlertEngine::with_dedupe_store(store);
+        let policy = fixture_alert_policy(30);
+
+        let first = engine
+            .evaluate(&policy, fixture_alert_input(now))
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(first.emitted);
+
+        let suppressed = engine
+            .evaluate(&policy, fixture_alert_input(now + Duration::seconds(29)))
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(!suppressed.emitted);
+        assert_eq!(
+            suppressed.suppressed_reason.as_deref(),
+            Some("dedupe_window")
+        );
+
+        let emitted = engine
+            .evaluate(&policy, fixture_alert_input(now + Duration::seconds(30)))
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(emitted.emitted);
+    }
+
+    #[test]
     fn alert_policy_debug_redacts_signing_secret() {
         let policy = AlertPolicy {
-            policy_id: "low-score".to_string(),
-            endpoint_url: "https://example.test/webhook".to_string(),
             signing_secret: "super-secret-signing-key".to_string(),
-            severity: AlertSeverity::Critical,
-            fire_when_score_at_or_below: 0.5,
-            dedupe_window_seconds: 60,
-            maintenance_windows: Vec::new(),
+            ..fixture_alert_policy(60)
         };
 
         let debug = format!("{policy:?}");
@@ -908,6 +1165,18 @@ mod tests {
                 gate_url: Some("https://beater.test/gates/gate".to_string()),
             },
             now,
+        }
+    }
+
+    fn fixture_alert_policy(dedupe_window_seconds: i64) -> AlertPolicy {
+        AlertPolicy {
+            policy_id: "low-score".to_string(),
+            endpoint_url: "https://example.test/webhook".to_string(),
+            signing_secret: "secret".to_string(),
+            severity: AlertSeverity::Critical,
+            fire_when_score_at_or_below: 0.5,
+            dedupe_window_seconds,
+            maintenance_windows: Vec::new(),
         }
     }
 
