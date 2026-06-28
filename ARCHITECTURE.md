@@ -454,9 +454,10 @@ beater/
     beater-secrets/       # Stash — opaque provider-secret refs, BYOK metadata, revocation
     beater-security/      # Vault — crypto primitives: Argon2 keys, ChaCha20 envelope, signed webhooks
     beater-judge/         # Backbeat (with beater-eval/-stats) — LLM/embedding judge broker, BYOK, calibration
-    beater-replay/        # Rewind [CHANGED] cassettes + deterministic replay PLUS real forked
-                          #   replay and earliest-failing-span attribution (§11); the
-                          #   current `attribute_failure` first-error heuristic is replaced
+    beater-replay/        # Rewind [CHANGED] cassettes + deterministic replay PLUS
+                          #   recovery-aware recorded-trace attribution and a linear
+                          #   earliest-outcome-flip helper; harness-backed forked
+                          #   replay + bisection remain planned (§11)
     beater-datasets/      # Encore [CHANGED] datasets, versions, examples, trace promotion PLUS a
                           #   seeded-hash Train/Dev/Test `split` on DatasetCase + min-sample
                           #   gate + contamination guard (§5.3, §6.4); bulk promote-from-query
@@ -1822,13 +1823,14 @@ failed trace
   -> write root-cause annotation and regression candidate
 ```
 
-**Real forked replay + earliest-failing-span attribution (replaces the current
-first-error heuristic).** Today `attribute_failure` in `beater-replay` is a stub:
-it sorts spans by `seq` and returns the first span that is `Status::Error` or whose
-evidence score `< 0.5`. That is "the first thing that looked bad," which is *not*
-the same as "the earliest change that flips the outcome" — an early low-score span
-may be irrelevant while a later one is causal, and a trace can fail with no errored
-span at all. The replacement is a real **forked-replay search**:
+**Real forked replay + earliest-failing-span attribution.** The old
+`attribute_failure` first-error stub has been retired. Current `beater-replay`
+has two partial pieces: recovery-aware recorded-trace attribution, which skips
+failure signals the trace later recovers from, and a linear
+`find_earliest_outcome_flip` helper that probes caller-supplied fork evaluations
+earliest-first. That is still not the full product contract: it does not yet run
+the agent harness from the fork point or attach the counterfactual correction
+generator. The target replacement remains a real **forked-replay search**:
 
 ```text
 for candidate fork points, earliest-first along the causal span order:
@@ -1846,21 +1848,23 @@ return the EARLIEST fork point whose correction flips the outcome
 ```
 
 This is a counterfactual definition — the root cause is the *earliest* span whose
-correction is *sufficient* to flip the outcome — so it survives the cases the
-heuristic fails on (no errored span; misleading early low score).
+correction is *sufficient* to flip the outcome — so it survives the cases a
+first-error heuristic fails on (no errored span; misleading early low score).
 
-**Complexity + the bisection optimization.** The naive scan tries each of the `n`
-candidate fork points earliest-first and stops at the first flip: worst case `O(n)`
-forked replays, each costing one prefix-replay + resume + re-score. When the outcome
-is **monotone in the fork point** — correcting an *earlier* span never *un*-flips a
-later success (the common case for a single propagating fault) — the earliest
-flipping span is found by **binary search (bisection) over the span order in
-`O(log n)` replays**: replay-and-score at the midpoint, recurse left if it flips,
-right if it does not. `beater-stats` is not involved; this is a deterministic search.
-Monotonicity is an assumption, not a guarantee, so bisection is the fast path and the
-linear earliest-first scan is the **fallback** whenever the cheap monotonicity check
-fails (e.g. interacting faults), preserving correctness at `O(n)`. The search is also
-bounded by a fork budget. Attribution
+**Complexity + the bisection optimization.** The implemented helper currently
+uses the naive scan: it tries each of the `n` candidate fork points
+earliest-first and stops at the first flip, for worst case `O(n)` fork
+evaluations. When the outcome is **monotone in the fork point** — correcting an
+*earlier* span never *un*-flips a later success (the common case for a single
+propagating fault) — the earliest flipping span can be found by **binary search
+(bisection) over the span order in `O(log n)` replays**: replay-and-score at the
+midpoint, recurse left if it flips, right if it does not. `beater-stats` is not
+involved; this is a deterministic search.
+Monotonicity is an assumption, not a guarantee, so the planned bisection
+optimization should be the fast path and the linear earliest-first scan remains
+the **fallback** whenever the cheap monotonicity check fails (e.g. interacting
+faults), preserving correctness at `O(n)`. The search is also bounded by a fork
+budget. Attribution
 confidence is reported with its replay guarantee level: a flip found under
 `deterministic_replay` (all cassettes present, hashes match) is high-confidence; a
 flip found under `forked_replay`/`simulation` is labeled as such (§1 #6). The

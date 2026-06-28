@@ -132,8 +132,8 @@
 
 | Component | ARCH § | Claimed status | Actual (verified) | Notes / Discrepancy |
 |---|---|---|---|---|
-| `beater-replay` (cassettes + deterministic replay) | §11 | built (cassette path) | **Partial** — `crates/beater-replay/` in workspace | `replay-fixture` cassette path built; real forked-replay search (earliest-flip attribution) is planned |
-| Forked replay / earliest-failing-span attribution | §11 | planned | **Planned** | The heuristic `attribute_failure` first-error exists; full forked binary search planned |
+| `beater-replay` (cassettes + deterministic replay) | §11 | built (cassette path) | **Partial** — `crates/beater-replay/` in workspace | `replay-fixture` cassette path built; `attribute_failure` is now recovery-aware recorded-trace attribution; harness-backed forked replay remains planned |
+| Forked replay / earliest-failing-span attribution | §11 | planned | **Partial** | First-error stub retired; `find_earliest_outcome_flip` is a linear earliest-first helper over caller-supplied fork evaluations. #112 remains the bisection fast-path; full harness-backed counterfactual replay remains planned |
 | `beater-search` (Tantivy full-text index) | §13 | built | **Built** — `crates/beater-search/` in workspace | |
 
 ---
