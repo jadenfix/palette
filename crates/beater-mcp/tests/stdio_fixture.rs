@@ -304,7 +304,8 @@ fn stdio_ping_returns_empty_object() {
         .find(|f| f["direction"] == "out" && f["frame"]["id"] == ping_req["frame"]["id"])
         .expect("session fixture must contain a ping response");
     assert_eq!(
-        ping_resp["frame"]["result"], json!({}),
+        ping_resp["frame"]["result"],
+        json!({}),
         "ping result must be empty object"
     );
     todo!("implement stdio transport (§21, Phase 1) then remove this todo");
@@ -334,10 +335,7 @@ fn stdio_full_session_golden() {
     let frames = session["frames"].as_array().unwrap();
 
     // Shape-check the fixture (belt and suspenders with the always-on test).
-    let out_frames: Vec<&Value> = frames
-        .iter()
-        .filter(|f| f["direction"] == "out")
-        .collect();
+    let out_frames: Vec<&Value> = frames.iter().filter(|f| f["direction"] == "out").collect();
     assert!(
         !out_frames.is_empty(),
         "session fixture must have at least one out frame"
