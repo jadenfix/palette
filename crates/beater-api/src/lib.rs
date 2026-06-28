@@ -592,6 +592,19 @@ async fn revoke_api_key_route(
     )
     .await?;
     let api_key_id = ApiKeyId::new(api_key_id)?;
+    let record = api_keys
+        .get_key(api_key_id.clone())
+        .await?
+        .ok_or_else(|| ApiError::not_found(format!("api key {} not found", api_key_id.as_str())))?;
+    if record.tenant_id != tenant_id
+        || record.project_id != project_id
+        || record.environment_id != environment_id
+    {
+        return Err(ApiError::not_found(format!(
+            "api key {} not found",
+            api_key_id.as_str()
+        )));
+    }
     let revoked = api_keys
         .revoke_key(api_key_id.clone(), Utc::now())
         .await?

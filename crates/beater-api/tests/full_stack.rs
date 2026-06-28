@@ -2600,6 +2600,17 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
         .unwrap_or_else(|| panic!("created key must include one-time secret"))
         .to_string();
     let trace_key_id = api_key_id_from_secret(&trace_secret).unwrap_or_else(|err| panic!("{err}"));
+    let mut other_scopes = BTreeSet::new();
+    other_scopes.insert(ApiScope::TraceWrite);
+    let other_scope_key = api_keys
+        .create_key(CreateApiKeyRequest {
+            tenant_id: TenantId::new("other-tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new("other-project").unwrap_or_else(|err| panic!("{err}")),
+            environment_id: EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            scopes: other_scopes,
+        })
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
 
     let mut request = native_request();
     request.redaction_class = RedactionClass::Sensitive;
@@ -2926,6 +2937,29 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
         .unwrap_or_else(|err| panic!("{err}"))
         .unwrap_or_else(|| panic!("created key should be persisted"));
     assert!(loaded_key.last_used_at.is_some());
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!(
+                    "/v1/api-keys/tenant/project/prod/{}/revoke",
+                    other_scope_key.record.api_key_id.as_str()
+                ))
+                .header("authorization", format!("Bearer {}", admin_key.secret))
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    let other_scope_key = api_keys
+        .get_key(other_scope_key.record.api_key_id)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"))
+        .unwrap_or_else(|| panic!("cross-scope key should still exist"));
+    assert!(other_scope_key.active);
 
     let response = app
         .clone()
