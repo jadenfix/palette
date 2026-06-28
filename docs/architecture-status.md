@@ -83,15 +83,15 @@
 
 | Component | ARCH § | Claimed status | Actual (verified) | Notes / Discrepancy |
 |---|---|---|---|---|
-| `beater-eval` (evaluator catalog, scoring contracts, aggregation) | §10 | built | **Built** — `crates/beater-eval/` in workspace | Hardcoded-z `compare_paired_scores` deleted per ARCH; delegates to `beater-stats` (planned) |
+| `beater-eval` (evaluator catalog, scoring contracts, aggregation) | §10 | built | **Built** — `crates/beater-eval/` in workspace | Hardcoded-z `compare_paired_scores` deleted per ARCH; intended to delegate to `beater-stats` (now built), but `beater-eval` does not yet depend on it (wiring pending) |
 | `beater-calibration` (kappa, proper-scoring calibration) | §10.5 | built | **Built** — `crates/beater-calibration/` in workspace | Kappa is the current signal; Brier/ECE recalibration planned |
 | `beater-judge` (LLM/embedding judge broker, BYOK, audit) | §10.1, §10.1.1 | built | **Built** — `crates/beater-judge/` in workspace | |
 | `beater-sandbox` (Wasmtime/WASI scorer runtime) | §10.4, §20.5 | built | **Built** — `crates/beater-sandbox/` in workspace | |
 | `beater-datasets` (datasets, versions, cases, train/dev/test split) | §5.4, §20.3 | built | **Built** — `crates/beater-datasets/` in workspace | |
 | `beater-experiments` (candidate-vs-baseline comparisons) | §10, §21 | built | **Built** — `crates/beater-experiments/` in workspace | |
-| `beater-gates` (CI/CD gate policy) | §22, §18 | built | **Built** — `crates/beater-gates/` in workspace | Gate now delegates stats to `beater-stats` (planned); current gate is on deleted-stats path |
+| `beater-gates` (CI/CD gate policy) | §22, §18 | built | **Built** — `crates/beater-gates/` in workspace | Gate is intended to delegate stats to `beater-stats` (now built), but `beater-gates` does not yet depend on it (wiring pending); current gate is on the deleted-stats path |
 | `beater-human` (review queues, annotations, human labels) | §20.4 #2.5 | built (backend) | **Built** — `crates/beater-human/` in workspace | Backend built; UI not built (see Dashboard §12) |
-| `beater-stats` (real p-values, Wilson CIs, test selection, FWER/FDR) | §10.3, §20.5 | planned | **Planned** — no directory, not in workspace | **DISCREPANCY: §4 workspace listing marks this `[planned, NEW]`; confirmed no directory exists. `beater-eval` and `beater-gates` currently have a hole where statistical rigor should go.** |
+| `beater-stats` (real p-values, Wilson CIs, test selection, FWER/FDR) | §10.3, §20.5 | planned | **Built (Phase 1 core)** — `crates/beater-stats/` in workspace (`Cargo.toml` member); has `src/lib.rs` | Added in PR #47. Phase 1 fixed-horizon primitives are built: `wilson_interval`, `two_proportion_z_test`, `bootstrap_diff_ci`. Anytime-valid/sequential (mSPRT) and test-selection/FWER-FDR are still planned. `beater-eval`/`beater-gates` do not yet depend on it (wiring pending) |
 | `beater-scorers` (custom scorer registry, WASM upload) | §20.5 | planned | **Planned** — no directory, not in workspace | Depends on `beater-sandbox` (built) |
 | `beater-online` (online-eval scoring worker) | §20.6 | planned | **Planned** — no directory, not in workspace | |
 | Fuzzy match / JSON-schema / embedding scorers | §10.4 | planned | **Planned** | Built-in scorers not yet in catalog |
@@ -106,8 +106,8 @@
 |---|---|---|---|---|
 | `beater-alerts` (alert evaluation over trace/score signals) | §13, §20.6 | built (compute); delivery planned | **Partial** — `crates/beater-alerts/` in workspace | `alert-fixture` signs a webhook; actual Slack/HMAC delivery is planned |
 | Alert delivery (Slack Block Kit / HMAC webhook) | §20.6 #4.3, #4.4 | planned | **Planned** | Delivery history endpoint also planned |
-| mSPRT / anytime-valid alerting (confidence sequences) | §20.6 #4.5 | planned | **Planned** | Depends on `beater-stats` (not built) |
-| Real statistics (p-values, power, FWER/FDR) | §10.3, §20.5 #3.4 | planned | **Planned** | Depends on `beater-stats` (not built) |
+| mSPRT / anytime-valid alerting (confidence sequences) | §20.6 #4.5 | planned | **Planned** | `beater-stats` is built (Phase 1) but its mSPRT/sequential-inference layer is not yet implemented |
+| Real statistics (p-values, power, FWER/FDR) | §10.3, §20.5 #3.4 | planned | **Partial** | `beater-stats` Phase 1 (Wilson CI, two-proportion z-test, bootstrap CI) is built; power, test-selection, and FWER/FDR are not yet implemented |
 | `beater-prompts` (prompt registry, versioning, playground) | §20.6 #4.7 | planned | **Planned** — no directory, not in workspace | |
 
 ---
@@ -197,7 +197,7 @@
 | `/login` page | §25 | built | **Built** — `web/dashboard/app/login/` present | |
 | `/settings`, `/settings/api-keys` | §25.4 | partial | **Partial** — `web/dashboard/app/settings/` and `app/settings/api-keys/` present | orgs/RBAC/billing settings need read-API |
 | `/docs`, `/docs/mcp`, `/docs/quickstarts` | §25.4 | built | **Built** — directories present under `web/dashboard/app/docs/` | Renders the committed OpenAPI snapshot |
-| `/search` **Crate Dig** | §25.4, §20.4 #2.8 | partial | **Partial** — `web/dashboard/app/search/` exists on `main`; ARCH §25 documents it as `[needs read-API]` (filter form built; full-text UI planned) | ARCH §25 explicitly lists and documents `/search`; the route exists on `main`. Earlier claim that it was "untracked / not documented" was incorrect. |
+| `/search` **Crate Dig** | §25.4, §20.4 #2.8 | planned | **Planned** — no directory `web/dashboard/app/search/` on `main` | Documented in ARCH §25 and §20.4 #2.8 (`web/dashboard/app/search` + `searchSpansPath()` calling `/v1/search/:tenant/spans`) but **not yet built**. The route directory does not exist on `main`. |
 | `/connect` (coding-agent connect screen) | §25.4 | partial | **Planned** — no directory `web/dashboard/app/connect/` | OAuth server built; the connect *screen* itself not built |
 | `/review` (Setlist annotation UI) | §25.4 | planned | **Planned** — no directory | Backend (`beater-human`) built; UI not built |
 | `/studio` **Agent Studio** | §25.4, §21.6b | deferred | **Deferred** — no directory; ARCH §21.6b marks `beater-studio` as DEFERRED design-only | Documented in ARCH §25; no implementation in-repo. Depends on forked-replay + `simulate` (both planned). |
@@ -213,7 +213,7 @@
 
 | Component | ARCH § | Claimed status | Actual (verified) | Notes / Discrepancy |
 |---|---|---|---|---|
-| `beater-bench` (criterion benches + load fixtures) | §23.10, §20.2 #0.3 | planned | **Planned** — no directory, not in workspace | **DISCREPANCY: No directory exists. All SLO bench gates (§24, §23.10) are blocked on this crate.** |
+| `beater-bench` (criterion benches + load fixtures) | §23.10, §20.2 #0.3 | planned | **Built (skeleton)** — `crates/beater-bench/` in workspace (`Cargo.toml` member); has `benches/smoke.rs` + `src/lib.rs` | Crate scaffolded (merged in PR #31). The criterion harness exists as a smoke skeleton; the full SLO bench gates (§24, §23.10) and load fixtures are still planned |
 | `xtask loadgen` | §23.10 | planned | **Partial** — `crates/xtask/` in workspace; `loadgen` subcommand status unverified | xtask crate exists; whether `loadgen` is implemented is unverified |
 | `/metrics` endpoint (Prometheus, Heartbeat) | §16, §23.10 | built | **Built** — `beaterd` exposes `/metrics` per ARCH §22.1 | Load evidence and p95 SLO gates are still planned |
 
@@ -237,12 +237,13 @@
 The items below are cases where the document's claim and the actual repo state diverge
 in a material way:
 
-1. **`beater-stats` is named in the workspace tree in ARCH §4 but does not exist.**
-   The listing shows `beater-stats/ # Backbeat ... [planned, NEW]`, which is
-   consistent text, but `beater-eval` and `beater-gates` have code paths that
-   *depend on* `beater-stats` (the hardcoded-z path was deleted per ARCH, leaving
-   a gap). Any test that invokes comparative statistics is currently on the deleted
-   path.
+1. **`beater-stats` is built (Phase 1), but not yet wired into `beater-eval`/`beater-gates`.**
+   `crates/beater-stats/` exists on `main` (added in PR #47) and is a workspace
+   member; its Phase 1 primitives (`wilson_interval`, `two_proportion_z_test`,
+   `bootstrap_diff_ci`) are implemented. However, `beater-eval` and `beater-gates`
+   do not yet declare a dependency on it, and the deleted hardcoded-z path has not
+   been replaced — so comparative statistics in those crates are still on the gap.
+   Anytime-valid (mSPRT) and FWER/FDR layers remain unimplemented.
 
 2. **`sdks/python-browser-use/` and `sdks/ts-stagehand/` are top-level under `sdks/`, NOT under `sdks/clients/`.**
    The initial ledger mistakenly listed them as `sdks/clients/python-browser-use/` and
@@ -266,7 +267,9 @@ in a material way:
 
 6. **Overall readiness ≈ 33%.** ARCH §20.1 states this honestly. The built
    primitives are strong (OTLP, normalizer, WASI sandbox, OAuth 2.1, crypto, 7 SDKs,
-   MCP streamable-HTTP, contract-drift CI). The largest unbuilt pillars are:
-   `beater-stats` (real statistics), MCP stdio transport, product UI beyond the
-   waterfall, enforced RBAC, hosted control-plane (identity/SSO), online eval
-   scoring, alert delivery, load benchmarks, and the full RSI loop.
+   MCP streamable-HTTP, contract-drift CI; `beater-stats` Phase 1 and the
+   `beater-bench` skeleton have since landed). The largest unbuilt pillars are:
+   `beater-stats` wiring into eval/gates plus its sequential/FWER-FDR layers, MCP
+   stdio transport, product UI beyond the waterfall, enforced RBAC, hosted
+   control-plane (identity/SSO), online eval scoring, alert delivery, the load
+   benchmark gates, and the full RSI loop.
