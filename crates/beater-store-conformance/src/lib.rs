@@ -91,6 +91,42 @@ where
     assert_eq!(spans.items.len(), 1);
     assert_eq!(spans.items[0].span_id.as_str(), "child");
 
+    let first_span_page = store
+        .query_spans(
+            tenant.clone(),
+            SpanFilter {
+                trace_id: Some(trace.clone()),
+                ..SpanFilter::default()
+            },
+            PageRequest {
+                limit: 1,
+                cursor: None,
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(first_span_page.items.len(), 1);
+    assert_eq!(first_span_page.items[0].span_id.as_str(), "child");
+    assert_eq!(first_span_page.next_cursor.as_deref(), Some("1"));
+
+    let second_span_page = store
+        .query_spans(
+            tenant.clone(),
+            SpanFilter {
+                trace_id: Some(trace.clone()),
+                ..SpanFilter::default()
+            },
+            PageRequest {
+                limit: 1,
+                cursor: first_span_page.next_cursor,
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(second_span_page.items.len(), 1);
+    assert_eq!(second_span_page.items[0].span_id.as_str(), "root");
+    assert_eq!(second_span_page.next_cursor, None);
+
     let other_tenant = TenantId::new("other").unwrap_or_else(|err| panic!("{err}"));
     let empty = store
         .query_spans(other_tenant, SpanFilter::default(), PageRequest::default())

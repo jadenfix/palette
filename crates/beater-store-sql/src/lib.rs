@@ -8,7 +8,7 @@ use beater_schema::{
     SpanFilter, SpanSummary, TraceView, WriteAck,
 };
 use beater_store::{
-    lock_poisoned, page_vec, query_runs_by_materializing_spans, EnvironmentMetadata, MetadataStore,
+    lock_poisoned, query_runs_by_materializing_spans, EnvironmentMetadata, MetadataStore,
     OrganizationMetadata, ProjectMetadata, QuotaDecision, QuotaLimiter, QuotaReservationRequest,
     RoleBinding, StoreError, StoreResult, TraceStore,
 };
@@ -836,6 +836,15 @@ impl TraceStore for SqliteTraceStore {
         filter: SpanFilter,
         page: PageRequest,
     ) -> StoreResult<Page<SpanSummary>> {
+        let limit = page.limit.max(1) as usize;
+        let offset = page
+            .cursor
+            .as_deref()
+            .and_then(|cursor| cursor.parse::<usize>().ok())
+            .unwrap_or(0);
+        let fetch_limit = limit.saturating_add(1);
+        let fetch_limit_i64 = i64::try_from(fetch_limit).unwrap_or(i64::MAX);
+        let offset_i64 = i64::try_from(offset).unwrap_or(i64::MAX);
         let connection = self.lock()?;
         let mut statement = connection
             .prepare(
@@ -850,6 +859,7 @@ impl TraceStore for SqliteTraceStore {
                   AND (?6 IS NULL OR kind = ?6)
                   AND (?7 IS NULL OR status = ?7)
                 ORDER BY start_time DESC, seq ASC
+                LIMIT ?8 OFFSET ?9
                 "#,
             )
             .map_err(StoreError::backend)?;
@@ -869,19 +879,32 @@ impl TraceStore for SqliteTraceStore {
                     filter.span_id.as_ref().map(|span_id| span_id.as_str()),
                     filter.kind.as_ref().map(|kind| kind.as_str()),
                     filter.status.as_ref().map(|status| status.as_str()),
+                    fetch_limit_i64,
+                    offset_i64,
                 ],
                 |row| row.get::<_, String>(0),
             )
             .map_err(StoreError::backend)?;
 
         let mut spans = Vec::new();
+        let mut has_more = false;
         for row in rows {
             let json = row.map_err(StoreError::backend)?;
+            if spans.len() == limit {
+                has_more = true;
+                break;
+            }
             let span = serde_json::from_str::<CanonicalSpan>(&json).map_err(StoreError::backend)?;
             spans.push(span_summary(span));
         }
 
-        Ok(page_vec(spans, page))
+        let next_cursor = if has_more {
+            Some(offset.saturating_add(limit).to_string())
+        } else {
+            None
+        };
+
+        Ok(Page::new(spans, next_cursor))
     }
 }
 
