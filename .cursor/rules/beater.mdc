@@ -1,0 +1,34 @@
+---
+description: Beater repo context and guardrails for Cursor agents
+alwaysApply: true
+---
+
+# Beater Agent Context
+
+Read `AGENTS.md` first. It is the compact startup map for this Rust workspace and
+links to `ARCHITECTURE.md`, `CONTRIBUTING.md`, and `CLAUDE.md`.
+
+Key rules:
+
+- One `beaterd` Rust binary first; service splits are thin bins over shared
+  crates and need measured pressure.
+- Standards at the edge: OTLP, W3C trace-context, OpenInference, and OTel GenAI
+  are first-class. Native SDKs are accelerators, not the onboarding gate.
+- Keep immutable raw envelopes plus normalized projections. Preserve tenant,
+  project, environment, redaction, and audited-unmask boundaries.
+- Do not hand-edit generated OpenAPI specs, SDKs, dashboard API types, or
+  `sdks/semconv/conventions.json`. Use the regen workflow in `CLAUDE.md`.
+- Vercel hosts the dashboard/stateless hosted surfaces only; `beaterd` and
+  stateful workers run in OSS/local or hosted Rust cells.
+- Keep PRs scoped. Do not edit `ARCHITECTURE.md` requirements or perform broad
+  refactors unless the request explicitly calls for it.
+
+Useful commands:
+
+```bash
+cargo fmt --all
+cargo test -p beater-api
+cargo test -p beater-api --test openapi_coverage
+scripts/check-contract-sync.sh
+cd web/dashboard && npm test && npm run build
+```

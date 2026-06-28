@@ -1,5 +1,8 @@
 # Beater — working rules
 
+Start with `AGENTS.md` for the compact repo map and cross-agent context. This
+file keeps the non-negotiable contract-generation rule close to Claude Code.
+
 ## The contract is the single source of truth (do not break this)
 
 The HTTP API, the 7 SDK clients (`sdks/clients/*`), the MCP tools (`/mcp`), the
