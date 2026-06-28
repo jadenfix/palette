@@ -3748,7 +3748,7 @@ mod tests {
     use axum::body::{to_bytes, Body};
     use beater_bus::InMemoryBus;
     use beater_core::sha256_hex;
-    use beater_core::{EnvironmentId, IdempotencyKey, ProjectId, SpanId, TenantScope};
+    use beater_core::{EnvironmentId, IdempotencyKey, ProjectId, SpanId, TenantScope, TraceId};
     use beater_ingest::IngestPolicy;
     use beater_otlp::encode_export_trace_request;
     use beater_schema::{AgentSpanKind, RedactionClass, SourceDialect, SpanStatus, TraceView};
@@ -4091,8 +4091,18 @@ mod tests {
             serde_json::from_slice(&response_body).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(trace.spans.len(), 1);
         assert_eq!(trace.spans[0].normalizer_version, "beater-otlp-v1");
+        assert_eq!(trace.spans[0].raw_ref.uri, "artifact://redacted");
+
+        let stored_trace = traces
+            .get_trace(
+                TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                TraceId::new("0102030405060708090a0b0c0d0e0f10")
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
         let raw_bytes = artifacts
-            .get_bytes(&trace.spans[0].raw_ref)
+            .get_bytes(&stored_trace.spans[0].raw_ref)
             .await
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(raw_bytes, body);
