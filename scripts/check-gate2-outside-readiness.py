@@ -303,10 +303,111 @@ def service_depends_on(body: list[str]) -> set[str]:
     return dependencies
 
 
+def service_environment(body: list[str]) -> dict[str, str]:
+    field = service_field_lines(body, "environment")
+    if field is None:
+        return {}
+    index, value = field
+    env: dict[str, str] = {}
+    for item in parse_inline_list(value):
+        if "=" in item:
+            key, env_value = item.split("=", 1)
+            env[key.strip()] = env_value.strip()
+    for line in body[index + 1 :]:
+        if line_indent(line) <= 4:
+            break
+        stripped = line.strip()
+        list_item = re.fullmatch(r"-\s*([A-Za-z_][A-Za-z0-9_]*)=(.*?)\s*(?:#.*)?", stripped)
+        mapping_item = re.fullmatch(r"([A-Za-z_][A-Za-z0-9_]*):\s*(.*?)\s*(?:#.*)?", stripped)
+        if list_item:
+            env[list_item.group(1)] = list_item.group(2).strip().strip("'\"")
+        elif mapping_item:
+            env[mapping_item.group(1)] = mapping_item.group(2).strip().strip("'\"")
+    return env
+
+
+def service_block_text(body: list[str], field: str) -> str:
+    field_line = service_field_lines(body, field)
+    if field_line is None:
+        return ""
+    index, value = field_line
+    values = [value]
+    for line in body[index + 1 :]:
+        if line_indent(line) <= 4:
+            break
+        values.append(line.strip())
+    return " ".join(values)
+
+
 def uses_third_party_image(image: str | None) -> bool:
     if image is None:
         return False
     return image.startswith(THIRD_PARTY_IMAGE_PREFIXES)
+
+
+def require_service_env(
+    compose_name: str,
+    services: dict[str, list[str]],
+    service: str,
+    key: str,
+    expected: str,
+) -> None:
+    env = service_environment(services.get(service, []))
+    actual = env.get(key)
+    if actual != expected:
+        raise SystemExit(
+            f"{compose_name} service {service} must set {key}={expected}, got {actual!r}"
+        )
+
+
+def require_local_browser_endpoint(
+    compose_name: str,
+    services: dict[str, list[str]],
+) -> None:
+    env = service_environment(services.get("dashboard", []))
+    key = "NEXT_PUBLIC_BEATER_API_BASE_URL"
+    actual = env.get(key)
+    if actual != "http://localhost:${BEATER_HTTP_PORT:-8080}":
+        raise SystemExit(
+            f"{compose_name} service dashboard must expose local browser API URL "
+            f"{key}=http://localhost:${{BEATER_HTTP_PORT:-8080}}, got {actual!r}"
+        )
+
+
+def require_compose_local_endpoints(
+    compose_name: str,
+    services: dict[str, list[str]],
+) -> None:
+    require_service_env(
+        compose_name,
+        services,
+        "dashboard",
+        "BEATER_API_BASE_URL",
+        "http://beaterd:8080",
+    )
+    require_local_browser_endpoint(compose_name, services)
+    require_service_env(
+        compose_name,
+        services,
+        "dashboard-e2e",
+        "PLAYWRIGHT_BASE_URL",
+        "http://dashboard:3000",
+    )
+    for service in ("otel-python-smoke", "otel-python-quickstart"):
+        require_service_env(
+            compose_name,
+            services,
+            service,
+            "OTEL_EXPORTER_OTLP_ENDPOINT",
+            "http://beaterd:4317",
+        )
+    if compose_name == "docker-compose.yml":
+        command = service_block_text(services.get("beaterctl", []), "command")
+        for endpoint in ("http://beaterd:8080", "http://beaterd:4317"):
+            if endpoint not in command:
+                raise SystemExit(
+                    f"{compose_name} service beaterctl command must use local endpoint {endpoint}"
+                )
 
 
 def require_compose_default_path_contract() -> None:
@@ -345,6 +446,7 @@ def require_compose_default_path_contract() -> None:
                     f"{compose_name} default/timed service {service} must not depend on "
                     f"profiled third-party service(s): {', '.join(blocked)}"
                 )
+        require_compose_local_endpoints(compose_name, services)
         print(
             f"ok default compose path {compose_name} services {sorted(DEFAULT_COMPOSE_SERVICES)}"
         )

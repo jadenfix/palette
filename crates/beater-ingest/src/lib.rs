@@ -934,15 +934,19 @@ impl IngestService {
         tenant_id: TenantId,
         project_id: ProjectId,
     ) -> Result<IngestQueueStatus, IngestError> {
-        let total_depth = self.bus.depth().await.map_err(map_bus_error)?;
+        let total_depth = self
+            .bus
+            .depth_for_scope(&tenant_id, &project_id)
+            .await
+            .map_err(map_bus_error)?;
         let trace_write_depth = self
             .bus
-            .depth_for_kind(TRACE_WRITE_BATCH_KIND)
+            .depth_for_scoped_kind(&tenant_id, &project_id, TRACE_WRITE_BATCH_KIND)
             .await
             .map_err(map_bus_error)?;
         let trace_ingested_depth = self
             .bus
-            .depth_for_kind(TRACE_INGESTED_KIND)
+            .depth_for_scoped_kind(&tenant_id, &project_id, TRACE_INGESTED_KIND)
             .await
             .map_err(map_bus_error)?;
         let dead_letters = self
@@ -1837,8 +1841,9 @@ impl TraceIngestedPublishReport {
 /// the recognized semantic-convention keys (the same keys the OTLP normalizer
 /// reads to populate model/cost/tokens/kind/seq/input/output) or belongs to a
 /// recognized namespace prefix (`llm.`, `gen_ai.`, `browser.`, `resource.`,
-/// `otel.`, `beater.`, `agent.`, `openinference.`, `w3c.`). Everything else
-/// "fails canonical mapping" and is recorded under `unmapped_attrs.unmapped`.
+/// `otel.`, `beater.`, `agent.`, `openinference.`, `w3c.`, `temporal.`,
+/// `langfuse.`). Everything else "fails canonical mapping" and is recorded under
+/// `unmapped_attrs.unmapped`.
 pub mod canonical_mapping {
     /// Recognized namespace prefixes whose attributes the canonical model
     /// understands (either projected to a typed field or carried as a known
@@ -1854,6 +1859,7 @@ pub mod canonical_mapping {
         "openinference.",
         "w3c.",
         "temporal.",
+        "langfuse.",
     ];
 
     /// Exact keys without a recognized prefix that are still canonical because the
@@ -2230,6 +2236,25 @@ mod tests {
 
         async fn depth_for_kind(&self, kind: &str) -> Result<usize, BusError> {
             self.inner.depth_for_kind(kind).await
+        }
+
+        async fn depth_for_scope(
+            &self,
+            tenant_id: &TenantId,
+            project_id: &ProjectId,
+        ) -> Result<usize, BusError> {
+            self.inner.depth_for_scope(tenant_id, project_id).await
+        }
+
+        async fn depth_for_scoped_kind(
+            &self,
+            tenant_id: &TenantId,
+            project_id: &ProjectId,
+            kind: &str,
+        ) -> Result<usize, BusError> {
+            self.inner
+                .depth_for_scoped_kind(tenant_id, project_id, kind)
+                .await
         }
     }
 
@@ -3804,6 +3829,77 @@ mod tests {
         assert_eq!(report.consumed, 2);
         assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(0));
         assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(2));
+    }
+
+    #[tokio::test]
+    async fn queue_status_depths_are_scoped_to_requested_project() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let service = IngestService::new(
+            artifacts,
+            traces.clone(),
+            bus.clone(),
+            IngestPolicy::default(),
+        );
+        let tenant_a = TenantId::new("tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_b = TenantId::new("tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let environment = EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}"));
+        let mut request_a = fixture_request_with_span("span-a");
+        request_a.scope = TenantScope::new(tenant_a.clone(), project.clone(), environment.clone());
+        request_a.trace_id = TraceId::new("trace-a").unwrap_or_else(|err| panic!("{err}"));
+        request_a.span_id = SpanId::new("span-a").unwrap_or_else(|err| panic!("{err}"));
+        let mut request_b = fixture_request_with_span("span-b");
+        request_b.scope = TenantScope::new(tenant_b.clone(), project.clone(), environment);
+        request_b.trace_id = TraceId::new("trace-b").unwrap_or_else(|err| panic!("{err}"));
+        request_b.span_id = SpanId::new("span-b").unwrap_or_else(|err| panic!("{err}"));
+
+        service
+            .buffer_native(request_a)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        service
+            .buffer_native(request_b)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(2));
+
+        let tenant_a_status = service
+            .queue_status(tenant_a.clone(), project.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(tenant_a_status.total_depth, 1);
+        assert_eq!(tenant_a_status.trace_write_depth, 1);
+        assert_eq!(tenant_a_status.trace_ingested_depth, 0);
+
+        let write_report = service
+            .drain_trace_writes_for(&tenant_a, &project, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(write_report.consumed, 1);
+        assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(1));
+        assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(1));
+
+        let tenant_a_status = service
+            .queue_status(tenant_a, project.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(tenant_a_status.total_depth, 1);
+        assert_eq!(tenant_a_status.trace_write_depth, 0);
+        assert_eq!(tenant_a_status.trace_ingested_depth, 1);
+
+        let tenant_b_status = service
+            .queue_status(tenant_b, project)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(tenant_b_status.total_depth, 1);
+        assert_eq!(tenant_b_status.trace_write_depth, 1);
+        assert_eq!(tenant_b_status.trace_ingested_depth, 0);
     }
 
     #[test]

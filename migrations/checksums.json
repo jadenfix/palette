@@ -1,0 +1,5 @@
+{
+  "clickhouse/0001_trace_store.sql": "sha256:97956aa94413f758779f352aa8274ab0dd036f036b1a1d097bb4c81a3ba3c38f",
+  "postgres/0001_initial.sql": "sha256:44b200a8e6b6ad3b1d85c5fbded5a0f0dac9bc70d6427af658c8609422758e7e",
+  "sqlite/0001_local_beaterd.sql": "sha256:5bd0326b38df894facacfad787e1f74f3fff2731ac5937b7cae55aabdb739ede"
+}

@@ -12,7 +12,7 @@ fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .and_then(|p| p.parent())
-        .expect("repo root is two levels above bins/beaterd")
+        .unwrap_or_else(|| panic!("repo root is two levels above bins/beaterd"))
         .to_path_buf()
 }
 

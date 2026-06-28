@@ -107,8 +107,8 @@ async fn project_scoped_sweep_ignores_out_of_scope_candidates() {
     let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
     let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
     let other_project = ProjectId::new("other-project").unwrap_or_else(|err| panic!("{err}"));
-    let in_scope_orphan = put(&*artifacts, &tenant, &project, b"in-scope-orphan").await;
-    let out_of_scope = put(&*artifacts, &tenant, &other_project, b"other-project").await;
+    let in_scope_orphan = put(&artifacts, &tenant, &project, b"in-scope-orphan").await;
+    let out_of_scope = put(&artifacts, &tenant, &other_project, b"other-project").await;
 
     let sweeper = OrphanedArtifactSweeper::new(artifacts.clone());
     let candidates = vec![in_scope_orphan.clone(), out_of_scope.clone()];

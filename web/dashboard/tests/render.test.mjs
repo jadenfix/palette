@@ -357,7 +357,8 @@ test("dashboard client uses public beater read endpoints", () => {
   assert.match(api, /\/v1\/spans\//);
   assert.match(api, /\/io/);
   assert.match(api, /const activeRun = query\.traceId/);
-  assert.match(api, /activeRun\?\.project_id && !query\.projectId/);
+  assert.match(api, /const activeRunMatchesTrace = activeRun !== undefined && activeRun\.trace_id === activeTraceId/);
+  assert.match(api, /activeRunMatchesTrace && activeRun\.project_id && !query\.projectId/);
   assert.match(api, /tracePath\(traceQuery, activeTraceId\)/);
   assert.match(api, /spanPath\(traceQuery, trace\.trace_id, activeSpanId\)/);
   assert.match(api, /query,\n\s+runs,/);
@@ -697,6 +698,53 @@ test("dashboard loader scopes tenant-wide trace details to the selected run proj
   assert.ok(
     detailRequests.every(
       ({ headers }) => headers["x-beater-project-id"] === "project-b"
+    )
+  );
+});
+
+test("dashboard loader does not scope explicit trace details to an unrelated fallback run", async () => {
+  const runs = {
+    items: [
+      {
+        tenant_id: "demo",
+        project_id: "project-b",
+        trace_id: "trace-2",
+        first_span_name: "other-run",
+        span_count: 1
+      }
+    ],
+    next_cursor: null
+  };
+  const span = {
+    ...spanFixture("span-1", null, "2026-01-01T00:00:00Z", 1),
+    project_id: "project-a",
+    trace_id: "trace-1",
+    kind: "llm.call"
+  };
+  const trace = { tenant_id: "demo", trace_id: "trace-1", spans: [span] };
+  const requests = [];
+  const { loadDashboardData } = loadDashboardApiModule({
+    fetch: async (url, init) => {
+      const href = String(url);
+      requests.push({ href, headers: init?.headers ?? {} });
+      if (href.includes("/v1/traces/demo?")) return okJson(runs);
+      if (href.includes("/v1/traces/demo/trace-1")) return okJson(trace);
+      if (href.includes("/v1/spans/demo/trace-1/span-1/io")) {
+        return okJson({ input: { kind: "missing" }, output: { kind: "missing" } });
+      }
+      if (href.includes("/v1/spans/demo/trace-1/span-1")) return okJson(span);
+      throw new Error(`unexpected fetch ${href}`);
+    }
+  });
+
+  const data = await loadDashboardData({ tenantId: "demo", traceId: "trace-1" });
+
+  assert.equal(data.selectedSpan?.project_id, "project-a");
+  const detailRequests = requests.filter(({ href }) => href.includes("/v1/traces/demo/trace-1") || href.includes("/v1/spans/demo/trace-1"));
+  assert.equal(detailRequests.length, 3);
+  assert.ok(
+    detailRequests.every(
+      ({ headers }) => headers["x-beater-project-id"] === undefined
     )
   );
 });

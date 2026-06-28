@@ -279,6 +279,45 @@ fn require_dataset_exists(
     }
 }
 
+fn require_dataset_version_exists(
+    connection: &Connection,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+    dataset_id: &DatasetId,
+    version_id: &DatasetVersionId,
+) -> StoreResult<()> {
+    let exists = connection
+        .query_row(
+            r#"
+            SELECT 1
+            FROM dataset_versions
+            WHERE tenant_id = ?1
+              AND project_id = ?2
+              AND dataset_id = ?3
+              AND version_id = ?4
+            "#,
+            params![
+                tenant_id.as_str(),
+                project_id.as_str(),
+                dataset_id.as_str(),
+                version_id.as_str()
+            ],
+            |_| Ok(()),
+        )
+        .optional()
+        .context("query dataset version existence")
+        .into_store()?
+        .is_some();
+    if exists {
+        Ok(())
+    } else {
+        Err(StoreError::NotFound(format!(
+            "dataset version {} not found",
+            version_id.as_str()
+        )))
+    }
+}
+
 #[async_trait]
 impl DatasetStore for SqliteDatasetStore {
     async fn create_dataset(
@@ -532,10 +571,17 @@ impl DatasetStore for SqliteDatasetStore {
     }
 
     async fn write_eval_report(&self, report: DatasetEvalReport) -> StoreResult<DatasetEvalReport> {
+        let connection = self.lock().into_store()?;
+        require_dataset_version_exists(
+            &connection,
+            &report.tenant_id,
+            &report.project_id,
+            &report.dataset_id,
+            &report.dataset_version_id,
+        )?;
         let report_json = serde_json::to_string(&report)
             .context("serialize dataset eval report")
             .into_store()?;
-        let connection = self.lock().into_store()?;
         connection
             .execute(
                 r#"
@@ -1144,6 +1190,94 @@ mod tests {
             err,
             StoreError::NotFound(message) if message.contains(missing_dataset.as_str())
         ));
+    }
+
+    #[tokio::test]
+    async fn dataset_store_rejects_orphan_or_cross_scope_eval_reports() {
+        let store = SqliteDatasetStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let dataset = store
+            .create_dataset(tenant.clone(), project.clone(), "failures".to_string())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let case = promote_trace_span_to_case(
+            tenant.clone(),
+            project.clone(),
+            dataset.dataset_id.clone(),
+            &fixture_trace(&tenant, &project),
+            None,
+            Some(json!("answer")),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        store
+            .put_case(case)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let version = store
+            .create_version(
+                tenant.clone(),
+                project.clone(),
+                dataset.dataset_id.clone(),
+                None,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let report = evaluate_dataset_version(
+            &version,
+            DatasetEvalSpec {
+                evaluator: EvaluatorSpec {
+                    id: "exact".to_string(),
+                    lane: beater_schema::EvaluatorLane::DeterministicWasi,
+                    kind: EvaluatorKind::ExactMatch,
+                },
+                evaluator_version_id: EvaluatorVersionId::new("exact-v1")
+                    .unwrap_or_else(|err| panic!("{err}")),
+                agent_release_id: AgentReleaseId::new("release-a")
+                    .unwrap_or_else(|err| panic!("{err}")),
+                prompt_version_id: None,
+                code_hash: None,
+                wasm_hash: None,
+            },
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        let missing_version =
+            DatasetVersionId::new("missing-version").unwrap_or_else(|err| panic!("{err}"));
+        let mut orphan_report = report.clone();
+        orphan_report.dataset_version_id = missing_version.clone();
+        let err = match store.write_eval_report(orphan_report).await {
+            Ok(report) => panic!("orphan eval report should be rejected, got {report:?}"),
+            Err(err) => err,
+        };
+        assert!(matches!(
+            err,
+            StoreError::NotFound(message) if message.contains(missing_version.as_str())
+        ));
+
+        let mut cross_project_report = report.clone();
+        cross_project_report.project_id =
+            ProjectId::new("other-project").unwrap_or_else(|err| panic!("{err}"));
+        let err = match store.write_eval_report(cross_project_report).await {
+            Ok(report) => panic!("cross-project eval report should be rejected, got {report:?}"),
+            Err(err) => err,
+        };
+        assert!(matches!(err, StoreError::NotFound(_)));
+
+        let mut cross_tenant_report = report.clone();
+        cross_tenant_report.tenant_id =
+            TenantId::new("other-tenant").unwrap_or_else(|err| panic!("{err}"));
+        let err = match store.write_eval_report(cross_tenant_report).await {
+            Ok(report) => panic!("cross-tenant eval report should be rejected, got {report:?}"),
+            Err(err) => err,
+        };
+        assert!(matches!(err, StoreError::NotFound(_)));
+
+        let stored = store
+            .write_eval_report(report)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(stored.dataset_version_id, version.version_id);
     }
 
     fn fixture_trace(tenant: &TenantId, project: &ProjectId) -> TraceView {
