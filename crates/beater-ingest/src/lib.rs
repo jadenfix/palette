@@ -113,7 +113,7 @@ impl SourceImporter for NativeSpansImporter {
             source_schema_version: Some("1".to_string()),
             normalizer_version: "beater-native-import-v1".to_string(),
             mime_type: "application/json".to_string(),
-            redaction_class: RedactionClass::Internal,
+            redaction_class: RedactionClass::Sensitive,
             raw_bytes: raw_bytes.to_vec(),
             raw_idempotency_key: None,
             auth_context: auth,
@@ -1058,7 +1058,7 @@ impl IngestService {
         let mut unmapped = BTreeMap::new();
         for (key, value) in attributes {
             if self.policy.denied_attributes.contains(&key) {
-                dropped.insert(key, value);
+                dropped.insert(key, json!("[redacted]"));
                 continue;
             }
             if let Some(allowed) = &self.policy.allowed_attributes {
@@ -1127,13 +1127,38 @@ impl Default for IngestPolicy {
             inline_payload_bytes: 16 * 1024,
             max_attributes: 128,
             allowed_attributes: None,
-            denied_attributes: BTreeSet::new(),
+            denied_attributes: default_denied_attributes(),
             per_project_event_quota: None,
             quota_window_seconds: 60,
             trace_write_max_attempts: 3,
             trace_completion: TraceCompletionConfig::default(),
         }
     }
+}
+
+fn default_denied_attributes() -> BTreeSet<String> {
+    [
+        "authorization",
+        "cookie",
+        "set-cookie",
+        "http.request.header.authorization",
+        "http.request.header.cookie",
+        "http.request.header.proxy-authorization",
+        "http.request.header.proxy_authorization",
+        "http.request.header.x-api-key",
+        "http.request.header.x_api_key",
+        "http.response.header.set-cookie",
+        "http.response.header.set_cookie",
+        "http.url",
+        "url.full",
+        "gen_ai.prompt",
+        "gen_ai.completion",
+        "llm.prompt",
+        "llm.completion",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, utoipa::ToSchema)]
@@ -2192,7 +2217,7 @@ mod tests {
         assert!(!span.attributes.contains_key("secret"));
         assert_eq!(
             span.unmapped_attrs["dropped_attributes"]["secret"],
-            json!("drop")
+            json!("[redacted]")
         );
     }
 
@@ -3031,8 +3056,87 @@ mod tests {
         assert!(!span.attributes.contains_key("secret"));
         let dropped = &span.unmapped_attrs["dropped_attributes"];
         assert_eq!(dropped["drop_me"], json!("unlisted"));
-        assert_eq!(dropped["secret"], json!("denied"));
+        assert_eq!(dropped["secret"], json!("[redacted]"));
         assert!(dropped.get("keep").is_none());
+    }
+
+    /// #126: the default ingest policy must not preserve the highest-risk
+    /// observability attributes in the canonical attribute bag.
+    #[tokio::test]
+    async fn default_policy_drops_standard_sensitive_attributes() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let service = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+        let mut request = fixture_request();
+        request.attributes = BTreeMap::from([
+            ("safe".to_string(), json!("keep")),
+            (
+                "http.request.header.authorization".to_string(),
+                json!("Bearer sk-live"),
+            ),
+            (
+                "http.request.header.cookie".to_string(),
+                json!("sid=secret"),
+            ),
+            (
+                "url.full".to_string(),
+                json!("https://example.test/callback?token=secret"),
+            ),
+            ("gen_ai.prompt".to_string(), json!("user secret prompt")),
+        ]);
+
+        service
+            .ingest_native(request.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let trace = traces
+            .get_trace(request.scope.tenant_id, request.trace_id)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let span = &trace.spans[0];
+        assert_eq!(span.attributes.get("safe"), Some(&json!("keep")));
+        let dropped = &span.unmapped_attrs["dropped_attributes"];
+        for key in [
+            "http.request.header.authorization",
+            "http.request.header.cookie",
+            "url.full",
+            "gen_ai.prompt",
+        ] {
+            assert!(
+                !span.attributes.contains_key(key),
+                "{key} must not remain readable as a canonical attribute"
+            );
+            assert!(
+                dropped.get(key).is_some(),
+                "{key} should be recorded as dropped provenance"
+            );
+            assert_eq!(
+                dropped[key],
+                json!("[redacted]"),
+                "{key} value must not survive in dropped provenance"
+            );
+        }
+    }
+
+    #[test]
+    fn native_importer_preserves_raw_bytes_as_sensitive() {
+        let importer = NativeSpansImporter;
+        let scope = TenantScope::new(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+        );
+
+        let request = importer
+            .normalize(&scope, br#"{"spans":[]}"#, None)
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(request.redaction_class, RedactionClass::Sensitive);
     }
 
     /// R4.1: the in-process queue-depth gauge (`DurableBus::depth_for_kind`, NOT
