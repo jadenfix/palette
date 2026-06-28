@@ -699,9 +699,7 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
     // therefore the final sort — is unchanged.
     let mut index = std::collections::HashMap::<(ProjectId, TraceId), usize>::new();
     for span in &spans {
-        if let Some(&pos) =
-            index.get(&(span.project_id.clone(), span.trace_id.clone()))
-        {
+        if let Some(&pos) = index.get(&(span.project_id.clone(), span.trace_id.clone())) {
             let run = &mut runs[pos];
             run.span_count += 1;
             if span.started_at < run.started_at {
@@ -720,10 +718,7 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
             run.duration_ms = run_duration_ms(run.started_at, run.ended_at);
         } else {
             let ended_at = span.ended_at;
-            index.insert(
-                (span.project_id.clone(), span.trace_id.clone()),
-                runs.len(),
-            );
+            index.insert((span.project_id.clone(), span.trace_id.clone()), runs.len());
             runs.push(RunSummary {
                 tenant_id: tenant.clone(),
                 project_id: span.project_id.clone(),
