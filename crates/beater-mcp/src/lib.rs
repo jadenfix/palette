@@ -13,17 +13,18 @@
 //! host is plain JSON-RPC 2.0 over `POST`, which is trivial to implement and
 //! keeps the dependency/footprint minimal. More importantly, the in-process
 //! approach lets tool calls reuse the *exact* axum handlers, `ApiState`, and
-//! auth (`Authorization: Bearer ...` / `x-beater-api-key`) with zero
-//! duplication — `rmcp` would add an abstraction layer between MCP and the real
-//! handlers and reintroduce the drift risk we are eliminating.
+//! auth (`Authorization: Bearer ...` / `x-beater-api-key` plus strict-auth
+//! project/environment scope headers) with zero duplication — `rmcp` would add
+//! an abstraction layer between MCP and the real handlers and reintroduce the
+//! drift risk we are eliminating.
 //!
 //! ## Auth
 //!
 //! Auth is identical to the HTTP surface: the inbound MCP request's
-//! `Authorization` and `x-beater-api-key` headers are forwarded verbatim onto
-//! every synthesized `/v1` request, so the real `authorize()` path runs
-//! unchanged. When the server is built with auth disabled, calls are anonymous,
-//! exactly as for direct HTTP.
+//! `Authorization`, `x-beater-api-key`, and strict-auth scope headers are
+//! forwarded verbatim onto every synthesized `/v1` request, so the real
+//! `authorize()` path runs unchanged. When the server is built with auth
+//! disabled, calls are anonymous, exactly as for direct HTTP.
 
 use axum::body::{to_bytes, Body};
 use axum::extract::State;
@@ -732,7 +733,12 @@ async fn call_tool(
         builder = builder.header(http::header::CONTENT_TYPE, "application/json");
     }
     // Forward auth headers verbatim so the real authorize() path runs unchanged.
-    for header_name in [http::header::AUTHORIZATION.as_str(), "x-beater-api-key"] {
+    for header_name in [
+        http::header::AUTHORIZATION.as_str(),
+        "x-beater-api-key",
+        "x-beater-project-id",
+        "x-beater-environment-id",
+    ] {
         if let Some(value) = headers.get(header_name) {
             builder = builder.header(header_name, value);
         }

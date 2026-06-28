@@ -18,6 +18,7 @@ async-trait.workspace = true
 beater-alerts = { path = "../beater-alerts" }
 beater-archive = { path = "../beater-archive" }
 beater-audit = { path = "../beater-audit" }
+beater-auth = { path = "../beater-auth" }
 beater-bus = { path = "../beater-bus" }
 beater-calibration = { path = "../beater-calibration" }
 beater-core = { path = "../beater-core" }
@@ -29,6 +30,7 @@ beater-ingest = { path = "../beater-ingest" }
 beater-judge = { path = "../beater-judge" }
 beater-search = { path = "../beater-search" }
 beater-secrets = { path = "../beater-secrets" }
+beater-security = { path = "../beater-security" }
 beater-store-obj = { path = "../beater-store-obj" }
 beater-store-sql = { path = "../beater-store-sql" }
 beater-usage = { path = "../beater-usage" }

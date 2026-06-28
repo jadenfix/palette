@@ -17,9 +17,10 @@ use axum::Router;
 use beater_api::{router, ApiState};
 use beater_archive::ParquetTraceArchive;
 use beater_audit::SqliteAuditStore;
+use beater_auth::{ApiKeyStore, CreateApiKeyRequest, SqliteApiKeyStore};
 use beater_bus::InMemoryBus;
 use beater_calibration::SqliteCalibrationStore;
-use beater_core::Money;
+use beater_core::{EnvironmentId, Money, ProjectId, TenantId};
 use beater_datasets::SqliteDatasetStore;
 use beater_experiments::SqliteExperimentStore;
 use beater_gates::SqliteGateStore;
@@ -28,6 +29,7 @@ use beater_ingest::{IngestPolicy, IngestService};
 use beater_judge::{JudgeBrokerService, KeywordJudgeProvider, SqliteJudgeLedger};
 use beater_search::TantivySearchIndex;
 use beater_secrets::{EncryptedSqliteProviderSecretStore, SecretKeyring};
+use beater_security::ApiScope;
 use beater_store_obj::FsArtifactStore;
 use beater_store_sql::SqliteTraceStore;
 use beater_usage::SqliteUsageLedger;
@@ -154,12 +156,23 @@ async fn list_tools(app: &Router) -> Vec<Value> {
 
 /// POST a JSON-RPC body to `/mcp` and return (status, parsed JSON).
 async fn mcp_call(app: &Router, body: Value, auth: Option<&str>) -> (StatusCode, Value) {
+    let headers = auth
+        .map(|token| vec![("authorization", token)])
+        .unwrap_or_default();
+    mcp_call_with_headers(app, body, &headers).await
+}
+
+async fn mcp_call_with_headers(
+    app: &Router,
+    body: Value,
+    headers: &[(&str, &str)],
+) -> (StatusCode, Value) {
     let mut builder = Request::builder()
         .method("POST")
         .uri("/mcp")
         .header("content-type", "application/json");
-    if let Some(token) = auth {
-        builder = builder.header("authorization", token);
+    for (name, value) in headers {
+        builder = builder.header(*name, *value);
     }
     let request = unwrap(builder.body(Body::from(body.to_string())));
     let response = unwrap(app.clone().oneshot(request).await);
@@ -332,6 +345,57 @@ async fn tools_call_matches_direct_http_for_traces_list() {
         result["structuredContent"], http_json,
         "MCP tool result JSON must equal the direct HTTP response JSON"
     );
+}
+
+#[tokio::test]
+async fn tools_call_forwards_strict_auth_scope_headers() {
+    let (state, _tempdir) = build_state();
+    let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
+    let created = unwrap(
+        api_keys
+            .create_key(CreateApiKeyRequest {
+                tenant_id: unwrap(TenantId::new("tenant-1")),
+                project_id: unwrap(ProjectId::new("proj-1")),
+                environment_id: unwrap(EnvironmentId::new("env-1")),
+                scopes: BTreeSet::from([ApiScope::TraceRead]),
+            })
+            .await,
+    );
+    let app = beater_mcp::router(state.require_auth(api_keys));
+    let call = json!({
+        "jsonrpc": "2.0",
+        "id": 8,
+        "method": "tools/call",
+        "params": {
+            "name": "getSpan",
+            "arguments": {
+                "tenant_id": "tenant-1",
+                "trace_id": "missing-trace",
+                "span_id": "missing-span"
+            }
+        }
+    });
+    let authorization = format!("Bearer {}", created.secret);
+
+    let (status, missing_scope) =
+        mcp_call_with_headers(&app, call.clone(), &[("authorization", &authorization)]).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(missing_scope["result"]["isError"], true);
+    assert_eq!(missing_scope["result"]["_meta"]["httpStatus"], 400);
+
+    let (status, authorized) = mcp_call_with_headers(
+        &app,
+        call,
+        &[
+            ("authorization", &authorization),
+            ("x-beater-project-id", "proj-1"),
+            ("x-beater-environment-id", "env-1"),
+        ],
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(authorized["result"]["isError"], true);
+    assert_eq!(authorized["result"]["_meta"]["httpStatus"], 404);
 }
 
 /// A 4xx from the underlying handler surfaces as `isError: true`.
