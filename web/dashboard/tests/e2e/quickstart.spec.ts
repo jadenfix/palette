@@ -19,7 +19,7 @@ test("renders the five-line stock OTLP quickstart trace in a browser", async ({ 
   const traceList = page.getByLabel("Traces");
   await expect(traceList).toContainText("five-line-llm-call");
   await expect(traceList).toContainText("openai/gpt-quickstart");
-  const traceFilter = page.locator('input[name="trace"]');
+  const traceFilter = page.getByRole("textbox", { name: "Trace" });
   await expect(traceFilter).toHaveValue("");
   await expect(traceFilter).toHaveAttribute("placeholder", /latest: /);
   await expect(page).not.toHaveURL(/trace=/);
