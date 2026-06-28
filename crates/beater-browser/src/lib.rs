@@ -14,6 +14,11 @@
 //!   (mirrors `beater-store-conformance`), plus [`MockDriver`] so downstream
 //!   crates can develop without a live browser.
 //!
+//! - [`url_policy::UrlPolicy`] / [`UrlPolicy`], an opt-in SSRF guard that
+//!   blocks private/loopback/link-local/metadata navigation targets before they
+//!   reach a real browser. Default-safe: use `UrlPolicy::block_private()` for
+//!   production and `UrlPolicy::allow_all()` for backwards-compatible tests.
+//!
 //! The crate is deliberately dependency-light (no store/replay/schema deps) so
 //! every backend can build against it in isolation.
 
@@ -22,6 +27,9 @@ use serde_json::Value;
 use std::collections::BTreeSet;
 
 pub mod semconv;
+pub mod url_policy;
+
+pub use url_policy::UrlPolicy;
 
 /// Selector present in the bundled conformance fixture page.
 pub const FIXTURE_KNOWN_SELECTOR: &str = "#beater-known";
@@ -54,6 +62,13 @@ pub enum BrowserError {
     /// The backend (driver process / protocol) failed.
     #[error("browser backend error: {0}")]
     Backend(String),
+    /// The navigation target was blocked by a [`UrlPolicy`] SSRF guard.
+    ///
+    /// The inner string contains the human-readable reason. Callers should
+    /// surface this to the agent / user so they understand why the navigation
+    /// was rejected rather than seeing a silent timeout.
+    #[error("SSRF guard blocked navigation: {0}")]
+    SsrfBlocked(String),
 }
 
 /// Browser engine that executed a step.
@@ -255,21 +270,41 @@ pub trait BrowserDriver: Send + Sync {
 
 /// An in-memory [`BrowserDriver`] for tests and downstream development. It does
 /// not load real pages; selectors it should treat as present are seeded.
+///
+/// ## SSRF policy
+///
+/// By default `MockDriver` uses [`UrlPolicy::allow_all`] so existing test
+/// suites are unaffected. Pass [`UrlPolicy::block_private()`] to
+/// [`MockDriver::with_policy`] to exercise the guard in unit tests without a
+/// real browser:
+///
+/// ```rust,no_run
+/// use beater_browser::{BrowserDriver, BrowserEngine, MockDriver, UrlPolicy};
+/// # async fn example() {
+/// let mut driver = MockDriver::new(BrowserEngine::Chromium)
+///     .with_policy(UrlPolicy::block_private());
+/// let err = driver.goto("http://169.254.169.254").await.unwrap_err();
+/// assert!(err.to_string().contains("SSRF guard"));
+/// # }
+/// ```
 pub struct MockDriver {
     engine: BrowserEngine,
     url: String,
     title: Option<String>,
     selectors: BTreeSet<String>,
+    policy: UrlPolicy,
 }
 
 impl MockDriver {
-    /// An empty mock with no known selectors.
+    /// An empty mock with no known selectors and `UrlPolicy::allow_all()`
+    /// (backwards-compatible default).
     pub fn new(engine: BrowserEngine) -> Self {
         Self {
             engine,
             url: String::new(),
             title: None,
             selectors: BTreeSet::new(),
+            policy: UrlPolicy::allow_all(),
         }
     }
 
@@ -282,7 +317,17 @@ impl MockDriver {
             url: String::new(),
             title: Some("Beater Conformance Fixture".to_string()),
             selectors,
+            policy: UrlPolicy::allow_all(),
         }
+    }
+
+    /// Replace the URL policy on this mock (builder method).
+    ///
+    /// Use `UrlPolicy::block_private()` to write tests that exercise SSRF
+    /// policy enforcement without a real browser.
+    pub fn with_policy(mut self, policy: UrlPolicy) -> Self {
+        self.policy = policy;
+        self
     }
 
     /// Mark `selector` as present in the mocked page.
@@ -310,12 +355,14 @@ impl BrowserDriver for MockDriver {
     }
 
     async fn goto(&mut self, url: &str) -> Result<Observation, BrowserError> {
+        self.policy.enforce(url)?;
         self.url = url.to_string();
         Ok(self.observation())
     }
 
     async fn act(&mut self, action: &BrowserAction) -> Result<StepOutcome, BrowserError> {
         if let BrowserAction::Goto { url } = action {
+            self.policy.enforce(url)?;
             self.url = url.clone();
         }
         let grounding = match action.selector() {
@@ -518,5 +565,110 @@ mod tests {
         let decoded: StepTriple =
             serde_json::from_str(&encoded).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(decoded, triple);
+    }
+
+    // ── MockDriver + UrlPolicy integration ─────────────────────────────────
+
+    /// Confirm that `allow_all` (the backwards-compatible default) does not
+    /// break the existing conformance suite — this test is a regression guard
+    /// for the policy wiring added in `goto`.
+    #[tokio::test]
+    async fn mock_driver_allow_all_passes_conformance() {
+        // MockDriver::with_conformance_fixture uses allow_all by default.
+        let mut driver = MockDriver::with_conformance_fixture();
+        assert_browser_driver_conformance(&mut driver, "https://fixture.local/page").await;
+    }
+
+    /// A `MockDriver` armed with `block_private` must reject a goto to the
+    /// AWS/GCP IMDS endpoint — the canonical SSRF target.
+    #[tokio::test]
+    async fn mock_driver_block_private_rejects_metadata_endpoint() {
+        let mut driver =
+            MockDriver::new(BrowserEngine::Chromium).with_policy(UrlPolicy::block_private());
+        let Err(err) = driver
+            .goto("http://169.254.169.254/latest/meta-data/iam/security-credentials/")
+            .await
+        else {
+            panic!("expected SsrfBlocked for metadata endpoint");
+        };
+        assert!(
+            matches!(err, BrowserError::SsrfBlocked(_)),
+            "expected SsrfBlocked, got: {err:?}"
+        );
+        assert!(
+            err.to_string().contains("SSRF guard"),
+            "error text should mention SSRF guard: {err}"
+        );
+    }
+
+    /// A `MockDriver` armed with `block_private` must reject navigations to
+    /// localhost/loopback addresses commonly used for internal service probing.
+    #[tokio::test]
+    async fn mock_driver_block_private_rejects_loopback() {
+        let mut driver =
+            MockDriver::new(BrowserEngine::Chromium).with_policy(UrlPolicy::block_private());
+
+        for url in &[
+            "http://127.0.0.1",
+            "http://localhost",
+            "http://[::1]",
+            "http://10.0.0.1",
+            "http://192.168.1.1",
+        ] {
+            let Err(err) = driver.goto(url).await else {
+                panic!("expected SsrfBlocked for {url:?}");
+            };
+            assert!(
+                matches!(err, BrowserError::SsrfBlocked(_)),
+                "expected SsrfBlocked for {url:?}, got: {err:?}"
+            );
+        }
+    }
+
+    /// A `MockDriver` armed with `block_private` must reject `file://` URLs —
+    /// a common path to local file read via browser automation.
+    #[tokio::test]
+    async fn mock_driver_block_private_rejects_file_scheme() {
+        let mut driver =
+            MockDriver::new(BrowserEngine::Chromium).with_policy(UrlPolicy::block_private());
+        let Err(err) = driver.goto("file:///etc/passwd").await else {
+            panic!("expected SsrfBlocked for file scheme");
+        };
+        assert!(
+            matches!(err, BrowserError::SsrfBlocked(_)),
+            "expected SsrfBlocked, got: {err:?}"
+        );
+    }
+
+    /// A `MockDriver` armed with `block_private` must allow navigation to
+    /// publicly-routable HTTPS URLs — the normal operating case.
+    #[tokio::test]
+    async fn mock_driver_block_private_allows_public_https() {
+        let mut driver = MockDriver::with_conformance_fixture()
+            .with_policy(UrlPolicy::block_private());
+        // Should succeed (no error) and return the mocked observation.
+        let obs = driver
+            .goto("https://example.com/page")
+            .await
+            .unwrap_or_else(|err| panic!("unexpected block: {err}"));
+        assert_eq!(obs.url, "https://example.com/page");
+    }
+
+    /// A `BrowserAction::Goto` dispatched through `act()` must also enforce
+    /// the policy — the guard must not be bypassable via the action surface.
+    #[tokio::test]
+    async fn mock_driver_block_private_enforced_via_act() {
+        let mut driver =
+            MockDriver::new(BrowserEngine::Chromium).with_policy(UrlPolicy::block_private());
+        let action = BrowserAction::Goto {
+            url: "http://169.254.169.254".to_string(),
+        };
+        let Err(err) = driver.act(&action).await else {
+            panic!("expected SsrfBlocked via act()");
+        };
+        assert!(
+            matches!(err, BrowserError::SsrfBlocked(_)),
+            "expected SsrfBlocked via act(), got: {err:?}"
+        );
     }
 }
