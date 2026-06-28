@@ -37,6 +37,23 @@ when the environment is configured.
 
 ## Drop-in provider wrappers
 
+Auto-instrument installed provider clients:
+
+```python
+import beater
+
+beater.init()
+beater.instrument(providers=["openai", "anthropic"])
+
+from openai import OpenAI
+
+client = OpenAI()
+# every client.chat.completions.create(...) is now an llm.call span
+# with model + token counts
+```
+
+Or wrap one client explicitly:
+
 ```python
 from openai import OpenAI
 client = beater.wrap_openai(OpenAI())
