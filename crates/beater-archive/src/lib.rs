@@ -582,16 +582,19 @@ fn opt_strings(values: impl IntoIterator<Item = Option<String>>) -> ArrayRef {
 }
 
 fn safe_segment(value: &str) -> String {
-    value
-        .chars()
-        .map(|character| {
-            if character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.') {
-                character
-            } else {
-                '_'
-            }
-        })
-        .collect()
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+
+    let mut encoded = String::with_capacity(value.len());
+    for &byte in value.as_bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_') {
+            encoded.push(byte as char);
+        } else {
+            encoded.push('%');
+            encoded.push(HEX[(byte >> 4) as usize] as char);
+            encoded.push(HEX[(byte & 0x0f) as usize] as char);
+        }
+    }
+    encoded
 }
 
 fn project_dir_has_parquet(path: &Path) -> anyhow::Result<bool> {
@@ -758,6 +761,61 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
 
         assert!(rows.is_empty());
+    }
+
+    #[tokio::test]
+    async fn archive_path_segments_escape_dot_dot_under_archive_root() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let archive =
+            ParquetTraceArchive::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("..").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("..").unwrap_or_else(|err| panic!("{err}"));
+        let span = fixture_span(
+            &tenant,
+            &project,
+            "prod",
+            "trace",
+            "span",
+            1,
+            SpanStatus::Ok,
+        );
+
+        let manifest = archive
+            .archive_spans(&tenant, &project, &[span])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let root = archive
+            .root()
+            .canonicalize()
+            .unwrap_or_else(|err| panic!("{err}"));
+        let archive_dir = manifest
+            .path
+            .parent()
+            .unwrap_or_else(|| panic!("archive path must have a parent"))
+            .canonicalize()
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert!(
+            archive_dir.starts_with(&root),
+            "archive dir {} must stay under root {}",
+            archive_dir.display(),
+            root.display()
+        );
+        assert!(manifest
+            .path
+            .components()
+            .any(|component| { component.as_os_str() == std::ffi::OsStr::new("%2E%2E") }));
+    }
+
+    #[test]
+    fn archive_path_segments_do_not_collapse_distinct_ids() {
+        assert_eq!(safe_segment("tenant"), "tenant");
+        assert_eq!(safe_segment("tenant-1_A"), "tenant-1_A");
+        assert_eq!(safe_segment(".."), "%2E%2E");
+        assert_eq!(safe_segment("a/b"), "a%2Fb");
+        assert_ne!(safe_segment("a/b"), safe_segment("a_b"));
+        assert_ne!(safe_segment("a.b"), safe_segment("a_b"));
+        assert_ne!(safe_segment("a%b"), safe_segment("a_b"));
     }
 
     // ── SQL-injection regression tests ────────────────────────────────────────
