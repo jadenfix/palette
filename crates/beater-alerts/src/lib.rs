@@ -92,6 +92,32 @@ pub fn decide_trace_sampling(trace: &TraceView, policy: &OnlineSamplingPolicy) -
     }
 }
 
+/// Inverse-probability sampling weight for a kept trace.
+///
+/// Architecture §9 requires kept routine traffic to carry
+/// `sampling_weight = 1 / keep_probability` so downstream aggregates can stay
+/// unbiased under tail sampling. Certainty keeps (error, slow, high-cost) have a
+/// keep probability of `1.0`; routine keeps use the configured per-mille sample
+/// rate. Dropped traces have no weight because they are not written.
+pub fn sampling_weight_for_decision(
+    policy: &OnlineSamplingPolicy,
+    decision: &SamplingDecision,
+) -> Option<f64> {
+    if !decision.selected {
+        return None;
+    }
+    match decision.reason {
+        SamplingReason::ErrorTrace | SamplingReason::SlowTrace | SamplingReason::HighCostTrace => {
+            Some(1.0)
+        }
+        SamplingReason::RoutineSampled => {
+            let sample_rate = policy.sample_rate_per_mille.min(1000);
+            (sample_rate > 0).then(|| 1000.0 / f64::from(sample_rate))
+        }
+        SamplingReason::RoutineDropped => None,
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AlertSeverity {
@@ -873,6 +899,89 @@ mod tests {
             decide_trace_sampling(&costly_trace, &policy).reason,
             SamplingReason::HighCostTrace
         );
+    }
+
+    #[test]
+    fn sampling_weight_is_inverse_probability_for_kept_routine_traces() {
+        let policy = OnlineSamplingPolicy {
+            sample_rate_per_mille: 250,
+            keep_errors: true,
+            slow_ms_threshold: None,
+            high_cost_micros_threshold: None,
+        };
+        let decision = SamplingDecision {
+            selected: true,
+            reason: SamplingReason::RoutineSampled,
+            stable_score_per_mille: 12,
+        };
+
+        assert_eq!(sampling_weight_for_decision(&policy, &decision), Some(4.0));
+    }
+
+    #[test]
+    fn sampling_weight_is_one_for_certainty_keeps() {
+        let policy = OnlineSamplingPolicy {
+            sample_rate_per_mille: 1,
+            keep_errors: true,
+            slow_ms_threshold: Some(5_000),
+            high_cost_micros_threshold: Some(10_000),
+        };
+
+        for reason in [
+            SamplingReason::ErrorTrace,
+            SamplingReason::SlowTrace,
+            SamplingReason::HighCostTrace,
+        ] {
+            let decision = SamplingDecision {
+                selected: true,
+                reason,
+                stable_score_per_mille: 999,
+            };
+            assert_eq!(sampling_weight_for_decision(&policy, &decision), Some(1.0));
+        }
+    }
+
+    #[test]
+    fn sampling_weight_is_absent_for_dropped_or_impossible_zero_rate_keeps() {
+        let zero_rate = OnlineSamplingPolicy {
+            sample_rate_per_mille: 0,
+            keep_errors: true,
+            slow_ms_threshold: None,
+            high_cost_micros_threshold: None,
+        };
+        let dropped = SamplingDecision {
+            selected: false,
+            reason: SamplingReason::RoutineDropped,
+            stable_score_per_mille: 500,
+        };
+        assert_eq!(sampling_weight_for_decision(&zero_rate, &dropped), None);
+
+        let impossible_keep = SamplingDecision {
+            selected: true,
+            reason: SamplingReason::RoutineSampled,
+            stable_score_per_mille: 0,
+        };
+        assert_eq!(
+            sampling_weight_for_decision(&zero_rate, &impossible_keep),
+            None
+        );
+    }
+
+    #[test]
+    fn sampling_weight_saturates_sample_rates_above_one_thousand_per_mille() {
+        let policy = OnlineSamplingPolicy {
+            sample_rate_per_mille: 2_000,
+            keep_errors: true,
+            slow_ms_threshold: None,
+            high_cost_micros_threshold: None,
+        };
+        let decision = SamplingDecision {
+            selected: true,
+            reason: SamplingReason::RoutineSampled,
+            stable_score_per_mille: 999,
+        };
+
+        assert_eq!(sampling_weight_for_decision(&policy, &decision), Some(1.0));
     }
 
     #[test]
