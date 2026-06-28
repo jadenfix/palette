@@ -208,7 +208,7 @@ test("keeps an explicitly opened trace coherent when secondary filters exclude i
   );
 
   await expect(page.getByRole("heading", { name: "Agent Trace Debugger" })).toBeVisible();
-  await expect(page.locator('input[name="trace"]')).toHaveValue(traceId);
+  await expect(page.getByRole("textbox", { name: "Trace" })).toHaveValue(traceId);
   await expect(page.locator('select[name="status"]')).toHaveValue("error");
 
   const traceList = page.getByLabel("Traces");
