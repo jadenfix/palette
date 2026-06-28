@@ -594,6 +594,8 @@ mod tests {
                 decision: decision.clone(),
                 test: StatisticalTest::PairedT,
                 adjusted_alpha: 0.05,
+                mde: None,
+                required_n: None,
             },
             decision,
             gate_policy: GatePolicy {

@@ -27,6 +27,13 @@ pub enum EvalError {
         evaluator_id: String,
         reason: String,
     },
+    #[error("evaluator {evaluator_id} requires a reference value")]
+    MissingReference { evaluator_id: String },
+    #[error("evaluator {evaluator_id} requires trace metric {metric}")]
+    MissingTraceMetric {
+        evaluator_id: String,
+        metric: &'static str,
+    },
     #[error(
         "underpowered comparison: sample_size={sample_size}, min_sample_size={min_sample_size}"
     )]
@@ -221,6 +228,83 @@ pub const EVALUATOR_CATALOG: &[EvaluatorCatalogEntry] = &[
         consumes_trace: true,
         wasm_safe: true,
     },
+    // Conversation-level scorers (§20.10 #7.8 / R18.8). These judge a whole
+    // session/thread group rather than a single turn; they route through the
+    // judge broker (§10.1 judge lane) like the rubric LLM judge. §10.4
+    // assumption: the §10.1.1 debiasing protocol (calibration, position-swap,
+    // small panel) holds. Conversations are the cluster unit, so scores
+    // aggregate with trajectory/conversation-clustered SE (§10.3 #1), never as
+    // a mean of independent per-turn scores.
+    EvaluatorCatalogEntry {
+        id: "conversation_coherence",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Conversation coherence",
+        description: "Judges whether turns across a session/thread stay mutually consistent and on-topic. §10.4 assumption: judge debiasing (§10.1.1) holds; aggregates with conversation-clustered SE, not per-turn means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "session_completeness",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Session completeness",
+        description: "Judges whether a session/thread resolved the user's overall goal. §10.4 assumption: judge debiasing (§10.1.1) holds; aggregates with conversation-clustered SE, not per-turn means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "user_frustration",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "User frustration",
+        description: "Judges signs of user frustration (repetition, escalation, abandonment) across a session/thread. §10.4 assumption: judge debiasing (§10.1.1) holds; aggregates with conversation-clustered SE, not per-turn means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    // Agent-trajectory scorers (§20.10 #7.8 / R18.8). These judge an ordered
+    // span sequence (plan→step→tool→…) and route through the judge broker for
+    // quality scoring (§10.4 trajectory / process-reward row, judge lane).
+    // §10.4 assumption: trajectory quality is jointly modeled (AgentPRM-style
+    // promise+progress), NOT a mean of independent per-step scores; per-step
+    // scores aggregate with trajectory-clustered SE (§10.3 #1, cluster =
+    // trajectory) [arXiv:2511.08325; arXiv:2507.21504].
+    EvaluatorCatalogEntry {
+        id: "tool_selection_quality",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Tool selection quality",
+        description: "Judges whether the agent chose appropriate tools for each step of the trajectory. §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "tool_error_rate",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Tool error rate",
+        description: "Judges the rate and severity of tool-call failures across the trajectory. §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "action_completion",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Action completion",
+        description: "Judges whether the agent completed the actions its trajectory set out to perform. §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
+    EvaluatorCatalogEntry {
+        id: "agent_flow",
+        lane: EvaluatorLane::JudgeBroker,
+        display_name: "Agent flow",
+        description: "Judges the overall coherence and progress of the agent's step sequence (promise+progress). §10.4 assumption: trajectory quality is jointly modeled; aggregates with trajectory-clustered SE, not per-step means.",
+        requires_reference: false,
+        consumes_trace: true,
+        wasm_safe: false,
+    },
 ];
 
 pub fn evaluator_catalog() -> &'static [EvaluatorCatalogEntry] {
@@ -285,7 +369,8 @@ pub fn evaluate_deterministic(
 
     match &spec.kind {
         EvaluatorKind::ExactMatch => {
-            let pass = case.reference.as_ref() == Some(&case.output);
+            let reference = required_reference(spec, case)?;
+            let pass = reference == &case.output;
             Ok(binary_score(pass, "exact_match"))
         }
         EvaluatorKind::RegexMatch { pattern } => {
@@ -299,21 +384,11 @@ pub fn evaluate_deterministic(
         }
         EvaluatorKind::JsonObject => Ok(binary_score(case.output.is_object(), "json_object")),
         EvaluatorKind::CostBudget { max_micros } => {
-            let cost = case
-                .trace
-                .as_ref()
-                .and_then(|trace| trace.get("cost_micros"))
-                .and_then(Value::as_i64)
-                .unwrap_or(0);
+            let cost = required_trace_i64(spec, case, "cost_micros")?;
             Ok(binary_score(cost <= *max_micros, "cost_budget"))
         }
         EvaluatorKind::LatencyBudgetMs { max_ms } => {
-            let latency = case
-                .trace
-                .as_ref()
-                .and_then(|trace| trace.get("latency_ms"))
-                .and_then(Value::as_u64)
-                .unwrap_or(0);
+            let latency = required_trace_u64(spec, case, "latency_ms")?;
             Ok(binary_score(latency <= *max_ms, "latency_budget"))
         }
         EvaluatorKind::LlmJudge { .. } => Err(EvalError::RequiresJudgeBroker(spec.id.clone())),
@@ -427,6 +502,47 @@ pub fn evaluate_deterministic(
     }
 }
 
+fn required_reference<'a>(
+    spec: &EvaluatorSpec,
+    case: &'a EvaluationCase,
+) -> Result<&'a Value, EvalError> {
+    case.reference
+        .as_ref()
+        .ok_or_else(|| EvalError::MissingReference {
+            evaluator_id: spec.id.clone(),
+        })
+}
+
+fn required_trace_i64(
+    spec: &EvaluatorSpec,
+    case: &EvaluationCase,
+    metric: &'static str,
+) -> Result<i64, EvalError> {
+    case.trace
+        .as_ref()
+        .and_then(|trace| trace.get(metric))
+        .and_then(Value::as_i64)
+        .ok_or_else(|| EvalError::MissingTraceMetric {
+            evaluator_id: spec.id.clone(),
+            metric,
+        })
+}
+
+fn required_trace_u64(
+    spec: &EvaluatorSpec,
+    case: &EvaluationCase,
+    metric: &'static str,
+) -> Result<u64, EvalError> {
+    case.trace
+        .as_ref()
+        .and_then(|trace| trace.get(metric))
+        .and_then(Value::as_u64)
+        .ok_or_else(|| EvalError::MissingTraceMetric {
+            evaluator_id: spec.id.clone(),
+            metric,
+        })
+}
+
 fn numeric_tolerance_score(
     spec: &EvaluatorSpec,
     case: &EvaluationCase,
@@ -441,7 +557,7 @@ fn numeric_tolerance_score(
     }
 
     let output = case.output.as_f64();
-    let reference = case.reference.as_ref().and_then(Value::as_f64);
+    let reference = required_reference(spec, case)?.as_f64();
     let (difference, allowed, pass) = match (output, reference) {
         (Some(output), Some(reference)) => {
             let difference = (output - reference).abs();
@@ -899,7 +1015,7 @@ mod tests {
     #[test]
     fn evaluator_catalog_classifies_execution_lanes() {
         let catalog = evaluator_catalog();
-        assert_eq!(catalog.len(), 11);
+        assert_eq!(catalog.len(), 18);
 
         let exact = evaluator_catalog_entry("exact_match")
             .unwrap_or_else(|| panic!("exact_match catalog entry should exist"));
@@ -1000,6 +1116,84 @@ mod tests {
             evaluate_deterministic(&spec, &case),
             Err(EvalError::InvalidNumericTolerance { .. })
         ));
+    }
+
+    #[test]
+    fn reference_scorers_reject_missing_reference() {
+        let case = EvaluationCase {
+            input: serde_json::json!("question"),
+            output: serde_json::json!("answer"),
+            reference: None,
+            trace: None,
+        };
+
+        assert!(matches!(
+            evaluate_deterministic(&deterministic_spec(EvaluatorKind::ExactMatch), &case),
+            Err(EvalError::MissingReference { evaluator_id }) if evaluator_id == "exact_match"
+        ));
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::NumericTolerance { abs: 0.0, rel: 0.0 }),
+                &case,
+            ),
+            Err(EvalError::MissingReference { evaluator_id }) if evaluator_id == "numeric_tolerance"
+        ));
+    }
+
+    #[test]
+    fn budget_scorers_reject_missing_trace_metrics() {
+        let case = EvaluationCase {
+            input: serde_json::json!(null),
+            output: serde_json::json!(null),
+            reference: None,
+            trace: Some(serde_json::json!({})),
+        };
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::CostBudget { max_micros: 100 }),
+                &case,
+            ),
+            Err(EvalError::MissingTraceMetric { evaluator_id, metric })
+                if evaluator_id == "cost_budget" && metric == "cost_micros"
+        ));
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::LatencyBudgetMs { max_ms: 100 }),
+                &case,
+            ),
+            Err(EvalError::MissingTraceMetric { evaluator_id, metric })
+                if evaluator_id == "latency_budget_ms" && metric == "latency_ms"
+        ));
+    }
+
+    #[test]
+    fn budget_scorers_score_present_trace_metrics() {
+        let case = EvaluationCase {
+            input: serde_json::json!(null),
+            output: serde_json::json!(null),
+            reference: None,
+            trace: Some(serde_json::json!({
+                "cost_micros": 42,
+                "latency_ms": 99,
+            })),
+        };
+
+        let cost = evaluate_deterministic(
+            &deterministic_spec(EvaluatorKind::CostBudget { max_micros: 100 }),
+            &case,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(cost.score, 1.0);
+
+        let latency = evaluate_deterministic(
+            &deterministic_spec(EvaluatorKind::LatencyBudgetMs { max_ms: 50 }),
+            &case,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(latency.score, 0.0);
     }
 
     #[test]
@@ -1235,6 +1429,37 @@ mod tests {
             assert_eq!(kind.catalog_entry().id, kind.catalog_id());
             assert_eq!(kind.expected_lane(), EvaluatorLane::DeterministicWasi);
             assert!(kind.catalog_entry().consumes_trace);
+        }
+    }
+
+    #[test]
+    fn conversation_and_trajectory_scorers_are_judge_lane_and_resolvable() {
+        // §20.10 #7.8 / R18.8: conversation-level and agent-trajectory named
+        // scorers are catalogued as judge-lane metadata entries (reusing the
+        // judge-broker mechanism), each resolvable by id via the lookup helper.
+        let conversation_scorers = [
+            "conversation_coherence",
+            "session_completeness",
+            "user_frustration",
+        ];
+        let trajectory_scorers = [
+            "tool_selection_quality",
+            "tool_error_rate",
+            "action_completion",
+            "agent_flow",
+        ];
+        for id in conversation_scorers.iter().chain(trajectory_scorers.iter()) {
+            let entry = evaluator_catalog_entry(id)
+                .unwrap_or_else(|| panic!("catalog entry {id} should exist"));
+            assert_eq!(entry.id, *id);
+            assert_eq!(
+                entry.lane,
+                EvaluatorLane::JudgeBroker,
+                "{id} must be judge-lane"
+            );
+            assert!(!entry.wasm_safe, "{id} is a judge scorer, not wasm-safe");
+            assert!(!entry.requires_reference, "{id} scores groups, not refs");
+            assert!(entry.consumes_trace, "{id} reads the session/trajectory");
         }
     }
 

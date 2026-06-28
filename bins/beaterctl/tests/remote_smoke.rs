@@ -119,6 +119,11 @@ impl BeaterdChild {
             .arg(grpc_addr.to_string())
             .arg("--data-dir")
             .arg(data_dir)
+            // beaterd defaults to --auth-mode required (b728b9e / #127); this smoke
+            // harness ingests anonymously, so opt into insecure local explicitly —
+            // the same opt-in that commit added to the other test harnesses.
+            .arg("--auth-mode")
+            .arg("local")
             .arg("--trace-write-drain-interval-ms")
             .arg("25")
             .arg("--trace-ingested-drain-interval-ms")

@@ -1013,7 +1013,10 @@ normalizers remain the fast path; the mapping importer is the escape hatch that
 makes "bring your weird exporter" a config task, not a PR. It rides the
 single-source contract (the `/v1` import endpoint is **[contract]**, §20.4) and,
 like every other importer, preserves the immutable raw envelope (§1 #3) so a
-mis-configured mapping is always re-projectable.
+mis-configured mapping is always re-projectable. **Status:** a first `source:
+mapping` importer is [built] for dot-path JSON span arrays, span-kind maps,
+attribute renames, RFC3339/epoch timestamp coercion, and raw-envelope
+preservation; richer dialect helpers remain incremental.
 
 Output dialects:
 
@@ -2362,7 +2365,7 @@ Goal: close the table-stakes agent concepts the data model lacks.
 | 1.5 | OTLP/JSON + canonical `/v1/traces` alias | OTLP HTTP is protobuf-only on a tenant-scoped path | Content-type negotiation in `ingest_otlp_http` (deserialize `ExportTraceServiceRequest` from JSON); gRPC `partial_success` population; optionally `/v1/logs` for events **[contract]** | M | contract |
 | 1.6 | Sampling weights + weighted aggregates (**honesty fix**, §9, §1 #9) | tail-sampling keeps/drops but records no weight; roll-ups average kept spans (biased) | Add `sampling_weight: f64` to `CanonicalSpan` (`beater-schema`); stamp `1/keep_probability` on the keep path in `beater-ingest`; make `beater-store` roll-up/aggregate queries weighted (Horvitz-Thompson); label any unweighted view biased **[contract]** | M | contract |
 | 1.7 | DatasetCase Train/Dev/Test split + contamination guard (§5.4, §6.4) | `DatasetCase` has no split; no held-out discipline | Add `split: DatasetSplit` (seeded hash off `dataset_version_seed ++ case_id`) to `DatasetCase` (`beater-datasets`/`beater-schema`); min-sample gate; near-dup contamination detection train↔test; gates/RSI read Test-only **[contract]** | M | contract |
-| 1.8 | Config-driven MAPPING importer (§7) | hand-written normalizers only; custom/older dialects need a PR | `SourceImporter` config dialect (field-path/span-kind/attr/units mapping) projecting a foreign shape to canonical with no code; `/v1/import` mapping endpoint; raw envelope preserved for re-projection **[contract]** | L | contract |
+| 1.8 | Config-driven MAPPING importer (§7) | first `source: mapping` dot-path JSON importer is built; richer helpers still needed for broad custom dialect ergonomics | `SourceImporter` config dialect (field-path/span-kind/attr/units mapping) projecting a foreign shape to canonical with no code; `/v1/import` mapping endpoint; raw envelope preserved for re-projection **[contract]** | L | contract |
 
 Acceptance: a multi-turn agent trace groups by session in the API; a vision LLM
 call renders its image; full-text search hits prompt/output bodies stored as
@@ -3485,7 +3488,7 @@ The CI gate is the workflow that blocks merge if the item regresses.
 | §20.3 #1.3 multimodal **[contract]** | a vision LLM call renders its image | media-artifact parse + render test `[planned]` | `sdk-contract` / `frontend` |
 | §20.3 #1.6 sampling weights **[contract]** | weighted aggregate matches population rate (A19) | unit: weighted vs unweighted diverge on tail-sampled fixture `[planned]` | `sdk-contract` / `backend` |
 | §20.3 #1.7 Train/Dev/Test split **[contract]** | seeded split + contamination guard rejects a near-dup in Test (A13) | dataset split + contamination unit test `[planned]` | `sdk-contract` |
-| §20.3 #1.8 mapping importer **[contract]** | a foreign dialect projects to canonical with no code | `/v1/import` mapping fixture `[planned]` | `sdk-contract` |
+| §20.3 #1.8 mapping importer **[contract]** | a foreign dialect projects to canonical with no code | `/v1/import` mapping fixture `[built]` for the first dot-path JSON importer | `sdk-contract` |
 | §20.4 #2.x read APIs + UI | browse datasets, open an experiment with per-case CIs + gate badge, annotate, diff, analytics | Playwright e2e over the dashboard `[planned]` | `frontend` |
 | §20.4 #2.1b bulk promote **[contract]** | `promote-from-query` materializes failures as cases with seeded split | `curl /v1/datasets/:id/promote-from-query` `[planned]` | `sdk-contract` |
 | §20.5 #3.1 scorer breadth **[contract]** | new scorers pass on valid + invalid-when fixtures (§10.4) | per-scorer unit tests `[planned]` | `sdk-contract` / `backend` |

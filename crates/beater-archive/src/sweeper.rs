@@ -48,8 +48,9 @@ impl OrphanedArtifactSweeper {
     /// candidate whose URI is not referenced.
     ///
     /// `candidates` is the set of artifacts known to exist in the object store
-    /// (e.g. an object-store listing). Anything in `candidates` not referenced by
-    /// a live span is treated as orphaned and deleted.
+    /// (e.g. an object-store listing). Candidates outside the requested
+    /// tenant/project scope are ignored; in-scope candidates not referenced by a
+    /// live span are treated as orphaned and deleted.
     pub async fn sweep(
         &self,
         trace_store: &dyn TraceStore,

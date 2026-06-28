@@ -622,6 +622,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "tempfile",
+ "thiserror 1.0.69",
  "utoipa",
 ]
 
@@ -734,7 +735,11 @@ dependencies = [
 name = "beater-bench"
 version = "0.1.0"
 dependencies = [
+ "beater-core",
+ "beater-schema",
+ "chrono",
  "criterion",
+ "serde_json",
 ]
 
 [[package]]
