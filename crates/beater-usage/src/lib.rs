@@ -701,8 +701,6 @@ mod tests {
                 ci_low: 1.0,
                 ci_high: 1.0,
                 p_value: 1.0,
-                mde: None,
-                required_n: None,
                 decision: beater_eval::GateDecision::Pass,
                 test: beater_eval::StatisticalTest::PairedT,
                 adjusted_alpha: 0.05,

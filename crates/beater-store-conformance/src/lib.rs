@@ -1,10 +1,11 @@
 use beater_core::{
-    ArtifactId, EnvironmentId, IdempotencyKey, OrganizationId, PageRequest, ProjectId, Sha256Hash,
-    SpanId, TenantId, TraceId,
+    ArtifactId, EnvironmentId, IdempotencyKey, Money, OrganizationId, PageRequest, ProjectId,
+    Sha256Hash, SpanId, TenantId, TraceId,
 };
 use beater_schema::{
-    AgentSpanKind, ArtifactRef, AuthContext, CanonicalSpan, CanonicalTraceBatch, RawEnvelope,
-    RedactionClass, RunFilter, SourceDialect, SpanFilter, SpanStatus, RAW_SCHEMA_VERSION,
+    AgentSpanKind, ArtifactRef, AuthContext, CanonicalSpan, CanonicalTraceBatch, ModelRef,
+    RawEnvelope, RedactionClass, RunFilter, SourceDialect, SpanFilter, SpanStatus,
+    RAW_SCHEMA_VERSION,
 };
 use beater_store::{
     MetadataStore, OrganizationMetadata, ProjectMetadata, QuotaLimiter, QuotaReservationRequest,
@@ -445,6 +446,114 @@ where
         .items
         .iter()
         .all(|run| run.tenant_id == pagination_tenant && run.project_id == pagination_project));
+
+    // Run roll-up over a multi-span trace carrying cost, model, release, status,
+    // and end-time variety. This exercises the full `RunSummary` aggregate — the
+    // path columnar backends must compute with a backend GROUP BY rather than by
+    // materializing every span (ARCHITECTURE.md §8.1) — and pins the exact
+    // aggregates the in-memory rollup produces.
+    let rollup_tenant = TenantId::new("rollup-tenant").unwrap_or_else(|err| panic!("{err}"));
+    let rollup_project = ProjectId::new("rollup-project").unwrap_or_else(|err| panic!("{err}"));
+    let rollup_trace = TraceId::new("rollup-trace").unwrap_or_else(|err| panic!("{err}"));
+    let write_rollup = store
+        .write_batch(fixture_rollup_batch(
+            &rollup_tenant,
+            &rollup_project,
+            &rollup_trace,
+        ))
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(write_rollup.accepted_spans, 3);
+
+    let rollup_runs = store
+        .query_runs(
+            rollup_tenant.clone(),
+            RunFilter {
+                project_id: Some(rollup_project.clone()),
+                ..RunFilter::default()
+            },
+            PageRequest {
+                limit: 10,
+                cursor: None,
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(rollup_runs.items.len(), 1);
+    let rollup_run = &rollup_runs.items[0];
+    assert_eq!(rollup_run.tenant_id, rollup_tenant);
+    assert_eq!(rollup_run.project_id, rollup_project);
+    assert_eq!(rollup_run.trace_id, rollup_trace);
+    assert_eq!(rollup_run.span_count, 3);
+    // `early` is the earliest span and names the run.
+    assert_eq!(rollup_run.first_span_name, "early");
+    // Any error span makes the run status Error.
+    assert_eq!(rollup_run.status, SpanStatus::Error);
+    assert_eq!(rollup_run.started_at, fixture_base_time());
+    assert_eq!(
+        rollup_run.ended_at,
+        Some(fixture_base_time() + Duration::seconds(8))
+    );
+    assert_eq!(rollup_run.duration_ms, Some(8_000));
+    // Summed across all three spans (100 + 200 + 50).
+    assert_eq!(rollup_run.total_cost, Some(Money::usd_micros(350)));
+    // Distinct models in `start_time DESC, seq ASC` first-occurrence order.
+    assert_eq!(
+        rollup_run.models,
+        vec![
+            ModelRef {
+                provider: "openai".to_string(),
+                name: "gpt-4".to_string(),
+            },
+            ModelRef {
+                provider: "anthropic".to_string(),
+                name: "claude".to_string(),
+            },
+        ]
+    );
+    // Distinct release ids in the same order.
+    assert_eq!(
+        rollup_run.release_ids,
+        vec!["rel-2".to_string(), "rel-1".to_string()]
+    );
+
+    // Run-level filters resolve against the backend-computed rollup.
+    let error_runs = store
+        .query_runs(
+            rollup_tenant.clone(),
+            RunFilter {
+                project_id: Some(rollup_project.clone()),
+                status: Some(SpanStatus::Error),
+                min_cost_micros: Some(300),
+                model: Some("anthropic".to_string()),
+                release: Some("rel-1".to_string()),
+                kind: Some(AgentSpanKind::ToolCall),
+                ..RunFilter::default()
+            },
+            PageRequest {
+                limit: 10,
+                cursor: None,
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(error_runs.items.len(), 1);
+    let no_runs = store
+        .query_runs(
+            rollup_tenant,
+            RunFilter {
+                project_id: Some(rollup_project),
+                status: Some(SpanStatus::Ok),
+                ..RunFilter::default()
+            },
+            PageRequest {
+                limit: 10,
+                cursor: None,
+            },
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert!(no_runs.items.is_empty());
 }
 
 /// Conformance for **keyset (seek) span pagination** (ARCHITECTURE.md §20.2
@@ -1117,6 +1226,127 @@ fn fixture_project_batch(
     CanonicalTraceBatch {
         raw_envelopes: vec![raw],
         spans: vec![span],
+    }
+}
+
+/// Builds a single-trace batch whose spans carry cost, model, release, status,
+/// and end-time variety, so the resulting run rolls up every `RunSummary` field
+/// (summed cost, distinct ordered models/releases, status precedence, duration).
+fn fixture_rollup_batch(
+    tenant: &TenantId,
+    project: &ProjectId,
+    trace: &TraceId,
+) -> CanonicalTraceBatch {
+    let environment = EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}"));
+    let idempotency_key = IdempotencyKey::new(format!(
+        "{}:{}:{}:rollup",
+        tenant.as_str(),
+        project.as_str(),
+        trace.as_str()
+    ))
+    .unwrap_or_else(|err| panic!("{err}"));
+    let body_ref = artifact_ref("rollup-raw");
+    let raw = RawEnvelope {
+        schema_version: RAW_SCHEMA_VERSION,
+        tenant_id: tenant.clone(),
+        project_id: project.clone(),
+        environment_id: environment.clone(),
+        source: SourceDialect::Native,
+        source_schema_url: Some("beater://native/v1".to_string()),
+        source_schema_version: Some("1".to_string()),
+        received_at: fixture_base_time(),
+        idempotency_key,
+        payload_hash: body_ref.sha256.clone(),
+        body_ref: body_ref.clone(),
+        auth_context: AuthContext {
+            api_key_id: None,
+            scopes: BTreeSet::new(),
+        },
+    };
+
+    let span = |span_id: &str,
+                seq: u64,
+                kind: AgentSpanKind,
+                name: &str,
+                status: SpanStatus,
+                start_offset: i64,
+                end_offset: i64,
+                model: (&str, &str),
+                cost_micros: i64,
+                release: &str| {
+        let mut attributes = BTreeMap::new();
+        attributes.insert("beater.release_id".to_string(), json!(release));
+        CanonicalSpan {
+            schema_version: beater_schema::CANONICAL_SCHEMA_VERSION,
+            normalizer_version: "beater-native-v1".to_string(),
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            environment_id: environment.clone(),
+            trace_id: trace.clone(),
+            span_id: SpanId::new(span_id).unwrap_or_else(|err| panic!("{err}")),
+            parent_span_id: None,
+            seq,
+            kind,
+            name: name.to_string(),
+            status,
+            start_time: fixture_base_time() + Duration::seconds(start_offset),
+            end_time: Some(fixture_base_time() + Duration::seconds(end_offset)),
+            model: Some(ModelRef {
+                provider: model.0.to_string(),
+                name: model.1.to_string(),
+            }),
+            cost: Some(Money::usd_micros(cost_micros)),
+            tokens: None,
+            input_ref: None,
+            output_ref: None,
+            attributes,
+            unmapped_attrs: json!({}),
+            raw_ref: body_ref.clone(),
+        }
+    };
+
+    let spans = vec![
+        span(
+            "early",
+            1,
+            AgentSpanKind::AgentRun,
+            "early",
+            SpanStatus::Ok,
+            0,
+            5,
+            ("openai", "gpt-4"),
+            100,
+            "rel-1",
+        ),
+        span(
+            "mid",
+            2,
+            AgentSpanKind::LlmCall,
+            "mid",
+            SpanStatus::Error,
+            2,
+            8,
+            ("anthropic", "claude"),
+            200,
+            "rel-1",
+        ),
+        span(
+            "late",
+            3,
+            AgentSpanKind::ToolCall,
+            "late",
+            SpanStatus::Ok,
+            4,
+            6,
+            ("openai", "gpt-4"),
+            50,
+            "rel-2",
+        ),
+    ];
+
+    CanonicalTraceBatch {
+        raw_envelopes: vec![raw],
+        spans,
     }
 }
 

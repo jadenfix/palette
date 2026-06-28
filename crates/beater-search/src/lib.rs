@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use beater_core::{ProjectId, SpanId, TenantId, TraceId};
-use beater_schema::CanonicalSpan;
+use beater_schema::{CanonicalSpan, RedactionClass};
 use beater_store::{IntoStoreResult, StoreError, StoreResult, TraceStore};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -534,10 +534,16 @@ const ERROR_BODY_ATTRS: &[&str] = &[
 ];
 
 fn input_body_text(span: &CanonicalSpan) -> String {
+    if !input_body_indexable(span) {
+        return String::new();
+    }
     canonical_body_text(span, INPUT_BODY_ATTRS)
 }
 
 fn output_body_text(span: &CanonicalSpan) -> String {
+    if !output_body_indexable(span) {
+        return String::new();
+    }
     canonical_body_text(span, OUTPUT_BODY_ATTRS)
 }
 
@@ -562,6 +568,38 @@ fn attr_matches(key: &str, candidate: &str) -> bool {
             .is_some_and(|suffix| suffix.starts_with('.') || suffix.starts_with('['))
 }
 
+fn input_body_indexable(span: &CanonicalSpan) -> bool {
+    body_indexable(span, span.input_ref.as_ref())
+}
+
+fn output_body_indexable(span: &CanonicalSpan) -> bool {
+    body_indexable(span, span.output_ref.as_ref())
+}
+
+fn body_indexable(span: &CanonicalSpan, body_ref: Option<&beater_schema::ArtifactRef>) -> bool {
+    !is_sensitive_redaction(&span.raw_ref.redaction_class)
+        && !body_ref
+            .is_some_and(|artifact_ref| is_sensitive_redaction(&artifact_ref.redaction_class))
+}
+
+fn is_sensitive_redaction(redaction_class: &RedactionClass) -> bool {
+    matches!(
+        redaction_class,
+        RedactionClass::Sensitive | RedactionClass::Secret
+    )
+}
+
+fn body_attr_value_indexable(span: &CanonicalSpan, key: &str) -> bool {
+    let input_body_attr = INPUT_BODY_ATTRS
+        .iter()
+        .any(|candidate| attr_matches(key, candidate));
+    let output_body_attr = OUTPUT_BODY_ATTRS
+        .iter()
+        .any(|candidate| attr_matches(key, candidate));
+    (!input_body_attr || input_body_indexable(span))
+        && (!output_body_attr || output_body_indexable(span))
+}
+
 fn searchable_text(span: &CanonicalSpan) -> String {
     let mut pieces = vec![
         span.name.clone(),
@@ -575,7 +613,9 @@ fn searchable_text(span: &CanonicalSpan) -> String {
     ];
     for (key, value) in &span.attributes {
         pieces.push(key.clone());
-        pieces.push(value_to_text(value));
+        if body_attr_value_indexable(span, key) {
+            pieces.push(value_to_text(value));
+        }
     }
     pieces.push(value_to_text(&span.unmapped_attrs));
     pieces.join(" ")
@@ -605,7 +645,9 @@ mod tests {
     use super::*;
     use beater_core::{EnvironmentId, ProjectId, TenantId};
     use beater_schema::CanonicalTraceBatch;
-    use beater_schema::{AgentSpanKind, ModelRef, SpanStatus, CANONICAL_SCHEMA_VERSION};
+    use beater_schema::{
+        AgentSpanKind, ModelRef, RedactionClass, SpanStatus, CANONICAL_SCHEMA_VERSION,
+    };
     use beater_store_memory::InMemoryTraceStore;
     use chrono::Utc;
     use serde_json::json;
@@ -1001,6 +1043,64 @@ mod tests {
         assert_eq!(error.hits[0].trace_id, "error-trace");
     }
 
+    #[tokio::test]
+    async fn redacted_body_attrs_are_not_indexed_as_search_text() {
+        let index = TantivySearchIndex::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let mut span = fixture_span(
+            &tenant,
+            "redacted-trace",
+            "redacted-span",
+            "visibleanchor chat completion",
+            SpanStatus::Ok,
+        );
+        span.raw_ref.redaction_class = RedactionClass::Sensitive;
+        span.attributes.insert(
+            "llm.input_messages".to_string(),
+            json!([{ "role": "user", "content": "secretinputquake" }]),
+        );
+        span.attributes
+            .insert("gen_ai.completion".to_string(), json!("secretoutputquake"));
+
+        index
+            .index_spans(&[span])
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let input = index
+            .search(SearchRequest {
+                tenant_id: tenant.clone(),
+                text: "secretinputquake".to_string(),
+                limit: Some(10),
+                ..SearchRequest::default_for_tenant(tenant.clone())
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let output = index
+            .search(SearchRequest {
+                tenant_id: tenant.clone(),
+                text: "secretoutputquake".to_string(),
+                limit: Some(10),
+                ..SearchRequest::default_for_tenant(tenant.clone())
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let metadata = index
+            .search(SearchRequest {
+                tenant_id: tenant.clone(),
+                text: "visibleanchor".to_string(),
+                limit: Some(10),
+                ..SearchRequest::default_for_tenant(tenant)
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert!(input.hits.is_empty());
+        assert!(output.hits.is_empty());
+        assert_eq!(metadata.hits.len(), 1);
+        assert_eq!(metadata.hits[0].trace_id, "redacted-trace");
+    }
+
     #[test]
     fn body_text_extractors_ignore_artifact_refs_and_use_inline_attrs_only() {
         let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
@@ -1015,6 +1115,25 @@ mod tests {
 
         assert_eq!(input_body_text(&span), "inline prompt body");
         assert_eq!(output_body_text(&span), "inline output body");
+        assert_eq!(error_text(&span), "inline error body");
+    }
+
+    #[test]
+    fn body_text_extractors_skip_sensitive_body_refs() {
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let mut span = fixture_span(&tenant, "trace", "span", "chat completion", SpanStatus::Ok);
+        let mut sensitive_ref = span.raw_ref.clone();
+        sensitive_ref.redaction_class = RedactionClass::Secret;
+        span.input_ref = Some(sensitive_ref.clone());
+        span.output_ref = Some(sensitive_ref);
+        span.attributes = BTreeMap::from([
+            ("input.value".to_string(), json!("inline prompt body")),
+            ("output.value".to_string(), json!("inline output body")),
+            ("error.message".to_string(), json!("inline error body")),
+        ]);
+
+        assert_eq!(input_body_text(&span), "");
+        assert_eq!(output_body_text(&span), "");
         assert_eq!(error_text(&span), "inline error body");
     }
 
