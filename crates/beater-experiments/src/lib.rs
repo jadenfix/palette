@@ -7,10 +7,11 @@ use beater_core::{
 use beater_datasets::DatasetVersionSnapshot;
 use beater_eval::{
     compare_paired_scores, evaluate_deterministic, EvaluationCase, EvaluatorSpec,
-    ExperimentComparison, GateDecision, GatePolicy, JudgeRequest, ScoreResult,
+    ExperimentComparison, GateDecision, GatePolicy, ScoreResult,
 };
 use beater_judge::{
-    JudgeBroker, JudgeBrokerOutcome, JudgeBrokerRequest, JudgeProvider, ProviderCredentials,
+    GenerationRequest, JudgeBroker, JudgeBrokerOutcome, JudgeBrokerRequest, ProviderCredentials,
+    TextGenerator,
 };
 use beater_schema::EvaluatorLane;
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
@@ -1072,6 +1073,28 @@ impl ProposalContext {
         Self::new(goal, current_prompt, Vec::new())
     }
 
+    /// Production constructor (#435): build a [`ProposalContext`] from the real
+    /// failing evaluation cases of an optimization round.
+    ///
+    /// This is the non-test entry point that populates the enriched
+    /// [`stats`](Self::stats) and [`failure_signatures`](Self::failure_signatures)
+    /// fields from real data — the aggregate statistics and failure signatures are
+    /// recomputed deterministically from `failures`, exactly as [`Self::new`] does
+    /// for tests. The caller passes the minimal failing-case data already modeled
+    /// by [`FailureExample`] (`input` / `expected` / `actual` / `score` / `error`),
+    /// which avoids a dependency on `beater-eval` and the resulting crate cycle.
+    ///
+    /// The eval loop that owns `EvaluationResult`s constructs each
+    /// [`FailureExample`] via [`FailureExample::from_parts`] and hands the slice
+    /// here; the fields are therefore not test-only plumbing.
+    pub fn from_failures(
+        goal: impl Into<String>,
+        current_prompt: impl Into<String>,
+        failures: &[FailureExample],
+    ) -> Self {
+        Self::new(goal, current_prompt, failures.to_vec())
+    }
+
     /// Group the failing examples by [`FailureExample::signature`] and return the
     /// buckets ordered by descending count (ties broken by signature string).
     fn compute_signatures(examples: &[FailureExample]) -> Vec<FailureSignature> {
@@ -1118,21 +1141,22 @@ pub trait ProposalStrategy {
     fn propose(&self, ctx: &ProposalContext) -> Result<Vec<CandidateChange>, OptimizerError>;
 }
 
-/// An LLM-backed proposal strategy whose `propose` requires an async broker call.
+/// An LLM-backed proposal strategy whose `propose` requires an async generation
+/// call.
 ///
 /// This complements the sync [`ProposalStrategy`] trait: strategies that must
 /// consult a live model (e.g. [`LlmRewrite`]) implement this instead, taking a
-/// [`JudgeProvider`] (the existing LLM-call abstraction in `beater-judge`) plus
-/// the [`ProviderCredentials`] needed to authenticate the call. The candidates
-/// returned are *still only proposals* — acceptance is decided by the held-out
-/// gate, never by the proposer.
+/// [`TextGenerator`] (the plain text-generation seam in `beater-judge` — NOT the
+/// scoring/judge path) plus the [`ProviderCredentials`] needed to authenticate
+/// the call. The candidates returned are *still only proposals* — acceptance is
+/// decided by the held-out gate, never by the proposer.
 #[async_trait]
 pub trait AsyncProposalStrategy {
-    /// Emit zero or more candidate changes, consulting `provider` as needed.
+    /// Emit zero or more candidate changes, consulting `generator` as needed.
     async fn propose_async(
         &self,
         ctx: &ProposalContext,
-        provider: &dyn JudgeProvider,
+        generator: &dyn TextGenerator,
         credentials: ProviderCredentials,
     ) -> Result<Vec<CandidateChange>, OptimizerError>;
 }
@@ -1144,8 +1168,9 @@ pub trait AsyncProposalStrategy {
 ///   that records the reflective brief built from the context but does not call
 ///   a model — useful when no broker is wired (e.g. dry runs / planning).
 /// * [`AsyncProposalStrategy::propose_async`] (async) builds the same reflective
-///   brief and sends it to the real [`JudgeProvider`], returning the model's
-///   improved prompt as the candidate's `target`/`description`.
+///   brief and sends it to a real [`TextGenerator`] as a plain completion (its
+///   own system + user prompt — never the judge/scoring contract), returning the
+///   model's improved prompt as the candidate's `target`/`description`.
 ///
 /// Either way the candidate is *only a proposal*; it must clear the held-out
 /// Test gate (§21.3) + the beater-stats CI before it can be accepted. Proposal
@@ -1155,6 +1180,14 @@ pub struct LlmRewrite;
 
 /// The model the reflective rewrite asks for when none is otherwise configured.
 const LLM_REWRITE_MODEL: &str = "gpt-4o-mini";
+
+/// The system prompt for the reflective rewrite generation call. It frames the
+/// model as a prompt engineer and constrains the output to the rewritten prompt
+/// only — this is a generation instruction, NOT a scoring/judge contract.
+const LLM_REWRITE_SYSTEM: &str =
+    "You are an expert prompt engineer. Given an optimization goal, a current system \
+     prompt, and observed failures, you produce an improved system prompt. Respond with \
+     ONLY the improved system prompt text — no preamble, no commentary, no scores.";
 
 impl LlmRewrite {
     /// Build the reflective brief sent to (or recorded for) the model: goal,
@@ -1236,42 +1269,39 @@ impl AsyncProposalStrategy for LlmRewrite {
     async fn propose_async(
         &self,
         ctx: &ProposalContext,
-        provider: &dyn JudgeProvider,
+        generator: &dyn TextGenerator,
         credentials: ProviderCredentials,
     ) -> Result<Vec<CandidateChange>, OptimizerError> {
         Self::validate(ctx)?;
-        // The reflective brief is packed into the `rubric` field of a
-        // `JudgeRequest`; the provider's free-text `rationale` carries back the
-        // model's rewritten prompt. This reuses the existing LLM-call seam in
-        // `beater-judge` without introducing a new contract type.
-        let request = JudgeRequest {
-            rubric: Self::reflective_brief(ctx),
-            model: LLM_REWRITE_MODEL.to_string(),
-            input: Value::String(ctx.current_prompt.clone()),
-            output: Value::String(ctx.goal.clone()),
-            reference: None,
-        };
-        let response = provider
-            .judge(request, credentials)
+        // Honest generation seam: the reflective brief is sent as a PLAIN
+        // completion (system + user prompt) via `TextGenerator::generate`. The
+        // model's raw text IS the rewritten prompt. This does NOT go through the
+        // judge/scoring path, so the model is asked to rewrite — not to score.
+        let request = GenerationRequest::new(LLM_REWRITE_MODEL, Self::reflective_brief(ctx))
+            .with_system(LLM_REWRITE_SYSTEM)
+            .with_temperature(0.3)
+            .with_max_tokens(1024);
+        let response = generator
+            .generate(request, credentials)
             .await
             .map_err(|err| OptimizerError::ProposerFailed(err.to_string()))?;
-        let rewritten = response.rationale.trim();
+        let rewritten = response.text.trim();
         if rewritten.is_empty() {
             return Err(OptimizerError::ProposerFailed(
-                "broker returned an empty rewritten prompt".to_string(),
+                "generator returned an empty rewritten prompt".to_string(),
             ));
         }
         Ok(vec![CandidateChange {
             kind: ChangeKind::SystemPrompt,
             target: rewritten.to_string(),
             description: format!(
-                "Broker-proposed system-prompt rewrite for goal: {}",
+                "Generator-proposed system-prompt rewrite for goal: {}",
                 ctx.goal
             ),
             rationale: format!(
-                "reflective LLM rewrite via the beater-judge broker over {} failing example(s) \
-                 (model {}); a proposal only — must clear the held-out Test gate + beater-stats \
-                 CI before acceptance. Proposal is not acceptance: the gate decides.",
+                "reflective LLM rewrite via the beater-judge text-generation seam over {} failing \
+                 example(s) (model {}); a proposal only — must clear the held-out Test gate + \
+                 beater-stats CI before acceptance. Proposal is not acceptance: the gate decides.",
                 ctx.stats.n_failures, LLM_REWRITE_MODEL
             ),
             proposed_by: OptimizerStrategy::LlmRewrite,
@@ -1328,8 +1358,8 @@ impl ProposalStrategy for ParamSearch {
 ///
 /// Two strategies are implemented synchronously here:
 /// * [`OptimizerStrategy::LlmRewrite`] — emits the reflective-rewrite *scaffold*
-///   (no model call). For the live, broker-backed rewrite call
-///   [`LlmRewrite::propose_async`] directly, which needs an async [`JudgeProvider`].
+///   (no model call). For the live, generation-backed rewrite call
+///   [`LlmRewrite::propose_async`] directly, which needs an async [`TextGenerator`].
 /// * [`OptimizerStrategy::ParamSearch`] — a deterministic model-params grid.
 ///
 /// The remaining variants are genuinely deferred and return a typed
@@ -1399,36 +1429,32 @@ mod tests {
         )
     }
 
-    /// A fake [`JudgeProvider`] that returns a canned completion in `rationale`,
+    /// A fake [`TextGenerator`] that returns a canned completion as raw text,
     /// standing in for a live model so [`LlmRewrite::propose_async`] can be
-    /// tested without network access. The production path calls the real broker
-    /// provider; only the test substitutes this mock.
-    struct FakeRewriteProvider {
+    /// tested without network access. The production path calls the real
+    /// generation seam; only the test substitutes this mock.
+    struct FakeRewriteGenerator {
         completion: String,
     }
 
     #[async_trait]
-    impl JudgeProvider for FakeRewriteProvider {
-        fn max_cost(
+    impl TextGenerator for FakeRewriteGenerator {
+        async fn generate(
             &self,
-            _provider: &str,
-            _request: &beater_eval::JudgeRequest,
-        ) -> beater_core::Money {
-            beater_core::Money::usd_micros(0)
-        }
-
-        async fn judge(
-            &self,
-            request: beater_eval::JudgeRequest,
+            req: beater_judge::GenerationRequest,
             _credentials: ProviderCredentials,
-        ) -> beater_judge::JudgeProviderResult<beater_eval::JudgeResponse> {
-            // Assert the reflective brief actually reached the provider.
-            assert!(request.rubric.contains("GOAL:"));
-            assert!(request.rubric.contains("FAILURE STATS:"));
-            Ok(beater_eval::JudgeResponse {
-                score: 0.0,
-                rationale: self.completion.clone(),
-                cost: beater_core::Money::usd_micros(0),
+        ) -> beater_judge::JudgeProviderResult<beater_judge::GenerationResponse> {
+            // Assert the reflective brief actually reached the generator as the
+            // PLAIN user prompt — not a judge rubric / scoring request.
+            assert!(req.prompt.contains("GOAL:"));
+            assert!(req.prompt.contains("FAILURE STATS:"));
+            // And the call carries a generation system prompt, not the judge one.
+            let system = req.system.as_deref().unwrap_or("");
+            assert!(system.contains("prompt engineer"));
+            assert!(!system.contains("strict evaluation judge"));
+            Ok(beater_judge::GenerationResponse {
+                text: self.completion.clone(),
+                model: Some(req.model),
             })
         }
     }
@@ -1509,35 +1535,75 @@ mod tests {
         assert!(ctx.failure_signatures.is_empty());
     }
 
+    #[test]
+    fn from_failures_populates_stats_and_signatures_from_real_cases() {
+        // The production (#435) entry point: real failing cases in, enriched
+        // context out — stats and signatures computed from the supplied data,
+        // not hand-set by a test fixture.
+        let failures = vec![
+            FailureExample::from_parts("What is 2+2?", Some("4".to_string()), "5", 0.0, None),
+            FailureExample::from_parts(
+                "Call the API",
+                None,
+                "boom",
+                0.1,
+                Some("timeout after 1200ms".to_string()),
+            ),
+            FailureExample::from_parts(
+                "Call the API again",
+                None,
+                "boom",
+                0.15,
+                Some("timeout after 950ms".to_string()),
+            ),
+        ];
+        let ctx = ProposalContext::from_failures(
+            "make the agent reliable",
+            "You are an assistant.",
+            &failures,
+        );
+        assert_eq!(ctx.stats.n_failures, 3);
+        assert!(ctx.stats.mean_score < 0.2);
+        // The two masked timeouts collapse into one signature with count 2.
+        let top = &ctx.failure_signatures[0];
+        assert!(top.signature.contains("timeout after <n>ms"), "{top:?}");
+        assert_eq!(top.count, 2);
+        // The context is usable by the proposer with no further plumbing.
+        let candidates = LlmRewrite
+            .propose(&ctx)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(candidates.len(), 1);
+    }
+
     #[tokio::test]
-    async fn llm_rewrite_async_calls_broker_and_returns_rewrite() {
-        let provider = FakeRewriteProvider {
+    async fn llm_rewrite_async_calls_generator_and_returns_rewrite() {
+        let generator = FakeRewriteGenerator {
             completion: "You are a meticulous assistant. Cite a source for every factual claim \
                          and say 'I am not sure' when uncertain."
                 .to_string(),
         };
         let credentials = ProviderCredentials::new("openai", "sk-test");
         let candidates = LlmRewrite
-            .propose_async(&proposal_context(), &provider, credentials)
+            .propose_async(&proposal_context(), &generator, credentials)
             .await
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(candidates.len(), 1);
         assert_eq!(candidates[0].kind, ChangeKind::SystemPrompt);
         assert_eq!(candidates[0].proposed_by, OptimizerStrategy::LlmRewrite);
-        // The broker's completion becomes the candidate target (the new prompt).
+        // The generator's raw text becomes the candidate target (the new prompt).
         assert!(candidates[0].target.contains("meticulous assistant"));
         // Proposal-not-acceptance invariant is preserved in the rationale.
         assert!(candidates[0].rationale.contains("gate decides"));
     }
 
     #[tokio::test]
-    async fn llm_rewrite_async_rejects_empty_broker_output() {
-        let provider = FakeRewriteProvider {
+    async fn llm_rewrite_async_rejects_empty_generator_output() {
+        let generator = FakeRewriteGenerator {
             completion: "   ".to_string(),
         };
         let credentials = ProviderCredentials::new("openai", "sk-test");
         let err = LlmRewrite
-            .propose_async(&proposal_context(), &provider, credentials)
+            .propose_async(&proposal_context(), &generator, credentials)
             .await
             .err()
             .unwrap_or_else(|| panic!("expected ProposerFailed"));
