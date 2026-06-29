@@ -21,6 +21,7 @@ typedef struct dataset_version_snapshot_t dataset_version_snapshot_t;
 
 typedef struct dataset_version_snapshot_t {
     list_t *cases; //nonprimitive container
+    char *corpus_root; // string
     char *created_at; //date time
     char *dataset_id; // string
     char *project_id; // string
@@ -32,6 +33,7 @@ typedef struct dataset_version_snapshot_t {
 
 __attribute__((deprecated)) dataset_version_snapshot_t *dataset_version_snapshot_create(
     list_t *cases,
+    char *corpus_root,
     char *created_at,
     char *dataset_id,
     char *project_id,

@@ -6987,6 +6987,10 @@
           "trace": {}
         }
       },
+      "CorpusRoot": {
+        "type": "string",
+        "description": "A content-addressed Merkle root naming the exact contents of a corpus.\n\nSerialized as its lowercase-hex SHA-256 string."
+      },
       "CreateApiKeyHttpRequest": {
         "type": "object",
         "required": [
@@ -7270,6 +7274,7 @@
           "dataset_id",
           "version_id",
           "cases",
+          "corpus_root",
           "created_at"
         ],
         "properties": {
@@ -7278,6 +7283,10 @@
             "items": {
               "$ref": "#/components/schemas/DatasetCase"
             }
+          },
+          "corpus_root": {
+            "$ref": "#/components/schemas/CorpusRoot",
+            "description": "Content-addressed Merkle root naming the exact set of cases in this\nversion. History-independent: identical case sets produce identical\nroots regardless of case order, so the root lets a trace, eval, or\ncustomer-facing report cite the precise corpus it ran against and lets\ntwo parties confirm they hold the same data with one comparison."
           },
           "created_at": {
             "type": "string",
@@ -9266,6 +9275,13 @@
           "provider_secret_id"
         ],
         "properties": {
+          "cache_namespace": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Calibration-map / judge-instrument version folded into the judge cache\nkey; bumping it on recalibration invalidates stale cached scores."
+          },
           "case": {
             "$ref": "#/components/schemas/EvaluationCase"
           },

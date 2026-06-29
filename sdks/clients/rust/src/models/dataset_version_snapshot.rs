@@ -15,6 +15,9 @@ use serde::{Deserialize, Serialize};
 pub struct DatasetVersionSnapshot {
     #[serde(rename = "cases")]
     pub cases: Vec<models::DatasetCase>,
+    /// A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string.
+    #[serde(rename = "corpus_root")]
+    pub corpus_root: String,
     #[serde(rename = "created_at")]
     pub created_at: String,
     #[serde(rename = "dataset_id")]
@@ -28,9 +31,10 @@ pub struct DatasetVersionSnapshot {
 }
 
 impl DatasetVersionSnapshot {
-    pub fn new(cases: Vec<models::DatasetCase>, created_at: String, dataset_id: String, project_id: String, tenant_id: String, version_id: String) -> DatasetVersionSnapshot {
+    pub fn new(cases: Vec<models::DatasetCase>, corpus_root: String, created_at: String, dataset_id: String, project_id: String, tenant_id: String, version_id: String) -> DatasetVersionSnapshot {
         DatasetVersionSnapshot {
             cases,
+            corpus_root,
             created_at,
             dataset_id,
             project_id,

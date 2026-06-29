@@ -38,6 +38,7 @@ import ai.beater.client.ApiClient;
  */
 @JsonPropertyOrder({
   DatasetVersionSnapshot.JSON_PROPERTY_CASES,
+  DatasetVersionSnapshot.JSON_PROPERTY_CORPUS_ROOT,
   DatasetVersionSnapshot.JSON_PROPERTY_CREATED_AT,
   DatasetVersionSnapshot.JSON_PROPERTY_DATASET_ID,
   DatasetVersionSnapshot.JSON_PROPERTY_PROJECT_ID,
@@ -49,6 +50,10 @@ public class DatasetVersionSnapshot {
   public static final String JSON_PROPERTY_CASES = "cases";
   @javax.annotation.Nonnull
   private List<DatasetCase> cases = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_CORPUS_ROOT = "corpus_root";
+  @javax.annotation.Nonnull
+  private String corpusRoot;
 
   public static final String JSON_PROPERTY_CREATED_AT = "created_at";
   @javax.annotation.Nonnull
@@ -102,6 +107,30 @@ public class DatasetVersionSnapshot {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setCases(@javax.annotation.Nonnull List<DatasetCase> cases) {
     this.cases = cases;
+  }
+
+
+  public DatasetVersionSnapshot corpusRoot(@javax.annotation.Nonnull String corpusRoot) {
+    this.corpusRoot = corpusRoot;
+    return this;
+  }
+
+  /**
+   * A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string.
+   * @return corpusRoot
+   */
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_CORPUS_ROOT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getCorpusRoot() {
+    return corpusRoot;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CORPUS_ROOT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCorpusRoot(@javax.annotation.Nonnull String corpusRoot) {
+    this.corpusRoot = corpusRoot;
   }
 
 
@@ -238,6 +267,7 @@ public class DatasetVersionSnapshot {
     }
     DatasetVersionSnapshot datasetVersionSnapshot = (DatasetVersionSnapshot) o;
     return Objects.equals(this.cases, datasetVersionSnapshot.cases) &&
+        Objects.equals(this.corpusRoot, datasetVersionSnapshot.corpusRoot) &&
         Objects.equals(this.createdAt, datasetVersionSnapshot.createdAt) &&
         Objects.equals(this.datasetId, datasetVersionSnapshot.datasetId) &&
         Objects.equals(this.projectId, datasetVersionSnapshot.projectId) &&
@@ -247,7 +277,7 @@ public class DatasetVersionSnapshot {
 
   @Override
   public int hashCode() {
-    return Objects.hash(cases, createdAt, datasetId, projectId, tenantId, versionId);
+    return Objects.hash(cases, corpusRoot, createdAt, datasetId, projectId, tenantId, versionId);
   }
 
   @Override
@@ -255,6 +285,7 @@ public class DatasetVersionSnapshot {
     StringBuilder sb = new StringBuilder();
     sb.append("class DatasetVersionSnapshot {\n");
     sb.append("    cases: ").append(toIndentedString(cases)).append("\n");
+    sb.append("    corpusRoot: ").append(toIndentedString(corpusRoot)).append("\n");
     sb.append("    createdAt: ").append(toIndentedString(createdAt)).append("\n");
     sb.append("    datasetId: ").append(toIndentedString(datasetId)).append("\n");
     sb.append("    projectId: ").append(toIndentedString(projectId)).append("\n");
@@ -315,6 +346,11 @@ public class DatasetVersionSnapshot {
           "".equals(suffix) ? "" : String.format("%s%d%s", containerPrefix, i, containerSuffix))));
         }
       }
+    }
+
+    // add `corpus_root` to the URL query string
+    if (getCorpusRoot() != null) {
+      joiner.add(String.format("%scorpus_root%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getCorpusRoot()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `created_at` to the URL query string

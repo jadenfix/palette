@@ -24,6 +24,7 @@ run_judge_eval_http_request_t* instantiate_run_judge_eval_http_request(int inclu
   run_judge_eval_http_request_t* run_judge_eval_http_request = NULL;
   if (include_optional) {
     run_judge_eval_http_request = run_judge_eval_http_request_create(
+      "0",
        // false, not to have infinite recursion
       instantiate_evaluation_case(0),
        // false, not to have infinite recursion
@@ -32,6 +33,7 @@ run_judge_eval_http_request_t* instantiate_run_judge_eval_http_request(int inclu
     );
   } else {
     run_judge_eval_http_request = run_judge_eval_http_request_create(
+      "0",
       NULL,
       NULL,
       "0"

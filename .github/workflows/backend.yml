@@ -22,6 +22,11 @@ concurrency:
 
 on:
   pull_request:
+  # Run on the merge queue's ephemeral `gh-readonly-queue/<base>/*` branch so this
+  # gate validates the exact merged result of every queued PR against the current
+  # tip — the check that stops two individually-green PRs from breaking main
+  # (#343). merge_group does not support `paths`/`branches-ignore` filters.
+  merge_group:
   push:
     branches: [main]
   workflow_dispatch:

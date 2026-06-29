@@ -35,6 +35,7 @@ class TestRunJudgeEvalHttpRequest(unittest.TestCase):
         model = RunJudgeEvalHttpRequest()
         if include_optional:
             return RunJudgeEvalHttpRequest(
+                cache_namespace = '',
                 case = beater_client.models.evaluation_case.EvaluationCase(
                     input = null, 
                     output = null, 

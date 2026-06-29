@@ -699,7 +699,7 @@ async fn sidecar_write_batch(
 ) -> Result<Json<WriteAck>, (StatusCode, String)> {
     state
         .traces
-        .write_batch(batch)
+        .write_batch(Arc::new(batch))
         .await
         .map(Json)
         .map_err(sidecar_store_error)

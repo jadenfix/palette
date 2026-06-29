@@ -599,12 +599,12 @@ mod tests {
         let dataset = DatasetId::new("dataset")?;
         let version = DatasetVersionId::new("version")?;
         let evaluator = EvaluatorVersionId::new("judge-v1")?;
-        let snapshot = DatasetVersionSnapshot {
-            tenant_id: tenant.clone(),
-            project_id: project.clone(),
-            dataset_id: dataset.clone(),
-            version_id: version.clone(),
-            cases: vec![
+        let snapshot = DatasetVersionSnapshot::try_new(
+            tenant.clone(),
+            project.clone(),
+            dataset.clone(),
+            version.clone(),
+            vec![
                 fixture_case(
                     &tenant,
                     &project,
@@ -638,8 +638,8 @@ mod tests {
                     json!("f"),
                 )?,
             ],
-            created_at: Utc::now(),
-        };
+            Utc::now(),
+        )?;
         let eval_report = DatasetEvalReport {
             report_id: "eval-report".to_string(),
             tenant_id: tenant.clone(),

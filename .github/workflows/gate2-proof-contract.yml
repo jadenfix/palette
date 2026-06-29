@@ -59,9 +59,13 @@ jobs:
           python3 -m py_compile scripts/tests/test_check_framework_examples.py
           python3 -m py_compile scripts/tests/test_gate2_proof_contract.py
           python3 -m py_compile scripts/tests/test_check_gate2_outside_readiness.py
+          python3 -m py_compile scripts/tests/test_gate2_outside_local_preflight.py
+          python3 -m py_compile scripts/tests/test_check_openapi_drift.py
           python3 scripts/tests/test_check_framework_examples.py
           python3 scripts/tests/test_gate2_proof_contract.py
           python3 scripts/tests/test_check_gate2_outside_readiness.py
+          python3 scripts/tests/test_gate2_outside_local_preflight.py
+          python3 scripts/tests/test_check_openapi_drift.py
           scripts/validate-gate2-outside-proof.sh --allow-pending
 
       - name: Gate 0 foundation contract

@@ -915,6 +915,12 @@ export interface components {
             output: unknown;
             trace?: unknown;
         };
+        /**
+         * @description A content-addressed Merkle root naming the exact contents of a corpus.
+         *
+         *     Serialized as its lowercase-hex SHA-256 string.
+         */
+        CorpusRoot: string;
         CreateApiKeyHttpRequest: {
             scopes: components["schemas"]["ApiScope"][];
         };
@@ -989,6 +995,14 @@ export interface components {
         DatasetVersionId: string;
         DatasetVersionSnapshot: {
             cases: components["schemas"]["DatasetCase"][];
+            /**
+             * @description Content-addressed Merkle root naming the exact set of cases in this
+             *     version. History-independent: identical case sets produce identical
+             *     roots regardless of case order, so the root lets a trace, eval, or
+             *     customer-facing report cite the precise corpus it ran against and lets
+             *     two parties confirm they hold the same data with one comparison.
+             */
+            corpus_root: components["schemas"]["CorpusRoot"];
             /** Format: date-time */
             created_at: string;
             dataset_id: components["schemas"]["DatasetId"];
@@ -1519,6 +1533,11 @@ export interface components {
             provider_secret_id: components["schemas"]["ProviderSecretId"];
         };
         RunJudgeEvalHttpRequest: {
+            /**
+             * @description Calibration-map / judge-instrument version folded into the judge cache
+             *     key; bumping it on recalibration invalidates stale cached scores.
+             */
+            cache_namespace?: string | null;
             case: components["schemas"]["EvaluationCase"];
             evaluator: components["schemas"]["EvaluatorSpec"];
             provider_secret_id: components["schemas"]["ProviderSecretId"];

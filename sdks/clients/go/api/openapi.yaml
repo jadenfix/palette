@@ -5230,6 +5230,12 @@ components:
       required:
       - case_id
       - output
+    CorpusRoot:
+      description: |-
+        A content-addressed Merkle root naming the exact contents of a corpus.
+
+        Serialized as its lowercase-hex SHA-256 string.
+      type: string
     CreateApiKeyHttpRequest:
       example:
         scopes:
@@ -5578,6 +5584,7 @@ components:
           project_id: project_id
           case_id: case_id
           trace_schema_version: 0
+        corpus_root: corpus_root
         project_id: project_id
         dataset_id: dataset_id
         created_at: 2000-01-23T04:56:07.000+00:00
@@ -5587,6 +5594,12 @@ components:
           items:
             $ref: '#/components/schemas/DatasetCase'
           type: array
+        corpus_root:
+          description: |-
+            A content-addressed Merkle root naming the exact contents of a corpus.
+
+            Serialized as its lowercase-hex SHA-256 string.
+          type: string
         created_at:
           format: date-time
           type: string
@@ -5600,6 +5613,7 @@ components:
           type: string
       required:
       - cases
+      - corpus_root
       - created_at
       - dataset_id
       - project_id
@@ -7229,6 +7243,7 @@ components:
     RunJudgeEvalHttpRequest:
       example:
         provider_secret_id: provider_secret_id
+        cache_namespace: cache_namespace
         case:
           output: ""
           reference: ""
@@ -7240,6 +7255,12 @@ components:
           id: id
           lane: deterministic_wasi
       properties:
+        cache_namespace:
+          description: |-
+            Calibration-map / judge-instrument version folded into the judge cache
+            key; bumping it on recalibration invalidates stale cached scores.
+          nullable: true
+          type: string
         case:
           $ref: '#/components/schemas/EvaluationCase'
         evaluator:

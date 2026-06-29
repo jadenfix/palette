@@ -25,6 +25,7 @@ use beater_store::{
     finalize_run_aggregates, page_vec, RunAggregateRow, StoreError, StoreResult, TraceStore,
 };
 use std::collections::BTreeSet;
+use std::sync::Arc;
 use tokio_postgres::{Client, NoTls};
 
 /// The Postgres schema contract this store applies and depends on.
@@ -108,7 +109,7 @@ impl PgTraceStore {
 
 #[async_trait]
 impl TraceStore for PgTraceStore {
-    async fn write_batch(&self, batch: CanonicalTraceBatch) -> StoreResult<WriteAck> {
+    async fn write_batch(&self, batch: Arc<CanonicalTraceBatch>) -> StoreResult<WriteAck> {
         let mut accepted_raw = 0;
         let mut duplicate_raw = 0;
         for raw in &batch.raw_envelopes {

@@ -15,6 +15,9 @@ concurrency:
 
 on:
   pull_request:
+  # Re-run the zero-drift contract gate on the merged result of each queued PR so
+  # a contract change that only conflicts post-merge cannot reach main (#343).
+  merge_group:
   push:
     branches: [main]
   workflow_dispatch:
@@ -45,6 +48,11 @@ jobs:
 
       - name: API shape consistency audit
         run: python3 scripts/audit-api-shapes.py
+
+      - name: Contract-sync checker self-test
+        run: |
+          python3 -m py_compile scripts/tests/test_check_contract_sync.py
+          python3 scripts/tests/test_check_contract_sync.py
 
       - name: Additive-only contract policy (oasdiff)
         run: |

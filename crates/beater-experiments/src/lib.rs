@@ -537,6 +537,7 @@ where
             snapshot,
             &spec.experiment.evaluator,
             &spec.provider_secret_id,
+            spec.experiment.evaluator_version_id.as_str(),
             case,
             &baseline,
             judge_broker,
@@ -547,6 +548,7 @@ where
             snapshot,
             &spec.experiment.evaluator,
             &spec.provider_secret_id,
+            spec.experiment.evaluator_version_id.as_str(),
             case,
             &candidate,
             judge_broker,
@@ -718,6 +720,7 @@ async fn score_output_with_judge<B>(
     snapshot: &DatasetVersionSnapshot,
     evaluator: &EvaluatorSpec,
     provider_secret_id: &ProviderSecretId,
+    cache_namespace: &str,
     case: &beater_datasets::DatasetCase,
     output: &AgentRunOutput,
     judge_broker: &B,
@@ -743,6 +746,7 @@ where
                 trace: output.trace.clone().or_else(|| Some(case.trace.clone())),
             },
             provider_secret_id: provider_secret_id.clone(),
+            cache_namespace: Some(cache_namespace.to_string()),
         })
         .await
         .map_err(|err| anyhow!(err))
@@ -1561,16 +1565,17 @@ mod tests {
         let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
         let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
         let dataset = DatasetId::new("dataset").unwrap_or_else(|err| panic!("{err}"));
-        let snapshot = DatasetVersionSnapshot {
-            tenant_id: tenant.clone(),
-            project_id: project.clone(),
-            dataset_id: dataset.clone(),
-            version_id: DatasetVersionId::new("v1").unwrap_or_else(|err| panic!("{err}")),
-            cases: (0..5)
+        let snapshot = DatasetVersionSnapshot::try_new(
+            tenant.clone(),
+            project.clone(),
+            dataset.clone(),
+            DatasetVersionId::new("v1").unwrap_or_else(|err| panic!("{err}")),
+            (0..5)
                 .map(|index| fixture_case(&tenant, &project, &dataset, index))
                 .collect(),
-            created_at: Utc::now(),
-        };
+            Utc::now(),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
         let baseline_outputs = snapshot
             .cases
             .iter()
@@ -1638,16 +1643,17 @@ mod tests {
         let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
         let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
         let dataset = DatasetId::new("dataset").unwrap_or_else(|err| panic!("{err}"));
-        let snapshot = DatasetVersionSnapshot {
-            tenant_id: tenant.clone(),
-            project_id: project.clone(),
-            dataset_id: dataset.clone(),
-            version_id: DatasetVersionId::new("v1").unwrap_or_else(|err| panic!("{err}")),
-            cases: (0..5)
+        let snapshot = DatasetVersionSnapshot::try_new(
+            tenant.clone(),
+            project.clone(),
+            dataset.clone(),
+            DatasetVersionId::new("v1").unwrap_or_else(|err| panic!("{err}")),
+            (0..5)
                 .map(|index| fixture_case(&tenant, &project, &dataset, index))
                 .collect(),
-            created_at: Utc::now(),
-        };
+            Utc::now(),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
         let baseline = StaticAgentAdapter::new(json!("wrong"), "static-baseline");
         let candidate = ReferenceAgentAdapter::new("reference-candidate");
 
@@ -1716,16 +1722,17 @@ mod tests {
         let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
         let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
         let dataset = DatasetId::new("dataset").unwrap_or_else(|err| panic!("{err}"));
-        let snapshot = DatasetVersionSnapshot {
-            tenant_id: tenant.clone(),
-            project_id: project.clone(),
-            dataset_id: dataset.clone(),
-            version_id: DatasetVersionId::new("v1").unwrap_or_else(|err| panic!("{err}")),
-            cases: (0..5)
+        let snapshot = DatasetVersionSnapshot::try_new(
+            tenant.clone(),
+            project.clone(),
+            dataset.clone(),
+            DatasetVersionId::new("v1").unwrap_or_else(|err| panic!("{err}")),
+            (0..5)
                 .map(|index| fixture_case(&tenant, &project, &dataset, index))
                 .collect(),
-            created_at: Utc::now(),
-        };
+            Utc::now(),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
         let baseline_outputs = snapshot
             .cases
             .iter()
@@ -2033,14 +2040,15 @@ mod tests {
         let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
         let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
         let dataset = DatasetId::new("dataset").unwrap_or_else(|err| panic!("{err}"));
-        let snapshot = DatasetVersionSnapshot {
-            tenant_id: tenant.clone(),
-            project_id: project.clone(),
-            dataset_id: dataset.clone(),
-            version_id: DatasetVersionId::new("v1").unwrap_or_else(|err| panic!("{err}")),
-            cases: vec![fixture_case(&tenant, &project, &dataset, 0)],
-            created_at: Utc::now(),
-        };
+        let snapshot = DatasetVersionSnapshot::try_new(
+            tenant.clone(),
+            project.clone(),
+            dataset.clone(),
+            DatasetVersionId::new("v1").unwrap_or_else(|err| panic!("{err}")),
+            vec![fixture_case(&tenant, &project, &dataset, 0)],
+            Utc::now(),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
         let error = run_deterministic_experiment(
             &snapshot,
             ExperimentRunSpec {

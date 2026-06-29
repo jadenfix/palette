@@ -1,9 +1,15 @@
+pub mod split;
+pub use split::{
+    duplicate_inputs, fingerprint_input, partition, split_for_fingerprint, split_for_input,
+    DuplicateGroup, SplitConfig, SplitError, SplitLabel, SplitPartition,
+};
+
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use beater_core::{
-    sha256_json_hash, AgentReleaseId, DatasetCaseId, DatasetId, DatasetVersionId, EnvironmentId,
-    EvalResultId, EvaluatorVersionId, ProjectId, PromptVersionId, ProviderSecretId, Sha256Hash,
-    SpanId, TenantId, Timestamp, TraceId,
+    corpus_root, sha256_json_hash, AgentReleaseId, CorpusRoot, DatasetCaseId, DatasetId,
+    DatasetVersionId, EnvironmentId, EvalResultId, EvaluatorVersionId, MerkleLeaf, ProjectId,
+    PromptVersionId, ProviderSecretId, Sha256Hash, SpanId, TenantId, Timestamp, TraceId,
 };
 use beater_eval::{evaluate_deterministic, EvaluationCase, EvaluatorSpec, ScoreResult};
 use beater_judge::{JudgeBroker, JudgeBrokerOutcome, JudgeBrokerRequest};
@@ -112,8 +118,92 @@ pub struct DatasetVersionSnapshot {
     pub dataset_id: DatasetId,
     pub version_id: DatasetVersionId,
     pub cases: Vec<DatasetCase>,
+    /// Content-addressed Merkle root naming the exact set of cases in this
+    /// version. History-independent: identical case sets produce identical
+    /// roots regardless of case order, so the root lets a trace, eval, or
+    /// customer-facing report cite the precise corpus it ran against and lets
+    /// two parties confirm they hold the same data with one comparison.
+    pub corpus_root: CorpusRoot,
     #[schema(value_type = String, format = DateTime)]
     pub created_at: Timestamp,
+}
+
+impl DatasetVersionSnapshot {
+    /// Build a snapshot, computing [`Self::corpus_root`] from `cases` so the
+    /// root and the cases can never disagree. Fails only if `cases` is somehow
+    /// not a well-formed set (duplicate `case_id`) or a case cannot be hashed.
+    pub fn try_new(
+        tenant_id: TenantId,
+        project_id: ProjectId,
+        dataset_id: DatasetId,
+        version_id: DatasetVersionId,
+        cases: Vec<DatasetCase>,
+        created_at: Timestamp,
+    ) -> StoreResult<Self> {
+        let corpus_root = corpus_root_for_cases(&cases)?;
+        Ok(Self {
+            tenant_id,
+            project_id,
+            dataset_id,
+            version_id,
+            cases,
+            corpus_root,
+            created_at,
+        })
+    }
+}
+
+/// Compute the content-addressed Merkle root for a set of dataset cases.
+///
+/// Each case becomes a Merkle leaf keyed by its `case_id`, with a content hash
+/// over the case's content and provenance (input/output/reference/trace plus
+/// the normalizer and trace-schema versions and input artifact hashes) —
+/// deliberately excluding volatile fields like `created_at` and the ambient
+/// tenant/project/dataset ids, so the root tracks *what the case is*, not when
+/// or where it was snapshotted.
+pub fn corpus_root_for_cases(cases: &[DatasetCase]) -> StoreResult<CorpusRoot> {
+    let mut leaves = Vec::with_capacity(cases.len());
+    for case in cases {
+        leaves.push(MerkleLeaf {
+            key: case.case_id.as_str().to_string(),
+            content_hash: case_content_hash(case)?,
+        });
+    }
+    corpus_root(leaves).map_err(StoreError::backend)
+}
+
+/// Stable content+provenance hash of a single dataset case.
+fn case_content_hash(case: &DatasetCase) -> StoreResult<String> {
+    #[derive(Serialize)]
+    struct CaseContentView<'a> {
+        case_id: &'a str,
+        source_trace_id: &'a str,
+        source_span_id: &'a str,
+        source_environment_id: &'a str,
+        input: &'a Value,
+        output: &'a Value,
+        reference: &'a Option<Value>,
+        trace: &'a Value,
+        normalizer_version: &'a str,
+        trace_schema_version: u32,
+        input_artifact_hashes: &'a [Sha256Hash],
+    }
+    let view = CaseContentView {
+        case_id: case.case_id.as_str(),
+        source_trace_id: case.source_trace_id.as_str(),
+        source_span_id: case.source_span_id.as_str(),
+        source_environment_id: case.source_environment_id.as_str(),
+        input: &case.input,
+        output: &case.output,
+        reference: &case.reference,
+        trace: &case.trace,
+        normalizer_version: &case.normalizer_version,
+        trace_schema_version: case.trace_schema_version,
+        input_artifact_hashes: &case.input_artifact_hashes,
+    };
+    sha256_json_hash(&view)
+        .map(|hash| hash.as_str().to_string())
+        .map_err(StoreError::backend)
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -440,15 +530,14 @@ impl DatasetStore for SqliteDatasetStore {
                 "cannot create a dataset version with no cases".to_string(),
             ));
         }
-        let snapshot = DatasetVersionSnapshot {
+        let snapshot = DatasetVersionSnapshot::try_new(
             tenant_id,
             project_id,
             dataset_id,
-            version_id: DatasetVersionId::new(Uuid::new_v4().to_string())
-                .map_err(StoreError::backend)?,
+            DatasetVersionId::new(Uuid::new_v4().to_string()).map_err(StoreError::backend)?,
             cases,
-            created_at: Utc::now(),
-        };
+            Utc::now(),
+        )?;
         let mut connection = self.lock().into_store()?;
         let tx = connection
             .transaction()
@@ -560,14 +649,9 @@ impl DatasetStore for SqliteDatasetStore {
             .context("query dataset version cases")
             .into_store()?;
         let cases = decode_json_rows(rows, "dataset version case").into_store()?;
-        Ok(DatasetVersionSnapshot {
-            tenant_id,
-            project_id,
-            dataset_id,
-            version_id,
-            cases,
-            created_at,
-        })
+        DatasetVersionSnapshot::try_new(
+            tenant_id, project_id, dataset_id, version_id, cases, created_at,
+        )
     }
 
     async fn write_eval_report(&self, report: DatasetEvalReport) -> StoreResult<DatasetEvalReport> {
@@ -792,6 +876,7 @@ where
                 evaluator: spec.eval.evaluator.clone(),
                 case: eval_case,
                 provider_secret_id: spec.provider_secret_id.clone(),
+                cache_namespace: Some(spec.eval.evaluator_version_id.as_str().to_string()),
             })
             .await
             .with_context(|| format!("judge dataset case {}", case.case_id.as_str()))?;
@@ -1000,6 +1085,72 @@ mod tests {
     };
     use serde_json::json;
     use std::collections::BTreeMap;
+
+    #[tokio::test]
+    async fn version_corpus_root_is_content_addressed_and_round_trips() {
+        let store = SqliteDatasetStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let dataset = store
+            .create_dataset(tenant.clone(), project.clone(), "failures".to_string())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let trace = fixture_trace(&tenant, &project);
+        let span_id = SpanId::new("span").unwrap_or_else(|err| panic!("{err}"));
+        let case = promote_trace_span_to_case(
+            tenant.clone(),
+            project.clone(),
+            dataset.dataset_id.clone(),
+            &trace,
+            Some(span_id),
+            Some(json!("answer")),
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        store
+            .put_case(case)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let created = store
+            .create_version(
+                tenant.clone(),
+                project.clone(),
+                dataset.dataset_id.clone(),
+                None,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        // The root is a real 64-hex SHA-256 digest, not the version UUID.
+        assert_eq!(created.corpus_root.as_str().len(), 64);
+        assert_ne!(created.corpus_root.as_str(), created.version_id.as_str());
+
+        // The root recomputes identically after a database round-trip, so it
+        // can be stored as a UUID yet remain a verifiable content address.
+        let fetched = store
+            .get_version(
+                tenant.clone(),
+                project.clone(),
+                dataset.dataset_id.clone(),
+                created.version_id.clone(),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(fetched.corpus_root, created.corpus_root);
+
+        // A second version over the identical case set is named by a different
+        // UUID but shares the same content-addressed root.
+        let twin = store
+            .create_version(
+                tenant.clone(),
+                project.clone(),
+                dataset.dataset_id.clone(),
+                None,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_ne!(twin.version_id, created.version_id);
+        assert_eq!(twin.corpus_root, created.corpus_root);
+    }
 
     #[tokio::test]
     async fn promotes_trace_case_versions_and_runs_deterministic_eval() {

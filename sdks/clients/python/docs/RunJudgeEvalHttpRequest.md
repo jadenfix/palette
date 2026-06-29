@@ -5,6 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**cache_namespace** | **str** | Calibration-map / judge-instrument version folded into the judge cache key; bumping it on recalibration invalidates stale cached scores. | [optional] 
 **case** | [**EvaluationCase**](EvaluationCase.md) |  | 
 **evaluator** | [**EvaluatorSpec**](EvaluatorSpec.md) |  | 
 **provider_secret_id** | **str** |  | 

@@ -34,21 +34,22 @@
 //!
 //! 1. Add a `[[bench]]` entry in `Cargo.toml` with `harness = false`.
 //! 2. Import `criterion::{criterion_group, criterion_main, Criterion}`.
-//! 3. Use [`span_fixtures`] / [`span_batch`] to get deterministic fixtures.
+//! 3. Use [`span_fixtures`] / [`canonical_trace_batch`] to get deterministic fixtures.
 //! 4. Wire the SLO assertion as a `criterion` throughput target or a custom
 //!    post-bench assertion so CI fails on regression.
 
 use beater_core::{
-    sha256_hex, ArtifactId, EnvironmentId, Money, ProjectId, Sha256Hash, SpanId, TenantId,
-    Timestamp, TokenCounts, TraceId,
+    sha256_hex, ArtifactId, EnvironmentId, IdempotencyKey, Money, ProjectId, Sha256Hash, SpanId,
+    TenantId, Timestamp, TokenCounts, TraceId,
 };
 use beater_schema::{
-    conventions, AgentSpanKind, ArtifactRef, CanonicalAttrs, CanonicalSpan, ModelRef,
-    RedactionClass, SpanStatus, CANONICAL_SCHEMA_VERSION,
+    conventions, AgentSpanKind, ArtifactRef, AuthContext, CanonicalAttrs, CanonicalSpan,
+    CanonicalTraceBatch, ModelRef, RawEnvelope, RedactionClass, SourceDialect, SpanStatus,
+    CANONICAL_SCHEMA_VERSION, RAW_SCHEMA_VERSION,
 };
 use chrono::{DateTime, Duration, Utc};
 use serde_json::{json, Value};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::time::SystemTime;
 
 const DEFAULT_SPAN_COUNT: usize = 1_024;
@@ -161,6 +162,29 @@ pub fn span_batch(count: usize) -> Vec<CanonicalSpan> {
     span_fixtures(&SpanFixtureConfig::new(count))
 }
 
+/// Generate a write-ready trace batch for future store throughput benchmarks.
+///
+/// Each span gets a matching raw envelope with a unique idempotency key, so a
+/// benchmark can pass the returned value directly to `TraceStore::write_batch`
+/// and measure raw-envelope and canonical-span insertion together.
+pub fn canonical_trace_batch(config: &SpanFixtureConfig) -> CanonicalTraceBatch {
+    let spans = span_fixtures(config);
+    let raw_envelopes = spans
+        .iter()
+        .map(|span| raw_envelope_for(config, span))
+        .collect();
+
+    CanonicalTraceBatch {
+        raw_envelopes,
+        spans,
+    }
+}
+
+/// Generate a default-shaped write-ready trace batch with `count` spans.
+pub fn trace_batch(count: usize) -> CanonicalTraceBatch {
+    canonical_trace_batch(&SpanFixtureConfig::new(count))
+}
+
 fn fixture_span(config: &SpanFixtureConfig, index: usize) -> CanonicalSpan {
     let spans_per_trace = config.spans_per_trace();
     let trace_index = index / spans_per_trace;
@@ -225,6 +249,28 @@ fn fixture_span(config: &SpanFixtureConfig, index: usize) -> CanonicalSpan {
         attributes,
         unmapped_attrs: Value::Object(serde_json::Map::new()),
         raw_ref: artifact_ref(config, &trace_id, &span_id, "raw", index, 512),
+    }
+}
+
+fn raw_envelope_for(config: &SpanFixtureConfig, span: &CanonicalSpan) -> RawEnvelope {
+    let idempotency_key = fixture_id!(IdempotencyKey, format!("bench-raw-{:012}", span.seq));
+
+    RawEnvelope {
+        schema_version: RAW_SCHEMA_VERSION,
+        tenant_id: config.tenant_id.clone(),
+        project_id: config.project_id.clone(),
+        environment_id: config.environment_id.clone(),
+        source: SourceDialect::Native,
+        source_schema_url: Some("beater://bench/native/v1".to_string()),
+        source_schema_version: Some("1".to_string()),
+        received_at: span.start_time,
+        idempotency_key,
+        payload_hash: span.raw_ref.sha256.clone(),
+        body_ref: span.raw_ref.clone(),
+        auth_context: AuthContext {
+            api_key_id: None,
+            scopes: BTreeSet::new(),
+        },
     }
 }
 
@@ -463,6 +509,30 @@ mod tests {
     fn span_batch_uses_requested_count() {
         assert_eq!(span_batch(0).len(), 0);
         assert_eq!(span_batch(3).len(), 3);
+    }
+
+    #[test]
+    fn trace_batch_pairs_raw_envelopes_with_spans() {
+        let batch = trace_batch(5);
+
+        assert_eq!(batch.raw_envelopes.len(), 5);
+        assert_eq!(batch.spans.len(), 5);
+
+        for (index, (raw, span)) in batch.raw_envelopes.iter().zip(&batch.spans).enumerate() {
+            assert_eq!(raw.schema_version, RAW_SCHEMA_VERSION);
+            assert_eq!(raw.tenant_id, span.tenant_id);
+            assert_eq!(raw.project_id, span.project_id);
+            assert_eq!(raw.environment_id, span.environment_id);
+            assert_eq!(raw.source, SourceDialect::Native);
+            assert_eq!(raw.received_at, span.start_time);
+            assert_eq!(raw.payload_hash, span.raw_ref.sha256);
+            assert_eq!(raw.body_ref, span.raw_ref);
+            assert_eq!(
+                raw.idempotency_key.as_str(),
+                format!("bench-raw-{index:012}")
+            );
+            assert!(raw.auth_context.scopes.is_empty());
+        }
     }
 
     #[test]

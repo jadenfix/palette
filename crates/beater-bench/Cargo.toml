@@ -11,10 +11,17 @@ chrono.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
+beater-store = { path = "../beater-store" }
+beater-store-memory = { path = "../beater-store-memory" }
 criterion.workspace = true
+tokio.workspace = true
 
 [[bench]]
 name = "smoke"
+harness = false
+
+[[bench]]
+name = "store_memory"
 harness = false
 
 [lints]

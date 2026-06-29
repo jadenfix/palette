@@ -366,9 +366,20 @@ def check_schema_owns_rollups_and_mappings() -> None:
 
     for path in ["crates/beater-store-memory/src/lib.rs", "crates/beater-store-sql/src/lib.rs"]:
         text = read(path)
-        for symbol in ["query_runs_by_materializing_spans", "span_summary"]:
-            if symbol not in text:
-                fail(f"{path} must use shared trace query helper/mapping via {symbol}")
+        # Span mapping must always go through the shared schema helper.
+        if "span_summary" not in text:
+            fail(f"{path} must use shared span mapping via span_summary")
+        # Run rollups must go through a shared run-query helper — either the
+        # materializing fallback (query_runs_by_materializing_spans) or the
+        # backend-pushdown finalizer (finalize_run_aggregates, used by the SQL
+        # backends that aggregate in the database) — never a backend-local
+        # reimplementation of the rollup.
+        shared_run_helpers = ["query_runs_by_materializing_spans", "finalize_run_aggregates"]
+        if not any(symbol in text for symbol in shared_run_helpers):
+            fail(
+                f"{path} must use a shared run-query helper "
+                f"(one of {shared_run_helpers})"
+            )
         for forbidden in ["fn roll_up_runs", "fn filter_run_summaries", "fn aggregate_run_status"]:
             if forbidden in text:
                 fail(f"{path} must not define backend-local {forbidden}")

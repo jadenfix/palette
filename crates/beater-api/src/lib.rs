@@ -864,6 +864,7 @@ async fn run_judge_eval_route(
             evaluator: request.evaluator,
             case: request.case,
             provider_secret_id: request.provider_secret_id,
+            cache_namespace: request.cache_namespace,
         })
         .await
         .map_err(judge_failure)?;
@@ -1450,6 +1451,12 @@ async fn get_trace(
     let tenant_id = TenantId::new(tenant_id)?;
     let trace_id = TraceId::new(trace_id)?;
     let auth = authorize_tenant_route(&state, &headers, &tenant_id, ApiScope::TraceRead).await?;
+    // A trace with no spans is intentionally returned as an empty 200, not a 404.
+    // Ingest is asynchronous and eventually consistent, so clients (e.g. the
+    // live-smoke `wait_for_trace` poller) read this endpoint immediately after
+    // submitting and poll until spans appear. The store cannot distinguish a
+    // genuinely-unknown trace id from one whose spans have not landed yet, so
+    // 404-ing on empty would break that polling contract.
     let trace = load_trace_for_auth_scope(&state, tenant_id, trace_id, &auth).await?;
     ensure_trace_auth_scope(&trace, &auth)?;
     if params.unmask.unwrap_or(false) {
@@ -1788,8 +1795,12 @@ async fn promote_dataset_case(
         .traces
         .get_project_trace(tenant_id.clone(), project_id.clone(), trace_id)
         .await?;
+    ensure_trace_not_empty(&trace)?;
     ensure_trace_project(&trace, &project_id)?;
     ensure_trace_auth_scope(&trace, &auth)?;
+    if let Some(span_id) = &span_id {
+        ensure_trace_has_span(&trace, span_id)?;
+    }
     let case = promote_trace_span_to_case(
         tenant_id,
         project_id,
@@ -3010,6 +3021,10 @@ struct RunJudgeEvalHttpRequest {
     evaluator: EvaluatorSpec,
     case: EvaluationCase,
     provider_secret_id: ProviderSecretId,
+    /// Calibration-map / judge-instrument version folded into the judge cache
+    /// key; bumping it on recalibration invalidates stale cached scores.
+    #[serde(default)]
+    cache_namespace: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
@@ -3416,6 +3431,16 @@ fn ensure_trace_has_span(trace: &TraceView, span_id: &SpanId) -> Result<(), ApiE
     Err(ApiError::not_found(format!(
         "span {} not found in trace {}",
         span_id.as_str(),
+        trace.trace_id.as_str()
+    )))
+}
+
+fn ensure_trace_not_empty(trace: &TraceView) -> Result<(), ApiError> {
+    if !trace.spans.is_empty() {
+        return Ok(());
+    }
+    Err(ApiError::not_found(format!(
+        "trace {} not found",
         trace.trace_id.as_str()
     )))
 }

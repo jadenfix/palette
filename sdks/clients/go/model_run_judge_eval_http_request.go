@@ -21,6 +21,8 @@ var _ MappedNullable = &RunJudgeEvalHttpRequest{}
 
 // RunJudgeEvalHttpRequest struct for RunJudgeEvalHttpRequest
 type RunJudgeEvalHttpRequest struct {
+	// Calibration-map / judge-instrument version folded into the judge cache key; bumping it on recalibration invalidates stale cached scores.
+	CacheNamespace NullableString `json:"cache_namespace,omitempty"`
 	Case EvaluationCase `json:"case"`
 	Evaluator EvaluatorSpec `json:"evaluator"`
 	ProviderSecretId string `json:"provider_secret_id"`
@@ -46,6 +48,48 @@ func NewRunJudgeEvalHttpRequest(case_ EvaluationCase, evaluator EvaluatorSpec, p
 func NewRunJudgeEvalHttpRequestWithDefaults() *RunJudgeEvalHttpRequest {
 	this := RunJudgeEvalHttpRequest{}
 	return &this
+}
+
+// GetCacheNamespace returns the CacheNamespace field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *RunJudgeEvalHttpRequest) GetCacheNamespace() string {
+	if o == nil || IsNil(o.CacheNamespace.Get()) {
+		var ret string
+		return ret
+	}
+	return *o.CacheNamespace.Get()
+}
+
+// GetCacheNamespaceOk returns a tuple with the CacheNamespace field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *RunJudgeEvalHttpRequest) GetCacheNamespaceOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.CacheNamespace.Get(), o.CacheNamespace.IsSet()
+}
+
+// HasCacheNamespace returns a boolean if a field has been set.
+func (o *RunJudgeEvalHttpRequest) HasCacheNamespace() bool {
+	if o != nil && o.CacheNamespace.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetCacheNamespace gets a reference to the given NullableString and assigns it to the CacheNamespace field.
+func (o *RunJudgeEvalHttpRequest) SetCacheNamespace(v string) {
+	o.CacheNamespace.Set(&v)
+}
+// SetCacheNamespaceNil sets the value for CacheNamespace to be an explicit nil
+func (o *RunJudgeEvalHttpRequest) SetCacheNamespaceNil() {
+	o.CacheNamespace.Set(nil)
+}
+
+// UnsetCacheNamespace ensures that no value is present for CacheNamespace, not even an explicit nil
+func (o *RunJudgeEvalHttpRequest) UnsetCacheNamespace() {
+	o.CacheNamespace.Unset()
 }
 
 // GetCase returns the Case field value
@@ -130,6 +174,9 @@ func (o RunJudgeEvalHttpRequest) MarshalJSON() ([]byte, error) {
 
 func (o RunJudgeEvalHttpRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if o.CacheNamespace.IsSet() {
+		toSerialize["cache_namespace"] = o.CacheNamespace.Get()
+	}
 	toSerialize["case"] = o.Case
 	toSerialize["evaluator"] = o.Evaluator
 	toSerialize["provider_secret_id"] = o.ProviderSecretId

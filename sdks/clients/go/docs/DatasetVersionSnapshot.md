@@ -5,6 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Cases** | [**[]DatasetCase**](DatasetCase.md) |  | 
+**CorpusRoot** | **string** | A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string. | 
 **CreatedAt** | **time.Time** |  | 
 **DatasetId** | **string** |  | 
 **ProjectId** | **string** |  | 
@@ -15,7 +16,7 @@ Name | Type | Description | Notes
 
 ### NewDatasetVersionSnapshot
 
-`func NewDatasetVersionSnapshot(cases []DatasetCase, createdAt time.Time, datasetId string, projectId string, tenantId string, versionId string, ) *DatasetVersionSnapshot`
+`func NewDatasetVersionSnapshot(cases []DatasetCase, corpusRoot string, createdAt time.Time, datasetId string, projectId string, tenantId string, versionId string, ) *DatasetVersionSnapshot`
 
 NewDatasetVersionSnapshot instantiates a new DatasetVersionSnapshot object
 This constructor will assign default values to properties that have it defined,
@@ -48,6 +49,26 @@ and a boolean to check if the value has been set.
 `func (o *DatasetVersionSnapshot) SetCases(v []DatasetCase)`
 
 SetCases sets Cases field to given value.
+
+
+### GetCorpusRoot
+
+`func (o *DatasetVersionSnapshot) GetCorpusRoot() string`
+
+GetCorpusRoot returns the CorpusRoot field if non-nil, zero value otherwise.
+
+### GetCorpusRootOk
+
+`func (o *DatasetVersionSnapshot) GetCorpusRootOk() (*string, bool)`
+
+GetCorpusRootOk returns a tuple with the CorpusRoot field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetCorpusRoot
+
+`func (o *DatasetVersionSnapshot) SetCorpusRoot(v string)`
+
+SetCorpusRoot sets CorpusRoot field to given value.
 
 
 ### GetCreatedAt

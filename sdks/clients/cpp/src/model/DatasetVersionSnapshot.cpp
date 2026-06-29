@@ -21,6 +21,8 @@ namespace model {
 DatasetVersionSnapshot::DatasetVersionSnapshot()
 {
     m_CasesIsSet = false;
+    m_Corpus_root = utility::conversions::to_string_t("");
+    m_Corpus_rootIsSet = false;
     m_Created_at = utility::datetime();
     m_Created_atIsSet = false;
     m_Dataset_id = utility::conversions::to_string_t("");
@@ -49,6 +51,11 @@ web::json::value DatasetVersionSnapshot::toJson() const
     {   
         
         val[utility::conversions::to_string_t(U("cases"))] = ModelBase::toJson(m_Cases);
+    }
+    if(m_Corpus_rootIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("corpus_root"))] = ModelBase::toJson(m_Corpus_root);
     }
     if(m_Created_atIsSet)
     {   
@@ -90,6 +97,17 @@ bool DatasetVersionSnapshot::fromJson(const web::json::value& val)
             std::vector<std::shared_ptr<DatasetCase>> refVal_setCases;
             ok &= ModelBase::fromJson(fieldValue, refVal_setCases);
             setCases(refVal_setCases);
+            
+        }
+    }
+    if(val.has_field(utility::conversions::to_string_t(U("corpus_root"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("corpus_root")));
+        if(!fieldValue.is_null())
+        {
+            utility::string_t refVal_setCorpusRoot;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setCorpusRoot);
+            setCorpusRoot(refVal_setCorpusRoot);
             
         }
     }
@@ -162,6 +180,10 @@ void DatasetVersionSnapshot::toMultipart(std::shared_ptr<MultipartFormData> mult
     {
         multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("cases")), m_Cases));
     }
+    if(m_Corpus_rootIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("corpus_root")), m_Corpus_root));
+    }
     if(m_Created_atIsSet)
     {
         multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("created_at")), m_Created_at));
@@ -198,6 +220,12 @@ bool DatasetVersionSnapshot::fromMultiPart(std::shared_ptr<MultipartFormData> mu
         std::vector<std::shared_ptr<DatasetCase>> refVal_setCases;
         ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("cases"))), refVal_setCases );
         setCases(refVal_setCases);
+    }
+    if(multipart->hasContent(utility::conversions::to_string_t(U("corpus_root"))))
+    {
+        utility::string_t refVal_setCorpusRoot;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("corpus_root"))), refVal_setCorpusRoot );
+        setCorpusRoot(refVal_setCorpusRoot);
     }
     if(multipart->hasContent(utility::conversions::to_string_t(U("created_at"))))
     {
@@ -253,6 +281,27 @@ bool DatasetVersionSnapshot::casesIsSet() const
 void DatasetVersionSnapshot::unsetCases()
 {
     m_CasesIsSet = false;
+}
+utility::string_t DatasetVersionSnapshot::getCorpusRoot() const
+{
+    return m_Corpus_root;
+}
+
+
+void DatasetVersionSnapshot::setCorpusRoot(const utility::string_t& value)
+{
+    m_Corpus_root = value;
+    m_Corpus_rootIsSet = true;
+}
+
+bool DatasetVersionSnapshot::corpusRootIsSet() const
+{
+    return m_Corpus_rootIsSet;
+}
+
+void DatasetVersionSnapshot::unsetCorpus_root()
+{
+    m_Corpus_rootIsSet = false;
 }
 utility::datetime DatasetVersionSnapshot::getCreatedAt() const
 {

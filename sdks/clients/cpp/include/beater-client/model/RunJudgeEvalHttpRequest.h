@@ -57,6 +57,14 @@ public:
     /// RunJudgeEvalHttpRequest members
 
 
+    /// <summary>
+    /// Calibration-map / judge-instrument version folded into the judge cache key; bumping it on recalibration invalidates stale cached scores.
+    /// </summary>
+    utility::string_t getCacheNamespace() const;
+    bool cacheNamespaceIsSet() const;
+    void unsetCache_namespace();
+    void setCacheNamespace(const utility::string_t& value);
+
     std::shared_ptr<EvaluationCase> getRCase() const;
     bool rCaseIsSet() const;
     void unsetr_case();
@@ -74,6 +82,9 @@ public:
 
 
 protected:
+    utility::string_t m_Cache_namespace;
+    bool m_Cache_namespaceIsSet;
+
     std::shared_ptr<EvaluationCase> m_r_case;
     bool m_r_caseIsSet;
 

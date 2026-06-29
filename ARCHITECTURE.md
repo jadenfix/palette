@@ -240,174 +240,66 @@ establishes the naming now and the code adopts it next. Until then, reach for a
 component by its crate path; reason about it by its beat name. Format below:
 **Beatname** — role — (crate).
 
+See the crate-tree below for the authoritative crate path, beat name, role, and
+implementation status of every component.
+
 **Conductor & foundation**
 
-- **Beater** — the conductor: the product and the default all-in-one binary that runs
-  every box in one process — (bin: `beaterd`).
-- **Downbeat** — foundational primitives: IDs, entity types, typed money, clocks,
-  tenant scope (the "one" every other beat counts from) — (crate: `beater-core`).
-- **Beatmap** — the canonical span/run/eval schema, mappings, roll-ups, conventions,
-  `sampling_weight`, DatasetCase `split`; the single source of truth the contract is
-  generated from — (crate: `beater-schema`).
+The top-level binary (`beaterd`), foundational primitives, and the canonical event
+schema that every other component depends on.
 
 **Signal in (ingest) & cadence**
 
-- **Upbeat** — the pickup: incoming signal — OTLP receive/export and the
-  OTLP/OpenInference/GenAI → canonical normalizer, plus auth/quota/raw-append,
-  tail-sampling, and `sampling_weight` stamping — (crates: `beater-otlp` +
-  `beater-ingest`).
-- **Syncopation** — off-grid signal made to fit the grid: Temporal workflow-history →
-  canonical span normalization — (crate: `beater-temporal`).
-- **Drumbeat** — durable cadence: the queue/job bus that keeps work moving on tempo
-  (`SqliteDurableBus` today; NATS/Kafka planned) — (crate: `beater-bus`).
+OTLP receive/normalize, Temporal workflow-history normalization, and the durable job
+bus.
 
 **Trace storage — the Groove**
 
-- **Groove** — trace storage: the `TraceStore`/`MetadataStore`/`ArtifactStore`/
-  `QuotaLimiter` trait boundary and weighted roll-up queries (the groove every trace
-  lays down) — (crate: `beater-store`).
-- **Soundcheck** — the shared trait-conformance suite run against every Groove backend
-  (you sound-check every box before the show) — (crate: `beater-store-conformance`).
-- **Sample** — the in-memory Groove backend for tests/dev (a quick captured sample) —
-  (crate: `beater-store-memory`).
-- **Vinyl** — the durable SQL Groove backends: SQLite (runtime default) plus the
-  ClickHouse/Postgres trace stores (the records the groove is pressed onto) — (crate:
-  `beater-store-sql`).
-- **Crate** — the artifact/raw-envelope object store (`FsArtifactStore`); a record
-  crate where the raw pressings are filed — (crate: `beater-store-obj`).
-- **Cold Storage** — the Parquet cold-tier archive over Arrow/DataFusion (the back-room
-  crate of old records) — (crate: `beater-archive`).
-- **Crate Dig** — full-text search (Tantivy) over spans; digging the crates for the
-  record you want — (crate: `beater-search`).
+The trait boundary for trace/metadata/artifact storage, backend implementations
+(in-memory, SQL, object store, cold-tier archive), full-text search, and the
+conformance suite.
 
 **Scoring backbone — the Backbeat**
 
-- **Backbeat** — the scoring backbone: the evaluator catalog, scoring contracts,
-  paired comparison and aggregation, the LLM/embedding judge broker, and the
-  statistics correctness layer (real p-values, CIs, power, FWER/FDR) — (crates:
-  `beater-eval` + `beater-judge` + `beater-stats` [planned]).
-- **Soundproof** — the WASI/Wasmtime sandbox that runs user evaluators isolated from
-  network/host (the soundproof booth) — (crate: `beater-sandbox`).
-- **Riff** — the custom-scorer registry over the Soundproof sandbox (player-supplied
-  riffs) — (crate: `beater-scorers` [planned]).
-- **Tuning** — agent/score proper-scoring calibration (Brier/ECE/reliability +
-  recalibration map) and judge-vs-human agreement; tuning the instrument so the
-  reading is true — (crate: `beater-calibration`).
-- **Encore** — datasets, versions, examples, trace promotion, and the Train/Dev/Test
-  `split` + contamination guard; the failures you bring back for another take —
-  (crate: `beater-datasets`).
-- **Setlist** — review queues, annotations, and human labels; the curated list a human
-  works through — (crate: `beater-human`).
+Evaluator catalog, LLM/embedding judge broker, statistics layer, WASI evaluator
+sandbox, calibration, datasets, and human-review queues.
 
 **Improvement & replay**
 
-- **Beatboxing** — the recursive-self-improvement loop and experiment harness:
-  candidate-vs-baseline comparisons, the propose→simulate→accept episode, and the
-  agent run harness (improvising on the beat to make it better) — (crates:
-  `beater-experiments` + the RSI tools, §21).
-- **Cue** — the CI/CD deploy gates and policy evaluation: a gate cues the deploy only
-  on a real, powered, multiplicity-corrected, held-out win — (crate: `beater-gates`).
-- **Rewind** — cassettes + deterministic/forked replay and earliest-failing-span
-  attribution (rewind the tape to the moment it went wrong) — (crate: `beater-replay`).
-- **Backspin** — online-eval scoring worker: continuously re-scoring sampled production
-  traces (the turntable's backspin re-reads the groove) — (crate: `beater-online`
-  [planned]).
-- **Mixdown** — prompt registry/versioning/playground: where prompt versions are mixed
-  and committed — (crate: `beater-prompts` [planned]).
+Experiment harness, CI/CD deploy gates, deterministic replay, online scoring worker,
+and prompt registry.
 
 **Anomaly, health & metering**
 
-- **Offbeat** — anomaly/drift alerting over trace/score signals (it fires when the
-  agent falls off the beat) — (crate: `beater-alerts`).
-- **Heartbeat** — self-observability: the Prometheus metrics facade, health, and SLO
-  instrumentation that proves the platform itself is alive — (in `beaterd`:
-  `metrics.rs` / `metrics_http.rs`; there is no separate crate).
-- **Tempo** — the usage ledger, billing meters, and spend summaries (the rate at which
-  value/spend accrues) — (crate: `beater-usage`).
-- **Bandwidth** — plans/subscriptions/Stripe metered sync; how much throughput a plan
-  buys — (crate: `beater-billing` [planned]).
-- **Tip Jar** — the autonomy-credits metering layer (deferred productization, §21.7);
-  what you pay into for verified gains — (crate: `beater-credits` [deferred]).
+Anomaly/drift alerting, self-observability instrumentation, usage ledger, billing, and
+autonomy credits.
 
 **Runtime safety, model traffic & discovery (Phase 7, §20.10)**
 
-- **Bouncer** — the runtime guardrail/firewall: pre/post input+output checks
-  (injection, PII/PHI, toxicity, topic) that *enforce* (block/redact/allow/flag), not
-  just observe; the door staff who turn people away at showtime — (crate:
-  `beater-guardrails` [planned]).
-- **Patchbay** — the OpenAI-compatible LLM gateway/proxy for the customer agent's own
-  model calls: caching, BYOK failover/load-balance, and native tracing + online
-  scoring on every routed signal (a patchbay routes every signal to where it needs to
-  go) — (crate: `beater-gateway` [planned]).
-- **Medley** — failure discovery: clusters failing traces into named `FailureIssue`s,
-  each with a §11 counterfactual root cause and a one-click promote/guardrail/propose
-  (a medley groups related tracks into one set) — (crate: `beater-insights` [planned]).
+Runtime guardrails, OpenAI-compatible LLM gateway, and failure-discovery clustering
+(all planned).
 
 **Identity, secrets & trust**
 
-- **Backstage** — API keys, JWT/session, RBAC types, and audit scopes; the
-  who's-allowed-backstage door — (crate: `beater-auth`).
-- **Guestlist** — users, password auth, browser sessions, org membership; the named
-  people on the list — (crate: `beater-accounts`).
-- **Wristband** — OAuth 2.1 core (clients, PKCE codes, access/refresh tokens); the
-  scoped wristband you're issued at the door — (crate: `beater-oauth`).
-- **Door** — the OAuth 2.1 HTTP surface wired into Beater (where the wristband is
-  checked) — (crate: `beater-oauth-server`).
-- **All-Access** — role/permission resolution inside `authorize()` (enforced RBAC) —
-  (crate: `beater-rbac` [planned]).
-- **Passport** — OIDC/SAML/SCIM enterprise identity (your credentials from another
-  venue) — (crate: `beater-identity` [planned]).
-- **Stash** — opaque provider-secret refs, BYOK metadata, and revocation (where keys
-  are stashed, never shown) — (crate: `beater-secrets`).
-- **Vault** — crypto primitives: Argon2 keys, ChaCha20 envelope encryption, signed
-  webhooks (the vault the Stash relies on) — (crate: `beater-security`).
-- **Logbook** — privileged-access audit events and tamper-evident readback (the venue's
-  signed logbook) — (crate: `beater-audit`).
+API keys, sessions, OAuth 2.1, RBAC, enterprise identity, secrets management, crypto
+primitives, and audit log.
 
 **Browser-agent family — the Liveset**
 
-- **Liveset** — the browser-agent observability contract: the shared foundation that
-  turns browser-driving agents into first-class observed agents (the live performance
-  on stage) — (crate: `beater-browser`).
-- **Liveset: DJ Deck** — the Chrome DevTools Protocol driver backend — (crate:
-  `beater-browser-cdp`).
-- **Liveset: Turntable** — the Playwright driver backend — (crate:
-  `beater-browser-playwright`).
-- **Liveset: Mixer** — the WebDriver/fantoccini driver backend — (crate:
-  `beater-browser-webdriver`).
-- **Liveset: Bootleg** — per-step console + network + DOM capture (the bootleg
-  recording of the live set) — (crate: `beater-browser-capture`).
-- **Liveset: Roadie** — the browser-agent run harness that drives the set — (crate:
-  `beater-browser-harness`).
+Six-crate family: shared contract, three driver backends (CDP, Playwright, WebDriver),
+per-step capture, and the run harness.
 
 **Surfaces, tooling & tracked-but-deferred**
 
-- **Beatbox** — the MCP tool-belt: the MCP server exposing every `/v1` operation as a
-  tool, the composite "recipe" tools, and the folded-in improvement loop (§21) (the
-  box you reach into for a tool) — (crate: `beater-mcp`).
-- **Mixing Board** — the axum routers, OpenAPI surface, SSE/read APIs, the mapping
-  importer, and bulk promote (every signal routed and faded to the right output) —
-  (crate: `beater-api`).
-- **Stomp Box** — the CLI: `init`, `ingest test`, `eval run`, `gate`, `export`, and
-  `beater api` over the spec (the foot pedal you stomp to trigger an action) — (bin:
-  `beaterctl`).
-- **Roadcase** — build/regen tasks: `regen-spec`, `regen-semconv`, loadgen (the case
-  that holds the road crew's tools) — (crate: `xtask`).
-- **Tech Rider** — the criterion benches + load-test fixtures (the rider that pins the
-  performance requirements) — (crate: `beater-bench` [planned]).
-- **Studio** — the deferred visual agent-design canvas (front-end ↔ back-end map,
-  live traces, drag-to-add); design-only, idea preserved (§21.6b) — (crate:
-  `beater-studio` [deferred]).
-- **Backline** — the deferred auto-provisioned tool-belt (managed vector memory, SQL,
-  web search, scrapers); the gear the venue provides on demand (§21.6c) — (crate:
-  `beater-toolbelt` [deferred]).
+The MCP tool-belt, HTTP API surface, CLI, build tasks, benchmark fixtures, and
+deferred UI crates.
 
 **Pipeline (not a crate):**
 
-- **Metronome** — the single combined CI/CD pipeline that keeps every box on tempo and
-  makes drift impossible to merge silently (§22.5).
+**Metronome** is the single combined CI/CD pipeline that keeps every box on tempo and
+makes drift impossible to merge silently (§22.5).
 
-The crate list below reflects the workspace as it exists on `origin/main`
+The crate-tree below reflects the workspace as it exists on `origin/main`
 (verified 2026-06-27). Crates marked **[planned]** are described elsewhere in
 this document as future work and do not yet exist; everything else is a real
 workspace member in `Cargo.toml`. Where this section once named a crate that the
@@ -1640,7 +1532,7 @@ the §20.5 catalog-breadth work; the rest exist in `EVALUATOR_CATALOG` today.
 | **JSON-object (current)** | 1 if output parses as a JSON object | object-shape ⇒ correct (weak) | checks shape only, *not* schema — a wrong-but-well-formed object passes | Wilson (binary) | WASI |
 | **Numeric tolerance** [planned] | 1 if `|out−exp| ≤ abs` or `≤ rel·|exp|` | a numeric ground truth with a known tolerance | unit mismatch; tolerance mis-set; non-numeric output | Wilson (binary) | WASI |
 | **Cost / latency / token budget** | 1 if measured ≤ budget | the measured field is populated and trustworthy | missing/estimated cost or tokens; clock skew on latency | Wilson (binary); raw values → bootstrap | WASI |
-| **Embedding similarity** [planned] | cosine(sim(out), sim(exp)) ≥ `min_cosine` | the embedding space separates correct from incorrect | out-of-domain text; threshold not calibrated; model drift | threshold→Wilson, or cosine→bootstrap; recalibrate on model change | **judge** (needs an embedding provider) |
+| **Embedding similarity** [planned, **opt-in, calibration required**] | cosine(sim(out), sim(exp)) ≥ `min_cosine` | the embedding space separates correct from incorrect; `min_cosine` calibrated to task-specific labeled examples, not a global default | out-of-domain text; threshold not calibrated to task; model drift; calibration data missing or stale (emits abstain/uncalibrated state) | threshold→Wilson, or cosine→bootstrap; recalibrate on model change; persist threshold provenance alongside eval result | **judge** (needs an embedding provider) |
 | **SQL-result match** [planned] | 1 if executing the candidate SQL yields the expected result set | a fixed seeded DB and order-insensitive set compare | schema/data drift; nondeterministic queries; ORDER BY semantics | Wilson (binary) | WASI (execution against a sandboxed/seeded store) |
 | **Execution-based tool correctness** | 1 if the tool call, *executed*, produces the correct effect/result | tool calls are checked by EXECUTION, not by AST/argument syntax | judging only the *syntactic* call shape (a syntactically valid call can be semantically wrong, and a differently-shaped call can be correct) | Wilson (binary); per-call then per-trajectory aggregation | WASI (replayed/sandboxed) |
 | **Trajectory / process-reward** | a process score over the span sequence (plan→step→tool→…) | progress is jointly modeled across steps, *not* independent per-step scores (AgentPRM-style promise+progress) | scoring steps independently double-counts shared context and misattributes credit | per-step scores aggregated with clustered SE (§10.3 #1, cluster = trajectory) | WASI for structural checks; **judge** for quality |
@@ -1665,7 +1557,12 @@ Exact algorithm per scorer (the surface forms behind the table):
 - **Embedding similarity** — cosine `sim = (u·v)/(‖u‖‖v‖)` ∈ [−1,1] between
   embeddings of output and expected from a **pinned** embedding model; score `1`
   iff `sim ≥ min_cosine` (a model-specific threshold, **recalibrated on model
-  change** — there is no universal cutoff). Judge lane (needs a provider).
+  change** — there is no universal cutoff). **[Opt-in, calibration required]**:
+  `min_cosine` must come from a calibration run against task-specific labeled
+  examples for the specific task/domain; threshold provenance (model, version,
+  calibration dataset hash, date) is persisted alongside the eval result; when
+  calibration data is missing or stale the scorer emits an abstain/uncalibrated
+  state rather than a bare score. Judge lane (needs a provider).
 - **SQL-result match** — execute candidate SQL against a fixed **seeded** DB and
   compare result sets as **multisets** (order-insensitive unless the query has an
   explicit `ORDER BY`, in which case order is compared); score `1` iff equal.
@@ -1963,7 +1860,7 @@ Core UI requirements:
   input-distribution drift (PSI/KL), and eval-score drift, each decided on the
   anytime-valid confidence sequence below (never a fixed-N peek) and reported with §9
   weighting — plus a UMAP point-cloud view (Soundstage, §25). Reuses the embedding
-  distance already computed for §21.4 OOD probes and the §10.4 embedding scorer.
+  distance already computed for §21.4 OOD probes and the §10.4 embedding scorer (opt-in, calibration required — see §10.4).
 
 Search:
 
@@ -2399,7 +2296,7 @@ Goal: scorer breadth and statistically defensible experiments.
 
 | # | Requirement | Now | Target / concrete task | Effort | Blocker |
 | --- | --- | --- | --- | --- | --- |
-| 3.1 | Scorer catalog breadth | 10 scorers; `json_object` checks object-ness not schema | Add `FuzzyMatch{min_ratio}` (strsim), `JsonSchema{schema}`, `NumericTolerance{abs,rel}`, `EmbeddingSimilarity{model,min_cosine}` (judge lane), SQL-result match to `EvaluatorKind`/`EVALUATOR_CATALOG` **[contract]** | L | contract |
+| 3.1 | Scorer catalog breadth | 10 scorers; `json_object` checks object-ness not schema | Add `FuzzyMatch{min_ratio}` (strsim), `JsonSchema{schema}`, `NumericTolerance{abs,rel}`, SQL-result match to `EvaluatorKind`/`EVALUATOR_CATALOG` **[contract]**; `EmbeddingSimilarity{model,min_cosine}` (judge lane) **[opt-in, calibration required — not a default addition]**: `min_cosine` must come from a calibration run against task-specific labeled examples; pinned provider/model/version with persisted threshold provenance required; scorer emits an abstain/uncalibrated state when calibration data is missing or stale | L | contract |
 | 3.2 | Structured-rubric LLM judge | `LlmJudge{rubric:String}` free-text | `JudgeRubric{criteria:[{name,weight,scale}],reference_mode,exemplars}`; `JudgeResponse.per_criterion`; reference-guided + CoT rationale **[contract]** | L | contract |
 | 3.3 | Custom scorer registry | WASI sandbox runs components, no upload/registry | `beater-scorers` (or extend `beater-eval`): `ScorerStore` (upload component bytes → `Sha256Hash`, version, list/get) on `beater-store-obj`+sqlite; `/v1/scorers` CRUD **[contract]**; resolve by `wasm_hash` into the sandbox; add memory/epoch limits to `SandboxConfig` | XL | contract |
 | 3.4 | Real statistics module (**correctness fix**, §10.3) | single paired normal-approx, **hardcoded z (1.96/2.576), Bonferroni-only, no p-value → nominal alpha ≠ actual alpha** | New `beater-stats` on `statrs`: paired-t / bootstrap-percentile / Wilson CIs; test selection `{PairedT, McNemarExact, WilcoxonSignedRank, Bootstrap}` with real `p_value`; Holm-Bonferroni + Benjamini-Hochberg; `power.rs` (`required_sample_size`, `achieved_power`); **DELETE `compare_paired_scores`'s hardcoded-z path + `StatisticalTest::PairedNormalApproximation`**, route `beater-eval`/`beater-experiments`/`beater-gates` through `beater-stats`. mSPRT/confidence-sequences are the REQUIRED online follow-on (Phase 4, §10.3 #6) | L | none |
@@ -2556,7 +2453,7 @@ as milestone **v4** (§18).
 | 7.2 | **Distilled small/fast "house" judge models** | judge broker calibrates frontier judges (§10.1.1); no owned small judge | Add `JudgeModelKind::Distilled{base, adapter_ref, calibration_version}` to `beater-judge`: distil a small open-weight judge (single-token or short-CoT) from the §10.1.1 human reference + calibration set; pin behind the broker. **Honesty gate:** a distilled judge may gate *only* after clearing the §10.1.1 kappa + §10.5 ECE bar on held-out human labels vs the frozen frontier judge. "Luna/Lynx/Glider, but you own it and it is calibration-gated." | Galileo Luna-2, Patronus Lynx/Glider | XL | evidence |
 | 7.3 | **LLM gateway / proxy for app traffic** | judge broker routes *judge* calls only | New `beater-gateway` (**Patchbay**): OpenAI-compatible `POST /v1/gateway/chat/completions` over one `ModelProvider` trait — request-hash caching (reuse the §10.1 judge cache), failover/load-balance across BYOK keys (§Stash), unified reasoning params, per-tenant budgets via `QuotaLimiter` (§8.4). **Any model, BYOK optional (the core requirement):** a request may target *any* provider/model; it uses the tenant's BYOK key when present (opaque `ProviderSecretId`, never raw keys) and otherwise falls back to a **managed default model** so a caller does *not have to* bring a key/model on hosted — OSS requires BYOK and returns a typed `NoKey` error in its absence (mirrors the §2 editions "managed routing vs optional BYOK" rows). **Robustness:** retry/backoff on 429/5xx, multi-key/provider failover, request-hash cache, per-tenant budget reservation + request timeout, and provider-key **redaction** (key material is never logged or returned). **The Beater twist:** every proxied call is *natively traced with zero SDK* and *online-scorable* (§20.6). **Opt-in and complementary to OTLP, never the primary instrumentation** — a proxy alone misses non-LLM agent steps (the §26.0 Helicone lesson) — and it carries its own hot-path availability SLO (§16) because an outage would hit the customer's app **[contract]** | Braintrust AI Proxy | XL | design |
 | 7.4 | **Failure discovery / clustering → named issues** | §13 "failure clustering" is one line; no pipeline | New `beater-insights` (**Medley**): embed failing traces → cluster (HDBSCAN/agglomerative) → auto-name each cluster (judge) → attach a §11 counterfactual root-cause to each exemplar → emit a `FailureIssue` (§5.1) with representative traces, **sampling-weighted** frequency (§9), est. cost impact, root-cause span, and one-click → promote-to-dataset / → generate online-evaluator / → `propose_change` (§21). The unsupervised *front-end* over Beater's already-rigorous back-end. `GET /v1/insights/clusters\|issues` **[contract]** | LangSmith Insights/Engine, Galileo Insights, Judgment Behavior Discovery, Patronus Percival | L | contract |
-| 7.5 | **Embedding-space drift + distribution monitoring** | Offbeat alerts on score signals only | Extend `beater-alerts` (+ Medley): production-vs-reference embedding-centroid drift, input-distribution drift (PSI/KL on key attrs), eval-score drift — each decided on the §13 **anytime-valid confidence sequence**, not a fixed-N peek, reported with §9 weighting/§10.3 uncertainty (never a bare distance). UMAP point-cloud is a §25 Soundstage screen. Reuses the embedding distance already computed for §21.4 OOD probes + the §10.4 embedding scorer — via the external embedding provider + existing columnar store, **no bundled vector DB** (§26.3) | Arize embeddings/drift | L | design |
+| 7.5 | **Embedding-space drift + distribution monitoring** | Offbeat alerts on score signals only | Extend `beater-alerts` (+ Medley): production-vs-reference embedding-centroid drift, input-distribution drift (PSI/KL on key attrs), eval-score drift — each decided on the §13 **anytime-valid confidence sequence**, not a fixed-N peek, reported with §9 weighting/§10.3 uncertainty (never a bare distance). UMAP point-cloud is a §25 Soundstage screen. Reuses the embedding distance already computed for §21.4 OOD probes + the §10.4 embedding scorer (opt-in, calibration required — see §10.4) — via the external embedding provider + existing columnar store, **no bundled vector DB** (§26.3) | Arize embeddings/drift | L | design |
 | 7.6 | **Named prompt/agent optimizer strategies** | RSI `propose_change` uses LLM-rewrite only; evolutionary/population search was deferred (§21) | Un-defer as *gated proposal strategies* behind `propose_change`: `OptimizerStrategy = { LlmRewrite, FewShotBayesian, MIPRO, Evolutionary, GEPA, ParamSearch }` (in **Beatboxing**/`beater-experiments`). All candidates flow through the SAME §10.3 stats + §21.4 anti-overfit guardrail + frozen-Test gate. **Differentiator:** to our knowledge no competitor optimizer documents a held-out + multiplicity-corrected acceptance gate (2026-06-27; re-verify per §26.0), so each is exposed to multiple-comparison overfitting; Beater's candidates run under FWER/FDR + held-out Test + the §21.4 Goodhart guardrail | Opik Optimizer (MIPRO/GEPA/evolutionary/Bayesian), DSPy, LangSmith Polly | L | none |
 | 7.7 | **AutoRubric + G-Eval generation** | `suggest_scorers` is advisory only (§21.1) | Make it generative: from a §7.4 failure cluster + a few human labels, auto-generate a structured `JudgeRubric` (§20.5 #3.2) and G-Eval-style evaluation steps from a task description — **gated**: a generated rubric cannot enter a production gate until it clears the §10.1.1 kappa + §10.5 ECE bar on held-out labels (what makes Beater's auto-rubric trustworthy where competitors' are vibes). `POST /v1/scorers/generate` **[contract]** | Judgment AutoRubrics, Opik G-Eval, Braintrust autoevals | M | contract |
 | 7.8 | **Conversation- & agent-trajectory named scorers** | catalog is single-turn-shaped | Add to `EVALUATOR_CATALOG`/§10.4: conversation-level (Coherence, Session-Completeness, User-Frustration) over §20.3 session/thread groups, and agent-trajectory (Tool-Selection-Quality, Tool-Error-Rate, Action-Advancement/Completion, Agent-Flow; RAG Context-Adherence, Chunk-Attribution/Utilization). Each pinned with §10.4 assumptions + CI; trajectory scorers use the §10.4 clustered process-reward aggregation, never per-step means **[contract]** | Opik &amp; Galileo agentic/conversation metrics | M | contract |
@@ -2802,6 +2699,15 @@ that buys Test points by blowing past a guardrail bound is dominated, not accept
 > default threshold / window `k` must be **auto-calibrated to the measured eval
 > noise floor** (§10.3), not hardcoded.
 
+> **Phasing.** Signals 1 (held-out gap), 2 (OOD-probe delta), and 5 (complexity
+> penalty) are **GA-safe**: they use the same held-out Test split and anytime-valid
+> confidence sequences as the rest of the platform. Signal 3 (smoothness/sensitivity)
+> is a **heuristic** — enable once per-task noise is measured. Signal 4 (proxy-vs-true
+> divergence) is **split**: EvalStop (4a) is GA-safe once `k` is calibrated to the
+> measured noise floor; the KL scaling-law stop (4b) and the CSI latent-outlier
+> detector (4c) are **[deferred]** — not enabled until BEATER-specific calibration
+> data is collected (see Signal 4 below).
+
 #### The five signals (computed per candidate RSI change)
 
 **Signal 1 — Held-out generalization gap.** The most basic overfitting tell:
@@ -2891,7 +2797,7 @@ detectors, used together:
   and **keep the best checkpoint** (not the last) [arXiv:2606.04145]. `k` is
   auto-calibrated to the per-step Test-score noise (a single noisy dip is not a
   decline).
-- **KL-distance scaling law (closed-form peak).** Over-optimization scales with the
+- **KL-distance scaling law (closed-form peak) [deferred — requires calibration data].** Over-optimization scales with the
   policy's drift from its init. With `d = √(D_KL(π ‖ π_init))`, the gold (true)
   reward follows
   `R_bon(d) = d·(α − β·d)` for best-of-n sampling and
@@ -2899,11 +2805,15 @@ detectors, used together:
   to BEATER's OWN proxy-vs-KL data** — Gao's published coefficients are **not
   reusable** (they are method-, scale-, and reward-model-specific; re-fit per
   config) — then **stop at the closed-form peak** (`d* = α/(2β)` for the BoN form),
-  i.e. the drift past which more optimization *reduces* true reward.
-- **Info-bottleneck latent-outlier detector (secondary).** A CSI-style
+  i.e. the drift past which more optimization *reduces* true reward. **Not enabled
+  until α, β are fit to measured BEATER proxy-vs-KL data; using published
+  coefficients before that calibration run silently mis-places the stop point.**
+- **Info-bottleneck latent-outlier detector (secondary) [deferred — requires calibration data].** A CSI-style
   (Contrastive Shifted Instances) outlier score on a bottlenecked latent of the
   candidate's behavior flags when a change has moved into a representation region
   uncharacteristic of genuinely-improving changes — a secondary divergence alarm.
+  **Not enabled until a bottleneck model is trained and validated on BEATER's own
+  behavioral embeddings; without that, the outlier boundary is uncalibrated.**
 
 State plainly: **KL-regularization ALONE is insufficient.** Under heavy-tailed
 reward misspecification, bounding KL does not bound true-reward loss
@@ -2934,9 +2844,9 @@ ACCEPT a candidate change only if ALL hold (constrained optimization, per axis):
 Ties broken by lower complexity (Signal 5) and higher verifier_gain over judge_gain (§21.2).
 
 HALT the whole RSI job (and ROLL BACK to the best checkpoint) when divergence is detected:
-    k consecutive frozen-Test declines while the proxy rises   (Signal 4 EvalStop), OR
-    drift d = √D_KL(π‖π_init) past the fitted scaling-law peak  (Signal 4 KL law),  OR
-    a CSI latent-outlier alarm                                  (Signal 4 secondary).
+    k consecutive frozen-Test declines while the proxy rises   (Signal 4a EvalStop — GA-safe once k calibrated), OR
+    drift d = √D_KL(π‖π_init) past the fitted scaling-law peak  (Signal 4b KL law — DEFERRED until α,β fit to BEATER data),  OR
+    a CSI latent-outlier alarm                                  (Signal 4c — DEFERRED until bottleneck model trained on BEATER data).
 ```
 
 This is the multi-objective framing made operational: **generalization gap,
@@ -2982,7 +2892,7 @@ discarded even if its headline Test delta is the largest in the round.
 
 This guardrail is **[planned]**, like the rest of §21; its acceptance test is the
 §24 ledger row "the §21 guardrail REJECTS an overfit change on a held-out OOD probe"
-and the §22.3 RSI rows.
+and the §24 RSI loop rows.
 
 [^sam-prompt]: The specific SAM-for-prompts source (arXiv:2509.24130) was
   *withdrawn; retained for framing only* — do not propagate it as valid evidence.
@@ -3470,51 +3380,19 @@ The containerized self-host equivalent: `scripts/smoke-compose.sh`. The
 clean-clone-to-browser proof: see the README "Clean Clone To Browser" path
 (enforced by `gate2-proof-contract`).
 
-### 22.3 Plan item → acceptance test → verification command → CI gate
+### 22.3 Plan item → acceptance test → CI gate
 
-Every §20/§21 item maps to a concrete acceptance test and a verification command.
-The CI gate is the workflow that blocks merge if the item regresses.
-
-| Item | Acceptance test | Verification command | CI gate |
-| --- | --- | --- | --- |
-| §20.2 #0.1 columnar store wired | `beaterd --trace-store clickhouse` boots + serves; non-ignored compose integration test | `cargo run -p beaterd -- --trace-store clickhouse && curl /health` `[planned]` | `storage-backends` |
-| §20.2 #0.2 pagination/pushdown | keyset cursor + `LIMIT` pushed to SQL; `query_runs` is a backend `GROUP BY` | conformance test asserts no in-memory full-scan `[planned]` | `storage-backends` |
-| §20.2 #0.3 query p95 SLOs | criterion bench on 1M/10M-span fixtures meets §16 p95 in CI | `cargo bench -p beater-bench` `[planned]` | `backend` (bench gate) |
-| §20.2 #0.4 retention/TTL | sweeper demotes-then-deletes expired hot rows | retention integration test `[planned]` | `backend` |
-| §20.2 #0.5 cold archival | partitioned Parquet to object store; DataFusion read path | archive round-trip test `[planned]` | `backend` |
-| §20.2 #0.6 backend-agnostic migrations | `Migrator` runs on ClickHouse/Postgres; `xtask renormalize` reprojects raw | migration checksum test per backend `[planned]` | `storage-backends` |
-| §20.3 #1.1 sessions **[contract]** | multi-turn trace groups by session in the API | `curl /v1/sessions` + normalizer golden test `[planned]` | `sdk-contract` |
-| §20.3 #1.2 structured message I/O **[contract]** | OpenInference/`gen_ai` messages parse into `CanonicalMessages` | golden fixture both dialects `[planned]` | `sdk-contract` |
-| §20.3 #1.3 multimodal **[contract]** | a vision LLM call renders its image | media-artifact parse + render test `[planned]` | `sdk-contract` / `frontend` |
-| §20.3 #1.6 sampling weights **[contract]** | weighted aggregate matches population rate (A19) | unit: weighted vs unweighted diverge on tail-sampled fixture `[planned]` | `sdk-contract` / `backend` |
-| §20.3 #1.7 Train/Dev/Test split **[contract]** | seeded split + contamination guard rejects a near-dup in Test (A13) | dataset split + contamination unit test `[planned]` | `sdk-contract` |
-| §20.3 #1.8 mapping importer **[contract]** | a foreign dialect projects to canonical with no code | `/v1/import` mapping fixture `[built]` for the first dot-path JSON importer | `sdk-contract` |
-| §20.4 #2.x read APIs + UI | browse datasets, open an experiment with per-case CIs + gate badge, annotate, diff, analytics | Playwright e2e over the dashboard `[planned]` | `frontend` |
-| §20.4 #2.1b bulk promote **[contract]** | `promote-from-query` materializes failures as cases with seeded split | `curl /v1/datasets/:id/promote-from-query` `[planned]` | `sdk-contract` |
-| §20.5 #3.1 scorer breadth **[contract]** | new scorers pass on valid + invalid-when fixtures (§10.4) | per-scorer unit tests `[planned]` | `sdk-contract` / `backend` |
-| §20.5 #3.3 custom scorer registry **[contract]** | an uploaded WASM scorer runs sandboxed with memory/epoch limits | `/v1/scorers` upload + sandbox limit test `[planned]` | `sdk-contract` |
-| §20.5 #3.4 real statistics | delta with method-appropriate CI + real p-value, FWER-corrected, refuses underpowered (A2–A6) | `cargo test -p beater-stats` (alpha-calibration) `[planned]` | `backend` |
-| §20.5 #3.6 CI integration | `pytest`/`beater eval` fails CI on regression | the pytest plugin / `beater eval` subcommand `[planned]` | `sdk-contract` |
-| §20.5 #3.7 proper-scoring calibration **[contract]** | Brier/ECE + recalibration map improves ECE (A11) | `calibration-fixture` extended `[planned]`; today `[built]` runs kappa | `backend` |
-| §20.6 #4.1 online evals score | sampled production traces scored on a schedule, weighted (A19) | `curl /v1/online/.../scores` timeseries `[planned]` | `backend` |
-| §20.6 #4.3/#4.4 delivery + Slack | alert actually delivered (HMAC webhook / Slack Block Kit) | delivery-history endpoint + signed-payload test `[planned]`; today `[built]` `alert-fixture` computes a signed webhook | `backend` |
-| §20.6 #4.5 anytime-valid alerting | alert decided against an mSPRT confidence sequence, not fixed-N (A7) | continuous-peek FP test `[planned]` | `backend` |
-| §20.6 #4.7 prompt management **[contract]** | create/version/diff/run a prompt; resolve `prompt_version_id` at eval | `/v1/prompts` CRUD + playground `[planned]` | `sdk-contract` |
-| §20.7 #5.2 enforced RBAC **[contract]** | a non-owner is denied a mutating route by `authorize()` (A20) | unauthorized mutate returns 403 `[planned]` | `sdk-contract` |
-| §20.7 #5.4 tenant isolation at DB | cross-tenant read fails under Postgres RLS (A20) | store-conformance cross-tenant test `[built]` (app-layer) → DB-layer `[planned]` | `storage-backends` |
-| §20.7 #5.5 crypto-shred **[contract]** | a shredded tenant is unreadable across hot/cold/artifact | deletion + unreadable-after assertion `[planned]` | `sdk-contract` |
-| §20.7 #5.9 backups/restore | restore drill meets documented RPO/RTO | CI restore-drill job `[planned]` | `backend` |
-| §20.7 #5.11 governance/SECURITY | `SECURITY.md` + compliance docs present | repo presence check; **`SECURITY.md` now exists `[built]`** | `backend` |
-| §20.8 #6.2 zero-code bootstrap | env-var-only app produces traces with no code (§1 #13) | the README zero-code OTLP snippet `[built]` (manual); `beaterctl ingest test` prints/validates the OTLP env block `[built]`; env-var distro `[planned]` | `gate1-live-smoke` |
-| §20.8 #6.4 `beaterctl quickstart` | timed e2e shows a *scored failing case* under the §15 SLO | `beaterctl quickstart` `[planned]` | `gate1-live-smoke` |
-| §21 MCP stdio transport | `tools/list` over stdio returns the full tool set | `beaterd mcp --stdio` `[built]`; streamable-HTTP `/mcp` `[built]` | `sdk-contract` |
-| §21.1 RSI tools | propose→simulate(Train)→accept(Test) only on a stat-sig held-out win (A13/A14) | `gate_candidate` MCP recipe `[planned]` | `backend` |
-| §21.9 RSI MVP acceptance | indexes a small agent, proposes a generalizable change, verifies a Test win, applies via Claude Code with approval | end-to-end MCP episode `[planned]` | `backend` |
+Every §20/§21 plan item maps to a row in the §24 Definition-of-Done ledger, which
+is the single authoritative acceptance-test matrix. The §24 table carries the
+binary done-criterion, the exact verification command, and the CI gate for each
+capability. To find the acceptance test for a specific plan item, look up the
+corresponding §24 row (Group A for the OSS core loop, Group B for Hosted GA, Group
+C for cross-cutting, Group D for competitive-parity surfaces).
 
 ### 22.4 Acceptance-to-milestone traceability
 
 The §18 milestone acceptance bullets and the §19 "Bar for Done" questions are
-satisfied exactly when their §22.1/§22.3 rows are green:
+satisfied exactly when their §24 rows are green:
 
 - **v0 Substrate** → ingest + store + `beaterctl smoke` rows (§22.1) all `[built]`.
 - **v1 OSS Observability & Offline Evals** → evals/judge, experiments+gates,
@@ -3538,7 +3416,7 @@ rule — **a change that is not regenerated, tested, and drift-free cannot merge
 only a green `main` deploys.** It has two halves: **CI** (the merge gates below,
 run on every PR and on `main`) and **CD** (the deploy/release workflows, triggered
 only by a push to `main` or a `v*` tag *after* the CI gates are green). The gate
-set here is the same one §22.1/§22.3 map every component and plan item to, the same
+set here is the same one §22.1 and §24 map every component and plan item to, the same
 verify-commands as §22.2, and is consistent with the README/CONTRIBUTING gate list
 — there is one source of truth for "what must pass," not three.
 
@@ -3556,7 +3434,7 @@ required gates are green.
 | **`storage-backends`** | the `beater-store-conformance` trait suite runs against every backend (in-memory, SQLite today; Postgres/ClickHouse as wired, §20.2 #0.1), incl. tenant-isolation (A20) and the `#[ignore]`d container-backed store tests | `cargo test -p beater-store-conformance --workspace`; `cargo test -p beater-store-sql -- --ignored` |
 | **`frontend`** | dashboard build/lint/typecheck against the **generated** OpenAPI client, plus `check-openapi-drift.sh` so a UI change cannot silently diverge from the served spec | `scripts/check-openapi-drift.sh` |
 | **`browser`** | the `beater-browser*` family (Liveset) builds and its driver/capture tests pass | `cargo test` over the browser crates |
-| **`gate1-live-smoke`** | a live `beaterd` ingest → query round-trip (`beaterd --test live_smoke`); the zero-code-bootstrap and `quickstart` acceptance live here (§22.3) | `cargo run -p beaterctl -- smoke …` |
+| **`gate1-live-smoke`** | a live `beaterd` ingest → query round-trip (`beaterd --test live_smoke`); the zero-code-bootstrap and `quickstart` acceptance map to §24 Group A rows | `cargo run -p beaterctl -- smoke …` |
 | **`gate2-proof-contract`** | the clean-clone-to-browser proof contract: `fmt`, `check-openapi-drift.sh`, the gate-0 foundations check, and the self-host/outside-validator tests that back the README "Clean Clone To Browser" path | `scripts/gate2-proof.sh` |
 | **`gate2-browser-proof`** | the recorded browser demo proof (Playwright over the dashboard) | `scripts/browser-e2e.sh` |
 
@@ -3856,17 +3734,17 @@ to §18 milestones, §19 Bar-for-Done, §20/§21 phase items, and §22 tests.
 
 | Capability | Binary done-criterion | Verified-by | Status |
 | --- | --- | --- | --- |
-| Columnar store wired | `beaterd --trace-store clickhouse` boots and serves traces | §22.3 §20.2 #0.1 row; `storage-backends` gate (compose integration test) | planned |
-| Scale: filtered search p95 | 10M-span seeded filtered search **p95 < 1s** in CI | §22.3 §20.2 #0.3 row; `beater-bench` load report (`backend` bench gate, §23.10) | planned |
-| Zero-SDK OTLP queryable | a stock OTel exporter trace (no Beater SDK) becomes queryable under the §16 ingest→queryable SLO | §22.1 Ingest e2e + §22.3 §20.8 #6.2; `gate1-live-smoke` | partial (built: SDK round-trip and `beaterctl ingest test` env block; env-var distro planned) |
-| Datasets read-API + UI | browse datasets/versions/cases via `GET /v1/datasets…` and the dashboard | §22.3 §20.4 #2.x (Playwright); `sdk-contract` + `frontend` | planned (create-only POST today) |
+| Columnar store wired | `beaterd --trace-store clickhouse` boots and serves traces | `cargo run -p beaterd -- --trace-store clickhouse && curl /health` `[planned]`; `storage-backends` gate (compose integration test) | planned |
+| Scale: filtered search p95 | 10M-span seeded filtered search **p95 < 1s** in CI | `cargo bench -p beater-bench` `[planned]`; `beater-bench` load report (`backend` bench gate, §23.10) | planned |
+| Zero-SDK OTLP queryable | a stock OTel exporter trace (no Beater SDK) becomes queryable under the §16 ingest→queryable SLO | §22.1 Ingest e2e; `gate1-live-smoke` | partial (built: SDK round-trip and `beaterctl ingest test` env block; env-var distro planned) |
+| Datasets read-API + UI | browse datasets/versions/cases via `GET /v1/datasets…` and the dashboard | Playwright e2e §20.4 #2.x `[planned]`; `sdk-contract` + `frontend` | planned (create-only POST today) |
 | Evals browseable (deterministic + calibrated judge) | deterministic WASI + judge eval results browseable with rationale + calibration | §22.1 Evals/Calibration rows; `judge-dataset-fixture` `[built]`; eval UI §20.4 `[planned]` | partial |
 | Real statistics | method-appropriate CI, real p-value, test-selection, Holm-BH/FDR, anytime-valid | §22.1 Statistics row (A2–A8); `cargo test -p beater-stats` | planned (hardcoded-z path deleted; `beater-stats` not yet built, §10.3) |
 | Candidate-vs-baseline gate blocks a regression | the gate **exits non-zero** on a real confidence-bound regression | §22.1 Experiments+gates; `! beaterctl gate-run …` (non-zero exit) `[built]` | partial (built on the deleted-stats path; trustworthy once `beater-stats` lands) |
 | Replay earliest-flip | forked replay finds the **earliest outcome-flipping span** on a seeded failure (A18) | §22.1 Replay row; `replay-fixture` `[built]` (cassette); real forked search §11 `[planned]` | partial |
-| MCP deployable < 5 min | stdio **and** hosted streamable-HTTP/OAuth, connecting from Claude Code/Cursor/ChatGPT/Codex with `tools/list`+`tools/call` | §22.1 MCP row + §22.3 §21 stdio row; `curl POST /mcp` `[built]`; `beaterd mcp --stdio` `[built]` | partial (basic transports built; end-client attach proof remains) |
-| RSI loop closes end-to-end | index→propose→simulate(Train)→accept(Test)→apply via Claude Code with approval | §22.1 RSI row + §22.3 §21.8 row; end-to-end MCP episode | planned |
-| §21 guardrail rejects an overfit change | the §21.4 guardrail **REJECTS** a deliberately-overfit change on a **held-out OOD probe** (demonstrated) | §22.1 RSI row + §22.3 §21.1 RSI row; OOD-reject acceptance test (§21.4) | planned |
+| MCP deployable < 5 min | stdio **and** hosted streamable-HTTP/OAuth, connecting from Claude Code/Cursor/ChatGPT/Codex with `tools/list`+`tools/call` | §22.1 MCP row; `curl POST /mcp` `[built]`; `beaterd mcp --stdio` `[built]` | partial (basic transports built; end-client attach proof remains) |
+| RSI loop closes end-to-end | index→propose→simulate(Train)→accept(Test)→apply via Claude Code with approval | §22.1 RSI row; end-to-end MCP episode `[planned]` | planned |
+| §21 guardrail rejects an overfit change | the §21.4 guardrail **REJECTS** a deliberately-overfit change on a **held-out OOD probe** (demonstrated) | §22.1 RSI row; OOD-reject acceptance test (§21.4) `[planned]` | planned |
 | SDK ↔ MCP ↔ API zero-drift | spec == served routes == all 7 clients == MCP tools == CLI == 5 semconv SDKs | §22.5 `sdk-contract` gate; `scripts/check-contract-sync.sh` `[built]` | built |
 | Docker compose offline | `scripts/smoke-compose.sh` runs the full loop with **no cloud calls** | §22.2 compose row; `gate2-proof-contract` | partial (compose path built; offline-guarantee assertion to harden) |
 | Heartbeat SLO dashboards live | `/metrics` exposes ingest success, ingest→queryable lag, DLQ age, query p95 (§16) | §22.1 Self-observability; `curl /metrics` `[built]`; load evidence §23.10 `[planned]` | partial |
@@ -3876,20 +3754,20 @@ to §18 milestones, §19 Bar-for-Done, §20/§21 phase items, and §22 tests.
 | Capability | Binary done-criterion | Verified-by | Status |
 | --- | --- | --- | --- |
 | Orgs / projects / envs | org/project/environment entities + scoping enforced | §22.1 Store row; `beater-store-conformance` boundaries `[built]` | built |
-| Enforced RBAC | a non-owner is **denied** a mutating route by `authorize()` (A20) | §22.3 §20.7 #5.2; `sdk-contract` (403 test) | planned (RBAC data model exists, never consulted by `authorize()`, §20.1) |
+| Enforced RBAC | a non-owner is **denied** a mutating route by `authorize()` (A20) | unauthorized mutate returns 403 `[planned]`; `sdk-contract` | planned (RBAC data model exists, never consulted by `authorize()`, §20.1) |
 | SSO / SAML / SCIM | enterprise login JIT-provisions a user (OIDC/SAML/SCIM) | §22.1 Hosted control plane (SSO JIT); Passport (`beater-identity` [planned]) | planned |
-| Storage-layer tenant isolation (RLS) + secure-default auth | cross-tenant read/write **fails at the DB** under Postgres RLS; auth required by default | §22.3 §20.7 #5.4 (A20); `storage-backends` (app-layer `[built]` → DB-layer `[planned]`) | partial (auth required by default; `--auth-mode local` rejects non-loopback HTTP binds; app-enforced today; DB RLS planned) |
+| Storage-layer tenant isolation (RLS) + secure-default auth | cross-tenant read/write **fails at the DB** under Postgres RLS; auth required by default | store-conformance cross-tenant test (A20); `storage-backends` (app-layer `[built]` → DB-layer `[planned]`) | partial (auth required by default; `--auth-mode local` rejects non-loopback HTTP binds; app-enforced today; DB RLS planned) |
 | Quotas / rate-limits / billing ledger | per-tenant quota + rolling-window limit + a usage/billing ledger | §22.1 + Tempo (`beater-usage`) `[built]` ledger; Bandwidth (`beater-billing` [planned]) | partial |
-| Crypto-shred deletion / GDPR + retention + residency | a shredded tenant is **unreadable across hot/cold/artifact**; retention sweeper runs; residency honored | §22.3 §20.7 #5.5 + §20.2 #0.4; `sdk-contract` / `backend` | planned (crypto primitives built; lifecycle planned) |
-| Backups + passing restore drill | a restore drill **meets documented RPO/RTO** | §22.3 §20.7 #5.9; CI restore-drill job | planned |
-| Alerts actually delivered | an alert is **delivered** (Slack Block Kit / HMAC webhook), with delivery history | §22.3 §20.6 #4.3/#4.4; `alert-fixture` signs a webhook `[built]`; delivery `[planned]` | partial |
+| Crypto-shred deletion / GDPR + retention + residency | a shredded tenant is **unreadable across hot/cold/artifact**; retention sweeper runs; residency honored | deletion + unreadable-after assertion `[planned]`; `sdk-contract` / `backend` | planned (crypto primitives built; lifecycle planned) |
+| Backups + passing restore drill | a restore drill **meets documented RPO/RTO** | CI restore-drill job `[planned]`; `backend` | planned |
+| Alerts actually delivered | an alert is **delivered** (Slack Block Kit / HMAC webhook), with delivery history | delivery-history endpoint + signed-payload test `[planned]`; `alert-fixture` `[built]`; `backend` | partial |
 
 ### 24.3 Group C — Cross-cutting
 
 | Capability | Binary done-criterion | Verified-by | Status |
 | --- | --- | --- | --- |
 | beater-bench SLO gates green | criterion + loadgen meet §16 SLOs and gate regressions | §22.5 advisory bench gate → required; Tech Rider (`beater-bench` [planned], §23.10) | planned |
-| Governance docs present | `LICENSE`, `GOVERNANCE.md`, `SECURITY.md`, `CONTRIBUTING.md` exist | §22.3 §20.7 #5.11 repo-presence check; `SECURITY.md` exists `[built]` | built (LICENSE + CONTRIBUTING + SECURITY + GOVERNANCE present); compliance docs `[planned]` |
+| Governance docs present | `LICENSE`, `GOVERNANCE.md`, `SECURITY.md`, `CONTRIBUTING.md` exist | repo presence check `[built]`; `SECURITY.md` exists | built (LICENSE + CONTRIBUTING + SECURITY + GOVERNANCE present); compliance docs `[planned]` |
 | Docs complete | quickstart + Claude-Code/Codex MCP setup + SDK & framework guides + API/MCP-tool reference exist and are verified by a new dev reaching first-scored-failure following **only** the docs (§15.1, §21.5b) | §22 docs-walkthrough check (a new dev hits first-scored-failure from docs alone) | partial (README/CONTRIBUTING/SECURITY/GOVERNANCE + `docs/` exist; user-facing guides + docs site `[planned]`) |
 | §19 Bar-for-Done all "yes" with evidence | every §19 question answerable **yes** with a green §22 verification | §22.4 traceability (milestone ⇒ §22 rows); §19 | planned (several answers still "no", §20.1) |
 
@@ -4177,7 +4055,7 @@ rubric, OOD-probe detail) — never on screen by default (§25.1).
   the generated OpenAPI client** + `check-openapi-drift.sh` so the UI can't diverge
   from the served spec. **[built].**
 - **`gate2-browser-proof`** (§22.5) is the recorded **Playwright** demo over the
-  dashboard — the §22.3 row "§20.4 #2.x read APIs + UI → Playwright e2e" and the
+  dashboard — the §24 "Datasets read-API + UI" row (§20.4 #2.x, Playwright e2e) and the
   README "Clean Clone To Browser" path (`gate2-proof-contract`). The
   quickstart/browser e2e (`tests/e2e`, `playwright.config.ts`) is **[built]** for
   the trace path; per-screen e2e for the §25.4 product routes lands with each route

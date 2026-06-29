@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List
 from beater_client.models.dataset_case import DatasetCase
 from typing import Optional, Set
@@ -29,12 +29,13 @@ class DatasetVersionSnapshot(BaseModel):
     DatasetVersionSnapshot
     """ # noqa: E501
     cases: List[DatasetCase]
+    corpus_root: StrictStr = Field(description="A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string.")
     created_at: datetime
     dataset_id: StrictStr
     project_id: StrictStr
     tenant_id: StrictStr
     version_id: StrictStr
-    __properties: ClassVar[List[str]] = ["cases", "created_at", "dataset_id", "project_id", "tenant_id", "version_id"]
+    __properties: ClassVar[List[str]] = ["cases", "corpus_root", "created_at", "dataset_id", "project_id", "tenant_id", "version_id"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -95,6 +96,7 @@ class DatasetVersionSnapshot(BaseModel):
 
         _obj = cls.model_validate({
             "cases": [DatasetCase.from_dict(_item) for _item in obj["cases"]] if obj.get("cases") is not None else None,
+            "corpus_root": obj.get("corpus_root"),
             "created_at": obj.get("created_at"),
             "dataset_id": obj.get("dataset_id"),
             "project_id": obj.get("project_id"),

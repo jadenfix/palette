@@ -43,11 +43,15 @@
 mod mcnemar;
 mod multiplicity;
 mod numerics;
+mod overfit;
 mod paired;
 mod power;
 
 pub use mcnemar::mcnemar_exact_p;
 pub use multiplicity::{benjamini_hochberg, holm_bonferroni, MultiplicityDecision};
+pub use overfit::{
+    assess_generalization_gap, GapAssessment, Ladder, Thresholdout, ThresholdoutAnswer,
+};
 pub use paired::paired_t_test;
 pub use power::{achieved_power, minimum_detectable_effect, required_sample_size, DEFAULT_POWER};
 
@@ -591,6 +595,7 @@ fn erfc_approx(x: f64) -> f64 {
 // Tiny deterministic RNG — 64-bit xorshift (Marsaglia 2003)
 // ─────────────────────────────────────────────────────────────────────────────
 
+#[derive(Debug, Clone)]
 struct Xorshift64 {
     state: u64,
 }

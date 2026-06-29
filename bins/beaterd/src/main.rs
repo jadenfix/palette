@@ -873,8 +873,8 @@ impl HttpTraceStore {
 
 #[async_trait::async_trait]
 impl TraceStore for HttpTraceStore {
-    async fn write_batch(&self, batch: CanonicalTraceBatch) -> StoreResult<WriteAck> {
-        self.post_json("write-batch", batch).await
+    async fn write_batch(&self, batch: Arc<CanonicalTraceBatch>) -> StoreResult<WriteAck> {
+        self.post_json("write-batch", batch.as_ref()).await
     }
 
     async fn get_trace(&self, tenant: TenantId, trace: TraceId) -> StoreResult<TraceView> {
@@ -956,7 +956,7 @@ impl FailSwitchTraceStore {
 
 #[async_trait::async_trait]
 impl TraceStore for FailSwitchTraceStore {
-    async fn write_batch(&self, batch: CanonicalTraceBatch) -> StoreResult<WriteAck> {
+    async fn write_batch(&self, batch: Arc<CanonicalTraceBatch>) -> StoreResult<WriteAck> {
         if self.fail_write_while_path.exists() {
             return Err(StoreError::backend(format!(
                 "test trace store write failure while {} exists",

@@ -101,6 +101,14 @@ pub struct JudgeBrokerRequest {
     pub evaluator: EvaluatorSpec,
     pub case: EvaluationCase,
     pub provider_secret_id: ProviderSecretId,
+    /// Cache-invalidation namespace folded into the judge cache key. Carries the
+    /// calibration-map / judge-instrument version, so that a recalibration
+    /// trigger (model deprecation, provider drift, rubric change, kappa
+    /// degradation) bumps it and invalidates the affected cached scores instead
+    /// of silently serving a pre-recalibration score. When `None` the key
+    /// reduces to the prior request-only composition.
+    #[serde(default)]
+    pub cache_namespace: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -301,6 +309,7 @@ where
             &request.evaluator.id,
             &provider,
             &request.provider_secret_id,
+            request.cache_namespace.as_deref(),
             &judge_request,
         )?;
 
@@ -1120,12 +1129,22 @@ fn strip_json_fence(content: &str) -> &str {
         .unwrap_or(content)
 }
 
+/// Compute the judge cache key.
+///
+/// The key is total over every input that can change the score: the request
+/// (rubric content, judge model, input/output/reference), the tenant/project,
+/// evaluator id, provider, provider secret, and the `cache_namespace` that
+/// carries the calibration-map / judge-instrument version. Recalibration bumps
+/// `cache_namespace`, so a post-recalibration lookup misses instead of serving a
+/// stale pre-recalibration score.
+#[allow(clippy::too_many_arguments)]
 pub fn judge_request_hash(
     tenant_id: &TenantId,
     project_id: &ProjectId,
     evaluator_id: &str,
     provider: &str,
     provider_secret_id: &ProviderSecretId,
+    cache_namespace: Option<&str>,
     request: &JudgeRequest,
 ) -> Result<Sha256Hash, JudgeBrokerError> {
     #[derive(Serialize)]
@@ -1135,6 +1154,7 @@ pub fn judge_request_hash(
         evaluator_id: &'a str,
         provider: &'a str,
         provider_secret_id: &'a ProviderSecretId,
+        cache_namespace: Option<&'a str>,
         request: &'a JudgeRequest,
     }
 
@@ -1144,6 +1164,7 @@ pub fn judge_request_hash(
         evaluator_id,
         provider,
         provider_secret_id,
+        cache_namespace,
         request,
     })
 }
@@ -1304,6 +1325,106 @@ mod tests {
             !format!("{:?}", ProviderCredentials::new("openai", "sk-live-secret"))
                 .contains("sk-live-secret")
         );
+    }
+
+    #[tokio::test]
+    async fn judge_broker_recalibration_namespace_invalidates_cache() {
+        // A recalibration bumps the cache namespace (calibration-map / instrument
+        // version). Identical inputs/rubric/model must then MISS the cache and
+        // re-score, instead of silently serving the pre-recalibration score.
+        let secrets = SqliteProviderSecretStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let ledger = SqliteJudgeLedger::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant_id = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let metadata = secrets
+            .put_secret(PutProviderSecretRequest {
+                tenant_id: tenant_id.clone(),
+                project_id: project_id.clone(),
+                provider: "openai".to_string(),
+                display_name: "judge".to_string(),
+                secret_value: "sk-live-secret".to_string(),
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let calls = Arc::new(AtomicUsize::new(0));
+        let broker = JudgeBrokerService::new(
+            secrets.clone(),
+            ledger.clone(),
+            CountingJudgeProvider {
+                calls: calls.clone(),
+                cost: Money::usd_micros(10),
+            },
+            Money::usd_micros(1000),
+        );
+
+        let mut request = fixture_request(
+            tenant_id.clone(),
+            project_id.clone(),
+            metadata.provider_secret_id.clone(),
+        );
+        request.cache_namespace = Some("calmap-v1".to_string());
+
+        let first = broker
+            .evaluate(request.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        // Same namespace => HIT.
+        let second = broker
+            .evaluate(request.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        assert!(!first.audit.cached);
+        assert!(second.audit.cached);
+        assert_eq!(first.audit.request_hash, second.audit.request_hash);
+
+        // Recalibration bumps the namespace => MISS, re-scored.
+        request.cache_namespace = Some("calmap-v2".to_string());
+        let after_recalibration = broker
+            .evaluate(request)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+        assert!(!after_recalibration.audit.cached);
+        assert_ne!(
+            first.audit.request_hash,
+            after_recalibration.audit.request_hash
+        );
+    }
+
+    #[test]
+    fn judge_request_hash_is_total_over_score_changing_inputs() {
+        let tenant_id = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let secret = ProviderSecretId::new("secret").unwrap_or_else(|err| panic!("{err}"));
+        let base = fixture_judge_request();
+        let hash = |namespace: Option<&str>, request: &JudgeRequest| {
+            judge_request_hash(
+                &tenant_id,
+                &project_id,
+                "evaluator",
+                "openai",
+                &secret,
+                namespace,
+                request,
+            )
+            .unwrap_or_else(|err| panic!("{err}"))
+        };
+
+        let baseline = hash(Some("calmap-v1"), &base);
+        // Identical inputs + identical namespace => identical key (determinism).
+        assert_eq!(baseline, hash(Some("calmap-v1"), &base));
+        // Changed calibration namespace => different key.
+        assert_ne!(baseline, hash(Some("calmap-v2"), &base));
+        assert_ne!(baseline, hash(None, &base));
+        // Changed rubric => different key.
+        let mut changed_rubric = base.clone();
+        changed_rubric.rubric = "helpfulness".to_string();
+        assert_ne!(baseline, hash(Some("calmap-v1"), &changed_rubric));
+        // Changed judge model/version => different key.
+        let mut changed_model = base.clone();
+        changed_model.model = "judge-model-v2".to_string();
+        assert_ne!(baseline, hash(Some("calmap-v1"), &changed_model));
     }
 
     #[tokio::test]
@@ -1675,6 +1796,7 @@ mod tests {
                 trace: None,
             },
             provider_secret_id,
+            cache_namespace: None,
         }
     }
 

@@ -772,13 +772,22 @@ pub fn filter_run_summaries(
     spans: &[SpanSummary],
     filter: &RunFilter,
 ) -> Vec<RunSummary> {
-    let kind_trace_ids = filter.kind.as_ref().map(|kind| {
-        spans
-            .iter()
-            .filter(|span| &span.kind == kind)
-            .map(|span| (span.project_id.as_str(), span.trace_id.as_str()))
-            .collect::<HashSet<_>>()
-    });
+    // Build the kind-filter membership set in a single borrow-keyed pass over
+    // the spans (no owned `(String, String)` clones — the keys borrow out of
+    // `spans`, which outlives this set). Skip the span traversal entirely when
+    // there is no `kind` filter, or when no runs survive to be checked against
+    // it, so the kind path never scans spans needlessly.
+    let kind_trace_ids = filter
+        .kind
+        .as_ref()
+        .filter(|_| !runs.is_empty())
+        .map(|kind| {
+            spans
+                .iter()
+                .filter(|span| &span.kind == kind)
+                .map(|span| (span.project_id.as_str(), span.trace_id.as_str()))
+                .collect::<HashSet<_>>()
+        });
     runs.into_iter()
         .filter(|run| match &filter.trace_id {
             Some(trace_id) => &run.trace_id == trace_id,

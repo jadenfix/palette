@@ -1690,10 +1690,10 @@ mod tests {
             SpanStatus::Ok,
         );
         traces
-            .write_batch(CanonicalTraceBatch {
+            .write_batch(Arc::new(CanonicalTraceBatch {
                 raw_envelopes: Vec::new(),
                 spans: vec![span],
-            })
+            }))
             .await
             .unwrap_or_else(|err| panic!("{err}"));
 

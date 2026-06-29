@@ -17,6 +17,8 @@ concurrency:
 
 on:
   pull_request:
+  # Validate the browser-agent suite against the merged result of each queued PR (#343).
+  merge_group:
   push:
     branches: [main]
   workflow_dispatch:
