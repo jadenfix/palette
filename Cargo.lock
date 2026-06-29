@@ -995,10 +995,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-design"
+version = "0.1.0"
+dependencies = [
+ "beater-core",
+ "serde",
+ "thiserror 1.0.69",
+ "utoipa",
+]
+
+[[package]]
 name = "beater-eval"
 version = "0.1.0"
 dependencies = [
  "beater-core",
+ "beater-design",
  "beater-schema",
  "beater-stats",
  "regex",

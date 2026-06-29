@@ -6,8 +6,8 @@ use beater_core::{
 };
 use beater_datasets::DatasetVersionSnapshot;
 use beater_eval::{
-    compare_paired_scores, evaluate_deterministic, EvaluationCase, EvaluatorSpec,
-    ExperimentComparison, GateDecision, GatePolicy, ScoreResult,
+    compare_paired_scores_with_design, conservative_gate_design, evaluate_deterministic,
+    EvaluationCase, EvaluatorSpec, ExperimentComparison, GateDecision, GatePolicy, ScoreResult,
 };
 use beater_judge::{
     GenerationRequest, JudgeBroker, JudgeBrokerOutcome, JudgeBrokerRequest, ProviderCredentials,
@@ -476,8 +476,14 @@ pub fn run_deterministic_experiment(
     }
 
     let gate_policy = spec.gate_policy.clone();
-    let comparison = compare_paired_scores(&baseline_scores, &candidate_scores, &gate_policy)
-        .context("compare experiment scores")?;
+    let design = conservative_gate_design(&gate_policy, baseline_scores.len());
+    let comparison = compare_paired_scores_with_design(
+        &baseline_scores,
+        &candidate_scores,
+        &gate_policy,
+        &design,
+    )
+    .context("compare experiment scores")?;
     Ok(ExperimentRunReport {
         experiment_run_id: ExperimentRunId::new(Uuid::new_v4().to_string())?,
         tenant_id: snapshot.tenant_id.clone(),
@@ -583,8 +589,14 @@ where
     }
 
     let gate_policy = spec.experiment.gate_policy.clone();
-    let comparison = compare_paired_scores(&baseline_scores, &candidate_scores, &gate_policy)
-        .context("compare judge experiment scores")?;
+    let design = conservative_gate_design(&gate_policy, baseline_scores.len());
+    let comparison = compare_paired_scores_with_design(
+        &baseline_scores,
+        &candidate_scores,
+        &gate_policy,
+        &design,
+    )
+    .context("compare judge experiment scores")?;
     Ok(ExperimentRunReport {
         experiment_run_id: ExperimentRunId::new(Uuid::new_v4().to_string())?,
         tenant_id: snapshot.tenant_id.clone(),
@@ -1679,9 +1691,19 @@ fn gate_candidate(
         ));
     }
 
-    // (1) Real held-out Test gate — reused verbatim from beater-eval.
-    let gate = compare_paired_scores(&test_baseline, &test_candidate, &cfg.gate_policy)
-        .map_err(|err| OptimizerError::GateFailed(err.to_string()))?;
+    // (1) Real held-out Test gate — reused verbatim from beater-eval, and now
+    // routed through the pre-registration design so the RSI acceptance decision
+    // enforces `EvalDesign::permit_pass` too (a structurally-invalid design can
+    // never certify a Pass). The conservative default design always permits pass,
+    // so this changes no accept/reject outcome (§1 #9, §10.3).
+    let gate_design = conservative_gate_design(&cfg.gate_policy, test_baseline.len());
+    let gate = compare_paired_scores_with_design(
+        &test_baseline,
+        &test_candidate,
+        &cfg.gate_policy,
+        &gate_design,
+    )
+    .map_err(|err| OptimizerError::GateFailed(err.to_string()))?;
 
     // (2) Real anti-overfit guardrail — reused verbatim from beater-stats.
     let overfit = assess_generalization_gap(
