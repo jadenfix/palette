@@ -66,4 +66,9 @@ jobs:
 
       - name: Compose diagnostics
         if: failure()
-        run: docker compose -p "$COMPOSE_PROJECT_NAME" ps || true
+        run: |
+          docker compose -p "$COMPOSE_PROJECT_NAME" ps || true
+          # Capture container logs (esp. beaterd) so a startup crash that exits
+          # before the healthcheck — invisible to `ps` once the container is gone —
+          # is recoverable from the run log.
+          docker compose -p "$COMPOSE_PROJECT_NAME" logs --no-color --timestamps || true
