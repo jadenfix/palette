@@ -417,27 +417,203 @@ fn sql_decode_error(error: impl std::error::Error + Send + Sync + 'static) -> ru
 }
 
 #[cfg(test)]
+pub(crate) async fn assert_provider_secret_scope_isolation<S>(store: &S)
+where
+    S: ProviderSecretStore + ?Sized,
+{
+    let owner_tenant = test_tenant_id("tenant-a");
+    let other_tenant = test_tenant_id("tenant-b");
+    let owner_project = test_project_id("project-a");
+    let other_project = test_project_id("project-b");
+
+    let owner_secret =
+        put_colliding_provider_secret(store, &owner_tenant, &owner_project, "sk-owner").await;
+    let tenant_collision =
+        put_colliding_provider_secret(store, &other_tenant, &owner_project, "sk-tenant").await;
+    let project_collision =
+        put_colliding_provider_secret(store, &owner_tenant, &other_project, "sk-project").await;
+
+    let cross_tenant_get = store
+        .get_secret(
+            other_tenant.clone(),
+            owner_project.clone(),
+            owner_secret.provider_secret_id.clone(),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert!(cross_tenant_get.is_none());
+
+    let cross_project_get = store
+        .get_secret(
+            owner_tenant.clone(),
+            other_project.clone(),
+            owner_secret.provider_secret_id.clone(),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert!(cross_project_get.is_none());
+
+    let cross_tenant_revoke = store
+        .revoke_secret(
+            other_tenant.clone(),
+            owner_project.clone(),
+            owner_secret.provider_secret_id.clone(),
+            Utc::now(),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert!(cross_tenant_revoke.is_none());
+
+    let cross_project_revoke = store
+        .revoke_secret(
+            owner_tenant.clone(),
+            other_project.clone(),
+            owner_secret.provider_secret_id.clone(),
+            Utc::now(),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert!(cross_project_revoke.is_none());
+
+    let loaded = store
+        .get_secret(
+            owner_tenant.clone(),
+            owner_project.clone(),
+            owner_secret.provider_secret_id.clone(),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"))
+        .unwrap_or_else(|| panic!("owner-scoped provider secret should remain active"));
+    assert_eq!(loaded.secret_value(), "sk-owner");
+    assert!(loaded.metadata.active);
+
+    assert_single_scoped_metadata(
+        store,
+        owner_tenant.clone(),
+        owner_project.clone(),
+        &owner_secret,
+    )
+    .await;
+    assert_single_scoped_metadata(
+        store,
+        other_tenant.clone(),
+        owner_project,
+        &tenant_collision,
+    )
+    .await;
+    assert_single_scoped_metadata(store, owner_tenant, other_project, &project_collision).await;
+}
+
+#[cfg(test)]
+async fn put_colliding_provider_secret<S>(
+    store: &S,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+    secret_value: &str,
+) -> ProviderSecretMetadata
+where
+    S: ProviderSecretStore + ?Sized,
+{
+    store
+        .put_secret(PutProviderSecretRequest {
+            tenant_id: tenant_id.clone(),
+            project_id: project_id.clone(),
+            provider: "openai".to_string(),
+            display_name: "shared judge".to_string(),
+            secret_value: secret_value.to_string(),
+        })
+        .await
+        .unwrap_or_else(|err| panic!("{err}"))
+}
+
+#[cfg(test)]
+async fn assert_single_scoped_metadata<S>(
+    store: &S,
+    tenant_id: TenantId,
+    project_id: ProjectId,
+    expected: &ProviderSecretMetadata,
+) where
+    S: ProviderSecretStore + ?Sized,
+{
+    let listed = store
+        .list_secret_metadata(tenant_id.clone(), project_id.clone())
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(listed.len(), 1);
+    let actual = listed
+        .first()
+        .unwrap_or_else(|| panic!("scope should contain one provider secret"));
+    assert_eq!(
+        actual.provider_secret_id.as_str(),
+        expected.provider_secret_id.as_str()
+    );
+    assert_eq!(actual.tenant_id.as_str(), tenant_id.as_str());
+    assert_eq!(actual.project_id.as_str(), project_id.as_str());
+    assert_eq!(actual.provider, "openai");
+    assert_eq!(actual.display_name, "shared judge");
+    assert!(actual.active);
+}
+
+#[cfg(test)]
+fn test_tenant_id(value: &str) -> TenantId {
+    TenantId::new(value).unwrap_or_else(|err| panic!("{err}"))
+}
+
+#[cfg(test)]
+fn test_project_id(value: &str) -> ProjectId {
+    ProjectId::new(value).unwrap_or_else(|err| panic!("{err}"))
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn provider_secret_metadata_never_serializes_secret_material() {
+    async fn provider_secret_debug_and_serde_surfaces_redact_secret_material() {
         let store = SqliteProviderSecretStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let plaintext_secret = "sk-test-secret";
         let request = PutProviderSecretRequest {
             tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
             project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
             provider: "openai".to_string(),
             display_name: "production judge".to_string(),
-            secret_value: "sk-test-secret".to_string(),
+            secret_value: plaintext_secret.to_string(),
         };
-        assert!(!format!("{request:?}").contains("sk-test-secret"));
+        let request_debug = format!("{request:?}");
+        assert_no_plaintext(
+            "put provider secret request debug",
+            &request_debug,
+            plaintext_secret,
+        );
+        assert!(request_debug.contains("<redacted>"));
 
         let metadata = store
             .put_secret(request)
             .await
             .unwrap_or_else(|err| panic!("{err}"));
-        let serialized = serde_json::to_string(&metadata).unwrap_or_else(|err| panic!("{err}"));
-        assert!(!serialized.contains("sk-test-secret"));
+        let metadata_json = serde_json::to_string(&metadata).unwrap_or_else(|err| panic!("{err}"));
+        assert_public_surface_has_no_secret_material(
+            "provider secret metadata json",
+            &metadata_json,
+            plaintext_secret,
+        );
+        let metadata_debug = format!("{metadata:?}");
+        assert_public_surface_has_no_secret_material(
+            "provider secret metadata debug",
+            &metadata_debug,
+            plaintext_secret,
+        );
+
+        let listed = store
+            .list_secret_metadata(metadata.tenant_id.clone(), metadata.project_id.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let listed_json = serde_json::to_string(&listed).unwrap_or_else(|err| panic!("{err}"));
+        assert_public_surface_has_no_secret_material(
+            "provider secret metadata list json",
+            &listed_json,
+            plaintext_secret,
+        );
 
         let loaded = store
             .get_secret(
@@ -448,8 +624,31 @@ mod tests {
             .await
             .unwrap_or_else(|err| panic!("{err}"))
             .unwrap_or_else(|| panic!("provider secret should exist"));
-        assert_eq!(loaded.secret_value(), "sk-test-secret");
-        assert!(!format!("{loaded:?}").contains("sk-test-secret"));
+        assert_eq!(loaded.secret_value(), plaintext_secret);
+        let loaded_debug = format!("{loaded:?}");
+        assert_no_plaintext(
+            "decrypted provider secret debug",
+            &loaded_debug,
+            plaintext_secret,
+        );
+        assert!(loaded_debug.contains("<redacted>"));
+
+        let revoked = store
+            .revoke_secret(
+                metadata.tenant_id,
+                metadata.project_id,
+                metadata.provider_secret_id,
+                Utc::now(),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .unwrap_or_else(|| panic!("provider secret should be revoked"));
+        let revoked_json = serde_json::to_string(&revoked).unwrap_or_else(|err| panic!("{err}"));
+        assert_public_surface_has_no_secret_material(
+            "revoked provider secret json",
+            &revoked_json,
+            plaintext_secret,
+        );
     }
 
     #[tokio::test]
@@ -497,5 +696,31 @@ mod tests {
         assert_eq!(listed.len(), 1);
         assert!(!listed[0].active);
         assert!(listed[0].rotated_at.is_some());
+    }
+
+    #[tokio::test]
+    async fn sqlite_provider_secret_store_enforces_tenant_project_scope() {
+        let store = SqliteProviderSecretStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+
+        assert_provider_secret_scope_isolation(&store).await;
+    }
+
+    fn assert_public_surface_has_no_secret_material(
+        surface_name: &str,
+        surface: &str,
+        plaintext_secret: &str,
+    ) {
+        assert_no_plaintext(surface_name, surface, plaintext_secret);
+        assert!(
+            !surface.contains("secret_value"),
+            "{surface_name} exposed a secret_value field"
+        );
+    }
+
+    fn assert_no_plaintext(surface_name: &str, surface: &str, plaintext_secret: &str) {
+        assert!(
+            !surface.contains(plaintext_secret),
+            "{surface_name} leaked plaintext provider secret"
+        );
     }
 }

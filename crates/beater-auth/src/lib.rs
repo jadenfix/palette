@@ -335,4 +335,147 @@ mod tests {
             Err(SecurityError::InactiveApiKey)
         ));
     }
+
+    #[tokio::test]
+    async fn sqlite_store_persists_last_used_without_changing_scope() {
+        let store = SqliteApiKeyStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let mut scopes = BTreeSet::new();
+        scopes.insert(ApiScope::TraceRead);
+        scopes.insert(ApiScope::TraceWrite);
+
+        let created = store
+            .create_key(CreateApiKeyRequest {
+                tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+                environment_id: EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+                scopes,
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let original = store
+            .get_key(created.record.api_key_id.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .unwrap_or_else(|| panic!("api key should exist"));
+        let used_at = DateTime::parse_from_rfc3339("2026-06-28T12:34:56Z")
+            .unwrap_or_else(|err| panic!("{err}"))
+            .with_timezone(&Utc);
+
+        store
+            .touch_last_used(created.record.api_key_id.clone(), used_at)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let touched = store
+            .get_key(created.record.api_key_id)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .unwrap_or_else(|| panic!("api key should still exist"));
+        assert_eq!(touched.last_used_at, Some(used_at));
+        assert_eq!(touched.api_key_id, original.api_key_id);
+        assert_eq!(touched.tenant_id, original.tenant_id);
+        assert_eq!(touched.project_id, original.project_id);
+        assert_eq!(touched.environment_id, original.environment_id);
+        assert_eq!(touched.secret_hash, original.secret_hash);
+        assert_eq!(touched.scopes, original.scopes);
+        assert_eq!(touched.active, original.active);
+        assert_eq!(touched.created_at, original.created_at);
+        assert_eq!(touched.rotated_at, original.rotated_at);
+
+        verify_api_key(
+            &touched,
+            &created.secret,
+            &TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            &ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            &EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            ApiScope::TraceRead,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+    }
+
+    #[tokio::test]
+    async fn sqlite_round_trip_preserves_scope_boundaries() {
+        let store = SqliteApiKeyStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let mut scopes = BTreeSet::new();
+        scopes.insert(ApiScope::TraceRead);
+        let created = store
+            .create_key(CreateApiKeyRequest {
+                tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+                environment_id: EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+                scopes,
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let loaded = store
+            .get_key(created.record.api_key_id)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .unwrap_or_else(|| panic!("api key should exist"));
+
+        assert!(matches!(
+            verify_api_key(
+                &loaded,
+                &created.secret,
+                &TenantId::new("other-tenant").unwrap_or_else(|err| panic!("{err}")),
+                &ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+                &EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+                ApiScope::TraceRead,
+            ),
+            Err(SecurityError::ScopeMismatch)
+        ));
+        assert!(matches!(
+            verify_api_key(
+                &loaded,
+                &created.secret,
+                &TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                &ProjectId::new("other-project").unwrap_or_else(|err| panic!("{err}")),
+                &EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+                ApiScope::TraceRead,
+            ),
+            Err(SecurityError::ScopeMismatch)
+        ));
+        assert!(matches!(
+            verify_api_key(
+                &loaded,
+                &created.secret,
+                &TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                &ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+                &EnvironmentId::new("dev").unwrap_or_else(|err| panic!("{err}")),
+                ApiScope::TraceRead,
+            ),
+            Err(SecurityError::ScopeMismatch)
+        ));
+    }
+
+    #[tokio::test]
+    async fn sqlite_round_trip_preserves_admin_scope() {
+        let store = SqliteApiKeyStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let mut scopes = BTreeSet::new();
+        scopes.insert(ApiScope::Admin);
+        let created = store
+            .create_key(CreateApiKeyRequest {
+                tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+                environment_id: EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+                scopes,
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let loaded = store
+            .get_key(created.record.api_key_id)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .unwrap_or_else(|| panic!("api key should exist"));
+
+        verify_api_key(
+            &loaded,
+            &created.secret,
+            &TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            &ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            &EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            ApiScope::TraceRead,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+    }
 }

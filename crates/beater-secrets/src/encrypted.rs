@@ -13,7 +13,6 @@ use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use chrono::{DateTime, Utc};
 use rand_core::{OsRng, RngCore};
 use rusqlite::{params, Connection, OptionalExtension};
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::fs;
@@ -77,7 +76,7 @@ impl Debug for SecretEncryptionKey {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SecretKeyring {
     active_key_id: String,
     keys: Arc<BTreeMap<String, SecretEncryptionKey>>,
@@ -146,6 +145,7 @@ impl SecretKeyring {
         let path = path.as_ref();
         let key_id = key_id.into();
         if path.exists() {
+            validate_existing_key_file_permissions(path)?;
             let encoded = fs::read_to_string(path)
                 .with_context(|| format!("read provider secret key file {}", path.display()))?;
             return Self::from_base64(key_id, &encoded);
@@ -170,6 +170,37 @@ impl SecretKeyring {
             .get(key_id)
             .ok_or_else(|| anyhow!("provider secret encryption key {key_id} is unavailable"))
     }
+}
+
+impl Debug for SecretKeyring {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let key_ids = self.keys.keys().collect::<Vec<_>>();
+        f.debug_struct("SecretKeyring")
+            .field("active_key_id", &self.active_key_id)
+            .field("key_ids", &key_ids)
+            .finish()
+    }
+}
+
+#[cfg(unix)]
+fn validate_existing_key_file_permissions(path: &Path) -> anyhow::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let metadata = fs::metadata(path)
+        .with_context(|| format!("stat provider secret key file {}", path.display()))?;
+    let mode = metadata.permissions().mode() & 0o777;
+    if mode & 0o077 != 0 {
+        return Err(anyhow!(
+            "provider secret key file {} must not be accessible by group or other users; found mode {mode:o}",
+            path.display()
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn validate_existing_key_file_permissions(_path: &Path) -> anyhow::Result<()> {
+    Ok(())
 }
 
 fn write_new_key_file(path: &Path, encoded_key: &str) -> anyhow::Result<()> {
@@ -573,11 +604,23 @@ impl ProviderSecretStore for EncryptedSqliteProviderSecretStore {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+// SQLite persists these fields separately; keep the encrypted payload off serde
+// surfaces so it cannot accidentally become an API/log payload.
+#[derive(Clone, PartialEq, Eq)]
 struct EncryptedSecretValue {
     key_id: String,
     nonce: Vec<u8>,
     ciphertext: Vec<u8>,
+}
+
+impl Debug for EncryptedSecretValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EncryptedSecretValue")
+            .field("key_id", &self.key_id)
+            .field("nonce", &"<redacted>")
+            .field("ciphertext", &"<redacted>")
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -798,6 +841,15 @@ mod tests {
         assert_eq!(loaded.secret_value(), "sk-rotating-secret");
     }
 
+    #[tokio::test]
+    async fn encrypted_provider_secret_store_enforces_tenant_project_scope() {
+        let keyring = SecretKeyring::generated_for_tests().unwrap_or_else(|err| panic!("{err}"));
+        let store = EncryptedSqliteProviderSecretStore::in_memory(keyring)
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        crate::assert_provider_secret_scope_isolation(&store).await;
+    }
+
     #[test]
     fn keyring_requires_active_key_to_be_present() {
         let key = SecretEncryptionKey::new("present", [1_u8; KEY_BYTES])
@@ -806,11 +858,118 @@ mod tests {
     }
 
     #[test]
+    fn key_debug_surfaces_redact_key_material() {
+        let old_key = SecretEncryptionKey::new("secrets-v1", [1_u8; KEY_BYTES])
+            .unwrap_or_else(|err| panic!("{err}"));
+        let new_key = SecretEncryptionKey::new("secrets-v2", [2_u8; KEY_BYTES])
+            .unwrap_or_else(|err| panic!("{err}"));
+        let old_encoded = old_key.to_base64();
+        let new_encoded = new_key.to_base64();
+        let keyring = SecretKeyring::with_keys("secrets-v2", [old_key.clone(), new_key.clone()])
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let surfaces = [
+            ("old key debug", format!("{old_key:?}")),
+            ("new key debug", format!("{new_key:?}")),
+            ("keyring debug", format!("{keyring:?}")),
+        ];
+        for (surface_name, surface) in surfaces {
+            assert_debug_surface_omits(surface_name, &surface, &old_encoded, "old key bytes");
+            assert_debug_surface_omits(surface_name, &surface, &new_encoded, "new key bytes");
+            assert_debug_surface_omits(surface_name, &surface, "[1, 1", "old raw key bytes");
+            assert_debug_surface_omits(surface_name, &surface, "[2, 2", "new raw key bytes");
+        }
+    }
+
+    #[test]
+    fn encrypted_secret_debug_surfaces_redact_ciphertext_material() {
+        let plaintext_secret = "sk-debug-secret";
+        let keyring = SecretKeyring::single(
+            SecretEncryptionKey::new("debug-key", [7_u8; KEY_BYTES])
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let store = EncryptedSqliteProviderSecretStore::in_memory(keyring)
+            .unwrap_or_else(|err| panic!("{err}"));
+        let metadata = ProviderSecretMetadata {
+            provider_secret_id: ProviderSecretId::new(Uuid::new_v4().to_string())
+                .unwrap_or_else(|err| panic!("{err}")),
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            provider: "openai".to_string(),
+            display_name: "debug judge".to_string(),
+            active: true,
+            created_at: Utc::now(),
+            rotated_at: None,
+        };
+        let encrypted = store
+            .encrypt_secret(&metadata, plaintext_secret)
+            .unwrap_or_else(|err| panic!("{err}"));
+        let nonce_debug = format!("{:?}", encrypted.nonce);
+        let ciphertext_debug = format!("{:?}", encrypted.ciphertext);
+
+        let encrypted_debug = format!("{encrypted:?}");
+        assert_debug_surface_omits(
+            "encrypted secret value debug",
+            &encrypted_debug,
+            plaintext_secret,
+            "plaintext provider secret",
+        );
+        assert_debug_surface_omits(
+            "encrypted secret value debug",
+            &encrypted_debug,
+            &nonce_debug,
+            "nonce bytes",
+        );
+        assert_debug_surface_omits(
+            "encrypted secret value debug",
+            &encrypted_debug,
+            &ciphertext_debug,
+            "ciphertext bytes",
+        );
+        assert!(encrypted_debug.contains("<redacted>"));
+
+        let row = EncryptedSecretRow {
+            metadata,
+            encrypted,
+        };
+        let row_debug = format!("{row:?}");
+        assert_debug_surface_omits(
+            "encrypted secret row debug",
+            &row_debug,
+            plaintext_secret,
+            "plaintext provider secret",
+        );
+        assert_debug_surface_omits(
+            "encrypted secret row debug",
+            &row_debug,
+            &nonce_debug,
+            "nonce bytes",
+        );
+        assert_debug_surface_omits(
+            "encrypted secret row debug",
+            &row_debug,
+            &ciphertext_debug,
+            "ciphertext bytes",
+        );
+    }
+
+    #[test]
     fn local_key_file_is_reused_and_redacted() {
         let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
         let path = tempdir.path().join("provider-secrets.key");
         let first = SecretKeyring::load_or_create_local_file(&path, "local-v1")
             .unwrap_or_else(|err| panic!("{err}"));
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+
+            let mode = fs::metadata(&path)
+                .unwrap_or_else(|err| panic!("{err}"))
+                .permissions()
+                .mode()
+                & 0o777;
+            assert_eq!(mode, 0o600);
+        }
         let second = SecretKeyring::load_or_create_local_file(&path, "local-v1")
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(
@@ -830,5 +989,39 @@ mod tests {
                 .to_base64()
                 .as_str()
         ));
+    }
+
+    fn assert_debug_surface_omits(
+        surface_name: &str,
+        surface: &str,
+        material: &str,
+        material_name: &str,
+    ) {
+        assert!(!material.is_empty());
+        assert!(
+            !surface.contains(material),
+            "{surface_name} exposed {material_name}"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn existing_local_key_file_with_broad_permissions_is_rejected() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let path = tempdir.path().join("provider-secrets.key");
+        let key = SecretEncryptionKey::generate("local-v1").unwrap_or_else(|err| panic!("{err}"));
+        fs::write(&path, format!("{}\n", key.to_base64())).unwrap_or_else(|err| panic!("{err}"));
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644))
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let error = SecretKeyring::load_or_create_local_file(&path, "local-v1")
+            .err()
+            .unwrap_or_else(|| panic!("group/world-readable key file should be rejected"));
+        assert!(
+            format!("{error:?}").contains("must not be accessible by group or other users"),
+            "unexpected error: {error:?}"
+        );
     }
 }

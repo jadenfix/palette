@@ -21,6 +21,8 @@ dependencies = [
 grpc = ["opentelemetry-exporter-otlp-proto-grpc>=1.20.0"]
 openai = ["openai>=1.0.0"]
 anthropic = ["anthropic>=0.30.0"]
+groq = ["groq>=0.9.0"]
+mistral = ["openai>=1.0.0"]
 langchain = ["langchain-core>=0.1.0"]
 llamaindex = ["llama-index-core>=0.10.0"]
 dev = ["pytest>=7.0.0"]
@@ -28,6 +30,9 @@ dev = ["pytest>=7.0.0"]
 [project.urls]
 Homepage = "https://github.com/beater/beater"
 Documentation = "https://github.com/beater/beater/tree/main/sdks/python"
+
+[project.entry-points.opentelemetry_configurator]
+beater = "beater.bootstrap:BeaterConfigurator"
 
 [tool.hatch.build.targets.wheel]
 packages = ["beater"]

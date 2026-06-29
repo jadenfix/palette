@@ -115,6 +115,17 @@ pub trait DurableBus: Send + Sync {
     async fn dlq(&self) -> Result<Vec<DeadLetter>, BusError>;
     async fn depth(&self) -> Result<usize, BusError>;
     async fn depth_for_kind(&self, kind: &str) -> Result<usize, BusError>;
+    async fn depth_for_scope(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError>;
+    async fn depth_for_scoped_kind(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError>;
 }
 
 #[derive(Clone, Debug)]
@@ -328,6 +339,39 @@ impl DurableBus for InMemoryBus {
             .filter(|message| message.kind == kind)
             .count())
     }
+
+    async fn depth_for_scope(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError> {
+        let state = self.lock()?;
+        Ok(state
+            .queue
+            .iter()
+            .chain(state.inflight.iter())
+            .filter(|message| message.tenant_id == *tenant_id && message.project_id == *project_id)
+            .count())
+    }
+
+    async fn depth_for_scoped_kind(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError> {
+        let state = self.lock()?;
+        Ok(state
+            .queue
+            .iter()
+            .chain(state.inflight.iter())
+            .filter(|message| {
+                message.tenant_id == *tenant_id
+                    && message.project_id == *project_id
+                    && message.kind == kind
+            })
+            .count())
+    }
 }
 
 #[derive(Clone)]
@@ -444,6 +488,41 @@ impl SqliteDurableBus {
             .map_err(|err| BusError::Storage(err.to_string()))
     }
 
+    fn queue_depth_for_scope(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError> {
+        connection
+            .query_row(
+                "SELECT COUNT(*) FROM queue_messages WHERE tenant_id = ?1 AND project_id = ?2",
+                params![tenant_id.as_str(), project_id.as_str()],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|count| count as usize)
+            .map_err(|err| BusError::Storage(err.to_string()))
+    }
+
+    fn queue_depth_for_scoped_kind(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError> {
+        connection
+            .query_row(
+                r#"
+                SELECT COUNT(*)
+                FROM queue_messages
+                WHERE tenant_id = ?1 AND project_id = ?2 AND kind = ?3
+                "#,
+                params![tenant_id.as_str(), project_id.as_str(), kind],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|count| count as usize)
+            .map_err(|err| BusError::Storage(err.to_string()))
+    }
+
     fn inflight_depth(connection: &Connection) -> Result<usize, BusError> {
         connection
             .query_row("SELECT COUNT(*) FROM inflight_messages", [], |row| {
@@ -464,6 +543,41 @@ impl SqliteDurableBus {
             .map_err(|err| BusError::Storage(err.to_string()))
     }
 
+    fn inflight_depth_for_scope(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError> {
+        connection
+            .query_row(
+                "SELECT COUNT(*) FROM inflight_messages WHERE tenant_id = ?1 AND project_id = ?2",
+                params![tenant_id.as_str(), project_id.as_str()],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|count| count as usize)
+            .map_err(|err| BusError::Storage(err.to_string()))
+    }
+
+    fn inflight_depth_for_scoped_kind(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError> {
+        connection
+            .query_row(
+                r#"
+                SELECT COUNT(*)
+                FROM inflight_messages
+                WHERE tenant_id = ?1 AND project_id = ?2 AND kind = ?3
+                "#,
+                params![tenant_id.as_str(), project_id.as_str(), kind],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|count| count as usize)
+            .map_err(|err| BusError::Storage(err.to_string()))
+    }
+
     fn active_depth(connection: &Connection) -> Result<usize, BusError> {
         Ok(Self::queue_depth(connection)?.saturating_add(Self::inflight_depth(connection)?))
     }
@@ -471,6 +585,32 @@ impl SqliteDurableBus {
     fn active_depth_for_kind(connection: &Connection, kind: &str) -> Result<usize, BusError> {
         Ok(Self::queue_depth_for_kind(connection, kind)?
             .saturating_add(Self::inflight_depth_for_kind(connection, kind)?))
+    }
+
+    fn active_depth_for_scope(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError> {
+        Ok(
+            Self::queue_depth_for_scope(connection, tenant_id, project_id)?.saturating_add(
+                Self::inflight_depth_for_scope(connection, tenant_id, project_id)?,
+            ),
+        )
+    }
+
+    fn active_depth_for_scoped_kind(
+        connection: &Connection,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError> {
+        Ok(
+            Self::queue_depth_for_scoped_kind(connection, tenant_id, project_id, kind)?
+                .saturating_add(Self::inflight_depth_for_scoped_kind(
+                    connection, tenant_id, project_id, kind,
+                )?),
+        )
     }
 
     fn inflight_exists(connection: &Connection, message_id: &str) -> Result<bool, BusError> {
@@ -819,6 +959,25 @@ impl DurableBus for SqliteDurableBus {
     async fn depth_for_kind(&self, kind: &str) -> Result<usize, BusError> {
         let connection = self.lock()?;
         Self::active_depth_for_kind(&connection, kind)
+    }
+
+    async fn depth_for_scope(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> Result<usize, BusError> {
+        let connection = self.lock()?;
+        Self::active_depth_for_scope(&connection, tenant_id, project_id)
+    }
+
+    async fn depth_for_scoped_kind(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        kind: &str,
+    ) -> Result<usize, BusError> {
+        let connection = self.lock()?;
+        Self::active_depth_for_scoped_kind(&connection, tenant_id, project_id, kind)
     }
 }
 
@@ -1427,6 +1586,38 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
     }
 
+    #[tokio::test]
+    async fn in_memory_bus_idempotency_keys_are_partitioned_by_scope() {
+        let bus: std::sync::Arc<dyn DurableBus> = std::sync::Arc::new(InMemoryBus::new(8));
+        assert_idempotency_keys_are_partitioned_by_scope(bus).await;
+    }
+
+    #[tokio::test]
+    async fn sqlite_bus_idempotency_keys_are_partitioned_by_scope() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let path = tempdir.path().join("bus.sqlite");
+        let bus: std::sync::Arc<dyn DurableBus> = std::sync::Arc::new(
+            SqliteDurableBus::open(&path, 8).unwrap_or_else(|err| panic!("{err}")),
+        );
+        assert_idempotency_keys_are_partitioned_by_scope(bus).await;
+    }
+
+    #[tokio::test]
+    async fn in_memory_bus_scoped_kind_consume_only_leases_requested_scope() {
+        let bus: std::sync::Arc<dyn DurableBus> = std::sync::Arc::new(InMemoryBus::new(8));
+        assert_scoped_kind_consume_only_leases_requested_scope(bus).await;
+    }
+
+    #[tokio::test]
+    async fn sqlite_bus_scoped_kind_consume_only_leases_requested_scope() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let path = tempdir.path().join("bus.sqlite");
+        let bus: std::sync::Arc<dyn DurableBus> = std::sync::Arc::new(
+            SqliteDurableBus::open(&path, 8).unwrap_or_else(|err| panic!("{err}")),
+        );
+        assert_scoped_kind_consume_only_leases_requested_scope(bus).await;
+    }
+
     fn fixture_message(kind: &str) -> BusMessage {
         BusMessage::new(
             TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
@@ -1450,6 +1641,152 @@ mod tests {
             kind,
             key.as_bytes().to_vec(),
         )
+    }
+
+    async fn assert_idempotency_keys_are_partitioned_by_scope(bus: std::sync::Arc<dyn DurableBus>) {
+        let tenant_a = TenantId::new("scope-tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_b = TenantId::new("scope-tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let project_a = ProjectId::new("scope-project-a").unwrap_or_else(|err| panic!("{err}"));
+        let project_b = ProjectId::new("scope-project-b").unwrap_or_else(|err| panic!("{err}"));
+        let kind = "scope.idempotent";
+        let key = "shared-idempotency-key";
+
+        let target = scoped_fixture_message(&tenant_a, &project_a, kind, key);
+        let same_scope_duplicate = scoped_fixture_message(&tenant_a, &project_a, kind, key);
+        let other_tenant = scoped_fixture_message(&tenant_b, &project_a, kind, key);
+        let other_project = scoped_fixture_message(&tenant_a, &project_b, kind, key);
+
+        assert_eq!(
+            bus.publish(target.clone()).await,
+            Ok(PublishAck::accepted()),
+            "first scoped publish must be accepted"
+        );
+        assert_eq!(
+            bus.publish(same_scope_duplicate.clone()).await,
+            Ok(PublishAck::duplicate()),
+            "same tenant/project/kind/idempotency key must dedupe while queued"
+        );
+        assert_eq!(
+            bus.publish(other_tenant.clone()).await,
+            Ok(PublishAck::accepted()),
+            "same kind/idempotency key in another tenant must be accepted"
+        );
+        assert_eq!(
+            bus.publish(other_project.clone()).await,
+            Ok(PublishAck::accepted()),
+            "same kind/idempotency key in another project must be accepted"
+        );
+        assert_eq!(
+            bus.depth_for_kind(kind).await,
+            Ok(3),
+            "duplicate publish must not increase active depth"
+        );
+
+        let consumed_target = bus
+            .consume_scoped_kind_batch(&tenant_a, &project_a, kind, 1)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(consumed_target, vec![target]);
+        assert_eq!(
+            bus.publish(same_scope_duplicate).await,
+            Ok(PublishAck::duplicate()),
+            "same tenant/project/kind/idempotency key must dedupe while inflight"
+        );
+
+        bus.ack(consumed_target[0].clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let remaining = bus
+            .consume_kind_batch(kind, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(remaining.len(), 2);
+        assert!(remaining.contains(&other_tenant));
+        assert!(remaining.contains(&other_project));
+        for message in remaining {
+            bus.ack(message).await.unwrap_or_else(|err| panic!("{err}"));
+        }
+        assert_eq!(bus.depth().await, Ok(0));
+    }
+
+    async fn assert_scoped_kind_consume_only_leases_requested_scope(
+        bus: std::sync::Arc<dyn DurableBus>,
+    ) {
+        let tenant_a = TenantId::new("consume-tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let tenant_b = TenantId::new("consume-tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let project_a = ProjectId::new("consume-project-a").unwrap_or_else(|err| panic!("{err}"));
+        let project_b = ProjectId::new("consume-project-b").unwrap_or_else(|err| panic!("{err}"));
+        let kind = "scope.consume";
+        let other_kind = "scope.consume.other";
+        let key = "consume-colliding-key";
+
+        let target = scoped_fixture_message(&tenant_a, &project_a, kind, key);
+        let other_tenant = scoped_fixture_message(&tenant_b, &project_a, kind, key);
+        let other_project = scoped_fixture_message(&tenant_a, &project_b, kind, key);
+        let other_kind_same_scope = scoped_fixture_message(&tenant_a, &project_a, other_kind, key);
+
+        for message in [
+            target.clone(),
+            other_tenant.clone(),
+            other_project.clone(),
+            other_kind_same_scope.clone(),
+        ] {
+            assert_eq!(
+                bus.publish(message).await,
+                Ok(PublishAck::accepted()),
+                "colliding messages must publish when scope or kind differs"
+            );
+        }
+
+        let target_batch = bus
+            .consume_scoped_kind_batch(&tenant_a, &project_a, kind, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            target_batch,
+            vec![target],
+            "scoped consume must lease only the requested tenant/project/kind"
+        );
+
+        let other_tenant_batch = bus
+            .consume_scoped_kind_batch(&tenant_b, &project_a, kind, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            other_tenant_batch,
+            vec![other_tenant],
+            "same key/kind in another tenant must remain queued"
+        );
+
+        let other_project_batch = bus
+            .consume_scoped_kind_batch(&tenant_a, &project_b, kind, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            other_project_batch,
+            vec![other_project],
+            "same key/kind in another project must remain queued"
+        );
+
+        let other_kind_batch = bus
+            .consume_scoped_kind_batch(&tenant_a, &project_a, other_kind, 10)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            other_kind_batch,
+            vec![other_kind_same_scope],
+            "same tenant/project/key with another kind must remain queued"
+        );
+
+        for message in target_batch
+            .into_iter()
+            .chain(other_tenant_batch)
+            .chain(other_project_batch)
+            .chain(other_kind_batch)
+        {
+            bus.ack(message).await.unwrap_or_else(|err| panic!("{err}"));
+        }
+        assert_eq!(bus.depth().await, Ok(0));
     }
 
     fn install_abort_trigger(bus: &SqliteDurableBus, trigger_name: &str, table_name: &str) {
@@ -1600,6 +1937,22 @@ mod tests {
                 .await
                 .unwrap_or_else(|e| panic!("{e}"));
 
+            assert_eq!(bus.depth_for_scope(&tenant_a, &project).await, Ok(1));
+            assert_eq!(bus.depth_for_scope(&tenant_b, &project).await, Ok(1));
+            assert_eq!(
+                bus.depth_for_scoped_kind(&tenant_a, &project, kind).await,
+                Ok(1)
+            );
+            assert_eq!(
+                bus.depth_for_scoped_kind(&tenant_b, &project, kind).await,
+                Ok(1)
+            );
+            assert_eq!(
+                bus.depth_for_scoped_kind(&tenant_a, &project, "c.other")
+                    .await,
+                Ok(0)
+            );
+
             // Tenant A's scoped consume must return only its own message.
             let consumed_a = bus
                 .consume_scoped_kind_batch(&tenant_a, &project, kind, 10)
@@ -1617,6 +1970,11 @@ mod tests {
             bus.ack(consumed_a[0].clone())
                 .await
                 .unwrap_or_else(|e| panic!("{e}"));
+            assert_eq!(bus.depth_for_scope(&tenant_a, &project).await, Ok(0));
+            assert_eq!(
+                bus.depth_for_scoped_kind(&tenant_b, &project, kind).await,
+                Ok(1)
+            );
 
             // Tenant B's message must remain unconsumed.
             let remaining = bus
@@ -1635,6 +1993,7 @@ mod tests {
             bus.ack(remaining[0].clone())
                 .await
                 .unwrap_or_else(|e| panic!("{e}"));
+            assert_eq!(bus.depth_for_scope(&tenant_b, &project).await, Ok(0));
         }
 
         // ── §3 Retry + DLQ routing ────────────────────────────────────────────

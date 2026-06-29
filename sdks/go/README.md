@@ -2,6 +2,11 @@
 
 Ergonomic OpenTelemetry tracing helpers for Beater (`package beater`).
 
+Beater's default onboarding path is still zero-code OTLP export: point an
+existing OpenTelemetry exporter at Beater with `BEATER_*` env vars, with no
+Beater SDK and no code edits. Use this Go SDK when you want an idiomatic helper
+layer after that standards-first path.
+
 ```go
 ctx := context.Background()
 shutdown, _ := beater.Init(ctx, beater.ConfigFromEnv()) // reads BEATER_* env

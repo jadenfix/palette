@@ -117,6 +117,13 @@ enum Command {
         #[arg(long, default_value_t = 5000)]
         timeout_ms: u64,
     },
+    /// Prove the local quickstart loop reaches a scored failing case.
+    Quickstart {
+        #[arg(long, default_value = ".beater")]
+        data_dir: PathBuf,
+        #[arg(long, default_value = "http://127.0.0.1:3000")]
+        dashboard_url: String,
+    },
     /// Validate live OTLP ingest and print a zero-code exporter env block.
     Ingest {
         #[command(subcommand)]
@@ -380,6 +387,13 @@ async fn main() -> anyhow::Result<()> {
             } else {
                 run_local_smoke(data_dir).await?
             };
+            println!("{}", serde_json::to_string_pretty(&output)?);
+        }
+        Command::Quickstart {
+            data_dir,
+            dashboard_url,
+        } => {
+            let output = run_local_quickstart(data_dir, &base_url, &dashboard_url).await?;
             println!("{}", serde_json::to_string_pretty(&output)?);
         }
         Command::Ingest {
@@ -2051,6 +2065,8 @@ async fn run_remote_smoke(
     let trace = wait_for_remote_trace(
         &http_url,
         &tenant_id,
+        &project_id,
+        &environment_id,
         &trace_id,
         StdDuration::from_millis(timeout_ms),
         api_key,
@@ -2107,6 +2123,178 @@ async fn run_ingest_test(
     object.insert("command".to_string(), json!("ingest test"));
     object.insert("zero_code_env".to_string(), zero_code_env);
     Ok(smoke)
+}
+
+async fn run_local_quickstart(
+    data_dir: PathBuf,
+    api_url: &str,
+    dashboard_url: &str,
+) -> anyhow::Result<serde_json::Value> {
+    let artifacts = Arc::new(FsArtifactStore::new(data_dir.join("artifacts"))?);
+    let traces = Arc::new(SqliteTraceStore::open(data_dir.join("traces.sqlite"))?);
+    let datasets = SqliteDatasetStore::open(data_dir.join("datasets.sqlite"))?;
+    let api_keys = SqliteApiKeyStore::open(data_dir.join("security.sqlite"))?;
+    let bus = local_bus(&data_dir)?;
+    let service = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+    let tenant = TenantId::new("demo")?;
+    let project = ProjectId::new("demo")?;
+    let environment = EnvironmentId::new("local")?;
+    let span_id = SpanId::new("smoke-root")?;
+
+    let api_key = api_keys
+        .create_key(CreateApiKeyRequest {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            environment_id: environment.clone(),
+            scopes: [
+                ApiScope::TraceWrite,
+                ApiScope::TraceRead,
+                ApiScope::DatasetWrite,
+                ApiScope::EvalRun,
+            ]
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
+        })
+        .await
+        .context("create quickstart api key")?;
+    let mut zero_code_env = zero_code_otlp_env(
+        api_url,
+        None,
+        tenant.as_str(),
+        project.as_str(),
+        environment.as_str(),
+        true,
+    );
+    zero_code_env
+        .as_object_mut()
+        .ok_or_else(|| anyhow::anyhow!("zero-code env was not an object"))?
+        .insert("BEATER_API_KEY".to_string(), json!(api_key.secret.clone()));
+
+    let ingest_outcome = smoke_trace(&service)
+        .await
+        .context("ingest quickstart smoke trace")?;
+    let trace = traces
+        .get_trace(tenant.clone(), TraceId::new("smoke-trace")?)
+        .await
+        .context("read quickstart smoke trace")?;
+    let dataset = datasets
+        .create_dataset(
+            tenant.clone(),
+            project.clone(),
+            "quickstart-scored-failure".to_string(),
+        )
+        .await
+        .context("create quickstart dataset")?;
+    let case = promote_trace_span_to_case(
+        tenant.clone(),
+        project.clone(),
+        dataset.dataset_id.clone(),
+        &trace,
+        Some(span_id.clone()),
+        Some(json!({ "answer": "expected quickstart failure" })),
+    )
+    .context("promote quickstart trace to failing dataset case")?;
+    let case = datasets
+        .put_case(case)
+        .await
+        .context("store quickstart dataset case")?;
+    let version = datasets
+        .create_version(
+            tenant.clone(),
+            project.clone(),
+            dataset.dataset_id.clone(),
+            Some(vec![case.case_id.clone()]),
+        )
+        .await
+        .context("create quickstart dataset version")?;
+    let report = evaluate_dataset_version(
+        &version,
+        DatasetEvalSpec {
+            evaluator: EvaluatorSpec {
+                id: "exact".to_string(),
+                lane: EvaluatorLane::DeterministicWasi,
+                kind: EvaluatorKind::ExactMatch,
+            },
+            evaluator_version_id: EvaluatorVersionId::new("exact-v1")?,
+            agent_release_id: AgentReleaseId::new("quickstart-smoke-release")?,
+            prompt_version_id: None,
+            code_hash: None,
+            wasm_hash: None,
+        },
+    )
+    .context("run quickstart exact-match eval")?;
+    let report = datasets
+        .write_eval_report(report)
+        .await
+        .context("store quickstart eval report")?;
+    let result = report
+        .results
+        .first()
+        .ok_or_else(|| anyhow::anyhow!("quickstart eval produced no results"))?;
+    let scored_failure = result.score == 0.0 && result.label.as_deref() == Some("fail");
+    if !scored_failure {
+        anyhow::bail!(
+            "quickstart did not reach a scored failure: score={} label={:?}",
+            result.score,
+            result.label
+        );
+    }
+
+    let dashboard_trace_url = format!(
+        "{}/?tenant={}&project={}&environment={}&trace={}&span={}",
+        trim_url(dashboard_url),
+        urlencode(tenant.as_str()),
+        urlencode(project.as_str()),
+        urlencode(environment.as_str()),
+        urlencode(trace.trace_id.as_str()),
+        urlencode(span_id.as_str())
+    );
+    let api_trace_url = format!(
+        "{}/v1/traces/{}/{}?project_id={}&environment_id={}",
+        trim_url(api_url),
+        urlencode(tenant.as_str()),
+        urlencode(trace.trace_id.as_str()),
+        urlencode(project.as_str()),
+        urlencode(environment.as_str())
+    );
+
+    Ok(json!({
+        "command": "quickstart",
+        "mode": "local",
+        "source": "native-smoke",
+        "tenant_id": tenant,
+        "project_id": project,
+        "environment_id": environment,
+        "api_key": {
+            "api_key_id": api_key.record.api_key_id,
+            "scopes": api_key.record.scopes,
+            "secret": api_key.secret,
+        },
+        "zero_code_env": zero_code_env,
+        "trace": {
+            "trace_id": trace.trace_id,
+            "span_id": span_id,
+            "span_count": trace.spans.len(),
+            "ingest_outcome": ingest_outcome,
+        },
+        "dataset": {
+            "dataset_id": dataset.dataset_id,
+            "dataset_version_id": version.version_id,
+            "case_id": case.case_id,
+        },
+        "eval": {
+            "report_id": report.report_id,
+            "evaluator_version_id": report.evaluator_version_id,
+            "score": result.score,
+            "label": result.label.clone(),
+            "evidence": result.evidence.clone(),
+            "aggregate_score": report.aggregate_score,
+            "result_count": report.result_count,
+        },
+        "scored_failure": scored_failure,
+        "dashboard_url": dashboard_trace_url,
+        "api_trace_url": api_trace_url,
+    }))
 }
 
 fn zero_code_otlp_env(
@@ -2233,6 +2421,8 @@ async fn emit_remote_grpc(
 async fn wait_for_remote_trace(
     http_url: &str,
     tenant_id: &str,
+    project_id: &str,
+    environment_id: &str,
     trace_id: &str,
     timeout: StdDuration,
     api_key: Option<&str>,
@@ -2247,6 +2437,8 @@ async fn wait_for_remote_trace(
     let deadline = tokio::time::Instant::now() + timeout;
     loop {
         let trace = with_bearer(client.get(&url), api_key)
+            .header("x-beater-project-id", project_id)
+            .header("x-beater-environment-id", environment_id)
             .send()
             .await
             .context("read smoke trace")?

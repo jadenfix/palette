@@ -30,7 +30,6 @@ members = [
   "crates/beater-browser-capture",
   "crates/beater-browser-harness",
   "crates/beater-search",
-  "crates/beater-stats",
   "crates/beater-archive",
   "crates/beater-datasets",
   "crates/beater-experiments",
@@ -114,3 +113,17 @@ unsafe_code = "forbid"
 [workspace.lints.clippy]
 unwrap_used = "deny"
 expect_used = "deny"
+
+# Local build-time tuning. The dominant cost of an edit→build→test loop is
+# codegen + linking, and full debuginfo is the biggest avoidable slice of it
+# (the macOS linker is especially sensitive). `line-tables-only` keeps panic
+# and backtrace file:line info (RUST_BACKTRACE still resolves) while dropping
+# variable-level debuginfo that a normal loop never reads. Set `debug = true`
+# locally when you actually need to step through code in a debugger.
+[profile.dev]
+debug = "line-tables-only"
+
+# `cargo test` builds use the test profile (which derives from dev); pin the
+# same setting so the test loop gets the win too.
+[profile.test]
+debug = "line-tables-only"

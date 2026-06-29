@@ -79,4 +79,4 @@ jobs:
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: clippy (enforces workspace deny-lints)
-        run: cargo clippy --workspace --all-targets --exclude beaterd
+        run: cargo clippy --workspace --all-targets --exclude beaterd -- -D warnings

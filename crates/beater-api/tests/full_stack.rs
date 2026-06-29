@@ -2378,6 +2378,7 @@ async fn hosted_judge_api_uses_byok_refs_cache_and_never_returns_secret() {
         )
         .unwrap_or_else(|err| panic!("{err}")),
     );
+    let audit = Arc::new(SqliteAuditStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
     let judge_ledger =
         Arc::new(SqliteJudgeLedger::in_memory().unwrap_or_else(|err| panic!("{err}")));
     let usage = Arc::new(SqliteUsageLedger::in_memory().unwrap_or_else(|err| panic!("{err}")));
@@ -2393,6 +2394,7 @@ async fn hosted_judge_api_uses_byok_refs_cache_and_never_returns_secret() {
         ApiState::with_search_and_archive(ingest, traces, search, archive)
             .with_judge(provider_secrets, judge_broker, judge_ledger)
             .with_usage(usage)
+            .with_audit(audit)
             .require_auth(api_keys.clone()),
     );
 
@@ -2512,6 +2514,64 @@ async fn hosted_judge_api_uses_byok_refs_cache_and_never_returns_secret() {
             .map(|total| total.quantity),
         Some(25)
     );
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!(
+                    "/v1/provider-secrets/tenant/project/{provider_secret_id}/revoke"
+                ))
+                .header("authorization", format!("Bearer {}", admin_key.secret))
+                .header("x-beater-environment-id", "prod")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let body_text = String::from_utf8(body.to_vec()).unwrap_or_else(|err| panic!("{err}"));
+    assert!(!body_text.contains(fixture_secret));
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/audit/tenant/project")
+                .header("authorization", format!("Bearer {}", admin_key.secret))
+                .header("x-beater-environment-id", "prod")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let body_text = String::from_utf8(body.to_vec()).unwrap_or_else(|err| panic!("{err}"));
+    assert!(!body_text.contains(fixture_secret));
+    let audit_events: serde_json::Value =
+        serde_json::from_str(&body_text).unwrap_or_else(|err| panic!("{err}"));
+    let audit_events = audit_events
+        .as_array()
+        .unwrap_or_else(|| panic!("audit events response must be an array"));
+    assert_eq!(audit_events.len(), 2);
+    assert_eq!(audit_events[0]["action"], "provider_secret_create");
+    assert_eq!(audit_events[0]["resource_type"], "provider_secret");
+    assert_eq!(audit_events[0]["resource_id"], provider_secret_id);
+    assert_eq!(audit_events[0]["attributes"]["provider"], "openai");
+    assert_eq!(
+        audit_events[0]["attributes"]["display_name"],
+        "hosted judge"
+    );
+    assert_eq!(audit_events[1]["action"], "provider_secret_revoke");
+    assert_eq!(audit_events[1]["resource_type"], "provider_secret");
+    assert_eq!(audit_events[1]["resource_id"], provider_secret_id);
 }
 
 #[tokio::test]
@@ -2807,6 +2867,8 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
         .as_str()
         .unwrap_or_else(|| panic!("unmask key must include one-time secret"))
         .to_string();
+    let unmask_key_id =
+        api_key_id_from_secret(&unmask_secret).unwrap_or_else(|err| panic!("{err}"));
 
     let response = app
         .clone()
@@ -2855,17 +2917,31 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
     let body = to_bytes(response.into_body(), 1024 * 1024)
         .await
         .unwrap_or_else(|err| panic!("{err}"));
+    let audit_body = String::from_utf8(body.to_vec()).unwrap_or_else(|err| panic!("{err}"));
+    assert!(!audit_body.contains(&trace_secret));
+    assert!(!audit_body.contains(&unmask_secret));
     let audit_events: serde_json::Value =
-        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        serde_json::from_str(&audit_body).unwrap_or_else(|err| panic!("{err}"));
     let audit_events = audit_events
         .as_array()
         .unwrap_or_else(|| panic!("audit events response must be an array"));
-    assert_eq!(audit_events.len(), 2);
-    assert_eq!(audit_events[0]["action"], "pii_unmask");
-    assert_eq!(audit_events[0]["outcome"], "denied");
-    assert_eq!(audit_events[1]["outcome"], "allowed");
-    assert_eq!(audit_events[1]["reason"], "incident-123");
-    assert_eq!(audit_events[1]["attributes"]["sensitive_ref_count"], 1);
+    assert_eq!(audit_events.len(), 4);
+    assert_eq!(audit_events[0]["action"], "api_key_create");
+    assert_eq!(audit_events[0]["resource_type"], "api_key");
+    assert_eq!(audit_events[0]["resource_id"], json!(trace_key_id.as_str()));
+    assert_eq!(audit_events[0]["attributes"]["active"], json!(true));
+    assert_eq!(audit_events[1]["action"], "pii_unmask");
+    assert_eq!(audit_events[1]["outcome"], "denied");
+    assert_eq!(audit_events[2]["action"], "api_key_create");
+    assert_eq!(audit_events[2]["resource_type"], "api_key");
+    assert_eq!(
+        audit_events[2]["resource_id"],
+        json!(unmask_key_id.as_str())
+    );
+    assert_eq!(audit_events[3]["action"], "pii_unmask");
+    assert_eq!(audit_events[3]["outcome"], "allowed");
+    assert_eq!(audit_events[3]["reason"], "incident-123");
+    assert_eq!(audit_events[3]["attributes"]["sensitive_ref_count"], 1);
 
     let response = app
         .clone()
@@ -2977,6 +3053,36 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
         .await
         .unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(response.status(), StatusCode::OK);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/audit/tenant/project")
+                .header("authorization", format!("Bearer {}", admin_key.secret))
+                .header("x-beater-environment-id", "prod")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let audit_body = String::from_utf8(body.to_vec()).unwrap_or_else(|err| panic!("{err}"));
+    assert!(!audit_body.contains(&trace_secret));
+    let audit_events: serde_json::Value =
+        serde_json::from_str(&audit_body).unwrap_or_else(|err| panic!("{err}"));
+    let audit_events = audit_events
+        .as_array()
+        .unwrap_or_else(|| panic!("audit events response must be an array"));
+    assert_eq!(audit_events.len(), 5);
+    assert_eq!(audit_events[4]["action"], "api_key_revoke");
+    assert_eq!(audit_events[4]["resource_type"], "api_key");
+    assert_eq!(audit_events[4]["resource_id"], json!(trace_key_id.as_str()));
+    assert_eq!(audit_events[4]["attributes"]["active"], json!(false));
 
     let response = app
         .oneshot(

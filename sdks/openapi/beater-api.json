@@ -6403,7 +6403,11 @@
       "AuditAction": {
         "type": "string",
         "enum": [
-          "pii_unmask"
+          "pii_unmask",
+          "api_key_create",
+          "api_key_revoke",
+          "provider_secret_create",
+          "provider_secret_revoke"
         ]
       },
       "AuditEvent": {

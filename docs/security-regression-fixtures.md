@@ -9,6 +9,19 @@ marked **GAP** and linked to the source security review.
 
 ---
 
+## Architecture contract map
+
+This catalog tracks regression coverage for security invariants already called
+out in `ARCHITECTURE.md`. It does not change any Covered/GAP status below.
+
+| Catalog area | Architecture contract | Notes |
+|---|---|---|
+| AuthZ / RBAC scope escalation | §20.7 #5.2 enforced RBAC; A20 tenant isolation | A non-owner must be denied mutating routes; scoped keys are not a substitute for enforced role resolution. |
+| Tenant cross-talk / IDOR | §20.7 #5.4 storage-layer tenant isolation; A20 tenant isolation | App-layer scoping is built today; DB-layer RLS is still planned, so API and store tests both matter. |
+| API-key leakage / scope and secret storage | §14 security; §20.7 #5.7 tamper-evident audit; §20.7 #5.12 BYOK/key rotation | Key material must stay scoped, rotatable, encrypted, and auditable across API responses and storage. |
+| PII redaction | §14 redaction and audited PII access | `pii_unmask` must remain separate from ordinary trace reads, and sensitive-data access must emit audit evidence. |
+| Data deletion / crypto-shred | §20.7 #5.5 crypto-shred | Unreadable-after-delete is planned contract work; fixture gaps should not be marked Covered until a deletion path exists. |
+
 ## Catalog
 
 ### AuthN bypass
@@ -93,7 +106,7 @@ Can attacker-controlled data cause the server to fetch or open unintended resour
 
 | Threat | Test (file :: function) | What it asserts | Status |
 |---|---|---|---|
-| FS artifact store path traversal (M2) | — | `FsArtifactStore` blocks `..` but not absolute paths; no test for `artifact:///etc/passwd` or tenant/project segments with path separators. | **GAP** |
+| FS artifact store path traversal (M2) | `crates/beater-store-obj/src/lib.rs :: path_for_uri_rejects_traversal_and_absolute_paths`; `put_bytes_rejects_tenant_id_with_path_separators`; `get_and_delete_bytes_reject_forged_malicious_uris` | `FsArtifactStore` rejects absolute `artifact:///etc/passwd`, `..`, `.`, empty paths, tenant/project IDs with path separators, and forged malicious `ArtifactRef` URIs before reads/deletes can escape the store root. | Covered |
 | Browser `goto` SSRF (M3) | — | All three browser drivers forward `start_url` verbatim; no URL allowlist and no test for `file://` or `http://169.254.169.254`. Currently latent (no MCP/API handler wires this), but no guard test exists. | **GAP** |
 | Webhook `endpoint_url` SSRF (M4) | — | `beater-alerts` accepts arbitrary tenant-supplied webhook URL with no scheme/host restriction. Delivery worker not yet implemented, so no live SSRF today — but no test blocks a private/loopback target when the worker is wired in. | **GAP** |
 
@@ -128,11 +141,10 @@ Do alternate access paths enforce the same auth policy?
 | 5 | Browser DOM / console / prompt redaction | H1 / H3 |
 | 6 | DataFusion archive SQL injection | H6 |
 | 7 | Tantivy query DSL injection / DoS | H7 |
-| 8 | FS artifact store path traversal | M2 |
-| 9 | Browser `goto` SSRF | M3 |
-| 10 | Webhook `endpoint_url` SSRF | M4 |
-| 11 | MCP surface with auth enabled | — |
-| 12 | OAuth session / PKCE / redirect-URI | — |
+| 8 | Browser `goto` SSRF | M3 |
+| 9 | Webhook `endpoint_url` SSRF | M4 |
+| 10 | MCP surface with auth enabled | — |
+| 11 | OAuth session / PKCE / redirect-URI | — |
 
 Findings marked H1, H6, H7 are rated **Critical / High** in the security
 review. Recommend addressing items 4, 6, and 7 first (aligned with the

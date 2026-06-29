@@ -56,6 +56,11 @@ impl FsArtifactStore {
         Ok(size_bytes)
     }
 
+    fn artifact_id_for_bytes(bytes: &[u8]) -> StoreResult<ArtifactId> {
+        ArtifactId::new(blake3::hash(bytes).to_hex().to_string())
+            .map_err(|err| StoreError::Integrity(err.to_string()))
+    }
+
     fn path_for_uri(&self, uri: &str) -> StoreResult<PathBuf> {
         let prefix = "artifact://";
         let relative = uri
@@ -133,6 +138,24 @@ impl FsArtifactStore {
             }
         }
     }
+
+    fn write_file_once(path: &std::path::Path, bytes: &[u8]) -> StoreResult<()> {
+        match fs::read(path) {
+            Ok(existing) => {
+                if existing == bytes {
+                    return Ok(());
+                }
+                return Err(StoreError::Integrity(format!(
+                    "content-addressed artifact collision at {}",
+                    path.display()
+                )));
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(StoreError::backend(error)),
+        }
+
+        Self::write_file_atomically(path, bytes)
+    }
 }
 
 fn sync_parent_dir_best_effort(path: &std::path::Path) {
@@ -162,8 +185,7 @@ impl ArtifactStore for FsArtifactStore {
         bytes: &[u8],
     ) -> StoreResult<ArtifactRef> {
         let size_bytes = self.validate_size(bytes.len(), &redaction_class)?;
-        let artifact_id = ArtifactId::new(Uuid::new_v4().to_string())
-            .map_err(|err| StoreError::Integrity(err.to_string()))?;
+        let artifact_id = Self::artifact_id_for_bytes(bytes)?;
         let sha256 = Sha256Hash::new(sha256_hex(bytes))
             .map_err(|err| StoreError::Integrity(err.to_string()))?;
         let relative = format!(
@@ -178,7 +200,7 @@ impl ArtifactStore for FsArtifactStore {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(StoreError::backend)?;
         }
-        Self::write_file_atomically(&path, bytes)?;
+        Self::write_file_once(&path, bytes)?;
 
         Ok(ArtifactRef {
             artifact_id,
@@ -244,6 +266,50 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(bytes, br#"{"ok":true}"#);
         assert_eq!(temp_artifact_file_count(tempdir.path()), 0);
+    }
+
+    #[tokio::test]
+    async fn put_bytes_deduplicates_same_tenant_project_content() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let store = FsArtifactStore::new(tempdir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let payload = b"repeatable prompt/tool body";
+
+        let first = store
+            .put_bytes(
+                &tenant,
+                &project,
+                "text/plain",
+                RedactionClass::Internal,
+                payload,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let second = store
+            .put_bytes(
+                &tenant,
+                &project,
+                "text/plain",
+                RedactionClass::Internal,
+                payload,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let expected_id = blake3::hash(payload).to_hex().to_string();
+        assert_eq!(first.artifact_id.as_str(), expected_id);
+        assert_eq!(second.artifact_id.as_str(), expected_id);
+        assert_eq!(first.uri, second.uri);
+        assert_eq!(artifact_file_count(tempdir.path()), 1);
+        assert_eq!(temp_artifact_file_count(tempdir.path()), 0);
+        assert_eq!(
+            store
+                .get_bytes(&second)
+                .await
+                .unwrap_or_else(|err| panic!("{err}")),
+            payload
+        );
     }
 
     #[tokio::test]

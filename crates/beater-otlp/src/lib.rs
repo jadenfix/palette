@@ -203,17 +203,17 @@ fn scope_from_metadata(
     metadata: &MetadataMap,
     default_scope: &TenantScope,
 ) -> Result<TenantScope, Status> {
-    let tenant_id = metadata_text(metadata, TENANT_METADATA_KEY)
+    let tenant_id = metadata_text(metadata, TENANT_METADATA_KEY)?
         .map(TenantId::new)
         .transpose()
         .map_err(|err| Status::invalid_argument(err.to_string()))?
         .unwrap_or_else(|| default_scope.tenant_id.clone());
-    let project_id = metadata_text(metadata, PROJECT_METADATA_KEY)
+    let project_id = metadata_text(metadata, PROJECT_METADATA_KEY)?
         .map(ProjectId::new)
         .transpose()
         .map_err(|err| Status::invalid_argument(err.to_string()))?
         .unwrap_or_else(|| default_scope.project_id.clone());
-    let environment_id = metadata_text(metadata, ENVIRONMENT_METADATA_KEY)
+    let environment_id = metadata_text(metadata, ENVIRONMENT_METADATA_KEY)?
         .map(EnvironmentId::new)
         .transpose()
         .map_err(|err| Status::invalid_argument(err.to_string()))?
@@ -221,8 +221,13 @@ fn scope_from_metadata(
     Ok(TenantScope::new(tenant_id, project_id, environment_id))
 }
 
-fn metadata_text<'a>(metadata: &'a MetadataMap, key: &str) -> Option<&'a str> {
-    metadata.get(key).and_then(|value| value.to_str().ok())
+fn metadata_text<'a>(metadata: &'a MetadataMap, key: &str) -> Result<Option<&'a str>, Status> {
+    let Some(value) = metadata.get(key) else {
+        return Ok(None);
+    };
+    value.to_str().map(Some).map_err(|_| {
+        Status::invalid_argument(format!("{key} metadata must contain a visible ASCII value"))
+    })
 }
 
 fn status_from_ingest_error(error: IngestError) -> Status {
@@ -1048,6 +1053,29 @@ mod tests {
 
         assert!(response.into_inner().partial_success.is_none());
         assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(1));
+    }
+
+    #[test]
+    fn scope_metadata_rejects_non_visible_ascii_values() {
+        let default_scope = TenantScope::new(
+            TenantId::new("default-tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("default-project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("local").unwrap_or_else(|err| panic!("{err}")),
+        );
+        let mut metadata = MetadataMap::new();
+        let opaque_value = tonic::metadata::AsciiMetadataValue::try_from(&b"tenant\xFA"[..])
+            .unwrap_or_else(|err| panic!("{err}"));
+        metadata.insert(TENANT_METADATA_KEY, opaque_value);
+
+        let error = scope_from_metadata(&metadata, &default_scope)
+            .err()
+            .unwrap_or_else(|| panic!("opaque scope metadata must be rejected"));
+
+        assert_eq!(error.code(), tonic::Code::InvalidArgument);
+        assert!(
+            error.message().contains(TENANT_METADATA_KEY),
+            "error should name the invalid metadata key: {error}"
+        );
     }
 
     #[tokio::test]

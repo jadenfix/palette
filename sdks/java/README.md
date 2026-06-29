@@ -4,6 +4,14 @@ Ergonomic, OpenTelemetry-native agent observability for Beater. This is the
 **Layer 2** (hand-written) SDK: span helpers built on the OpenTelemetry Java SDK
 that emit Beater-conformant spans over OTLP/HTTP.
 
+## Onboarding order
+
+Beater's default onboarding remains the zero-code OTLP path: point an existing
+OpenTelemetry/OpenInference exporter at Beater with environment variables and no
+Beater SDK code. Use this Java SDK when a service wants in-process helpers for
+span boundaries, Beater semantic-convention constants, and short-lived process
+flush behavior while still exporting standard OTLP/HTTP.
+
 ## Quickstart (5 lines)
 
 ```java
