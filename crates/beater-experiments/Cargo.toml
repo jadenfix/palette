@@ -14,6 +14,7 @@ beater-datasets = { path = "../beater-datasets" }
 beater-eval = { path = "../beater-eval" }
 beater-judge = { path = "../beater-judge" }
 beater-schema = { path = "../beater-schema" }
+beater-stats = { path = "../beater-stats" }
 beater-store = { path = "../beater-store" }
 chrono.workspace = true
 rusqlite.workspace = true

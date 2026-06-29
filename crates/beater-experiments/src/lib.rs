@@ -14,6 +14,7 @@ use beater_judge::{
     TextGenerator,
 };
 use beater_schema::EvaluatorLane;
+use beater_stats::{assess_generalization_gap, GapAssessment};
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension};
@@ -1130,6 +1131,19 @@ pub enum OptimizerError {
     /// candidate (e.g. the broker errored or returned nothing usable).
     #[error("proposer failed: {0}")]
     ProposerFailed(String),
+    /// The injected [`CandidateEvaluator`] failed to score a candidate's cases.
+    #[error("candidate evaluation failed: {0}")]
+    EvaluationFailed(String),
+    /// The held-out gate / anti-overfit statistics could not be computed for a
+    /// candidate (e.g. mismatched per-split score lengths, non-finite scores, or
+    /// an under-powered comparison). Surfaced as a typed error rather than a
+    /// silent accept — a candidate the gate cannot judge is never accepted.
+    #[error("gate evaluation failed: {0}")]
+    GateFailed(String),
+    /// The round configuration was internally inconsistent (e.g. an empty goal or
+    /// no failing cases to reflect on).
+    #[error("invalid optimization-round config: {0}")]
+    InvalidConfig(String),
 }
 
 /// A strategy that *proposes* candidate changes for the held-out gate to judge.
@@ -1380,6 +1394,329 @@ pub fn propose_with(
     }
 }
 
+/// Which split of the optimization substrate a [`CaseScore`] belongs to.
+///
+/// The RSI optimizer searches candidates against `Train`/`Val` and decides
+/// acceptance only on the held-out `Test` split (§21.4). The split assignment is
+/// the *caller's* responsibility — it owns the dataset and its train/val/test
+/// partition — so [`run_optimization_round`] never reshuffles or peeks at the
+/// split substrate; it merely routes each [`CaseScore`] to the gate by its tag.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Split {
+    /// Optimization split the proposer is allowed to fit against.
+    Train,
+    /// Validation split used for in-loop model selection / early signal.
+    Val,
+    /// Held-out **Test** split — the only split that can grant acceptance.
+    Test,
+}
+
+/// One case's paired baseline-vs-candidate score, tagged with its [`Split`].
+///
+/// This is the unit the injected [`CandidateEvaluator`] returns. `baseline_score`
+/// is the current policy's score on the case and `candidate_score` is the
+/// candidate policy's score on the *same* case (paired), so the gate can compute
+/// a paired lift. Scores are the evaluator's own metric in `[0, 1]` (higher is
+/// better), matching the convention of `compare_paired_scores`.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CaseScore {
+    /// Which split this case belongs to.
+    pub split: Split,
+    /// Score of the current (baseline) policy on this case.
+    pub baseline_score: f64,
+    /// Score of the candidate policy on the same case (paired with baseline).
+    pub candidate_score: f64,
+}
+
+/// Scores a proposed [`CandidateChange`] against a set of cases — the seam the
+/// caller injects so [`run_optimization_round`] can drive the proposer → gate
+/// loop *without* itself executing the candidate agent / LLM.
+///
+/// **Honest boundary.** Actually running the candidate policy over the cases
+/// (re-prompting the agent, calling the model, executing tools, scoring the
+/// outputs) is the caller's responsibility — it owns the agent runtime, the
+/// provider credentials, and the dataset. This crate only orchestrates the
+/// proposal and the statistical gate, so the "run the candidate" step is an
+/// injected trait, not faked in-tree. Production wires a real evaluator (e.g. one
+/// built on [`run_agent_experiment`] / [`run_judge_experiment`]); tests inject a
+/// deterministic stub.
+///
+/// Implementations must return one [`CaseScore`] per case they were given,
+/// tagged with the case's [`Split`]; the orchestrator partitions them and feeds
+/// the held-out Test split to the gate.
+#[async_trait]
+pub trait CandidateEvaluator {
+    /// Score `candidate`'s effect on `cases`, returning paired baseline-vs-candidate
+    /// scores keyed by split. The slice is opaque (`serde_json::Value`) so the
+    /// evaluator can carry whatever case identity / payload its runtime needs
+    /// without coupling this crate to a concrete case type.
+    async fn evaluate(
+        &self,
+        candidate: &CandidateChange,
+        cases: &[Value],
+    ) -> Result<Vec<CaseScore>, String>;
+}
+
+/// Configuration for a single [`run_optimization_round`].
+///
+/// The round reflects on `failures` to build a [`ProposalContext`], asks the
+/// configured [`OptimizerStrategy`] for candidates, and routes each through the
+/// held-out gate. The `cases` are handed verbatim to the [`CandidateEvaluator`];
+/// the caller is responsible for their train/val/test split tagging.
+#[derive(Clone, Debug)]
+pub struct OptimizationRoundConfig {
+    /// The improvement goal in natural language (§21.3 "goal + params").
+    pub goal: String,
+    /// The current prompt / lever text the proposer may rewrite.
+    pub current_prompt: String,
+    /// The round's failing examples, used to build the reflective context.
+    pub failures: Vec<FailureExample>,
+    /// The cases to score each candidate against (opaque payloads the injected
+    /// evaluator understands). The evaluator tags each returned [`CaseScore`]
+    /// with its [`Split`].
+    pub cases: Vec<Value>,
+    /// Which proposer to drive. `LlmRewrite` uses the async generation seam;
+    /// every other implemented strategy uses the deterministic [`propose_with`]
+    /// dispatch.
+    pub strategy: OptimizerStrategy,
+    /// Gate policy applied to the held-out **Test** split via
+    /// [`compare_paired_scores`].
+    pub gate_policy: GatePolicy,
+    /// Largest benign generalization gap for [`assess_generalization_gap`]
+    /// (e.g. `0.0` — "held-out lift must not be significantly below the
+    /// optimization-split lift").
+    pub overfit_tolerance: f64,
+    /// Bootstrap confidence level for the generalization-gap CI.
+    pub overfit_confidence: f64,
+    /// Number of bootstrap resamples for the generalization-gap CI.
+    pub overfit_resamples: usize,
+    /// Seed for the (deterministic) generalization-gap bootstrap.
+    pub overfit_seed: u64,
+}
+
+impl OptimizationRoundConfig {
+    /// Sensible anti-overfit defaults: zero-tolerance gap, 95% bootstrap CI,
+    /// 2000 resamples, fixed seed. The caller still must set `goal`,
+    /// `current_prompt`, `failures`, `cases`, `strategy`, and `gate_policy`.
+    pub fn new(
+        goal: impl Into<String>,
+        current_prompt: impl Into<String>,
+        failures: Vec<FailureExample>,
+        cases: Vec<Value>,
+        strategy: OptimizerStrategy,
+        gate_policy: GatePolicy,
+    ) -> Self {
+        Self {
+            goal: goal.into(),
+            current_prompt: current_prompt.into(),
+            failures,
+            cases,
+            strategy,
+            gate_policy,
+            overfit_tolerance: 0.0,
+            overfit_confidence: 0.95,
+            overfit_resamples: 2000,
+            overfit_seed: 1,
+        }
+    }
+}
+
+/// The per-candidate verdict produced by [`run_optimization_round`].
+///
+/// Carries both gate decisions so the audit trail records *why* a candidate was
+/// or wasn't accepted: the held-out **Test** [`GateDecision`] AND the
+/// generalization-gap [`GapAssessment`] (the §21.4 anti-overfit check). A
+/// candidate is `accepted` only when the Test gate `Pass`es **and** the gap
+/// assessment does not flag overfitting — proposal is never acceptance.
+#[derive(Clone, Debug)]
+pub struct CandidateEvaluation {
+    /// The proposed change that was evaluated.
+    pub candidate: CandidateChange,
+    /// The held-out **Test**-split gate comparison (`compare_paired_scores`).
+    pub gate: ExperimentComparison,
+    /// The generalization-gap assessment (optimization split vs. held-out split).
+    pub overfit: GapAssessment,
+    /// `true` iff the Test gate passed AND no significant generalization gap was
+    /// detected. This is the only path to acceptance.
+    pub accepted: bool,
+}
+
+/// The outcome of one [`run_optimization_round`].
+///
+/// `accepted` is the single candidate (if any) that cleared *both* gates; when
+/// multiple candidates clear, the first in proposal order wins (deterministic).
+/// `evaluated` records every candidate's full verdict for the audit trail.
+#[derive(Clone, Debug)]
+pub struct OptimizationOutcome {
+    /// The accepted candidate, or `None` when no candidate cleared the gates.
+    pub accepted: Option<CandidateChange>,
+    /// Per-candidate verdicts, in proposal order.
+    pub evaluated: Vec<CandidateEvaluation>,
+}
+
+/// Drive one optimization round end-to-end: **propose → evaluate → gate**.
+///
+/// This is the first real (non-test) caller of the proposer seam landed in
+/// 5e299f1: it builds a [`ProposalContext`] from the round's failing cases,
+/// asks the configured [`OptimizerStrategy`] for candidate changes (the live
+/// [`LlmRewrite::propose_async`] generation path for `LlmRewrite`, the
+/// deterministic [`propose_with`] dispatch for strategies like `ParamSearch`),
+/// and then runs **every** candidate through the existing held-out gate before
+/// any acceptance.
+///
+/// # The gate is reused, not reinvented
+///
+/// Each candidate is scored by the injected [`CandidateEvaluator`] (which the
+/// caller owns — see its docs), yielding paired baseline-vs-candidate
+/// [`CaseScore`]s tagged by [`Split`]. Acceptance then requires **both**:
+///
+/// 1. The held-out **Test** split must `Pass` the existing
+///    [`compare_paired_scores`] gate (§21.3): a real paired test + CI against the
+///    regression bound. The Test split is the *only* split that can grant
+///    acceptance.
+/// 2. The §21.4 anti-overfit guardrail [`assess_generalization_gap`] must NOT
+///    flag a significant gap between the optimization (Train+Val) lift and the
+///    held-out (Test) lift. A candidate that looks good only on data the
+///    optimizer could see is rejected even if it marginally passes (1).
+///
+/// Both come straight from `beater-eval` / `beater-stats`; this function does no
+/// statistics of its own — it routes scores to the existing functions and
+/// records their verdicts.
+///
+/// # Proposal is not acceptance
+///
+/// The proposer only emits [`CandidateChange`]s; the gate decides. A candidate is
+/// returned in [`OptimizationOutcome::accepted`] only when it clears both checks,
+/// and a candidate the gate *cannot judge* (e.g. an under-powered Test split)
+/// surfaces as a typed [`OptimizerError`] rather than a silent accept.
+///
+/// # What this is NOT
+///
+/// This orchestrates proposal + gating only. Actually executing the candidate
+/// agent/LLM over the cases is the [`CandidateEvaluator`]'s job (caller-supplied),
+/// and the production CLI / HTTP endpoint that invokes this round, persists the
+/// outcome, and applies an accepted change is the next layer up — intentionally
+/// not built here.
+pub async fn run_optimization_round(
+    cfg: OptimizationRoundConfig,
+    generator: &dyn TextGenerator,
+    credentials: ProviderCredentials,
+    evaluate_candidate: &dyn CandidateEvaluator,
+) -> Result<OptimizationOutcome, OptimizerError> {
+    if cfg.goal.trim().is_empty() {
+        return Err(OptimizerError::InvalidConfig(
+            "goal must not be empty".to_string(),
+        ));
+    }
+
+    // 1. Build the reflective context from the round's real failing cases.
+    let ctx = ProposalContext::from_failures(&cfg.goal, &cfg.current_prompt, &cfg.failures);
+
+    // 2. Propose candidate(s) via the configured strategy. LlmRewrite consults
+    //    the live generation seam; every other implemented strategy is
+    //    deterministic via `propose_with`.
+    let candidates = match cfg.strategy {
+        OptimizerStrategy::LlmRewrite => {
+            LlmRewrite
+                .propose_async(&ctx, generator, credentials)
+                .await?
+        }
+        other => propose_with(other, &ctx)?,
+    };
+
+    let mut evaluated = Vec::with_capacity(candidates.len());
+    let mut accepted: Option<CandidateChange> = None;
+
+    // 3 + 4. For each candidate: score its cases (injected evaluator), then run
+    //         the REAL held-out gate + anti-overfit assessment.
+    for candidate in candidates {
+        let scores = evaluate_candidate
+            .evaluate(&candidate, &cfg.cases)
+            .await
+            .map_err(OptimizerError::EvaluationFailed)?;
+
+        let evaluation = gate_candidate(&candidate, &scores, &cfg)?;
+        if evaluation.accepted && accepted.is_none() {
+            // First candidate (in proposal order) to clear both gates wins.
+            accepted = Some(evaluation.candidate.clone());
+        }
+        evaluated.push(evaluation);
+    }
+
+    Ok(OptimizationOutcome {
+        accepted,
+        evaluated,
+    })
+}
+
+/// Route one candidate's per-case scores through the held-out Test gate and the
+/// generalization-gap guardrail, returning the combined verdict. Pure plumbing
+/// over `compare_paired_scores` + `assess_generalization_gap` — no bespoke stats.
+fn gate_candidate(
+    candidate: &CandidateChange,
+    scores: &[CaseScore],
+    cfg: &OptimizationRoundConfig,
+) -> Result<CandidateEvaluation, OptimizerError> {
+    // Held-out Test split: the only split that can grant acceptance.
+    let (test_baseline, test_candidate) = split_scores(scores, Split::Test);
+    if test_baseline.is_empty() {
+        return Err(OptimizerError::GateFailed(
+            "no held-out Test cases were scored; the gate cannot grant acceptance".to_string(),
+        ));
+    }
+
+    // Optimization split = Train + Val (everything the proposer could see). The
+    // generalization gap compares this lift against the held-out Test lift.
+    let (optimize_baseline, optimize_candidate): (Vec<f64>, Vec<f64>) = scores
+        .iter()
+        .filter(|s| matches!(s.split, Split::Train | Split::Val))
+        .map(|s| (s.baseline_score, s.candidate_score))
+        .unzip();
+    if optimize_baseline.is_empty() {
+        return Err(OptimizerError::GateFailed(
+            "no Train/Val cases were scored; cannot assess the generalization gap".to_string(),
+        ));
+    }
+
+    // (1) Real held-out Test gate — reused verbatim from beater-eval.
+    let gate = compare_paired_scores(&test_baseline, &test_candidate, &cfg.gate_policy)
+        .map_err(|err| OptimizerError::GateFailed(err.to_string()))?;
+
+    // (2) Real anti-overfit guardrail — reused verbatim from beater-stats.
+    let overfit = assess_generalization_gap(
+        &optimize_baseline,
+        &optimize_candidate,
+        &test_baseline,
+        &test_candidate,
+        cfg.overfit_tolerance,
+        cfg.overfit_confidence,
+        cfg.overfit_resamples,
+        cfg.overfit_seed,
+    )
+    .map_err(|err| OptimizerError::GateFailed(err.to_string()))?;
+
+    // Acceptance requires BOTH: Test passes AND no significant generalization gap.
+    let accepted = gate.decision == GateDecision::Pass && !overfit.overfit;
+
+    Ok(CandidateEvaluation {
+        candidate: candidate.clone(),
+        gate,
+        overfit,
+        accepted,
+    })
+}
+
+/// Collect the paired (baseline, candidate) score vectors for a single [`Split`],
+/// preserving case order so the pairing stays aligned.
+fn split_scores(scores: &[CaseScore], split: Split) -> (Vec<f64>, Vec<f64>) {
+    scores
+        .iter()
+        .filter(|s| s.split == split)
+        .map(|s| (s.baseline_score, s.candidate_score))
+        .unzip()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1608,6 +1945,205 @@ mod tests {
             .err()
             .unwrap_or_else(|| panic!("expected ProposerFailed"));
         assert!(matches!(err, OptimizerError::ProposerFailed(_)));
+    }
+
+    /// A deterministic [`CandidateEvaluator`] driven by two closures: one that
+    /// produces the per-case baseline/candidate scores for the optimization
+    /// (Train+Val) split, and one for the held-out Test split. This lets a test
+    /// dial in "improves everywhere" vs. "improves only on the optimization
+    /// split" without any live agent or network.
+    struct ScriptedEvaluator {
+        /// (baseline, candidate) score for each Train/Val case.
+        optimize: Vec<(f64, f64)>,
+        /// (baseline, candidate) score for each held-out Test case.
+        test: Vec<(f64, f64)>,
+    }
+
+    #[async_trait]
+    impl CandidateEvaluator for ScriptedEvaluator {
+        async fn evaluate(
+            &self,
+            _candidate: &CandidateChange,
+            _cases: &[Value],
+        ) -> Result<Vec<CaseScore>, String> {
+            // Split Train/Val arbitrarily; both count as the optimization split
+            // for the generalization-gap assessment.
+            let mut out = Vec::new();
+            for (i, (b, c)) in self.optimize.iter().enumerate() {
+                let split = if i % 2 == 0 { Split::Train } else { Split::Val };
+                out.push(CaseScore {
+                    split,
+                    baseline_score: *b,
+                    candidate_score: *c,
+                });
+            }
+            for (b, c) in &self.test {
+                out.push(CaseScore {
+                    split: Split::Test,
+                    baseline_score: *b,
+                    candidate_score: *c,
+                });
+            }
+            Ok(out)
+        }
+    }
+
+    fn round_config(strategy: OptimizerStrategy) -> OptimizationRoundConfig {
+        OptimizationRoundConfig::new(
+            "reduce hallucinations on factual lookups",
+            "You are a helpful assistant.",
+            proposal_context().failing_examples,
+            // Cases are opaque to the orchestrator; the scripted evaluator ignores them.
+            (0..12).map(|i| json!({ "case": i })).collect(),
+            strategy,
+            GatePolicy {
+                min_sample_size: 6,
+                max_regression: 0.0,
+                alpha: 0.05,
+                comparison_count: 1,
+            },
+        )
+    }
+
+    /// Test A: a candidate that improves uniformly across every split clears the
+    /// held-out Test gate AND the anti-overfit guardrail → accepted.
+    #[tokio::test]
+    async fn round_accepts_candidate_that_improves_across_all_splits() {
+        let generator = FakeRewriteGenerator {
+            completion: "You are a meticulous assistant. Cite a source for every claim."
+                .to_string(),
+        };
+        // Baseline 0.5 everywhere, candidate 0.9 everywhere — same lift on the
+        // optimization and held-out splits, so no generalization gap.
+        let evaluator = ScriptedEvaluator {
+            optimize: vec![(0.5, 0.9); 6],
+            test: vec![(0.5, 0.9); 6],
+        };
+        let outcome = run_optimization_round(
+            round_config(OptimizerStrategy::LlmRewrite),
+            &generator,
+            ProviderCredentials::new("openai", "sk-test"),
+            &evaluator,
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(outcome.evaluated.len(), 1, "LlmRewrite emits one candidate");
+        let eval = &outcome.evaluated[0];
+        assert_eq!(eval.gate.decision, GateDecision::Pass);
+        assert!(
+            !eval.overfit.overfit,
+            "uniform lift has no generalization gap"
+        );
+        assert!(eval.accepted);
+        let accepted = outcome
+            .accepted
+            .unwrap_or_else(|| panic!("expected an accepted candidate"));
+        assert_eq!(accepted.proposed_by, OptimizerStrategy::LlmRewrite);
+        assert!(accepted.target.contains("meticulous assistant"));
+    }
+
+    /// Test B: a candidate that improves only on Train/Val but reverts to
+    /// baseline on the held-out Test split is REJECTED — proving the loop honors
+    /// the §21.4 anti-overfit gate (a candidate that looks good only on data the
+    /// optimizer could see is never accepted).
+    #[tokio::test]
+    async fn round_rejects_candidate_that_overfits_the_optimization_split() {
+        let generator = FakeRewriteGenerator {
+            completion: "You are a meticulous assistant.".to_string(),
+        };
+        // Big lift on the optimization split (0.2 -> 0.95) but ZERO lift on the
+        // held-out Test split (0.2 -> 0.2): the classic overfit signature.
+        let evaluator = ScriptedEvaluator {
+            optimize: vec![(0.2, 0.95); 6],
+            test: vec![(0.2, 0.2); 6],
+        };
+        let outcome = run_optimization_round(
+            round_config(OptimizerStrategy::LlmRewrite),
+            &generator,
+            ProviderCredentials::new("openai", "sk-test"),
+            &evaluator,
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        let eval = &outcome.evaluated[0];
+        // The generalization-gap guardrail flags the candidate.
+        assert!(
+            eval.overfit.overfit,
+            "expected an overfit flag: gap={:?}",
+            eval.overfit
+        );
+        assert!(eval.overfit.gap_ci_low > 0.0);
+        // Even though the Test split shows no regression (so the Test gate alone
+        // would Pass), acceptance is denied because the gap guardrail fired.
+        assert!(!eval.accepted, "overfit candidate must not be accepted");
+        assert!(
+            outcome.accepted.is_none(),
+            "no candidate should be accepted in the overfit round"
+        );
+    }
+
+    /// A round with a deterministic (LLM-free) strategy still drives the gate:
+    /// ParamSearch proposes a grid, each point is gated, and the generator is
+    /// never consulted.
+    #[tokio::test]
+    async fn round_drives_deterministic_param_search_through_the_gate() {
+        // A generator that panics if called — proves ParamSearch never touches it.
+        struct PanicGenerator;
+        #[async_trait]
+        impl TextGenerator for PanicGenerator {
+            async fn generate(
+                &self,
+                _req: beater_judge::GenerationRequest,
+                _credentials: ProviderCredentials,
+            ) -> beater_judge::JudgeProviderResult<beater_judge::GenerationResponse> {
+                panic!("deterministic strategy must not call the generator");
+            }
+        }
+        let evaluator = ScriptedEvaluator {
+            optimize: vec![(0.5, 0.9); 6],
+            test: vec![(0.5, 0.9); 6],
+        };
+        let outcome = run_optimization_round(
+            round_config(OptimizerStrategy::ParamSearch),
+            &PanicGenerator,
+            ProviderCredentials::new("openai", "sk-test"),
+            &evaluator,
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+
+        // 3 temperatures x 2 top_p = 6 grid points, each gated.
+        assert_eq!(outcome.evaluated.len(), 6);
+        assert!(outcome.evaluated.iter().all(|e| e.accepted));
+        let accepted = outcome
+            .accepted
+            .unwrap_or_else(|| panic!("expected an accepted grid point"));
+        assert_eq!(accepted.proposed_by, OptimizerStrategy::ParamSearch);
+    }
+
+    /// A held-out Test split smaller than `min_sample_size` is a candidate the
+    /// gate cannot judge — surfaced as a typed error, never a silent accept.
+    #[tokio::test]
+    async fn round_errors_when_test_split_underpowers_the_gate() {
+        let generator = FakeRewriteGenerator {
+            completion: "You are a meticulous assistant.".to_string(),
+        };
+        let evaluator = ScriptedEvaluator {
+            optimize: vec![(0.5, 0.9); 6],
+            test: vec![(0.5, 0.9); 2], // below min_sample_size = 6
+        };
+        let err = run_optimization_round(
+            round_config(OptimizerStrategy::LlmRewrite),
+            &generator,
+            ProviderCredentials::new("openai", "sk-test"),
+            &evaluator,
+        )
+        .await
+        .err()
+        .unwrap_or_else(|| panic!("expected a GateFailed error"));
+        assert!(matches!(err, OptimizerError::GateFailed(_)), "{err:?}");
     }
 
     #[test]
