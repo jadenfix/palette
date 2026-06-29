@@ -1,3 +1,9 @@
+pub mod split;
+pub use split::{
+    duplicate_inputs, fingerprint_input, partition, split_for_fingerprint, split_for_input,
+    DuplicateGroup, SplitConfig, SplitError, SplitLabel, SplitPartition,
+};
+
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use beater_core::{
