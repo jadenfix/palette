@@ -2892,7 +2892,7 @@ discarded even if its headline Test delta is the largest in the round.
 
 This guardrail is **[planned]**, like the rest of §21; its acceptance test is the
 §24 ledger row "the §21 guardrail REJECTS an overfit change on a held-out OOD probe"
-and the §22.3 RSI rows.
+and the §24 RSI loop rows.
 
 [^sam-prompt]: The specific SAM-for-prompts source (arXiv:2509.24130) was
   *withdrawn; retained for framing only* — do not propagate it as valid evidence.
@@ -3380,51 +3380,19 @@ The containerized self-host equivalent: `scripts/smoke-compose.sh`. The
 clean-clone-to-browser proof: see the README "Clean Clone To Browser" path
 (enforced by `gate2-proof-contract`).
 
-### 22.3 Plan item → acceptance test → verification command → CI gate
+### 22.3 Plan item → acceptance test → CI gate
 
-Every §20/§21 item maps to a concrete acceptance test and a verification command.
-The CI gate is the workflow that blocks merge if the item regresses.
-
-| Item | Acceptance test | Verification command | CI gate |
-| --- | --- | --- | --- |
-| §20.2 #0.1 columnar store wired | `beaterd --trace-store clickhouse` boots + serves; non-ignored compose integration test | `cargo run -p beaterd -- --trace-store clickhouse && curl /health` `[planned]` | `storage-backends` |
-| §20.2 #0.2 pagination/pushdown | keyset cursor + `LIMIT` pushed to SQL; `query_runs` is a backend `GROUP BY` | conformance test asserts no in-memory full-scan `[planned]` | `storage-backends` |
-| §20.2 #0.3 query p95 SLOs | criterion bench on 1M/10M-span fixtures meets §16 p95 in CI | `cargo bench -p beater-bench` `[planned]` | `backend` (bench gate) |
-| §20.2 #0.4 retention/TTL | sweeper demotes-then-deletes expired hot rows | retention integration test `[planned]` | `backend` |
-| §20.2 #0.5 cold archival | partitioned Parquet to object store; DataFusion read path | archive round-trip test `[planned]` | `backend` |
-| §20.2 #0.6 backend-agnostic migrations | `Migrator` runs on ClickHouse/Postgres; `xtask renormalize` reprojects raw | migration checksum test per backend `[planned]` | `storage-backends` |
-| §20.3 #1.1 sessions **[contract]** | multi-turn trace groups by session in the API | `curl /v1/sessions` + normalizer golden test `[planned]` | `sdk-contract` |
-| §20.3 #1.2 structured message I/O **[contract]** | OpenInference/`gen_ai` messages parse into `CanonicalMessages` | golden fixture both dialects `[planned]` | `sdk-contract` |
-| §20.3 #1.3 multimodal **[contract]** | a vision LLM call renders its image | media-artifact parse + render test `[planned]` | `sdk-contract` / `frontend` |
-| §20.3 #1.6 sampling weights **[contract]** | weighted aggregate matches population rate (A19) | unit: weighted vs unweighted diverge on tail-sampled fixture `[planned]` | `sdk-contract` / `backend` |
-| §20.3 #1.7 Train/Dev/Test split **[contract]** | seeded split + contamination guard rejects a near-dup in Test (A13) | dataset split + contamination unit test `[planned]` | `sdk-contract` |
-| §20.3 #1.8 mapping importer **[contract]** | a foreign dialect projects to canonical with no code | `/v1/import` mapping fixture `[built]` for the first dot-path JSON importer | `sdk-contract` |
-| §20.4 #2.x read APIs + UI | browse datasets, open an experiment with per-case CIs + gate badge, annotate, diff, analytics | Playwright e2e over the dashboard `[planned]` | `frontend` |
-| §20.4 #2.1b bulk promote **[contract]** | `promote-from-query` materializes failures as cases with seeded split | `curl /v1/datasets/:id/promote-from-query` `[planned]` | `sdk-contract` |
-| §20.5 #3.1 scorer breadth **[contract]** | new scorers pass on valid + invalid-when fixtures (§10.4) | per-scorer unit tests `[planned]` | `sdk-contract` / `backend` |
-| §20.5 #3.3 custom scorer registry **[contract]** | an uploaded WASM scorer runs sandboxed with memory/epoch limits | `/v1/scorers` upload + sandbox limit test `[planned]` | `sdk-contract` |
-| §20.5 #3.4 real statistics | delta with method-appropriate CI + real p-value, FWER-corrected, refuses underpowered (A2–A6) | `cargo test -p beater-stats` (alpha-calibration) `[planned]` | `backend` |
-| §20.5 #3.6 CI integration | `pytest`/`beater eval` fails CI on regression | the pytest plugin / `beater eval` subcommand `[planned]` | `sdk-contract` |
-| §20.5 #3.7 proper-scoring calibration **[contract]** | Brier/ECE + recalibration map improves ECE (A11) | `calibration-fixture` extended `[planned]`; today `[built]` runs kappa | `backend` |
-| §20.6 #4.1 online evals score | sampled production traces scored on a schedule, weighted (A19) | `curl /v1/online/.../scores` timeseries `[planned]` | `backend` |
-| §20.6 #4.3/#4.4 delivery + Slack | alert actually delivered (HMAC webhook / Slack Block Kit) | delivery-history endpoint + signed-payload test `[planned]`; today `[built]` `alert-fixture` computes a signed webhook | `backend` |
-| §20.6 #4.5 anytime-valid alerting | alert decided against an mSPRT confidence sequence, not fixed-N (A7) | continuous-peek FP test `[planned]` | `backend` |
-| §20.6 #4.7 prompt management **[contract]** | create/version/diff/run a prompt; resolve `prompt_version_id` at eval | `/v1/prompts` CRUD + playground `[planned]` | `sdk-contract` |
-| §20.7 #5.2 enforced RBAC **[contract]** | a non-owner is denied a mutating route by `authorize()` (A20) | unauthorized mutate returns 403 `[planned]` | `sdk-contract` |
-| §20.7 #5.4 tenant isolation at DB | cross-tenant read fails under Postgres RLS (A20) | store-conformance cross-tenant test `[built]` (app-layer) → DB-layer `[planned]` | `storage-backends` |
-| §20.7 #5.5 crypto-shred **[contract]** | a shredded tenant is unreadable across hot/cold/artifact | deletion + unreadable-after assertion `[planned]` | `sdk-contract` |
-| §20.7 #5.9 backups/restore | restore drill meets documented RPO/RTO | CI restore-drill job `[planned]` | `backend` |
-| §20.7 #5.11 governance/SECURITY | `SECURITY.md` + compliance docs present | repo presence check; **`SECURITY.md` now exists `[built]`** | `backend` |
-| §20.8 #6.2 zero-code bootstrap | env-var-only app produces traces with no code (§1 #13) | the README zero-code OTLP snippet `[built]` (manual); `beaterctl ingest test` prints/validates the OTLP env block `[built]`; env-var distro `[planned]` | `gate1-live-smoke` |
-| §20.8 #6.4 `beaterctl quickstart` | timed e2e shows a *scored failing case* under the §15 SLO | `beaterctl quickstart` `[planned]` | `gate1-live-smoke` |
-| §21 MCP stdio transport | `tools/list` over stdio returns the full tool set | `beaterd mcp --stdio` `[built]`; streamable-HTTP `/mcp` `[built]` | `sdk-contract` |
-| §21.1 RSI tools | propose→simulate(Train)→accept(Test) only on a stat-sig held-out win (A13/A14) | `gate_candidate` MCP recipe `[planned]` | `backend` |
-| §21.9 RSI MVP acceptance | indexes a small agent, proposes a generalizable change, verifies a Test win, applies via Claude Code with approval | end-to-end MCP episode `[planned]` | `backend` |
+Every §20/§21 plan item maps to a row in the §24 Definition-of-Done ledger, which
+is the single authoritative acceptance-test matrix. The §24 table carries the
+binary done-criterion, the exact verification command, and the CI gate for each
+capability. To find the acceptance test for a specific plan item, look up the
+corresponding §24 row (Group A for the OSS core loop, Group B for Hosted GA, Group
+C for cross-cutting, Group D for competitive-parity surfaces).
 
 ### 22.4 Acceptance-to-milestone traceability
 
 The §18 milestone acceptance bullets and the §19 "Bar for Done" questions are
-satisfied exactly when their §22.1/§22.3 rows are green:
+satisfied exactly when their §24 rows are green:
 
 - **v0 Substrate** → ingest + store + `beaterctl smoke` rows (§22.1) all `[built]`.
 - **v1 OSS Observability & Offline Evals** → evals/judge, experiments+gates,
@@ -3448,7 +3416,7 @@ rule — **a change that is not regenerated, tested, and drift-free cannot merge
 only a green `main` deploys.** It has two halves: **CI** (the merge gates below,
 run on every PR and on `main`) and **CD** (the deploy/release workflows, triggered
 only by a push to `main` or a `v*` tag *after* the CI gates are green). The gate
-set here is the same one §22.1/§22.3 map every component and plan item to, the same
+set here is the same one §22.1 and §24 map every component and plan item to, the same
 verify-commands as §22.2, and is consistent with the README/CONTRIBUTING gate list
 — there is one source of truth for "what must pass," not three.
 
@@ -3466,7 +3434,7 @@ required gates are green.
 | **`storage-backends`** | the `beater-store-conformance` trait suite runs against every backend (in-memory, SQLite today; Postgres/ClickHouse as wired, §20.2 #0.1), incl. tenant-isolation (A20) and the `#[ignore]`d container-backed store tests | `cargo test -p beater-store-conformance --workspace`; `cargo test -p beater-store-sql -- --ignored` |
 | **`frontend`** | dashboard build/lint/typecheck against the **generated** OpenAPI client, plus `check-openapi-drift.sh` so a UI change cannot silently diverge from the served spec | `scripts/check-openapi-drift.sh` |
 | **`browser`** | the `beater-browser*` family (Liveset) builds and its driver/capture tests pass | `cargo test` over the browser crates |
-| **`gate1-live-smoke`** | a live `beaterd` ingest → query round-trip (`beaterd --test live_smoke`); the zero-code-bootstrap and `quickstart` acceptance live here (§22.3) | `cargo run -p beaterctl -- smoke …` |
+| **`gate1-live-smoke`** | a live `beaterd` ingest → query round-trip (`beaterd --test live_smoke`); the zero-code-bootstrap and `quickstart` acceptance map to §24 Group A rows | `cargo run -p beaterctl -- smoke …` |
 | **`gate2-proof-contract`** | the clean-clone-to-browser proof contract: `fmt`, `check-openapi-drift.sh`, the gate-0 foundations check, and the self-host/outside-validator tests that back the README "Clean Clone To Browser" path | `scripts/gate2-proof.sh` |
 | **`gate2-browser-proof`** | the recorded browser demo proof (Playwright over the dashboard) | `scripts/browser-e2e.sh` |
 
@@ -3766,17 +3734,17 @@ to §18 milestones, §19 Bar-for-Done, §20/§21 phase items, and §22 tests.
 
 | Capability | Binary done-criterion | Verified-by | Status |
 | --- | --- | --- | --- |
-| Columnar store wired | `beaterd --trace-store clickhouse` boots and serves traces | §22.3 §20.2 #0.1 row; `storage-backends` gate (compose integration test) | planned |
-| Scale: filtered search p95 | 10M-span seeded filtered search **p95 < 1s** in CI | §22.3 §20.2 #0.3 row; `beater-bench` load report (`backend` bench gate, §23.10) | planned |
-| Zero-SDK OTLP queryable | a stock OTel exporter trace (no Beater SDK) becomes queryable under the §16 ingest→queryable SLO | §22.1 Ingest e2e + §22.3 §20.8 #6.2; `gate1-live-smoke` | partial (built: SDK round-trip and `beaterctl ingest test` env block; env-var distro planned) |
-| Datasets read-API + UI | browse datasets/versions/cases via `GET /v1/datasets…` and the dashboard | §22.3 §20.4 #2.x (Playwright); `sdk-contract` + `frontend` | planned (create-only POST today) |
+| Columnar store wired | `beaterd --trace-store clickhouse` boots and serves traces | `cargo run -p beaterd -- --trace-store clickhouse && curl /health` `[planned]`; `storage-backends` gate (compose integration test) | planned |
+| Scale: filtered search p95 | 10M-span seeded filtered search **p95 < 1s** in CI | `cargo bench -p beater-bench` `[planned]`; `beater-bench` load report (`backend` bench gate, §23.10) | planned |
+| Zero-SDK OTLP queryable | a stock OTel exporter trace (no Beater SDK) becomes queryable under the §16 ingest→queryable SLO | §22.1 Ingest e2e; `gate1-live-smoke` | partial (built: SDK round-trip and `beaterctl ingest test` env block; env-var distro planned) |
+| Datasets read-API + UI | browse datasets/versions/cases via `GET /v1/datasets…` and the dashboard | Playwright e2e §20.4 #2.x `[planned]`; `sdk-contract` + `frontend` | planned (create-only POST today) |
 | Evals browseable (deterministic + calibrated judge) | deterministic WASI + judge eval results browseable with rationale + calibration | §22.1 Evals/Calibration rows; `judge-dataset-fixture` `[built]`; eval UI §20.4 `[planned]` | partial |
 | Real statistics | method-appropriate CI, real p-value, test-selection, Holm-BH/FDR, anytime-valid | §22.1 Statistics row (A2–A8); `cargo test -p beater-stats` | planned (hardcoded-z path deleted; `beater-stats` not yet built, §10.3) |
 | Candidate-vs-baseline gate blocks a regression | the gate **exits non-zero** on a real confidence-bound regression | §22.1 Experiments+gates; `! beaterctl gate-run …` (non-zero exit) `[built]` | partial (built on the deleted-stats path; trustworthy once `beater-stats` lands) |
 | Replay earliest-flip | forked replay finds the **earliest outcome-flipping span** on a seeded failure (A18) | §22.1 Replay row; `replay-fixture` `[built]` (cassette); real forked search §11 `[planned]` | partial |
-| MCP deployable < 5 min | stdio **and** hosted streamable-HTTP/OAuth, connecting from Claude Code/Cursor/ChatGPT/Codex with `tools/list`+`tools/call` | §22.1 MCP row + §22.3 §21 stdio row; `curl POST /mcp` `[built]`; `beaterd mcp --stdio` `[built]` | partial (basic transports built; end-client attach proof remains) |
-| RSI loop closes end-to-end | index→propose→simulate(Train)→accept(Test)→apply via Claude Code with approval | §22.1 RSI row + §22.3 §21.8 row; end-to-end MCP episode | planned |
-| §21 guardrail rejects an overfit change | the §21.4 guardrail **REJECTS** a deliberately-overfit change on a **held-out OOD probe** (demonstrated) | §22.1 RSI row + §22.3 §21.1 RSI row; OOD-reject acceptance test (§21.4) | planned |
+| MCP deployable < 5 min | stdio **and** hosted streamable-HTTP/OAuth, connecting from Claude Code/Cursor/ChatGPT/Codex with `tools/list`+`tools/call` | §22.1 MCP row; `curl POST /mcp` `[built]`; `beaterd mcp --stdio` `[built]` | partial (basic transports built; end-client attach proof remains) |
+| RSI loop closes end-to-end | index→propose→simulate(Train)→accept(Test)→apply via Claude Code with approval | §22.1 RSI row; end-to-end MCP episode `[planned]` | planned |
+| §21 guardrail rejects an overfit change | the §21.4 guardrail **REJECTS** a deliberately-overfit change on a **held-out OOD probe** (demonstrated) | §22.1 RSI row; OOD-reject acceptance test (§21.4) `[planned]` | planned |
 | SDK ↔ MCP ↔ API zero-drift | spec == served routes == all 7 clients == MCP tools == CLI == 5 semconv SDKs | §22.5 `sdk-contract` gate; `scripts/check-contract-sync.sh` `[built]` | built |
 | Docker compose offline | `scripts/smoke-compose.sh` runs the full loop with **no cloud calls** | §22.2 compose row; `gate2-proof-contract` | partial (compose path built; offline-guarantee assertion to harden) |
 | Heartbeat SLO dashboards live | `/metrics` exposes ingest success, ingest→queryable lag, DLQ age, query p95 (§16) | §22.1 Self-observability; `curl /metrics` `[built]`; load evidence §23.10 `[planned]` | partial |
@@ -3786,20 +3754,20 @@ to §18 milestones, §19 Bar-for-Done, §20/§21 phase items, and §22 tests.
 | Capability | Binary done-criterion | Verified-by | Status |
 | --- | --- | --- | --- |
 | Orgs / projects / envs | org/project/environment entities + scoping enforced | §22.1 Store row; `beater-store-conformance` boundaries `[built]` | built |
-| Enforced RBAC | a non-owner is **denied** a mutating route by `authorize()` (A20) | §22.3 §20.7 #5.2; `sdk-contract` (403 test) | planned (RBAC data model exists, never consulted by `authorize()`, §20.1) |
+| Enforced RBAC | a non-owner is **denied** a mutating route by `authorize()` (A20) | unauthorized mutate returns 403 `[planned]`; `sdk-contract` | planned (RBAC data model exists, never consulted by `authorize()`, §20.1) |
 | SSO / SAML / SCIM | enterprise login JIT-provisions a user (OIDC/SAML/SCIM) | §22.1 Hosted control plane (SSO JIT); Passport (`beater-identity` [planned]) | planned |
-| Storage-layer tenant isolation (RLS) + secure-default auth | cross-tenant read/write **fails at the DB** under Postgres RLS; auth required by default | §22.3 §20.7 #5.4 (A20); `storage-backends` (app-layer `[built]` → DB-layer `[planned]`) | partial (auth required by default; `--auth-mode local` rejects non-loopback HTTP binds; app-enforced today; DB RLS planned) |
+| Storage-layer tenant isolation (RLS) + secure-default auth | cross-tenant read/write **fails at the DB** under Postgres RLS; auth required by default | store-conformance cross-tenant test (A20); `storage-backends` (app-layer `[built]` → DB-layer `[planned]`) | partial (auth required by default; `--auth-mode local` rejects non-loopback HTTP binds; app-enforced today; DB RLS planned) |
 | Quotas / rate-limits / billing ledger | per-tenant quota + rolling-window limit + a usage/billing ledger | §22.1 + Tempo (`beater-usage`) `[built]` ledger; Bandwidth (`beater-billing` [planned]) | partial |
-| Crypto-shred deletion / GDPR + retention + residency | a shredded tenant is **unreadable across hot/cold/artifact**; retention sweeper runs; residency honored | §22.3 §20.7 #5.5 + §20.2 #0.4; `sdk-contract` / `backend` | planned (crypto primitives built; lifecycle planned) |
-| Backups + passing restore drill | a restore drill **meets documented RPO/RTO** | §22.3 §20.7 #5.9; CI restore-drill job | planned |
-| Alerts actually delivered | an alert is **delivered** (Slack Block Kit / HMAC webhook), with delivery history | §22.3 §20.6 #4.3/#4.4; `alert-fixture` signs a webhook `[built]`; delivery `[planned]` | partial |
+| Crypto-shred deletion / GDPR + retention + residency | a shredded tenant is **unreadable across hot/cold/artifact**; retention sweeper runs; residency honored | deletion + unreadable-after assertion `[planned]`; `sdk-contract` / `backend` | planned (crypto primitives built; lifecycle planned) |
+| Backups + passing restore drill | a restore drill **meets documented RPO/RTO** | CI restore-drill job `[planned]`; `backend` | planned |
+| Alerts actually delivered | an alert is **delivered** (Slack Block Kit / HMAC webhook), with delivery history | delivery-history endpoint + signed-payload test `[planned]`; `alert-fixture` `[built]`; `backend` | partial |
 
 ### 24.3 Group C — Cross-cutting
 
 | Capability | Binary done-criterion | Verified-by | Status |
 | --- | --- | --- | --- |
 | beater-bench SLO gates green | criterion + loadgen meet §16 SLOs and gate regressions | §22.5 advisory bench gate → required; Tech Rider (`beater-bench` [planned], §23.10) | planned |
-| Governance docs present | `LICENSE`, `GOVERNANCE.md`, `SECURITY.md`, `CONTRIBUTING.md` exist | §22.3 §20.7 #5.11 repo-presence check; `SECURITY.md` exists `[built]` | built (LICENSE + CONTRIBUTING + SECURITY + GOVERNANCE present); compliance docs `[planned]` |
+| Governance docs present | `LICENSE`, `GOVERNANCE.md`, `SECURITY.md`, `CONTRIBUTING.md` exist | repo presence check `[built]`; `SECURITY.md` exists | built (LICENSE + CONTRIBUTING + SECURITY + GOVERNANCE present); compliance docs `[planned]` |
 | Docs complete | quickstart + Claude-Code/Codex MCP setup + SDK & framework guides + API/MCP-tool reference exist and are verified by a new dev reaching first-scored-failure following **only** the docs (§15.1, §21.5b) | §22 docs-walkthrough check (a new dev hits first-scored-failure from docs alone) | partial (README/CONTRIBUTING/SECURITY/GOVERNANCE + `docs/` exist; user-facing guides + docs site `[planned]`) |
 | §19 Bar-for-Done all "yes" with evidence | every §19 question answerable **yes** with a green §22 verification | §22.4 traceability (milestone ⇒ §22 rows); §19 | planned (several answers still "no", §20.1) |
 
@@ -4087,7 +4055,7 @@ rubric, OOD-probe detail) — never on screen by default (§25.1).
   the generated OpenAPI client** + `check-openapi-drift.sh` so the UI can't diverge
   from the served spec. **[built].**
 - **`gate2-browser-proof`** (§22.5) is the recorded **Playwright** demo over the
-  dashboard — the §22.3 row "§20.4 #2.x read APIs + UI → Playwright e2e" and the
+  dashboard — the §24 "Datasets read-API + UI" row (§20.4 #2.x, Playwright e2e) and the
   README "Clean Clone To Browser" path (`gate2-proof-contract`). The
   quickstart/browser e2e (`tests/e2e`, `playwright.config.ts`) is **[built]** for
   the trace path; per-screen e2e for the §25.4 product routes lands with each route
