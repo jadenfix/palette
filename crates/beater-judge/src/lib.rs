@@ -94,6 +94,106 @@ where
     }
 }
 
+/// A plain text-generation request — the generation seam used by the optimizer's
+/// reflective prompt rewrite (and any other caller that needs a raw completion
+/// rather than a scored judgement).
+///
+/// This is deliberately separate from [`JudgeRequest`]/[`JudgeProvider`]: the
+/// judge path wraps every call in a strict-evaluation system prompt and forces a
+/// `{score, rationale}` JSON contract. A generation request carries the caller's
+/// *own* system/user prompt and returns the model's raw text, with no scoring
+/// contract imposed.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GenerationRequest {
+    /// The model identifier to send to the provider.
+    pub model: String,
+    /// An optional system prompt. When `None`, no system message is sent (the
+    /// caller's intent lives entirely in `prompt`).
+    #[serde(default)]
+    pub system: Option<String>,
+    /// The user prompt — the caller's actual instruction (e.g. the reflective
+    /// rewrite brief). Sent verbatim; never wrapped in a judge contract.
+    pub prompt: String,
+    /// Upper bound on generated tokens.
+    pub max_tokens: u32,
+    /// Sampling temperature.
+    pub temperature: f32,
+}
+
+impl GenerationRequest {
+    /// Build a generation request with sensible defaults (`temperature = 0.2`,
+    /// `max_tokens = 1024`) and no system prompt.
+    pub fn new(model: impl Into<String>, prompt: impl Into<String>) -> Self {
+        Self {
+            model: model.into(),
+            system: None,
+            prompt: prompt.into(),
+            max_tokens: 1024,
+            temperature: 0.2,
+        }
+    }
+
+    /// Set the system prompt.
+    pub fn with_system(mut self, system: impl Into<String>) -> Self {
+        self.system = Some(system.into());
+        self
+    }
+
+    /// Set the maximum generated tokens.
+    pub fn with_max_tokens(mut self, max_tokens: u32) -> Self {
+        self.max_tokens = max_tokens;
+        self
+    }
+
+    /// Set the sampling temperature.
+    pub fn with_temperature(mut self, temperature: f32) -> Self {
+        self.temperature = temperature;
+        self
+    }
+}
+
+/// The raw text produced by a [`TextGenerator`].
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GenerationResponse {
+    /// The model's raw output text (no JSON / scoring contract applied).
+    pub text: String,
+    /// The model the provider reported (or echoed) for the call, if available.
+    #[serde(default)]
+    pub model: Option<String>,
+}
+
+/// A plain text-generation seam over an LLM provider.
+///
+/// Implemented by the same provider types that back [`JudgeProvider`], but it
+/// sends a PLAIN completion (the caller's own system/user prompt) and returns the
+/// raw text — it does NOT inject the strict-evaluation judge system prompt and
+/// does NOT enforce the `{score, rationale}` JSON contract. This is the honest
+/// generation seam the optimizer's `LlmRewrite` proposer needs; scoring stays on
+/// [`JudgeProvider`].
+#[async_trait]
+pub trait TextGenerator: Send + Sync {
+    /// Send `req` to the provider and return the raw generated text.
+    async fn generate(
+        &self,
+        req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse>;
+}
+
+#[async_trait]
+impl<T> TextGenerator for Arc<T>
+where
+    T: TextGenerator + ?Sized,
+{
+    async fn generate(
+        &self,
+        req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        (**self).generate(req, credentials).await
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct JudgeBrokerRequest {
     pub tenant_id: TenantId,
@@ -853,6 +953,56 @@ impl JudgeProvider for OpenAiJudgeProvider {
     }
 }
 
+#[async_trait]
+impl TextGenerator for OpenAiJudgeProvider {
+    async fn generate(
+        &self,
+        req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        // Plain completion: the caller's own system/user prompt, no judge system
+        // prompt and no JSON/scoring contract.
+        let mut messages = Vec::new();
+        if let Some(system) = req.system.as_deref().filter(|s| !s.trim().is_empty()) {
+            messages.push(serde_json::json!({ "role": "system", "content": system }));
+        }
+        messages.push(serde_json::json!({ "role": "user", "content": req.prompt }));
+        let body = serde_json::json!({
+            "model": req.model,
+            "temperature": req.temperature,
+            "max_tokens": req.max_tokens,
+            "messages": messages,
+        });
+        let response = send_json_with_retries(
+            || {
+                self.client
+                    .post(&self.config.endpoint_url)
+                    .bearer_auth(credentials.secret_value())
+                    .json(&body)
+            },
+            self.config.retry_policy,
+        )
+        .await
+        .map_err(JudgeProviderError::backend)?;
+        let payload: OpenAiChatCompletionResponse = response
+            .json()
+            .await
+            .context("decode openai generation response")
+            .map_err(JudgeProviderError::backend)?;
+        let text = payload
+            .choices
+            .first()
+            .map(|choice| choice.message.content.clone())
+            .ok_or_else(|| {
+                JudgeProviderError::backend("openai generation response did not include a choice")
+            })?;
+        Ok(GenerationResponse {
+            text,
+            model: Some(req.model),
+        })
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct AnthropicJudgeProvider {
     client: reqwest::Client,
@@ -928,6 +1078,60 @@ impl JudgeProvider for AnthropicJudgeProvider {
     }
 }
 
+#[async_trait]
+impl TextGenerator for AnthropicJudgeProvider {
+    async fn generate(
+        &self,
+        req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        // Plain completion: the caller's own system/user prompt, no judge system
+        // prompt and no JSON/scoring contract.
+        let mut body = serde_json::json!({
+            "model": req.model,
+            "max_tokens": req.max_tokens,
+            "temperature": req.temperature,
+            "messages": [
+                { "role": "user", "content": req.prompt }
+            ]
+        });
+        if let Some(system) = req.system.as_deref().filter(|s| !s.trim().is_empty()) {
+            body["system"] = serde_json::Value::String(system.to_string());
+        }
+        let response = send_json_with_retries(
+            || {
+                self.client
+                    .post(&self.config.endpoint_url)
+                    .header("x-api-key", credentials.secret_value())
+                    .header("anthropic-version", self.anthropic_version.as_str())
+                    .json(&body)
+            },
+            self.config.retry_policy,
+        )
+        .await
+        .map_err(JudgeProviderError::backend)?;
+        let payload: AnthropicMessagesResponse = response
+            .json()
+            .await
+            .context("decode anthropic generation response")
+            .map_err(JudgeProviderError::backend)?;
+        let text = payload
+            .content
+            .iter()
+            .find(|block| block.kind == "text")
+            .map(|block| block.text.clone())
+            .ok_or_else(|| {
+                JudgeProviderError::backend(
+                    "anthropic generation response did not include text content",
+                )
+            })?;
+        Ok(GenerationResponse {
+            text,
+            model: Some(req.model),
+        })
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct HttpRoutingJudgeProvider {
     openai: OpenAiJudgeProvider,
@@ -979,6 +1183,30 @@ impl JudgeProvider for HttpRoutingJudgeProvider {
         } else {
             Err(JudgeProviderError::backend(format!(
                 "unsupported judge provider {}",
+                credentials.provider()
+            )))
+        }
+    }
+}
+
+#[async_trait]
+impl TextGenerator for HttpRoutingJudgeProvider {
+    async fn generate(
+        &self,
+        req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        if credentials.provider().eq_ignore_ascii_case("openai")
+            || credentials
+                .provider()
+                .eq_ignore_ascii_case("openai-compatible")
+        {
+            self.openai.generate(req, credentials).await
+        } else if credentials.provider().eq_ignore_ascii_case("anthropic") {
+            self.anthropic.generate(req, credentials).await
+        } else {
+            Err(JudgeProviderError::backend(format!(
+                "unsupported generation provider {}",
                 credentials.provider()
             )))
         }
@@ -1771,6 +1999,142 @@ mod tests {
         assert_eq!(response.score, 0.67);
         assert_eq!(response.rationale, "anthropic mock rationale");
         assert_eq!(response.cost, Money::usd_micros(44));
+    }
+
+    async fn spawn_mock_generator(state: Arc<MockGenerationState>) -> anyhow::Result<String> {
+        let listener = TcpListener::bind("127.0.0.1:0")
+            .await
+            .context("bind mock generation provider")?;
+        let addr = listener.local_addr().context("read mock provider addr")?;
+        let app = Router::new()
+            .route("/generate", post(mock_generation_handler))
+            .with_state(state);
+        tokio::spawn(async move {
+            if let Err(err) = axum::serve(listener, app).await {
+                panic!("{err}");
+            }
+        });
+        Ok(format!("http://{addr}/generate"))
+    }
+
+    #[derive(Debug)]
+    struct MockGenerationState {
+        response: MockProviderResponse,
+        captured_body: Arc<Mutex<Option<serde_json::Value>>>,
+    }
+
+    async fn mock_generation_handler(
+        State(state): State<Arc<MockGenerationState>>,
+        Json(body): Json<serde_json::Value>,
+    ) -> Response {
+        *state
+            .captured_body
+            .lock()
+            .unwrap_or_else(|err| panic!("{err}")) = Some(body.clone());
+        match state.response {
+            MockProviderResponse::OpenAi => Json(serde_json::json!({
+                "choices": [
+                    { "message": { "content": "rewritten openai prompt" } }
+                ]
+            }))
+            .into_response(),
+            MockProviderResponse::Anthropic => Json(serde_json::json!({
+                "content": [
+                    { "type": "text", "text": "rewritten anthropic prompt" }
+                ]
+            }))
+            .into_response(),
+        }
+    }
+
+    #[tokio::test]
+    async fn openai_text_generator_sends_plain_completion_and_returns_raw_text() {
+        let captured = Arc::new(Mutex::new(None));
+        let endpoint = spawn_mock_generator(Arc::new(MockGenerationState {
+            response: MockProviderResponse::OpenAi,
+            captured_body: captured.clone(),
+        }))
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+        let provider = OpenAiJudgeProvider::new(HttpJudgeProviderConfig {
+            endpoint_url: endpoint,
+            max_cost: Money::usd_micros(0),
+            retry_policy: RetryPolicy {
+                max_attempts: 1,
+                base_backoff_ms: 0,
+            },
+        });
+
+        let response = provider
+            .generate(
+                GenerationRequest::new("gen-model", "rewrite this prompt")
+                    .with_system("you are a prompt engineer"),
+                ProviderCredentials::new("openai", "sk-openai"),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(response.text, "rewritten openai prompt");
+        let body = captured
+            .lock()
+            .unwrap_or_else(|err| panic!("{err}"))
+            .clone()
+            .unwrap_or_else(|| panic!("no body captured"));
+        // No judge contract: no response_format / strict-judge system prompt.
+        assert!(body.get("response_format").is_none());
+        let serialized = body.to_string();
+        assert!(
+            !serialized.contains("strict evaluation judge"),
+            "{serialized}"
+        );
+        // The caller's own system + user prompt are sent verbatim.
+        assert!(serialized.contains("you are a prompt engineer"));
+        assert!(serialized.contains("rewrite this prompt"));
+    }
+
+    #[tokio::test]
+    async fn anthropic_text_generator_sends_plain_completion_and_returns_raw_text() {
+        let captured = Arc::new(Mutex::new(None));
+        let endpoint = spawn_mock_generator(Arc::new(MockGenerationState {
+            response: MockProviderResponse::Anthropic,
+            captured_body: captured.clone(),
+        }))
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+        let provider = AnthropicJudgeProvider::new(HttpJudgeProviderConfig {
+            endpoint_url: endpoint,
+            max_cost: Money::usd_micros(0),
+            retry_policy: RetryPolicy {
+                max_attempts: 1,
+                base_backoff_ms: 0,
+            },
+        });
+
+        let response = provider
+            .generate(
+                GenerationRequest::new("gen-model", "rewrite this prompt")
+                    .with_system("you are a prompt engineer"),
+                ProviderCredentials::new("anthropic", "sk-anthropic"),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(response.text, "rewritten anthropic prompt");
+        let body = captured
+            .lock()
+            .unwrap_or_else(|err| panic!("{err}"))
+            .clone()
+            .unwrap_or_else(|| panic!("no body captured"));
+        let serialized = body.to_string();
+        assert!(
+            !serialized.contains("strict evaluation judge"),
+            "{serialized}"
+        );
+        assert_eq!(
+            body.get("system").and_then(serde_json::Value::as_str),
+            Some("you are a prompt engineer")
+        );
+        assert!(serialized.contains("rewrite this prompt"));
     }
 
     fn fixture_request(
