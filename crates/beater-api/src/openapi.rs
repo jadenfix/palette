@@ -84,12 +84,37 @@ use utoipa::OpenApi;
 )]
 pub struct BeaterApi;
 
+/// Billing/Stripe is a hosted concern. Its paths, schemas, and tag live in this
+/// separate document that is only compiled — and only merged into the public
+/// contract — under the non-default `billing` cargo feature, so the open-source
+/// API contract never advertises Stripe endpoints.
+#[cfg(feature = "billing")]
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        crate::get_plans_route,
+        crate::get_plan_route,
+        crate::get_subscription_route,
+        crate::create_subscription_route,
+        crate::change_subscription_plan_route,
+        crate::get_org_invoices_route,
+        crate::get_invoice_route,
+        crate::stripe_webhook_route,
+    ),
+    tags(
+        (name = "billing", description = "Plans, subscriptions, invoices, and Stripe billing"),
+    )
+)]
+pub struct BillingApi;
+
 /// Build the OpenAPI document, stamping the live crate version at runtime.
 ///
 /// The utoipa derive requires a literal `version`, so we override it here with
 /// the actual `CARGO_PKG_VERSION` to keep the spec in lockstep with the crate.
 pub fn openapi() -> utoipa::openapi::OpenApi {
     let mut doc = BeaterApi::openapi();
+    #[cfg(feature = "billing")]
+    doc.merge(BillingApi::openapi());
     doc.info.version = env!("CARGO_PKG_VERSION").to_string();
     doc
 }

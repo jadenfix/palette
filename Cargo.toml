@@ -39,6 +39,7 @@ members = [
   "crates/beater-calibration",
   "crates/beater-alerts",
   "crates/beater-usage",
+  "crates/beater-billing",
   "crates/beater-audit",
   "crates/beater-api",
   "crates/beater-bench",

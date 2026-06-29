@@ -637,6 +637,7 @@ dependencies = [
  "beater-archive",
  "beater-audit",
  "beater-auth",
+ "beater-billing",
  "beater-bus",
  "beater-calibration",
  "beater-core",
@@ -760,6 +761,27 @@ dependencies = [
  "criterion",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "beater-billing"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "beater-core",
+ "beater-security",
+ "beater-store",
+ "beater-usage",
+ "chrono",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "utoipa",
+ "uuid",
 ]
 
 [[package]]
@@ -1556,6 +1578,7 @@ dependencies = [
  "beater-archive",
  "beater-audit",
  "beater-auth",
+ "beater-billing",
  "beater-bus",
  "beater-calibration",
  "beater-core",
