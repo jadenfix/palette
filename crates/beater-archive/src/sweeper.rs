@@ -629,7 +629,7 @@ mod tests {
 
     #[async_trait]
     impl TraceStore for FakeTraceStore {
-        async fn write_batch(&self, _batch: CanonicalTraceBatch) -> StoreResult<WriteAck> {
+        async fn write_batch(&self, _batch: Arc<CanonicalTraceBatch>) -> StoreResult<WriteAck> {
             Err(StoreError::backend("write_batch not used in sweeper tests"))
         }
 
