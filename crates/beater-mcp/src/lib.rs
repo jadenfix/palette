@@ -1057,6 +1057,8 @@ mod tests {
             "listJudgeLedger",
             "listProviderSecrets",
             "listReviewTasks",
+            "listConnectors",
+            "listConnectorTools",
         ];
         for tool in tools() {
             match &tool.output_schema {

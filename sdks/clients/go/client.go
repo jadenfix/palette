@@ -59,6 +59,8 @@ type APIClient struct {
 
 	CalibrationsAPI *CalibrationsAPIService
 
+	ConnectorsAPI *ConnectorsAPIService
+
 	DatasetsAPI *DatasetsAPIService
 
 	EvalsAPI *EvalsAPIService
@@ -74,6 +76,8 @@ type APIClient struct {
 	JudgeAPI *JudgeAPIService
 
 	OnlineAPI *OnlineAPIService
+
+	PromptsAPI *PromptsAPIService
 
 	ProviderSecretsAPI *ProviderSecretsAPIService
 
@@ -109,6 +113,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.ArchiveAPI = (*ArchiveAPIService)(&c.common)
 	c.AuditAPI = (*AuditAPIService)(&c.common)
 	c.CalibrationsAPI = (*CalibrationsAPIService)(&c.common)
+	c.ConnectorsAPI = (*ConnectorsAPIService)(&c.common)
 	c.DatasetsAPI = (*DatasetsAPIService)(&c.common)
 	c.EvalsAPI = (*EvalsAPIService)(&c.common)
 	c.ExperimentsAPI = (*ExperimentsAPIService)(&c.common)
@@ -117,6 +122,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.IngestAPI = (*IngestAPIService)(&c.common)
 	c.JudgeAPI = (*JudgeAPIService)(&c.common)
 	c.OnlineAPI = (*OnlineAPIService)(&c.common)
+	c.PromptsAPI = (*PromptsAPIService)(&c.common)
 	c.ProviderSecretsAPI = (*ProviderSecretsAPIService)(&c.common)
 	c.ReviewsAPI = (*ReviewsAPIService)(&c.common)
 	c.SearchAPI = (*SearchAPIService)(&c.common)

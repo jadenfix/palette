@@ -103,11 +103,15 @@ client = beater.wrap_mistral(mistral_client)
 
 ## Framework callbacks
 
+The framework adapters are part of the SDK's public surface (importable straight
+from `beater`, matching the TypeScript SDK). Each one imports its framework
+lazily, so `import beater` never requires LangChain or LlamaIndex to be installed.
+
 ```python
-from beater.integrations.langchain import BeaterCallbackHandler
+from beater import BeaterCallbackHandler
 chain.invoke(inputs, config={"callbacks": [BeaterCallbackHandler()]})
 
-from beater.integrations.llamaindex import BeaterLlamaIndexHandler
+from beater import BeaterLlamaIndexHandler
 from llama_index.core import Settings
 from llama_index.core.callbacks import CallbackManager
 Settings.callback_manager = CallbackManager([BeaterLlamaIndexHandler()])

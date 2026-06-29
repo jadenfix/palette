@@ -7,8 +7,11 @@ use beater_api::{router, ApiState};
 use beater_archive::ParquetTraceArchive;
 use beater_audit::SqliteAuditStore;
 use beater_auth::SqliteApiKeyStore;
+#[cfg(feature = "billing")]
+use beater_billing::SqliteBillingStore;
 use beater_bus::{DeadLetter, DurableBus, InMemoryBus, SqliteDurableBus};
 use beater_calibration::SqliteCalibrationStore;
+use beater_composio::HttpComposioClient;
 use beater_core::{IdempotencyKey, Money, Page, PageRequest, ProjectId, TenantId, TraceId};
 use beater_datasets::SqliteDatasetStore;
 use beater_experiments::SqliteExperimentStore;
@@ -25,6 +28,7 @@ use beater_judge::{
 use beater_oauth::SqliteOAuthStore;
 use beater_oauth_server::OAuthServerState;
 use beater_otlp::{OtlpGrpcTraceService, TraceServiceServer};
+use beater_prompts::SqlitePromptRegistry;
 use beater_schema::{
     ArtifactRef, AuthContext, CanonicalTraceBatch, RawEnvelope, RedactionClass, RunFilter,
     RunSummary, SpanFilter, SpanSummary, TraceView, WriteAck,
@@ -103,6 +107,17 @@ struct Args {
     judge_provider: JudgeProviderArg,
     #[arg(long, env = "BEATER_JUDGE_BUDGET_MICROS", default_value_t = 1_000_000)]
     judge_budget_micros: i64,
+    /// Stripe webhook signing secret (HMAC). When set, the
+    /// `/v1/billing/webhooks/stripe` route verifies inbound deliveries against
+    /// it. Hosted-only: available only in builds compiled with the `billing`
+    /// feature.
+    #[cfg(feature = "billing")]
+    #[arg(
+        long,
+        env = "BEATER_STRIPE_WEBHOOK_SECRET",
+        default_value = "whsec_local_dev"
+    )]
+    stripe_webhook_secret: String,
     #[arg(
         long,
         env = "BEATER_TRACE_WRITE_DRAIN_INTERVAL_MS",
@@ -253,9 +268,12 @@ async fn main() -> anyhow::Result<()> {
     let review_db_path = args.data_dir.join("reviews.sqlite");
     let calibration_db_path = args.data_dir.join("calibrations.sqlite");
     let usage_db_path = args.data_dir.join("usage.sqlite");
+    #[cfg(feature = "billing")]
+    let billing_db_path = args.data_dir.join("billing.sqlite");
     let audit_db_path = args.data_dir.join("audit.sqlite");
     let provider_secret_db_path = args.data_dir.join("provider-secrets.sqlite");
     let judge_db_path = args.data_dir.join("judge.sqlite");
+    let prompt_db_path = args.data_dir.join("prompts.sqlite");
     let bus_db_path = args.data_dir.join("bus.sqlite");
     let security_db_path = args.data_dir.join("security.sqlite");
     let mut sqlite_store_paths = vec![
@@ -271,7 +289,10 @@ async fn main() -> anyhow::Result<()> {
         audit_db_path.clone(),
         provider_secret_db_path.clone(),
         judge_db_path.clone(),
+        prompt_db_path.clone(),
     ];
+    #[cfg(feature = "billing")]
+    sqlite_store_paths.push(billing_db_path.clone());
     if matches!(args.bus_backend, BusBackendArg::Sqlite) {
         sqlite_store_paths.push(bus_db_path.clone());
     }
@@ -309,6 +330,8 @@ async fn main() -> anyhow::Result<()> {
     let human_reviews = Arc::new(SqliteHumanReviewStore::open(review_db_path)?);
     let calibrations = Arc::new(SqliteCalibrationStore::open(calibration_db_path)?);
     let usage = Arc::new(SqliteUsageLedger::open(usage_db_path)?);
+    #[cfg(feature = "billing")]
+    let billing = Arc::new(SqliteBillingStore::open(billing_db_path)?);
     let audit = Arc::new(SqliteAuditStore::open(audit_db_path)?);
     let provider_secret_keyring = match args.provider_secret_key.as_deref() {
         Some(encoded) => SecretKeyring::from_base64("env-v1", encoded)?,
@@ -322,6 +345,7 @@ async fn main() -> anyhow::Result<()> {
         provider_secret_keyring,
     )?);
     let judge_ledger = Arc::new(SqliteJudgeLedger::open(judge_db_path)?);
+    let prompts = Arc::new(SqlitePromptRegistry::open(prompt_db_path)?);
     let judge_provider: Arc<dyn JudgeProvider> = match args.judge_provider {
         JudgeProviderArg::Keyword => Arc::new(KeywordJudgeProvider::default()),
         JudgeProviderArg::HttpRouting => Arc::new(HttpRoutingJudgeProvider::default()),
@@ -437,7 +461,21 @@ async fn main() -> anyhow::Result<()> {
             .with_calibrations(calibrations)
             .with_usage(usage)
             .with_audit(audit)
+            .with_prompts(prompts)
             .with_judge(provider_secrets, judge_broker, judge_ledger);
+    // Billing/Stripe is hosted-only and compiled in only under the `billing`
+    // feature; the OSS daemon neither opens a billing store nor wires the
+    // Stripe webhook route.
+    #[cfg(feature = "billing")]
+    {
+        state = state.with_billing(billing, args.stripe_webhook_secret.clone().into_bytes());
+    }
+    // Composio-backed connectors are opt-in: only when `COMPOSIO_API_KEY` is set
+    // does the `/v1/connectors` surface come online. Unset → the endpoints report
+    // 501 and beaterd runs with zero third-party cloud dependency (OSS default).
+    if let Some(connectors) = HttpComposioClient::from_env() {
+        state = state.with_connectors(Arc::new(connectors));
+    }
     // Build the API-key store once (strict auth only) and share it between the
     // `/v1` auth path and the session-authorized `/auth/api-keys` endpoints.
     let api_key_store: Option<Arc<dyn beater_auth::ApiKeyStore>> =

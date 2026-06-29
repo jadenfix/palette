@@ -26,6 +26,12 @@ use utoipa::OpenApi;
         crate::list_provider_secrets_route,
         crate::create_provider_secret_route,
         crate::revoke_provider_secret_route,
+        crate::list_connectors_route,
+        crate::list_connector_tools_route,
+        crate::connector_skills_route,
+        crate::connect_connector_route,
+        crate::connector_status_route,
+        crate::invoke_connector_tool_route,
         crate::run_judge_eval_route,
         crate::list_judge_ledger_route,
         crate::get_usage_summary_route,
@@ -42,6 +48,12 @@ use utoipa::OpenApi;
         crate::get_span_io_route,
         crate::archive_trace,
         crate::query_archive_spans,
+        crate::create_prompt_route,
+        crate::list_prompts_route,
+        crate::get_prompt_route,
+        crate::add_prompt_version_route,
+        crate::list_prompt_versions_route,
+        crate::diff_prompt_versions_route,
         crate::create_dataset,
         crate::promote_dataset_case,
         crate::create_dataset_version,
@@ -67,6 +79,7 @@ use utoipa::OpenApi;
         (name = "spans", description = "Span read APIs"),
         (name = "search", description = "Span search"),
         (name = "archive", description = "Trace archival and archived-span queries"),
+        (name = "prompts", description = "Prompt registry, versions, and diffs"),
         (name = "datasets", description = "Datasets, cases, and versions"),
         (name = "evals", description = "Dataset evaluations"),
         (name = "experiments", description = "Baseline/candidate experiments"),
@@ -79,10 +92,34 @@ use utoipa::OpenApi;
         (name = "usage", description = "Usage summaries"),
         (name = "audit", description = "Audit events"),
         (name = "apiKeys", description = "API key management"),
-        (name = "providerSecrets", description = "Provider secret management")
+        (name = "providerSecrets", description = "Provider secret management"),
+        (name = "connectors", description = "Composio-backed third-party tool connectors")
     )
 )]
 pub struct BeaterApi;
+
+/// Billing/Stripe is a hosted concern. Its paths, schemas, and tag live in this
+/// separate document that is only compiled — and only merged into the public
+/// contract — under the non-default `billing` cargo feature, so the open-source
+/// API contract never advertises Stripe endpoints.
+#[cfg(feature = "billing")]
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        crate::get_plans_route,
+        crate::get_plan_route,
+        crate::get_subscription_route,
+        crate::create_subscription_route,
+        crate::change_subscription_plan_route,
+        crate::get_org_invoices_route,
+        crate::get_invoice_route,
+        crate::stripe_webhook_route,
+    ),
+    tags(
+        (name = "billing", description = "Plans, subscriptions, invoices, and Stripe billing"),
+    )
+)]
+pub struct BillingApi;
 
 /// Build the OpenAPI document, stamping the live crate version at runtime.
 ///
@@ -90,6 +127,8 @@ pub struct BeaterApi;
 /// the actual `CARGO_PKG_VERSION` to keep the spec in lockstep with the crate.
 pub fn openapi() -> utoipa::openapi::OpenApi {
     let mut doc = BeaterApi::openapi();
+    #[cfg(feature = "billing")]
+    doc.merge(BillingApi::openapi());
     doc.info.version = env!("CARGO_PKG_VERSION").to_string();
     doc
 }

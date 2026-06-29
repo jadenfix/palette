@@ -561,6 +561,160 @@ button:hover {
   padding: 10px 12px;
 }
 
+.search-summary,
+.search-results {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1780px;
+  width: 100%;
+}
+
+.search-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.search-results {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  box-shadow: var(--panel-shadow);
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.search-filter-grid {
+  grid-template-columns:
+    minmax(96px, 0.62fr) minmax(112px, 0.72fr) minmax(118px, 0.72fr)
+    minmax(240px, 1.3fr) minmax(106px, 0.6fr) minmax(138px, 0.82fr)
+    minmax(118px, 0.72fr) minmax(118px, 0.72fr) minmax(180px, 1fr)
+    minmax(164px, 0.9fr) 84px 96px 74px;
+}
+
+.search-table {
+  display: grid;
+}
+
+.search-table-head,
+.search-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(260px, 1.45fr) minmax(168px, 0.65fr) minmax(310px, 1.2fr) 82px;
+}
+
+.search-table-head {
+  background: var(--surface-muted);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  min-height: 30px;
+  padding: 0 12px;
+  text-transform: uppercase;
+}
+
+.search-table-head span {
+  align-self: center;
+}
+
+.search-row {
+  --row-state: var(--slate);
+  align-items: center;
+  border-bottom: 1px solid #edf1f5;
+  box-shadow: inset 4px 0 0 var(--row-state);
+  min-height: 64px;
+  padding: 10px 12px 10px 16px;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.search-row:last-child {
+  border-bottom: 0;
+}
+
+.search-row[data-status="ok"] {
+  --row-state: var(--green);
+}
+
+.search-row[data-status="error"] {
+  --row-state: var(--red);
+}
+
+.search-row[data-status="unset"] {
+  --row-state: var(--yellow);
+}
+
+.search-row:hover {
+  background: #f8fafb;
+}
+
+.search-hit-main,
+.search-hit-scope {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.search-hit-main strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-hit-main small,
+.search-hit-scope small {
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-hit-scope span {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-hit-signals {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 11px;
+  gap: 6px;
+  min-width: 0;
+}
+
+.search-hit-signals > span:not(.status) {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink-soft);
+  font-weight: 700;
+  max-width: 160px;
+  overflow: hidden;
+  padding: 3px 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-score {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  justify-self: end;
+}
+
 .workspace {
   align-items: start;
   display: grid;
@@ -1632,6 +1786,15 @@ pre {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .search-filter-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .search-table-head,
+  .search-row {
+    grid-template-columns: minmax(240px, 1fr) minmax(150px, 0.55fr) minmax(240px, 0.95fr) 70px;
+  }
+
   .trace-filter {
     grid-column: span 2;
   }
@@ -1699,8 +1862,32 @@ pre {
   }
 
   .filter-primary,
-  .filter-secondary {
+  .filter-secondary,
+  .search-filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search-query-field {
+    grid-column: 1 / -1;
+  }
+
+  .search-table-head {
+    display: none;
+  }
+
+  .search-row {
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .search-hit-scope,
+  .search-hit-signals {
+    grid-column: 1 / -1;
+  }
+
+  .search-score {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .trace-filter,
@@ -1792,8 +1979,23 @@ pre {
   .summary-strip,
   .filter-primary,
   .filter-secondary,
+  .search-filter-grid,
   .metrics {
     grid-template-columns: 1fr;
+  }
+
+  .search-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .search-score {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
   }
 
   .summary-item,

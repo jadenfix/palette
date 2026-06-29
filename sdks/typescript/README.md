@@ -46,3 +46,39 @@ const wrapped = beater.wrapOpenAI(existingOpenAIClient);
 
 Call `instrument()` before constructing provider clients. For the broadest
 CommonJS monkeypatch coverage, call it before importing provider SDKs.
+
+## Vercel AI SDK
+
+The AI SDK emits OpenTelemetry spans when telemetry is enabled on a request. Beater
+can ingest those spans through the same OTLP pipeline as the rest of the SDK.
+
+```ts
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { withVercelAiTelemetry } from "@beater/sdk";
+
+const result = await generateText(
+  withVercelAiTelemetry(
+    {
+      model: openai("gpt-4o-mini"),
+      prompt: "Draft a concise support reply.",
+    },
+    { functionId: "support-reply", recordInputs: false },
+  ),
+);
+```
+
+For AI SDK versions or observability providers that use the newer option name:
+
+```ts
+withVercelAiTelemetry(request, { optionName: "telemetry" });
+```
+
+## Integration Registry
+
+```ts
+import { availableIntegrations, plannedIntegrations } from "@beater/sdk";
+
+availableIntegrations().map((spec) => spec.slug);
+plannedIntegrations().map((spec) => spec.slug);
+```

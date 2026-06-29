@@ -21,6 +21,8 @@ tags:
   name: search
 - description: Trace archival and archived-span queries
   name: archive
+- description: "Prompt registry, versions, and diffs"
+  name: prompts
 - description: "Datasets, cases, and versions"
   name: datasets
 - description: Dataset evaluations
@@ -47,6 +49,8 @@ tags:
   name: apiKeys
 - description: Provider secret management
   name: providerSecrets
+- description: Composio-backed third-party tool connectors
+  name: connectors
 paths:
   /health:
     get:
@@ -795,6 +799,616 @@ paths:
       tags:
       - calibrations
       x-content-type: application/json
+      x-accepts:
+      - application/json
+  /v1/connectors/{tenant_id}/{project_id}:
+    get:
+      operationId: listConnectors
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Maximum number of apps to return (page size).
+        explode: false
+        in: path
+        name: limit
+        required: true
+        schema:
+          format: int32
+          minimum: 0
+          nullable: true
+          type: integer
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Toolkit'
+                type: array
+          description: List connectable third-party apps (catalog)
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Connector provider not configured
+      tags:
+      - connectors
+      x-accepts:
+      - application/json
+  /v1/connectors/{tenant_id}/{project_id}/connect:
+    post:
+      operationId: connectConnector
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectConnectorRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionLink'
+          description: One-time login link to authorize the app
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Connector provider not configured
+      tags:
+      - connectors
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /v1/connectors/{tenant_id}/{project_id}/invoke:
+    post:
+      operationId: invokeConnectorTool
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvokeConnectorRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolExecution'
+          description: Execute a connector tool and return its result envelope
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Connector provider not configured
+      tags:
+      - connectors
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /v1/connectors/{tenant_id}/{project_id}/skills:
+    get:
+      operationId: getConnectorSkills
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Toolkit slug to scope the request to.
+        explode: false
+        in: path
+        name: toolkit
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorSkillsResponse'
+          description: Generated prompting scaffold (skill cards) for a toolkit
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Connector provider not configured
+      tags:
+      - connectors
+      x-accepts:
+      - application/json
+  /v1/connectors/{tenant_id}/{project_id}/status:
+    get:
+      operationId: connectorStatus
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Toolkit slug to scope the request to.
+        explode: false
+        in: path
+        name: toolkit
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionStatus'
+          description: Connection status of a toolkit for this project
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Connector provider not configured
+      tags:
+      - connectors
+      x-accepts:
+      - application/json
+  /v1/connectors/{tenant_id}/{project_id}/tools:
+    get:
+      operationId: listConnectorTools
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Toolkit slug to list tools for.
+        explode: false
+        in: path
+        name: toolkit
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Maximum number of tools to return (page size).
+        explode: false
+        in: path
+        name: limit
+        required: true
+        schema:
+          format: int32
+          minimum: 0
+          nullable: true
+          type: integer
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ConnectorTool'
+                type: array
+          description: List a toolkit's executable tools with input schemas
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Connector provider not configured
+      tags:
+      - connectors
       x-accepts:
       - application/json
   /v1/datasets/{tenant_id}/{project_id}:
@@ -2735,6 +3349,598 @@ paths:
       - ingest
       x-accepts:
       - application/json
+  /v1/prompts/{tenant_id}/{project_id}:
+    get:
+      operationId: listPrompts
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptListResponse'
+          description: List prompts in a project
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+      tags:
+      - prompts
+      x-accepts:
+      - application/json
+    post:
+      operationId: createPrompt
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePromptRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedPrompt'
+          description: Create a prompt and its initial version
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+      tags:
+      - prompts
+      x-content-type: application/json
+      x-accepts:
+      - application/json
+  /v1/prompts/{tenant_id}/{project_id}/{prompt_id}:
+    get:
+      operationId: getPrompt
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: prompt_id
+        explode: false
+        in: path
+        name: prompt_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prompt'
+          description: Get a prompt's metadata
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Resource not found
+      tags:
+      - prompts
+      x-accepts:
+      - application/json
+  /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff:
+    get:
+      operationId: diffPromptVersions
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: prompt_id
+        explode: false
+        in: path
+        name: prompt_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: from
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: to
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptVersionDiff'
+          description: Line diff between two prompt versions
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Resource not found
+      tags:
+      - prompts
+      x-accepts:
+      - application/json
+  /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions:
+    get:
+      operationId: listPromptVersions
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: prompt_id
+        explode: false
+        in: path
+        name: prompt_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptVersionListResponse'
+          description: List a prompt's versions oldest-first
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Resource not found
+      tags:
+      - prompts
+      x-accepts:
+      - application/json
+    post:
+      operationId: addPromptVersion
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: prompt_id
+        explode: false
+        in: path
+        name: prompt_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPromptVersionRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptVersion'
+          description: Append an immutable prompt version
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Resource not found
+      tags:
+      - prompts
+      x-content-type: application/json
+      x-accepts:
+      - application/json
   /v1/provider-secrets/{tenant_id}/{project_id}:
     get:
       operationId: listProviderSecrets
@@ -4404,6 +5610,37 @@ paths:
       - application/json
 components:
   schemas:
+    AddPromptVersionRequest:
+      description: "Request body for `addPromptVersion`: a new immutable template\
+        \ revision."
+      example:
+        template:
+          variables:
+          - default: default
+            name: name
+            description: description
+            required: true
+          - default: default
+            name: name
+            description: description
+            required: true
+          body: body
+          tags:
+          - tags
+          - tags
+        message: message
+        created_by: created_by
+      properties:
+        created_by:
+          nullable: true
+          type: string
+        message:
+          nullable: true
+          type: string
+        template:
+          $ref: '#/components/schemas/PromptTemplate'
+      required:
+      - template
     AgentReleaseId:
       type: string
     AgentSpanKind:
@@ -5335,6 +6572,127 @@ components:
       required:
       - case_id
       - output
+    ConnectConnectorRequest:
+      example:
+        toolkit: toolkit
+      properties:
+        toolkit:
+          description: "Toolkit slug to connect (e.g. `github`, `gmail`, `slack`)."
+          type: string
+      required:
+      - toolkit
+    ConnectionLink:
+      description: One-time login link returned when initiating a managed-OAuth connection.
+      example:
+        expires_at: expires_at
+        connected_account_id: connected_account_id
+        redirect_url: redirect_url
+      properties:
+        connected_account_id:
+          description: Composio connection id (`ca_…`) created for this handshake.
+          type: string
+        expires_at:
+          description: "When the link expires (RFC 3339), if provided."
+          nullable: true
+          type: string
+        redirect_url:
+          description: URL the end user opens once to authorize the app.
+          type: string
+      required:
+      - connected_account_id
+      - redirect_url
+    ConnectionStatus:
+      description: Connection status of one app for one entity.
+      example:
+        connected: true
+        toolkit: toolkit
+        connected_account_id: connected_account_id
+        status: status
+      properties:
+        connected:
+          description: '`true` only when an account exists and is `ACTIVE`.'
+          type: boolean
+        connected_account_id:
+          description: "The connected-account id, when one exists."
+          nullable: true
+          type: string
+        status:
+          description: |-
+            Raw Composio status (`ACTIVE`, `INITIALIZING`, `FAILED`, …) or
+            `not_connected` when no account exists yet.
+          type: string
+        toolkit:
+          description: Toolkit slug this status is for.
+          type: string
+      required:
+      - connected
+      - status
+      - toolkit
+    ConnectorSkillsResponse:
+      description: Generated prompting scaffold ("skills.md") for a toolkit's tools.
+      example:
+        skills: skills
+        toolkit: toolkit
+      properties:
+        skills:
+          description: |-
+            Markdown document: one skill card per tool, ready to splice into an
+            agent's system prompt.
+          type: string
+        toolkit:
+          description: Toolkit the skills document covers.
+          type: string
+      required:
+      - skills
+      - toolkit
+    ConnectorTool:
+      description: |-
+        A single executable tool within a toolkit, carrying the metadata an agent
+        needs to actually *call* it: the input JSON Schema, tags, and toolkit. This
+        is the raw material for the prompting scaffold in [`crate::skill`].
+      example:
+        input_schema: "{}"
+        toolkit: toolkit
+        name: name
+        description: description
+        no_auth: true
+        slug: slug
+        tags:
+        - tags
+        - tags
+      properties:
+        description:
+          description: What the tool does.
+          nullable: true
+          type: string
+        input_schema:
+          description: |-
+            JSON Schema of the tool's `arguments`, verbatim from Composio. The agent
+            loop uses this to construct valid calls; [`crate::skill`] renders it.
+          nullable: true
+          type: object
+        name:
+          description: Human display name.
+          type: string
+        no_auth:
+          description: '`true` when the tool executes without a connected account.'
+          type: boolean
+        slug:
+          description: "Tool slug passed to [`ComposioClient::execute`] (e.g. `GITHUB_CREATE_AN_ISSUE`)."
+          type: string
+        tags:
+          description: "Free-form tags Composio assigns (categories, importance, …\
+            )."
+          items:
+            type: string
+          type: array
+        toolkit:
+          description: "Owning toolkit slug (e.g. `github`), when known."
+          nullable: true
+          type: string
+      required:
+      - name
+      - slug
     CorpusRoot:
       description: |-
         A content-addressed Merkle root naming the exact contents of a corpus.
@@ -5396,6 +6754,46 @@ components:
       required:
       - gate_id
       - name
+    CreatePromptRequest:
+      description: |-
+        Request body for `createPrompt`: the new prompt's metadata plus its initial
+        (version 1) template.
+      example:
+        template:
+          variables:
+          - default: default
+            name: name
+            description: description
+            required: true
+          - default: default
+            name: name
+            description: description
+            required: true
+          body: body
+          tags:
+          - tags
+          - tags
+        name: name
+        description: description
+        message: message
+        created_by: created_by
+      properties:
+        created_by:
+          nullable: true
+          type: string
+        description:
+          nullable: true
+          type: string
+        message:
+          nullable: true
+          type: string
+        name:
+          type: string
+        template:
+          $ref: '#/components/schemas/PromptTemplate'
+      required:
+      - name
+      - template
     CreateProviderSecretHttpRequest:
       example:
         provider: provider
@@ -5427,6 +6825,48 @@ components:
       required:
       - annotation_schema
       - name
+    CreatedPrompt:
+      example:
+        prompt:
+          tenant_id: tenant_id
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          project_id: project_id
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          description: description
+          prompt_id: prompt_id
+        version:
+          template:
+            variables:
+            - default: default
+              name: name
+              description: description
+              required: true
+            - default: default
+              name: name
+              description: description
+              required: true
+            body: body
+            tags:
+            - tags
+            - tags
+          tenant_id: tenant_id
+          metadata:
+            created_at: 2000-01-23T04:56:07.000+00:00
+            message: message
+            created_by: created_by
+          project_id: project_id
+          version_number: 0
+          version_id: version_id
+          prompt_id: prompt_id
+      properties:
+        prompt:
+          $ref: '#/components/schemas/Prompt'
+        version:
+          $ref: '#/components/schemas/PromptVersion'
+      required:
+      - prompt
+      - version
     Currency:
       enum:
       - USD
@@ -5778,6 +7218,34 @@ components:
       - project_id
       - reset_attempts
       - tenant_id
+    DiffLine:
+      example:
+        kind: unchanged
+        new_line: 0
+        old_line: 0
+        text: text
+      properties:
+        kind:
+          $ref: '#/components/schemas/DiffLineKind'
+        new_line:
+          minimum: 0
+          nullable: true
+          type: integer
+        old_line:
+          minimum: 0
+          nullable: true
+          type: integer
+        text:
+          type: string
+      required:
+      - kind
+      - text
+    DiffLineKind:
+      enum:
+      - unchanged
+      - added
+      - removed
+      type: string
     EnqueueReviewTaskFromTraceHttpRequest:
       example:
         trace_id: trace_id
@@ -6543,6 +8011,19 @@ components:
       - total_depth
       - trace_ingested_depth
       - trace_write_depth
+    InvokeConnectorRequest:
+      example:
+        arguments: "{}"
+        tool: tool
+      properties:
+        arguments:
+          description: Arguments object matching the tool's input schema.
+          type: object
+        tool:
+          description: Tool slug to execute (e.g. `GITHUB_CREATE_AN_ISSUE`).
+          type: string
+      required:
+      - tool
     JudgeAuditRecord:
       example:
         tenant_id: tenant_id
@@ -6913,8 +8394,267 @@ components:
           type: string
       required:
       - trace_id
+    Prompt:
+      example:
+        tenant_id: tenant_id
+        updated_at: 2000-01-23T04:56:07.000+00:00
+        project_id: project_id
+        name: name
+        created_at: 2000-01-23T04:56:07.000+00:00
+        description: description
+        prompt_id: prompt_id
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        description:
+          nullable: true
+          type: string
+        name:
+          type: string
+        project_id:
+          type: string
+        prompt_id:
+          type: string
+        tenant_id:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+      - created_at
+      - name
+      - project_id
+      - prompt_id
+      - tenant_id
+      - updated_at
+    PromptId:
+      type: string
+    PromptListResponse:
+      example:
+        prompts:
+        - tenant_id: tenant_id
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          project_id: project_id
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          description: description
+          prompt_id: prompt_id
+        - tenant_id: tenant_id
+          updated_at: 2000-01-23T04:56:07.000+00:00
+          project_id: project_id
+          name: name
+          created_at: 2000-01-23T04:56:07.000+00:00
+          description: description
+          prompt_id: prompt_id
+      properties:
+        prompts:
+          items:
+            $ref: '#/components/schemas/Prompt'
+          type: array
+      required:
+      - prompts
+    PromptTemplate:
+      example:
+        variables:
+        - default: default
+          name: name
+          description: description
+          required: true
+        - default: default
+          name: name
+          description: description
+          required: true
+        body: body
+        tags:
+        - tags
+        - tags
+      properties:
+        body:
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+        variables:
+          items:
+            $ref: '#/components/schemas/PromptVariable'
+          type: array
+      required:
+      - body
+      - tags
+      - variables
+    PromptVariable:
+      example:
+        default: default
+        name: name
+        description: description
+        required: true
+      properties:
+        default:
+          nullable: true
+          type: string
+        description:
+          nullable: true
+          type: string
+        name:
+          type: string
+        required:
+          type: boolean
+      required:
+      - name
+      - required
+    PromptVersion:
+      example:
+        template:
+          variables:
+          - default: default
+            name: name
+            description: description
+            required: true
+          - default: default
+            name: name
+            description: description
+            required: true
+          body: body
+          tags:
+          - tags
+          - tags
+        tenant_id: tenant_id
+        metadata:
+          created_at: 2000-01-23T04:56:07.000+00:00
+          message: message
+          created_by: created_by
+        project_id: project_id
+        version_number: 0
+        version_id: version_id
+        prompt_id: prompt_id
+      properties:
+        metadata:
+          $ref: '#/components/schemas/PromptVersionMetadata'
+        project_id:
+          type: string
+        prompt_id:
+          type: string
+        template:
+          $ref: '#/components/schemas/PromptTemplate'
+        tenant_id:
+          type: string
+        version_id:
+          type: string
+        version_number:
+          format: int32
+          minimum: 0
+          type: integer
+      required:
+      - metadata
+      - project_id
+      - prompt_id
+      - template
+      - tenant_id
+      - version_id
+      - version_number
+    PromptVersionDiff:
+      example:
+        to_version_id: to_version_id
+        lines:
+        - kind: unchanged
+          new_line: 0
+          old_line: 0
+          text: text
+        - kind: unchanged
+          new_line: 0
+          old_line: 0
+          text: text
+        from_version_id: from_version_id
+      properties:
+        from_version_id:
+          type: string
+        lines:
+          items:
+            $ref: '#/components/schemas/DiffLine'
+          type: array
+        to_version_id:
+          type: string
+      required:
+      - from_version_id
+      - lines
+      - to_version_id
     PromptVersionId:
       type: string
+    PromptVersionListResponse:
+      example:
+        versions:
+        - template:
+            variables:
+            - default: default
+              name: name
+              description: description
+              required: true
+            - default: default
+              name: name
+              description: description
+              required: true
+            body: body
+            tags:
+            - tags
+            - tags
+          tenant_id: tenant_id
+          metadata:
+            created_at: 2000-01-23T04:56:07.000+00:00
+            message: message
+            created_by: created_by
+          project_id: project_id
+          version_number: 0
+          version_id: version_id
+          prompt_id: prompt_id
+        - template:
+            variables:
+            - default: default
+              name: name
+              description: description
+              required: true
+            - default: default
+              name: name
+              description: description
+              required: true
+            body: body
+            tags:
+            - tags
+            - tags
+          tenant_id: tenant_id
+          metadata:
+            created_at: 2000-01-23T04:56:07.000+00:00
+            message: message
+            created_by: created_by
+          project_id: project_id
+          version_number: 0
+          version_id: version_id
+          prompt_id: prompt_id
+      properties:
+        versions:
+          items:
+            $ref: '#/components/schemas/PromptVersion'
+          type: array
+      required:
+      - versions
+    PromptVersionMetadata:
+      example:
+        created_at: 2000-01-23T04:56:07.000+00:00
+        message: message
+        created_by: created_by
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        created_by:
+          nullable: true
+          type: string
+        message:
+          nullable: true
+          type: string
+      required:
+      - created_at
     ProviderSecretId:
       type: string
     ProviderSecretMetadata:
@@ -7723,6 +9463,72 @@ components:
       - input
       - output
       - reasoning
+    ToolExecution:
+      description: "Result of executing a tool — Composio's `{successful, data, error}`\
+        \ envelope."
+      example:
+        log_id: log_id
+        data: "{}"
+        error: error
+        successful: true
+      properties:
+        data:
+          description: Tool output payload (shape is tool-specific).
+          type: object
+        error:
+          description: Error message when `successful` is false.
+          nullable: true
+          type: string
+        log_id:
+          description: "Composio execution log id, for tracing."
+          nullable: true
+          type: string
+        successful:
+          description: Whether the tool reported success.
+          type: boolean
+      required:
+      - successful
+    Toolkit:
+      description: |-
+        A connectable third-party app (Composio "toolkit"), flattened from the v3
+        `GET /toolkits` shape into the fields Beater exposes.
+      example:
+        name: name
+        auth_schemes:
+        - auth_schemes
+        - auth_schemes
+        description: description
+        no_auth: true
+        slug: slug
+        tools_count: 0
+      properties:
+        auth_schemes:
+          description: "Supported auth schemes (e.g. `OAUTH2`, `API_KEY`, `NO_AUTH`)."
+          items:
+            type: string
+          type: array
+        description:
+          description: "Short description, if the catalog provides one."
+          nullable: true
+          type: string
+        name:
+          description: Human display name.
+          type: string
+        no_auth:
+          description: '`true` when the toolkit needs no OAuth/connection to execute.'
+          type: boolean
+        slug:
+          description: "Stable slug used everywhere else (e.g. `github`, `gmail`)."
+          type: string
+        tools_count:
+          description: "Number of tools the toolkit exposes, if known."
+          format: int32
+          minimum: 0
+          nullable: true
+          type: integer
+      required:
+      - name
+      - slug
     TraceId:
       type: string
     TraceIngestedDrainReport:

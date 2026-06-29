@@ -1,7 +1,15 @@
 GET /v1/archive/{tenant_id}/{project_id}/spans
 GET /v1/audit/{tenant_id}/{project_id}
+GET /v1/connectors/{tenant_id}/{project_id}
+GET /v1/connectors/{tenant_id}/{project_id}/skills
+GET /v1/connectors/{tenant_id}/{project_id}/status
+GET /v1/connectors/{tenant_id}/{project_id}/tools
 GET /v1/ingest/{tenant_id}/{project_id}/queue
 GET /v1/judge/{tenant_id}/{project_id}/ledger
+GET /v1/prompts/{tenant_id}/{project_id}
+GET /v1/prompts/{tenant_id}/{project_id}/{prompt_id}
+GET /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff
+GET /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions
 GET /v1/provider-secrets/{tenant_id}/{project_id}
 GET /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks
 GET /v1/search/{tenant_id}/spans
@@ -15,6 +23,8 @@ POST /v1/api-keys/{tenant_id}/{project_id}/{environment_id}
 POST /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke
 POST /v1/archive/{tenant_id}/{project_id}/{trace_id}
 POST /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}
+POST /v1/connectors/{tenant_id}/{project_id}/connect
+POST /v1/connectors/{tenant_id}/{project_id}/invoke
 POST /v1/datasets/{tenant_id}/{project_id}
 POST /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace
 POST /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions
@@ -32,6 +42,8 @@ POST /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile
 POST /v1/judge/{tenant_id}/{project_id}/evaluate
 POST /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling
 POST /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces
+POST /v1/prompts/{tenant_id}/{project_id}
+POST /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions
 POST /v1/provider-secrets/{tenant_id}/{project_id}
 POST /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke
 POST /v1/review-queues/{tenant_id}/{project_id}

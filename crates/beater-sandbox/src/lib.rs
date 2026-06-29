@@ -18,6 +18,8 @@ wasmtime::component::bindgen!({
 
 #[derive(Debug, thiserror::Error)]
 pub enum SandboxError {
+    #[error("invalid sandbox config: {field} must be greater than zero, got {value}")]
+    InvalidConfig { field: &'static str, value: u128 },
     #[error("evaluator input is too large: {size_bytes} > {limit_bytes}")]
     InputTooLarge {
         size_bytes: usize,
@@ -47,6 +49,8 @@ pub struct WasmEvaluatorRuntime {
 
 impl WasmEvaluatorRuntime {
     pub fn new(config: SandboxConfig) -> Result<Self, SandboxError> {
+        config.validate()?;
+
         let mut wasmtime_config = Config::new();
         wasmtime_config.wasm_component_model(true);
         wasmtime_config.consume_fuel(true);
@@ -192,6 +196,24 @@ pub struct SandboxConfig {
     pub fuel: u64,
 }
 
+impl SandboxConfig {
+    fn validate(&self) -> Result<(), SandboxError> {
+        if self.max_input_bytes == 0 {
+            return Err(SandboxError::InvalidConfig {
+                field: "max_input_bytes",
+                value: self.max_input_bytes as u128,
+            });
+        }
+        if self.fuel == 0 {
+            return Err(SandboxError::InvalidConfig {
+                field: "fuel",
+                value: self.fuel as u128,
+            });
+        }
+        Ok(())
+    }
+}
+
 impl Default for SandboxConfig {
     fn default() -> Self {
         Self {
@@ -244,6 +266,54 @@ mod tests {
 
     fn scorer_component() -> Vec<u8> {
         wat::parse_str(SCORER_COMPONENT_WAT).unwrap_or_else(|err| panic!("{err}"))
+    }
+
+    #[test]
+    fn sandbox_config_rejects_zero_max_input_bytes() {
+        let Err(err) = WasmEvaluatorRuntime::new(SandboxConfig {
+            max_input_bytes: 0,
+            fuel: 10_000,
+        }) else {
+            panic!("zero max_input_bytes should be rejected");
+        };
+
+        assert!(matches!(
+            err,
+            SandboxError::InvalidConfig {
+                field: "max_input_bytes",
+                value: 0
+            }
+        ));
+    }
+
+    #[test]
+    fn sandbox_config_rejects_zero_fuel() {
+        let Err(err) = WasmEvaluatorRuntime::new(SandboxConfig {
+            max_input_bytes: 1024,
+            fuel: 0,
+        }) else {
+            panic!("zero fuel should be rejected");
+        };
+
+        assert!(matches!(
+            err,
+            SandboxError::InvalidConfig {
+                field: "fuel",
+                value: 0
+            }
+        ));
+    }
+
+    #[test]
+    fn default_sandbox_config_constructs_runtime() {
+        let runtime = WasmEvaluatorRuntime::new(SandboxConfig::default())
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(
+            runtime.max_input_bytes,
+            SandboxConfig::default().max_input_bytes
+        );
+        assert_eq!(runtime.fuel, SandboxConfig::default().fuel);
     }
 
     #[test]

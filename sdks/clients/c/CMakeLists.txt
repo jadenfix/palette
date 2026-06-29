@@ -48,6 +48,7 @@ set(SRCS
     src/binary.c
     external/cJSON.c
     model/object.c
+    model/add_prompt_version_request.c
     model/alert_decision.c
     model/alert_input.c
     model/alert_links.c
@@ -72,12 +73,19 @@ set(SRCS
     model/canonical_span.c
     model/case_experiment_score.c
     model/case_output_override_request.c
+    model/connect_connector_request.c
+    model/connection_link.c
+    model/connection_status.c
+    model/connector_skills_response.c
+    model/connector_tool.c
     model/create_api_key_http_request.c
     model/create_dataset_request.c
     model/create_dataset_version_request.c
     model/create_gate_request.c
+    model/create_prompt_request.c
     model/create_provider_secret_http_request.c
     model/create_review_queue_http_request.c
+    model/created_prompt.c
     model/currency.c
     model/dataset.c
     model/dataset_case.c
@@ -85,6 +93,8 @@ set(SRCS
     model/dataset_version_snapshot.c
     model/dead_letter.c
     model/dead_letter_replay_report.c
+    model/diff_line.c
+    model/diff_line_kind.c
     model/enqueue_review_task_from_trace_http_request.c
     model/error_response.c
     model/eval_reproducibility.c
@@ -116,6 +126,7 @@ set(SRCS
     model/inconclusive_policy.c
     model/ingest_outcome.c
     model/ingest_queue_status.c
+    model/invoke_connector_request.c
     model/judge_audit_record.c
     model/judge_broker_outcome.c
     model/maintenance_window.c
@@ -128,6 +139,14 @@ set(SRCS
     model/page_run_summary_items_inner.c
     model/promote_review_annotation_http_request.c
     model/promote_trace_case_request.c
+    model/prompt.c
+    model/prompt_list_response.c
+    model/prompt_template.c
+    model/prompt_variable.c
+    model/prompt_version.c
+    model/prompt_version_diff.c
+    model/prompt_version_list_response.c
+    model/prompt_version_metadata.c
     model/provider_secret_metadata.c
     model/publish_ack.c
     model/queued_trace_work.c
@@ -164,6 +183,8 @@ set(SRCS
     model/submit_review_annotation_http_request.c
     model/tenant_scope.c
     model/token_counts.c
+    model/tool_execution.c
+    model/toolkit.c
     model/trace_ingested_drain_report.c
     model/trace_ingested_reconcile_report.c
     model/trace_view.c
@@ -177,6 +198,7 @@ set(SRCS
     api/ArchiveAPI.c
     api/AuditAPI.c
     api/CalibrationsAPI.c
+    api/ConnectorsAPI.c
     api/DatasetsAPI.c
     api/EvalsAPI.c
     api/ExperimentsAPI.c
@@ -185,6 +207,7 @@ set(SRCS
     api/IngestAPI.c
     api/JudgeAPI.c
     api/OnlineAPI.c
+    api/PromptsAPI.c
     api/ProviderSecretsAPI.c
     api/ReviewsAPI.c
     api/SearchAPI.c
@@ -202,6 +225,7 @@ set(HDRS
     external/cJSON.h
     model/object.h
     model/any_type.h
+    model/add_prompt_version_request.h
     model/alert_decision.h
     model/alert_input.h
     model/alert_links.h
@@ -226,12 +250,19 @@ set(HDRS
     model/canonical_span.h
     model/case_experiment_score.h
     model/case_output_override_request.h
+    model/connect_connector_request.h
+    model/connection_link.h
+    model/connection_status.h
+    model/connector_skills_response.h
+    model/connector_tool.h
     model/create_api_key_http_request.h
     model/create_dataset_request.h
     model/create_dataset_version_request.h
     model/create_gate_request.h
+    model/create_prompt_request.h
     model/create_provider_secret_http_request.h
     model/create_review_queue_http_request.h
+    model/created_prompt.h
     model/currency.h
     model/dataset.h
     model/dataset_case.h
@@ -239,6 +270,8 @@ set(HDRS
     model/dataset_version_snapshot.h
     model/dead_letter.h
     model/dead_letter_replay_report.h
+    model/diff_line.h
+    model/diff_line_kind.h
     model/enqueue_review_task_from_trace_http_request.h
     model/error_response.h
     model/eval_reproducibility.h
@@ -270,6 +303,7 @@ set(HDRS
     model/inconclusive_policy.h
     model/ingest_outcome.h
     model/ingest_queue_status.h
+    model/invoke_connector_request.h
     model/judge_audit_record.h
     model/judge_broker_outcome.h
     model/maintenance_window.h
@@ -282,6 +316,14 @@ set(HDRS
     model/page_run_summary_items_inner.h
     model/promote_review_annotation_http_request.h
     model/promote_trace_case_request.h
+    model/prompt.h
+    model/prompt_list_response.h
+    model/prompt_template.h
+    model/prompt_variable.h
+    model/prompt_version.h
+    model/prompt_version_diff.h
+    model/prompt_version_list_response.h
+    model/prompt_version_metadata.h
     model/provider_secret_metadata.h
     model/publish_ack.h
     model/queued_trace_work.h
@@ -318,6 +360,8 @@ set(HDRS
     model/submit_review_annotation_http_request.h
     model/tenant_scope.h
     model/token_counts.h
+    model/tool_execution.h
+    model/toolkit.h
     model/trace_ingested_drain_report.h
     model/trace_ingested_reconcile_report.h
     model/trace_view.h
@@ -331,6 +375,7 @@ set(HDRS
     api/ArchiveAPI.h
     api/AuditAPI.h
     api/CalibrationsAPI.h
+    api/ConnectorsAPI.h
     api/DatasetsAPI.h
     api/EvalsAPI.h
     api/ExperimentsAPI.h
@@ -339,6 +384,7 @@ set(HDRS
     api/IngestAPI.h
     api/JudgeAPI.h
     api/OnlineAPI.h
+    api/PromptsAPI.h
     api/ProviderSecretsAPI.h
     api/ReviewsAPI.h
     api/SearchAPI.h
@@ -431,6 +477,7 @@ set(HDRS "")
 #    unit-tests/manual-ArchiveAPI.c
 #    unit-tests/manual-AuditAPI.c
 #    unit-tests/manual-CalibrationsAPI.c
+#    unit-tests/manual-ConnectorsAPI.c
 #    unit-tests/manual-DatasetsAPI.c
 #    unit-tests/manual-EvalsAPI.c
 #    unit-tests/manual-ExperimentsAPI.c
@@ -439,6 +486,7 @@ set(HDRS "")
 #    unit-tests/manual-IngestAPI.c
 #    unit-tests/manual-JudgeAPI.c
 #    unit-tests/manual-OnlineAPI.c
+#    unit-tests/manual-PromptsAPI.c
 #    unit-tests/manual-ProviderSecretsAPI.c
 #    unit-tests/manual-ReviewsAPI.c
 #    unit-tests/manual-SearchAPI.c

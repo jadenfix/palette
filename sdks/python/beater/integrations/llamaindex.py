@@ -19,7 +19,7 @@ from ..tracing import get_tracer
 try:  # pragma: no cover - import guard
     from llama_index.core.callbacks.base_handler import BaseCallbackHandler
     from llama_index.core.callbacks.schema import CBEventType
-except ImportError:  # pragma: no cover
+except Exception:  # pragma: no cover - missing or import-incompatible framework
     BaseCallbackHandler = object  # type: ignore
     CBEventType = None  # type: ignore
 

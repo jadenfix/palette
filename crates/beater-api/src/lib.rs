@@ -13,14 +13,28 @@ use beater_audit::{
     PiiUnmaskAuditInput,
 };
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, RevokedApiKey};
+#[cfg(feature = "billing")]
+use beater_billing::store::BillingStore;
+#[cfg(feature = "billing")]
+use beater_billing::stripe::{EventApplication, StripeError, StripeSync};
+#[cfg(feature = "billing")]
+use beater_billing::{
+    Billing, BillingError, Invoice, Plan, PlanChange, PlanId, Subscription, SubscriptionStatus,
+};
 use beater_calibration::{
     calibrate_eval_report, CalibrationPolicy, CalibrationReport, CalibrationStore,
 };
+use beater_composio::{
+    skill, ComposioClient, ComposioError, ConnectionLink, ConnectionStatus, ConnectorTool,
+    ToolExecution, Toolkit,
+};
+#[cfg(feature = "billing")]
+use beater_core::OrganizationId;
 use beater_core::{
     AgentReleaseId, AnnotationId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetId, DatasetVersionId,
     EnvironmentId, EvaluatorVersionId, ExperimentRunId, GateId, Page, PageRequest, ProjectId,
-    PromptVersionId, ProviderSecretId, ReviewQueueId, ReviewTaskId, Sha256Hash, SpanId, TenantId,
-    TenantScope, TraceId,
+    PromptId, PromptVersionId, ProviderSecretId, ReviewQueueId, ReviewTaskId, Sha256Hash, SpanId,
+    TenantId, TenantScope, TraceId,
 };
 use beater_datasets::{
     evaluate_dataset_version, evaluate_dataset_version_with_judge, promote_trace_span_to_case,
@@ -49,6 +63,10 @@ use beater_judge::{
 };
 use beater_oauth::OAuthStore;
 use beater_otlp::{decode_export_trace_request, export_to_raw_trace_ingest_request};
+use beater_prompts::{
+    AddPromptVersion, CreatePrompt, CreatedPrompt, Prompt, PromptRegistry, PromptRegistryError,
+    PromptTemplate, PromptVersion, PromptVersionDiff,
+};
 use beater_schema::{
     AgentSpanKind, ArtifactRef, AuthContext, CanonicalSpan, RedactionClass, RunFilter, RunSummary,
     SpanStatus, TraceView,
@@ -108,7 +126,19 @@ pub struct ApiState {
     judge_broker: Option<Arc<dyn JudgeBroker>>,
     judge_ledger: Option<Arc<dyn JudgeLedgerStore>>,
     usage: Option<Arc<dyn UsageLedgerStore>>,
+    #[cfg(feature = "billing")]
+    billing: Option<Arc<dyn BillingStore>>,
+    /// Stripe webhook signing secret (HMAC). Required for the Stripe webhook
+    /// route to verify inbound deliveries.
+    #[cfg(feature = "billing")]
+    stripe_webhook_secret: Option<Vec<u8>>,
     audit: Option<Arc<dyn AuditStore>>,
+    /// Composio-backed third-party tool provider. When set, the `/v1/connectors`
+    /// endpoints broker managed-OAuth connections and tool execution; when unset
+    /// (no `COMPOSIO_API_KEY`), those endpoints report 501 and the core runs with
+    /// zero cloud dependency.
+    connectors: Option<Arc<dyn ComposioClient>>,
+    prompts: Option<Arc<dyn PromptRegistry>>,
     /// OAuth 2.1 authorization-server store. When set, `authorize()` also
     /// accepts OAuth access tokens (`bao_...`) as bearer credentials, mapping
     /// the token's tenant scope + OAuth scopes onto the request.
@@ -142,7 +172,13 @@ impl ApiState {
             judge_broker: None,
             judge_ledger: None,
             usage: None,
+            #[cfg(feature = "billing")]
+            billing: None,
+            #[cfg(feature = "billing")]
+            stripe_webhook_secret: None,
             audit: None,
+            connectors: None,
+            prompts: None,
             oauth: None,
             oauth_metadata_url: None,
         }
@@ -260,8 +296,39 @@ impl ApiState {
         self
     }
 
+    /// Wire the billing store and the Stripe webhook signing secret. Enables the
+    /// `/v1/plans`, `/v1/subscriptions`, `/v1/billing/invoices` and
+    /// `/v1/billing/webhooks/stripe` routes.
+    ///
+    /// Billing is a hosted concern and is gated behind the non-default `billing`
+    /// cargo feature so the open-source build neither compiles billing code nor
+    /// advertises Stripe endpoints in the OSS API contract.
+    #[cfg(feature = "billing")]
+    pub fn with_billing(
+        mut self,
+        billing: Arc<dyn BillingStore>,
+        stripe_webhook_secret: impl Into<Vec<u8>>,
+    ) -> Self {
+        self.billing = Some(billing);
+        self.stripe_webhook_secret = Some(stripe_webhook_secret.into());
+        self
+    }
+
     pub fn with_audit(mut self, audit: Arc<dyn AuditStore>) -> Self {
         self.audit = Some(audit);
+        self
+    }
+
+    /// Wire a Composio-backed connector provider so the `/v1/connectors`
+    /// endpoints (and, via the spec→MCP bridge, the `invokeConnectorTool` MCP
+    /// tool) can discover, connect, and execute third-party tools.
+    pub fn with_connectors(mut self, connectors: Arc<dyn ComposioClient>) -> Self {
+        self.connectors = Some(connectors);
+        self
+    }
+
+    pub fn with_prompts(mut self, prompts: Arc<dyn PromptRegistry>) -> Self {
+        self.prompts = Some(prompts);
         self
     }
 
@@ -276,7 +343,12 @@ impl ApiState {
 /// spec; the `openapi_coverage` integration test enforces this both ways.
 ///
 /// Update this when adding or removing a `/v1` route in [`router`].
-pub const V1_ROUTE_COUNT: usize = 41;
+///
+/// Billing/Stripe routes are hosted-only and compiled in only under the
+/// `billing` feature, so the count is feature-aware: the open-source default
+/// build registers 53 `/v1` routes (41 base + 6 always-on `/v1/connectors`
+/// routes + 6 `/v1/prompts` routes); the hosted `billing` build adds 8.
+pub const V1_ROUTE_COUNT: usize = if cfg!(feature = "billing") { 61 } else { 53 };
 
 /// See [`V1_ROUTE_COUNT`].
 pub fn v1_route_count() -> usize {
@@ -284,7 +356,7 @@ pub fn v1_route_count() -> usize {
 }
 
 pub fn router(state: ApiState) -> Router {
-    Router::new()
+    let router = Router::new()
         .route("/health", get(health))
         .route("/openapi.json", get(openapi_json))
         .route("/v1/traces/native", post(ingest_native))
@@ -303,6 +375,30 @@ pub fn router(state: ApiState) -> Router {
         .route(
             "/v1/provider-secrets/:tenant_id/:project_id/:provider_secret_id/revoke",
             post(revoke_provider_secret_route),
+        )
+        .route(
+            "/v1/connectors/:tenant_id/:project_id",
+            get(list_connectors_route),
+        )
+        .route(
+            "/v1/connectors/:tenant_id/:project_id/tools",
+            get(list_connector_tools_route),
+        )
+        .route(
+            "/v1/connectors/:tenant_id/:project_id/skills",
+            get(connector_skills_route),
+        )
+        .route(
+            "/v1/connectors/:tenant_id/:project_id/connect",
+            post(connect_connector_route),
+        )
+        .route(
+            "/v1/connectors/:tenant_id/:project_id/status",
+            get(connector_status_route),
+        )
+        .route(
+            "/v1/connectors/:tenant_id/:project_id/invoke",
+            post(invoke_connector_tool_route),
         )
         .route(
             "/v1/judge/:tenant_id/:project_id/evaluate",
@@ -351,6 +447,22 @@ pub fn router(state: ApiState) -> Router {
         .route(
             "/v1/archive/:tenant_id/:project_id/spans",
             get(query_archive_spans),
+        )
+        .route(
+            "/v1/prompts/:tenant_id/:project_id",
+            get(list_prompts_route).post(create_prompt_route),
+        )
+        .route(
+            "/v1/prompts/:tenant_id/:project_id/:prompt_id",
+            get(get_prompt_route),
+        )
+        .route(
+            "/v1/prompts/:tenant_id/:project_id/:prompt_id/versions",
+            get(list_prompt_versions_route).post(add_prompt_version_route),
+        )
+        .route(
+            "/v1/prompts/:tenant_id/:project_id/:prompt_id/diff",
+            get(diff_prompt_versions_route),
         )
         .route("/v1/datasets/:tenant_id/:project_id", post(create_dataset))
         .route(
@@ -422,8 +534,31 @@ pub fn router(state: ApiState) -> Router {
             "/v1/import/:tenant_id/:project_id/:environment_id",
             post(import_source_route),
         )
-        .route("/v1/traces/:tenant_id/:trace_id", get(get_trace))
-        .with_state(state)
+        .route("/v1/traces/:tenant_id/:trace_id", get(get_trace));
+
+    // Billing/Stripe is a hosted concern gated behind the non-default `billing`
+    // feature; the OSS build neither registers these routes nor advertises them
+    // in the API contract.
+    #[cfg(feature = "billing")]
+    let router = router
+        .route("/v1/plans", get(get_plans_route))
+        .route("/v1/plans/:plan_id", get(get_plan_route))
+        .route(
+            "/v1/subscriptions/:org_id",
+            get(get_subscription_route).post(create_subscription_route),
+        )
+        .route(
+            "/v1/subscriptions/:org_id/change-plan",
+            post(change_subscription_plan_route),
+        )
+        .route("/v1/billing/invoices/:org_id", get(get_org_invoices_route))
+        .route(
+            "/v1/billing/invoices/:org_id/:period_key",
+            get(get_invoice_route),
+        )
+        .route("/v1/billing/webhooks/stripe", post(stripe_webhook_route));
+
+    router.with_state(state)
 }
 
 #[utoipa::path(
@@ -826,6 +961,363 @@ async fn revoke_provider_secret_route(
     Ok(Json(revoked))
 }
 
+// Connectors (Composio-backed third-party tools)
+//
+// These broker managed-OAuth connections and tool execution for an agent's
+// `tool_set` lever. Every operation here auto-becomes an MCP tool (the MCP
+// catalog is derived from the `/v1` surface), so an RSI agent session reaches
+// Composio tools through the same path it already uses for Beater's own tools.
+// The Composio "entity" is keyed per project: `beater:{tenant}:{project}`, so
+// connections are isolated per project under one shared Composio API key.
+// ---------------------------------------------------------------------------
+
+/// Maximum apps returned from the catalog listing.
+const CONNECTOR_CATALOG_LIMIT: u32 = 100;
+/// Maximum tools returned for a single toolkit.
+const CONNECTOR_TOOL_LIMIT: u32 = 100;
+
+/// Composio entity id Beater uses for a project's connections.
+fn connector_user_id(tenant_id: &TenantId, project_id: &ProjectId) -> String {
+    format!("beater:{}:{}", tenant_id.as_str(), project_id.as_str())
+}
+
+fn connector_client(state: &ApiState) -> Result<Arc<dyn ComposioClient>, ApiError> {
+    require(
+        &state.connectors,
+        "connector provider (set COMPOSIO_API_KEY)",
+    )
+}
+
+/// Map a Composio client error onto an API error. Upstream 4xx (bad arguments)
+/// surface as 400; auth/transport/decode failures are our configuration problem
+/// and surface as 500.
+fn map_composio_err(err: ComposioError) -> ApiError {
+    match err {
+        ComposioError::Api { status, message }
+            if (400..500).contains(&status) && status != 401 && status != 403 =>
+        {
+            ApiError::bad_request(format!("composio: {message}"))
+        }
+        other => ApiError::internal(format!("composio: {other}")),
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+struct ConnectConnectorRequest {
+    /// Toolkit slug to connect (e.g. `github`, `gmail`, `slack`).
+    toolkit: String,
+}
+
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+struct InvokeConnectorRequest {
+    /// Tool slug to execute (e.g. `GITHUB_CREATE_AN_ISSUE`).
+    tool: String,
+    /// Arguments object matching the tool's input schema.
+    #[serde(default)]
+    #[schema(value_type = Object)]
+    arguments: serde_json::Value,
+}
+
+#[derive(Clone, Debug, Deserialize, IntoParams)]
+struct ToolkitQuery {
+    /// Toolkit slug to scope the request to.
+    toolkit: String,
+}
+
+#[derive(Clone, Debug, Deserialize, IntoParams)]
+struct CatalogQuery {
+    /// Maximum number of apps to return (page size).
+    limit: Option<u32>,
+}
+
+#[derive(Clone, Debug, Deserialize, IntoParams)]
+struct ToolListQuery {
+    /// Toolkit slug to list tools for.
+    toolkit: String,
+    /// Maximum number of tools to return (page size).
+    limit: Option<u32>,
+}
+
+/// Generated prompting scaffold ("skills.md") for a toolkit's tools.
+#[derive(Clone, Debug, Serialize, ToSchema)]
+struct ConnectorSkillsResponse {
+    /// Toolkit the skills document covers.
+    toolkit: String,
+    /// Markdown document: one skill card per tool, ready to splice into an
+    /// agent's system prompt.
+    skills: String,
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/connectors/{tenant_id}/{project_id}",
+    tag = "connectors",
+    operation_id = "listConnectors",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        CatalogQuery,
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "List connectable third-party apps (catalog)", body = Vec < Toolkit >),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 501, description = "Connector provider not configured", body = ErrorResponse),
+    )
+)]
+async fn list_connectors_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+    Query(query): Query<CatalogQuery>,
+) -> Result<Json<Vec<Toolkit>>, ApiError> {
+    let connectors = connector_client(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::TraceRead,
+    )
+    .await?;
+    let limit = query.limit.unwrap_or(CONNECTOR_CATALOG_LIMIT);
+    let toolkits = connectors
+        .list_toolkits(limit)
+        .await
+        .map_err(map_composio_err)?;
+    Ok(Json(toolkits))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/connectors/{tenant_id}/{project_id}/tools",
+    tag = "connectors",
+    operation_id = "listConnectorTools",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ToolListQuery,
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "List a toolkit's executable tools with input schemas", body = Vec < ConnectorTool >),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 501, description = "Connector provider not configured", body = ErrorResponse),
+    )
+)]
+async fn list_connector_tools_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+    Query(query): Query<ToolListQuery>,
+) -> Result<Json<Vec<ConnectorTool>>, ApiError> {
+    let connectors = connector_client(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::TraceRead,
+    )
+    .await?;
+    let limit = query.limit.unwrap_or(CONNECTOR_TOOL_LIMIT);
+    let tools = connectors
+        .list_tools(&query.toolkit, limit)
+        .await
+        .map_err(map_composio_err)?;
+    Ok(Json(tools))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/connectors/{tenant_id}/{project_id}/skills",
+    tag = "connectors",
+    operation_id = "getConnectorSkills",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ToolkitQuery,
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "Generated prompting scaffold (skill cards) for a toolkit", body = ConnectorSkillsResponse),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 501, description = "Connector provider not configured", body = ErrorResponse),
+    )
+)]
+async fn connector_skills_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+    Query(query): Query<ToolkitQuery>,
+) -> Result<Json<ConnectorSkillsResponse>, ApiError> {
+    let connectors = connector_client(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::TraceRead,
+    )
+    .await?;
+    let tools = connectors
+        .list_tools(&query.toolkit, CONNECTOR_TOOL_LIMIT)
+        .await
+        .map_err(map_composio_err)?;
+    Ok(Json(ConnectorSkillsResponse {
+        toolkit: query.toolkit,
+        skills: skill::skills_doc(&tools),
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/connectors/{tenant_id}/{project_id}/connect",
+    tag = "connectors",
+    operation_id = "connectConnector",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    request_body = ConnectConnectorRequest,
+    responses(
+        (status = 200, description = "One-time login link to authorize the app", body = ConnectionLink),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 501, description = "Connector provider not configured", body = ErrorResponse),
+    )
+)]
+async fn connect_connector_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+    Json(request): Json<ConnectConnectorRequest>,
+) -> Result<Json<ConnectionLink>, ApiError> {
+    let connectors = connector_client(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
+    let user_id = connector_user_id(&tenant_id, &project_id);
+    let link = connectors
+        .connect(&request.toolkit, &user_id)
+        .await
+        .map_err(map_composio_err)?;
+    Ok(Json(link))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/connectors/{tenant_id}/{project_id}/status",
+    tag = "connectors",
+    operation_id = "connectorStatus",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ToolkitQuery,
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "Connection status of a toolkit for this project", body = ConnectionStatus),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 501, description = "Connector provider not configured", body = ErrorResponse),
+    )
+)]
+async fn connector_status_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+    Query(query): Query<ToolkitQuery>,
+) -> Result<Json<ConnectionStatus>, ApiError> {
+    let connectors = connector_client(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::TraceRead,
+    )
+    .await?;
+    let user_id = connector_user_id(&tenant_id, &project_id);
+    let status = connectors
+        .connection_status(&query.toolkit, &user_id)
+        .await
+        .map_err(map_composio_err)?;
+    Ok(Json(status))
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/connectors/{tenant_id}/{project_id}/invoke",
+    tag = "connectors",
+    operation_id = "invokeConnectorTool",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    request_body = InvokeConnectorRequest,
+    responses(
+        (status = 200, description = "Execute a connector tool and return its result envelope", body = ToolExecution),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 501, description = "Connector provider not configured", body = ErrorResponse),
+    )
+)]
+async fn invoke_connector_tool_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+    Json(request): Json<InvokeConnectorRequest>,
+) -> Result<Json<ToolExecution>, ApiError> {
+    let connectors = connector_client(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
+    let user_id = connector_user_id(&tenant_id, &project_id);
+    let execution = connectors
+        .execute(&request.tool, &user_id, request.arguments)
+        .await
+        .map_err(map_composio_err)?;
+    Ok(Json(execution))
+}
+
 #[utoipa::path(
     post,
     path = "/v1/judge/{tenant_id}/{project_id}/evaluate",
@@ -903,6 +1395,328 @@ async fn get_usage_summary_route(
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let summary = usage.summarize_usage(tenant_id, project_id).await?;
     Ok(Json(summary))
+}
+
+// ---------------------------------------------------------------------------
+// Billing (Bandwidth, §20.7 #5.8 / §21.7 / R15)
+// ---------------------------------------------------------------------------
+
+/// Request body for creating a subscription.
+#[cfg(feature = "billing")]
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+struct CreateSubscriptionRequest {
+    /// Plan to subscribe the org to.
+    plan_id: String,
+    /// RFC3339 period start.
+    period_start: String,
+    /// RFC3339 period end.
+    period_end: String,
+    /// Optional initial status (`active` default).
+    status: Option<String>,
+}
+
+/// Request body for changing an org's plan with proration.
+#[cfg(feature = "billing")]
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+struct ChangePlanRequest {
+    /// New plan id.
+    new_plan_id: String,
+    /// RFC3339 instant at which the change takes effect (defaults to now).
+    at: Option<String>,
+}
+
+/// Acknowledgement for an inbound Stripe webhook delivery.
+#[cfg(feature = "billing")]
+#[derive(Clone, Debug, Serialize, ToSchema)]
+struct StripeWebhookAck {
+    /// `applied`, `duplicate`, or `stale`.
+    outcome: String,
+}
+
+#[cfg(feature = "billing")]
+#[utoipa::path(
+    get,
+    path = "/v1/plans",
+    tag = "billing",
+    operation_id = "getPlans",
+    responses(
+        (status = 200, description = "List billing plans", body = Vec < Plan >),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+    )
+)]
+async fn get_plans_route(State(state): State<ApiState>) -> Result<Json<Vec<Plan>>, ApiError> {
+    let billing = billing_store(&state)?;
+    let plans = billing.list_plans().await?;
+    Ok(Json(plans))
+}
+
+#[cfg(feature = "billing")]
+#[utoipa::path(
+    get,
+    path = "/v1/plans/{plan_id}",
+    tag = "billing",
+    operation_id = "getPlan",
+    params(("plan_id" = String, Path, description = "plan_id")),
+    responses(
+        (status = 200, description = "Get a billing plan", body = Plan),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+    )
+)]
+async fn get_plan_route(
+    State(state): State<ApiState>,
+    Path(plan_id): Path<String>,
+) -> Result<Json<Plan>, ApiError> {
+    let billing = billing_store(&state)?;
+    let plan_id = PlanId::new(plan_id).map_err(ApiError::from)?;
+    let plan = billing
+        .get_plan(&plan_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found(format!("plan {} not found", plan_id.as_str())))?;
+    Ok(Json(plan))
+}
+
+#[cfg(feature = "billing")]
+#[utoipa::path(
+    get,
+    path = "/v1/subscriptions/{org_id}",
+    tag = "billing",
+    operation_id = "getSubscription",
+    params(
+        ("org_id" = String, Path, description = "org_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "Get an org subscription", body = Subscription),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+    )
+)]
+async fn get_subscription_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path(org_id): Path<String>,
+) -> Result<Json<Subscription>, ApiError> {
+    let billing = billing_store(&state)?;
+    let org_id = OrganizationId::new(org_id)?;
+    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
+    let subscription = billing.get_subscription(&org_id).await?.ok_or_else(|| {
+        ApiError::not_found(format!(
+            "subscription for org {} not found",
+            org_id.as_str()
+        ))
+    })?;
+    Ok(Json(subscription))
+}
+
+#[cfg(feature = "billing")]
+#[utoipa::path(
+    post,
+    path = "/v1/subscriptions/{org_id}",
+    tag = "billing",
+    operation_id = "createSubscription",
+    params(
+        ("org_id" = String, Path, description = "org_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    request_body = CreateSubscriptionRequest,
+    responses(
+        (status = 200, description = "Create an org subscription", body = Subscription),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 409, description = "Subscription already exists", body = ErrorResponse),
+    )
+)]
+async fn create_subscription_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path(org_id): Path<String>,
+    Json(request): Json<CreateSubscriptionRequest>,
+) -> Result<Json<Subscription>, ApiError> {
+    let billing = billing_store(&state)?;
+    let org_id = OrganizationId::new(org_id)?;
+    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
+    let plan_id = PlanId::new(request.plan_id).map_err(ApiError::from)?;
+    let period_start = parse_required_timestamp(&request.period_start, "period_start")?;
+    let period_end = parse_required_timestamp(&request.period_end, "period_end")?;
+    let status = match request.status.as_deref() {
+        None | Some("active") => SubscriptionStatus::Active,
+        Some(other) => SubscriptionStatus::parse(other).ok_or_else(|| {
+            ApiError::bad_request(format!("unknown subscription status: {other}"))
+        })?,
+    };
+    let subscription = billing
+        .create_subscription(Subscription {
+            org_id,
+            plan_id,
+            status,
+            period_start,
+            period_end,
+            version: 1,
+        })
+        .await?;
+    Ok(Json(subscription))
+}
+
+#[cfg(feature = "billing")]
+#[utoipa::path(
+    post,
+    path = "/v1/subscriptions/{org_id}/change-plan",
+    tag = "billing",
+    operation_id = "changeSubscriptionPlan",
+    params(
+        ("org_id" = String, Path, description = "org_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    request_body = ChangePlanRequest,
+    responses(
+        (status = 200, description = "Change an org plan with proration", body = PlanChange),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+        (status = 409, description = "Concurrent modification", body = ErrorResponse),
+    )
+)]
+async fn change_subscription_plan_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path(org_id): Path<String>,
+    Json(request): Json<ChangePlanRequest>,
+) -> Result<Json<PlanChange>, ApiError> {
+    let billing = billing_service(&state)?;
+    let org_id = OrganizationId::new(org_id)?;
+    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
+    let new_plan_id = PlanId::new(request.new_plan_id).map_err(ApiError::from)?;
+    let at = match request.at {
+        Some(value) => parse_required_timestamp(&value, "at")?,
+        None => Utc::now(),
+    };
+    let change = billing.change_plan(&org_id, &new_plan_id, at).await?;
+    Ok(Json(change))
+}
+
+#[cfg(feature = "billing")]
+#[utoipa::path(
+    get,
+    path = "/v1/billing/invoices/{org_id}",
+    tag = "billing",
+    operation_id = "getOrgInvoices",
+    params(
+        ("org_id" = String, Path, description = "org_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "List org invoices", body = Vec < Invoice >),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+    )
+)]
+async fn get_org_invoices_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path(org_id): Path<String>,
+) -> Result<Json<Vec<Invoice>>, ApiError> {
+    let billing = billing_store(&state)?;
+    let org_id = OrganizationId::new(org_id)?;
+    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
+    let invoices = billing.list_invoices(&org_id).await?;
+    Ok(Json(invoices))
+}
+
+#[cfg(feature = "billing")]
+#[utoipa::path(
+    get,
+    path = "/v1/billing/invoices/{org_id}/{period_key}",
+    tag = "billing",
+    operation_id = "getInvoice",
+    params(
+        ("org_id" = String, Path, description = "org_id"),
+        ("period_key" = String, Path, description = "period_key (YYYY-MM)"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "Get an org invoice for a period", body = Invoice),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+    )
+)]
+async fn get_invoice_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((org_id, period_key)): Path<(String, String)>,
+) -> Result<Json<Invoice>, ApiError> {
+    let billing = billing_store(&state)?;
+    let org_id = OrganizationId::new(org_id)?;
+    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
+    let invoice = billing
+        .get_invoice(&org_id, &period_key)
+        .await?
+        .ok_or_else(|| {
+            ApiError::not_found(format!(
+                "invoice for org {} period {period_key} not found",
+                org_id.as_str()
+            ))
+        })?;
+    Ok(Json(invoice))
+}
+
+#[cfg(feature = "billing")]
+#[utoipa::path(
+    post,
+    path = "/v1/billing/webhooks/stripe",
+    tag = "billing",
+    operation_id = "handleStripeWebhook",
+    params(
+        ("stripe-signature" = String, Header, description = "Stripe signed-webhook header (t=...,v1=...)"),
+    ),
+    request_body(content = String, description = "Raw Stripe event JSON (signature-verified)"),
+    responses(
+        (status = 200, description = "Webhook accepted (applied/duplicate/stale)", body = StripeWebhookAck),
+        (status = 400, description = "Invalid signature or malformed event", body = ErrorResponse),
+    )
+)]
+async fn stripe_webhook_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Json<StripeWebhookAck>, ApiError> {
+    let sync = stripe_sync(&state)?;
+    let signature = headers
+        .get("stripe-signature")
+        .and_then(|value| value.to_str().ok())
+        .ok_or_else(|| ApiError::bad_request("missing stripe-signature header".to_string()))?;
+    let outcome = sync.apply_event(&body, signature).await?;
+    let outcome = match outcome {
+        EventApplication::Applied => "applied",
+        EventApplication::Duplicate => "duplicate",
+        EventApplication::Stale => "stale",
+    };
+    Ok(Json(StripeWebhookAck {
+        outcome: outcome.to_string(),
+    }))
 }
 
 #[utoipa::path(
@@ -1702,6 +2516,328 @@ async fn query_archive_spans(
         .query_project(&tenant_id, &project_id, query)
         .await?;
     Ok(Json(ArchiveQueryResponse { rows }))
+}
+
+/// Request body for `createPrompt`: the new prompt's metadata plus its initial
+/// (version 1) template.
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+struct CreatePromptRequest {
+    name: String,
+    #[serde(default)]
+    description: Option<String>,
+    template: PromptTemplate,
+    #[serde(default)]
+    created_by: Option<String>,
+    #[serde(default)]
+    message: Option<String>,
+}
+
+/// Request body for `addPromptVersion`: a new immutable template revision.
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+struct AddPromptVersionRequest {
+    template: PromptTemplate,
+    #[serde(default)]
+    created_by: Option<String>,
+    #[serde(default)]
+    message: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+struct PromptListResponse {
+    prompts: Vec<Prompt>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+struct PromptVersionListResponse {
+    versions: Vec<PromptVersion>,
+}
+
+/// Query parameters for `diffPromptVersions`: the two version ids to compare.
+#[derive(Clone, Debug, Deserialize, IntoParams)]
+struct DiffPromptVersionsQuery {
+    from: String,
+    to: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/prompts/{tenant_id}/{project_id}",
+    tag = "prompts",
+    operation_id = "createPrompt",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    request_body = CreatePromptRequest,
+    responses(
+        (status = 200, description = "Create a prompt and its initial version", body = CreatedPrompt),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+    )
+)]
+async fn create_prompt_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+    Json(request): Json<CreatePromptRequest>,
+) -> Result<Json<CreatedPrompt>, ApiError> {
+    let prompts = prompt_registry(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::DatasetWrite,
+    )
+    .await?;
+    let created = prompts.create_prompt(CreatePrompt {
+        tenant_id,
+        project_id,
+        name: request.name,
+        description: request.description,
+        template: request.template,
+        created_by: request.created_by,
+        message: request.message,
+    })?;
+    Ok(Json(created))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/prompts/{tenant_id}/{project_id}",
+    tag = "prompts",
+    operation_id = "listPrompts",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "List prompts in a project", body = PromptListResponse),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+    )
+)]
+async fn list_prompts_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+) -> Result<Json<PromptListResponse>, ApiError> {
+    let prompts = prompt_registry(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::TraceRead,
+    )
+    .await?;
+    let prompts = prompts.list_prompts(&tenant_id, &project_id)?;
+    Ok(Json(PromptListResponse { prompts }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/prompts/{tenant_id}/{project_id}/{prompt_id}",
+    tag = "prompts",
+    operation_id = "getPrompt",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("prompt_id" = String, Path, description = "prompt_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "Get a prompt's metadata", body = Prompt),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+    )
+)]
+async fn get_prompt_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id, prompt_id)): Path<(String, String, String)>,
+) -> Result<Json<Prompt>, ApiError> {
+    let prompts = prompt_registry(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let prompt_id = PromptId::new(prompt_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::TraceRead,
+    )
+    .await?;
+    let prompt = prompts.get_prompt(&tenant_id, &project_id, &prompt_id)?;
+    Ok(Json(prompt))
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions",
+    tag = "prompts",
+    operation_id = "addPromptVersion",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("prompt_id" = String, Path, description = "prompt_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    request_body = AddPromptVersionRequest,
+    responses(
+        (status = 200, description = "Append an immutable prompt version", body = PromptVersion),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+    )
+)]
+async fn add_prompt_version_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id, prompt_id)): Path<(String, String, String)>,
+    Json(request): Json<AddPromptVersionRequest>,
+) -> Result<Json<PromptVersion>, ApiError> {
+    let prompts = prompt_registry(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let prompt_id = PromptId::new(prompt_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::DatasetWrite,
+    )
+    .await?;
+    let version = prompts.add_version(AddPromptVersion {
+        tenant_id,
+        project_id,
+        prompt_id,
+        template: request.template,
+        created_by: request.created_by,
+        message: request.message,
+    })?;
+    Ok(Json(version))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions",
+    tag = "prompts",
+    operation_id = "listPromptVersions",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("prompt_id" = String, Path, description = "prompt_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "List a prompt's versions oldest-first", body = PromptVersionListResponse),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+    )
+)]
+async fn list_prompt_versions_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id, prompt_id)): Path<(String, String, String)>,
+) -> Result<Json<PromptVersionListResponse>, ApiError> {
+    let prompts = prompt_registry(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let prompt_id = PromptId::new(prompt_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::TraceRead,
+    )
+    .await?;
+    let versions = prompts.list_versions(&tenant_id, &project_id, &prompt_id)?;
+    Ok(Json(PromptVersionListResponse { versions }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff",
+    tag = "prompts",
+    operation_id = "diffPromptVersions",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("prompt_id" = String, Path, description = "prompt_id"),
+        DiffPromptVersionsQuery,
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "Line diff between two prompt versions", body = PromptVersionDiff),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+    )
+)]
+async fn diff_prompt_versions_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id, prompt_id)): Path<(String, String, String)>,
+    Query(query): Query<DiffPromptVersionsQuery>,
+) -> Result<Json<PromptVersionDiff>, ApiError> {
+    let prompts = prompt_registry(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    let prompt_id = PromptId::new(prompt_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::TraceRead,
+    )
+    .await?;
+    let from_version_id = PromptVersionId::new(query.from)?;
+    let to_version_id = PromptVersionId::new(query.to)?;
+    let diff = prompts.diff_versions(
+        &tenant_id,
+        &project_id,
+        &prompt_id,
+        &from_version_id,
+        &to_version_id,
+    )?;
+    Ok(Json(diff))
 }
 
 #[utoipa::path(
@@ -2764,6 +3900,10 @@ fn dataset_store(state: &ApiState) -> Result<Arc<dyn DatasetStore>, ApiError> {
     require(&state.datasets, "dataset store")
 }
 
+fn prompt_registry(state: &ApiState) -> Result<Arc<dyn PromptRegistry>, ApiError> {
+    require(&state.prompts, "prompt registry")
+}
+
 fn provider_secret_store(state: &ApiState) -> Result<Arc<dyn ProviderSecretStore>, ApiError> {
     require(&state.provider_secrets, "provider secret store")
 }
@@ -2794,6 +3934,28 @@ fn calibration_store(state: &ApiState) -> Result<Arc<dyn CalibrationStore>, ApiE
 
 fn usage_ledger(state: &ApiState) -> Result<Arc<dyn UsageLedgerStore>, ApiError> {
     require(&state.usage, "usage ledger")
+}
+
+#[cfg(feature = "billing")]
+fn billing_store(state: &ApiState) -> Result<Arc<dyn BillingStore>, ApiError> {
+    require(&state.billing, "billing store")
+}
+
+/// Build the [`Billing`] service from the wired billing + usage stores.
+#[cfg(feature = "billing")]
+fn billing_service(state: &ApiState) -> Result<Billing, ApiError> {
+    let billing = billing_store(state)?;
+    let usage = usage_ledger(state)?;
+    Ok(Billing::new(billing, usage))
+}
+
+#[cfg(feature = "billing")]
+fn stripe_sync(state: &ApiState) -> Result<StripeSync, ApiError> {
+    let billing = billing_store(state)?;
+    let secret = state.stripe_webhook_secret.clone().ok_or_else(|| {
+        ApiError::not_implemented("stripe webhook secret is not configured".to_string())
+    })?;
+    Ok(StripeSync::new(billing, secret))
 }
 
 fn audit_store(state: &ApiState) -> Result<Arc<dyn AuditStore>, ApiError> {
@@ -3210,6 +4372,23 @@ async fn authorize_tenant_route(
         required_scope,
     )
     .await
+}
+
+/// Authorize an org-scoped billing route. Billing is org-scoped; auth is
+/// project-scoped, so we map the organization id onto the tenant scope for the
+/// credential check. A no-op when auth is disabled.
+#[cfg(feature = "billing")]
+async fn authorize_org_route(
+    state: &ApiState,
+    headers: &HeaderMap,
+    org_id: &OrganizationId,
+    required_scope: ApiScope,
+) -> Result<AuthDecision, ApiError> {
+    if !state.auth_required() {
+        return Ok(AuthDecision::anonymous());
+    }
+    let tenant_id = TenantId::new(org_id.as_str())?;
+    authorize_tenant_route(state, headers, &tenant_id, required_scope).await
 }
 
 async fn authorize_query_scope(
@@ -3804,6 +4983,16 @@ fn parse_optional_timestamp(
         .transpose()
 }
 
+#[cfg(feature = "billing")]
+fn parse_required_timestamp(
+    value: &str,
+    field_name: &str,
+) -> Result<beater_core::Timestamp, ApiError> {
+    chrono::DateTime::parse_from_rfc3339(value)
+        .map(|timestamp| timestamp.with_timezone(&Utc))
+        .map_err(|err| ApiError::bad_request(format!("{field_name} must be RFC3339: {err}")))
+}
+
 fn parse_span_status(value: String) -> Result<SpanStatus, ApiError> {
     SpanStatus::parse(&value)
         .ok_or_else(|| ApiError::bad_request(format!("unsupported span status: {value}")))
@@ -3868,6 +5057,21 @@ impl From<IngestError> for ApiError {
     }
 }
 
+impl From<PromptRegistryError> for ApiError {
+    fn from(error: PromptRegistryError) -> Self {
+        match error {
+            PromptRegistryError::PromptNotFound { .. }
+            | PromptRegistryError::VersionNotFound { .. } => Self::not_found(error.to_string()),
+            PromptRegistryError::VersionPromptMismatch { .. } => {
+                Self::bad_request(error.to_string())
+            }
+            PromptRegistryError::LockPoisoned | PromptRegistryError::Backend(_) => {
+                Self::internal(error.to_string())
+            }
+        }
+    }
+}
+
 impl From<StoreError> for ApiError {
     fn from(error: StoreError) -> Self {
         match error {
@@ -3880,6 +5084,42 @@ impl From<StoreError> for ApiError {
                 Self::with_status(StatusCode::PAYLOAD_TOO_LARGE, error.to_string())
             }
             StoreError::Integrity(_) | StoreError::Backend(_) => Self::internal(error.to_string()),
+        }
+    }
+}
+
+#[cfg(feature = "billing")]
+impl From<BillingError> for ApiError {
+    fn from(error: BillingError) -> Self {
+        match error {
+            BillingError::NotFound(_) => {
+                Self::with_status(StatusCode::NOT_FOUND, error.to_string())
+            }
+            BillingError::Conflict(_) | BillingError::ConcurrentModification(_) => {
+                Self::with_status(StatusCode::CONFLICT, error.to_string())
+            }
+            BillingError::InvalidPlan(_)
+            | BillingError::InvalidPeriod(_)
+            | BillingError::Money(_)
+            | BillingError::Overflow => Self::bad_request(error.to_string()),
+            BillingError::Store(store) => store.into(),
+            BillingError::Backend(_) => Self::internal(error.to_string()),
+        }
+    }
+}
+
+#[cfg(feature = "billing")]
+impl From<StripeError> for ApiError {
+    fn from(error: StripeError) -> Self {
+        match error {
+            StripeError::Signature(_) | StripeError::Malformed(_) => {
+                Self::bad_request(error.to_string())
+            }
+            StripeError::Store(store) => store.into(),
+            StripeError::Billing(message) => Self::bad_request(message),
+            StripeError::Transport(_) => {
+                Self::with_status(StatusCode::BAD_GATEWAY, error.to_string())
+            }
         }
     }
 }

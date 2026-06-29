@@ -13,10 +13,12 @@ beater-api = { path = "../../crates/beater-api" }
 beater-archive = { path = "../../crates/beater-archive" }
 beater-audit = { path = "../../crates/beater-audit" }
 beater-auth = { path = "../../crates/beater-auth" }
+beater-billing = { path = "../../crates/beater-billing", optional = true }
 beater-oauth = { path = "../../crates/beater-oauth" }
 beater-oauth-server = { path = "../../crates/beater-oauth-server" }
 beater-bus = { path = "../../crates/beater-bus" }
 beater-calibration = { path = "../../crates/beater-calibration" }
+beater-composio = { path = "../../crates/beater-composio" }
 beater-datasets = { path = "../../crates/beater-datasets" }
 beater-experiments = { path = "../../crates/beater-experiments" }
 beater-gates = { path = "../../crates/beater-gates" }
@@ -26,6 +28,7 @@ beater-judge = { path = "../../crates/beater-judge" }
 beater-langfuse = { path = "../../crates/beater-langfuse" }
 beater-mcp = { path = "../../crates/beater-mcp" }
 beater-otlp = { path = "../../crates/beater-otlp" }
+beater-prompts = { path = "../../crates/beater-prompts" }
 beater-search = { path = "../../crates/beater-search" }
 beater-secrets = { path = "../../crates/beater-secrets" }
 beater-schema = { path = "../../crates/beater-schema" }
@@ -50,6 +53,11 @@ tonic.workspace = true
 # has to run a multi-service topology.
 default = []
 thin-bins = []
+
+# Hosted-only: compile billing/Stripe into the daemon and the API contract.
+# Off by default so the open-source `beaterd` runs fully locally with no billing
+# store, no Stripe webhook route, and no Stripe endpoints in its API contract.
+billing = ["dep:beater-billing", "beater-api/billing"]
 
 # Optional thin role binaries (R1.2). They share the same crate but are only
 # compiled when the `thin-bins` feature is enabled, proving the split is opt-in.

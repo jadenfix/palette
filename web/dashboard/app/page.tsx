@@ -133,6 +133,10 @@ export default async function DashboardPage({
             <span>Read API</span>
             <code title={data.apiBaseUrl}>{apiHostLabel(data.apiBaseUrl)}</code>
           </div>
+          <Link className="refresh-action" href={searchHref(data.query)}>
+            <SearchIcon aria-hidden="true" />
+            <span>Search</span>
+          </Link>
           <Link
             className="refresh-action"
             href={hrefFor(data.query, {
@@ -1045,6 +1049,19 @@ function scopeHref(query: DashboardQuery): string {
   if (query.projectId) params.set("project", query.projectId);
   if (query.environmentId) params.set("environment", query.environmentId);
   return `/?${params.toString()}`;
+}
+
+function searchHref(query: DashboardQuery): string {
+  const params = new URLSearchParams();
+  params.set("tenant", query.tenantId);
+  if (query.projectId) params.set("project", query.projectId);
+  if (query.environmentId) params.set("environment", query.environmentId);
+  if (query.traceId) params.set("trace_id", query.traceId);
+  if (query.selectedSpanId) params.set("span_id", query.selectedSpanId);
+  if (query.status) params.set("status", query.status);
+  if (query.kind) params.set("kind", query.kind);
+  if (query.model) params.set("model", query.model);
+  return `/search?${params.toString()}`;
 }
 
 function hrefFor(

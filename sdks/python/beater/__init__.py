@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from .auto import InstrumentationResult, instrument
 from .config import BeaterConfig
+from .integrations import BeaterCallbackHandler, BeaterLlamaIndexHandler
 from .observe import observe, set_input, set_output, span
 from .providers.anthropic import wrap_anthropic
 from .providers.openai import wrap_openai
@@ -48,6 +49,8 @@ __all__ = [
     "wrap_openai_compatible",
     "wrap_groq",
     "wrap_mistral",
+    "BeaterCallbackHandler",
+    "BeaterLlamaIndexHandler",
     "flush",
     "shutdown",
     "get_config",

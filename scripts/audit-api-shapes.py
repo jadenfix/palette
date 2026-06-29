@@ -24,6 +24,8 @@ CAMEL = re.compile(r"^[a-z][a-zA-Z0-9]*$")
 LIST_PAGINATION_EXEMPTIONS = {
     "listAuditEvents",
     "listJudgeLedger",
+    "listPromptVersions",
+    "listPrompts",
     "listProviderSecrets",
     "listReviewTasks",
 }

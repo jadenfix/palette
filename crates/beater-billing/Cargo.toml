@@ -1,0 +1,28 @@
+[package]
+name = "beater-billing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+utoipa = { workspace = true }
+anyhow.workspace = true
+async-trait.workspace = true
+beater-core = { path = "../beater-core" }
+beater-security = { path = "../beater-security" }
+beater-store = { path = "../beater-store" }
+beater-usage = { path = "../beater-usage" }
+chrono.workspace = true
+rusqlite.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

@@ -18,6 +18,7 @@ use beater_gates::SqliteGateStore;
 use beater_human::SqliteHumanReviewStore;
 use beater_ingest::{IngestPolicy, IngestService};
 use beater_judge::{JudgeBrokerService, KeywordJudgeProvider, SqliteJudgeLedger};
+use beater_prompts::SqlitePromptRegistry;
 use beater_search::TantivySearchIndex;
 use beater_secrets::{EncryptedSqliteProviderSecretStore, SecretKeyring};
 use beater_store_obj::FsArtifactStore;
@@ -75,6 +76,7 @@ fn build_app() -> (Router, tempfile::TempDir) {
         .with_calibrations(calibrations)
         .with_usage(usage)
         .with_audit(audit)
+        .with_prompts(Arc::new(unwrap(SqlitePromptRegistry::in_memory())))
         .require_auth(api_keys)
         .with_judge(provider_secrets, judge_broker, judge_ledger);
 
