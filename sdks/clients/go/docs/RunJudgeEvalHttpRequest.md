@@ -4,6 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**CacheNamespace** | Pointer to **NullableString** | Calibration-map / judge-instrument version folded into the judge cache key; bumping it on recalibration invalidates stale cached scores. | [optional] 
 **Case** | [**EvaluationCase**](EvaluationCase.md) |  | 
 **Evaluator** | [**EvaluatorSpec**](EvaluatorSpec.md) |  | 
 **ProviderSecretId** | **string** |  | 
@@ -27,6 +28,41 @@ NewRunJudgeEvalHttpRequestWithDefaults instantiates a new RunJudgeEvalHttpReques
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
+### GetCacheNamespace
+
+`func (o *RunJudgeEvalHttpRequest) GetCacheNamespace() string`
+
+GetCacheNamespace returns the CacheNamespace field if non-nil, zero value otherwise.
+
+### GetCacheNamespaceOk
+
+`func (o *RunJudgeEvalHttpRequest) GetCacheNamespaceOk() (*string, bool)`
+
+GetCacheNamespaceOk returns a tuple with the CacheNamespace field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetCacheNamespace
+
+`func (o *RunJudgeEvalHttpRequest) SetCacheNamespace(v string)`
+
+SetCacheNamespace sets CacheNamespace field to given value.
+
+### HasCacheNamespace
+
+`func (o *RunJudgeEvalHttpRequest) HasCacheNamespace() bool`
+
+HasCacheNamespace returns a boolean if a field has been set.
+
+### SetCacheNamespaceNil
+
+`func (o *RunJudgeEvalHttpRequest) SetCacheNamespaceNil(b bool)`
+
+ SetCacheNamespaceNil sets the value for CacheNamespace to be an explicit nil
+
+### UnsetCacheNamespace
+`func (o *RunJudgeEvalHttpRequest) UnsetCacheNamespace()`
+
+UnsetCacheNamespace ensures that no value is present for CacheNamespace, not even an explicit nil
 ### GetCase
 
 `func (o *RunJudgeEvalHttpRequest) GetCase() EvaluationCase`

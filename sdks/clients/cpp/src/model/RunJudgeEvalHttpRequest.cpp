@@ -20,6 +20,8 @@ namespace model {
 
 RunJudgeEvalHttpRequest::RunJudgeEvalHttpRequest()
 {
+    m_Cache_namespace = utility::conversions::to_string_t("");
+    m_Cache_namespaceIsSet = false;
     m_r_caseIsSet = false;
     m_EvaluatorIsSet = false;
     m_Provider_secret_id = utility::conversions::to_string_t("");
@@ -38,6 +40,11 @@ void RunJudgeEvalHttpRequest::validate()
 web::json::value RunJudgeEvalHttpRequest::toJson() const
 {
     web::json::value val = web::json::value::object();
+    if(m_Cache_namespaceIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("cache_namespace"))] = ModelBase::toJson(m_Cache_namespace);
+    }
     if(m_r_caseIsSet)
     {   
         
@@ -60,6 +67,17 @@ web::json::value RunJudgeEvalHttpRequest::toJson() const
 bool RunJudgeEvalHttpRequest::fromJson(const web::json::value& val)
 {
     bool ok = true;
+    if(val.has_field(utility::conversions::to_string_t(U("cache_namespace"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("cache_namespace")));
+        if(!fieldValue.is_null())
+        {
+            utility::string_t refVal_setCacheNamespace;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setCacheNamespace);
+            setCacheNamespace(refVal_setCacheNamespace);
+            
+        }
+    }
     if(val.has_field(utility::conversions::to_string_t(U("case"))))
     {
         const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("case")));
@@ -103,6 +121,10 @@ void RunJudgeEvalHttpRequest::toMultipart(std::shared_ptr<MultipartFormData> mul
     {
         namePrefix += utility::conversions::to_string_t(U("."));
     }
+    if(m_Cache_namespaceIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("cache_namespace")), m_Cache_namespace));
+    }
     if(m_r_caseIsSet)
     {
         multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("case")), m_r_case));
@@ -126,6 +148,12 @@ bool RunJudgeEvalHttpRequest::fromMultiPart(std::shared_ptr<MultipartFormData> m
         namePrefix += utility::conversions::to_string_t(U("."));
     }
 
+    if(multipart->hasContent(utility::conversions::to_string_t(U("cache_namespace"))))
+    {
+        utility::string_t refVal_setCacheNamespace;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("cache_namespace"))), refVal_setCacheNamespace );
+        setCacheNamespace(refVal_setCacheNamespace);
+    }
     if(multipart->hasContent(utility::conversions::to_string_t(U("case"))))
     {
         std::shared_ptr<EvaluationCase> refVal_setRCase;
@@ -148,6 +176,27 @@ bool RunJudgeEvalHttpRequest::fromMultiPart(std::shared_ptr<MultipartFormData> m
 }
 
 
+utility::string_t RunJudgeEvalHttpRequest::getCacheNamespace() const
+{
+    return m_Cache_namespace;
+}
+
+
+void RunJudgeEvalHttpRequest::setCacheNamespace(const utility::string_t& value)
+{
+    m_Cache_namespace = value;
+    m_Cache_namespaceIsSet = true;
+}
+
+bool RunJudgeEvalHttpRequest::cacheNamespaceIsSet() const
+{
+    return m_Cache_namespaceIsSet;
+}
+
+void RunJudgeEvalHttpRequest::unsetCache_namespace()
+{
+    m_Cache_namespaceIsSet = false;
+}
 std::shared_ptr<EvaluationCase> RunJudgeEvalHttpRequest::getRCase() const
 {
     return m_r_case;

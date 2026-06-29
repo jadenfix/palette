@@ -2835,6 +2835,7 @@ fn judge_fixture_request(
             trace: None,
         },
         provider_secret_id,
+        cache_namespace: None,
     }
 }
 

@@ -6,6 +6,7 @@
 
 
 static run_judge_eval_http_request_t *run_judge_eval_http_request_create_internal(
+    char *cache_namespace,
     evaluation_case_t *_case,
     evaluator_spec_t *evaluator,
     char *provider_secret_id
@@ -14,6 +15,7 @@ static run_judge_eval_http_request_t *run_judge_eval_http_request_create_interna
     if (!run_judge_eval_http_request_local_var) {
         return NULL;
     }
+    run_judge_eval_http_request_local_var->cache_namespace = cache_namespace;
     run_judge_eval_http_request_local_var->_case = _case;
     run_judge_eval_http_request_local_var->evaluator = evaluator;
     run_judge_eval_http_request_local_var->provider_secret_id = provider_secret_id;
@@ -23,11 +25,13 @@ static run_judge_eval_http_request_t *run_judge_eval_http_request_create_interna
 }
 
 __attribute__((deprecated)) run_judge_eval_http_request_t *run_judge_eval_http_request_create(
+    char *cache_namespace,
     evaluation_case_t *_case,
     evaluator_spec_t *evaluator,
     char *provider_secret_id
     ) {
     return run_judge_eval_http_request_create_internal (
+        cache_namespace,
         _case,
         evaluator,
         provider_secret_id
@@ -43,6 +47,10 @@ void run_judge_eval_http_request_free(run_judge_eval_http_request_t *run_judge_e
         return ;
     }
     listEntry_t *listEntry;
+    if (run_judge_eval_http_request->cache_namespace) {
+        free(run_judge_eval_http_request->cache_namespace);
+        run_judge_eval_http_request->cache_namespace = NULL;
+    }
     if (run_judge_eval_http_request->_case) {
         evaluation_case_free(run_judge_eval_http_request->_case);
         run_judge_eval_http_request->_case = NULL;
@@ -60,6 +68,14 @@ void run_judge_eval_http_request_free(run_judge_eval_http_request_t *run_judge_e
 
 cJSON *run_judge_eval_http_request_convertToJSON(run_judge_eval_http_request_t *run_judge_eval_http_request) {
     cJSON *item = cJSON_CreateObject();
+
+    // run_judge_eval_http_request->cache_namespace
+    if(run_judge_eval_http_request->cache_namespace) {
+    if(cJSON_AddStringToObject(item, "cache_namespace", run_judge_eval_http_request->cache_namespace) == NULL) {
+    goto fail; //String
+    }
+    }
+
 
     // run_judge_eval_http_request->_case
     if (!run_judge_eval_http_request->_case) {
@@ -115,6 +131,18 @@ run_judge_eval_http_request_t *run_judge_eval_http_request_parseFromJSON(cJSON *
     // define the local variable for run_judge_eval_http_request->evaluator
     evaluator_spec_t *evaluator_local_nonprim = NULL;
 
+    // run_judge_eval_http_request->cache_namespace
+    cJSON *cache_namespace = cJSON_GetObjectItemCaseSensitive(run_judge_eval_http_requestJSON, "cache_namespace");
+    if (cJSON_IsNull(cache_namespace)) {
+        cache_namespace = NULL;
+    }
+    if (cache_namespace) { 
+    if(!cJSON_IsString(cache_namespace) && !cJSON_IsNull(cache_namespace))
+    {
+    goto end; //String
+    }
+    }
+
     // run_judge_eval_http_request->_case
     cJSON *_case = cJSON_GetObjectItemCaseSensitive(run_judge_eval_http_requestJSON, "case");
     if (cJSON_IsNull(_case)) {
@@ -156,6 +184,7 @@ run_judge_eval_http_request_t *run_judge_eval_http_request_parseFromJSON(cJSON *
 
 
     run_judge_eval_http_request_local_var = run_judge_eval_http_request_create_internal (
+        cache_namespace && !cJSON_IsNull(cache_namespace) ? strdup(cache_namespace->valuestring) : NULL,
         _case_local_nonprim,
         evaluator_local_nonprim,
         strdup(provider_secret_id->valuestring)

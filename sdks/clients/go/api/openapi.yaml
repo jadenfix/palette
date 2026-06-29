@@ -7229,6 +7229,7 @@ components:
     RunJudgeEvalHttpRequest:
       example:
         provider_secret_id: provider_secret_id
+        cache_namespace: cache_namespace
         case:
           output: ""
           reference: ""
@@ -7240,6 +7241,12 @@ components:
           id: id
           lane: deterministic_wasi
       properties:
+        cache_namespace:
+          description: |-
+            Calibration-map / judge-instrument version folded into the judge cache
+            key; bumping it on recalibration invalidates stale cached scores.
+          nullable: true
+          type: string
         case:
           $ref: '#/components/schemas/EvaluationCase'
         evaluator:

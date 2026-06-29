@@ -1386,7 +1386,10 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(calls.load(Ordering::SeqCst), 2);
         assert!(!after_recalibration.audit.cached);
-        assert_ne!(first.audit.request_hash, after_recalibration.audit.request_hash);
+        assert_ne!(
+            first.audit.request_hash,
+            after_recalibration.audit.request_hash
+        );
     }
 
     #[test]

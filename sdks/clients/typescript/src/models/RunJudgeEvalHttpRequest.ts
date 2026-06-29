@@ -35,6 +35,13 @@ import {
  */
 export interface RunJudgeEvalHttpRequest {
     /**
+     * Calibration-map / judge-instrument version folded into the judge cache
+     * key; bumping it on recalibration invalidates stale cached scores.
+     * @type {string}
+     * @memberof RunJudgeEvalHttpRequest
+     */
+    cacheNamespace?: string | null;
+    /**
      * 
      * @type {EvaluationCase}
      * @memberof RunJudgeEvalHttpRequest
@@ -74,6 +81,7 @@ export function RunJudgeEvalHttpRequestFromJSONTyped(json: any, ignoreDiscrimina
     }
     return {
         
+        'cacheNamespace': json['cache_namespace'] == null ? undefined : json['cache_namespace'],
         '_case': EvaluationCaseFromJSON(json['case']),
         'evaluator': EvaluatorSpecFromJSON(json['evaluator']),
         'providerSecretId': json['provider_secret_id'],
@@ -91,6 +99,7 @@ export function RunJudgeEvalHttpRequestToJSONTyped(value?: RunJudgeEvalHttpReque
 
     return {
         
+        'cache_namespace': value['cacheNamespace'],
         'case': EvaluationCaseToJSON(value['_case']),
         'evaluator': EvaluatorSpecToJSON(value['evaluator']),
         'provider_secret_id': value['providerSecretId'],

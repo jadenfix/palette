@@ -9266,6 +9266,13 @@
           "provider_secret_id"
         ],
         "properties": {
+          "cache_namespace": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Calibration-map / judge-instrument version folded into the judge cache\nkey; bumping it on recalibration invalidates stale cached scores."
+          },
           "case": {
             "$ref": "#/components/schemas/EvaluationCase"
           },

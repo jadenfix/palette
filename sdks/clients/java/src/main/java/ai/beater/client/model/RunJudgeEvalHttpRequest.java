@@ -27,6 +27,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
+import org.openapitools.jackson.nullable.JsonNullable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.util.NoSuchElementException;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -35,12 +39,16 @@ import ai.beater.client.ApiClient;
  * RunJudgeEvalHttpRequest
  */
 @JsonPropertyOrder({
+  RunJudgeEvalHttpRequest.JSON_PROPERTY_CACHE_NAMESPACE,
   RunJudgeEvalHttpRequest.JSON_PROPERTY_CASE,
   RunJudgeEvalHttpRequest.JSON_PROPERTY_EVALUATOR,
   RunJudgeEvalHttpRequest.JSON_PROPERTY_PROVIDER_SECRET_ID
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class RunJudgeEvalHttpRequest {
+  public static final String JSON_PROPERTY_CACHE_NAMESPACE = "cache_namespace";
+  private JsonNullable<String> cacheNamespace = JsonNullable.<String>undefined();
+
   public static final String JSON_PROPERTY_CASE = "case";
   @javax.annotation.Nonnull
   private EvaluationCase _case;
@@ -55,6 +63,38 @@ public class RunJudgeEvalHttpRequest {
 
   public RunJudgeEvalHttpRequest() { 
   }
+
+  public RunJudgeEvalHttpRequest cacheNamespace(@javax.annotation.Nullable String cacheNamespace) {
+    this.cacheNamespace = JsonNullable.<String>of(cacheNamespace);
+    return this;
+  }
+
+  /**
+   * Calibration-map / judge-instrument version folded into the judge cache key; bumping it on recalibration invalidates stale cached scores.
+   * @return cacheNamespace
+   */
+  @javax.annotation.Nullable
+  @JsonIgnore
+  public String getCacheNamespace() {
+        return cacheNamespace.orElse(null);
+  }
+
+  @JsonProperty(JSON_PROPERTY_CACHE_NAMESPACE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public JsonNullable<String> getCacheNamespace_JsonNullable() {
+    return cacheNamespace;
+  }
+  
+  @JsonProperty(JSON_PROPERTY_CACHE_NAMESPACE)
+  public void setCacheNamespace_JsonNullable(JsonNullable<String> cacheNamespace) {
+    this.cacheNamespace = cacheNamespace;
+  }
+
+  public void setCacheNamespace(@javax.annotation.Nullable String cacheNamespace) {
+    this.cacheNamespace = JsonNullable.<String>of(cacheNamespace);
+  }
+
 
   public RunJudgeEvalHttpRequest _case(@javax.annotation.Nonnull EvaluationCase _case) {
     this._case = _case;
@@ -140,20 +180,33 @@ public class RunJudgeEvalHttpRequest {
       return false;
     }
     RunJudgeEvalHttpRequest runJudgeEvalHttpRequest = (RunJudgeEvalHttpRequest) o;
-    return Objects.equals(this._case, runJudgeEvalHttpRequest._case) &&
+    return equalsNullable(this.cacheNamespace, runJudgeEvalHttpRequest.cacheNamespace) &&
+        Objects.equals(this._case, runJudgeEvalHttpRequest._case) &&
         Objects.equals(this.evaluator, runJudgeEvalHttpRequest.evaluator) &&
         Objects.equals(this.providerSecretId, runJudgeEvalHttpRequest.providerSecretId);
   }
 
+  private static <T> boolean equalsNullable(JsonNullable<T> a, JsonNullable<T> b) {
+    return a == b || (a != null && b != null && a.isPresent() && b.isPresent() && Objects.deepEquals(a.get(), b.get()));
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(_case, evaluator, providerSecretId);
+    return Objects.hash(hashCodeNullable(cacheNamespace), _case, evaluator, providerSecretId);
+  }
+
+  private static <T> int hashCodeNullable(JsonNullable<T> a) {
+    if (a == null) {
+      return 1;
+    }
+    return a.isPresent() ? Arrays.deepHashCode(new Object[]{a.get()}) : 31;
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class RunJudgeEvalHttpRequest {\n");
+    sb.append("    cacheNamespace: ").append(toIndentedString(cacheNamespace)).append("\n");
     sb.append("    _case: ").append(toIndentedString(_case)).append("\n");
     sb.append("    evaluator: ").append(toIndentedString(evaluator)).append("\n");
     sb.append("    providerSecretId: ").append(toIndentedString(providerSecretId)).append("\n");
@@ -203,6 +256,11 @@ public class RunJudgeEvalHttpRequest {
     }
 
     StringJoiner joiner = new StringJoiner("&");
+
+    // add `cache_namespace` to the URL query string
+    if (getCacheNamespace() != null) {
+      joiner.add(String.format("%scache_namespace%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getCacheNamespace()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
 
     // add `case` to the URL query string
     if (getCase() != null) {

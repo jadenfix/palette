@@ -1519,6 +1519,11 @@ export interface components {
             provider_secret_id: components["schemas"]["ProviderSecretId"];
         };
         RunJudgeEvalHttpRequest: {
+            /**
+             * @description Calibration-map / judge-instrument version folded into the judge cache
+             *     key; bumping it on recalibration invalidates stale cached scores.
+             */
+            cache_namespace?: string | null;
             case: components["schemas"]["EvaluationCase"];
             evaluator: components["schemas"]["EvaluatorSpec"];
             provider_secret_id: components["schemas"]["ProviderSecretId"];
