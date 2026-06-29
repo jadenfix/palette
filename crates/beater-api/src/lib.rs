@@ -1450,8 +1450,13 @@ async fn get_trace(
     let tenant_id = TenantId::new(tenant_id)?;
     let trace_id = TraceId::new(trace_id)?;
     let auth = authorize_tenant_route(&state, &headers, &tenant_id, ApiScope::TraceRead).await?;
+    // A trace with no spans is intentionally returned as an empty 200, not a 404.
+    // Ingest is asynchronous and eventually consistent, so clients (e.g. the
+    // live-smoke `wait_for_trace` poller) read this endpoint immediately after
+    // submitting and poll until spans appear. The store cannot distinguish a
+    // genuinely-unknown trace id from one whose spans have not landed yet, so
+    // 404-ing on empty would break that polling contract.
     let trace = load_trace_for_auth_scope(&state, tenant_id, trace_id, &auth).await?;
-    ensure_trace_not_empty(&trace)?;
     ensure_trace_auth_scope(&trace, &auth)?;
     if params.unmask.unwrap_or(false) {
         let trace =

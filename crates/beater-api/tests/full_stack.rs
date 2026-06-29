@@ -141,7 +141,12 @@ fn full_stack_test_app() -> (Router, tempfile::TempDir) {
 }
 
 #[tokio::test]
-async fn get_trace_missing_trace_returns_404() {
+async fn get_trace_not_yet_ingested_returns_empty_200() {
+    // Ingest is asynchronous and eventually consistent. A trace id whose spans
+    // have not yet landed (or is genuinely unknown — the store cannot tell them
+    // apart) must read back as an empty 200, never a 404, so that clients can
+    // poll the read endpoint until spans appear (see `wait_for_trace` in the
+    // live-smoke suite).
     let (app, _tempdir) = full_stack_test_app();
 
     let response = app
@@ -154,19 +159,17 @@ async fn get_trace_missing_trace_returns_404() {
         )
         .await
         .unwrap_or_else(|err| panic!("{err}"));
-    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    assert_eq!(response.status(), StatusCode::OK);
     let body = to_bytes(response.into_body(), 1024 * 1024)
         .await
         .unwrap_or_else(|err| panic!("{err}"));
-    let error: serde_json::Value =
+    let trace: serde_json::Value =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
-    assert_eq!(error["status"], 404);
-    assert!(
-        error["error"]
-            .as_str()
-            .unwrap_or_default()
-            .contains("trace missing-trace not found"),
-        "unexpected error body: {error}"
+    assert_eq!(trace["trace_id"], "missing-trace");
+    assert_eq!(
+        trace["spans"].as_array().map(|spans| spans.len()),
+        Some(0),
+        "unexpected trace body: {trace}"
     );
 }
 
