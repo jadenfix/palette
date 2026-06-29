@@ -117,8 +117,14 @@ pub enum Reversibility {
     },
     /// The action cannot be reversed.
     Irreversible,
-    /// The action has already been reversed by another receipt.
+    /// The action has already been reversed: `reversal_receipt_id` is the id of
+    /// the later receipt that reversed it. Set on the ORIGINAL receipt and
+    /// points *forward* to the receipt that undid it.
     Reversed { reversal_receipt_id: String },
+    /// The action itself reverses an earlier action: `original_receipt_id` is the
+    /// id of the receipt being undone. Set on the REVERSAL receipt and points
+    /// *back* to the original it reverses.
+    Reverses { original_receipt_id: String },
 }
 
 /// Fields supplied by the caller when appending a receipt. The ledger derives
@@ -277,32 +283,65 @@ impl ReceiptLedger {
 
     /// Records the reversal of `original_receipt_id` by appending a NEW receipt.
     ///
-    /// The original receipt stays immutable. The new receipt's `reversibility`
-    /// is set to [`Reversibility::Reversed`] pointing back at the original. The
-    /// reversal's `reversibility` field links it to the original. Returns the id
-    /// of the original alongside the newly appended reversal receipt.
+    /// Linkage is bidirectional and points in the natural direction of each
+    /// field's name:
+    /// * the NEW reversal receipt's `reversibility` becomes
+    ///   [`Reversibility::Reverses`] carrying the original's id (it records which
+    ///   receipt it undoes);
+    /// * the ORIGINAL receipt's `reversibility` becomes
+    ///   [`Reversibility::Reversed`] carrying the new reversal receipt's id (it
+    ///   points forward to the receipt that undid it).
+    ///
+    /// Because the original receipt is updated in place, every receipt from the
+    /// original onward is re-hashed so the SHA-256 chain stays intact
+    /// ([`ReceiptLedger::verify_chain`] still passes). Returns the
+    /// [`ReversalLink`] connecting the two ids.
     pub fn record_reversal(
         &mut self,
         original_receipt_id: &str,
         mut reversal: ReceiptInput,
     ) -> Result<ReversalLink, ChainError> {
-        if !self
+        let original_index = self
             .receipts
             .iter()
-            .any(|r| r.receipt_id == original_receipt_id)
-        {
-            return Err(ChainError::OriginalNotFound(
-                original_receipt_id.to_string(),
-            ));
-        }
-        reversal.reversibility = Reversibility::Reversed {
-            reversal_receipt_id: original_receipt_id.to_string(),
+            .position(|r| r.receipt_id == original_receipt_id)
+            .ok_or_else(|| ChainError::OriginalNotFound(original_receipt_id.to_string()))?;
+
+        // The new receipt reverses the original: it points *back* at it.
+        reversal.reversibility = Reversibility::Reverses {
+            original_receipt_id: original_receipt_id.to_string(),
         };
-        let receipt = self.append(reversal)?;
+        let reversal_receipt_id = self.append(reversal)?.receipt_id.clone();
+
+        // The original has now been reversed: mark it pointing *forward* at the
+        // new reversal receipt, then re-chain from the original onward so the
+        // hash chain stays valid after the in-place edit.
+        self.receipts[original_index].reversibility = Reversibility::Reversed {
+            reversal_receipt_id: reversal_receipt_id.clone(),
+        };
+        self.rechain_from(original_index)?;
+
         Ok(ReversalLink {
             original_receipt_id: original_receipt_id.to_string(),
-            reversal_receipt_id: receipt.receipt_id.clone(),
+            reversal_receipt_id,
         })
+    }
+
+    /// Recomputes `prev_hash` and `hash` for every receipt from `start` to the
+    /// end of the chain, preserving append-only ordering and `seq`. Used after an
+    /// in-place edit to an existing receipt so [`ReceiptLedger::verify_chain`]
+    /// keeps passing.
+    fn rechain_from(&mut self, start: usize) -> Result<(), ChainError> {
+        for index in start..self.receipts.len() {
+            let prev_hash = if index == 0 {
+                genesis_hash()
+            } else {
+                self.receipts[index - 1].hash.clone()
+            };
+            self.receipts[index].prev_hash = prev_hash;
+            self.receipts[index].hash = compute_hash(&self.receipts[index])?;
+        }
+        Ok(())
     }
 
     /// Verifies the full chain: sequencing, `prev_hash` linkage, and per-record
@@ -608,23 +647,79 @@ mod tests {
         assert_eq!(link.original_receipt_id, "pay-1");
         assert_eq!(link.reversal_receipt_id, "refund-1");
 
-        // Original is immutable and still present.
+        // The ORIGINAL is marked Reversed, pointing *forward* at the receipt
+        // that undid it.
         let original = ledger
             .get("pay-1")
             .unwrap_or_else(|| panic!("original gone"));
-        assert_eq!(original.reversibility, Reversibility::Irreversible);
+        assert_eq!(
+            original.reversibility,
+            Reversibility::Reversed {
+                reversal_receipt_id: "refund-1".to_string()
+            }
+        );
 
-        // The reversal records the link via Reversibility::Reversed.
+        // The REVERSAL records which receipt it undoes, pointing *back* at the
+        // original via Reversibility::Reverses.
         let reversal = ledger
             .get("refund-1")
             .unwrap_or_else(|| panic!("reversal gone"));
         assert_eq!(
             reversal.reversibility,
-            Reversibility::Reversed {
-                reversal_receipt_id: "pay-1".to_string()
+            Reversibility::Reverses {
+                original_receipt_id: "pay-1".to_string()
             }
         );
         assert_eq!(reversal.seq, 1);
+        // The in-place edit of the original re-chained the ledger correctly.
+        assert!(ledger.verify_chain().is_ok());
+    }
+
+    #[test]
+    fn reversal_linkage_points_in_correct_direction() {
+        // Three receipts before the reversal so that re-chaining must update
+        // the original *and* every receipt appended after it.
+        let mut ledger = ledger_with_three();
+
+        let link = ledger
+            .record_reversal(
+                "r0",
+                input(
+                    "rev-r0",
+                    agent("agent-a"),
+                    ActionKind::Refund,
+                    Outcome::Succeeded,
+                    RedactionClass::Internal,
+                ),
+            )
+            .unwrap_or_else(|e| panic!("{e}"));
+
+        assert_eq!(link.original_receipt_id, "r0");
+        assert_eq!(link.reversal_receipt_id, "rev-r0");
+
+        // Original points forward to the reversal receipt's id (NOT its own id).
+        let original = ledger.get("r0").unwrap_or_else(|| panic!("original gone"));
+        assert_eq!(
+            original.reversibility,
+            Reversibility::Reversed {
+                reversal_receipt_id: "rev-r0".to_string()
+            },
+            "original must reference the NEW reversal receipt, not itself"
+        );
+
+        // Reversal points back to the original via Reverses.
+        let reversal = ledger
+            .get("rev-r0")
+            .unwrap_or_else(|| panic!("reversal gone"));
+        assert_eq!(
+            reversal.reversibility,
+            Reversibility::Reverses {
+                original_receipt_id: "r0".to_string()
+            }
+        );
+        assert_eq!(reversal.seq, 3);
+
+        // Hash chain remains intact across the in-place edit + re-chain.
         assert!(ledger.verify_chain().is_ok());
     }
 
