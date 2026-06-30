@@ -38,9 +38,11 @@
 //!   so results are deterministic and can be committed to a test oracle.
 //! * **No heavyweight deps** — the normal/Student-t quantiles, incomplete beta,
 //!   exact binomial tail, and normal CDF are hand-rolled (see [`numerics`] and the
-//!   helpers below) so the default build pulls in only `thiserror`. The optional
-//!   `parallel` feature adds `rayon` to fan the bootstrap's independent resamples
-//!   across cores without changing any result.
+//!   helpers below) so the crate needs no numerics/linear-algebra stack: its only
+//!   dependencies are `thiserror` and `rayon`. The default-on `parallel` feature
+//!   uses `rayon` to fan the bootstrap's independent resamples across cores
+//!   without changing any result; `--no-default-features` drops `rayon` and runs
+//!   the bootstrap single-threaded.
 //! * **Efficient by construction** — quantitative kernels avoid wasted work: the
 //!   bootstrap seeds each resample independently (so the work parallelises) and
 //!   quickselects only the two percentile endpoints it needs instead of fully
