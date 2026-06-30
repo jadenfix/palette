@@ -289,4 +289,27 @@ mod tests {
         assert!(close(binomial_lower_tail_half(5, 10), 0.623_046_875, 1e-9));
         assert!(close(binomial_lower_tail_half(10, 10), 1.0, 1e-12));
     }
+
+    /// The incremental log-binomial recurrence must stay accurate at large `n`,
+    /// where it carries `ln C(n,i)` across many iterations. Reference values from
+    /// exact `sum(comb(n,i))/2^n`. The full tail `P(X ≤ n) = 1` also pins that the
+    /// per-term coefficients still sum to one after thousands of steps.
+    #[test]
+    fn binomial_tail_large_n_recurrence_is_accurate() {
+        // P(X ≤ 500 | n = 1000): 0.5·(1 + P(X = 500)).
+        assert!(close(
+            binomial_lower_tail_half(500, 1000),
+            0.512_612_509_089_180_4,
+            1e-9
+        ));
+        // A deep lower tail far below the median.
+        assert!(close(
+            binomial_lower_tail_half(50, 200),
+            4.196_510_437_802_38e-13,
+            1e-15
+        ));
+        // The whole distribution sums to 1 even after n steps of the recurrence.
+        assert!(close(binomial_lower_tail_half(1000, 1000), 1.0, 1e-9));
+        assert!(close(binomial_lower_tail_half(5000, 5000), 1.0, 1e-9));
+    }
 }

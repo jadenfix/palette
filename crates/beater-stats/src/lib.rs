@@ -1009,6 +1009,68 @@ mod tests {
 
     // ── Bootstrap CI ─────────────────────────────────────────────────────────
 
+    /// The quickselect endpoint extraction must agree with a full sort for any
+    /// input, including ties. This brute-forces the reference across several
+    /// configurations: regenerate the exact resample diffs, sort them, and index
+    /// the same percentile positions the implementation uses.
+    #[test]
+    fn bootstrap_quickselect_matches_full_sort() {
+        let a = vec![0.9, 0.8, 0.85, 0.88, 0.92, 0.7];
+        let b = vec![0.6, 0.65, 0.7, 0.62, 0.68, 0.5];
+        for &(confidence, n_resamples, seed) in &[
+            (0.95, 1usize, 3u64),
+            (0.95, 2, 3),
+            (0.95, 3, 9),
+            (0.90, 257, 1),
+            (0.99, 1000, 42),
+        ] {
+            let ci = bootstrap_diff_ci(&a, &b, confidence, n_resamples, seed)
+                .unwrap_or_else(|err| panic!("{err}"));
+
+            // Reference: regenerate the identical diffs and fully sort them.
+            let mut diffs: Vec<f64> = (0..n_resamples)
+                .map(|i| resample_diff(&a, &b, seed, i))
+                .collect();
+            diffs.sort_by(|x, y| x.total_cmp(y));
+            let alpha = 1.0 - confidence;
+            let lo = (((alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
+            let hi =
+                (((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
+
+            assert_eq!(
+                ci.lower, diffs[lo],
+                "lower mismatch @ {confidence}/{n_resamples}"
+            );
+            assert_eq!(
+                ci.upper, diffs[hi],
+                "upper mismatch @ {confidence}/{n_resamples}"
+            );
+            assert!(ci.lower <= ci.upper, "endpoints out of order");
+        }
+    }
+
+    /// Tiny resample counts and tied/degenerate samples must not panic and must
+    /// return ordered, finite endpoints.
+    #[test]
+    fn bootstrap_small_counts_and_ties_are_safe() {
+        // Identical samples → every resampled difference is exactly 0.
+        let tied = vec![0.5, 0.5, 0.5];
+        for n_resamples in [1usize, 2, 3, 7] {
+            let ci = bootstrap_diff_ci(&tied, &tied, 0.95, n_resamples, 11)
+                .unwrap_or_else(|err| panic!("{err}"));
+            assert_eq!(ci.lower, 0.0);
+            assert_eq!(ci.upper, 0.0);
+            assert_eq!(ci.estimate, 0.0);
+            assert_eq!(ci.n_resamples, n_resamples);
+        }
+        // Distinct samples with the smallest possible resample count.
+        let a = vec![1.0, 2.0, 3.0];
+        let b = vec![0.0, 0.5, 1.0];
+        let ci = bootstrap_diff_ci(&a, &b, 0.95, 1, 5).unwrap_or_else(|err| panic!("{err}"));
+        assert!(ci.lower.is_finite() && ci.upper.is_finite());
+        assert!(ci.lower <= ci.upper);
+    }
+
     /// Determinism: same seed → identical CI.
     #[test]
     fn bootstrap_deterministic_with_seed() {
@@ -1032,7 +1094,11 @@ mod tests {
         let ci = bootstrap_diff_ci(&a, &b, 0.95, 2000, 42).unwrap_or_else(|err| panic!("{err}"));
         assert!((ci.lower - 0.17).abs() < 1e-12, "lower = {}", ci.lower);
         assert!((ci.upper - 0.268).abs() < 1e-12, "upper = {}", ci.upper);
-        assert!((ci.estimate - 0.22).abs() < 1e-12, "estimate = {}", ci.estimate);
+        assert!(
+            (ci.estimate - 0.22).abs() < 1e-12,
+            "estimate = {}",
+            ci.estimate
+        );
     }
 
     /// Different seeds → (almost certainly) different CIs.
