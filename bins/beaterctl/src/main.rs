@@ -43,9 +43,9 @@ use beater_ingest::{
     TRACE_WRITE_BATCH_KIND,
 };
 use beater_judge::{
-    GenerationRequest, GenerationResponse, JudgeBrokerRequest, JudgeBrokerService,
-    JudgeLedgerStore, JudgeProviderResult, KeywordJudgeProvider, ProviderCredentials,
-    SqliteJudgeLedger, TextGenerator,
+    AnthropicJudgeProvider, GenerationRequest, GenerationResponse, HttpJudgeProviderConfig,
+    JudgeBrokerRequest, JudgeBrokerService, JudgeLedgerStore, JudgeProviderResult,
+    KeywordJudgeProvider, ProviderCredentials, SqliteJudgeLedger, TextGenerator,
 };
 use beater_otlp::{encode_export_trace_request, export_to_raw_trace_ingest_request};
 use beater_replay::{
@@ -245,6 +245,37 @@ enum Command {
     /// evaluator (executing the agent per case) is the next layer up — this
     /// fixture only proves the proposal → gate loop end-to-end, deterministically.
     RsiRoundFixture {},
+    /// Drive one recursive-self-improvement optimization round end-to-end against
+    /// a REAL Anthropic model — the live counterpart to `rsi-round-fixture`.
+    ///
+    /// This closes the "synthetic generation + synthetic scores" gap: a real
+    /// Anthropic model BOTH proposes the prompt rewrite (via `LlmRewrite` over the
+    /// beater-judge text-generation seam) AND scores every candidate by being
+    /// re-prompted per seeded factual Q/A case under the baseline vs. candidate
+    /// system prompt. Each answer is graded deterministically (case-insensitive
+    /// normalized substring match against the expected answer → 1.0 else 0.0),
+    /// then routed through the SAME held-out **Test** gate + §21.4 anti-overfit
+    /// guardrail the fixture uses.
+    ///
+    /// This performs REAL Anthropic API calls and costs tokens. It needs a BYOK
+    /// `ANTHROPIC_API_KEY` in the environment; if it is unset/empty the command
+    /// returns a clean error (NOT a panic) pointing at `rsi-round-fixture` for a
+    /// no-network demo. The default `--model` (`claude-haiku-4-5-20251001`) is a
+    /// current, cheap Anthropic model and is overridable.
+    RsiRound {
+        /// Anthropic model id used for BOTH the proposer rewrite and per-case
+        /// evaluation. Overridable; defaults to a current, cheap model.
+        #[arg(long, default_value = "claude-haiku-4-5-20251001")]
+        model: String,
+        /// Optimization goal. Defaults to the seeded factual-hallucination
+        /// scenario so the command is a self-contained smoke.
+        #[arg(long, default_value = "reduce hallucinations on factual lookups")]
+        goal: String,
+        /// Baseline system prompt the candidate must beat. Defaults to the same
+        /// minimal prompt the fixture seeds.
+        #[arg(long, default_value = "You are a helpful assistant.")]
+        current_prompt: String,
+    },
     ReviewFixture {
         #[arg(long, default_value = ".beater")]
         data_dir: PathBuf,
@@ -1332,6 +1363,14 @@ async fn main() -> anyhow::Result<()> {
         }
         Command::RsiRoundFixture {} => {
             let output = run_rsi_round_fixture().await?;
+            println!("{}", serde_json::to_string_pretty(&output)?);
+        }
+        Command::RsiRound {
+            model,
+            goal,
+            current_prompt,
+        } => {
+            let output = run_rsi_round_live(model, goal, current_prompt).await?;
             println!("{}", serde_json::to_string_pretty(&output)?);
         }
         Command::ReviewFixture { data_dir } => {
@@ -2949,6 +2988,300 @@ async fn run_rsi_round_fixture() -> anyhow::Result<serde_json::Value> {
         .collect();
 
     Ok(json!({
+        "accepted_candidate": outcome.accepted.map(|candidate| json!({
+            "kind": candidate.kind,
+            "target": candidate.target,
+            "description": candidate.description,
+            "proposed_by": candidate.proposed_by,
+        })),
+        "evaluated": evaluated,
+    }))
+}
+
+/// A seeded factual Q/A case for the live RSI round: a `question`, its
+/// canonical `expected_answer`, and the split it belongs to. The model is
+/// re-prompted with the baseline and candidate system prompts on each question
+/// and graded deterministically against `expected_answer`.
+#[derive(Clone, Debug)]
+struct FactualCase {
+    question: String,
+    expected_answer: String,
+    split: Split,
+}
+
+/// Wraps a [`TextGenerator`] and forces every outgoing [`GenerationRequest`] to
+/// use a fixed model id, regardless of what the caller put in `req.model`.
+///
+/// `LlmRewrite::propose_async` hardcodes its rewrite model (`LLM_REWRITE_MODEL`
+/// = an OpenAI id) in the `GenerationRequest` it builds, so to route the live
+/// proposer through Anthropic with the operator-chosen `--model` we override the
+/// model on the way through. The honest seam (`generate`) is otherwise untouched.
+struct ModelForcingGenerator<G: TextGenerator> {
+    inner: G,
+    model: String,
+}
+
+#[async_trait::async_trait]
+impl<G: TextGenerator> TextGenerator for ModelForcingGenerator<G> {
+    async fn generate(
+        &self,
+        mut req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        req.model = self.model.clone();
+        self.inner.generate(req, credentials).await
+    }
+}
+
+/// Case-insensitive, whitespace-normalized substring grading: `1.0` if the
+/// expected answer appears (normalized) within the model's answer, else `0.0`.
+/// Deliberately simple and deterministic so the score reflects the model's
+/// answer, not a second LLM's opinion of it.
+fn substring_match_score(answer: &str, expected: &str) -> f64 {
+    fn normalize(s: &str) -> String {
+        s.to_lowercase()
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+    let answer_norm = normalize(answer);
+    let expected_norm = normalize(expected);
+    if !expected_norm.is_empty() && answer_norm.contains(&expected_norm) {
+        1.0
+    } else {
+        0.0
+    }
+}
+
+/// A live [`CandidateEvaluator`] that closes the "synthetic scores" gap: for each
+/// seeded factual case it calls the SAME Anthropic model once with the baseline
+/// system prompt + the question and once with the candidate's system prompt
+/// (`candidate.target`) + the question, then grades each answer deterministically
+/// against the expected answer. Calls are sequential (modest concurrency) and use
+/// a small `max_tokens`.
+struct ModelCandidateEvaluator<G: TextGenerator> {
+    generator: G,
+    credentials: ProviderCredentials,
+    model: String,
+    baseline_prompt: String,
+    cases: Vec<FactualCase>,
+}
+
+impl<G: TextGenerator> ModelCandidateEvaluator<G> {
+    /// Ask the model `question` under `system_prompt` and return its raw answer.
+    async fn answer(&self, system_prompt: &str, question: &str) -> Result<String, String> {
+        let req = GenerationRequest::new(self.model.clone(), question)
+            .with_system(system_prompt)
+            .with_temperature(0.0)
+            .with_max_tokens(256);
+        let resp = self
+            .generator
+            .generate(req, self.credentials.clone())
+            .await
+            .map_err(|err| err.to_string())?;
+        Ok(resp.text)
+    }
+}
+
+#[async_trait::async_trait]
+impl<G: TextGenerator> CandidateEvaluator for ModelCandidateEvaluator<G> {
+    async fn evaluate(
+        &self,
+        candidate: &CandidateChange,
+        // The opaque case payloads passed to the round are ignored; the seeded
+        // `FactualCase`s (with expected answers) are the source of truth here.
+        _cases: &[serde_json::Value],
+    ) -> Result<Vec<CaseScore>, String> {
+        // The candidate's rewritten system prompt lives in `target` for the
+        // SystemPrompt change kind produced by LlmRewrite.
+        let candidate_prompt = candidate.target.as_str();
+        let mut scores = Vec::with_capacity(self.cases.len());
+        // Sequential to keep it simple and gentle on rate limits.
+        for case in &self.cases {
+            let baseline_answer = self.answer(&self.baseline_prompt, &case.question).await?;
+            let candidate_answer = self.answer(candidate_prompt, &case.question).await?;
+            scores.push(CaseScore {
+                split: case.split,
+                baseline_score: substring_match_score(&baseline_answer, &case.expected_answer),
+                candidate_score: substring_match_score(&candidate_answer, &case.expected_answer),
+            });
+        }
+        Ok(scores)
+    }
+}
+
+/// Seeded factual Q/A cases for the live RSI round: ~6 Train/Val optimization
+/// cases + ~6 held-out Test cases. The Test set is genuinely held out (different
+/// questions than the optimization split) so acceptance is a real generalization
+/// check, not memorization of the optimization questions.
+fn live_factual_cases() -> Vec<FactualCase> {
+    let optimize = [
+        ("Who wrote the novel '1984'?", "George Orwell"),
+        ("What is the capital of Australia?", "Canberra"),
+        ("How many moons does Mars have?", "Two"),
+        ("What is the chemical symbol for gold?", "Au"),
+        ("In what year did the first human land on the Moon?", "1969"),
+        ("What is the largest planet in our solar system?", "Jupiter"),
+    ];
+    let test = [
+        ("Who painted the Mona Lisa?", "Leonardo da Vinci"),
+        ("What is the capital of Canada?", "Ottawa"),
+        ("What is the tallest mountain on Earth?", "Mount Everest"),
+        ("What is the chemical symbol for sodium?", "Na"),
+        ("How many continents are there on Earth?", "Seven"),
+        (
+            "What is the speed of light in a vacuum (approx, km/s)?",
+            "299792",
+        ),
+    ];
+    let mut cases = Vec::with_capacity(optimize.len() + test.len());
+    for (i, (question, expected)) in optimize.iter().enumerate() {
+        // Alternate Train/Val; both count as the optimization split.
+        let split = if i % 2 == 0 { Split::Train } else { Split::Val };
+        cases.push(FactualCase {
+            question: (*question).to_string(),
+            expected_answer: (*expected).to_string(),
+            split,
+        });
+    }
+    for (question, expected) in test {
+        cases.push(FactualCase {
+            question: question.to_string(),
+            expected_answer: expected.to_string(),
+            split: Split::Test,
+        });
+    }
+    cases
+}
+
+/// Drive one LIVE, Anthropic-backed RSI optimization round end-to-end and build
+/// the same JSON report shape as `run_rsi_round_fixture`, plus the model used.
+///
+/// REAL Anthropic calls: the proposer rewrite and the per-case baseline/candidate
+/// answers all hit `https://api.anthropic.com/v1/messages`. Requires a BYOK key in
+/// `ANTHROPIC_API_KEY`; the no-network proof remains `rsi-round-fixture`.
+async fn run_rsi_round_live(
+    model: String,
+    goal: String,
+    current_prompt: String,
+) -> anyhow::Result<serde_json::Value> {
+    // BYOK gate: a clean error, not a panic, and no network call without a key.
+    let api_key = std::env::var("ANTHROPIC_API_KEY")
+        .ok()
+        .filter(|key| !key.trim().is_empty())
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "rsi-round needs a real Anthropic key: set ANTHROPIC_API_KEY (BYOK). For a \
+                 no-network demo use `beaterctl rsi-round-fixture`."
+            )
+        })?;
+    let credentials = ProviderCredentials::new("anthropic", api_key);
+
+    // Real Anthropic provider, used as both the proposer's TextGenerator and the
+    // evaluator's model. The model-forcing wrapper makes LlmRewrite's hardcoded
+    // proposer model resolve to the operator-chosen `--model`.
+    let provider = AnthropicJudgeProvider::new(HttpJudgeProviderConfig::anthropic_default());
+    let proposer = ModelForcingGenerator {
+        inner: provider.clone(),
+        model: model.clone(),
+    };
+
+    // The seeded failing examples motivating the round (the same factual scenario
+    // the fixture uses), used to build the reflective brief for the proposer.
+    let failures = vec![
+        FailureExample::from_parts(
+            "Who wrote the novel '1984'?",
+            Some("George Orwell".to_string()),
+            "I am not certain, possibly Aldous Huxley.",
+            0.0,
+            None,
+        ),
+        FailureExample::from_parts(
+            "What is the capital of Australia?",
+            Some("Canberra".to_string()),
+            "Sydney.",
+            0.0,
+            None,
+        ),
+        FailureExample::from_parts(
+            "How many moons does Mars have?",
+            Some("Two".to_string()),
+            "I think it has one moon.",
+            0.0,
+            None,
+        ),
+    ];
+
+    let cases = live_factual_cases();
+    let optimize_cases = cases.iter().filter(|c| c.split != Split::Test).count();
+    let test_cases = cases.iter().filter(|c| c.split == Split::Test).count();
+
+    let evaluator = ModelCandidateEvaluator {
+        generator: provider,
+        credentials: credentials.clone(),
+        model: model.clone(),
+        baseline_prompt: current_prompt.clone(),
+        cases,
+    };
+
+    let cfg = OptimizationRoundConfig::new(
+        goal,
+        current_prompt,
+        failures,
+        // Opaque case payloads (the evaluator uses its own seeded FactualCases);
+        // sized to match so the round's bookkeeping lines up with the scores.
+        (0..(optimize_cases + test_cases))
+            .map(|i| json!({ "case": i }))
+            .collect(),
+        OptimizerStrategy::LlmRewrite,
+        GatePolicy {
+            min_sample_size: 6,
+            max_regression: 0.0,
+            alpha: 0.05,
+            comparison_count: 1,
+        },
+    );
+
+    let outcome = run_optimization_round(cfg, &proposer, credentials, &evaluator)
+        .await
+        .context("run live anthropic-backed rsi optimization round")?;
+
+    let evaluated: Vec<serde_json::Value> = outcome
+        .evaluated
+        .iter()
+        .map(|evaluation| {
+            json!({
+                "candidate": {
+                    "kind": evaluation.candidate.kind,
+                    "target": evaluation.candidate.target,
+                    "description": evaluation.candidate.description,
+                    "proposed_by": evaluation.candidate.proposed_by,
+                },
+                "gate_decision": evaluation.gate.decision.name(),
+                "gate": {
+                    "sample_size": evaluation.gate.sample_size,
+                    "baseline_mean": evaluation.gate.baseline_mean,
+                    "candidate_mean": evaluation.gate.candidate_mean,
+                    "delta": evaluation.gate.delta,
+                    "ci_low": evaluation.gate.ci_low,
+                    "ci_high": evaluation.gate.ci_high,
+                    "p_value": evaluation.gate.p_value,
+                },
+                "overfit_flag": evaluation.overfit.overfit,
+                "overfit": {
+                    "optimize_lift": evaluation.overfit.optimize_lift,
+                    "holdout_lift": evaluation.overfit.holdout_lift,
+                    "gap": evaluation.overfit.gap,
+                    "gap_ci_low": evaluation.overfit.gap_ci_low,
+                    "gap_ci_high": evaluation.overfit.gap_ci_high,
+                },
+                "accepted": evaluation.accepted,
+            })
+        })
+        .collect();
+
+    Ok(json!({
+        "model": model,
         "accepted_candidate": outcome.accepted.map(|candidate| json!({
             "kind": candidate.kind,
             "target": candidate.target,
