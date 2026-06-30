@@ -1450,6 +1450,7 @@ dependencies = [
 name = "beater-stats"
 version = "0.1.0"
 dependencies = [
+ "rayon",
  "thiserror 1.0.69",
 ]
 

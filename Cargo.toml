@@ -100,6 +100,7 @@ parquet = "=58.3.0"
 percent-encoding = "2"
 prost = "0.14"
 rand_core = { version = "0.6", features = ["std"] }
+rayon = "1"
 regex = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 rusqlite = { version = "0.32", features = ["bundled"] }

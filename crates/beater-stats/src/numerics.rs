@@ -214,13 +214,19 @@ pub fn normal_quantile(p: f64) -> f64 {
 }
 
 /// Exact Binomial(n, ½) lower tail `P(X ≤ k)`, summed in log-space for stability.
+///
+/// The log binomial coefficient is carried forward by the recurrence
+/// `ln C(n,i) = ln C(n,i−1) + ln(n−i+1) − ln(i)`, so each term costs two cheap
+/// `ln` calls instead of two `ln_gamma` evaluations — an O(k) gamma-free sum that
+/// matters when the discordant-pair count `k` is large.
 pub fn binomial_lower_tail_half(k: u64, n: u64) -> f64 {
     let ln_half_pow_n = n as f64 * 0.5_f64.ln();
-    let ln_n_fact = ln_gamma(n as f64 + 1.0);
-    let mut sum = 0.0;
     let upper = k.min(n);
-    for i in 0..=upper {
-        let ln_choose = ln_n_fact - ln_gamma(i as f64 + 1.0) - ln_gamma((n - i) as f64 + 1.0);
+    // ln C(n,0) = 0, so the i = 0 term is exp(n·ln½).
+    let mut ln_choose = 0.0_f64;
+    let mut sum = ln_half_pow_n.exp();
+    for i in 1..=upper {
+        ln_choose += ((n - i + 1) as f64).ln() - (i as f64).ln();
         sum += (ln_choose + ln_half_pow_n).exp();
     }
     sum.min(1.0)

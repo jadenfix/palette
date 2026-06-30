@@ -38,7 +38,13 @@
 //!   so results are deterministic and can be committed to a test oracle.
 //! * **No heavyweight deps** — the normal/Student-t quantiles, incomplete beta,
 //!   exact binomial tail, and normal CDF are hand-rolled (see [`numerics`] and the
-//!   helpers below) so the crate pulls in only `thiserror`.
+//!   helpers below) so the default build pulls in only `thiserror`. The optional
+//!   `parallel` feature adds `rayon` to fan the bootstrap's independent resamples
+//!   across cores without changing any result.
+//! * **Efficient by construction** — quantitative kernels avoid wasted work: the
+//!   bootstrap seeds each resample independently (so the work parallelises) and
+//!   quickselects only the two percentile endpoints it needs instead of fully
+//!   sorting the resample distribution.
 
 mod mcnemar;
 mod multiplicity;
@@ -359,8 +365,11 @@ pub fn two_proportion_z_test(
 /// # Reproducibility
 ///
 /// A `seed` is required so that a reported CI can be committed to a test oracle
-/// and re-derived from the raw samples.  The internal RNG is a 64-bit xorshift
-/// (period 2⁶⁴−1), which is sufficient for up to `~10_000` resamples.
+/// and re-derived from the raw samples.  Each resample is driven by its own
+/// 64-bit xorshift substream (period 2⁶⁴−1) seeded from `(seed, resample_index)`
+/// via SplitMix64, so the i-th draw is a pure function of its index. The result
+/// is therefore identical whether the resamples are evaluated sequentially or, under
+/// the optional `parallel` feature, across cores.
 ///
 /// # Arguments
 ///
@@ -420,23 +429,51 @@ pub fn bootstrap_diff_ci(
 
     let observed_est = mean(sample_a) - mean(sample_b);
 
-    let mut rng = Xorshift64::new(seed);
-    let mut diffs: Vec<f64> = Vec::with_capacity(n_resamples);
-
-    for _ in 0..n_resamples {
-        let ra = resample_mean(sample_a, &mut rng);
-        let rb = resample_mean(sample_b, &mut rng);
-        diffs.push(ra - rb);
-    }
-
-    diffs.sort_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
+    // Each resample draws from an *independent* RNG substream seeded
+    // deterministically from `(seed, i)`. This makes the i-th resample a pure
+    // function of its index — the result no longer depends on iteration order, so
+    // the loop can be evaluated in any order (sequentially, or in parallel under
+    // the `parallel` feature) and still produce a bit-identical, reproducible CI.
+    // Per-substream seeding via SplitMix64 also avoids the inter-stream
+    // correlation a single split xorshift stream can exhibit in parallel Monte
+    // Carlo. `into_par_iter().map().collect()` preserves index order, so the two
+    // paths are numerically identical.
+    let mut diffs: Vec<f64> = {
+        #[cfg(feature = "parallel")]
+        {
+            use rayon::prelude::*;
+            (0..n_resamples)
+                .into_par_iter()
+                .map(|i| resample_diff(sample_a, sample_b, seed, i))
+                .collect()
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            (0..n_resamples)
+                .map(|i| resample_diff(sample_a, sample_b, seed, i))
+                .collect()
+        }
+    };
 
     let alpha = 1.0 - confidence;
-    let lo_idx = ((alpha / 2.0) * n_resamples as f64).floor() as usize;
-    let hi_idx = ((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize;
+    let lo_idx = (((alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
+    let hi_idx = (((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
 
-    let lower = diffs[lo_idx.min(n_resamples - 1)];
-    let upper = diffs[hi_idx.min(n_resamples - 1)];
+    // Only the two percentile order statistics are needed, so quickselect them in
+    // expected O(n_resamples) instead of fully sorting in O(n_resamples log n).
+    // `select_nth_unstable_by` leaves the chosen index holding the value it would
+    // occupy in a fully sorted slice, with all smaller elements ahead of it — so
+    // selecting `lo_idx` within that left partition yields the lower endpoint
+    // without a second full pass. All values are finite (validated above), so
+    // `total_cmp` is a total order.
+    diffs.select_nth_unstable_by(hi_idx, |x, y| x.total_cmp(y));
+    let upper = diffs[hi_idx];
+    let lower = if lo_idx < hi_idx {
+        diffs[..hi_idx].select_nth_unstable_by(lo_idx, |x, y| x.total_cmp(y));
+        diffs[lo_idx]
+    } else {
+        diffs[lo_idx]
+    };
 
     Ok(BootstrapInterval {
         lower,
@@ -600,6 +637,17 @@ struct Xorshift64 {
     state: u64,
 }
 
+/// SplitMix64 finalizer (Steele et al., 2014) — a fast bijective bit-mixer used
+/// to expand a `(seed, index)` pair into a well-distributed 64-bit substream seed.
+/// Adjacent inputs map to uncorrelated outputs, which is what lets each bootstrap
+/// resample own an independent RNG keyed by its index.
+fn splitmix64(mut z: u64) -> u64 {
+    z = z.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^ (z >> 31)
+}
+
 impl Xorshift64 {
     fn new(seed: u64) -> Self {
         // Avoid the forbidden all-zero state
@@ -610,6 +658,14 @@ impl Xorshift64 {
                 seed
             },
         }
+    }
+
+    /// Seed an independent substream for resample `index` of a bootstrap keyed by
+    /// `seed`. The double SplitMix64 mix decorrelates both the base seed and the
+    /// index so neighbouring resamples do not share low-order structure.
+    fn for_resample(seed: u64, index: usize) -> Self {
+        let mixed = splitmix64(seed) ^ splitmix64((index as u64).wrapping_add(1));
+        Self::new(splitmix64(mixed))
     }
 
     /// Returns the next pseudo-random `u64`.
@@ -668,6 +724,16 @@ fn resample_mean(xs: &[f64], rng: &mut Xorshift64) -> f64 {
         sum += xs[rng.next_index(n)];
     }
     sum / n as f64
+}
+
+/// One bootstrap difference `mean(resample_a) − mean(resample_b)` for resample
+/// `index`, computed from an index-keyed RNG substream so it is a pure,
+/// order-independent function of `(seed, index)`.
+fn resample_diff(sample_a: &[f64], sample_b: &[f64], seed: u64, index: usize) -> f64 {
+    let mut rng = Xorshift64::for_resample(seed, index);
+    let ra = resample_mean(sample_a, &mut rng);
+    let rb = resample_mean(sample_b, &mut rng);
+    ra - rb
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -952,6 +1018,21 @@ mod tests {
         let ci2 = bootstrap_diff_ci(&a, &b, 0.95, 1000, 42).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(ci1.lower, ci2.lower);
         assert_eq!(ci1.upper, ci2.upper);
+    }
+
+    /// Golden output: pins the exact percentile endpoints for a fixed
+    /// `(samples, confidence, n_resamples, seed)`. Because the per-index resample
+    /// seeding makes the bootstrap order-independent, the sequential build and the
+    /// `--features parallel` build must both reproduce these values — CI runs both
+    /// configurations, so any divergence between the two paths fails here.
+    #[test]
+    fn bootstrap_golden_values_are_path_independent() {
+        let a = vec![0.9, 0.8, 0.85, 0.88, 0.92];
+        let b = vec![0.6, 0.65, 0.7, 0.62, 0.68];
+        let ci = bootstrap_diff_ci(&a, &b, 0.95, 2000, 42).unwrap_or_else(|err| panic!("{err}"));
+        assert!((ci.lower - 0.17).abs() < 1e-12, "lower = {}", ci.lower);
+        assert!((ci.upper - 0.268).abs() < 1e-12, "upper = {}", ci.upper);
+        assert!((ci.estimate - 0.22).abs() < 1e-12, "estimate = {}", ci.estimate);
     }
 
     /// Different seeds → (almost certainly) different CIs.
