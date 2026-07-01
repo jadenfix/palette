@@ -97,6 +97,8 @@ use http::{HeaderMap, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::Semaphore;
 use utoipa::{IntoParams, ToSchema};
 
 pub mod openapi;
@@ -109,6 +111,78 @@ const ENVIRONMENT_ID_HEADER: &str = "x-beater-environment-id";
 pub enum AuthMode {
     Disabled,
     Required,
+}
+
+/// Process-wide resource bounds for eval-style work that executes inline in
+/// HTTP handlers (dataset evals, judge evals, experiments, calibrations).
+///
+/// - A shared semaphore caps how many evals run at once. Requests over the cap
+///   QUEUE on the semaphore (acquire awaits) instead of being rejected, so no
+///   new status code enters the API contract.
+/// - A per-request timeout bounds any single eval so a hung judge provider
+///   cannot pin a request forever. Timeouts surface on the existing
+///   internal-error (500) path.
+///
+/// Purely internal: this changes no request/response types, routes, or
+/// documented status codes.
+#[derive(Clone)]
+pub struct EvalLimits {
+    semaphore: Arc<Semaphore>,
+    timeout: Duration,
+}
+
+impl EvalLimits {
+    /// Default for `BEATER_MAX_CONCURRENT_EVALS`.
+    pub const DEFAULT_MAX_CONCURRENT_EVALS: usize = 4;
+    /// Default for `BEATER_EVAL_TIMEOUT_SECS`.
+    pub const DEFAULT_TIMEOUT_SECS: u64 = 300;
+
+    /// Bound eval execution to at most `max_concurrent_evals` in flight (a
+    /// floor of 1 is enforced) with `timeout` per eval.
+    pub fn new(max_concurrent_evals: usize, timeout: Duration) -> Self {
+        Self {
+            semaphore: Arc::new(Semaphore::new(max_concurrent_evals.max(1))),
+            timeout,
+        }
+    }
+
+    /// Build limits from `BEATER_MAX_CONCURRENT_EVALS` and
+    /// `BEATER_EVAL_TIMEOUT_SECS`, falling back to the defaults when a
+    /// variable is missing, unparsable, or zero.
+    pub fn from_env() -> Self {
+        Self::from_values(
+            std::env::var("BEATER_MAX_CONCURRENT_EVALS").ok().as_deref(),
+            std::env::var("BEATER_EVAL_TIMEOUT_SECS").ok().as_deref(),
+        )
+    }
+
+    fn from_values(max_concurrent_evals: Option<&str>, timeout_secs: Option<&str>) -> Self {
+        let max_concurrent_evals = max_concurrent_evals
+            .and_then(|value| value.trim().parse::<usize>().ok())
+            .filter(|permits| *permits > 0)
+            .unwrap_or(Self::DEFAULT_MAX_CONCURRENT_EVALS);
+        let timeout_secs = timeout_secs
+            .and_then(|value| value.trim().parse::<u64>().ok())
+            .filter(|secs| *secs > 0)
+            .unwrap_or(Self::DEFAULT_TIMEOUT_SECS);
+        Self::new(max_concurrent_evals, Duration::from_secs(timeout_secs))
+    }
+
+    fn timeout_error(&self) -> ApiError {
+        ApiError::internal(format!(
+            "eval timed out after {:?}; raise BEATER_EVAL_TIMEOUT_SECS to allow longer evals",
+            self.timeout
+        ))
+    }
+}
+
+impl Default for EvalLimits {
+    fn default() -> Self {
+        Self::new(
+            Self::DEFAULT_MAX_CONCURRENT_EVALS,
+            Duration::from_secs(Self::DEFAULT_TIMEOUT_SECS),
+        )
+    }
 }
 
 #[derive(Clone)]
@@ -151,6 +225,10 @@ pub struct ApiState {
     /// URL of the OAuth protected-resource metadata document, surfaced in the
     /// `WWW-Authenticate` challenge on 401 (RFC 9728 / MCP auth discovery).
     oauth_metadata_url: Option<String>,
+    /// Process-wide concurrency + timeout bounds for inline eval execution
+    /// (dataset evals, judge evals, experiments, calibrations). Shared across
+    /// clones of this state so the limit is per process, not per request.
+    eval_limits: EvalLimits,
 }
 
 impl ApiState {
@@ -187,6 +265,7 @@ impl ApiState {
             prompts: None,
             oauth: None,
             oauth_metadata_url: None,
+            eval_limits: EvalLimits::from_env(),
         }
     }
 
@@ -340,6 +419,13 @@ impl ApiState {
 
     pub fn with_prompts(mut self, prompts: Arc<dyn PromptRegistry>) -> Self {
         self.prompts = Some(prompts);
+        self
+    }
+
+    /// Override the process-wide eval concurrency/timeout bounds (defaults
+    /// come from `BEATER_MAX_CONCURRENT_EVALS` / `BEATER_EVAL_TIMEOUT_SECS`).
+    pub fn with_eval_limits(mut self, eval_limits: EvalLimits) -> Self {
+        self.eval_limits = eval_limits;
         self
     }
 
@@ -3306,24 +3392,25 @@ async fn run_deterministic_dataset_eval(
             version_id,
         )
         .await?;
-    let report = evaluate_dataset_version(
-        &snapshot,
-        DatasetEvalSpec {
-            evaluator: EvaluatorSpec {
-                id: request.evaluator_id,
-                lane: beater_schema::EvaluatorLane::DeterministicWasi,
-                kind: request.kind,
-            },
-            evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
-            agent_release_id: AgentReleaseId::new(request.agent_release_id)?,
-            prompt_version_id: request
-                .prompt_version_id
-                .map(PromptVersionId::new)
-                .transpose()?,
-            code_hash: request.code_hash.map(Sha256Hash::new).transpose()?,
-            wasm_hash: request.wasm_hash.map(Sha256Hash::new).transpose()?,
+    let spec = DatasetEvalSpec {
+        evaluator: EvaluatorSpec {
+            id: request.evaluator_id,
+            lane: beater_schema::EvaluatorLane::DeterministicWasi,
+            kind: request.kind,
         },
-    )?;
+        evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
+        agent_release_id: AgentReleaseId::new(request.agent_release_id)?,
+        prompt_version_id: request
+            .prompt_version_id
+            .map(PromptVersionId::new)
+            .transpose()?,
+        code_hash: request.code_hash.map(Sha256Hash::new).transpose()?,
+        wasm_hash: request.wasm_hash.map(Sha256Hash::new).transpose()?,
+    };
+    let report = run_bounded_blocking_eval(&state, move || {
+        evaluate_dataset_version(&snapshot, spec).map_err(ApiError::from)
+    })
+    .await?;
     let report = datasets.write_eval_report(report).await?;
     Ok(Json(report))
 }
@@ -3373,30 +3460,30 @@ async fn run_judge_dataset_eval(
             version_id,
         )
         .await?;
-    let report = evaluate_dataset_version_with_judge(
-        &snapshot,
-        DatasetJudgeEvalSpec {
-            eval: DatasetEvalSpec {
-                evaluator: EvaluatorSpec {
-                    id: request.evaluator_id,
-                    lane: beater_schema::EvaluatorLane::JudgeBroker,
-                    kind: request.kind,
-                },
-                evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
-                agent_release_id: AgentReleaseId::new(request.agent_release_id)?,
-                prompt_version_id: request
-                    .prompt_version_id
-                    .map(PromptVersionId::new)
-                    .transpose()?,
-                code_hash: request.code_hash.map(Sha256Hash::new).transpose()?,
-                wasm_hash: None,
+    let spec = DatasetJudgeEvalSpec {
+        eval: DatasetEvalSpec {
+            evaluator: EvaluatorSpec {
+                id: request.evaluator_id,
+                lane: beater_schema::EvaluatorLane::JudgeBroker,
+                kind: request.kind,
             },
-            provider_secret_id: request.provider_secret_id,
+            evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
+            agent_release_id: AgentReleaseId::new(request.agent_release_id)?,
+            prompt_version_id: request
+                .prompt_version_id
+                .map(PromptVersionId::new)
+                .transpose()?,
+            code_hash: request.code_hash.map(Sha256Hash::new).transpose()?,
+            wasm_hash: None,
         },
-        judge_broker.as_ref(),
-    )
-    .await
-    .map_err(|err| ApiError::internal(err.to_string()))?;
+        provider_secret_id: request.provider_secret_id,
+    };
+    let report = run_bounded_eval(&state, async {
+        evaluate_dataset_version_with_judge(&snapshot, spec, judge_broker.as_ref())
+            .await
+            .map_err(|err| ApiError::internal(err.to_string()))
+    })
+    .await?;
     let report = datasets.write_eval_report(report).await?;
     record_usage_if_configured(&state, judge_usage_from_dataset_eval_report(&report)).await?;
     Ok(Json(report))
@@ -3475,14 +3562,14 @@ async fn run_calibration_route(
             .await?
             .ok_or_else(|| ApiError::not_found("dataset eval report not found".to_string()))?
     };
-    let report = calibrate_eval_report(
-        &snapshot,
-        &eval_report,
-        CalibrationPolicy {
-            pass_threshold: request.pass_threshold.unwrap_or(0.5),
-        },
-    )
-    .map_err(|err| ApiError::bad_request(err.to_string()))?;
+    let policy = CalibrationPolicy {
+        pass_threshold: request.pass_threshold.unwrap_or(0.5),
+    };
+    let report = run_bounded_blocking_eval(&state, move || {
+        calibrate_eval_report(&snapshot, &eval_report, policy)
+            .map_err(|err| ApiError::bad_request(err.to_string()))
+    })
+    .await?;
     let report = calibrations.write_report(report).await?;
     Ok(Json(report))
 }
@@ -3532,22 +3619,23 @@ async fn run_deterministic_experiment_route(
             version_id,
         )
         .await?;
-    let report = run_deterministic_experiment(
-        &snapshot,
-        ExperimentRunSpec {
-            baseline_release_id: AgentReleaseId::new(request.baseline_release_id)?,
-            candidate_release_id: AgentReleaseId::new(request.candidate_release_id)?,
-            evaluator: EvaluatorSpec {
-                id: request.evaluator_id,
-                lane: beater_schema::EvaluatorLane::DeterministicWasi,
-                kind: request.kind,
-            },
-            evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
-            gate_policy: request.gate_policy.unwrap_or_default(),
-            baseline_outputs: parse_case_outputs(request.baseline_outputs)?,
-            candidate_outputs: parse_case_outputs(request.candidate_outputs)?,
+    let spec = ExperimentRunSpec {
+        baseline_release_id: AgentReleaseId::new(request.baseline_release_id)?,
+        candidate_release_id: AgentReleaseId::new(request.candidate_release_id)?,
+        evaluator: EvaluatorSpec {
+            id: request.evaluator_id,
+            lane: beater_schema::EvaluatorLane::DeterministicWasi,
+            kind: request.kind,
         },
-    )?;
+        evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
+        gate_policy: request.gate_policy.unwrap_or_default(),
+        baseline_outputs: parse_case_outputs(request.baseline_outputs)?,
+        candidate_outputs: parse_case_outputs(request.candidate_outputs)?,
+    };
+    let report = run_bounded_blocking_eval(&state, move || {
+        run_deterministic_experiment(&snapshot, spec).map_err(ApiError::from)
+    })
+    .await?;
     let report = experiments.write_run(report).await?;
     Ok(Json(report))
 }
@@ -3598,28 +3686,28 @@ async fn run_judge_experiment_route(
             version_id,
         )
         .await?;
-    let report = run_judge_experiment(
-        &snapshot,
-        JudgeExperimentRunSpec {
-            experiment: ExperimentRunSpec {
-                baseline_release_id: AgentReleaseId::new(request.baseline_release_id)?,
-                candidate_release_id: AgentReleaseId::new(request.candidate_release_id)?,
-                evaluator: EvaluatorSpec {
-                    id: request.evaluator_id,
-                    lane: beater_schema::EvaluatorLane::JudgeBroker,
-                    kind: request.kind,
-                },
-                evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
-                gate_policy: request.gate_policy.unwrap_or_default(),
-                baseline_outputs: parse_case_outputs(request.baseline_outputs)?,
-                candidate_outputs: parse_case_outputs(request.candidate_outputs)?,
+    let spec = JudgeExperimentRunSpec {
+        experiment: ExperimentRunSpec {
+            baseline_release_id: AgentReleaseId::new(request.baseline_release_id)?,
+            candidate_release_id: AgentReleaseId::new(request.candidate_release_id)?,
+            evaluator: EvaluatorSpec {
+                id: request.evaluator_id,
+                lane: beater_schema::EvaluatorLane::JudgeBroker,
+                kind: request.kind,
             },
-            provider_secret_id: request.provider_secret_id,
+            evaluator_version_id: EvaluatorVersionId::new(request.evaluator_version_id)?,
+            gate_policy: request.gate_policy.unwrap_or_default(),
+            baseline_outputs: parse_case_outputs(request.baseline_outputs)?,
+            candidate_outputs: parse_case_outputs(request.candidate_outputs)?,
         },
-        judge_broker.as_ref(),
-    )
-    .await
-    .map_err(|err| ApiError::internal(err.to_string()))?;
+        provider_secret_id: request.provider_secret_id,
+    };
+    let report = run_bounded_eval(&state, async {
+        run_judge_experiment(&snapshot, spec, judge_broker.as_ref())
+            .await
+            .map_err(|err| ApiError::internal(err.to_string()))
+    })
+    .await?;
     let report = experiments.write_run(report).await?;
     record_usage_if_configured(&state, judge_usage_from_experiment_report(&report)).await?;
     Ok(Json(report))
@@ -4152,6 +4240,55 @@ fn require<T: ?Sized>(value: &Option<Arc<T>>, what: &str) -> Result<Arc<T>, ApiE
     value
         .clone()
         .ok_or_else(|| ApiError::not_implemented(format!("{what} is not configured")))
+}
+
+/// Run one eval-style unit of work under the process-wide [`EvalLimits`]:
+/// queue on the shared semaphore (waiting requests are never rejected, so the
+/// API contract is unchanged) and cut the work off at the configured timeout,
+/// surfacing it on the existing internal-error path.
+async fn run_bounded_eval<T>(
+    state: &ApiState,
+    work: impl std::future::Future<Output = Result<T, ApiError>>,
+) -> Result<T, ApiError> {
+    let limits = &state.eval_limits;
+    let _permit = limits.semaphore.acquire().await.map_err(|err| {
+        ApiError::internal(format!("eval concurrency limiter unavailable: {err}"))
+    })?;
+    match tokio::time::timeout(limits.timeout, work).await {
+        Ok(result) => result,
+        Err(_elapsed) => Err(limits.timeout_error()),
+    }
+}
+
+/// [`run_bounded_eval`] for synchronous CPU-bound eval work: runs `work` on
+/// the blocking pool so it cannot stall the async executor. The permit moves
+/// into the blocking task, so it is released only when the work actually
+/// finishes — a timed-out blocking eval keeps its permit (the CPU is still
+/// busy) even though the request already returned.
+async fn run_bounded_blocking_eval<T, F>(state: &ApiState, work: F) -> Result<T, ApiError>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, ApiError> + Send + 'static,
+{
+    let limits = &state.eval_limits;
+    let permit = limits
+        .semaphore
+        .clone()
+        .acquire_owned()
+        .await
+        .map_err(|err| {
+            ApiError::internal(format!("eval concurrency limiter unavailable: {err}"))
+        })?;
+    let task = tokio::task::spawn_blocking(move || {
+        let _permit = permit;
+        work()
+    });
+    match tokio::time::timeout(limits.timeout, task).await {
+        Ok(joined) => {
+            joined.map_err(|err| ApiError::internal(format!("eval task failed: {err}")))?
+        }
+        Err(_elapsed) => Err(limits.timeout_error()),
+    }
 }
 
 fn dataset_store(state: &ApiState) -> Result<Arc<dyn DatasetStore>, ApiError> {
@@ -5460,6 +5597,42 @@ mod tests {
     use serde_json::json;
     use std::collections::BTreeMap;
     use tower::ServiceExt;
+
+    #[test]
+    fn eval_limits_parse_env_values_with_sane_fallbacks() {
+        let limits = EvalLimits::from_values(Some("2"), Some("7"));
+        assert_eq!(limits.semaphore.available_permits(), 2);
+        assert_eq!(limits.timeout, Duration::from_secs(7));
+
+        // Missing, unparsable, or zero values fall back to the defaults.
+        for (max_concurrent, timeout_secs) in [
+            (None, None),
+            (Some("not-a-number"), Some("later")),
+            (Some("0"), Some("0")),
+        ] {
+            let limits = EvalLimits::from_values(max_concurrent, timeout_secs);
+            assert_eq!(
+                limits.semaphore.available_permits(),
+                EvalLimits::DEFAULT_MAX_CONCURRENT_EVALS
+            );
+            assert_eq!(
+                limits.timeout,
+                Duration::from_secs(EvalLimits::DEFAULT_TIMEOUT_SECS)
+            );
+        }
+
+        // Constructor floors the permit count at 1 so evals can still run.
+        let limits = EvalLimits::new(0, Duration::from_secs(1));
+        assert_eq!(limits.semaphore.available_permits(), 1);
+    }
+
+    #[test]
+    fn eval_limits_timeout_error_names_the_env_knob() {
+        let error = EvalLimits::new(1, Duration::from_secs(3)).timeout_error();
+        assert_eq!(error.status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert!(error.message.contains("eval timed out after 3s"));
+        assert!(error.message.contains("BEATER_EVAL_TIMEOUT_SECS"));
+    }
 
     #[tokio::test]
     async fn oauth_access_token_authorizes_only_for_its_tenant_and_scope() {
