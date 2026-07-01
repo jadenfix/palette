@@ -53,8 +53,12 @@ fly ssh console -C "beaterctl api-key-create \
 # prints { "api_key_id": "...", "secret": "bt_...", ... } ONCE — copy the secret.
 ```
 
-Use that `bt_...` secret as the dashboard's `BEATER_API_TOKEN` (below). After
-that, mint per-project/scope keys through the API/dashboard — no more SSH.
+Use that `bt_...` Admin secret only to mint narrower project-scoped keys. Do not
+use the bootstrap Admin key as a standing Vercel credential: for the dashboard,
+create a key with the minimum scopes the web tier needs (`trace-read`, plus
+`pii-unmask` only if audited unmask controls are enabled; add write scopes only
+for workflows that require them). After that, mint and rotate per-project/scope
+keys through the API/dashboard — no more SSH.
 
 ## One-time frontend setup (Vercel)
 
@@ -70,7 +74,7 @@ browser.
 | Env var | Value |
 | --- | --- |
 | `BEATER_API_BASE_URL` | `https://beater-api.fly.dev` (your Fly HTTPS URL) |
-| `BEATER_API_TOKEN` | the `bt_...` Admin secret from bootstrap (sent as `Authorization: Bearer`) |
+| `BEATER_API_TOKEN` | a scoped dashboard key (sent as `Authorization: Bearer`; do not use the bootstrap Admin key as a standing credential) |
 | `BEATER_GATE2_CONFIRMATION_SALT` | any long random string (`openssl rand -hex 32`) |
 
 `BEATER_API_KEY` is an alternative to `BEATER_API_TOKEN` (sent as
