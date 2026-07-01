@@ -857,6 +857,11 @@ pub use beater_design::EvalDesign;
 /// dependency.
 pub use beater_design::MultiplicityPolicy;
 
+/// The variance-reduction policy (§10.3 #4), re-exported so gate/round callers can
+/// pre-register CUPED (with its covariate name) without a direct `beater-design`
+/// dependency.
+pub use beater_design::VarianceReduction;
+
 /// Build a conservative [`EvalDesign`] for a deploy gate from its [`GatePolicy`]
 /// and the realised sample size. This is the design the experiment/gate path
 /// pre-registers when the caller has not supplied one of its own: a single-metric,
@@ -901,6 +906,7 @@ pub fn conservative_gate_design(policy: &GatePolicy, sample_size: usize) -> Eval
         split: DatasetSplit::Test,
         gate_may_read_split: true,
         analysis_version: CURRENT_ANALYSIS_VERSION,
+        variance_reduction: beater_design::VarianceReduction::None,
     }
 }
 
@@ -924,6 +930,138 @@ pub fn compare_paired_scores_with_design(
     let design_ok = design.validate().is_ok() && design.permit_pass().is_ok();
     if !design_ok && comparison.decision == GateDecision::Pass {
         // Nominal alpha ≠ actual alpha under this design — refuse to certify a Pass.
+        comparison.decision = GateDecision::Inconclusive;
+        comparison.mde = None;
+        comparison.required_n = None;
+    }
+    Ok(comparison)
+}
+
+/// Design-aware deploy gate with optional CUPED variance reduction (§10.3 #4 /
+/// #436 item 4).
+///
+/// When the pre-registered [`EvalDesign`] declares
+/// [`VarianceReduction::Cuped`], a per-case `covariate` is supplied for **every**
+/// Test case, and there are at least 3 paired observations, the paired difference
+/// is CUPED-adjusted (the covariate is regressed out, centered on the design's
+/// **known** population mean μ_x) before the t-test. The one-sample regression
+/// estimator μ̂ = mean(d) − θ(x̄ − μ_x) both **moves** the point estimate off the
+/// raw delta (centering on the sample mean instead would be degenerate — see
+/// [`beater_stats::cuped_paired_t_test`]) and tightens the confidence interval;
+/// together that is what lets a borderline round clear the regression bound on the
+/// same data. The recorded `test` stays [`StatisticalTest::PairedT`] — a paired
+/// t-test on CUPED-adjusted differences is still a paired t-test — and that CUPED
+/// was applied is recorded in the pre-registered [`EvalDesign`] (the source of
+/// truth, part of the hashed commitment), never the wire result, so the `/v1`
+/// contract is unchanged.
+///
+/// In every other case — no CUPED policy, an absent/partial covariate, or `n < 3`
+/// — this is byte-for-byte [`compare_paired_scores_with_design`], so declaring a
+/// covariate can only ever *add* power, never change a decision it wasn't wired
+/// for. The pre-registration manifest is enforced exactly as the plain design
+/// path does: a structurally-invalid or non-permitting design can never certify a
+/// `Pass`.
+///
+/// The covariate MUST be a genuine pre-experiment quantity independent of the
+/// candidate under test (never an arm's own score) — see
+/// [`beater_stats::cuped_adjust`]. That provenance is the caller's responsibility.
+pub fn compare_paired_scores_cuped(
+    baseline: &[f64],
+    candidate: &[f64],
+    covariate: Option<&[f64]>,
+    policy: &GatePolicy,
+    design: &EvalDesign,
+) -> Result<ExperimentComparison, EvalError> {
+    // The known population covariate mean μ_x comes from the pre-registered design;
+    // it is what makes the one-sample regression estimator valid (centering on the
+    // sample mean instead would under-cover — see `beater_stats::cuped_paired_t_test`).
+    let population_covariate_mean = match &design.variance_reduction {
+        VarianceReduction::Cuped {
+            population_mean, ..
+        } => *population_mean,
+        VarianceReduction::None => {
+            return compare_paired_scores_with_design(baseline, candidate, policy, design);
+        }
+    };
+    // A covariate is only usable when it aligns one-to-one with the pairs.
+    let Some(covariate) = covariate.filter(|c| c.len() == baseline.len()) else {
+        return compare_paired_scores_with_design(baseline, candidate, policy, design);
+    };
+    // CUPED spends one degree of freedom on θ, so it needs n ≥ 3; below that (or
+    // below the policy floor) fall back to the unadjusted design path unchanged.
+    if baseline.len() < 3 || baseline.len() < policy.min_sample_size {
+        return compare_paired_scores_with_design(baseline, candidate, policy, design);
+    }
+
+    // Reuse the plain path for all shared validation (lengths, finiteness, alpha,
+    // min-sample, comparison_count) and for the family-adjusted alpha + means.
+    let base = compare_paired_scores(baseline, candidate, policy)?;
+    let adjusted_alpha = base.adjusted_alpha;
+
+    let differences: Vec<f64> = candidate
+        .iter()
+        .zip(baseline.iter())
+        .map(|(c, b)| c - b)
+        .collect();
+    let outcome = beater_stats::cuped_paired_t_test(
+        &differences,
+        covariate,
+        population_covariate_mean,
+        adjusted_alpha,
+    )
+    .map_err(|err| EvalError::Statistics(err.to_string()))?;
+    let ci = outcome.ci.unwrap_or(beater_stats::ConfidenceInterval {
+        low: outcome.estimate,
+        high: outcome.estimate,
+        confidence: 1.0 - adjusted_alpha,
+    });
+
+    // Identical decision rule to `compare_paired_scores`: the CI is tested against
+    // the negated regression bound.
+    let decision = if ci.high < -policy.max_regression {
+        GateDecision::FailRegression
+    } else if ci.low >= -policy.max_regression {
+        GateDecision::Pass
+    } else {
+        GateDecision::Inconclusive
+    };
+    let (mde, required_n) = if decision == GateDecision::Inconclusive {
+        power_annotations(
+            baseline,
+            candidate,
+            baseline.len(),
+            outcome.estimate,
+            adjusted_alpha,
+        )
+    } else {
+        (None, None)
+    };
+
+    let mut comparison = ExperimentComparison {
+        sample_size: base.sample_size,
+        baseline_mean: base.baseline_mean,
+        candidate_mean: base.candidate_mean,
+        // The regression estimate μ̂ = mean(d) − θ(x̄ − μ_x): centered on the
+        // design's known population mean, it moves off the raw delta — that shift
+        // is exactly what makes the variance-reduced CI a valid interval for E[d].
+        delta: outcome.estimate,
+        ci_low: ci.low,
+        ci_high: ci.high,
+        p_value: outcome.p_value,
+        decision,
+        // A paired t-test on CUPED-adjusted differences is still a paired t-test;
+        // that CUPED was applied is recorded in the pre-registered `EvalDesign`
+        // (its `variance_reduction` policy is part of the hashed commitment), not
+        // in the wire result — so the `/v1` contract is unchanged.
+        test: StatisticalTest::PairedT,
+        adjusted_alpha,
+        mde,
+        required_n,
+    };
+
+    // Enforce the pre-registration manifest exactly as the plain design path does.
+    let design_ok = design.validate().is_ok() && design.permit_pass().is_ok();
+    if !design_ok && comparison.decision == GateDecision::Pass {
         comparison.decision = GateDecision::Inconclusive;
         comparison.mde = None;
         comparison.required_n = None;
@@ -1504,6 +1642,139 @@ mod tests {
         let gated = compare_paired_scores_with_design(&baseline, &candidate, &policy, &design)
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(gated.decision, GateDecision::FailRegression);
+    }
+
+    // A fixture where the paired difference is a fixed +0.05 lift buried under
+    // noise that a pre-experiment covariate almost fully explains. `baseline` is
+    // constant, so the covariate is independent of it (a valid difficulty proxy).
+    // Plain gate: the noise widens the CI past 0 → Inconclusive. CUPED regresses
+    // the covariate out → the CI tightens around +0.05 → Pass, same delta.
+    fn cuped_fixture() -> (Vec<f64>, Vec<f64>, Vec<f64>) {
+        let covariate = vec![0.0, 1.0, 0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6, 0.45, 0.55];
+        let baseline = vec![0.5; 12];
+        let candidate = vec![
+            0.405, 0.695, 0.435, 0.665, 0.465, 0.635, 0.495, 0.605, 0.525, 0.575, 0.54, 0.56,
+        ];
+        (baseline, candidate, covariate)
+    }
+
+    fn cuped_design(policy: &GatePolicy, n: usize, population_mean: f64) -> EvalDesign {
+        let mut design = conservative_gate_design(policy, n);
+        design.variance_reduction = VarianceReduction::Cuped {
+            covariate: "prior_difficulty".to_string(),
+            population_mean,
+        };
+        design
+    }
+
+    #[test]
+    fn cuped_resolves_an_inconclusive_gate_via_the_regression_estimator() {
+        let (baseline, candidate, covariate) = cuped_fixture();
+        let policy = GatePolicy::default();
+
+        // Without the covariate the noise leaves the CI straddling the bound.
+        let plain = compare_paired_scores(&baseline, &candidate, &policy)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            plain.decision,
+            GateDecision::Inconclusive,
+            "plain gate should be underpowered against the noise"
+        );
+
+        // The covariate's known population mean (0.7) is above this Test sample's
+        // mean (0.5); since the difference rises with the covariate, the regression
+        // estimator corrects the lift UPWARD, and the variance-reduced CI clears the
+        // bound → Pass.
+        let mu_x = 0.7;
+        let design = cuped_design(&policy, baseline.len(), mu_x);
+        let gated =
+            compare_paired_scores_cuped(&baseline, &candidate, Some(&covariate), &policy, &design)
+                .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            gated.decision,
+            GateDecision::Pass,
+            "CUPED should resolve it"
+        );
+        // Still reported as a paired t-test (CUPED is recorded in the design, not
+        // the wire result, keeping the /v1 contract unchanged).
+        assert_eq!(gated.test, StatisticalTest::PairedT);
+
+        // The reported delta is the regression estimator μ̂ = mean(d) − θ(x̄ − μ_x),
+        // computed independently here — it MOVES off the plain mean (that movement
+        // is exactly what makes the variance-reduced CI valid).
+        let differences: Vec<f64> = candidate
+            .iter()
+            .zip(baseline.iter())
+            .map(|(c, b)| c - b)
+            .collect();
+        let adj = beater_stats::cuped_adjust(&differences, &covariate)
+            .unwrap_or_else(|err| panic!("{err}"));
+        let expected = plain.delta - adj.theta * (adj.covariate_mean - mu_x);
+        assert!(
+            (gated.delta - expected).abs() < 1e-9,
+            "delta must be the regression estimator: {} vs {expected}",
+            gated.delta
+        );
+        assert!(gated.delta > plain.delta, "estimate corrected upward");
+        assert!(
+            gated.ci_high - gated.ci_low < plain.ci_high - plain.ci_low,
+            "CUPED CI must be narrower"
+        );
+    }
+
+    #[test]
+    fn cuped_gate_is_identical_to_plain_when_policy_is_none() {
+        let (baseline, candidate, covariate) = cuped_fixture();
+        let policy = GatePolicy::default();
+        // conservative_gate_design carries VarianceReduction::None.
+        let design = conservative_gate_design(&policy, baseline.len());
+        let plain = compare_paired_scores_with_design(&baseline, &candidate, &policy, &design)
+            .unwrap_or_else(|err| panic!("{err}"));
+        // Even with a covariate on hand, a None policy takes the unadjusted path.
+        let via_cuped =
+            compare_paired_scores_cuped(&baseline, &candidate, Some(&covariate), &policy, &design)
+                .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(plain, via_cuped, "None policy must be byte-identical");
+    }
+
+    #[test]
+    fn cuped_gate_falls_back_when_covariate_absent_or_too_short() {
+        let (baseline, candidate, covariate) = cuped_fixture();
+        let policy = GatePolicy::default();
+        let design = cuped_design(&policy, baseline.len(), 0.5);
+        let plain = compare_paired_scores_with_design(&baseline, &candidate, &policy, &design)
+            .unwrap_or_else(|err| panic!("{err}"));
+        // No covariate supplied → unadjusted path.
+        let none = compare_paired_scores_cuped(&baseline, &candidate, None, &policy, &design)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(none, plain);
+        // Misaligned covariate → unadjusted path (never silently truncates pairs).
+        let short = compare_paired_scores_cuped(
+            &baseline,
+            &candidate,
+            Some(&covariate[..3]),
+            &policy,
+            &design,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(short, plain);
+    }
+
+    #[test]
+    fn cuped_gate_still_refuses_a_pass_under_an_invalid_design() {
+        use beater_design::Monitoring;
+        let (baseline, candidate, covariate) = cuped_fixture();
+        let policy = GatePolicy::default();
+        let mut design = cuped_design(&policy, baseline.len(), 0.7);
+        design.monitoring = Monitoring::Online; // online + fixed-horizon → refusal
+        let gated =
+            compare_paired_scores_cuped(&baseline, &candidate, Some(&covariate), &policy, &design)
+                .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            gated.decision,
+            GateDecision::Inconclusive,
+            "an invalid design cannot certify a Pass even with CUPED"
+        );
     }
 
     #[test]

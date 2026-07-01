@@ -20,6 +20,7 @@
 //! | [`required_sample_size`] / [`minimum_detectable_effect`] / [`achieved_power`] | §10.3 #5 | power / MDE / minimum-sample planning |
 //! | [`holm_bonferroni`] / [`benjamini_hochberg`] | §10.3 #4 | multiple-comparison corrections |
 //! | [`cuped_adjust`] | §10.3 #4 | CUPED variance reduction via a pre-experiment covariate |
+//! | [`cuped_paired_t_test`] | §10.3 #4 | Paired t-test on CUPED-adjusted differences (df n−2) |
 //! | [`hoeffding_race`] | §10.3 / #436 | best-arm identification: eliminate confidently-dominated candidates |
 //! | [`SequentialMeanTest`] / [`evalue_one_sided_mean`] | §10.3 #6 / #436 | always-valid sequential inference (e-values); peek-and-stop |
 //!
@@ -71,7 +72,7 @@ pub use bca::{bootstrap_bca_ci, paired_bootstrap_test, PairedBootstrapOutcome};
 pub use clustered::{
     clustered_bootstrap_ci, clustered_standard_error, iid_standard_error, ClusteredStandardError,
 };
-pub use cuped::{cuped_adjust, CupedOutcome};
+pub use cuped::{cuped_adjust, cuped_paired_t_test, CupedOutcome};
 pub use mcnemar::mcnemar_exact_p;
 pub use multiplicity::{benjamini_hochberg, holm_bonferroni, MultiplicityDecision};
 pub use overfit::{

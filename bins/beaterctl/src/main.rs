@@ -2914,6 +2914,7 @@ impl CandidateEvaluator for FixtureCandidateEvaluator {
                 split,
                 baseline_score: self.baseline_score,
                 candidate_score: self.candidate_score,
+                covariate: None,
             });
         }
         for _ in 0..self.test_cases {
@@ -2921,6 +2922,7 @@ impl CandidateEvaluator for FixtureCandidateEvaluator {
                 split: Split::Test,
                 baseline_score: self.baseline_score,
                 candidate_score: self.candidate_score,
+                covariate: None,
             });
         }
         Ok(scores)
@@ -3201,6 +3203,7 @@ impl<G: TextGenerator> CandidateEvaluator for ModelCandidateEvaluator<G> {
                 split: case.split,
                 baseline_score: token_match_score(&baseline_answer, &case.expected_answer),
                 candidate_score: token_match_score(&candidate_answer, &case.expected_answer),
+                covariate: None,
             });
         }
         Ok(scores)
