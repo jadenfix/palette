@@ -1,3 +1,5 @@
+pub mod rsi;
+
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 use beater_core::{
