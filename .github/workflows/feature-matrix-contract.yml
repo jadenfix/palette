@@ -1,0 +1,29 @@
+name: feature-matrix-contract
+
+# Supersede an in-flight run when a PR branch is pushed again, so the shared CI
+# runner pool is not starved by stacked redundant runs. main pushes are never
+# cancelled (their CI history must stay complete).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/feature-matrix-contract.yml"
+      - "docs/feature-matrix.md"
+      - "scripts/check-feature-matrix-contract.py"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  feature-matrix-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify feature matrix open-core boundary
+        run: python3 scripts/check-feature-matrix-contract.py
