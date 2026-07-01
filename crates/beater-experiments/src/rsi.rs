@@ -236,8 +236,8 @@ mod tests {
 
     fn snapshot(n: usize) -> DatasetVersionSnapshot {
         let cases: Vec<_> = (0..n).map(|i| case(i, "ok")).collect();
-        let corpus_root = beater_datasets::corpus_root_for_cases(&cases)
-            .unwrap_or_else(|err| panic!("{err}"));
+        let corpus_root =
+            beater_datasets::corpus_root_for_cases(&cases).unwrap_or_else(|err| panic!("{err}"));
         DatasetVersionSnapshot {
             tenant_id: TenantId::new("t").unwrap_or_else(|err| panic!("{err}")),
             project_id: ProjectId::new("p").unwrap_or_else(|err| panic!("{err}")),
