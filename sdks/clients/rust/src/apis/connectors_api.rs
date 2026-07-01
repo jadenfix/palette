@@ -235,9 +235,10 @@ pub async fn connect_connector(configuration: &configuration::Configuration, par
 
 pub async fn connector_status(configuration: &configuration::Configuration, params: ConnectorStatusParams) -> Result<models::ConnectionStatus, Error<ConnectorStatusError>> {
 
-    let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/status", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), toolkit=crate::apis::urlencode(params.toolkit));
+    let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/status", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
+    req_builder = req_builder.query(&[("toolkit", &params.toolkit.to_string())]);
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -271,9 +272,10 @@ pub async fn connector_status(configuration: &configuration::Configuration, para
 
 pub async fn get_connector_skills(configuration: &configuration::Configuration, params: GetConnectorSkillsParams) -> Result<models::ConnectorSkillsResponse, Error<GetConnectorSkillsError>> {
 
-    let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/skills", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), toolkit=crate::apis::urlencode(params.toolkit));
+    let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/skills", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
+    req_builder = req_builder.query(&[("toolkit", &params.toolkit.to_string())]);
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -344,9 +346,13 @@ pub async fn invoke_connector_tool(configuration: &configuration::Configuration,
 
 pub async fn list_connector_tools(configuration: &configuration::Configuration, params: ListConnectorToolsParams) -> Result<Vec<models::ConnectorTool>, Error<ListConnectorToolsError>> {
 
-    let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/tools", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), toolkit=crate::apis::urlencode(params.toolkit), limit=params.limit.unwrap());
+    let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/tools", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
+    req_builder = req_builder.query(&[("toolkit", &params.toolkit.to_string())]);
+    if let Some(ref param_value) = params.limit {
+        req_builder = req_builder.query(&[("limit", &param_value.to_string())]);
+    }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -380,9 +386,12 @@ pub async fn list_connector_tools(configuration: &configuration::Configuration, 
 
 pub async fn list_connectors(configuration: &configuration::Configuration, params: ListConnectorsParams) -> Result<Vec<models::Toolkit>, Error<ListConnectorsError>> {
 
-    let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), limit=params.limit.unwrap());
+    let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
+    if let Some(ref param_value) = params.limit {
+        req_builder = req_builder.query(&[("limit", &param_value.to_string())]);
+    }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }

@@ -149,7 +149,7 @@ public:
     /// <param name="tenantId">tenant_id</param>
     /// <param name="projectId">project_id</param>
     /// <param name="toolkit">Toolkit slug to list tools for.</param>
-    /// <param name="limit">Maximum number of tools to return (page size).</param>
+    /// <param name="limit">Maximum number of tools to return (page size). (optional, default to 0)</param>
     /// <param name="authorization">Bearer API token for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
@@ -158,7 +158,7 @@ public:
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t toolkit,
-        int32_t limit,
+        boost::optional<int32_t> limit,
         boost::optional<utility::string_t> authorization,
         boost::optional<utility::string_t> xBeaterApiKey,
         boost::optional<utility::string_t> xBeaterProjectId,
@@ -172,7 +172,7 @@ public:
     /// </remarks>
     /// <param name="tenantId">tenant_id</param>
     /// <param name="projectId">project_id</param>
-    /// <param name="limit">Maximum number of apps to return (page size).</param>
+    /// <param name="limit">Maximum number of apps to return (page size). (optional, default to 0)</param>
     /// <param name="authorization">Bearer API token for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
@@ -180,7 +180,7 @@ public:
     pplx::task<std::vector<std::shared_ptr<Toolkit>>> listConnectors(
         utility::string_t tenantId,
         utility::string_t projectId,
-        int32_t limit,
+        boost::optional<int32_t> limit,
         boost::optional<utility::string_t> authorization,
         boost::optional<utility::string_t> xBeaterApiKey,
         boost::optional<utility::string_t> xBeaterProjectId,

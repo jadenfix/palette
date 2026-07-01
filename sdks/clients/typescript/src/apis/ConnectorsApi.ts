@@ -90,7 +90,7 @@ export interface ListConnectorToolsRequest {
     tenantId: string;
     projectId: string;
     toolkit: string;
-    limit: number | null;
+    limit?: number;
     authorization?: string | null;
     xBeaterApiKey?: string | null;
     xBeaterProjectId?: string | null;
@@ -100,7 +100,7 @@ export interface ListConnectorToolsRequest {
 export interface ListConnectorsRequest {
     tenantId: string;
     projectId: string;
-    limit: number | null;
+    limit?: number;
     authorization?: string | null;
     xBeaterApiKey?: string | null;
     xBeaterProjectId?: string | null;
@@ -202,6 +202,10 @@ export class ConnectorsApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
+        if (requestParameters['toolkit'] != null) {
+            queryParameters['toolkit'] = requestParameters['toolkit'];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         if (requestParameters['authorization'] != null) {
@@ -221,7 +225,7 @@ export class ConnectorsApi extends runtime.BaseAPI {
         }
 
         const response = await this.request({
-            path: `/v1/connectors/{tenant_id}/{project_id}/status`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))).replace(`{${"toolkit"}}`, encodeURIComponent(String(requestParameters['toolkit']))),
+            path: `/v1/connectors/{tenant_id}/{project_id}/status`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -263,6 +267,10 @@ export class ConnectorsApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
+        if (requestParameters['toolkit'] != null) {
+            queryParameters['toolkit'] = requestParameters['toolkit'];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         if (requestParameters['authorization'] != null) {
@@ -282,7 +290,7 @@ export class ConnectorsApi extends runtime.BaseAPI {
         }
 
         const response = await this.request({
-            path: `/v1/connectors/{tenant_id}/{project_id}/skills`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))).replace(`{${"toolkit"}}`, encodeURIComponent(String(requestParameters['toolkit']))),
+            path: `/v1/connectors/{tenant_id}/{project_id}/skills`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -386,14 +394,15 @@ export class ConnectorsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['limit'] == null) {
-            throw new runtime.RequiredError(
-                'limit',
-                'Required parameter "limit" was null or undefined when calling listConnectorTools().'
-            );
+        const queryParameters: any = {};
+
+        if (requestParameters['toolkit'] != null) {
+            queryParameters['toolkit'] = requestParameters['toolkit'];
         }
 
-        const queryParameters: any = {};
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -414,7 +423,7 @@ export class ConnectorsApi extends runtime.BaseAPI {
         }
 
         const response = await this.request({
-            path: `/v1/connectors/{tenant_id}/{project_id}/tools`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))).replace(`{${"toolkit"}}`, encodeURIComponent(String(requestParameters['toolkit']))).replace(`{${"limit"}}`, encodeURIComponent(String(requestParameters['limit']))),
+            path: `/v1/connectors/{tenant_id}/{project_id}/tools`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -447,14 +456,11 @@ export class ConnectorsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['limit'] == null) {
-            throw new runtime.RequiredError(
-                'limit',
-                'Required parameter "limit" was null or undefined when calling listConnectors().'
-            );
-        }
-
         const queryParameters: any = {};
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -475,7 +481,7 @@ export class ConnectorsApi extends runtime.BaseAPI {
         }
 
         const response = await this.request({
-            path: `/v1/connectors/{tenant_id}/{project_id}`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))).replace(`{${"limit"}}`, encodeURIComponent(String(requestParameters['limit']))),
+            path: `/v1/connectors/{tenant_id}/{project_id}`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

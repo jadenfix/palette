@@ -435,7 +435,7 @@ end:
 prompt_version_diff_t*
 PromptsAPI_diffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *project_id, char *prompt_id, char *from, char *to, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
-    list_t    *localVarQueryParameters = NULL;
+    list_t    *localVarQueryParameters = list_createList();
     list_t    *localVarHeaderParameters = list_createList();
     list_t    *localVarFormParameters = NULL;
     list_t *localVarHeaderType = list_createList();
@@ -455,14 +455,10 @@ PromptsAPI_diffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *pro
         goto end;
     if(!prompt_id)
         goto end;
-    if(!from)
-        goto end;
-    if(!to)
-        goto end;
 
 
     // Path Params
-    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(prompt_id)+3 + strlen(from)+3 + strlen(to)+3 + sizeof("{ tenant_id }") - 1;
+    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(prompt_id)+3 + sizeof("{ tenant_id }") - 1;
     if(tenant_id == NULL) {
         goto end;
     }
@@ -472,7 +468,7 @@ PromptsAPI_diffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *pro
     localVarPath = strReplace(localVarPath, localVarToReplace_tenant_id, tenant_id);
 
     // Path Params
-    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(prompt_id)+3 + strlen(from)+3 + strlen(to)+3 + sizeof("{ project_id }") - 1;
+    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(prompt_id)+3 + sizeof("{ project_id }") - 1;
     if(project_id == NULL) {
         goto end;
     }
@@ -482,7 +478,7 @@ PromptsAPI_diffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *pro
     localVarPath = strReplace(localVarPath, localVarToReplace_project_id, project_id);
 
     // Path Params
-    long sizeOfPathParams_prompt_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(prompt_id)+3 + strlen(from)+3 + strlen(to)+3 + sizeof("{ prompt_id }") - 1;
+    long sizeOfPathParams_prompt_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(prompt_id)+3 + sizeof("{ prompt_id }") - 1;
     if(prompt_id == NULL) {
         goto end;
     }
@@ -490,26 +486,6 @@ PromptsAPI_diffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *pro
     sprintf(localVarToReplace_prompt_id, "{%s}", "prompt_id");
 
     localVarPath = strReplace(localVarPath, localVarToReplace_prompt_id, prompt_id);
-
-    // Path Params
-    long sizeOfPathParams_from = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(prompt_id)+3 + strlen(from)+3 + strlen(to)+3 + sizeof("{ from }") - 1;
-    if(from == NULL) {
-        goto end;
-    }
-    char* localVarToReplace_from = malloc(sizeOfPathParams_from);
-    sprintf(localVarToReplace_from, "{%s}", "from");
-
-    localVarPath = strReplace(localVarPath, localVarToReplace_from, from);
-
-    // Path Params
-    long sizeOfPathParams_to = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(prompt_id)+3 + strlen(from)+3 + strlen(to)+3 + sizeof("{ to }") - 1;
-    if(to == NULL) {
-        goto end;
-    }
-    char* localVarToReplace_to = malloc(sizeOfPathParams_to);
-    sprintf(localVarToReplace_to, "{%s}", "to");
-
-    localVarPath = strReplace(localVarPath, localVarToReplace_to, to);
 
 
 
@@ -560,6 +536,30 @@ PromptsAPI_diffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *pro
         list_addElement(localVarHeaderParameters,keyPairHeader_x_beater_environment_id);
     }
 
+
+    // query parameters
+    char *keyQuery_from = NULL;
+    char * valueQuery_from = NULL;
+    keyValuePair_t *keyPairQuery_from = 0;
+    if (from)
+    {
+        keyQuery_from = strdup("from");
+        valueQuery_from = strdup((from));
+        keyPairQuery_from = keyValuePair_create(keyQuery_from, valueQuery_from);
+        list_addElement(localVarQueryParameters,keyPairQuery_from);
+    }
+
+    // query parameters
+    char *keyQuery_to = NULL;
+    char * valueQuery_to = NULL;
+    keyValuePair_t *keyPairQuery_to = 0;
+    if (to)
+    {
+        keyQuery_to = strdup("to");
+        valueQuery_to = strdup((to));
+        keyPairQuery_to = keyValuePair_create(keyQuery_to, valueQuery_to);
+        list_addElement(localVarQueryParameters,keyPairQuery_to);
+    }
     list_addElement(localVarHeaderType,"application/json"); //produces
     apiClient_invoke(apiClient,
                     localVarPath,
@@ -609,7 +609,7 @@ PromptsAPI_diffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *pro
         apiClient->dataReceived = NULL;
         apiClient->dataReceivedLen = 0;
     }
-    
+    list_freeList(localVarQueryParameters);
     list_freeList(localVarHeaderParameters);
     
     list_freeList(localVarHeaderType);
@@ -618,8 +618,6 @@ PromptsAPI_diffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *pro
     free(localVarToReplace_tenant_id);
     free(localVarToReplace_project_id);
     free(localVarToReplace_prompt_id);
-    free(localVarToReplace_from);
-    free(localVarToReplace_to);
     if (keyHeader_authorization) {
         free(keyHeader_authorization);
         keyHeader_authorization = NULL;
@@ -656,6 +654,30 @@ PromptsAPI_diffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *pro
         valueHeader_x_beater_environment_id = NULL;
     }
     free(keyPairHeader_x_beater_environment_id);
+    if(keyQuery_from){
+        free(keyQuery_from);
+        keyQuery_from = NULL;
+    }
+    if(valueQuery_from){
+        free(valueQuery_from);
+        valueQuery_from = NULL;
+    }
+    if(keyPairQuery_from){
+        keyValuePair_free(keyPairQuery_from);
+        keyPairQuery_from = NULL;
+    }
+    if(keyQuery_to){
+        free(keyQuery_to);
+        keyQuery_to = NULL;
+    }
+    if(valueQuery_to){
+        free(valueQuery_to);
+        valueQuery_to = NULL;
+    }
+    if(keyPairQuery_to){
+        keyValuePair_free(keyPairQuery_to);
+        keyPairQuery_to = NULL;
+    }
     return elementToReturn;
 end:
     free(localVarPath);

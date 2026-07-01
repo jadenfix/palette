@@ -444,11 +444,26 @@ public class PromptsApi {
     String localVarPath = "/v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff"
         .replace("{tenant_id}", ApiClient.urlEncode(tenantId.toString()))
         .replace("{project_id}", ApiClient.urlEncode(projectId.toString()))
-        .replace("{prompt_id}", ApiClient.urlEncode(promptId.toString()))
-        .replace("{from}", ApiClient.urlEncode(from.toString()))
-        .replace("{to}", ApiClient.urlEncode(to.toString()));
+        .replace("{prompt_id}", ApiClient.urlEncode(promptId.toString()));
 
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    List<Pair> localVarQueryParams = new ArrayList<>();
+    StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
+    String localVarQueryParameterBaseName;
+    localVarQueryParameterBaseName = "from";
+    localVarQueryParams.addAll(ApiClient.parameterToPairs("from", from));
+    localVarQueryParameterBaseName = "to";
+    localVarQueryParams.addAll(ApiClient.parameterToPairs("to", to));
+
+    if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
+      StringJoiner queryJoiner = new StringJoiner("&");
+      localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
+      if (localVarQueryStringJoiner.length() != 0) {
+        queryJoiner.add(localVarQueryStringJoiner.toString());
+      }
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
+    } else {
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    }
 
     if (authorization != null) {
       localVarRequestBuilder.header("authorization", authorization.toString());

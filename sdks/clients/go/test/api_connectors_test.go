@@ -43,9 +43,8 @@ func Test_beaterclient_ConnectorsAPIService(t *testing.T) {
 
 		var tenantId string
 		var projectId string
-		var toolkit string
 
-		resp, httpRes, err := apiClient.ConnectorsAPI.ConnectorStatus(context.Background(), tenantId, projectId, toolkit).Execute()
+		resp, httpRes, err := apiClient.ConnectorsAPI.ConnectorStatus(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -59,9 +58,8 @@ func Test_beaterclient_ConnectorsAPIService(t *testing.T) {
 
 		var tenantId string
 		var projectId string
-		var toolkit string
 
-		resp, httpRes, err := apiClient.ConnectorsAPI.GetConnectorSkills(context.Background(), tenantId, projectId, toolkit).Execute()
+		resp, httpRes, err := apiClient.ConnectorsAPI.GetConnectorSkills(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -90,10 +88,8 @@ func Test_beaterclient_ConnectorsAPIService(t *testing.T) {
 
 		var tenantId string
 		var projectId string
-		var toolkit string
-		var limit int32
 
-		resp, httpRes, err := apiClient.ConnectorsAPI.ListConnectorTools(context.Background(), tenantId, projectId, toolkit, limit).Execute()
+		resp, httpRes, err := apiClient.ConnectorsAPI.ListConnectorTools(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -107,9 +103,8 @@ func Test_beaterclient_ConnectorsAPIService(t *testing.T) {
 
 		var tenantId string
 		var projectId string
-		var limit int32
 
-		resp, httpRes, err := apiClient.ConnectorsAPI.ListConnectors(context.Background(), tenantId, projectId, limit).Execute()
+		resp, httpRes, err := apiClient.ConnectorsAPI.ListConnectors(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

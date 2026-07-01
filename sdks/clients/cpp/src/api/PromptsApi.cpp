@@ -371,8 +371,6 @@ pplx::task<std::shared_ptr<PromptVersionDiff>> PromptsApi::diffPromptVersions(ut
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("tenant_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(tenantId)));
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("project_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(projectId)));
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("prompt_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(promptId)));
-    boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("from") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(from)));
-    boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("to") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(to)));
 
     std::map<utility::string_t, utility::string_t> localVarQueryParams;
     std::map<utility::string_t, utility::string_t> localVarHeaderParams( localVarApiConfiguration->getDefaultHeaders() );
@@ -408,6 +406,12 @@ pplx::task<std::shared_ptr<PromptVersionDiff>> PromptsApi::diffPromptVersions(ut
 
     std::unordered_set<utility::string_t> localVarConsumeHttpContentTypes;
 
+    {
+        localVarQueryParams[utility::conversions::to_string_t("from")] = ApiClient::parameterToString(from);
+    }
+    {
+        localVarQueryParams[utility::conversions::to_string_t("to")] = ApiClient::parameterToString(to);
+    }
     if (authorization)
     {
         localVarHeaderParams[utility::conversions::to_string_t("authorization")] = ApiClient::parameterToString(*authorization);

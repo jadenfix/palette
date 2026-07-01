@@ -288,6 +288,14 @@ export class PromptsApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
+        if (requestParameters['from'] != null) {
+            queryParameters['from'] = requestParameters['from'];
+        }
+
+        if (requestParameters['to'] != null) {
+            queryParameters['to'] = requestParameters['to'];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         if (requestParameters['authorization'] != null) {
@@ -307,7 +315,7 @@ export class PromptsApi extends runtime.BaseAPI {
         }
 
         const response = await this.request({
-            path: `/v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))).replace(`{${"prompt_id"}}`, encodeURIComponent(String(requestParameters['promptId']))).replace(`{${"from"}}`, encodeURIComponent(String(requestParameters['from']))).replace(`{${"to"}}`, encodeURIComponent(String(requestParameters['to']))),
+            path: `/v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff`.replace(`{${"tenant_id"}}`, encodeURIComponent(String(requestParameters['tenantId']))).replace(`{${"project_id"}}`, encodeURIComponent(String(requestParameters['projectId']))).replace(`{${"prompt_id"}}`, encodeURIComponent(String(requestParameters['promptId']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

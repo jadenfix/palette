@@ -227,11 +227,17 @@ type ApiConnectorStatusRequest struct {
 	ApiService *ConnectorsAPIService
 	tenantId string
 	projectId string
-	toolkit string
+	toolkit *string
 	authorization *string
 	xBeaterApiKey *string
 	xBeaterProjectId *string
 	xBeaterEnvironmentId *string
+}
+
+// Toolkit slug to scope the request to.
+func (r ApiConnectorStatusRequest) Toolkit(toolkit string) ApiConnectorStatusRequest {
+	r.toolkit = &toolkit
+	return r
 }
 
 // Bearer API token for strict auth
@@ -268,16 +274,14 @@ ConnectorStatus Method for ConnectorStatus
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @param toolkit Toolkit slug to scope the request to.
  @return ApiConnectorStatusRequest
 */
-func (a *ConnectorsAPIService) ConnectorStatus(ctx context.Context, tenantId string, projectId string, toolkit string) ApiConnectorStatusRequest {
+func (a *ConnectorsAPIService) ConnectorStatus(ctx context.Context, tenantId string, projectId string) ApiConnectorStatusRequest {
 	return ApiConnectorStatusRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
 		projectId: projectId,
-		toolkit: toolkit,
 	}
 }
 
@@ -299,12 +303,15 @@ func (a *ConnectorsAPIService) ConnectorStatusExecute(r ApiConnectorStatusReques
 	localVarPath := localBasePath + "/v1/connectors/{tenant_id}/{project_id}/status"
 	localVarPath = strings.Replace(localVarPath, "{"+"tenant_id"+"}", url.PathEscape(parameterValueToString(r.tenantId, "tenantId")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"project_id"+"}", url.PathEscape(parameterValueToString(r.projectId, "projectId")), -1)
-	localVarPath = strings.Replace(localVarPath, "{"+"toolkit"+"}", url.PathEscape(parameterValueToString(r.toolkit, "toolkit")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
+	if r.toolkit == nil {
+		return localVarReturnValue, nil, reportError("toolkit is required and must be specified")
+	}
 
+	parameterAddToHeaderOrQuery(localVarQueryParams, "toolkit", r.toolkit, "form", "")
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 
@@ -419,11 +426,17 @@ type ApiGetConnectorSkillsRequest struct {
 	ApiService *ConnectorsAPIService
 	tenantId string
 	projectId string
-	toolkit string
+	toolkit *string
 	authorization *string
 	xBeaterApiKey *string
 	xBeaterProjectId *string
 	xBeaterEnvironmentId *string
+}
+
+// Toolkit slug to scope the request to.
+func (r ApiGetConnectorSkillsRequest) Toolkit(toolkit string) ApiGetConnectorSkillsRequest {
+	r.toolkit = &toolkit
+	return r
 }
 
 // Bearer API token for strict auth
@@ -460,16 +473,14 @@ GetConnectorSkills Method for GetConnectorSkills
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @param toolkit Toolkit slug to scope the request to.
  @return ApiGetConnectorSkillsRequest
 */
-func (a *ConnectorsAPIService) GetConnectorSkills(ctx context.Context, tenantId string, projectId string, toolkit string) ApiGetConnectorSkillsRequest {
+func (a *ConnectorsAPIService) GetConnectorSkills(ctx context.Context, tenantId string, projectId string) ApiGetConnectorSkillsRequest {
 	return ApiGetConnectorSkillsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
 		projectId: projectId,
-		toolkit: toolkit,
 	}
 }
 
@@ -491,12 +502,15 @@ func (a *ConnectorsAPIService) GetConnectorSkillsExecute(r ApiGetConnectorSkills
 	localVarPath := localBasePath + "/v1/connectors/{tenant_id}/{project_id}/skills"
 	localVarPath = strings.Replace(localVarPath, "{"+"tenant_id"+"}", url.PathEscape(parameterValueToString(r.tenantId, "tenantId")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"project_id"+"}", url.PathEscape(parameterValueToString(r.projectId, "projectId")), -1)
-	localVarPath = strings.Replace(localVarPath, "{"+"toolkit"+"}", url.PathEscape(parameterValueToString(r.toolkit, "toolkit")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
+	if r.toolkit == nil {
+		return localVarReturnValue, nil, reportError("toolkit is required and must be specified")
+	}
 
+	parameterAddToHeaderOrQuery(localVarQueryParams, "toolkit", r.toolkit, "form", "")
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 
@@ -810,12 +824,24 @@ type ApiListConnectorToolsRequest struct {
 	ApiService *ConnectorsAPIService
 	tenantId string
 	projectId string
-	toolkit string
-	limit int32
+	toolkit *string
+	limit *int32
 	authorization *string
 	xBeaterApiKey *string
 	xBeaterProjectId *string
 	xBeaterEnvironmentId *string
+}
+
+// Toolkit slug to list tools for.
+func (r ApiListConnectorToolsRequest) Toolkit(toolkit string) ApiListConnectorToolsRequest {
+	r.toolkit = &toolkit
+	return r
+}
+
+// Maximum number of tools to return (page size).
+func (r ApiListConnectorToolsRequest) Limit(limit int32) ApiListConnectorToolsRequest {
+	r.limit = &limit
+	return r
 }
 
 // Bearer API token for strict auth
@@ -852,18 +878,14 @@ ListConnectorTools Method for ListConnectorTools
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @param toolkit Toolkit slug to list tools for.
- @param limit Maximum number of tools to return (page size).
  @return ApiListConnectorToolsRequest
 */
-func (a *ConnectorsAPIService) ListConnectorTools(ctx context.Context, tenantId string, projectId string, toolkit string, limit int32) ApiListConnectorToolsRequest {
+func (a *ConnectorsAPIService) ListConnectorTools(ctx context.Context, tenantId string, projectId string) ApiListConnectorToolsRequest {
 	return ApiListConnectorToolsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
 		projectId: projectId,
-		toolkit: toolkit,
-		limit: limit,
 	}
 }
 
@@ -885,16 +907,18 @@ func (a *ConnectorsAPIService) ListConnectorToolsExecute(r ApiListConnectorTools
 	localVarPath := localBasePath + "/v1/connectors/{tenant_id}/{project_id}/tools"
 	localVarPath = strings.Replace(localVarPath, "{"+"tenant_id"+"}", url.PathEscape(parameterValueToString(r.tenantId, "tenantId")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"project_id"+"}", url.PathEscape(parameterValueToString(r.projectId, "projectId")), -1)
-	localVarPath = strings.Replace(localVarPath, "{"+"toolkit"+"}", url.PathEscape(parameterValueToString(r.toolkit, "toolkit")), -1)
-	localVarPath = strings.Replace(localVarPath, "{"+"limit"+"}", url.PathEscape(parameterValueToString(r.limit, "limit")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
-	if r.limit < 0 {
-		return localVarReturnValue, nil, reportError("limit must be greater than 0")
+	if r.toolkit == nil {
+		return localVarReturnValue, nil, reportError("toolkit is required and must be specified")
 	}
 
+	parameterAddToHeaderOrQuery(localVarQueryParams, "toolkit", r.toolkit, "form", "")
+	if r.limit != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "limit", r.limit, "form", "")
+	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 
@@ -1009,11 +1033,17 @@ type ApiListConnectorsRequest struct {
 	ApiService *ConnectorsAPIService
 	tenantId string
 	projectId string
-	limit int32
+	limit *int32
 	authorization *string
 	xBeaterApiKey *string
 	xBeaterProjectId *string
 	xBeaterEnvironmentId *string
+}
+
+// Maximum number of apps to return (page size).
+func (r ApiListConnectorsRequest) Limit(limit int32) ApiListConnectorsRequest {
+	r.limit = &limit
+	return r
 }
 
 // Bearer API token for strict auth
@@ -1050,16 +1080,14 @@ ListConnectors Method for ListConnectors
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @param limit Maximum number of apps to return (page size).
  @return ApiListConnectorsRequest
 */
-func (a *ConnectorsAPIService) ListConnectors(ctx context.Context, tenantId string, projectId string, limit int32) ApiListConnectorsRequest {
+func (a *ConnectorsAPIService) ListConnectors(ctx context.Context, tenantId string, projectId string) ApiListConnectorsRequest {
 	return ApiListConnectorsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
 		projectId: projectId,
-		limit: limit,
 	}
 }
 
@@ -1081,15 +1109,14 @@ func (a *ConnectorsAPIService) ListConnectorsExecute(r ApiListConnectorsRequest)
 	localVarPath := localBasePath + "/v1/connectors/{tenant_id}/{project_id}"
 	localVarPath = strings.Replace(localVarPath, "{"+"tenant_id"+"}", url.PathEscape(parameterValueToString(r.tenantId, "tenantId")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"project_id"+"}", url.PathEscape(parameterValueToString(r.projectId, "projectId")), -1)
-	localVarPath = strings.Replace(localVarPath, "{"+"limit"+"}", url.PathEscape(parameterValueToString(r.limit, "limit")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
-	if r.limit < 0 {
-		return localVarReturnValue, nil, reportError("limit must be greater than 0")
-	}
 
+	if r.limit != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "limit", r.limit, "form", "")
+	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 

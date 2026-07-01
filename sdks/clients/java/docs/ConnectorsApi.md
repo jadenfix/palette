@@ -719,7 +719,7 @@ public class Example {
 | **tenantId** | **String**| tenant_id | |
 | **projectId** | **String**| project_id | |
 | **toolkit** | **String**| Toolkit slug to list tools for. | |
-| **limit** | **Integer**| Maximum number of tools to return (page size). | |
+| **limit** | **Integer**| Maximum number of tools to return (page size). | [optional] |
 | **authorization** | **String**| Bearer API token for strict auth | [optional] |
 | **xBeaterApiKey** | **String**| API key alternative for strict auth | [optional] |
 | **xBeaterProjectId** | **String**| Strict-auth project scope | [optional] |
@@ -803,7 +803,7 @@ public class Example {
 | **tenantId** | **String**| tenant_id | |
 | **projectId** | **String**| project_id | |
 | **toolkit** | **String**| Toolkit slug to list tools for. | |
-| **limit** | **Integer**| Maximum number of tools to return (page size). | |
+| **limit** | **Integer**| Maximum number of tools to return (page size). | [optional] |
 | **authorization** | **String**| Bearer API token for strict auth | [optional] |
 | **xBeaterApiKey** | **String**| API key alternative for strict auth | [optional] |
 | **xBeaterProjectId** | **String**| Strict-auth project scope | [optional] |
@@ -883,7 +883,7 @@ public class Example {
 |------------- | ------------- | ------------- | -------------|
 | **tenantId** | **String**| tenant_id | |
 | **projectId** | **String**| project_id | |
-| **limit** | **Integer**| Maximum number of apps to return (page size). | |
+| **limit** | **Integer**| Maximum number of apps to return (page size). | [optional] |
 | **authorization** | **String**| Bearer API token for strict auth | [optional] |
 | **xBeaterApiKey** | **String**| API key alternative for strict auth | [optional] |
 | **xBeaterProjectId** | **String**| Strict-auth project scope | [optional] |
@@ -965,7 +965,7 @@ public class Example {
 |------------- | ------------- | ------------- | -------------|
 | **tenantId** | **String**| tenant_id | |
 | **projectId** | **String**| project_id | |
-| **limit** | **Integer**| Maximum number of apps to return (page size). | |
+| **limit** | **Integer**| Maximum number of apps to return (page size). | [optional] |
 | **authorization** | **String**| Bearer API token for strict auth | [optional] |
 | **xBeaterApiKey** | **String**| API key alternative for strict auth | [optional] |
 | **xBeaterProjectId** | **String**| Strict-auth project scope | [optional] |

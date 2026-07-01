@@ -730,9 +730,11 @@ class ConnectorsApi:
             _path_params['tenant_id'] = tenant_id
         if project_id is not None:
             _path_params['project_id'] = project_id
-        if toolkit is not None:
-            _path_params['toolkit'] = toolkit
         # process the query parameters
+        if toolkit is not None:
+            
+            _query_params.append(('toolkit', toolkit))
+            
         # process the header parameters
         if authorization is not None:
             _header_params['authorization'] = authorization
@@ -1089,9 +1091,11 @@ class ConnectorsApi:
             _path_params['tenant_id'] = tenant_id
         if project_id is not None:
             _path_params['project_id'] = project_id
-        if toolkit is not None:
-            _path_params['toolkit'] = toolkit
         # process the query parameters
+        if toolkit is not None:
+            
+            _query_params.append(('toolkit', toolkit))
+            
         # process the header parameters
         if authorization is not None:
             _header_params['authorization'] = authorization
@@ -1514,7 +1518,7 @@ class ConnectorsApi:
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
         toolkit: Annotated[StrictStr, Field(description="Toolkit slug to list tools for.")],
-        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of tools to return (page size).")],
+        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of tools to return (page size).")] = None,
         authorization: Annotated[Optional[StrictStr], Field(description="Bearer API token for strict auth")] = None,
         x_beater_api_key: Annotated[Optional[StrictStr], Field(description="API key alternative for strict auth")] = None,
         x_beater_project_id: Annotated[Optional[StrictStr], Field(description="Strict-auth project scope")] = None,
@@ -1541,7 +1545,7 @@ class ConnectorsApi:
         :type project_id: str
         :param toolkit: Toolkit slug to list tools for. (required)
         :type toolkit: str
-        :param limit: Maximum number of tools to return (page size). (required)
+        :param limit: Maximum number of tools to return (page size).
         :type limit: int
         :param authorization: Bearer API token for strict auth
         :type authorization: str
@@ -1612,7 +1616,7 @@ class ConnectorsApi:
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
         toolkit: Annotated[StrictStr, Field(description="Toolkit slug to list tools for.")],
-        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of tools to return (page size).")],
+        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of tools to return (page size).")] = None,
         authorization: Annotated[Optional[StrictStr], Field(description="Bearer API token for strict auth")] = None,
         x_beater_api_key: Annotated[Optional[StrictStr], Field(description="API key alternative for strict auth")] = None,
         x_beater_project_id: Annotated[Optional[StrictStr], Field(description="Strict-auth project scope")] = None,
@@ -1639,7 +1643,7 @@ class ConnectorsApi:
         :type project_id: str
         :param toolkit: Toolkit slug to list tools for. (required)
         :type toolkit: str
-        :param limit: Maximum number of tools to return (page size). (required)
+        :param limit: Maximum number of tools to return (page size).
         :type limit: int
         :param authorization: Bearer API token for strict auth
         :type authorization: str
@@ -1710,7 +1714,7 @@ class ConnectorsApi:
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
         toolkit: Annotated[StrictStr, Field(description="Toolkit slug to list tools for.")],
-        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of tools to return (page size).")],
+        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of tools to return (page size).")] = None,
         authorization: Annotated[Optional[StrictStr], Field(description="Bearer API token for strict auth")] = None,
         x_beater_api_key: Annotated[Optional[StrictStr], Field(description="API key alternative for strict auth")] = None,
         x_beater_project_id: Annotated[Optional[StrictStr], Field(description="Strict-auth project scope")] = None,
@@ -1737,7 +1741,7 @@ class ConnectorsApi:
         :type project_id: str
         :param toolkit: Toolkit slug to list tools for. (required)
         :type toolkit: str
-        :param limit: Maximum number of tools to return (page size). (required)
+        :param limit: Maximum number of tools to return (page size).
         :type limit: int
         :param authorization: Bearer API token for strict auth
         :type authorization: str
@@ -1833,11 +1837,15 @@ class ConnectorsApi:
             _path_params['tenant_id'] = tenant_id
         if project_id is not None:
             _path_params['project_id'] = project_id
-        if toolkit is not None:
-            _path_params['toolkit'] = toolkit
-        if limit is not None:
-            _path_params['limit'] = limit
         # process the query parameters
+        if toolkit is not None:
+            
+            _query_params.append(('toolkit', toolkit))
+            
+        if limit is not None:
+            
+            _query_params.append(('limit', limit))
+            
         # process the header parameters
         if authorization is not None:
             _header_params['authorization'] = authorization
@@ -1887,7 +1895,7 @@ class ConnectorsApi:
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
-        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of apps to return (page size).")],
+        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of apps to return (page size).")] = None,
         authorization: Annotated[Optional[StrictStr], Field(description="Bearer API token for strict auth")] = None,
         x_beater_api_key: Annotated[Optional[StrictStr], Field(description="API key alternative for strict auth")] = None,
         x_beater_project_id: Annotated[Optional[StrictStr], Field(description="Strict-auth project scope")] = None,
@@ -1912,7 +1920,7 @@ class ConnectorsApi:
         :type tenant_id: str
         :param project_id: project_id (required)
         :type project_id: str
-        :param limit: Maximum number of apps to return (page size). (required)
+        :param limit: Maximum number of apps to return (page size).
         :type limit: int
         :param authorization: Bearer API token for strict auth
         :type authorization: str
@@ -1981,7 +1989,7 @@ class ConnectorsApi:
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
-        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of apps to return (page size).")],
+        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of apps to return (page size).")] = None,
         authorization: Annotated[Optional[StrictStr], Field(description="Bearer API token for strict auth")] = None,
         x_beater_api_key: Annotated[Optional[StrictStr], Field(description="API key alternative for strict auth")] = None,
         x_beater_project_id: Annotated[Optional[StrictStr], Field(description="Strict-auth project scope")] = None,
@@ -2006,7 +2014,7 @@ class ConnectorsApi:
         :type tenant_id: str
         :param project_id: project_id (required)
         :type project_id: str
-        :param limit: Maximum number of apps to return (page size). (required)
+        :param limit: Maximum number of apps to return (page size).
         :type limit: int
         :param authorization: Bearer API token for strict auth
         :type authorization: str
@@ -2075,7 +2083,7 @@ class ConnectorsApi:
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
-        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of apps to return (page size).")],
+        limit: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="Maximum number of apps to return (page size).")] = None,
         authorization: Annotated[Optional[StrictStr], Field(description="Bearer API token for strict auth")] = None,
         x_beater_api_key: Annotated[Optional[StrictStr], Field(description="API key alternative for strict auth")] = None,
         x_beater_project_id: Annotated[Optional[StrictStr], Field(description="Strict-auth project scope")] = None,
@@ -2100,7 +2108,7 @@ class ConnectorsApi:
         :type tenant_id: str
         :param project_id: project_id (required)
         :type project_id: str
-        :param limit: Maximum number of apps to return (page size). (required)
+        :param limit: Maximum number of apps to return (page size).
         :type limit: int
         :param authorization: Bearer API token for strict auth
         :type authorization: str
@@ -2194,9 +2202,11 @@ class ConnectorsApi:
             _path_params['tenant_id'] = tenant_id
         if project_id is not None:
             _path_params['project_id'] = project_id
-        if limit is not None:
-            _path_params['limit'] = limit
         # process the query parameters
+        if limit is not None:
+            
+            _query_params.append(('limit', limit))
+            
         # process the header parameters
         if authorization is not None:
             _header_params['authorization'] = authorization

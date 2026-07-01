@@ -180,7 +180,7 @@ No authorization required
 
 ## DiffPromptVersions
 
-> PromptVersionDiff DiffPromptVersions(ctx, tenantId, projectId, promptId, from, to).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> PromptVersionDiff DiffPromptVersions(ctx, tenantId, projectId, promptId).From(from).To(to).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -209,7 +209,7 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.PromptsAPI.DiffPromptVersions(context.Background(), tenantId, projectId, promptId, from, to).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.PromptsAPI.DiffPromptVersions(context.Background(), tenantId, projectId, promptId).From(from).To(to).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `PromptsAPI.DiffPromptVersions``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -228,8 +228,6 @@ Name | Type | Description  | Notes
 **tenantId** | **string** | tenant_id | 
 **projectId** | **string** | project_id | 
 **promptId** | **string** | prompt_id | 
-**from** | **string** |  | 
-**to** | **string** |  | 
 
 ### Other Parameters
 
@@ -241,8 +239,8 @@ Name | Type | Description  | Notes
 
 
 
-
-
+ **from** | **string** |  | 
+ **to** | **string** |  | 
  **authorization** | **string** | Bearer API token for strict auth | 
  **xBeaterApiKey** | **string** | API key alternative for strict auth | 
  **xBeaterProjectId** | **string** | Strict-auth project scope | 

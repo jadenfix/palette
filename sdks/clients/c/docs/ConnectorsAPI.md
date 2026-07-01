@@ -156,7 +156,7 @@ Name | Type | Description  | Notes
 **tenant_id** | **char \*** | tenant_id | 
 **project_id** | **char \*** | project_id | 
 **toolkit** | **char \*** | Toolkit slug to list tools for. | 
-**limit** | **int \*** | Maximum number of tools to return (page size). | 
+**limit** | **int \*** | Maximum number of tools to return (page size). | [optional] 
 **authorization** | **char \*** | Bearer API token for strict auth | [optional] 
 **x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional] 
 **x_beater_project_id** | **char \*** | Strict-auth project scope | [optional] 
@@ -189,7 +189,7 @@ Name | Type | Description  | Notes
 **apiClient** | **apiClient_t \*** | context containing the client configuration |
 **tenant_id** | **char \*** | tenant_id | 
 **project_id** | **char \*** | project_id | 
-**limit** | **int \*** | Maximum number of apps to return (page size). | 
+**limit** | **int \*** | Maximum number of apps to return (page size). | [optional] 
 **authorization** | **char \*** | Bearer API token for strict auth | [optional] 
 **x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional] 
 **x_beater_project_id** | **char \*** | Strict-auth project scope | [optional] 

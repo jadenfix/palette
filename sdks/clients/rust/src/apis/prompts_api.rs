@@ -270,9 +270,11 @@ pub async fn create_prompt(configuration: &configuration::Configuration, params:
 
 pub async fn diff_prompt_versions(configuration: &configuration::Configuration, params: DiffPromptVersionsParams) -> Result<models::PromptVersionDiff, Error<DiffPromptVersionsError>> {
 
-    let uri_str = format!("{}/v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), prompt_id=crate::apis::urlencode(params.prompt_id), from=crate::apis::urlencode(params.from), to=crate::apis::urlencode(params.to));
+    let uri_str = format!("{}/v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), prompt_id=crate::apis::urlencode(params.prompt_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
+    req_builder = req_builder.query(&[("from", &params.from.to_string())]);
+    req_builder = req_builder.query(&[("to", &params.to.to_string())]);
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }

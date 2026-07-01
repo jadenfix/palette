@@ -301,10 +301,24 @@ public class ConnectorsApi {
 
     String localVarPath = "/v1/connectors/{tenant_id}/{project_id}/status"
         .replace("{tenant_id}", ApiClient.urlEncode(tenantId.toString()))
-        .replace("{project_id}", ApiClient.urlEncode(projectId.toString()))
-        .replace("{toolkit}", ApiClient.urlEncode(toolkit.toString()));
+        .replace("{project_id}", ApiClient.urlEncode(projectId.toString()));
 
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    List<Pair> localVarQueryParams = new ArrayList<>();
+    StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
+    String localVarQueryParameterBaseName;
+    localVarQueryParameterBaseName = "toolkit";
+    localVarQueryParams.addAll(ApiClient.parameterToPairs("toolkit", toolkit));
+
+    if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
+      StringJoiner queryJoiner = new StringJoiner("&");
+      localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
+      if (localVarQueryStringJoiner.length() != 0) {
+        queryJoiner.add(localVarQueryStringJoiner.toString());
+      }
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
+    } else {
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    }
 
     if (authorization != null) {
       localVarRequestBuilder.header("authorization", authorization.toString());
@@ -419,10 +433,24 @@ public class ConnectorsApi {
 
     String localVarPath = "/v1/connectors/{tenant_id}/{project_id}/skills"
         .replace("{tenant_id}", ApiClient.urlEncode(tenantId.toString()))
-        .replace("{project_id}", ApiClient.urlEncode(projectId.toString()))
-        .replace("{toolkit}", ApiClient.urlEncode(toolkit.toString()));
+        .replace("{project_id}", ApiClient.urlEncode(projectId.toString()));
 
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    List<Pair> localVarQueryParams = new ArrayList<>();
+    StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
+    String localVarQueryParameterBaseName;
+    localVarQueryParameterBaseName = "toolkit";
+    localVarQueryParams.addAll(ApiClient.parameterToPairs("toolkit", toolkit));
+
+    if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
+      StringJoiner queryJoiner = new StringJoiner("&");
+      localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
+      if (localVarQueryStringJoiner.length() != 0) {
+        queryJoiner.add(localVarQueryStringJoiner.toString());
+      }
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
+    } else {
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    }
 
     if (authorization != null) {
       localVarRequestBuilder.header("authorization", authorization.toString());
@@ -577,7 +605,7 @@ public class ConnectorsApi {
    * @param tenantId tenant_id (required)
    * @param projectId project_id (required)
    * @param toolkit Toolkit slug to list tools for. (required)
-   * @param limit Maximum number of tools to return (page size). (required)
+   * @param limit Maximum number of tools to return (page size). (optional)
    * @param authorization Bearer API token for strict auth (optional)
    * @param xBeaterApiKey API key alternative for strict auth (optional)
    * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -596,7 +624,7 @@ public class ConnectorsApi {
    * @param tenantId tenant_id (required)
    * @param projectId project_id (required)
    * @param toolkit Toolkit slug to list tools for. (required)
-   * @param limit Maximum number of tools to return (page size). (required)
+   * @param limit Maximum number of tools to return (page size). (optional)
    * @param authorization Bearer API token for strict auth (optional)
    * @param xBeaterApiKey API key alternative for strict auth (optional)
    * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -657,20 +685,31 @@ public class ConnectorsApi {
     if (toolkit == null) {
       throw new ApiException(400, "Missing the required parameter 'toolkit' when calling listConnectorTools");
     }
-    // verify the required parameter 'limit' is set
-    if (limit == null) {
-      throw new ApiException(400, "Missing the required parameter 'limit' when calling listConnectorTools");
-    }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
     String localVarPath = "/v1/connectors/{tenant_id}/{project_id}/tools"
         .replace("{tenant_id}", ApiClient.urlEncode(tenantId.toString()))
-        .replace("{project_id}", ApiClient.urlEncode(projectId.toString()))
-        .replace("{toolkit}", ApiClient.urlEncode(toolkit.toString()))
-        .replace("{limit}", ApiClient.urlEncode(limit.toString()));
+        .replace("{project_id}", ApiClient.urlEncode(projectId.toString()));
 
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    List<Pair> localVarQueryParams = new ArrayList<>();
+    StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
+    String localVarQueryParameterBaseName;
+    localVarQueryParameterBaseName = "toolkit";
+    localVarQueryParams.addAll(ApiClient.parameterToPairs("toolkit", toolkit));
+    localVarQueryParameterBaseName = "limit";
+    localVarQueryParams.addAll(ApiClient.parameterToPairs("limit", limit));
+
+    if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
+      StringJoiner queryJoiner = new StringJoiner("&");
+      localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
+      if (localVarQueryStringJoiner.length() != 0) {
+        queryJoiner.add(localVarQueryStringJoiner.toString());
+      }
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
+    } else {
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    }
 
     if (authorization != null) {
       localVarRequestBuilder.header("authorization", authorization.toString());
@@ -701,7 +740,7 @@ public class ConnectorsApi {
    * 
    * @param tenantId tenant_id (required)
    * @param projectId project_id (required)
-   * @param limit Maximum number of apps to return (page size). (required)
+   * @param limit Maximum number of apps to return (page size). (optional)
    * @param authorization Bearer API token for strict auth (optional)
    * @param xBeaterApiKey API key alternative for strict auth (optional)
    * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -719,7 +758,7 @@ public class ConnectorsApi {
    * 
    * @param tenantId tenant_id (required)
    * @param projectId project_id (required)
-   * @param limit Maximum number of apps to return (page size). (required)
+   * @param limit Maximum number of apps to return (page size). (optional)
    * @param authorization Bearer API token for strict auth (optional)
    * @param xBeaterApiKey API key alternative for strict auth (optional)
    * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -776,19 +815,29 @@ public class ConnectorsApi {
     if (projectId == null) {
       throw new ApiException(400, "Missing the required parameter 'projectId' when calling listConnectors");
     }
-    // verify the required parameter 'limit' is set
-    if (limit == null) {
-      throw new ApiException(400, "Missing the required parameter 'limit' when calling listConnectors");
-    }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
     String localVarPath = "/v1/connectors/{tenant_id}/{project_id}"
         .replace("{tenant_id}", ApiClient.urlEncode(tenantId.toString()))
-        .replace("{project_id}", ApiClient.urlEncode(projectId.toString()))
-        .replace("{limit}", ApiClient.urlEncode(limit.toString()));
+        .replace("{project_id}", ApiClient.urlEncode(projectId.toString()));
 
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    List<Pair> localVarQueryParams = new ArrayList<>();
+    StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
+    String localVarQueryParameterBaseName;
+    localVarQueryParameterBaseName = "limit";
+    localVarQueryParams.addAll(ApiClient.parameterToPairs("limit", limit));
+
+    if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
+      StringJoiner queryJoiner = new StringJoiner("&");
+      localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
+      if (localVarQueryStringJoiner.length() != 0) {
+        queryJoiner.add(localVarQueryStringJoiner.toString());
+      }
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
+    } else {
+      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    }
 
     if (authorization != null) {
       localVarRequestBuilder.header("authorization", authorization.toString());

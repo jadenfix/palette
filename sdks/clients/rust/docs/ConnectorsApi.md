@@ -162,7 +162,7 @@ Name | Type | Description  | Required | Notes
 **tenant_id** | **String** | tenant_id | [required] |
 **project_id** | **String** | project_id | [required] |
 **toolkit** | **String** | Toolkit slug to list tools for. | [required] |
-**limit** | Option<**i32**> | Maximum number of tools to return (page size). | [required] |
+**limit** | Option<**i32**> | Maximum number of tools to return (page size). |  |
 **authorization** | Option<**String**> | Bearer API token for strict auth |  |
 **x_beater_api_key** | Option<**String**> | API key alternative for strict auth |  |
 **x_beater_project_id** | Option<**String**> | Strict-auth project scope |  |
@@ -196,7 +196,7 @@ Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **tenant_id** | **String** | tenant_id | [required] |
 **project_id** | **String** | project_id | [required] |
-**limit** | Option<**i32**> | Maximum number of apps to return (page size). | [required] |
+**limit** | Option<**i32**> | Maximum number of apps to return (page size). |  |
 **authorization** | Option<**String**> | Bearer API token for strict auth |  |
 **x_beater_api_key** | Option<**String**> | API key alternative for strict auth |  |
 **x_beater_project_id** | Option<**String**> | Strict-auth project scope |  |

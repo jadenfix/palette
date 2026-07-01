@@ -803,16 +803,15 @@ paths:
           type: string
         style: simple
       - description: Maximum number of apps to return (page size).
-        explode: false
-        in: path
+        explode: true
+        in: query
         name: limit
-        required: true
+        required: false
         schema:
           format: int32
           minimum: 0
-          nullable: true
           type: integer
-        style: simple
+        style: form
       - description: Bearer API token for strict auth
         explode: false
         in: header
@@ -1095,13 +1094,13 @@ paths:
           type: string
         style: simple
       - description: Toolkit slug to scope the request to.
-        explode: false
-        in: path
+        explode: true
+        in: query
         name: toolkit
         required: true
         schema:
           type: string
-        style: simple
+        style: form
       - description: Bearer API token for strict auth
         explode: false
         in: header
@@ -1192,13 +1191,13 @@ paths:
           type: string
         style: simple
       - description: Toolkit slug to scope the request to.
-        explode: false
-        in: path
+        explode: true
+        in: query
         name: toolkit
         required: true
         schema:
           type: string
-        style: simple
+        style: form
       - description: Bearer API token for strict auth
         explode: false
         in: header
@@ -1289,24 +1288,23 @@ paths:
           type: string
         style: simple
       - description: Toolkit slug to list tools for.
-        explode: false
-        in: path
+        explode: true
+        in: query
         name: toolkit
         required: true
         schema:
           type: string
-        style: simple
+        style: form
       - description: Maximum number of tools to return (page size).
-        explode: false
-        in: path
+        explode: true
+        in: query
         name: limit
-        required: true
+        required: false
         schema:
           format: int32
           minimum: 0
-          nullable: true
           type: integer
-        style: simple
+        style: form
       - description: Bearer API token for strict auth
         explode: false
         in: header
@@ -3562,20 +3560,20 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: false
-        in: path
+      - explode: true
+        in: query
         name: from
         required: true
         schema:
           type: string
-        style: simple
-      - explode: false
-        in: path
+        style: form
+      - explode: true
+        in: query
         name: to
         required: true
         schema:
           type: string
-        style: simple
+        style: form
       - description: Bearer API token for strict auth
         explode: false
         in: header

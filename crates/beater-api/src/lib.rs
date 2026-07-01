@@ -1019,18 +1019,21 @@ struct InvokeConnectorRequest {
 }
 
 #[derive(Clone, Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 struct ToolkitQuery {
     /// Toolkit slug to scope the request to.
     toolkit: String,
 }
 
 #[derive(Clone, Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 struct CatalogQuery {
     /// Maximum number of apps to return (page size).
     limit: Option<u32>,
 }
 
 #[derive(Clone, Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 struct ToolListQuery {
     /// Toolkit slug to list tools for.
     toolkit: String,
@@ -2554,6 +2557,7 @@ struct PromptVersionListResponse {
 
 /// Query parameters for `diffPromptVersions`: the two version ids to compare.
 #[derive(Clone, Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 struct DiffPromptVersionsQuery {
     from: String,
     to: String,

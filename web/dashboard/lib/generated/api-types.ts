@@ -2579,7 +2579,10 @@ export interface operations {
     };
     listConnectors: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Maximum number of apps to return (page size). */
+                limit?: number;
+            };
             header?: {
                 /** @description Bearer API token for strict auth */
                 authorization?: string | null;
@@ -2595,8 +2598,6 @@ export interface operations {
                 tenant_id: string;
                 /** @description project_id */
                 project_id: string;
-                /** @description Maximum number of apps to return (page size). */
-                limit: number | null;
             };
             cookie?: never;
         };
@@ -2799,7 +2800,10 @@ export interface operations {
     };
     getConnectorSkills: {
         parameters: {
-            query?: never;
+            query: {
+                /** @description Toolkit slug to scope the request to. */
+                toolkit: string;
+            };
             header?: {
                 /** @description Bearer API token for strict auth */
                 authorization?: string | null;
@@ -2815,8 +2819,6 @@ export interface operations {
                 tenant_id: string;
                 /** @description project_id */
                 project_id: string;
-                /** @description Toolkit slug to scope the request to. */
-                toolkit: string;
             };
             cookie?: never;
         };
@@ -2871,7 +2873,10 @@ export interface operations {
     };
     connectorStatus: {
         parameters: {
-            query?: never;
+            query: {
+                /** @description Toolkit slug to scope the request to. */
+                toolkit: string;
+            };
             header?: {
                 /** @description Bearer API token for strict auth */
                 authorization?: string | null;
@@ -2887,8 +2892,6 @@ export interface operations {
                 tenant_id: string;
                 /** @description project_id */
                 project_id: string;
-                /** @description Toolkit slug to scope the request to. */
-                toolkit: string;
             };
             cookie?: never;
         };
@@ -2943,7 +2946,12 @@ export interface operations {
     };
     listConnectorTools: {
         parameters: {
-            query?: never;
+            query: {
+                /** @description Toolkit slug to list tools for. */
+                toolkit: string;
+                /** @description Maximum number of tools to return (page size). */
+                limit?: number;
+            };
             header?: {
                 /** @description Bearer API token for strict auth */
                 authorization?: string | null;
@@ -2959,10 +2967,6 @@ export interface operations {
                 tenant_id: string;
                 /** @description project_id */
                 project_id: string;
-                /** @description Toolkit slug to list tools for. */
-                toolkit: string;
-                /** @description Maximum number of tools to return (page size). */
-                limit: number | null;
             };
             cookie?: never;
         };
@@ -4595,7 +4599,10 @@ export interface operations {
     };
     diffPromptVersions: {
         parameters: {
-            query?: never;
+            query: {
+                from: string;
+                to: string;
+            };
             header?: {
                 /** @description Bearer API token for strict auth */
                 authorization?: string | null;
@@ -4613,8 +4620,6 @@ export interface operations {
                 project_id: string;
                 /** @description prompt_id */
                 prompt_id: string;
-                from: string;
-                to: string;
             };
             cookie?: never;
         };

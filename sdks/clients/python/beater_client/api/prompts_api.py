@@ -1142,11 +1142,15 @@ class PromptsApi:
             _path_params['project_id'] = project_id
         if prompt_id is not None:
             _path_params['prompt_id'] = prompt_id
-        if var_from is not None:
-            _path_params['from'] = var_from
-        if to is not None:
-            _path_params['to'] = to
         # process the query parameters
+        if var_from is not None:
+            
+            _query_params.append(('from', var_from))
+            
+        if to is not None:
+            
+            _query_params.append(('to', to))
+            
         # process the header parameters
         if authorization is not None:
             _header_params['authorization'] = authorization

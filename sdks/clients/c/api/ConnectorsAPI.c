@@ -218,7 +218,7 @@ end:
 connection_status_t*
 ConnectorsAPI_connectorStatus(apiClient_t *apiClient, char *tenant_id, char *project_id, char *toolkit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
-    list_t    *localVarQueryParameters = NULL;
+    list_t    *localVarQueryParameters = list_createList();
     list_t    *localVarHeaderParameters = list_createList();
     list_t    *localVarFormParameters = NULL;
     list_t *localVarHeaderType = list_createList();
@@ -236,12 +236,10 @@ ConnectorsAPI_connectorStatus(apiClient_t *apiClient, char *tenant_id, char *pro
         goto end;
     if(!project_id)
         goto end;
-    if(!toolkit)
-        goto end;
 
 
     // Path Params
-    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(toolkit)+3 + sizeof("{ tenant_id }") - 1;
+    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 + sizeof("{ tenant_id }") - 1;
     if(tenant_id == NULL) {
         goto end;
     }
@@ -251,7 +249,7 @@ ConnectorsAPI_connectorStatus(apiClient_t *apiClient, char *tenant_id, char *pro
     localVarPath = strReplace(localVarPath, localVarToReplace_tenant_id, tenant_id);
 
     // Path Params
-    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(toolkit)+3 + sizeof("{ project_id }") - 1;
+    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 + sizeof("{ project_id }") - 1;
     if(project_id == NULL) {
         goto end;
     }
@@ -259,16 +257,6 @@ ConnectorsAPI_connectorStatus(apiClient_t *apiClient, char *tenant_id, char *pro
     sprintf(localVarToReplace_project_id, "{%s}", "project_id");
 
     localVarPath = strReplace(localVarPath, localVarToReplace_project_id, project_id);
-
-    // Path Params
-    long sizeOfPathParams_toolkit = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(toolkit)+3 + sizeof("{ toolkit }") - 1;
-    if(toolkit == NULL) {
-        goto end;
-    }
-    char* localVarToReplace_toolkit = malloc(sizeOfPathParams_toolkit);
-    sprintf(localVarToReplace_toolkit, "{%s}", "toolkit");
-
-    localVarPath = strReplace(localVarPath, localVarToReplace_toolkit, toolkit);
 
 
 
@@ -319,6 +307,18 @@ ConnectorsAPI_connectorStatus(apiClient_t *apiClient, char *tenant_id, char *pro
         list_addElement(localVarHeaderParameters,keyPairHeader_x_beater_environment_id);
     }
 
+
+    // query parameters
+    char *keyQuery_toolkit = NULL;
+    char * valueQuery_toolkit = NULL;
+    keyValuePair_t *keyPairQuery_toolkit = 0;
+    if (toolkit)
+    {
+        keyQuery_toolkit = strdup("toolkit");
+        valueQuery_toolkit = strdup((toolkit));
+        keyPairQuery_toolkit = keyValuePair_create(keyQuery_toolkit, valueQuery_toolkit);
+        list_addElement(localVarQueryParameters,keyPairQuery_toolkit);
+    }
     list_addElement(localVarHeaderType,"application/json"); //produces
     apiClient_invoke(apiClient,
                     localVarPath,
@@ -368,7 +368,7 @@ ConnectorsAPI_connectorStatus(apiClient_t *apiClient, char *tenant_id, char *pro
         apiClient->dataReceived = NULL;
         apiClient->dataReceivedLen = 0;
     }
-    
+    list_freeList(localVarQueryParameters);
     list_freeList(localVarHeaderParameters);
     
     list_freeList(localVarHeaderType);
@@ -376,7 +376,6 @@ ConnectorsAPI_connectorStatus(apiClient_t *apiClient, char *tenant_id, char *pro
     free(localVarPath);
     free(localVarToReplace_tenant_id);
     free(localVarToReplace_project_id);
-    free(localVarToReplace_toolkit);
     if (keyHeader_authorization) {
         free(keyHeader_authorization);
         keyHeader_authorization = NULL;
@@ -413,6 +412,18 @@ ConnectorsAPI_connectorStatus(apiClient_t *apiClient, char *tenant_id, char *pro
         valueHeader_x_beater_environment_id = NULL;
     }
     free(keyPairHeader_x_beater_environment_id);
+    if(keyQuery_toolkit){
+        free(keyQuery_toolkit);
+        keyQuery_toolkit = NULL;
+    }
+    if(valueQuery_toolkit){
+        free(valueQuery_toolkit);
+        valueQuery_toolkit = NULL;
+    }
+    if(keyPairQuery_toolkit){
+        keyValuePair_free(keyPairQuery_toolkit);
+        keyPairQuery_toolkit = NULL;
+    }
     return elementToReturn;
 end:
     free(localVarPath);
@@ -423,7 +434,7 @@ end:
 connector_skills_response_t*
 ConnectorsAPI_getConnectorSkills(apiClient_t *apiClient, char *tenant_id, char *project_id, char *toolkit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
-    list_t    *localVarQueryParameters = NULL;
+    list_t    *localVarQueryParameters = list_createList();
     list_t    *localVarHeaderParameters = list_createList();
     list_t    *localVarFormParameters = NULL;
     list_t *localVarHeaderType = list_createList();
@@ -441,12 +452,10 @@ ConnectorsAPI_getConnectorSkills(apiClient_t *apiClient, char *tenant_id, char *
         goto end;
     if(!project_id)
         goto end;
-    if(!toolkit)
-        goto end;
 
 
     // Path Params
-    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(toolkit)+3 + sizeof("{ tenant_id }") - 1;
+    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 + sizeof("{ tenant_id }") - 1;
     if(tenant_id == NULL) {
         goto end;
     }
@@ -456,7 +465,7 @@ ConnectorsAPI_getConnectorSkills(apiClient_t *apiClient, char *tenant_id, char *
     localVarPath = strReplace(localVarPath, localVarToReplace_tenant_id, tenant_id);
 
     // Path Params
-    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(toolkit)+3 + sizeof("{ project_id }") - 1;
+    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 + sizeof("{ project_id }") - 1;
     if(project_id == NULL) {
         goto end;
     }
@@ -464,16 +473,6 @@ ConnectorsAPI_getConnectorSkills(apiClient_t *apiClient, char *tenant_id, char *
     sprintf(localVarToReplace_project_id, "{%s}", "project_id");
 
     localVarPath = strReplace(localVarPath, localVarToReplace_project_id, project_id);
-
-    // Path Params
-    long sizeOfPathParams_toolkit = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(toolkit)+3 + sizeof("{ toolkit }") - 1;
-    if(toolkit == NULL) {
-        goto end;
-    }
-    char* localVarToReplace_toolkit = malloc(sizeOfPathParams_toolkit);
-    sprintf(localVarToReplace_toolkit, "{%s}", "toolkit");
-
-    localVarPath = strReplace(localVarPath, localVarToReplace_toolkit, toolkit);
 
 
 
@@ -524,6 +523,18 @@ ConnectorsAPI_getConnectorSkills(apiClient_t *apiClient, char *tenant_id, char *
         list_addElement(localVarHeaderParameters,keyPairHeader_x_beater_environment_id);
     }
 
+
+    // query parameters
+    char *keyQuery_toolkit = NULL;
+    char * valueQuery_toolkit = NULL;
+    keyValuePair_t *keyPairQuery_toolkit = 0;
+    if (toolkit)
+    {
+        keyQuery_toolkit = strdup("toolkit");
+        valueQuery_toolkit = strdup((toolkit));
+        keyPairQuery_toolkit = keyValuePair_create(keyQuery_toolkit, valueQuery_toolkit);
+        list_addElement(localVarQueryParameters,keyPairQuery_toolkit);
+    }
     list_addElement(localVarHeaderType,"application/json"); //produces
     apiClient_invoke(apiClient,
                     localVarPath,
@@ -573,7 +584,7 @@ ConnectorsAPI_getConnectorSkills(apiClient_t *apiClient, char *tenant_id, char *
         apiClient->dataReceived = NULL;
         apiClient->dataReceivedLen = 0;
     }
-    
+    list_freeList(localVarQueryParameters);
     list_freeList(localVarHeaderParameters);
     
     list_freeList(localVarHeaderType);
@@ -581,7 +592,6 @@ ConnectorsAPI_getConnectorSkills(apiClient_t *apiClient, char *tenant_id, char *
     free(localVarPath);
     free(localVarToReplace_tenant_id);
     free(localVarToReplace_project_id);
-    free(localVarToReplace_toolkit);
     if (keyHeader_authorization) {
         free(keyHeader_authorization);
         keyHeader_authorization = NULL;
@@ -618,6 +628,18 @@ ConnectorsAPI_getConnectorSkills(apiClient_t *apiClient, char *tenant_id, char *
         valueHeader_x_beater_environment_id = NULL;
     }
     free(keyPairHeader_x_beater_environment_id);
+    if(keyQuery_toolkit){
+        free(keyQuery_toolkit);
+        keyQuery_toolkit = NULL;
+    }
+    if(valueQuery_toolkit){
+        free(valueQuery_toolkit);
+        valueQuery_toolkit = NULL;
+    }
+    if(keyPairQuery_toolkit){
+        keyValuePair_free(keyPairQuery_toolkit);
+        keyPairQuery_toolkit = NULL;
+    }
     return elementToReturn;
 end:
     free(localVarPath);
@@ -836,7 +858,7 @@ end:
 list_t*
 ConnectorsAPI_listConnectorTools(apiClient_t *apiClient, char *tenant_id, char *project_id, char *toolkit, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
-    list_t    *localVarQueryParameters = NULL;
+    list_t    *localVarQueryParameters = list_createList();
     list_t    *localVarHeaderParameters = list_createList();
     list_t    *localVarFormParameters = NULL;
     list_t *localVarHeaderType = list_createList();
@@ -854,12 +876,10 @@ ConnectorsAPI_listConnectorTools(apiClient_t *apiClient, char *tenant_id, char *
         goto end;
     if(!project_id)
         goto end;
-    if(!toolkit)
-        goto end;
 
 
     // Path Params
-    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(toolkit)+3 +  + sizeof("{ tenant_id }") - 1;
+    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 + sizeof("{ tenant_id }") - 1;
     if(tenant_id == NULL) {
         goto end;
     }
@@ -869,7 +889,7 @@ ConnectorsAPI_listConnectorTools(apiClient_t *apiClient, char *tenant_id, char *
     localVarPath = strReplace(localVarPath, localVarToReplace_tenant_id, tenant_id);
 
     // Path Params
-    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(toolkit)+3 +  + sizeof("{ project_id }") - 1;
+    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 + sizeof("{ project_id }") - 1;
     if(project_id == NULL) {
         goto end;
     }
@@ -877,30 +897,6 @@ ConnectorsAPI_listConnectorTools(apiClient_t *apiClient, char *tenant_id, char *
     sprintf(localVarToReplace_project_id, "{%s}", "project_id");
 
     localVarPath = strReplace(localVarPath, localVarToReplace_project_id, project_id);
-
-    // Path Params
-    long sizeOfPathParams_toolkit = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(toolkit)+3 +  + sizeof("{ toolkit }") - 1;
-    if(toolkit == NULL) {
-        goto end;
-    }
-    char* localVarToReplace_toolkit = malloc(sizeOfPathParams_toolkit);
-    sprintf(localVarToReplace_toolkit, "{%s}", "toolkit");
-
-    localVarPath = strReplace(localVarPath, localVarToReplace_toolkit, toolkit);
-
-    // Path Params
-    long sizeOfPathParams_limit = strlen(tenant_id)+3 + strlen(project_id)+3 + strlen(toolkit)+3 +  + sizeof("{ limit }") - 1;
-    if(limit == 0){
-        goto end;
-    }
-    char* localVarToReplace_limit = malloc(sizeOfPathParams_limit);
-    snprintf(localVarToReplace_limit, sizeOfPathParams_limit, "{%s}", "limit");
-
-    char localVarBuff_limit[256];
-    snprintf(localVarBuff_limit, sizeof localVarBuff_limit, "%ld", (long)*limit);
-
-    localVarPath = strReplace(localVarPath, localVarToReplace_limit, localVarBuff_limit);
-
 
 
 
@@ -951,6 +947,31 @@ ConnectorsAPI_listConnectorTools(apiClient_t *apiClient, char *tenant_id, char *
         list_addElement(localVarHeaderParameters,keyPairHeader_x_beater_environment_id);
     }
 
+
+    // query parameters
+    char *keyQuery_toolkit = NULL;
+    char * valueQuery_toolkit = NULL;
+    keyValuePair_t *keyPairQuery_toolkit = 0;
+    if (toolkit)
+    {
+        keyQuery_toolkit = strdup("toolkit");
+        valueQuery_toolkit = strdup((toolkit));
+        keyPairQuery_toolkit = keyValuePair_create(keyQuery_toolkit, valueQuery_toolkit);
+        list_addElement(localVarQueryParameters,keyPairQuery_toolkit);
+    }
+
+    // query parameters
+    char *keyQuery_limit = NULL;
+    char * valueQuery_limit = NULL;
+    keyValuePair_t *keyPairQuery_limit = 0;
+    if (limit)
+    {
+        keyQuery_limit = strdup("limit");
+        valueQuery_limit = calloc(1,MAX_NUMBER_LENGTH);
+        snprintf(valueQuery_limit, MAX_NUMBER_LENGTH, "%d", *limit);
+        keyPairQuery_limit = keyValuePair_create(keyQuery_limit, valueQuery_limit);
+        list_addElement(localVarQueryParameters,keyPairQuery_limit);
+    }
     list_addElement(localVarHeaderType,"application/json"); //produces
     apiClient_invoke(apiClient,
                     localVarPath,
@@ -1010,7 +1031,7 @@ ConnectorsAPI_listConnectorTools(apiClient_t *apiClient, char *tenant_id, char *
         apiClient->dataReceived = NULL;
         apiClient->dataReceivedLen = 0;
     }
-    
+    list_freeList(localVarQueryParameters);
     list_freeList(localVarHeaderParameters);
     
     list_freeList(localVarHeaderType);
@@ -1018,8 +1039,6 @@ ConnectorsAPI_listConnectorTools(apiClient_t *apiClient, char *tenant_id, char *
     free(localVarPath);
     free(localVarToReplace_tenant_id);
     free(localVarToReplace_project_id);
-    free(localVarToReplace_toolkit);
-    free(localVarToReplace_limit);
     if (keyHeader_authorization) {
         free(keyHeader_authorization);
         keyHeader_authorization = NULL;
@@ -1056,6 +1075,30 @@ ConnectorsAPI_listConnectorTools(apiClient_t *apiClient, char *tenant_id, char *
         valueHeader_x_beater_environment_id = NULL;
     }
     free(keyPairHeader_x_beater_environment_id);
+    if(keyQuery_toolkit){
+        free(keyQuery_toolkit);
+        keyQuery_toolkit = NULL;
+    }
+    if(valueQuery_toolkit){
+        free(valueQuery_toolkit);
+        valueQuery_toolkit = NULL;
+    }
+    if(keyPairQuery_toolkit){
+        keyValuePair_free(keyPairQuery_toolkit);
+        keyPairQuery_toolkit = NULL;
+    }
+    if(keyQuery_limit){
+        free(keyQuery_limit);
+        keyQuery_limit = NULL;
+    }
+    if(valueQuery_limit){
+        free(valueQuery_limit);
+        valueQuery_limit = NULL;
+    }
+    if(keyPairQuery_limit){
+        keyValuePair_free(keyPairQuery_limit);
+        keyPairQuery_limit = NULL;
+    }
     return elementToReturn;
 end:
     free(localVarPath);
@@ -1066,7 +1109,7 @@ end:
 list_t*
 ConnectorsAPI_listConnectors(apiClient_t *apiClient, char *tenant_id, char *project_id, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
-    list_t    *localVarQueryParameters = NULL;
+    list_t    *localVarQueryParameters = list_createList();
     list_t    *localVarHeaderParameters = list_createList();
     list_t    *localVarFormParameters = NULL;
     list_t *localVarHeaderType = list_createList();
@@ -1087,7 +1130,7 @@ ConnectorsAPI_listConnectors(apiClient_t *apiClient, char *tenant_id, char *proj
 
 
     // Path Params
-    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 +  + sizeof("{ tenant_id }") - 1;
+    long sizeOfPathParams_tenant_id = strlen(tenant_id)+3 + strlen(project_id)+3 + sizeof("{ tenant_id }") - 1;
     if(tenant_id == NULL) {
         goto end;
     }
@@ -1097,7 +1140,7 @@ ConnectorsAPI_listConnectors(apiClient_t *apiClient, char *tenant_id, char *proj
     localVarPath = strReplace(localVarPath, localVarToReplace_tenant_id, tenant_id);
 
     // Path Params
-    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 +  + sizeof("{ project_id }") - 1;
+    long sizeOfPathParams_project_id = strlen(tenant_id)+3 + strlen(project_id)+3 + sizeof("{ project_id }") - 1;
     if(project_id == NULL) {
         goto end;
     }
@@ -1105,20 +1148,6 @@ ConnectorsAPI_listConnectors(apiClient_t *apiClient, char *tenant_id, char *proj
     sprintf(localVarToReplace_project_id, "{%s}", "project_id");
 
     localVarPath = strReplace(localVarPath, localVarToReplace_project_id, project_id);
-
-    // Path Params
-    long sizeOfPathParams_limit = strlen(tenant_id)+3 + strlen(project_id)+3 +  + sizeof("{ limit }") - 1;
-    if(limit == 0){
-        goto end;
-    }
-    char* localVarToReplace_limit = malloc(sizeOfPathParams_limit);
-    snprintf(localVarToReplace_limit, sizeOfPathParams_limit, "{%s}", "limit");
-
-    char localVarBuff_limit[256];
-    snprintf(localVarBuff_limit, sizeof localVarBuff_limit, "%ld", (long)*limit);
-
-    localVarPath = strReplace(localVarPath, localVarToReplace_limit, localVarBuff_limit);
-
 
 
 
@@ -1169,6 +1198,19 @@ ConnectorsAPI_listConnectors(apiClient_t *apiClient, char *tenant_id, char *proj
         list_addElement(localVarHeaderParameters,keyPairHeader_x_beater_environment_id);
     }
 
+
+    // query parameters
+    char *keyQuery_limit = NULL;
+    char * valueQuery_limit = NULL;
+    keyValuePair_t *keyPairQuery_limit = 0;
+    if (limit)
+    {
+        keyQuery_limit = strdup("limit");
+        valueQuery_limit = calloc(1,MAX_NUMBER_LENGTH);
+        snprintf(valueQuery_limit, MAX_NUMBER_LENGTH, "%d", *limit);
+        keyPairQuery_limit = keyValuePair_create(keyQuery_limit, valueQuery_limit);
+        list_addElement(localVarQueryParameters,keyPairQuery_limit);
+    }
     list_addElement(localVarHeaderType,"application/json"); //produces
     apiClient_invoke(apiClient,
                     localVarPath,
@@ -1228,7 +1270,7 @@ ConnectorsAPI_listConnectors(apiClient_t *apiClient, char *tenant_id, char *proj
         apiClient->dataReceived = NULL;
         apiClient->dataReceivedLen = 0;
     }
-    
+    list_freeList(localVarQueryParameters);
     list_freeList(localVarHeaderParameters);
     
     list_freeList(localVarHeaderType);
@@ -1236,7 +1278,6 @@ ConnectorsAPI_listConnectors(apiClient_t *apiClient, char *tenant_id, char *proj
     free(localVarPath);
     free(localVarToReplace_tenant_id);
     free(localVarToReplace_project_id);
-    free(localVarToReplace_limit);
     if (keyHeader_authorization) {
         free(keyHeader_authorization);
         keyHeader_authorization = NULL;
@@ -1273,6 +1314,18 @@ ConnectorsAPI_listConnectors(apiClient_t *apiClient, char *tenant_id, char *proj
         valueHeader_x_beater_environment_id = NULL;
     }
     free(keyPairHeader_x_beater_environment_id);
+    if(keyQuery_limit){
+        free(keyQuery_limit);
+        keyQuery_limit = NULL;
+    }
+    if(valueQuery_limit){
+        free(valueQuery_limit);
+        valueQuery_limit = NULL;
+    }
+    if(keyPairQuery_limit){
+        keyValuePair_free(keyPairQuery_limit);
+        keyPairQuery_limit = NULL;
+    }
     return elementToReturn;
 end:
     free(localVarPath);

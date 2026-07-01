@@ -206,7 +206,6 @@ pplx::task<std::shared_ptr<ConnectionStatus>> ConnectorsApi::connectorStatus(uti
     utility::string_t localVarPath = utility::conversions::to_string_t("/v1/connectors/{tenant_id}/{project_id}/status");
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("tenant_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(tenantId)));
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("project_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(projectId)));
-    boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("toolkit") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(toolkit)));
 
     std::map<utility::string_t, utility::string_t> localVarQueryParams;
     std::map<utility::string_t, utility::string_t> localVarHeaderParams( localVarApiConfiguration->getDefaultHeaders() );
@@ -242,6 +241,9 @@ pplx::task<std::shared_ptr<ConnectionStatus>> ConnectorsApi::connectorStatus(uti
 
     std::unordered_set<utility::string_t> localVarConsumeHttpContentTypes;
 
+    {
+        localVarQueryParams[utility::conversions::to_string_t("toolkit")] = ApiClient::parameterToString(toolkit);
+    }
     if (authorization)
     {
         localVarHeaderParams[utility::conversions::to_string_t("authorization")] = ApiClient::parameterToString(*authorization);
@@ -347,7 +349,6 @@ pplx::task<std::shared_ptr<ConnectorSkillsResponse>> ConnectorsApi::getConnector
     utility::string_t localVarPath = utility::conversions::to_string_t("/v1/connectors/{tenant_id}/{project_id}/skills");
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("tenant_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(tenantId)));
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("project_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(projectId)));
-    boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("toolkit") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(toolkit)));
 
     std::map<utility::string_t, utility::string_t> localVarQueryParams;
     std::map<utility::string_t, utility::string_t> localVarHeaderParams( localVarApiConfiguration->getDefaultHeaders() );
@@ -383,6 +384,9 @@ pplx::task<std::shared_ptr<ConnectorSkillsResponse>> ConnectorsApi::getConnector
 
     std::unordered_set<utility::string_t> localVarConsumeHttpContentTypes;
 
+    {
+        localVarQueryParams[utility::conversions::to_string_t("toolkit")] = ApiClient::parameterToString(toolkit);
+    }
     if (authorization)
     {
         localVarHeaderParams[utility::conversions::to_string_t("authorization")] = ApiClient::parameterToString(*authorization);
@@ -643,7 +647,7 @@ pplx::task<std::shared_ptr<ToolExecution>> ConnectorsApi::invokeConnectorTool(ut
         return localVarResult;
     });
 }
-pplx::task<std::vector<std::shared_ptr<ConnectorTool>>> ConnectorsApi::listConnectorTools(utility::string_t tenantId, utility::string_t projectId, utility::string_t toolkit, int32_t limit, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::vector<std::shared_ptr<ConnectorTool>>> ConnectorsApi::listConnectorTools(utility::string_t tenantId, utility::string_t projectId, utility::string_t toolkit, boost::optional<int32_t> limit, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -651,8 +655,6 @@ pplx::task<std::vector<std::shared_ptr<ConnectorTool>>> ConnectorsApi::listConne
     utility::string_t localVarPath = utility::conversions::to_string_t("/v1/connectors/{tenant_id}/{project_id}/tools");
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("tenant_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(tenantId)));
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("project_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(projectId)));
-    boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("toolkit") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(toolkit)));
-    boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("limit") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(limit)));
 
     std::map<utility::string_t, utility::string_t> localVarQueryParams;
     std::map<utility::string_t, utility::string_t> localVarHeaderParams( localVarApiConfiguration->getDefaultHeaders() );
@@ -688,6 +690,13 @@ pplx::task<std::vector<std::shared_ptr<ConnectorTool>>> ConnectorsApi::listConne
 
     std::unordered_set<utility::string_t> localVarConsumeHttpContentTypes;
 
+    {
+        localVarQueryParams[utility::conversions::to_string_t("toolkit")] = ApiClient::parameterToString(toolkit);
+    }
+    if (limit)
+    {
+        localVarQueryParams[utility::conversions::to_string_t("limit")] = ApiClient::parameterToString(*limit);
+    }
     if (authorization)
     {
         localVarHeaderParams[utility::conversions::to_string_t("authorization")] = ApiClient::parameterToString(*authorization);
@@ -789,7 +798,7 @@ pplx::task<std::vector<std::shared_ptr<ConnectorTool>>> ConnectorsApi::listConne
         return localVarResult;
     });
 }
-pplx::task<std::vector<std::shared_ptr<Toolkit>>> ConnectorsApi::listConnectors(utility::string_t tenantId, utility::string_t projectId, int32_t limit, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::vector<std::shared_ptr<Toolkit>>> ConnectorsApi::listConnectors(utility::string_t tenantId, utility::string_t projectId, boost::optional<int32_t> limit, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -797,7 +806,6 @@ pplx::task<std::vector<std::shared_ptr<Toolkit>>> ConnectorsApi::listConnectors(
     utility::string_t localVarPath = utility::conversions::to_string_t("/v1/connectors/{tenant_id}/{project_id}");
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("tenant_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(tenantId)));
     boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("project_id") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(projectId)));
-    boost::replace_all(localVarPath, utility::conversions::to_string_t("{") + utility::conversions::to_string_t("limit") + utility::conversions::to_string_t("}"), web::uri::encode_uri(ApiClient::parameterToString(limit)));
 
     std::map<utility::string_t, utility::string_t> localVarQueryParams;
     std::map<utility::string_t, utility::string_t> localVarHeaderParams( localVarApiConfiguration->getDefaultHeaders() );
@@ -833,6 +841,10 @@ pplx::task<std::vector<std::shared_ptr<Toolkit>>> ConnectorsApi::listConnectors(
 
     std::unordered_set<utility::string_t> localVarConsumeHttpContentTypes;
 
+    if (limit)
+    {
+        localVarQueryParams[utility::conversions::to_string_t("limit")] = ApiClient::parameterToString(*limit);
+    }
     if (authorization)
     {
         localVarHeaderParams[utility::conversions::to_string_t("authorization")] = ApiClient::parameterToString(*authorization);

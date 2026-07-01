@@ -60,10 +60,8 @@ func Test_beaterclient_PromptsAPIService(t *testing.T) {
 		var tenantId string
 		var projectId string
 		var promptId string
-		var from string
-		var to string
 
-		resp, httpRes, err := apiClient.PromptsAPI.DiffPromptVersions(context.Background(), tenantId, projectId, promptId, from, to).Execute()
+		resp, httpRes, err := apiClient.PromptsAPI.DiffPromptVersions(context.Background(), tenantId, projectId, promptId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

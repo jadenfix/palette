@@ -1058,14 +1058,11 @@
           },
           {
             "name": "limit",
-            "in": "path",
+            "in": "query",
             "description": "Maximum number of apps to return (page size).",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ],
+              "type": "integer",
               "format": "int32",
               "minimum": 0
             }
@@ -1479,7 +1476,7 @@
           },
           {
             "name": "toolkit",
-            "in": "path",
+            "in": "query",
             "description": "Toolkit slug to scope the request to.",
             "required": true,
             "schema": {
@@ -1616,7 +1613,7 @@
           },
           {
             "name": "toolkit",
-            "in": "path",
+            "in": "query",
             "description": "Toolkit slug to scope the request to.",
             "required": true,
             "schema": {
@@ -1753,7 +1750,7 @@
           },
           {
             "name": "toolkit",
-            "in": "path",
+            "in": "query",
             "description": "Toolkit slug to list tools for.",
             "required": true,
             "schema": {
@@ -1762,14 +1759,11 @@
           },
           {
             "name": "limit",
-            "in": "path",
+            "in": "query",
             "description": "Maximum number of tools to return (page size).",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ],
+              "type": "integer",
               "format": "int32",
               "minimum": 0
             }
@@ -4974,7 +4968,7 @@
           },
           {
             "name": "from",
-            "in": "path",
+            "in": "query",
             "required": true,
             "schema": {
               "type": "string"
@@ -4982,7 +4976,7 @@
           },
           {
             "name": "to",
-            "in": "path",
+            "in": "query",
             "required": true,
             "schema": {
               "type": "string"

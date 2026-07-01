@@ -420,12 +420,22 @@ type ApiDiffPromptVersionsRequest struct {
 	tenantId string
 	projectId string
 	promptId string
-	from string
-	to string
+	from *string
+	to *string
 	authorization *string
 	xBeaterApiKey *string
 	xBeaterProjectId *string
 	xBeaterEnvironmentId *string
+}
+
+func (r ApiDiffPromptVersionsRequest) From(from string) ApiDiffPromptVersionsRequest {
+	r.from = &from
+	return r
+}
+
+func (r ApiDiffPromptVersionsRequest) To(to string) ApiDiffPromptVersionsRequest {
+	r.to = &to
+	return r
 }
 
 // Bearer API token for strict auth
@@ -463,19 +473,15 @@ DiffPromptVersions Method for DiffPromptVersions
  @param tenantId tenant_id
  @param projectId project_id
  @param promptId prompt_id
- @param from
- @param to
  @return ApiDiffPromptVersionsRequest
 */
-func (a *PromptsAPIService) DiffPromptVersions(ctx context.Context, tenantId string, projectId string, promptId string, from string, to string) ApiDiffPromptVersionsRequest {
+func (a *PromptsAPIService) DiffPromptVersions(ctx context.Context, tenantId string, projectId string, promptId string) ApiDiffPromptVersionsRequest {
 	return ApiDiffPromptVersionsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
 		projectId: projectId,
 		promptId: promptId,
-		from: from,
-		to: to,
 	}
 }
 
@@ -498,13 +504,19 @@ func (a *PromptsAPIService) DiffPromptVersionsExecute(r ApiDiffPromptVersionsReq
 	localVarPath = strings.Replace(localVarPath, "{"+"tenant_id"+"}", url.PathEscape(parameterValueToString(r.tenantId, "tenantId")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"project_id"+"}", url.PathEscape(parameterValueToString(r.projectId, "projectId")), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"prompt_id"+"}", url.PathEscape(parameterValueToString(r.promptId, "promptId")), -1)
-	localVarPath = strings.Replace(localVarPath, "{"+"from"+"}", url.PathEscape(parameterValueToString(r.from, "from")), -1)
-	localVarPath = strings.Replace(localVarPath, "{"+"to"+"}", url.PathEscape(parameterValueToString(r.to, "to")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
+	if r.from == nil {
+		return localVarReturnValue, nil, reportError("from is required and must be specified")
+	}
+	if r.to == nil {
+		return localVarReturnValue, nil, reportError("to is required and must be specified")
+	}
 
+	parameterAddToHeaderOrQuery(localVarQueryParams, "from", r.from, "form", "")
+	parameterAddToHeaderOrQuery(localVarQueryParams, "to", r.to, "form", "")
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 
