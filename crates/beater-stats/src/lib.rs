@@ -21,6 +21,7 @@
 //! | [`holm_bonferroni`] / [`benjamini_hochberg`] | §10.3 #4 | multiple-comparison corrections |
 //! | [`cuped_adjust`] | §10.3 #4 | CUPED variance reduction via a pre-experiment covariate |
 //! | [`hoeffding_race`] | §10.3 / #436 | best-arm identification: eliminate confidently-dominated candidates |
+//! | [`SequentialMeanTest`] / [`evalue_one_sided_mean`] | §10.3 #6 / #436 | always-valid sequential inference (e-values); peek-and-stop |
 //!
 //! The paired layer ([`compare_paired`]) is what the **experiment gate** calls
 //! today: it picks **Student's paired t** for continuous metrics and the **exact
@@ -30,8 +31,11 @@
 //! critical value (`z = 1.96 / 2.576`) and reported no p-value at all, so its
 //! *nominal* alpha did not equal its *actual* alpha.
 //!
-//! Anytime-valid / sequential inference (mSPRT, §10.3 #6) is the **required
-//! follow-on phase** and is not included here; see §10.3 phasing note.
+//! Anytime-valid / sequential inference (§10.3 #6) is provided by
+//! [`SequentialMeanTest`] — a test-martingale / e-value process whose "reject
+//! when `E_n ≥ 1/α`" rule controls type-I error under arbitrary optional stopping
+//! (Ville's inequality), so an eval can peek case-by-case and stop as soon as the
+//! evidence crosses the bound.
 //!
 //! ## Design invariants
 //!
@@ -58,6 +62,7 @@ mod overfit;
 mod paired;
 mod power;
 mod racing;
+mod sequential;
 mod wilcoxon;
 
 pub use bca::{bootstrap_bca_ci, paired_bootstrap_test, PairedBootstrapOutcome};
@@ -76,6 +81,7 @@ pub use power::{
     required_sample_size, DEFAULT_POWER,
 };
 pub use racing::{hoeffding_race, ArmSummary, RaceOutcome};
+pub use sequential::{evalue_one_sided_mean, recommended_lambda, SequentialMeanTest};
 pub use wilcoxon::{wilcoxon_signed_rank, WilcoxonOutcome};
 
 // ─────────────────────────────────────────────────────────────────────────────
