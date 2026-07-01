@@ -20,6 +20,7 @@
 //! | [`required_sample_size`] / [`minimum_detectable_effect`] / [`achieved_power`] | §10.3 #5 | power / MDE / minimum-sample planning |
 //! | [`holm_bonferroni`] / [`benjamini_hochberg`] | §10.3 #4 | multiple-comparison corrections |
 //! | [`cuped_adjust`] | §10.3 #4 | CUPED variance reduction via a pre-experiment covariate |
+//! | [`hoeffding_race`] | §10.3 / #436 | best-arm identification: eliminate confidently-dominated candidates |
 //!
 //! The paired layer ([`compare_paired`]) is what the **experiment gate** calls
 //! today: it picks **Student's paired t** for continuous metrics and the **exact
@@ -56,6 +57,7 @@ mod numerics;
 mod overfit;
 mod paired;
 mod power;
+mod racing;
 mod wilcoxon;
 
 pub use bca::{bootstrap_bca_ci, paired_bootstrap_test, PairedBootstrapOutcome};
@@ -73,6 +75,7 @@ pub use power::{
     achieved_power, mcnemar_achieved_power, mcnemar_required_discordant, minimum_detectable_effect,
     required_sample_size, DEFAULT_POWER,
 };
+pub use racing::{hoeffding_race, ArmSummary, RaceOutcome};
 pub use wilcoxon::{wilcoxon_signed_rank, WilcoxonOutcome};
 
 // ─────────────────────────────────────────────────────────────────────────────

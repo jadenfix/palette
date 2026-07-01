@@ -15,7 +15,9 @@ use beater_judge::{
     TextGenerator,
 };
 use beater_schema::EvaluatorLane;
-use beater_stats::{assess_generalization_gap, benjamini_hochberg, holm_bonferroni, GapAssessment};
+use beater_stats::{
+    assess_generalization_gap, benjamini_hochberg, hoeffding_race, holm_bonferroni, GapAssessment,
+};
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension};
@@ -1653,6 +1655,9 @@ pub async fn run_optimization_round(
     };
 
     let mut evaluated = Vec::with_capacity(candidates.len());
+    // Each candidate's held-out Test-split candidate scores, kept parallel to
+    // `evaluated` so the best-arm race can compare arms after gating.
+    let mut test_arms: Vec<Vec<f64>> = Vec::with_capacity(candidates.len());
 
     // 3 + 4. For each candidate: score its cases (injected evaluator), then run
     //         the REAL held-out gate + anti-overfit assessment.
@@ -1663,7 +1668,10 @@ pub async fn run_optimization_round(
             .map_err(OptimizerError::EvaluationFailed)?;
 
         let evaluation = gate_candidate(&candidate, &scores, &cfg)?;
+        // gate_candidate already proved the Test split is non-empty.
+        let (_, test_candidate) = split_scores(&scores, Split::Test);
         evaluated.push(evaluation);
+        test_arms.push(test_candidate);
     }
 
     // 5. Family-wise multiple-comparison control across the candidates proposed
@@ -1675,8 +1683,16 @@ pub async fn run_optimization_round(
     //    `comparison_count` path (and its e2e coverage) is unchanged.
     apply_family_multiplicity(&mut evaluated, cfg.multiplicity, cfg.gate_policy.alpha)?;
 
-    // First candidate (in proposal order) that still clears both gates after the
-    // family correction wins. Deterministic in proposal order.
+    // 6. Best-arm race across the *accepted* candidates (§10.3 / #436 item 2):
+    //    drop any that a strictly-better accepted candidate confidently dominates
+    //    on the held-out split, so acceptance never lands on a dominated arm. A
+    //    no-op unless two or more candidates are accepted and their intervals are
+    //    disjoint, so single-candidate and tied rounds are unchanged.
+    apply_best_arm_race(&mut evaluated, &test_arms, cfg.gate_policy.alpha)?;
+
+    // First candidate (in proposal order) that still clears every gate — the
+    // held-out gate, anti-overfit guardrail, family correction, and best-arm
+    // race — wins. Deterministic in proposal order.
     let accepted = evaluated
         .iter()
         .find(|evaluation| evaluation.accepted)
@@ -1737,6 +1753,54 @@ fn apply_family_multiplicity(
         if evaluation.gate.decision == GateDecision::Pass && !decision.reject {
             evaluation.gate.decision = GateDecision::Inconclusive;
             evaluation.accepted = false;
+        }
+    }
+
+    Ok(())
+}
+
+/// Best-arm race across a round's *accepted* candidates (§10.3 / #436 item 2).
+///
+/// Among the candidates that cleared the gate, the anti-overfit guardrail, and
+/// the family correction, a Hoeffding race on their held-out Test scores drops
+/// any candidate that a strictly-better accepted candidate *confidently
+/// dominates* — so the round never accepts a candidate that a demonstrably better
+/// one beats at the same eval budget. The gate decision of a dropped candidate is
+/// left as `Pass` (it genuinely cleared its own gate) for the audit trail; only
+/// its acceptance is withdrawn.
+///
+/// A deliberate no-op unless at least two candidates are still accepted, and even
+/// then it only eliminates arms with *disjoint* confidence intervals — tied or
+/// statistically-indistinguishable candidates all survive, so deterministic
+/// proposal-order selection is preserved. The Hoeffding range is `1.0` because
+/// eval scores are bounded to `[0, 1]`. The empirically-best arm can never be
+/// eliminated, so the accepted set is never emptied.
+fn apply_best_arm_race(
+    evaluated: &mut [CandidateEvaluation],
+    test_arms: &[Vec<f64>],
+    alpha: f64,
+) -> Result<(), OptimizerError> {
+    let accepted_indices: Vec<usize> = evaluated
+        .iter()
+        .enumerate()
+        .filter(|(_, evaluation)| evaluation.accepted)
+        .map(|(index, _)| index)
+        .collect();
+    if accepted_indices.len() < 2 {
+        return Ok(());
+    }
+
+    let arms: Vec<&[f64]> = accepted_indices
+        .iter()
+        .map(|&index| test_arms[index].as_slice())
+        .collect();
+    let outcome = hoeffding_race(&arms, 1.0, alpha)
+        .map_err(|err| OptimizerError::GateFailed(err.to_string()))?;
+
+    // `survivors` are positions within `arms`, i.e. into `accepted_indices`.
+    for (position, &eval_index) in accepted_indices.iter().enumerate() {
+        if !outcome.survivors.contains(&position) {
+            evaluated[eval_index].accepted = false;
         }
     }
 
@@ -2355,6 +2419,29 @@ mod tests {
         assert!(none
             .iter()
             .all(|e| e.gate.decision == GateDecision::Pass && e.accepted));
+    }
+
+    /// The best-arm race withdraws acceptance from a candidate that a strictly
+    /// better accepted candidate confidently dominates on the held-out split —
+    /// proving §10.3 / #436 item 2 is load-bearing in the round.
+    #[test]
+    fn best_arm_race_drops_a_dominated_accepted_candidate() {
+        let mut evals = vec![passing_eval(0.001), passing_eval(0.001)];
+        // 40 held-out cases each: arm 0 ≈ 0.95, arm 1 ≈ 0.05 → disjoint intervals.
+        let test_arms = vec![vec![0.95; 40], vec![0.05; 40]];
+        apply_best_arm_race(&mut evals, &test_arms, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        assert!(evals[0].accepted, "the dominant arm survives");
+        assert!(!evals[1].accepted, "the dominated arm loses acceptance");
+    }
+
+    /// Tied (statistically-indistinguishable) accepted candidates all survive the
+    /// race, so proposal-order selection is preserved.
+    #[test]
+    fn best_arm_race_keeps_tied_candidates() {
+        let mut evals = vec![passing_eval(0.001), passing_eval(0.001)];
+        let test_arms = vec![vec![0.6; 30], vec![0.6; 30]];
+        apply_best_arm_race(&mut evals, &test_arms, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        assert!(evals.iter().all(|e| e.accepted), "tied arms both survive");
     }
 
     #[test]
