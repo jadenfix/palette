@@ -11,7 +11,9 @@ beater-alerts = { path = "../beater-alerts" }
 beater-archive = { path = "../beater-archive" }
 beater-audit = { path = "../beater-audit" }
 beater-auth = { path = "../beater-auth" }
+beater-billing = { path = "../beater-billing", optional = true }
 beater-calibration = { path = "../beater-calibration" }
+beater-composio = { path = "../beater-composio" }
 beater-core = { path = "../beater-core" }
 beater-datasets = { path = "../beater-datasets" }
 beater-eval = { path = "../beater-eval" }
@@ -22,6 +24,7 @@ beater-ingest = { path = "../beater-ingest" }
 beater-judge = { path = "../beater-judge" }
 beater-oauth = { path = "../beater-oauth" }
 beater-otlp = { path = "../beater-otlp" }
+beater-prompts = { path = "../beater-prompts" }
 beater-schema = { path = "../beater-schema" }
 beater-search = { path = "../beater-search" }
 beater-security = { path = "../beater-security" }
@@ -35,6 +38,12 @@ percent-encoding.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 utoipa.workspace = true
+
+[features]
+# Hosted-only: billing/Stripe is a hosted concern kept out of the OSS default
+# build. Enabling this compiles the billing handlers and merges the Stripe
+# endpoints into the API contract. The open-source build must not enable it.
+billing = ["dep:beater-billing"]
 
 [dev-dependencies]
 async-trait.workspace = true

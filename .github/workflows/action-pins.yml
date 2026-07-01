@@ -16,6 +16,7 @@ on:
     paths:
       - ".github/workflows/**"
       - "scripts/check-action-pins.sh"
+      - "scripts/check-backend-deploy-scope.py"
   push:
     branches: [main]
   workflow_dispatch:
@@ -30,3 +31,5 @@ jobs:
       - uses: actions/checkout@v7
       - name: Verify all third-party actions are pinned to commit SHAs
         run: scripts/check-action-pins.sh
+      - name: Verify backend deploy scope
+        run: python3 scripts/check-backend-deploy-scope.py

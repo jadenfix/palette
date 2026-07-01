@@ -16,7 +16,10 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 mod sweeper;
-pub use sweeper::{OrphanedArtifactSweeper, SweepReport};
+pub use sweeper::{
+    CandidateSource, OrphanedArtifactSweeper, SliceCandidateSource, SweepCheckpoint, SweepConfig,
+    SweepMetrics, SweepOutcome, SweepReport, DEFAULT_SWEEP_BATCH_SIZE,
+};
 
 const TABLE_NAME: &str = "spans";
 
@@ -885,7 +888,7 @@ mod tests {
             1,
             SpanStatus::Ok,
         );
-        let batch = CanonicalTraceBatch::one(raw, span);
+        let batch = Arc::new(CanonicalTraceBatch::one(raw, span));
 
         store
             .write_batch(batch)

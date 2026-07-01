@@ -94,6 +94,106 @@ where
     }
 }
 
+/// A plain text-generation request — the generation seam used by the optimizer's
+/// reflective prompt rewrite (and any other caller that needs a raw completion
+/// rather than a scored judgement).
+///
+/// This is deliberately separate from [`JudgeRequest`]/[`JudgeProvider`]: the
+/// judge path wraps every call in a strict-evaluation system prompt and forces a
+/// `{score, rationale}` JSON contract. A generation request carries the caller's
+/// *own* system/user prompt and returns the model's raw text, with no scoring
+/// contract imposed.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GenerationRequest {
+    /// The model identifier to send to the provider.
+    pub model: String,
+    /// An optional system prompt. When `None`, no system message is sent (the
+    /// caller's intent lives entirely in `prompt`).
+    #[serde(default)]
+    pub system: Option<String>,
+    /// The user prompt — the caller's actual instruction (e.g. the reflective
+    /// rewrite brief). Sent verbatim; never wrapped in a judge contract.
+    pub prompt: String,
+    /// Upper bound on generated tokens.
+    pub max_tokens: u32,
+    /// Sampling temperature.
+    pub temperature: f32,
+}
+
+impl GenerationRequest {
+    /// Build a generation request with sensible defaults (`temperature = 0.2`,
+    /// `max_tokens = 1024`) and no system prompt.
+    pub fn new(model: impl Into<String>, prompt: impl Into<String>) -> Self {
+        Self {
+            model: model.into(),
+            system: None,
+            prompt: prompt.into(),
+            max_tokens: 1024,
+            temperature: 0.2,
+        }
+    }
+
+    /// Set the system prompt.
+    pub fn with_system(mut self, system: impl Into<String>) -> Self {
+        self.system = Some(system.into());
+        self
+    }
+
+    /// Set the maximum generated tokens.
+    pub fn with_max_tokens(mut self, max_tokens: u32) -> Self {
+        self.max_tokens = max_tokens;
+        self
+    }
+
+    /// Set the sampling temperature.
+    pub fn with_temperature(mut self, temperature: f32) -> Self {
+        self.temperature = temperature;
+        self
+    }
+}
+
+/// The raw text produced by a [`TextGenerator`].
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GenerationResponse {
+    /// The model's raw output text (no JSON / scoring contract applied).
+    pub text: String,
+    /// The model the provider reported (or echoed) for the call, if available.
+    #[serde(default)]
+    pub model: Option<String>,
+}
+
+/// A plain text-generation seam over an LLM provider.
+///
+/// Implemented by the same provider types that back [`JudgeProvider`], but it
+/// sends a PLAIN completion (the caller's own system/user prompt) and returns the
+/// raw text — it does NOT inject the strict-evaluation judge system prompt and
+/// does NOT enforce the `{score, rationale}` JSON contract. This is the honest
+/// generation seam the optimizer's `LlmRewrite` proposer needs; scoring stays on
+/// [`JudgeProvider`].
+#[async_trait]
+pub trait TextGenerator: Send + Sync {
+    /// Send `req` to the provider and return the raw generated text.
+    async fn generate(
+        &self,
+        req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse>;
+}
+
+#[async_trait]
+impl<T> TextGenerator for Arc<T>
+where
+    T: TextGenerator + ?Sized,
+{
+    async fn generate(
+        &self,
+        req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        (**self).generate(req, credentials).await
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct JudgeBrokerRequest {
     pub tenant_id: TenantId,
@@ -101,6 +201,14 @@ pub struct JudgeBrokerRequest {
     pub evaluator: EvaluatorSpec,
     pub case: EvaluationCase,
     pub provider_secret_id: ProviderSecretId,
+    /// Cache-invalidation namespace folded into the judge cache key. Carries the
+    /// calibration-map / judge-instrument version, so that a recalibration
+    /// trigger (model deprecation, provider drift, rubric change, kappa
+    /// degradation) bumps it and invalidates the affected cached scores instead
+    /// of silently serving a pre-recalibration score. When `None` the key
+    /// reduces to the prior request-only composition.
+    #[serde(default)]
+    pub cache_namespace: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -301,6 +409,7 @@ where
             &request.evaluator.id,
             &provider,
             &request.provider_secret_id,
+            request.cache_namespace.as_deref(),
             &judge_request,
         )?;
 
@@ -844,6 +953,56 @@ impl JudgeProvider for OpenAiJudgeProvider {
     }
 }
 
+#[async_trait]
+impl TextGenerator for OpenAiJudgeProvider {
+    async fn generate(
+        &self,
+        req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        // Plain completion: the caller's own system/user prompt, no judge system
+        // prompt and no JSON/scoring contract.
+        let mut messages = Vec::new();
+        if let Some(system) = req.system.as_deref().filter(|s| !s.trim().is_empty()) {
+            messages.push(serde_json::json!({ "role": "system", "content": system }));
+        }
+        messages.push(serde_json::json!({ "role": "user", "content": req.prompt }));
+        let body = serde_json::json!({
+            "model": req.model,
+            "temperature": req.temperature,
+            "max_tokens": req.max_tokens,
+            "messages": messages,
+        });
+        let response = send_json_with_retries(
+            || {
+                self.client
+                    .post(&self.config.endpoint_url)
+                    .bearer_auth(credentials.secret_value())
+                    .json(&body)
+            },
+            self.config.retry_policy,
+        )
+        .await
+        .map_err(JudgeProviderError::backend)?;
+        let payload: OpenAiChatCompletionResponse = response
+            .json()
+            .await
+            .context("decode openai generation response")
+            .map_err(JudgeProviderError::backend)?;
+        let text = payload
+            .choices
+            .first()
+            .map(|choice| choice.message.content.clone())
+            .ok_or_else(|| {
+                JudgeProviderError::backend("openai generation response did not include a choice")
+            })?;
+        Ok(GenerationResponse {
+            text,
+            model: Some(req.model),
+        })
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct AnthropicJudgeProvider {
     client: reqwest::Client,
@@ -919,6 +1078,60 @@ impl JudgeProvider for AnthropicJudgeProvider {
     }
 }
 
+#[async_trait]
+impl TextGenerator for AnthropicJudgeProvider {
+    async fn generate(
+        &self,
+        req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        // Plain completion: the caller's own system/user prompt, no judge system
+        // prompt and no JSON/scoring contract.
+        let mut body = serde_json::json!({
+            "model": req.model,
+            "max_tokens": req.max_tokens,
+            "temperature": req.temperature,
+            "messages": [
+                { "role": "user", "content": req.prompt }
+            ]
+        });
+        if let Some(system) = req.system.as_deref().filter(|s| !s.trim().is_empty()) {
+            body["system"] = serde_json::Value::String(system.to_string());
+        }
+        let response = send_json_with_retries(
+            || {
+                self.client
+                    .post(&self.config.endpoint_url)
+                    .header("x-api-key", credentials.secret_value())
+                    .header("anthropic-version", self.anthropic_version.as_str())
+                    .json(&body)
+            },
+            self.config.retry_policy,
+        )
+        .await
+        .map_err(JudgeProviderError::backend)?;
+        let payload: AnthropicMessagesResponse = response
+            .json()
+            .await
+            .context("decode anthropic generation response")
+            .map_err(JudgeProviderError::backend)?;
+        let text = payload
+            .content
+            .iter()
+            .find(|block| block.kind == "text")
+            .map(|block| block.text.clone())
+            .ok_or_else(|| {
+                JudgeProviderError::backend(
+                    "anthropic generation response did not include text content",
+                )
+            })?;
+        Ok(GenerationResponse {
+            text,
+            model: Some(req.model),
+        })
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct HttpRoutingJudgeProvider {
     openai: OpenAiJudgeProvider,
@@ -970,6 +1183,30 @@ impl JudgeProvider for HttpRoutingJudgeProvider {
         } else {
             Err(JudgeProviderError::backend(format!(
                 "unsupported judge provider {}",
+                credentials.provider()
+            )))
+        }
+    }
+}
+
+#[async_trait]
+impl TextGenerator for HttpRoutingJudgeProvider {
+    async fn generate(
+        &self,
+        req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        if credentials.provider().eq_ignore_ascii_case("openai")
+            || credentials
+                .provider()
+                .eq_ignore_ascii_case("openai-compatible")
+        {
+            self.openai.generate(req, credentials).await
+        } else if credentials.provider().eq_ignore_ascii_case("anthropic") {
+            self.anthropic.generate(req, credentials).await
+        } else {
+            Err(JudgeProviderError::backend(format!(
+                "unsupported generation provider {}",
                 credentials.provider()
             )))
         }
@@ -1120,12 +1357,22 @@ fn strip_json_fence(content: &str) -> &str {
         .unwrap_or(content)
 }
 
+/// Compute the judge cache key.
+///
+/// The key is total over every input that can change the score: the request
+/// (rubric content, judge model, input/output/reference), the tenant/project,
+/// evaluator id, provider, provider secret, and the `cache_namespace` that
+/// carries the calibration-map / judge-instrument version. Recalibration bumps
+/// `cache_namespace`, so a post-recalibration lookup misses instead of serving a
+/// stale pre-recalibration score.
+#[allow(clippy::too_many_arguments)]
 pub fn judge_request_hash(
     tenant_id: &TenantId,
     project_id: &ProjectId,
     evaluator_id: &str,
     provider: &str,
     provider_secret_id: &ProviderSecretId,
+    cache_namespace: Option<&str>,
     request: &JudgeRequest,
 ) -> Result<Sha256Hash, JudgeBrokerError> {
     #[derive(Serialize)]
@@ -1135,6 +1382,7 @@ pub fn judge_request_hash(
         evaluator_id: &'a str,
         provider: &'a str,
         provider_secret_id: &'a ProviderSecretId,
+        cache_namespace: Option<&'a str>,
         request: &'a JudgeRequest,
     }
 
@@ -1144,6 +1392,7 @@ pub fn judge_request_hash(
         evaluator_id,
         provider,
         provider_secret_id,
+        cache_namespace,
         request,
     })
 }
@@ -1307,6 +1556,106 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn judge_broker_recalibration_namespace_invalidates_cache() {
+        // A recalibration bumps the cache namespace (calibration-map / instrument
+        // version). Identical inputs/rubric/model must then MISS the cache and
+        // re-score, instead of silently serving the pre-recalibration score.
+        let secrets = SqliteProviderSecretStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let ledger = SqliteJudgeLedger::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant_id = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let metadata = secrets
+            .put_secret(PutProviderSecretRequest {
+                tenant_id: tenant_id.clone(),
+                project_id: project_id.clone(),
+                provider: "openai".to_string(),
+                display_name: "judge".to_string(),
+                secret_value: "sk-live-secret".to_string(),
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let calls = Arc::new(AtomicUsize::new(0));
+        let broker = JudgeBrokerService::new(
+            secrets.clone(),
+            ledger.clone(),
+            CountingJudgeProvider {
+                calls: calls.clone(),
+                cost: Money::usd_micros(10),
+            },
+            Money::usd_micros(1000),
+        );
+
+        let mut request = fixture_request(
+            tenant_id.clone(),
+            project_id.clone(),
+            metadata.provider_secret_id.clone(),
+        );
+        request.cache_namespace = Some("calmap-v1".to_string());
+
+        let first = broker
+            .evaluate(request.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        // Same namespace => HIT.
+        let second = broker
+            .evaluate(request.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        assert!(!first.audit.cached);
+        assert!(second.audit.cached);
+        assert_eq!(first.audit.request_hash, second.audit.request_hash);
+
+        // Recalibration bumps the namespace => MISS, re-scored.
+        request.cache_namespace = Some("calmap-v2".to_string());
+        let after_recalibration = broker
+            .evaluate(request)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+        assert!(!after_recalibration.audit.cached);
+        assert_ne!(
+            first.audit.request_hash,
+            after_recalibration.audit.request_hash
+        );
+    }
+
+    #[test]
+    fn judge_request_hash_is_total_over_score_changing_inputs() {
+        let tenant_id = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let secret = ProviderSecretId::new("secret").unwrap_or_else(|err| panic!("{err}"));
+        let base = fixture_judge_request();
+        let hash = |namespace: Option<&str>, request: &JudgeRequest| {
+            judge_request_hash(
+                &tenant_id,
+                &project_id,
+                "evaluator",
+                "openai",
+                &secret,
+                namespace,
+                request,
+            )
+            .unwrap_or_else(|err| panic!("{err}"))
+        };
+
+        let baseline = hash(Some("calmap-v1"), &base);
+        // Identical inputs + identical namespace => identical key (determinism).
+        assert_eq!(baseline, hash(Some("calmap-v1"), &base));
+        // Changed calibration namespace => different key.
+        assert_ne!(baseline, hash(Some("calmap-v2"), &base));
+        assert_ne!(baseline, hash(None, &base));
+        // Changed rubric => different key.
+        let mut changed_rubric = base.clone();
+        changed_rubric.rubric = "helpfulness".to_string();
+        assert_ne!(baseline, hash(Some("calmap-v1"), &changed_rubric));
+        // Changed judge model/version => different key.
+        let mut changed_model = base.clone();
+        changed_model.model = "judge-model-v2".to_string();
+        assert_ne!(baseline, hash(Some("calmap-v1"), &changed_model));
+    }
+
+    #[tokio::test]
     async fn judge_broker_rejects_inactive_secret_references() {
         let secrets = SqliteProviderSecretStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
         let ledger = SqliteJudgeLedger::in_memory().unwrap_or_else(|err| panic!("{err}"));
@@ -1394,6 +1743,190 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn sqlite_judge_ledger_list_records_is_scoped_to_tenant_and_project() {
+        let ledger = SqliteJudgeLedger::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant_id = TenantId::new("tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("project-a").unwrap_or_else(|err| panic!("{err}"));
+        let other_tenant_id = TenantId::new("tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let other_project_id = ProjectId::new("project-b").unwrap_or_else(|err| panic!("{err}"));
+        let request_hash =
+            Sha256Hash::new("shared-request-hash").unwrap_or_else(|err| panic!("{err}"));
+
+        let target_first = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "target-first-response",
+                rationale: "target first",
+                score: 0.25,
+                cost_micros: 25,
+                cached: false,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &target_first, "2026-01-01T00:00:01Z");
+        append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &other_project_id,
+                request_hash: &request_hash,
+                response_hash: "same-tenant-other-project-response",
+                rationale: "same tenant other project",
+                score: 0.5,
+                cost_micros: 50,
+                cached: false,
+            },
+        )
+        .await;
+        append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &other_tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "other-tenant-same-project-response",
+                rationale: "other tenant same project",
+                score: 0.75,
+                cost_micros: 75,
+                cached: false,
+            },
+        )
+        .await;
+        let target_second = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "target-second-response",
+                rationale: "target second",
+                score: 1.0,
+                cost_micros: 100,
+                cached: true,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &target_second, "2026-01-01T00:00:04Z");
+
+        let records = ledger
+            .list_records(tenant_id.clone(), project_id.clone())
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(
+            records
+                .iter()
+                .map(|record| record.judge_call_id.clone())
+                .collect::<Vec<_>>(),
+            vec![target_first.judge_call_id, target_second.judge_call_id]
+        );
+        assert!(records
+            .iter()
+            .all(|record| record.tenant_id == tenant_id && record.project_id == project_id));
+    }
+
+    #[tokio::test]
+    async fn sqlite_judge_ledger_cached_response_uses_latest_uncached_record_in_scope() {
+        let ledger = SqliteJudgeLedger::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let tenant_id = TenantId::new("tenant-a").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("project-a").unwrap_or_else(|err| panic!("{err}"));
+        let other_tenant_id = TenantId::new("tenant-b").unwrap_or_else(|err| panic!("{err}"));
+        let other_project_id = ProjectId::new("project-b").unwrap_or_else(|err| panic!("{err}"));
+        let request_hash =
+            Sha256Hash::new("shared-request-hash").unwrap_or_else(|err| panic!("{err}"));
+
+        let target_old = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "target-old-response",
+                rationale: "target old",
+                score: 0.2,
+                cost_micros: 20,
+                cached: false,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &target_old, "2026-01-01T00:00:01Z");
+        let target_latest = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "target-latest-response",
+                rationale: "target latest",
+                score: 0.8,
+                cost_micros: 80,
+                cached: false,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &target_latest, "2026-01-01T00:00:02Z");
+        let target_cached = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "target-cached-response",
+                rationale: "target cached",
+                score: 0.99,
+                cost_micros: 99,
+                cached: true,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &target_cached, "2026-01-01T00:00:03Z");
+        let other_tenant_newer = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &other_tenant_id,
+                project_id: &project_id,
+                request_hash: &request_hash,
+                response_hash: "other-tenant-newer-response",
+                rationale: "other tenant newer",
+                score: 0.1,
+                cost_micros: 10,
+                cached: false,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &other_tenant_newer, "2026-01-01T00:00:04Z");
+        let other_project_newer = append_ledger_record(
+            &ledger,
+            TestLedgerRecord {
+                tenant_id: &tenant_id,
+                project_id: &other_project_id,
+                request_hash: &request_hash,
+                response_hash: "other-project-newer-response",
+                rationale: "other project newer",
+                score: 0.3,
+                cost_micros: 30,
+                cached: false,
+            },
+        )
+        .await;
+        set_record_created_at(&ledger, &other_project_newer, "2026-01-01T00:00:05Z");
+
+        let cached = ledger
+            .cached_response(tenant_id, project_id, request_hash)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .unwrap_or_else(|| panic!("expected cached judge response"));
+
+        assert_eq!(cached.response_hash, target_latest.response_hash);
+        assert_eq!(cached.response.score, 0.8);
+        assert_eq!(cached.response.rationale, "target latest");
+        assert_eq!(cached.provider_cost, Money::usd_micros(80));
+    }
+
+    #[tokio::test]
     async fn openai_provider_retries_rate_limit_and_parses_structured_score() {
         let calls = Arc::new(AtomicUsize::new(0));
         let endpoint = spawn_mock_provider(Arc::new(MockHttpJudgeState {
@@ -1468,6 +2001,142 @@ mod tests {
         assert_eq!(response.cost, Money::usd_micros(44));
     }
 
+    async fn spawn_mock_generator(state: Arc<MockGenerationState>) -> anyhow::Result<String> {
+        let listener = TcpListener::bind("127.0.0.1:0")
+            .await
+            .context("bind mock generation provider")?;
+        let addr = listener.local_addr().context("read mock provider addr")?;
+        let app = Router::new()
+            .route("/generate", post(mock_generation_handler))
+            .with_state(state);
+        tokio::spawn(async move {
+            if let Err(err) = axum::serve(listener, app).await {
+                panic!("{err}");
+            }
+        });
+        Ok(format!("http://{addr}/generate"))
+    }
+
+    #[derive(Debug)]
+    struct MockGenerationState {
+        response: MockProviderResponse,
+        captured_body: Arc<Mutex<Option<serde_json::Value>>>,
+    }
+
+    async fn mock_generation_handler(
+        State(state): State<Arc<MockGenerationState>>,
+        Json(body): Json<serde_json::Value>,
+    ) -> Response {
+        *state
+            .captured_body
+            .lock()
+            .unwrap_or_else(|err| panic!("{err}")) = Some(body.clone());
+        match state.response {
+            MockProviderResponse::OpenAi => Json(serde_json::json!({
+                "choices": [
+                    { "message": { "content": "rewritten openai prompt" } }
+                ]
+            }))
+            .into_response(),
+            MockProviderResponse::Anthropic => Json(serde_json::json!({
+                "content": [
+                    { "type": "text", "text": "rewritten anthropic prompt" }
+                ]
+            }))
+            .into_response(),
+        }
+    }
+
+    #[tokio::test]
+    async fn openai_text_generator_sends_plain_completion_and_returns_raw_text() {
+        let captured = Arc::new(Mutex::new(None));
+        let endpoint = spawn_mock_generator(Arc::new(MockGenerationState {
+            response: MockProviderResponse::OpenAi,
+            captured_body: captured.clone(),
+        }))
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+        let provider = OpenAiJudgeProvider::new(HttpJudgeProviderConfig {
+            endpoint_url: endpoint,
+            max_cost: Money::usd_micros(0),
+            retry_policy: RetryPolicy {
+                max_attempts: 1,
+                base_backoff_ms: 0,
+            },
+        });
+
+        let response = provider
+            .generate(
+                GenerationRequest::new("gen-model", "rewrite this prompt")
+                    .with_system("you are a prompt engineer"),
+                ProviderCredentials::new("openai", "sk-openai"),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(response.text, "rewritten openai prompt");
+        let body = captured
+            .lock()
+            .unwrap_or_else(|err| panic!("{err}"))
+            .clone()
+            .unwrap_or_else(|| panic!("no body captured"));
+        // No judge contract: no response_format / strict-judge system prompt.
+        assert!(body.get("response_format").is_none());
+        let serialized = body.to_string();
+        assert!(
+            !serialized.contains("strict evaluation judge"),
+            "{serialized}"
+        );
+        // The caller's own system + user prompt are sent verbatim.
+        assert!(serialized.contains("you are a prompt engineer"));
+        assert!(serialized.contains("rewrite this prompt"));
+    }
+
+    #[tokio::test]
+    async fn anthropic_text_generator_sends_plain_completion_and_returns_raw_text() {
+        let captured = Arc::new(Mutex::new(None));
+        let endpoint = spawn_mock_generator(Arc::new(MockGenerationState {
+            response: MockProviderResponse::Anthropic,
+            captured_body: captured.clone(),
+        }))
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+        let provider = AnthropicJudgeProvider::new(HttpJudgeProviderConfig {
+            endpoint_url: endpoint,
+            max_cost: Money::usd_micros(0),
+            retry_policy: RetryPolicy {
+                max_attempts: 1,
+                base_backoff_ms: 0,
+            },
+        });
+
+        let response = provider
+            .generate(
+                GenerationRequest::new("gen-model", "rewrite this prompt")
+                    .with_system("you are a prompt engineer"),
+                ProviderCredentials::new("anthropic", "sk-anthropic"),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(response.text, "rewritten anthropic prompt");
+        let body = captured
+            .lock()
+            .unwrap_or_else(|err| panic!("{err}"))
+            .clone()
+            .unwrap_or_else(|| panic!("no body captured"));
+        let serialized = body.to_string();
+        assert!(
+            !serialized.contains("strict evaluation judge"),
+            "{serialized}"
+        );
+        assert_eq!(
+            body.get("system").and_then(serde_json::Value::as_str),
+            Some("you are a prompt engineer")
+        );
+        assert!(serialized.contains("rewrite this prompt"));
+    }
+
     fn fixture_request(
         tenant_id: TenantId,
         project_id: ProjectId,
@@ -1491,6 +2160,7 @@ mod tests {
                 trace: None,
             },
             provider_secret_id,
+            cache_namespace: None,
         }
     }
 
@@ -1502,6 +2172,65 @@ mod tests {
             output: serde_json::json!("answer"),
             reference: Some(serde_json::json!("answer")),
         }
+    }
+
+    struct TestLedgerRecord<'a> {
+        tenant_id: &'a TenantId,
+        project_id: &'a ProjectId,
+        request_hash: &'a Sha256Hash,
+        response_hash: &'a str,
+        rationale: &'a str,
+        score: f64,
+        cost_micros: i64,
+        cached: bool,
+    }
+
+    async fn append_ledger_record(
+        ledger: &SqliteJudgeLedger,
+        record: TestLedgerRecord<'_>,
+    ) -> JudgeAuditRecord {
+        let provider_cost = Money::usd_micros(record.cost_micros);
+        ledger
+            .append_record(JudgeAuditInsert {
+                tenant_id: record.tenant_id.clone(),
+                project_id: record.project_id.clone(),
+                evaluator_id: "judge-correctness".to_string(),
+                provider: "openai".to_string(),
+                provider_secret_id: ProviderSecretId::new("secret")
+                    .unwrap_or_else(|err| panic!("{err}")),
+                model: "judge-model".to_string(),
+                request_hash: record.request_hash.clone(),
+                response_hash: Sha256Hash::new(record.response_hash)
+                    .unwrap_or_else(|err| panic!("{err}")),
+                response: JudgeResponse {
+                    score: record.score,
+                    rationale: record.rationale.to_string(),
+                    cost: provider_cost.clone(),
+                },
+                provider_cost,
+                charged_cost: if record.cached {
+                    Money::usd_micros(0)
+                } else {
+                    Money::usd_micros(record.cost_micros)
+                },
+                cached: record.cached,
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+    }
+
+    fn set_record_created_at(
+        ledger: &SqliteJudgeLedger,
+        record: &JudgeAuditRecord,
+        created_at: &str,
+    ) {
+        let connection = ledger.lock().unwrap_or_else(|err| panic!("{err}"));
+        connection
+            .execute(
+                "UPDATE judge_audit_records SET created_at = ?1 WHERE judge_call_id = ?2",
+                rusqlite::params![created_at, record.judge_call_id.as_str()],
+            )
+            .unwrap_or_else(|err| panic!("{err}"));
     }
 
     async fn spawn_mock_provider(state: Arc<MockHttpJudgeState>) -> anyhow::Result<String> {

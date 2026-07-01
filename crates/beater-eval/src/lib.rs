@@ -384,8 +384,11 @@ pub fn evaluate_deterministic(
         }
         EvaluatorKind::JsonObject => Ok(binary_score(case.output.is_object(), "json_object")),
         EvaluatorKind::CostBudget { max_micros } => {
-            let cost = required_trace_i64(spec, case, "cost_micros")?;
-            Ok(binary_score(cost <= *max_micros, "cost_budget"))
+            let cost = required_trace_u64(spec, case, "cost_micros")?;
+            Ok(binary_score(
+                *max_micros >= 0 && cost <= *max_micros as u64,
+                "cost_budget",
+            ))
         }
         EvaluatorKind::LatencyBudgetMs { max_ms } => {
             let latency = required_trace_u64(spec, case, "latency_ms")?;
@@ -510,21 +513,6 @@ fn required_reference<'a>(
         .as_ref()
         .ok_or_else(|| EvalError::MissingReference {
             evaluator_id: spec.id.clone(),
-        })
-}
-
-fn required_trace_i64(
-    spec: &EvaluatorSpec,
-    case: &EvaluationCase,
-    metric: &'static str,
-) -> Result<i64, EvalError> {
-    case.trace
-        .as_ref()
-        .and_then(|trace| trace.get(metric))
-        .and_then(Value::as_i64)
-        .ok_or_else(|| EvalError::MissingTraceMetric {
-            evaluator_id: spec.id.clone(),
-            metric,
         })
 }
 
@@ -755,13 +743,18 @@ pub fn compare_paired_scores(
             policy.alpha
         )));
     }
+    if policy.comparison_count == 0 {
+        return Err(EvalError::Statistics(
+            "comparison_count must be greater than zero".to_string(),
+        ));
+    }
 
     // Single-step Bonferroni correction across the comparison family: the
     // per-comparison level the CI and decision are computed at. No lower clamp — a
     // large `comparison_count` must genuinely shrink alpha; clamping it up would let
     // the family-wise error rate exceed the requested level. `compare_paired`
     // validates the result is a usable alpha in (0, 1).
-    let adjusted_alpha = policy.alpha / policy.comparison_count.max(1) as f64;
+    let adjusted_alpha = policy.alpha / policy.comparison_count as f64;
 
     if n == 0 {
         return Err(EvalError::Statistics("no scores to compare".to_string()));
@@ -852,6 +845,90 @@ pub fn compare_paired_scores(
         mde,
         required_n,
     })
+}
+
+/// The pre-registration manifest type, re-exported so gate callers can build and
+/// pass a design without taking a direct `beater-design` dependency.
+pub use beater_design::EvalDesign;
+
+/// The multiple-comparison policy (§10.3 #4), re-exported so gate/round callers
+/// can select a family-wise (Holm) or false-discovery (Benjamini-Hochberg)
+/// correction across a candidate family without a direct `beater-design`
+/// dependency.
+pub use beater_design::MultiplicityPolicy;
+
+/// Build a conservative [`EvalDesign`] for a deploy gate from its [`GatePolicy`]
+/// and the realised sample size. This is the design the experiment/gate path
+/// pre-registers when the caller has not supplied one of its own: a single-metric,
+/// fixed-horizon, offline regression-guard on the untouched `Test` split, with no
+/// multiplicity family and case-level (independent) units. It is intentionally the
+/// *safe* default — it always satisfies [`EvalDesign::permit_pass`], so wiring it
+/// in changes no existing gate decision, while making the design contract
+/// load-bearing for any caller that later supplies a richer (and possibly
+/// refusing) design.
+pub fn conservative_gate_design(policy: &GatePolicy, sample_size: usize) -> EvalDesign {
+    use beater_design::{
+        DatasetSplit, Estimand, MetricDirection, MetricSpec, MetricType, Monitoring,
+        MultiplicityPolicy, RepetitionPlan, SamplingDesign, StoppingRule, TestSelectionPolicy,
+        UnitOfAnalysis, WeightingPolicy, CURRENT_ANALYSIS_VERSION, DEFAULT_POWER,
+    };
+    EvalDesign {
+        name: "experiment-gate".to_string(),
+        hypothesis: "candidate does not regress beyond the policy bound".to_string(),
+        estimand: Estimand::RegressionGuard {
+            max_regression: policy.max_regression.max(0.0),
+        },
+        primary_metric: MetricSpec::new(
+            "primary",
+            MetricType::Bounded,
+            MetricDirection::HigherIsBetter,
+        ),
+        secondary_metrics: Vec::new(),
+        unit_of_analysis: UnitOfAnalysis::Case,
+        cluster_key: None,
+        test_selection: TestSelectionPolicy::Auto,
+        multiplicity: MultiplicityPolicy::None,
+        sampling: SamplingDesign::Random,
+        weighting: WeightingPolicy::Unweighted,
+        monitoring: Monitoring::Offline,
+        stopping_rule: StoppingRule::FixedHorizon {
+            planned_n: sample_size.max(1),
+        },
+        repetition: RepetitionPlan::default(),
+        alpha: policy.alpha,
+        power_target: DEFAULT_POWER,
+        mde: None,
+        split: DatasetSplit::Test,
+        gate_may_read_split: true,
+        analysis_version: CURRENT_ANALYSIS_VERSION,
+    }
+}
+
+/// Design-aware deploy gate: enforce the pre-registered [`EvalDesign`] before a
+/// `Pass` can be certified (§1 #9, §10.3). The comparison is computed exactly as
+/// [`compare_paired_scores`] does, but a design that is structurally malformed
+/// ([`EvalDesign::validate`]) or *incapable of a valid decision*
+/// ([`EvalDesign::permit_pass`] — an online fixed-horizon stream, a non-independent
+/// unit with no cluster key, a tail-sampled unweighted population claim, an
+/// uncorrected multi-metric family, or a gate reading a non-`Test` split) can
+/// **never** yield `Pass`: the decision is forced to `Inconclusive`. A regression
+/// failure is preserved (an invalid design is no reason to ship). This is the
+/// first consumer that makes the pre-registration manifest load-bearing.
+pub fn compare_paired_scores_with_design(
+    baseline: &[f64],
+    candidate: &[f64],
+    policy: &GatePolicy,
+    design: &EvalDesign,
+) -> Result<ExperimentComparison, EvalError> {
+    let mut comparison = compare_paired_scores(baseline, candidate, policy)?;
+    let design_ok = design.validate().is_ok() && design.permit_pass().is_ok();
+    if !design_ok && comparison.decision == GateDecision::Pass {
+        // Nominal alpha ≠ actual alpha under this design — refuse to certify a Pass.
+        comparison.decision = GateDecision::Inconclusive;
+        comparison.mde = None;
+        comparison.required_n = None;
+    }
+    Ok(comparison)
 }
 
 /// Compute the §10.3 #5 power annotations for an inconclusive comparison: the
@@ -1170,6 +1247,25 @@ mod tests {
     }
 
     #[test]
+    fn cost_budget_rejects_negative_trace_metric() {
+        let case = EvaluationCase {
+            input: serde_json::json!(null),
+            output: serde_json::json!(null),
+            reference: None,
+            trace: Some(serde_json::json!({ "cost_micros": -1 })),
+        };
+
+        assert!(matches!(
+            evaluate_deterministic(
+                &deterministic_spec(EvaluatorKind::CostBudget { max_micros: 100 }),
+                &case,
+            ),
+            Err(EvalError::MissingTraceMetric { evaluator_id, metric })
+                if evaluator_id == "cost_budget" && metric == "cost_micros"
+        ));
+    }
+
+    #[test]
     fn budget_scorers_score_present_trace_metrics() {
         let case = EvaluationCase {
             input: serde_json::json!(null),
@@ -1187,6 +1283,13 @@ mod tests {
         )
         .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(cost.score, 1.0);
+
+        let negative_budget = evaluate_deterministic(
+            &deterministic_spec(EvaluatorKind::CostBudget { max_micros: -1 }),
+            &case,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(negative_budget.score, 0.0);
 
         let latency = evaluate_deterministic(
             &deterministic_spec(EvaluatorKind::LatencyBudgetMs { max_ms: 50 }),
@@ -1339,6 +1442,70 @@ mod tests {
         assert!(matches!(result, Err(EvalError::Statistics(_))));
     }
 
+    // ── design-aware gate: EvalDesign::permit_pass is load-bearing ────────────
+
+    #[test]
+    fn conservative_gate_design_always_permits_pass() {
+        // The derived default design must never itself block a Pass, so wiring it
+        // into the gate path changes no existing decision.
+        let design = conservative_gate_design(&GatePolicy::default(), 20);
+        assert_eq!(design.validate(), Ok(()));
+        assert_eq!(design.permit_pass(), Ok(()));
+    }
+
+    #[test]
+    fn valid_design_preserves_pass() {
+        let baseline = [0.50, 0.55, 0.48, 0.52, 0.51, 0.49, 0.53, 0.47, 0.50, 0.52];
+        let candidate = [0.60, 0.64, 0.59, 0.62, 0.61, 0.58, 0.63, 0.57, 0.60, 0.62];
+        let policy = GatePolicy::default();
+        let plain = compare_paired_scores(&baseline, &candidate, &policy)
+            .unwrap_or_else(|err| panic!("{err}"));
+        let design = conservative_gate_design(&policy, baseline.len());
+        let gated = compare_paired_scores_with_design(&baseline, &candidate, &policy, &design)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(plain.decision, GateDecision::Pass);
+        assert_eq!(
+            gated.decision, plain.decision,
+            "valid design preserves Pass"
+        );
+    }
+
+    #[test]
+    fn refusing_design_forces_inconclusive_despite_clear_win() {
+        // A clearly-passing comparison, but the design is incapable of a valid
+        // decision (online stream with a fixed-horizon test). The gate must refuse
+        // to certify a Pass — inconclusive, never pass (§10.3 #6).
+        use beater_design::{Monitoring, StoppingRule};
+        let baseline = [0.50, 0.55, 0.48, 0.52, 0.51, 0.49, 0.53, 0.47, 0.50, 0.52];
+        let candidate = [0.60, 0.64, 0.59, 0.62, 0.61, 0.58, 0.63, 0.57, 0.60, 0.62];
+        let policy = GatePolicy::default();
+        let mut design = conservative_gate_design(&policy, baseline.len());
+        design.monitoring = Monitoring::Online; // peeked stream + FixedHorizon → refusal
+        assert!(matches!(
+            design.stopping_rule,
+            StoppingRule::FixedHorizon { .. }
+        ));
+        assert!(design.permit_pass().is_err());
+        let gated = compare_paired_scores_with_design(&baseline, &candidate, &policy, &design)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(gated.decision, GateDecision::Inconclusive);
+    }
+
+    #[test]
+    fn refusing_design_preserves_regression_failure() {
+        // An invalid design does not whitewash a regression into a pass — a clear
+        // regression still fails.
+        use beater_design::Monitoring;
+        let baseline = [0.90, 0.92, 0.88, 0.91, 0.89, 0.93, 0.90, 0.92, 0.91, 0.89];
+        let candidate = [0.50, 0.52, 0.48, 0.51, 0.49, 0.53, 0.50, 0.52, 0.51, 0.49];
+        let policy = GatePolicy::default();
+        let mut design = conservative_gate_design(&policy, baseline.len());
+        design.monitoring = Monitoring::Online;
+        let gated = compare_paired_scores_with_design(&baseline, &candidate, &policy, &design)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(gated.decision, GateDecision::FailRegression);
+    }
+
     #[test]
     fn non_finite_scores_error() {
         let result = compare_paired_scores(
@@ -1350,6 +1517,22 @@ mod tests {
             },
         );
         assert!(matches!(result, Err(EvalError::Statistics(_))));
+    }
+
+    #[test]
+    fn zero_comparison_count_errors() {
+        let result = compare_paired_scores(
+            &[1.0; 10],
+            &[1.0; 10],
+            &GatePolicy {
+                comparison_count: 0,
+                ..GatePolicy::default()
+            },
+        );
+        assert!(matches!(
+            result,
+            Err(EvalError::Statistics(message)) if message.contains("comparison_count")
+        ));
     }
 
     fn browser_step(action: &str, selector: Option<&str>, matched: bool, status: &str) -> Value {

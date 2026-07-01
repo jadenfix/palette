@@ -7,6 +7,7 @@
 
 static dataset_version_snapshot_t *dataset_version_snapshot_create_internal(
     list_t *cases,
+    char *corpus_root,
     char *created_at,
     char *dataset_id,
     char *project_id,
@@ -18,6 +19,7 @@ static dataset_version_snapshot_t *dataset_version_snapshot_create_internal(
         return NULL;
     }
     dataset_version_snapshot_local_var->cases = cases;
+    dataset_version_snapshot_local_var->corpus_root = corpus_root;
     dataset_version_snapshot_local_var->created_at = created_at;
     dataset_version_snapshot_local_var->dataset_id = dataset_id;
     dataset_version_snapshot_local_var->project_id = project_id;
@@ -30,6 +32,7 @@ static dataset_version_snapshot_t *dataset_version_snapshot_create_internal(
 
 __attribute__((deprecated)) dataset_version_snapshot_t *dataset_version_snapshot_create(
     list_t *cases,
+    char *corpus_root,
     char *created_at,
     char *dataset_id,
     char *project_id,
@@ -38,6 +41,7 @@ __attribute__((deprecated)) dataset_version_snapshot_t *dataset_version_snapshot
     ) {
     return dataset_version_snapshot_create_internal (
         cases,
+        corpus_root,
         created_at,
         dataset_id,
         project_id,
@@ -61,6 +65,10 @@ void dataset_version_snapshot_free(dataset_version_snapshot_t *dataset_version_s
         }
         list_freeList(dataset_version_snapshot->cases);
         dataset_version_snapshot->cases = NULL;
+    }
+    if (dataset_version_snapshot->corpus_root) {
+        free(dataset_version_snapshot->corpus_root);
+        dataset_version_snapshot->corpus_root = NULL;
     }
     if (dataset_version_snapshot->created_at) {
         free(dataset_version_snapshot->created_at);
@@ -106,6 +114,15 @@ cJSON *dataset_version_snapshot_convertToJSON(dataset_version_snapshot_t *datase
     }
     cJSON_AddItemToArray(cases, itemLocal);
     }
+    }
+
+
+    // dataset_version_snapshot->corpus_root
+    if (!dataset_version_snapshot->corpus_root) {
+        goto fail;
+    }
+    if(cJSON_AddStringToObject(item, "corpus_root", dataset_version_snapshot->corpus_root) == NULL) {
+    goto fail; //String
     }
 
 
@@ -195,6 +212,21 @@ dataset_version_snapshot_t *dataset_version_snapshot_parseFromJSON(cJSON *datase
         list_addElement(casesList, casesItem);
     }
 
+    // dataset_version_snapshot->corpus_root
+    cJSON *corpus_root = cJSON_GetObjectItemCaseSensitive(dataset_version_snapshotJSON, "corpus_root");
+    if (cJSON_IsNull(corpus_root)) {
+        corpus_root = NULL;
+    }
+    if (!corpus_root) {
+        goto end;
+    }
+
+    
+    if(!cJSON_IsString(corpus_root))
+    {
+    goto end; //String
+    }
+
     // dataset_version_snapshot->created_at
     cJSON *created_at = cJSON_GetObjectItemCaseSensitive(dataset_version_snapshotJSON, "created_at");
     if (cJSON_IsNull(created_at)) {
@@ -273,6 +305,7 @@ dataset_version_snapshot_t *dataset_version_snapshot_parseFromJSON(cJSON *datase
 
     dataset_version_snapshot_local_var = dataset_version_snapshot_create_internal (
         casesList,
+        strdup(corpus_root->valuestring),
         strdup(created_at->valuestring),
         strdup(dataset_id->valuestring),
         strdup(project_id->valuestring),

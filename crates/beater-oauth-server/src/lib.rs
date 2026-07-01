@@ -32,8 +32,8 @@ use beater_core::{
     ApiKeyId, EnvironmentId, OrganizationId, ProjectId, TenantId, TenantScope, UserId,
 };
 use beater_oauth::{
-    AuthorizationGrant, ClientAuthMethod, ClientRegistration, GrantType, IssuedTokens, OAuthError,
-    OAuthStore,
+    validate_redirect_uri, AuthorizationGrant, ClientAuthMethod, ClientRegistration, GrantType,
+    IssuedTokens, OAuthError, OAuthStore,
 };
 use beater_security::ApiScope;
 use chrono::Utc;
@@ -451,6 +451,9 @@ async fn register(
         set
     };
     let scopes = parse_scope(req.scope.as_deref());
+    if let Some(scope) = unsupported_scope(&scopes, &state.scopes_supported) {
+        return oauth_error(StatusCode::BAD_REQUEST, "invalid_scope", Some(scope));
+    }
     let registration = ClientRegistration {
         client_name: req
             .client_name
@@ -544,6 +547,9 @@ async fn authorize(
             Some("redirect_uri not registered"),
         );
     }
+    if let Err(err) = validate_redirect_uri(&params.redirect_uri) {
+        return oauth_error_from(err);
+    }
 
     // From here, recoverable errors are returned to the client via redirect.
     if params.response_type != "code" {
@@ -630,6 +636,13 @@ async fn authorize(
     } else {
         requested
     };
+    if unsupported_scope(&scope, &state.scopes_supported).is_some() {
+        return redirect_error(
+            &params.redirect_uri,
+            "invalid_scope",
+            params.state.as_deref(),
+        );
+    }
 
     let grant = AuthorizationGrant {
         client_id,
@@ -833,6 +846,17 @@ fn parse_scope(scope: Option<&str>) -> BTreeSet<String> {
         .collect()
 }
 
+fn unsupported_scope<'a>(
+    scopes: &'a BTreeSet<String>,
+    scopes_supported: &[String],
+) -> Option<&'a str> {
+    let supported: BTreeSet<&str> = scopes_supported.iter().map(String::as_str).collect();
+    scopes
+        .iter()
+        .find(|scope| !supported.contains(scope.as_str()))
+        .map(String::as_str)
+}
+
 fn parse_grant_type(value: &str) -> Option<GrantType> {
     match value {
         "authorization_code" => Some(GrantType::AuthorizationCode),
@@ -895,7 +919,7 @@ mod tests {
     use axum::body::Body;
     use axum::http::Request;
     use beater_accounts::SqliteAccountStore;
-    use beater_oauth::SqliteOAuthStore;
+    use beater_oauth::{OAuthClient, SqliteOAuthStore};
     use http::header::LOCATION;
     use http::header::SET_COOKIE;
     use tower::ServiceExt;
@@ -1113,6 +1137,51 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn session_user_cannot_revoke_api_key_from_another_tenant() {
+        let state = test_state();
+        let api_keys = state
+            .api_keys
+            .as_ref()
+            .unwrap_or_else(|| panic!("missing api key store"))
+            .clone();
+        let foreign_key = ok(api_keys
+            .create_key(CreateApiKeyRequest {
+                tenant_id: ok(TenantId::new("other-user")),
+                project_id: ok(ProjectId::new("default")),
+                environment_id: ok(EnvironmentId::new("default")),
+                scopes: BTreeSet::from([ApiScope::TraceRead]),
+            })
+            .await);
+        let app = router(state);
+
+        let resp = post_json(
+            &app,
+            "/auth/register",
+            json!({"email": "dev@example.test", "password": "supersecret"}),
+            None,
+        )
+        .await;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let cookie = format!("{SESSION_COOKIE}={}", cookie_token(&resp));
+
+        let resp = post_json(
+            &app,
+            "/auth/api-keys/revoke",
+            json!({"api_key_id": foreign_key.record.api_key_id.as_str()}),
+            Some(&cookie),
+        )
+        .await;
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+
+        let loaded = ok(api_keys
+            .get_key(foreign_key.record.api_key_id.clone())
+            .await)
+        .unwrap_or_else(|| panic!("expected foreign key to remain stored"));
+        assert!(loaded.active, "foreign tenant key must not be revoked");
+        assert_eq!(loaded.tenant_id, foreign_key.record.tenant_id);
+    }
+
+    #[tokio::test]
     async fn authorization_server_metadata_advertises_s256_and_endpoints() {
         let app = router(test_state());
         let resp = ok(app
@@ -1160,6 +1229,106 @@ mod tests {
             body.get("client_secret").is_none(),
             "public client has no secret"
         );
+    }
+
+    #[tokio::test]
+    async fn register_rejects_unsupported_scope() {
+        let app = router(test_state());
+        let req_body = json!({
+            "client_name": "mcp",
+            "redirect_uris": ["https://app.example.test/cb"],
+            "token_endpoint_auth_method": "none",
+            "scope": "traces:read traces:delete"
+        });
+        let resp = ok(app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/oauth/register")
+                    .header("content-type", "application/json")
+                    .body(Body::from(req_body.to_string()))
+                    .unwrap_or_else(|e| panic!("{e}")),
+            )
+            .await);
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        let body = body_json(resp).await;
+        assert_eq!(body["error"], "invalid_scope");
+        assert_eq!(body["error_description"], "traces:delete");
+    }
+
+    #[tokio::test]
+    async fn register_rejects_unsafe_redirect_uris() {
+        let app = router(test_state());
+        let cases = [
+            "",
+            "not a uri",
+            "https://app.example.test/cb#fragment",
+            "http://app.example.test/cb",
+            "ftp://app.example.test/cb",
+        ];
+
+        for redirect_uri in cases {
+            let resp = post_json(
+                &app,
+                "/oauth/register",
+                json!({
+                    "client_name": "mcp",
+                    "redirect_uris": [redirect_uri],
+                    "token_endpoint_auth_method": "none",
+                    "scope": "traces:read"
+                }),
+                None,
+            )
+            .await;
+            assert_eq!(
+                resp.status(),
+                StatusCode::BAD_REQUEST,
+                "expected {redirect_uri:?} to be rejected"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn authorize_rejects_unsafe_registered_redirect_uri_without_redirecting() {
+        let state = test_state();
+        let now = Utc::now();
+        let client_id = ok(beater_core::OAuthClientId::new("unsafe-client"));
+        ok(state
+            .oauth
+            .put_client(OAuthClient {
+                client_id: client_id.clone(),
+                client_secret_hash: None,
+                client_name: "legacy-client".to_string(),
+                redirect_uris: vec!["http://app.example.test/cb".to_string()],
+                grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
+                scopes: BTreeSet::from(["traces:read".to_string()]),
+                token_endpoint_auth_method: ClientAuthMethod::None,
+                created_at: now,
+            })
+            .await);
+
+        let app = router(state);
+        let uri = format!(
+            "/oauth/authorize?response_type=token&client_id={client_id}&redirect_uri={}&tenant_id=demo&project_id=demo&environment_id=local&code_challenge={}&code_challenge_method=S256",
+            utf8_percent_encode("http://app.example.test/cb", NON_ALPHANUMERIC),
+            challenge()
+        );
+        let resp = ok(app
+            .oneshot(
+                Request::builder()
+                    .uri(uri)
+                    .body(Body::empty())
+                    .unwrap_or_else(|e| panic!("{e}")),
+            )
+            .await);
+
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert!(
+            resp.headers().get(LOCATION).is_none(),
+            "must not redirect to an unsafe registered URI"
+        );
+        let body = body_json(resp).await;
+        assert_eq!(body["error"], "invalid_request");
     }
 
     #[tokio::test]
@@ -1260,6 +1429,71 @@ mod tests {
             .and_then(|v| v.to_str().ok())
             .unwrap_or("");
         assert!(loc.contains("error=access_denied"), "got {loc}");
+        assert!(!loc.contains("code="), "must not issue a code: {loc}");
+    }
+
+    #[tokio::test]
+    async fn authorize_rejects_client_with_unsupported_scope() {
+        let state = test_state();
+        let now = Utc::now();
+        let user = ok(state.accounts.register("dev@example.test", "pw", now).await);
+        let session = ok(state
+            .accounts
+            .start_session(user.user_id.clone(), default_session_ttl(), now)
+            .await);
+        ok(state
+            .accounts
+            .put_membership(beater_accounts::OrgMembership {
+                organization_id: ok(OrganizationId::new("demo")),
+                user_id: user.user_id.clone(),
+                role: beater_accounts::OrgRole::Member,
+                created_at: now,
+            })
+            .await);
+        // Seed the store directly to simulate a client that predates the
+        // HTTP registration allowlist or was inserted by an admin tool.
+        let registered = ok(state
+            .oauth
+            .register_client(
+                ClientRegistration {
+                    client_name: "mcp".to_string(),
+                    redirect_uris: vec!["https://app.example.test/cb".to_string()],
+                    grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
+                    scopes: BTreeSet::from([
+                        "traces:read".to_string(),
+                        "traces:delete".to_string(),
+                    ]),
+                    token_endpoint_auth_method: ClientAuthMethod::None,
+                },
+                now,
+            )
+            .await);
+        let client_id = registered.client.client_id.as_str().to_string();
+        let app = router(state);
+        let uri = format!(
+            "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={}&tenant_id=demo&project_id=demo&environment_id=local&code_challenge={}&code_challenge_method=S256",
+            utf8_percent_encode("https://app.example.test/cb", NON_ALPHANUMERIC),
+            challenge()
+        );
+        let resp = ok(app
+            .oneshot(
+                Request::builder()
+                    .uri(uri)
+                    .header(
+                        http::header::COOKIE,
+                        format!("{SESSION_COOKIE}={}", session.token),
+                    )
+                    .body(Body::empty())
+                    .unwrap_or_else(|e| panic!("{e}")),
+            )
+            .await);
+        assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+        let loc = resp
+            .headers()
+            .get(LOCATION)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        assert!(loc.contains("error=invalid_scope"), "got {loc}");
         assert!(!loc.contains("code="), "must not issue a code: {loc}");
     }
 

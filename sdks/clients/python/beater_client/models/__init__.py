@@ -14,6 +14,7 @@
 
 
 # import models into model package
+from beater_client.models.add_prompt_version_request import AddPromptVersionRequest
 from beater_client.models.alert_decision import AlertDecision
 from beater_client.models.alert_input import AlertInput
 from beater_client.models.alert_links import AlertLinks
@@ -38,12 +39,19 @@ from beater_client.models.calibration_report import CalibrationReport
 from beater_client.models.canonical_span import CanonicalSpan
 from beater_client.models.case_experiment_score import CaseExperimentScore
 from beater_client.models.case_output_override_request import CaseOutputOverrideRequest
+from beater_client.models.connect_connector_request import ConnectConnectorRequest
+from beater_client.models.connection_link import ConnectionLink
+from beater_client.models.connection_status import ConnectionStatus
+from beater_client.models.connector_skills_response import ConnectorSkillsResponse
+from beater_client.models.connector_tool import ConnectorTool
 from beater_client.models.create_api_key_http_request import CreateApiKeyHttpRequest
 from beater_client.models.create_dataset_request import CreateDatasetRequest
 from beater_client.models.create_dataset_version_request import CreateDatasetVersionRequest
 from beater_client.models.create_gate_request import CreateGateRequest
+from beater_client.models.create_prompt_request import CreatePromptRequest
 from beater_client.models.create_provider_secret_http_request import CreateProviderSecretHttpRequest
 from beater_client.models.create_review_queue_http_request import CreateReviewQueueHttpRequest
+from beater_client.models.created_prompt import CreatedPrompt
 from beater_client.models.currency import Currency
 from beater_client.models.dataset import Dataset
 from beater_client.models.dataset_case import DatasetCase
@@ -51,6 +59,8 @@ from beater_client.models.dataset_eval_report import DatasetEvalReport
 from beater_client.models.dataset_version_snapshot import DatasetVersionSnapshot
 from beater_client.models.dead_letter import DeadLetter
 from beater_client.models.dead_letter_replay_report import DeadLetterReplayReport
+from beater_client.models.diff_line import DiffLine
+from beater_client.models.diff_line_kind import DiffLineKind
 from beater_client.models.enqueue_review_task_from_trace_http_request import EnqueueReviewTaskFromTraceHttpRequest
 from beater_client.models.error_response import ErrorResponse
 from beater_client.models.eval_reproducibility import EvalReproducibility
@@ -82,6 +92,7 @@ from beater_client.models.import_source_http_request import ImportSourceHttpRequ
 from beater_client.models.inconclusive_policy import InconclusivePolicy
 from beater_client.models.ingest_outcome import IngestOutcome
 from beater_client.models.ingest_queue_status import IngestQueueStatus
+from beater_client.models.invoke_connector_request import InvokeConnectorRequest
 from beater_client.models.judge_audit_record import JudgeAuditRecord
 from beater_client.models.judge_broker_outcome import JudgeBrokerOutcome
 from beater_client.models.maintenance_window import MaintenanceWindow
@@ -94,6 +105,14 @@ from beater_client.models.page_run_summary import PageRunSummary
 from beater_client.models.page_run_summary_items_inner import PageRunSummaryItemsInner
 from beater_client.models.promote_review_annotation_http_request import PromoteReviewAnnotationHttpRequest
 from beater_client.models.promote_trace_case_request import PromoteTraceCaseRequest
+from beater_client.models.prompt import Prompt
+from beater_client.models.prompt_list_response import PromptListResponse
+from beater_client.models.prompt_template import PromptTemplate
+from beater_client.models.prompt_variable import PromptVariable
+from beater_client.models.prompt_version import PromptVersion
+from beater_client.models.prompt_version_diff import PromptVersionDiff
+from beater_client.models.prompt_version_list_response import PromptVersionListResponse
+from beater_client.models.prompt_version_metadata import PromptVersionMetadata
 from beater_client.models.provider_secret_metadata import ProviderSecretMetadata
 from beater_client.models.publish_ack import PublishAck
 from beater_client.models.queued_trace_work import QueuedTraceWork
@@ -130,6 +149,8 @@ from beater_client.models.statistical_test import StatisticalTest
 from beater_client.models.submit_review_annotation_http_request import SubmitReviewAnnotationHttpRequest
 from beater_client.models.tenant_scope import TenantScope
 from beater_client.models.token_counts import TokenCounts
+from beater_client.models.tool_execution import ToolExecution
+from beater_client.models.toolkit import Toolkit
 from beater_client.models.trace_ingested_drain_report import TraceIngestedDrainReport
 from beater_client.models.trace_ingested_reconcile_report import TraceIngestedReconcileReport
 from beater_client.models.trace_view import TraceView

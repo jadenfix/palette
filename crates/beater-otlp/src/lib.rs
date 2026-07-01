@@ -203,17 +203,17 @@ fn scope_from_metadata(
     metadata: &MetadataMap,
     default_scope: &TenantScope,
 ) -> Result<TenantScope, Status> {
-    let tenant_id = metadata_text(metadata, TENANT_METADATA_KEY)
+    let tenant_id = metadata_text(metadata, TENANT_METADATA_KEY)?
         .map(TenantId::new)
         .transpose()
         .map_err(|err| Status::invalid_argument(err.to_string()))?
         .unwrap_or_else(|| default_scope.tenant_id.clone());
-    let project_id = metadata_text(metadata, PROJECT_METADATA_KEY)
+    let project_id = metadata_text(metadata, PROJECT_METADATA_KEY)?
         .map(ProjectId::new)
         .transpose()
         .map_err(|err| Status::invalid_argument(err.to_string()))?
         .unwrap_or_else(|| default_scope.project_id.clone());
-    let environment_id = metadata_text(metadata, ENVIRONMENT_METADATA_KEY)
+    let environment_id = metadata_text(metadata, ENVIRONMENT_METADATA_KEY)?
         .map(EnvironmentId::new)
         .transpose()
         .map_err(|err| Status::invalid_argument(err.to_string()))?
@@ -221,8 +221,13 @@ fn scope_from_metadata(
     Ok(TenantScope::new(tenant_id, project_id, environment_id))
 }
 
-fn metadata_text<'a>(metadata: &'a MetadataMap, key: &str) -> Option<&'a str> {
-    metadata.get(key).and_then(|value| value.to_str().ok())
+fn metadata_text<'a>(metadata: &'a MetadataMap, key: &str) -> Result<Option<&'a str>, Status> {
+    let Some(value) = metadata.get(key) else {
+        return Ok(None);
+    };
+    value.to_str().map(Some).map_err(|_| {
+        Status::invalid_argument(format!("{key} metadata must contain a visible ASCII value"))
+    })
 }
 
 fn status_from_ingest_error(error: IngestError) -> Status {
@@ -245,7 +250,7 @@ fn convert_resource_spans(
     resource_spans: ResourceSpans,
     converted: &mut Vec<NativeIngestRequest>,
 ) -> anyhow::Result<()> {
-    let resource_attrs = resource_attrs(resource_spans.resource.as_ref());
+    let resource_attrs = prefixed_resource_attrs(resource_spans.resource.as_ref());
     let resource_schema_url = resource_spans.schema_url;
     for scope_spans in resource_spans.scope_spans {
         convert_scope_spans(
@@ -319,10 +324,10 @@ fn convert_span(
     } else {
         Some(SpanId::new(lower_hex(&span.parent_span_id))?)
     };
-    let mut attributes = BTreeMap::new();
-    for (key, value) in resource_attrs {
-        attributes.insert(format!("resource.{key}"), value.clone());
-    }
+    // `resource_attrs` already carries the `resource.<key>` prefix (built once
+    // per ResourceSpans group), so cloning it here lands the identical keys on
+    // every span without re-formatting per key per span.
+    let mut attributes = resource_attrs.clone();
     attributes.insert(
         "otel.resource_schema_url".to_string(),
         Value::String(resource_schema_url.to_string()),
@@ -417,14 +422,22 @@ fn convert_span(
     })
 }
 
-fn resource_attrs(resource: Option<&Resource>) -> CanonicalAttrs {
+/// Build the `resource.<key>`-prefixed canonical attributes once per
+/// `ResourceSpans` group. Resource attributes are constant across every span in
+/// the group, so the `format!("resource.{key}")` work is done a single time here
+/// and the prebuilt map is cloned onto each span (see `convert_span`) instead of
+/// re-formatting every key for every span.
+fn prefixed_resource_attrs(resource: Option<&Resource>) -> CanonicalAttrs {
     let mut attrs = BTreeMap::new();
     if let Some(resource) = resource {
         for attr in &resource.attributes {
-            attrs.insert(attr.key.clone(), any_value_to_json(attr.value.as_ref()));
+            attrs.insert(
+                format!("resource.{}", attr.key),
+                any_value_to_json(attr.value.as_ref()),
+            );
         }
         attrs.insert(
-            "otel.dropped_resource_attributes_count".to_string(),
+            "resource.otel.dropped_resource_attributes_count".to_string(),
             json!(resource.dropped_attributes_count),
         );
     }
@@ -1050,6 +1063,29 @@ mod tests {
         assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(1));
     }
 
+    #[test]
+    fn scope_metadata_rejects_non_visible_ascii_values() {
+        let default_scope = TenantScope::new(
+            TenantId::new("default-tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("default-project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("local").unwrap_or_else(|err| panic!("{err}")),
+        );
+        let mut metadata = MetadataMap::new();
+        let opaque_value = tonic::metadata::AsciiMetadataValue::try_from(&b"tenant\xFA"[..])
+            .unwrap_or_else(|err| panic!("{err}"));
+        metadata.insert(TENANT_METADATA_KEY, opaque_value);
+
+        let error = scope_from_metadata(&metadata, &default_scope)
+            .err()
+            .unwrap_or_else(|| panic!("opaque scope metadata must be rejected"));
+
+        assert_eq!(error.code(), tonic::Code::InvalidArgument);
+        assert!(
+            error.message().contains(TENANT_METADATA_KEY),
+            "error should name the invalid metadata key: {error}"
+        );
+    }
+
     #[tokio::test]
     async fn export_propagates_w3c_context_across_spawn_and_redacts_baggage_secrets() {
         let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
@@ -1526,6 +1562,84 @@ mod tests {
             decision.attributes["browser.reasoning"],
             json!("the submit button is visible")
         );
+    }
+
+    #[test]
+    fn resource_attrs_are_prefixed_once_and_replicated_onto_every_span() {
+        // Two spans in one ResourceSpans group must each receive the identical
+        // `resource.<key>` attributes (built once per group), including the
+        // `resource.`-prefixed dropped-count key. Guards #445: prefixing the
+        // resource attributes once and cloning them per span must not change the
+        // keys/values that land on each span.
+        let scope = TenantScope::new(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+        );
+        let span = |span_id: Vec<u8>, name: &str| Span {
+            trace_id: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+            span_id,
+            trace_state: String::new(),
+            parent_span_id: Vec::new(),
+            flags: 0,
+            name: name.to_string(),
+            kind: span::SpanKind::Client as i32,
+            start_time_unix_nano: 1_700_000_000_000_000_000,
+            end_time_unix_nano: 1_700_000_001_000_000_000,
+            attributes: Vec::new(),
+            dropped_attributes_count: 0,
+            events: Vec::new(),
+            dropped_events_count: 0,
+            links: Vec::new(),
+            dropped_links_count: 0,
+            status: Some(Status {
+                message: String::new(),
+                code: status::StatusCode::Ok as i32,
+            }),
+        };
+        let request = ExportTraceServiceRequest {
+            resource_spans: vec![ResourceSpans {
+                resource: Some(Resource {
+                    attributes: vec![
+                        kv("service.name", string_value("checkout-agent")),
+                        kv("deployment.environment", string_value("prod")),
+                    ],
+                    dropped_attributes_count: 4,
+                    entity_refs: Vec::new(),
+                }),
+                scope_spans: vec![ScopeSpans {
+                    scope: None,
+                    spans: vec![
+                        span(vec![17, 18, 19, 20, 21, 22, 23, 24], "first"),
+                        span(vec![25, 26, 27, 28, 29, 30, 31, 32], "second"),
+                    ],
+                    schema_url: String::new(),
+                }],
+                schema_url: String::new(),
+            }],
+        };
+
+        let native =
+            export_to_native_requests(scope, request).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(native.len(), 2);
+        for span in &native {
+            assert_eq!(
+                span.attributes["resource.service.name"],
+                json!("checkout-agent")
+            );
+            assert_eq!(
+                span.attributes["resource.deployment.environment"],
+                json!("prod")
+            );
+            assert_eq!(
+                span.attributes["resource.otel.dropped_resource_attributes_count"],
+                json!(4)
+            );
+            // No un-prefixed leakage of the dropped-count key.
+            assert!(!span
+                .attributes
+                .contains_key("otel.dropped_resource_attributes_count"));
+        }
     }
 
     pub fn fixture_export() -> ExportTraceServiceRequest {

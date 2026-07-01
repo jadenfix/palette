@@ -12,7 +12,6 @@
  *      it will automatically be enforced on every subsequent run.
  *
  * Route discrepancies vs §25.4 as of the commit this test was added:
- *   - /search      → §25.4 [needs read-API]; exists on feature branch, NOT main.
  *   - /settings    → §25.4 says [partial/built] but app/settings/page.tsx is
  *                    absent on main (settings/ is a namespace dir; api-keys page
  *                    lives at /settings/api-keys). Added to PENDING_ROUTES with a
@@ -55,6 +54,11 @@ const EXPECTED_ROUTES = [
     file: "docs/quickstarts/page.tsx",
     note: "Quickstart guides — §25.4 [built]",
   },
+  {
+    route: "/search",
+    file: "search/page.tsx",
+    note: "Crate Dig — §25.4 [partial, built against /v1/search/:tenant/spans]",
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -63,11 +67,6 @@ const EXPECTED_ROUTES = [
 // Promote an entry to EXPECTED_ROUTES once the route ships to main.
 // ---------------------------------------------------------------------------
 const PENDING_ROUTES = [
-  {
-    route: "/search",
-    file: "search/page.tsx",
-    note: "Crate Dig — §25.4 [needs read-API: /v1/search/:tenant/spans, §20.4 #2.8]; exists on feature branch",
-  },
   {
     route: "/settings",
     file: "settings/page.tsx",

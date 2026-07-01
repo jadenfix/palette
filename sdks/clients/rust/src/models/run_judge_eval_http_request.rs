@@ -13,6 +13,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RunJudgeEvalHttpRequest {
+    /// Calibration-map / judge-instrument version folded into the judge cache key; bumping it on recalibration invalidates stale cached scores.
+    #[serde(rename = "cache_namespace", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub cache_namespace: Option<Option<String>>,
     #[serde(rename = "case")]
     pub case: Box<models::EvaluationCase>,
     #[serde(rename = "evaluator")]
@@ -24,6 +27,7 @@ pub struct RunJudgeEvalHttpRequest {
 impl RunJudgeEvalHttpRequest {
     pub fn new(case: models::EvaluationCase, evaluator: models::EvaluatorSpec, provider_secret_id: String) -> RunJudgeEvalHttpRequest {
         RunJudgeEvalHttpRequest {
+            cache_namespace: None,
             case: Box::new(case),
             evaluator: Box::new(evaluator),
             provider_secret_id,

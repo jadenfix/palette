@@ -8,7 +8,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use beater_archive::OrphanedArtifactSweeper;
+use beater_archive::{OrphanedArtifactSweeper, SweepConfig};
 use beater_core::{EnvironmentId, IdempotencyKey, ProjectId, SpanId, TenantId, TraceId};
 use beater_schema::{
     AgentSpanKind, ArtifactRef, AuthContext, CanonicalSpan, CanonicalTraceBatch, RawEnvelope,
@@ -40,7 +40,7 @@ async fn sweeps_orphaned_artifacts_against_live_spans() {
     let raw = raw_envelope(&tenant, &project, raw_ref.clone());
     let span = canonical_span(&tenant, &project, raw_ref.clone(), Some(output_ref.clone()));
     trace_store
-        .write_batch(CanonicalTraceBatch::one(raw, span))
+        .write_batch(Arc::new(CanonicalTraceBatch::one(raw, span)))
         .await
         .unwrap_or_else(|err| panic!("{err}"));
 
@@ -55,17 +55,21 @@ async fn sweeps_orphaned_artifacts_against_live_spans() {
     let sweeper = OrphanedArtifactSweeper::new(artifacts.clone());
     let candidates = vec![raw_ref.clone(), output_ref.clone(), orphan_ref.clone()];
     let report = sweeper
-        .sweep(
+        .sweep_slice(
             &trace_store,
             tenant.clone(),
             Some(project.clone()),
             &candidates,
+            SweepConfig::default(),
         )
         .await
         .unwrap_or_else(|err| panic!("{err}"));
 
-    assert_eq!(report.retained, 2, "raw + output refs are still referenced");
-    assert_eq!(report.deleted, 1, "only the orphan is deleted");
+    assert_eq!(
+        report.metrics.retained, 2,
+        "raw + output refs are still referenced"
+    );
+    assert_eq!(report.metrics.deleted, 1, "only the orphan is deleted");
     assert_eq!(report.deleted_uris, vec![orphan_ref.uri.clone()]);
 
     // Referenced artifacts survive.
@@ -87,12 +91,18 @@ async fn sweeps_orphaned_artifacts_against_live_spans() {
     // Re-running the sweep is idempotent: the orphan is already gone, so nothing
     // new is deleted and the referenced artifacts are still retained.
     let second = sweeper
-        .sweep(&trace_store, tenant, Some(project), &candidates)
+        .sweep_slice(
+            &trace_store,
+            tenant,
+            Some(project),
+            &candidates,
+            SweepConfig::default(),
+        )
         .await
         .unwrap_or_else(|err| panic!("{err}"));
-    assert_eq!(second.retained, 2);
+    assert_eq!(second.metrics.retained, 2);
     assert_eq!(
-        second.deleted, 1,
+        second.metrics.deleted, 1,
         "delete of a missing object is a no-op success"
     );
 }
@@ -113,17 +123,18 @@ async fn project_scoped_sweep_ignores_out_of_scope_candidates() {
     let sweeper = OrphanedArtifactSweeper::new(artifacts.clone());
     let candidates = vec![in_scope_orphan.clone(), out_of_scope.clone()];
     let report = sweeper
-        .sweep(
+        .sweep_slice(
             &trace_store,
             tenant.clone(),
             Some(project.clone()),
             &candidates,
+            SweepConfig::default(),
         )
         .await
         .unwrap_or_else(|err| panic!("{err}"));
 
-    assert_eq!(report.retained, 0);
-    assert_eq!(report.deleted, 1);
+    assert_eq!(report.metrics.retained, 0);
+    assert_eq!(report.metrics.deleted, 1);
     assert_eq!(report.deleted_uris, vec![in_scope_orphan.uri.clone()]);
 
     match artifacts.get_bytes(&in_scope_orphan).await {

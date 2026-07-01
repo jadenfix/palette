@@ -1,16 +1,16 @@
 use async_trait::async_trait;
 use beater_core::{
-    sha256_hex, Clock, EnvironmentId, IdempotencyKey, OrganizationId, Page, PageRequest, ProjectId,
-    SystemClock, TenantId, Timestamp, TraceId,
+    sha256_hex, Clock, EnvironmentId, IdempotencyKey, Money, OrganizationId, Page, PageRequest,
+    ProjectId, SystemClock, TenantId, Timestamp, TraceId,
 };
 use beater_schema::{
-    span_summary, CanonicalSpan, CanonicalTraceBatch, RawEnvelope, RunFilter, RunSummary,
-    SpanFilter, SpanSummary, TraceView, WriteAck,
+    span_summary, AgentSpanKind, CanonicalSpan, CanonicalTraceBatch, ModelRef, RawEnvelope,
+    RunFilter, RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck,
 };
 use beater_store::{
-    lock_poisoned, query_runs_by_materializing_spans, EnvironmentMetadata, MetadataStore,
+    finalize_run_aggregates, lock_poisoned, EnvironmentMetadata, MetadataStore,
     OrganizationMetadata, ProjectMetadata, QuotaDecision, QuotaLimiter, QuotaReservationRequest,
-    RoleBinding, StoreError, StoreResult, TraceStore,
+    RoleBinding, RunAggregateRow, StoreError, StoreResult, TraceStore,
 };
 use chrono::DateTime;
 use rusqlite::{params, Connection, OptionalExtension, TransactionBehavior};
@@ -219,6 +219,23 @@ impl SqliteQuotaLimiter {
                     updated_at TEXT NOT NULL,
                     PRIMARY KEY (tenant_id, project_id, window_start)
                 );
+
+                -- Idempotency ledger for reservations carrying a client key.
+                -- Records the decision of each keyed reservation so a client
+                -- retry within the same window replays it instead of
+                -- double-counting (see reserve_quota). Scoped by window_start so
+                -- the same key in a later window is a fresh reservation.
+                CREATE TABLE IF NOT EXISTS quota_reservations (
+                    tenant_id TEXT NOT NULL,
+                    project_id TEXT NOT NULL,
+                    window_start TEXT NOT NULL,
+                    idempotency_key TEXT NOT NULL,
+                    accepted INTEGER NOT NULL,
+                    used_after INTEGER NOT NULL,
+                    reset_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (tenant_id, project_id, window_start, idempotency_key)
+                );
                 "#,
             )
             .map_err(StoreError::backend)?;
@@ -237,6 +254,18 @@ impl QuotaLimiter for SqliteQuotaLimiter {
         let tx = connection
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(StoreError::backend)?;
+
+        // Idempotent replay: a retry of the same logical reservation (same key,
+        // same window) returns the originally recorded decision without advancing
+        // the counter again. The counter read/write and this lookup share one
+        // IMMEDIATE transaction, so the dedup is atomic with the reservation.
+        if let Some(key) = request.idempotency_key.as_deref() {
+            if let Some(decision) = replay_keyed_reservation(&tx, &request, key)? {
+                tx.commit().map_err(StoreError::backend)?;
+                return Ok(decision);
+            }
+        }
+
         let current_used = tx
             .query_row(
                 r#"
@@ -261,45 +290,113 @@ impl QuotaLimiter for SqliteQuotaLimiter {
         let Some(new_used) = current_used.checked_add(request.amount) else {
             return Err(StoreError::integrity("quota counter overflow"));
         };
-        if new_used > request.limit {
-            tx.commit().map_err(StoreError::backend)?;
-            return Ok(QuotaDecision {
+
+        let decision = if new_used > request.limit {
+            QuotaDecision {
                 accepted: false,
                 used: current_used,
                 limit: request.limit,
                 reset_at: request.reset_at,
-            });
+            }
+        } else {
+            tx.execute(
+                r#"
+                INSERT INTO quota_counters
+                  (tenant_id, project_id, window_start, reset_at, used_events, updated_at)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+                ON CONFLICT(tenant_id, project_id, window_start) DO UPDATE SET
+                  reset_at = excluded.reset_at,
+                  used_events = excluded.used_events,
+                  updated_at = excluded.updated_at
+                "#,
+                params![
+                    request.tenant_id.as_str(),
+                    request.project_id.as_str(),
+                    request.window_start.to_rfc3339(),
+                    request.reset_at.to_rfc3339(),
+                    new_used as i64,
+                    self.clock.now().to_rfc3339(),
+                ],
+            )
+            .map_err(StoreError::backend)?;
+            QuotaDecision {
+                accepted: true,
+                used: new_used,
+                limit: request.limit,
+                reset_at: request.reset_at,
+            }
+        };
+
+        // Record the keyed outcome (accepted or rejected) so a later retry of this
+        // key replays it verbatim. Rejections are recorded too: replaying a denial
+        // is correct and still never advances the counter.
+        if let Some(key) = request.idempotency_key.as_deref() {
+            tx.execute(
+                r#"
+                INSERT INTO quota_reservations
+                  (tenant_id, project_id, window_start, idempotency_key,
+                   accepted, used_after, reset_at, created_at)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                "#,
+                params![
+                    request.tenant_id.as_str(),
+                    request.project_id.as_str(),
+                    request.window_start.to_rfc3339(),
+                    key,
+                    decision.accepted as i64,
+                    decision.used as i64,
+                    decision.reset_at.to_rfc3339(),
+                    self.clock.now().to_rfc3339(),
+                ],
+            )
+            .map_err(StoreError::backend)?;
         }
 
-        tx.execute(
-            r#"
-            INSERT INTO quota_counters
-              (tenant_id, project_id, window_start, reset_at, used_events, updated_at)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-            ON CONFLICT(tenant_id, project_id, window_start) DO UPDATE SET
-              reset_at = excluded.reset_at,
-              used_events = excluded.used_events,
-              updated_at = excluded.updated_at
-            "#,
-            params![
-                request.tenant_id.as_str(),
-                request.project_id.as_str(),
-                request.window_start.to_rfc3339(),
-                request.reset_at.to_rfc3339(),
-                new_used as i64,
-                self.clock.now().to_rfc3339(),
-            ],
-        )
-        .map_err(StoreError::backend)?;
         tx.commit().map_err(StoreError::backend)?;
-
-        Ok(QuotaDecision {
-            accepted: true,
-            used: new_used,
-            limit: request.limit,
-            reset_at: request.reset_at,
-        })
+        Ok(decision)
     }
+}
+
+/// Looks up a previously recorded keyed reservation in the current transaction
+/// and, if present, reconstructs the decision it returned. Returns `None` for a
+/// first-seen key so the caller proceeds with a normal reservation.
+fn replay_keyed_reservation(
+    tx: &rusqlite::Transaction<'_>,
+    request: &QuotaReservationRequest,
+    key: &str,
+) -> StoreResult<Option<QuotaDecision>> {
+    tx.query_row(
+        r#"
+        SELECT accepted, used_after, reset_at
+        FROM quota_reservations
+        WHERE tenant_id = ?1 AND project_id = ?2 AND window_start = ?3
+          AND idempotency_key = ?4
+        "#,
+        params![
+            request.tenant_id.as_str(),
+            request.project_id.as_str(),
+            request.window_start.to_rfc3339(),
+            key,
+        ],
+        |row| {
+            let accepted: i64 = row.get(0)?;
+            let used_after: i64 = row.get(1)?;
+            let reset_at: String = row.get(2)?;
+            Ok((accepted, used_after, reset_at))
+        },
+    )
+    .optional()
+    .map_err(StoreError::backend)?
+    .map(|(accepted, used_after, reset_at)| {
+        let reset_at = parse_timestamp(reset_at).map_err(StoreError::backend)?;
+        Ok(QuotaDecision {
+            accepted: accepted != 0,
+            used: used_after.max(0) as u64,
+            limit: request.limit,
+            reset_at,
+        })
+    })
+    .transpose()
 }
 
 fn configure_sqlite_connection(connection: &Connection) -> StoreResult<()> {
@@ -706,7 +803,7 @@ impl SqliteTraceStore {
 
 #[async_trait]
 impl TraceStore for SqliteTraceStore {
-    async fn write_batch(&self, batch: CanonicalTraceBatch) -> StoreResult<WriteAck> {
+    async fn write_batch(&self, batch: Arc<CanonicalTraceBatch>) -> StoreResult<WriteAck> {
         let mut connection = self.lock()?;
         let tx = connection.transaction().map_err(StoreError::backend)?;
 
@@ -827,7 +924,91 @@ impl TraceStore for SqliteTraceStore {
         filter: RunFilter,
         page: PageRequest,
     ) -> StoreResult<Page<RunSummary>> {
-        query_runs_by_materializing_spans(self, tenant, filter, page).await
+        // Backend GROUP BY over the span-scope columns (§8.1), mirroring the
+        // Postgres/ClickHouse backends: the database reduces each run to one row
+        // with scalar rollups plus the per-span model/cost/release occurrences in
+        // `start_time DESC, seq ASC` order (matching `roll_up_runs`). The shared
+        // `finalize_run_aggregates` then applies the run-level filters that depend
+        // on rolled-up values (status/kind/cost/latency/model/release) and
+        // pagination — exactly as the materializing fallback did, but without
+        // pulling every span for the tenant/project into memory.
+        //
+        // `model`/`cost` are top-level span fields, and `release_id` is the first
+        // string-valued attribute among the canonical release keys (mirrors
+        // `beater_schema::span_release_id`); all are read out of `span_json` with
+        // `json_extract`. SQLite (>= 3.44, bundled here) supports `ORDER BY` and
+        // `FILTER` inside aggregates and `json_group_array`, so the per-span lists
+        // are emitted already ordered and null-free.
+        let connection = self.lock()?;
+        // `RUN_RELEASE_ID_EXPR` is interpolated (not a bound parameter) — it is a
+        // fixed, code-owned SQL fragment with no caller input, so there is no
+        // injection surface. Sharing it between the projection and the FILTER
+        // keeps the two in lockstep and lets a unit test exercise the exact
+        // expression.
+        let query = format!(
+            r#"
+                SELECT
+                  project_id,
+                  trace_id,
+                  COUNT(*) AS span_count,
+                  CASE
+                    WHEN MAX(status = 'error') = 1 THEN 'error'
+                    WHEN MAX(status = 'ok') = 1 THEN 'ok'
+                    ELSE 'unset'
+                  END AS status,
+                  json_group_array(name ORDER BY start_time ASC, seq ASC) AS names_asc,
+                  MIN(start_time) AS started_at,
+                  MAX(end_time) AS ended_at,
+                  json_group_array(
+                    json_array(
+                      json_extract(span_json, '$.model.provider'),
+                      json_extract(span_json, '$.model.name')
+                    ) ORDER BY start_time DESC, seq ASC
+                  ) FILTER (
+                    WHERE json_extract(span_json, '$.model.provider') IS NOT NULL
+                      AND json_extract(span_json, '$.model.name') IS NOT NULL
+                  ) AS models,
+                  json_group_array(
+                    json_array(
+                      json_extract(span_json, '$.cost.currency'),
+                      json_extract(span_json, '$.cost.amount_micros')
+                    ) ORDER BY start_time DESC, seq ASC
+                  ) FILTER (
+                    WHERE json_extract(span_json, '$.cost.currency') IS NOT NULL
+                      AND json_extract(span_json, '$.cost.amount_micros') IS NOT NULL
+                  ) AS costs,
+                  json_group_array({release} ORDER BY start_time DESC, seq ASC)
+                    FILTER (WHERE {release} IS NOT NULL) AS release_ids,
+                  json_group_array(DISTINCT kind) AS kinds
+                FROM spans
+                WHERE tenant_id = ?1
+                  AND (?2 IS NULL OR project_id = ?2)
+                  AND (?3 IS NULL OR environment_id = ?3)
+                  AND (?4 IS NULL OR trace_id = ?4)
+                GROUP BY project_id, trace_id
+                ORDER BY MAX(start_time) DESC, project_id ASC, trace_id ASC
+                "#,
+            release = RUN_RELEASE_ID_EXPR,
+        );
+        let mut statement = connection.prepare(&query).map_err(StoreError::backend)?;
+        let rows = statement
+            .query_map(
+                params![
+                    tenant.as_str(),
+                    filter.project_id.as_ref().map(|value| value.as_str()),
+                    filter.environment_id.as_ref().map(|value| value.as_str()),
+                    filter.trace_id.as_ref().map(|value| value.as_str()),
+                ],
+                run_aggregate_from_row,
+            )
+            .map_err(StoreError::backend)?;
+        let mut aggregates = Vec::new();
+        for row in rows {
+            aggregates.push(row.map_err(StoreError::backend)??);
+        }
+        drop(statement);
+        drop(connection);
+        Ok(finalize_run_aggregates(tenant, aggregates, filter, page))
     }
 
     async fn query_spans(
@@ -1064,15 +1245,204 @@ fn conversion_error(
     rusqlite::Error::FromSqlConversionFailure(index, rusqlite::types::Type::Text, Box::new(err))
 }
 
+/// Per-span release-id SQL expression for `query_runs`: the first *string*
+/// attribute among the canonical release keys, in the same precedence as
+/// [`beater_schema::span_release_id`]. The `json_type(...) = 'text'` guard mirrors
+/// that function's `as_str()` filter, so a non-string attribute value (e.g. a
+/// number) is skipped rather than coerced. Keys with dots are double-quoted in
+/// the JSON path. Interpolated into the query (it carries no caller input).
+const RUN_RELEASE_ID_EXPR: &str = r#"coalesce(
+  CASE WHEN json_type(span_json, '$.attributes."beater.release_id"') = 'text'
+       THEN json_extract(span_json, '$.attributes."beater.release_id"') END,
+  CASE WHEN json_type(span_json, '$.attributes."agent.release_id"') = 'text'
+       THEN json_extract(span_json, '$.attributes."agent.release_id"') END,
+  CASE WHEN json_type(span_json, '$.attributes."deployment.release_id"') = 'text'
+       THEN json_extract(span_json, '$.attributes."deployment.release_id"') END,
+  CASE WHEN json_type(span_json, '$.attributes."release.id"') = 'text'
+       THEN json_extract(span_json, '$.attributes."release.id"') END,
+  CASE WHEN json_type(span_json, '$.attributes."release_id"') = 'text'
+       THEN json_extract(span_json, '$.attributes."release_id"') END
+)"#;
+
+/// Builds a [`RunAggregateRow`] from one row of the `query_runs` GROUP BY. The
+/// SQLite column read can fail (`rusqlite::Result`); the inner decode of the
+/// JSON aggregate columns can fail with a typed [`StoreError`], hence the nested
+/// result. The JSON array shapes match the Postgres backend exactly, so the
+/// shared [`finalize_run_aggregates`] folds them identically.
+fn run_aggregate_from_row(
+    row: &rusqlite::Row<'_>,
+) -> rusqlite::Result<StoreResult<RunAggregateRow>> {
+    let project_id: String = row.get("project_id")?;
+    let trace_id: String = row.get("trace_id")?;
+    let span_count: i64 = row.get("span_count")?;
+    let status: String = row.get("status")?;
+    let names_asc: String = row.get("names_asc")?;
+    let started_at: String = row.get("started_at")?;
+    let ended_at: Option<String> = row.get("ended_at")?;
+    let models: String = row.get("models")?;
+    let costs: String = row.get("costs")?;
+    let release_ids: String = row.get("release_ids")?;
+    let kinds: String = row.get("kinds")?;
+    Ok(decode_run_aggregate(RunAggregateColumns {
+        project_id,
+        trace_id,
+        span_count,
+        status,
+        names_asc,
+        started_at,
+        ended_at,
+        models,
+        costs,
+        release_ids,
+        kinds,
+    }))
+}
+
+/// Raw column values for one `query_runs` GROUP BY row, before typed decoding.
+struct RunAggregateColumns {
+    project_id: String,
+    trace_id: String,
+    span_count: i64,
+    status: String,
+    names_asc: String,
+    started_at: String,
+    ended_at: Option<String>,
+    models: String,
+    costs: String,
+    release_ids: String,
+    kinds: String,
+}
+
+fn decode_run_aggregate(columns: RunAggregateColumns) -> StoreResult<RunAggregateRow> {
+    let started_at = parse_timestamp(columns.started_at).map_err(StoreError::backend)?;
+    let ended_at = match columns.ended_at {
+        Some(value) => Some(parse_timestamp(value).map_err(StoreError::backend)?),
+        None => None,
+    };
+    // `names_asc` is `json_group_array(name ORDER BY start_time ASC, seq ASC)`;
+    // the run's first span name is the earliest, i.e. element 0. COUNT(*) >= 1
+    // for every grouped row, so the array is never empty.
+    let names: serde_json::Value =
+        serde_json::from_str(&columns.names_asc).map_err(StoreError::integrity)?;
+    let first_span_name = names
+        .as_array()
+        .and_then(|names| names.first())
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| StoreError::integrity("run aggregate has no span name"))?
+        .to_string();
+
+    Ok(RunAggregateRow {
+        project_id: ProjectId::new(columns.project_id).map_err(StoreError::integrity)?,
+        trace_id: TraceId::new(columns.trace_id).map_err(StoreError::integrity)?,
+        span_count: usize::try_from(columns.span_count).map_err(StoreError::integrity)?,
+        status: SpanStatus::parse(&columns.status).ok_or_else(|| {
+            StoreError::integrity(format!("unknown span status {}", columns.status))
+        })?,
+        first_span_name,
+        started_at,
+        ended_at,
+        models: parse_models(&parse_json_array(&columns.models)?)?,
+        costs: parse_costs(&parse_json_array(&columns.costs)?)?,
+        release_ids: parse_release_ids(&parse_json_array(&columns.release_ids)?)?,
+        kinds: parse_kinds(&parse_json_array(&columns.kinds)?)?,
+    })
+}
+
+/// Decodes a `json_group_array(...)` text column into the JSON array it always
+/// holds (`[]` when empty).
+fn parse_json_array(value: &str) -> StoreResult<serde_json::Value> {
+    let value: serde_json::Value = serde_json::from_str(value).map_err(StoreError::integrity)?;
+    if value.is_array() {
+        Ok(value)
+    } else {
+        Err(StoreError::integrity(
+            "expected a JSON array aggregate column",
+        ))
+    }
+}
+
+fn json_array_items(value: &serde_json::Value) -> StoreResult<&Vec<serde_json::Value>> {
+    value
+        .as_array()
+        .ok_or_else(|| StoreError::integrity("expected a JSON array aggregate column"))
+}
+
+/// Parses the `[ [provider, name], ... ]` models aggregate.
+fn parse_models(value: &serde_json::Value) -> StoreResult<Vec<ModelRef>> {
+    json_array_items(value)?
+        .iter()
+        .map(|entry| {
+            let provider = entry
+                .get(0)
+                .and_then(serde_json::Value::as_str)
+                .ok_or_else(|| StoreError::integrity("model tuple missing provider"))?;
+            let name = entry
+                .get(1)
+                .and_then(serde_json::Value::as_str)
+                .ok_or_else(|| StoreError::integrity("model tuple missing name"))?;
+            Ok(ModelRef {
+                provider: provider.to_string(),
+                name: name.to_string(),
+            })
+        })
+        .collect()
+}
+
+/// Parses the `[ [currency, micros], ... ]` costs aggregate.
+fn parse_costs(value: &serde_json::Value) -> StoreResult<Vec<Money>> {
+    json_array_items(value)?
+        .iter()
+        .map(|entry| {
+            let currency = entry
+                .get(0)
+                .ok_or_else(|| StoreError::integrity("cost tuple missing currency"))?;
+            let amount_micros = entry
+                .get(1)
+                .and_then(serde_json::Value::as_i64)
+                .ok_or_else(|| StoreError::integrity("cost tuple missing amount_micros"))?;
+            let currency =
+                serde_json::from_value(currency.clone()).map_err(StoreError::integrity)?;
+            Ok(Money::new(amount_micros, currency))
+        })
+        .collect()
+}
+
+/// Parses the `[ release_id, ... ]` release-id aggregate.
+fn parse_release_ids(value: &serde_json::Value) -> StoreResult<Vec<String>> {
+    json_array_items(value)?
+        .iter()
+        .map(|entry| {
+            entry
+                .as_str()
+                .map(ToString::to_string)
+                .ok_or_else(|| StoreError::integrity("release id is not a string"))
+        })
+        .collect()
+}
+
+/// Parses the distinct-`kind` aggregate.
+fn parse_kinds(value: &serde_json::Value) -> StoreResult<BTreeSet<AgentSpanKind>> {
+    json_array_items(value)?
+        .iter()
+        .map(|entry| {
+            let kind = entry
+                .as_str()
+                .ok_or_else(|| StoreError::integrity("span kind is not a string"))?;
+            AgentSpanKind::parse(kind)
+                .ok_or_else(|| StoreError::integrity(format!("unknown span kind {kind}")))
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use beater_core::FixedClock;
     use beater_store_conformance::{
         assert_metadata_store_conformance, assert_quota_limiter_concurrency_conformance,
-        assert_quota_limiter_conformance, assert_span_pagination_keyset_stability,
-        assert_span_pagination_seq_tiebreak, assert_span_pagination_tenant_wide_tiebreak,
-        assert_trace_store_conformance,
+        assert_quota_limiter_conformance, assert_quota_limiter_idempotency_conformance,
+        assert_span_pagination_keyset_stability, assert_span_pagination_seq_tiebreak,
+        assert_span_pagination_tenant_wide_tiebreak, assert_trace_store_conformance,
     };
     use beater_store_memory::{InMemoryMetadataStore, InMemoryQuotaLimiter, InMemoryTraceStore};
     use chrono::{TimeZone, Utc};
@@ -1151,6 +1521,79 @@ mod tests {
         .await;
     }
 
+    /// The shared trace-store conformance covers the common run rollup (and the
+    /// `beater.release_id` key), but not the parts of `query_runs`'s release-id
+    /// resolution that are unique to the SQLite backend's `json_extract` path:
+    /// the precedence across the five canonical keys and the "string values
+    /// only" rule from `beater_schema::span_release_id`. This drives the exact
+    /// `RUN_RELEASE_ID_EXPR` used by `query_runs` against hand-built `span_json`.
+    #[test]
+    fn run_release_id_expr_matches_span_release_id_precedence() {
+        let connection = Connection::open_in_memory().unwrap_or_else(|err| panic!("{err}"));
+        connection
+            .execute_batch(
+                "CREATE TABLE spans (span_json TEXT NOT NULL, start_time TEXT NOT NULL, seq INTEGER NOT NULL);",
+            )
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        // (seq, start_time, attributes-json, what span_release_id would return)
+        let rows = [
+            // beater absent -> falls through to agent.release_id.
+            (
+                1,
+                "2026-01-01T00:00:01Z",
+                r#"{"agent.release_id":"from-agent"}"#,
+            ),
+            // beater present -> wins over agent (precedence).
+            (
+                2,
+                "2026-01-01T00:00:02Z",
+                r#"{"beater.release_id":"from-beater","agent.release_id":"ignored"}"#,
+            ),
+            // numeric release_id -> not a string, skipped entirely.
+            (3, "2026-01-01T00:00:03Z", r#"{"release_id":999}"#),
+            // dotted "release.id" key resolves via the double-quoted JSON path.
+            (
+                4,
+                "2026-01-01T00:00:04Z",
+                r#"{"release.id":"from-release-dot"}"#,
+            ),
+            // no release attribute at all -> NULL, filtered out.
+            (5, "2026-01-01T00:00:05Z", r#"{"other":"x"}"#),
+        ];
+        for (seq, start_time, attributes) in rows {
+            let span_json = format!(r#"{{"attributes":{attributes}}}"#);
+            connection
+                .execute(
+                    "INSERT INTO spans (span_json, start_time, seq) VALUES (?1, ?2, ?3)",
+                    params![span_json, start_time, seq],
+                )
+                .unwrap_or_else(|err| panic!("{err}"));
+        }
+
+        let query = format!(
+            "SELECT json_group_array({release} ORDER BY start_time DESC, seq ASC) \
+             FILTER (WHERE {release} IS NOT NULL) FROM spans",
+            release = RUN_RELEASE_ID_EXPR,
+        );
+        let aggregate: String = connection
+            .query_row(&query, [], |row| row.get(0))
+            .unwrap_or_else(|err| panic!("{err}"));
+        let resolved: Vec<String> =
+            serde_json::from_str(&aggregate).unwrap_or_else(|err| panic!("{err}"));
+
+        // Ordered start_time DESC: seq5(NULL), seq4(release.id), seq3(NULL),
+        // seq2(beater wins), seq1(agent fallthrough). NULLs are filtered out.
+        assert_eq!(
+            resolved,
+            vec![
+                "from-release-dot".to_string(),
+                "from-beater".to_string(),
+                "from-agent".to_string(),
+            ]
+        );
+    }
+
     #[tokio::test]
     async fn in_memory_trace_store_conforms() {
         assert_trace_store_conformance(InMemoryTraceStore::new()).await;
@@ -1211,6 +1654,14 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn sqlite_quota_limiter_idempotency_conforms() {
+        assert_quota_limiter_idempotency_conformance(
+            SqliteQuotaLimiter::in_memory().unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await;
+    }
+
+    #[tokio::test]
     async fn sqlite_quota_limiter_uses_injected_clock_for_updates() {
         let now = Utc
             .with_ymd_and_hms(2026, 1, 1, 0, 0, 42)
@@ -1238,6 +1689,7 @@ mod tests {
                 limit: 2,
                 window_start,
                 reset_at,
+                idempotency_key: None,
             })
             .await
             .unwrap_or_else(|err| panic!("{err}"));
@@ -1275,6 +1727,7 @@ mod tests {
             limit: 1,
             window_start,
             reset_at,
+            idempotency_key: None,
         };
         let first_request = request.clone();
         let second_request = request;
@@ -1354,6 +1807,7 @@ mod tests {
                 limit: LIMIT,
                 window_start,
                 reset_at,
+                idempotency_key: None,
             };
             handles.push(tokio::spawn(
                 async move { limiter.reserve_quota(request).await },
@@ -1433,6 +1887,7 @@ mod tests {
                 limit: LIMIT,
                 window_start,
                 reset_at,
+                idempotency_key: None,
             };
             handles.push(tokio::spawn(
                 async move { limiter.reserve_quota(request).await },

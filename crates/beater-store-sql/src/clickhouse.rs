@@ -32,6 +32,7 @@ use beater_store::{
     finalize_run_aggregates, page_vec, RunAggregateRow, StoreError, StoreResult, TraceStore,
 };
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 /// The ClickHouse schema contract this store applies and depends on.
 pub const CLICKHOUSE_TRACE_STORE_MIGRATION: &str =
@@ -288,7 +289,7 @@ struct SpanKey {
 
 #[async_trait]
 impl TraceStore for ClickHouseTraceStore {
-    async fn write_batch(&self, batch: CanonicalTraceBatch) -> StoreResult<WriteAck> {
+    async fn write_batch(&self, batch: Arc<CanonicalTraceBatch>) -> StoreResult<WriteAck> {
         // De-duplicate against what is already persisted (MergeTree does not
         // enforce uniqueness on insert).
         let raw_candidates: Vec<(String, String, String)> = batch

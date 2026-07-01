@@ -86,6 +86,125 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317 \
   /tmp/beater-otel/bin/python examples/python/five_line_otel.py
 ```
 
+## How Beater Does RSI
+
+RSI (recursive self-improvement) here means one thing, kept honest: **Beater only
+accepts a change to your agent when it measurably improves behavior *and*
+generalizes — never just because it looked good on the cases you already had.**
+
+The loop at the top of this README, run continuously:
+
+1. **Instrument** the agent (one SDK call) so every run becomes a trace.
+2. **Inspect** the trace/span tree to find where it failed.
+3. **Promote** that failure into a versioned dataset — a held-out *test* split is
+   set aside automatically.
+4. **Evaluate** a candidate fix with deterministic scorers and/or BYOK LLM judges.
+5. **Compare** baseline vs candidate as an experiment with confidence intervals.
+6. **Gate**: the change passes only if it beats the **held-out test split** *and*
+   clears the **anti-overfitting guardrail** (a generalization-gap check). A
+   candidate that only improves the data the optimizer could see is rejected —
+   even when the test gate alone would have passed it.
+7. **Monitor** production and feed new failures back into step 1.
+
+### One optimizer round, end to end
+
+`beaterctl` runs a full round: a model proposes an improved prompt from the
+observed failures, Beater re-runs that candidate on the cases, then routes the
+result through the same held-out + anti-overfit gate. Acceptance is never the
+proposer's call — the gate decides.
+
+```bash
+# Deterministic, no network, no key — proves the whole loop:
+cargo run -q -p beaterctl -- rsi-round-fixture --record-trace --data-dir /tmp/beater-rsi
+
+# Live, with a real model proposing and scoring (bring your own key):
+ANTHROPIC_API_KEY=sk-ant-... \
+  cargo run -q -p beaterctl -- rsi-round --model claude-haiku-4-5-20251001 \
+    --record-trace --data-dir /tmp/beater-rsi
+```
+
+It prints the proposed change, each candidate's gate decision (delta, p-value),
+the overfit flag, and whether it was **accepted**. `--record-trace` writes the
+round itself into Beater as a trace, so the improvement loop is observable too.
+
+Most tools tell you *what* your agent did. Beater's gate answers the harder
+question — *"does this fix actually help, and does it generalize, or did it just
+memorize the eval set?"* — and refuses to ship the change when the answer is no.
+
+## Connect Your Agent (SDK, CLI, MCP)
+
+The SDK, the CLI, and the MCP tools all talk to the same running `beaterd`
+(`http://127.0.0.1:8080` by default) and are generated from one OpenAPI contract,
+so they never drift apart.
+
+### SDK — instrument your agent
+
+Python:
+
+```bash
+pip install beater-sdk           # add [openai], [anthropic], or [langchain] extras as needed
+```
+
+```python
+import beater
+
+beater.init(tenant_id="acme", project_id="support-bot", environment_id="prod")
+
+@beater.observe(kind=beater.SpanKind.AGENT_RUN)
+def handle(query): ...
+```
+
+TypeScript:
+
+```bash
+npm install @beater/sdk
+```
+
+```ts
+import * as beater from "@beater/sdk";
+
+beater.init({ tenantId: "acme", projectId: "support-bot", environmentId: "prod" });
+beater.instrument({ providers: ["openai", "anthropic"] }); // auto-wraps the provider clients
+```
+
+Every `init()` argument also falls back to `BEATER_*` env vars (`BEATER_BASE_URL`,
+`BEATER_TENANT_ID`, `BEATER_PROJECT_ID`, `BEATER_ENVIRONMENT_ID`,
+`BEATER_API_KEY`), so `beater.init()` with no arguments works once the
+environment is set. Ingest is plain OTLP, so a stock OpenTelemetry exporter
+pointed at `:4317` also works with no Beater-specific code.
+
+### CLI — drive the API from a terminal
+
+`beaterctl api <operationId>` invokes any `/v1` operation; the operation list is
+resolved from the same spec, so the CLI never drifts from the server.
+
+```bash
+export BEATER_BASE_URL=http://127.0.0.1:8080
+export BEATER_API_KEY=sk-...        # omit when beaterd runs with --auth-mode local
+
+cargo run -q -p beaterctl -- api listTraces --param tenant_id=demo --param project_id=demo
+cargo run -q -p beaterctl -- api createDataset \
+  --body '{"tenant_id":"demo","project_id":"demo","name":"failures"}'
+```
+
+The `--base-url` and `--api-key` flags override the env vars.
+
+### MCP — use Beater as agent tools
+
+`beaterd` serves an MCP endpoint at **`POST /mcp`** alongside the API. **Every API
+operation is exposed as one MCP tool**, behind the same auth (API key or
+OAuth 2.1, scope `mcp:invoke`). Point any HTTP MCP client at:
+
+```
+http://127.0.0.1:8080/mcp
+```
+
+For a local stdio MCP client (such as an editor agent), run the stdio transport:
+
+```bash
+cargo run -q -p beaterd -- mcp --stdio --data-dir /tmp/beaterd
+```
+
 ## Repository Map
 
 | Path | Purpose |

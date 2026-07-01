@@ -184,7 +184,7 @@
 | Vercel dashboard deploy (`vercel.json`) | §3.2, §25 | built | **Built** — `web/dashboard/vercel.json` present | CI deploy step gated; deploy pending secrets |
 | `docs/hosting.md` | §3.2 | built | **Built** — `docs/hosting.md` present | |
 | Docs site (published OpenAPI docs) | §3.3 | planned (site); spec is built | **Partial** — `sdks/openapi/beater-api.json` is built; no published site | |
-| Multi-arch GHCR image (`container-images` workflow) | §3.3 | built | **Unverified** — `Dockerfile` present; CI workflow existence not verified in this pass | |
+| Multi-arch GHCR image (`container-images` workflow) | §3.3, §22.5 | built | **Built** — `.github/workflows/container-images.yml` builds amd64/arm64 GHCR images for `beaterd`, dashboard, dashboard e2e, and OTEL Python runner, then verifies public handoff readiness | Publishes SHA and `main` tags used by the clean-machine compose path |
 
 ---
 
@@ -227,6 +227,8 @@
 | `SECURITY.md` | §20.7 #5.11 | built | **Built** — `SECURITY.md` present | |
 | `GOVERNANCE.md` | §20.7 #5.11 | built | **Built** — `GOVERNANCE.md` present | |
 | `CONTRIBUTING.md` | §20.7 #5.11 | built | **Built** — `CONTRIBUTING.md` present | |
+| Security review snapshot | §20.1, §20.7 | built evidence | **Built** — `docs/security-review-2026-06-24.md` present | Historical audit snapshot; does not by itself close planned hosted-control-plane gaps |
+| Security regression fixture catalog | §20.7 #5.2/#5.4/#5.5, A20 | built evidence | **Built** — `docs/security-regression-fixtures.md` present | Tracks Covered/GAP rows for security regressions; gaps remain planned until code/tests land |
 | Compliance docs (SOC 2, HIPAA, etc.) | §20.7 | planned | **Planned** | ARCH notes as planned alongside the governance docs |
 | Backups / restore drill | §20.7 #5.9 | planned | **Planned** | No CI restore-drill job found |
 

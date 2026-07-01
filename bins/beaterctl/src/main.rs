@@ -27,9 +27,11 @@ use beater_eval::{
     GateDecision, GatePolicy, StatisticalTest,
 };
 use beater_experiments::{
-    run_agent_experiment, run_deterministic_experiment, run_judge_experiment, AgentExperimentSpec,
-    CaseOutputOverride, ExperimentRunReport, ExperimentRunSpec, ExperimentStore,
-    JudgeExperimentRunSpec, ReferenceAgentAdapter, SqliteExperimentStore, StaticAgentAdapter,
+    run_agent_experiment, run_deterministic_experiment, run_judge_experiment,
+    run_optimization_round, AgentExperimentSpec, CandidateChange, CandidateEvaluator,
+    CaseOutputOverride, CaseScore, ExperimentRunReport, ExperimentRunSpec, ExperimentStore,
+    FailureExample, JudgeExperimentRunSpec, OptimizationRoundConfig, OptimizerStrategy,
+    ReferenceAgentAdapter, Split, SqliteExperimentStore, StaticAgentAdapter,
 };
 use beater_gates::{run_gate, GateDefinition, GateStore, InconclusivePolicy, SqliteGateStore};
 use beater_human::{
@@ -41,16 +43,17 @@ use beater_ingest::{
     TRACE_WRITE_BATCH_KIND,
 };
 use beater_judge::{
-    JudgeBrokerRequest, JudgeBrokerService, JudgeLedgerStore, KeywordJudgeProvider,
-    SqliteJudgeLedger,
+    AnthropicJudgeProvider, GenerationRequest, GenerationResponse, HttpJudgeProviderConfig,
+    JudgeBrokerRequest, JudgeBrokerService, JudgeLedgerStore, JudgeProviderResult,
+    KeywordJudgeProvider, ProviderCredentials, SqliteJudgeLedger, TextGenerator,
 };
 use beater_otlp::{encode_export_trace_request, export_to_raw_trace_ingest_request};
 use beater_replay::{
     execute_replay, ReplayEvent, ReplayEventKind, ReplayScenario, ReplayStep, SqliteReplayStore,
 };
 use beater_schema::{
-    AgentSpanKind, CanonicalTraceBatch, EvaluatorLane, RawEnvelope, RedactionClass, RunFilter,
-    RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck,
+    AgentSpanKind, CanonicalAttrs, CanonicalTraceBatch, EvaluatorLane, RawEnvelope, RedactionClass,
+    RunFilter, RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck,
 };
 use beater_secrets::{
     EncryptedSqliteProviderSecretStore, ProviderSecretStore, PutProviderSecretRequest,
@@ -116,6 +119,13 @@ enum Command {
         environment_id: String,
         #[arg(long, default_value_t = 5000)]
         timeout_ms: u64,
+    },
+    /// Prove the local quickstart loop reaches a scored failing case.
+    Quickstart {
+        #[arg(long, default_value = ".beater")]
+        data_dir: PathBuf,
+        #[arg(long, default_value = "http://127.0.0.1:3000")]
+        dashboard_url: String,
     },
     /// Validate live OTLP ingest and print a zero-code exporter env block.
     Ingest {
@@ -216,6 +226,76 @@ enum Command {
         experiment_run_id: Option<String>,
     },
     GateRunFixture {
+        #[arg(long, default_value = ".beater")]
+        data_dir: PathBuf,
+    },
+    /// Drive one recursive-self-improvement optimization round end-to-end with a
+    /// deterministic, network-free seeded fixture.
+    ///
+    /// This is the first production caller of
+    /// `beater_experiments::run_optimization_round`: it builds an
+    /// `OptimizationRoundConfig` from seeded failing examples + cases, proposes a
+    /// candidate via the `LlmRewrite` strategy backed by an in-process canned
+    /// `TextGenerator` (no LLM key, no network), scores it with a seeded
+    /// `FixtureCandidateEvaluator`, and routes the candidate through the existing
+    /// held-out **Test** gate + §21.4 anti-overfit guardrail. The seeded scenario
+    /// is a *generalizing* candidate, so the happy path shows acceptance with a
+    /// `Pass` gate decision; the overfit-rejection path is unit-tested in
+    /// beater-experiments. A live run against real providers + a real candidate
+    /// evaluator (executing the agent per case) is the next layer up — this
+    /// fixture only proves the proposal → gate loop end-to-end, deterministically.
+    ///
+    /// With `--record-trace`, the completed round is ALSO emitted as one
+    /// canonical Beater trace (via the same `IngestService::ingest_native` path
+    /// `smoke` uses) into the `--data-dir` SQLite store and read back, proving the
+    /// optimization loop is observable end-to-end with no network.
+    RsiRoundFixture {
+        /// Emit the round as a canonical trace into `--data-dir` and read it back,
+        /// adding `trace_id`/`trace_span_count` to the JSON report. Off by default
+        /// so the pure fixture path needs no store.
+        #[arg(long)]
+        record_trace: bool,
+        /// SQLite store + artifact dir used only when `--record-trace` is set.
+        /// Defaults to a process-temp dir so the command needs no arguments.
+        #[arg(long, default_value = ".beater")]
+        data_dir: PathBuf,
+    },
+    /// Drive one recursive-self-improvement optimization round end-to-end against
+    /// a REAL Anthropic model — the live counterpart to `rsi-round-fixture`.
+    ///
+    /// This closes the "synthetic generation + synthetic scores" gap: a real
+    /// Anthropic model BOTH proposes the prompt rewrite (via `LlmRewrite` over the
+    /// beater-judge text-generation seam) AND scores every candidate by being
+    /// re-prompted per seeded factual Q/A case under the baseline vs. candidate
+    /// system prompt. Each answer is graded deterministically (case-insensitive
+    /// normalized substring match against the expected answer → 1.0 else 0.0),
+    /// then routed through the SAME held-out **Test** gate + §21.4 anti-overfit
+    /// guardrail the fixture uses.
+    ///
+    /// This performs REAL Anthropic API calls and costs tokens. It needs a BYOK
+    /// `ANTHROPIC_API_KEY` in the environment; if it is unset/empty the command
+    /// returns a clean error (NOT a panic) pointing at `rsi-round-fixture` for a
+    /// no-network demo. The default `--model` (`claude-haiku-4-5-20251001`) is a
+    /// current, cheap Anthropic model and is overridable.
+    RsiRound {
+        /// Anthropic model id used for BOTH the proposer rewrite and per-case
+        /// evaluation. Overridable; defaults to a current, cheap model.
+        #[arg(long, default_value = "claude-haiku-4-5-20251001")]
+        model: String,
+        /// Optimization goal. Defaults to the seeded factual-hallucination
+        /// scenario so the command is a self-contained smoke.
+        #[arg(long, default_value = "reduce hallucinations on factual lookups")]
+        goal: String,
+        /// Baseline system prompt the candidate must beat. Defaults to the same
+        /// minimal prompt the fixture seeds.
+        #[arg(long, default_value = "You are a helpful assistant.")]
+        current_prompt: String,
+        /// Emit the round as a canonical trace into `--data-dir` and read it back,
+        /// adding `trace_id`/`trace_span_count` to the JSON report. Independent of
+        /// the `ANTHROPIC_API_KEY` requirement for the live round itself.
+        #[arg(long)]
+        record_trace: bool,
+        /// SQLite store + artifact dir used only when `--record-trace` is set.
         #[arg(long, default_value = ".beater")]
         data_dir: PathBuf,
     },
@@ -380,6 +460,13 @@ async fn main() -> anyhow::Result<()> {
             } else {
                 run_local_smoke(data_dir).await?
             };
+            println!("{}", serde_json::to_string_pretty(&output)?);
+        }
+        Command::Quickstart {
+            data_dir,
+            dashboard_url,
+        } => {
+            let output = run_local_quickstart(data_dir, &base_url, &dashboard_url).await?;
             println!("{}", serde_json::to_string_pretty(&output)?);
         }
         Command::Ingest {
@@ -1297,6 +1384,45 @@ async fn main() -> anyhow::Result<()> {
                 }))?
             );
         }
+        Command::RsiRoundFixture {
+            record_trace,
+            data_dir,
+        } => {
+            let mut output = run_rsi_round_fixture().await?;
+            if record_trace {
+                record_rsi_round_trace(
+                    &data_dir,
+                    "rsi-round-fixture",
+                    "fixture",
+                    "reduce hallucinations on factual lookups",
+                    &mut output,
+                )
+                .await?;
+            }
+            println!("{}", serde_json::to_string_pretty(&output)?);
+        }
+        Command::RsiRound {
+            model,
+            goal,
+            current_prompt,
+            record_trace,
+            data_dir,
+        } => {
+            let goal_for_trace = goal.clone();
+            let model_for_trace = model.clone();
+            let mut output = run_rsi_round_live(model, goal, current_prompt).await?;
+            if record_trace {
+                record_rsi_round_trace(
+                    &data_dir,
+                    "rsi-round",
+                    &model_for_trace,
+                    &goal_for_trace,
+                    &mut output,
+                )
+                .await?;
+            }
+            println!("{}", serde_json::to_string_pretty(&output)?);
+        }
         Command::ReviewFixture { data_dir } => {
             let artifacts = Arc::new(FsArtifactStore::new(data_dir.join("artifacts"))?);
             let traces = Arc::new(SqliteTraceStore::open(data_dir.join("traces.sqlite"))?);
@@ -2051,6 +2177,8 @@ async fn run_remote_smoke(
     let trace = wait_for_remote_trace(
         &http_url,
         &tenant_id,
+        &project_id,
+        &environment_id,
         &trace_id,
         StdDuration::from_millis(timeout_ms),
         api_key,
@@ -2107,6 +2235,178 @@ async fn run_ingest_test(
     object.insert("command".to_string(), json!("ingest test"));
     object.insert("zero_code_env".to_string(), zero_code_env);
     Ok(smoke)
+}
+
+async fn run_local_quickstart(
+    data_dir: PathBuf,
+    api_url: &str,
+    dashboard_url: &str,
+) -> anyhow::Result<serde_json::Value> {
+    let artifacts = Arc::new(FsArtifactStore::new(data_dir.join("artifacts"))?);
+    let traces = Arc::new(SqliteTraceStore::open(data_dir.join("traces.sqlite"))?);
+    let datasets = SqliteDatasetStore::open(data_dir.join("datasets.sqlite"))?;
+    let api_keys = SqliteApiKeyStore::open(data_dir.join("security.sqlite"))?;
+    let bus = local_bus(&data_dir)?;
+    let service = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+    let tenant = TenantId::new("demo")?;
+    let project = ProjectId::new("demo")?;
+    let environment = EnvironmentId::new("local")?;
+    let span_id = SpanId::new("smoke-root")?;
+
+    let api_key = api_keys
+        .create_key(CreateApiKeyRequest {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            environment_id: environment.clone(),
+            scopes: [
+                ApiScope::TraceWrite,
+                ApiScope::TraceRead,
+                ApiScope::DatasetWrite,
+                ApiScope::EvalRun,
+            ]
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
+        })
+        .await
+        .context("create quickstart api key")?;
+    let mut zero_code_env = zero_code_otlp_env(
+        api_url,
+        None,
+        tenant.as_str(),
+        project.as_str(),
+        environment.as_str(),
+        true,
+    );
+    zero_code_env
+        .as_object_mut()
+        .ok_or_else(|| anyhow::anyhow!("zero-code env was not an object"))?
+        .insert("BEATER_API_KEY".to_string(), json!(api_key.secret.clone()));
+
+    let ingest_outcome = smoke_trace(&service)
+        .await
+        .context("ingest quickstart smoke trace")?;
+    let trace = traces
+        .get_trace(tenant.clone(), TraceId::new("smoke-trace")?)
+        .await
+        .context("read quickstart smoke trace")?;
+    let dataset = datasets
+        .create_dataset(
+            tenant.clone(),
+            project.clone(),
+            "quickstart-scored-failure".to_string(),
+        )
+        .await
+        .context("create quickstart dataset")?;
+    let case = promote_trace_span_to_case(
+        tenant.clone(),
+        project.clone(),
+        dataset.dataset_id.clone(),
+        &trace,
+        Some(span_id.clone()),
+        Some(json!({ "answer": "expected quickstart failure" })),
+    )
+    .context("promote quickstart trace to failing dataset case")?;
+    let case = datasets
+        .put_case(case)
+        .await
+        .context("store quickstart dataset case")?;
+    let version = datasets
+        .create_version(
+            tenant.clone(),
+            project.clone(),
+            dataset.dataset_id.clone(),
+            Some(vec![case.case_id.clone()]),
+        )
+        .await
+        .context("create quickstart dataset version")?;
+    let report = evaluate_dataset_version(
+        &version,
+        DatasetEvalSpec {
+            evaluator: EvaluatorSpec {
+                id: "exact".to_string(),
+                lane: EvaluatorLane::DeterministicWasi,
+                kind: EvaluatorKind::ExactMatch,
+            },
+            evaluator_version_id: EvaluatorVersionId::new("exact-v1")?,
+            agent_release_id: AgentReleaseId::new("quickstart-smoke-release")?,
+            prompt_version_id: None,
+            code_hash: None,
+            wasm_hash: None,
+        },
+    )
+    .context("run quickstart exact-match eval")?;
+    let report = datasets
+        .write_eval_report(report)
+        .await
+        .context("store quickstart eval report")?;
+    let result = report
+        .results
+        .first()
+        .ok_or_else(|| anyhow::anyhow!("quickstart eval produced no results"))?;
+    let scored_failure = result.score == 0.0 && result.label.as_deref() == Some("fail");
+    if !scored_failure {
+        anyhow::bail!(
+            "quickstart did not reach a scored failure: score={} label={:?}",
+            result.score,
+            result.label
+        );
+    }
+
+    let dashboard_trace_url = format!(
+        "{}/?tenant={}&project={}&environment={}&trace={}&span={}",
+        trim_url(dashboard_url),
+        urlencode(tenant.as_str()),
+        urlencode(project.as_str()),
+        urlencode(environment.as_str()),
+        urlencode(trace.trace_id.as_str()),
+        urlencode(span_id.as_str())
+    );
+    let api_trace_url = format!(
+        "{}/v1/traces/{}/{}?project_id={}&environment_id={}",
+        trim_url(api_url),
+        urlencode(tenant.as_str()),
+        urlencode(trace.trace_id.as_str()),
+        urlencode(project.as_str()),
+        urlencode(environment.as_str())
+    );
+
+    Ok(json!({
+        "command": "quickstart",
+        "mode": "local",
+        "source": "native-smoke",
+        "tenant_id": tenant,
+        "project_id": project,
+        "environment_id": environment,
+        "api_key": {
+            "api_key_id": api_key.record.api_key_id,
+            "scopes": api_key.record.scopes,
+            "secret": api_key.secret,
+        },
+        "zero_code_env": zero_code_env,
+        "trace": {
+            "trace_id": trace.trace_id,
+            "span_id": span_id,
+            "span_count": trace.spans.len(),
+            "ingest_outcome": ingest_outcome,
+        },
+        "dataset": {
+            "dataset_id": dataset.dataset_id,
+            "dataset_version_id": version.version_id,
+            "case_id": case.case_id,
+        },
+        "eval": {
+            "report_id": report.report_id,
+            "evaluator_version_id": report.evaluator_version_id,
+            "score": result.score,
+            "label": result.label.clone(),
+            "evidence": result.evidence.clone(),
+            "aggregate_score": report.aggregate_score,
+            "result_count": report.result_count,
+        },
+        "scored_failure": scored_failure,
+        "dashboard_url": dashboard_trace_url,
+        "api_trace_url": api_trace_url,
+    }))
 }
 
 fn zero_code_otlp_env(
@@ -2233,6 +2533,8 @@ async fn emit_remote_grpc(
 async fn wait_for_remote_trace(
     http_url: &str,
     tenant_id: &str,
+    project_id: &str,
+    environment_id: &str,
     trace_id: &str,
     timeout: StdDuration,
     api_key: Option<&str>,
@@ -2247,6 +2549,8 @@ async fn wait_for_remote_trace(
     let deadline = tokio::time::Instant::now() + timeout;
     loop {
         let trace = with_bearer(client.get(&url), api_key)
+            .header("x-beater-project-id", project_id)
+            .header("x-beater-environment-id", environment_id)
             .send()
             .await
             .context("read smoke trace")?
@@ -2552,6 +2856,793 @@ fn gate_fixture_experiment(
     })
 }
 
+/// A deterministic, network-free [`TextGenerator`] for the RSI fixture: it never
+/// calls a model and returns a single canned "improved" prompt regardless of the
+/// reflective brief it is handed. This keeps `rsi-round-fixture` reproducible and
+/// key-free while still exercising the real `LlmRewrite::propose_async` path,
+/// which turns the generated text into the candidate's rewritten prompt.
+struct CannedRewriteGenerator {
+    completion: String,
+}
+
+#[async_trait::async_trait]
+impl TextGenerator for CannedRewriteGenerator {
+    async fn generate(
+        &self,
+        _req: GenerationRequest,
+        _credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        Ok(GenerationResponse {
+            text: self.completion.clone(),
+            model: Some("fixture-canned-generator".to_string()),
+        })
+    }
+}
+
+/// A deterministic [`CandidateEvaluator`] for the RSI fixture. It ignores the
+/// opaque case payloads and emits seeded, reproducible paired baseline-vs-candidate
+/// [`CaseScore`]s: a uniform lift (`baseline_score` → `candidate_score`) on every
+/// split, so the candidate generalizes — the same lift on the held-out **Test**
+/// split as on the optimization (Train/Val) split. That clears both the held-out
+/// gate (a real paired improvement) and the anti-overfit guardrail (no gap),
+/// demonstrating the loop accepting a generalizing candidate. The overfit-rejection
+/// path (good only on the optimization split) is unit-tested in beater-experiments.
+struct FixtureCandidateEvaluator {
+    /// Number of optimization-split (Train/Val) cases to score.
+    optimize_cases: usize,
+    /// Number of held-out Test cases to score.
+    test_cases: usize,
+    /// Baseline score applied to every case (the current policy).
+    baseline_score: f64,
+    /// Candidate score applied to every case (the proposed policy).
+    candidate_score: f64,
+}
+
+#[async_trait::async_trait]
+impl CandidateEvaluator for FixtureCandidateEvaluator {
+    async fn evaluate(
+        &self,
+        _candidate: &CandidateChange,
+        _cases: &[serde_json::Value],
+    ) -> Result<Vec<CaseScore>, String> {
+        let mut scores = Vec::with_capacity(self.optimize_cases + self.test_cases);
+        for i in 0..self.optimize_cases {
+            // Alternate Train/Val; both count as the optimization split for the
+            // generalization-gap assessment.
+            let split = if i % 2 == 0 { Split::Train } else { Split::Val };
+            scores.push(CaseScore {
+                split,
+                baseline_score: self.baseline_score,
+                candidate_score: self.candidate_score,
+            });
+        }
+        for _ in 0..self.test_cases {
+            scores.push(CaseScore {
+                split: Split::Test,
+                baseline_score: self.baseline_score,
+                candidate_score: self.candidate_score,
+            });
+        }
+        Ok(scores)
+    }
+}
+
+/// Drive one deterministic, seeded RSI optimization round and build the JSON
+/// report. Proves the propose → evaluate → held-out gate + anti-overfit loop
+/// end-to-end with no network and no LLM key.
+async fn run_rsi_round_fixture() -> anyhow::Result<serde_json::Value> {
+    // Seeded failing examples motivating the round (deterministic excerpts).
+    let failures = vec![
+        FailureExample::from_parts(
+            "Who wrote the novel '1984'?",
+            Some("George Orwell".to_string()),
+            "I am not certain, possibly Aldous Huxley.",
+            0.0,
+            None,
+        ),
+        FailureExample::from_parts(
+            "What is the capital of Australia?",
+            Some("Canberra".to_string()),
+            "Sydney.",
+            0.0,
+            None,
+        ),
+        FailureExample::from_parts(
+            "How many moons does Mars have?",
+            Some("Two".to_string()),
+            "I think it has one moon.",
+            0.0,
+            None,
+        ),
+    ];
+
+    // The injected, network-free proposer: a canned improved system prompt that
+    // the real `LlmRewrite::propose_async` path turns into the candidate.
+    let generator = CannedRewriteGenerator {
+        completion: "You are a meticulous factual assistant. Answer only when confident, cite \
+                     the specific source for each factual claim, and say 'I am not sure' when \
+                     you cannot verify an answer."
+            .to_string(),
+    };
+
+    // 6 optimization cases + 6 held-out Test cases.
+    let optimize_cases = 6usize;
+    let test_cases = 6usize;
+    let evaluator = FixtureCandidateEvaluator {
+        optimize_cases,
+        test_cases,
+        // Uniform 0.5 → 0.9 lift everywhere: a generalizing candidate.
+        baseline_score: 0.5,
+        candidate_score: 0.9,
+    };
+
+    let cfg = OptimizationRoundConfig::new(
+        "reduce hallucinations on factual lookups",
+        "You are a helpful assistant.",
+        failures,
+        // Opaque case payloads; the fixture evaluator ignores their contents.
+        (0..(optimize_cases + test_cases))
+            .map(|i| json!({ "case": i }))
+            .collect(),
+        OptimizerStrategy::LlmRewrite,
+        GatePolicy {
+            min_sample_size: 6,
+            max_regression: 0.0,
+            alpha: 0.05,
+            comparison_count: 1,
+        },
+    );
+
+    let outcome = run_optimization_round(
+        cfg,
+        &generator,
+        // No real key needed: the canned generator never reads credentials.
+        ProviderCredentials::new("fixture", "sk-fixture-no-network"),
+        &evaluator,
+    )
+    .await
+    .context("run rsi optimization round fixture")?;
+
+    let evaluated: Vec<serde_json::Value> = outcome
+        .evaluated
+        .iter()
+        .map(|evaluation| {
+            json!({
+                "candidate": {
+                    "kind": evaluation.candidate.kind,
+                    "target": evaluation.candidate.target,
+                    "description": evaluation.candidate.description,
+                    "proposed_by": evaluation.candidate.proposed_by,
+                },
+                "gate_decision": evaluation.gate.decision.name(),
+                "gate": {
+                    "sample_size": evaluation.gate.sample_size,
+                    "baseline_mean": evaluation.gate.baseline_mean,
+                    "candidate_mean": evaluation.gate.candidate_mean,
+                    "delta": evaluation.gate.delta,
+                    "ci_low": evaluation.gate.ci_low,
+                    "ci_high": evaluation.gate.ci_high,
+                    "p_value": evaluation.gate.p_value,
+                },
+                "overfit_flag": evaluation.overfit.overfit,
+                "overfit": {
+                    "optimize_lift": evaluation.overfit.optimize_lift,
+                    "holdout_lift": evaluation.overfit.holdout_lift,
+                    "gap": evaluation.overfit.gap,
+                    "gap_ci_low": evaluation.overfit.gap_ci_low,
+                    "gap_ci_high": evaluation.overfit.gap_ci_high,
+                },
+                "accepted": evaluation.accepted,
+            })
+        })
+        .collect();
+
+    Ok(json!({
+        "accepted_candidate": outcome.accepted.map(|candidate| json!({
+            "kind": candidate.kind,
+            "target": candidate.target,
+            "description": candidate.description,
+            "proposed_by": candidate.proposed_by,
+        })),
+        "evaluated": evaluated,
+    }))
+}
+
+/// A seeded factual Q/A case for the live RSI round: a `question`, its
+/// canonical `expected_answer`, and the split it belongs to. The model is
+/// re-prompted with the baseline and candidate system prompts on each question
+/// and graded deterministically against `expected_answer`.
+#[derive(Clone, Debug)]
+struct FactualCase {
+    question: String,
+    expected_answer: String,
+    split: Split,
+}
+
+/// Wraps a [`TextGenerator`] and forces every outgoing [`GenerationRequest`] to
+/// use a fixed model id, regardless of what the caller put in `req.model`.
+///
+/// `LlmRewrite::propose_async` hardcodes its rewrite model (`LLM_REWRITE_MODEL`
+/// = an OpenAI id) in the `GenerationRequest` it builds, so to route the live
+/// proposer through Anthropic with the operator-chosen `--model` we override the
+/// model on the way through. The honest seam (`generate`) is otherwise untouched.
+struct ModelForcingGenerator<G: TextGenerator> {
+    inner: G,
+    model: String,
+}
+
+#[async_trait::async_trait]
+impl<G: TextGenerator> TextGenerator for ModelForcingGenerator<G> {
+    async fn generate(
+        &self,
+        mut req: GenerationRequest,
+        credentials: ProviderCredentials,
+    ) -> JudgeProviderResult<GenerationResponse> {
+        req.model = self.model.clone();
+        self.inner.generate(req, credentials).await
+    }
+}
+
+/// Tokenize a string for deterministic grading.
+///
+/// Normalization rules (single-sourced so the answer and expected strings are
+/// treated identically):
+/// 1. Lowercase the whole string (case-insensitive matching).
+/// 2. Strip commas that sit *between* two ASCII digits, so a thousands-separated
+///    number like `299,792` collapses to the bare token `299792` and matches a
+///    plain `299792` answer.
+/// 3. Split on any character that is not ASCII-alphanumeric (whitespace and all
+///    other punctuation become separators), so `Canberra.` yields `canberra`.
+/// 4. Drop empty tokens produced by runs of separators.
+///
+/// Digits and letters survive; everything else is a boundary. The result is the
+/// ordered list of word/number tokens in the string.
+fn grading_tokens(s: &str) -> Vec<String> {
+    // Lowercase once, then drop digit-grouping commas (e.g. "299,792" -> "299792")
+    // before tokenizing so a comma between digits never splits a number.
+    let lowered = s.to_lowercase();
+    let chars: Vec<char> = lowered.chars().collect();
+    let mut cleaned = String::with_capacity(lowered.len());
+    for (i, &c) in chars.iter().enumerate() {
+        let comma_between_digits = c == ','
+            && i > 0
+            && chars[i - 1].is_ascii_digit()
+            && chars.get(i + 1).is_some_and(char::is_ascii_digit);
+        if !comma_between_digits {
+            cleaned.push(c);
+        }
+    }
+    cleaned
+        .split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|tok| !tok.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+/// Token-boundary grading: `1.0` iff the `expected` answer's token sequence
+/// appears as a CONTIGUOUS sub-slice of the `answer`'s token sequence, else
+/// `0.0`. An empty `expected` always scores `0.0`.
+///
+/// Both strings are normalized via [`grading_tokens`] (lowercased, digit-comma
+/// stripped, split on non-alphanumerics). Matching on whole tokens — not raw
+/// substrings — kills the substring false-positives that plagued the old grader:
+/// expected `"Au"` no longer matches inside `"because"`/`"Australia"`, `"Na"` no
+/// longer matches inside `"national"`, and `"Two"` no longer matches inside
+/// `"between"`/`"network"`. It also fixes the false-negative where `"299792"`
+/// failed to match an answer that wrote `"299,792"`. Multi-word expecteds
+/// (`"Mount Everest"`, `"Leonardo da Vinci"`) match only as consecutive tokens.
+///
+/// Deliberately simple and deterministic so the score reflects the model's
+/// answer, not a second LLM's opinion of it.
+fn token_match_score(answer: &str, expected: &str) -> f64 {
+    let answer_tokens = grading_tokens(answer);
+    let expected_tokens = grading_tokens(expected);
+    if expected_tokens.is_empty() {
+        return 0.0;
+    }
+    let matched = answer_tokens
+        .windows(expected_tokens.len())
+        .any(|window| window == expected_tokens.as_slice());
+    if matched {
+        1.0
+    } else {
+        0.0
+    }
+}
+
+/// A live [`CandidateEvaluator`] that closes the "synthetic scores" gap: for each
+/// seeded factual case it calls the SAME Anthropic model once with the baseline
+/// system prompt + the question and once with the candidate's system prompt
+/// (`candidate.target`) + the question, then grades each answer deterministically
+/// against the expected answer. Calls are sequential (modest concurrency) and use
+/// a small `max_tokens`.
+struct ModelCandidateEvaluator<G: TextGenerator> {
+    generator: G,
+    credentials: ProviderCredentials,
+    model: String,
+    baseline_prompt: String,
+    cases: Vec<FactualCase>,
+}
+
+impl<G: TextGenerator> ModelCandidateEvaluator<G> {
+    /// Ask the model `question` under `system_prompt` and return its raw answer.
+    async fn answer(&self, system_prompt: &str, question: &str) -> Result<String, String> {
+        let req = GenerationRequest::new(self.model.clone(), question)
+            .with_system(system_prompt)
+            .with_temperature(0.0)
+            .with_max_tokens(256);
+        let resp = self
+            .generator
+            .generate(req, self.credentials.clone())
+            .await
+            .map_err(|err| err.to_string())?;
+        Ok(resp.text)
+    }
+}
+
+#[async_trait::async_trait]
+impl<G: TextGenerator> CandidateEvaluator for ModelCandidateEvaluator<G> {
+    async fn evaluate(
+        &self,
+        candidate: &CandidateChange,
+        // The opaque case payloads passed to the round are ignored; the seeded
+        // `FactualCase`s (with expected answers) are the source of truth here.
+        _cases: &[serde_json::Value],
+    ) -> Result<Vec<CaseScore>, String> {
+        // The candidate's rewritten system prompt lives in `target` for the
+        // SystemPrompt change kind produced by LlmRewrite.
+        let candidate_prompt = candidate.target.as_str();
+        let mut scores = Vec::with_capacity(self.cases.len());
+        // Sequential to keep it simple and gentle on rate limits.
+        for case in &self.cases {
+            let baseline_answer = self.answer(&self.baseline_prompt, &case.question).await?;
+            let candidate_answer = self.answer(candidate_prompt, &case.question).await?;
+            scores.push(CaseScore {
+                split: case.split,
+                baseline_score: token_match_score(&baseline_answer, &case.expected_answer),
+                candidate_score: token_match_score(&candidate_answer, &case.expected_answer),
+            });
+        }
+        Ok(scores)
+    }
+}
+
+/// Seeded factual Q/A cases for the live RSI round: ~6 Train/Val optimization
+/// cases + ~6 held-out Test cases. The Test set is genuinely held out (different
+/// questions than the optimization split) so acceptance is a real generalization
+/// check, not memorization of the optimization questions.
+fn live_factual_cases() -> Vec<FactualCase> {
+    let optimize = [
+        ("Who wrote the novel '1984'?", "George Orwell"),
+        ("What is the capital of Australia?", "Canberra"),
+        ("How many moons does Mars have?", "Two"),
+        ("What is the chemical symbol for gold?", "Au"),
+        ("In what year did the first human land on the Moon?", "1969"),
+        ("What is the largest planet in our solar system?", "Jupiter"),
+    ];
+    let test = [
+        ("Who painted the Mona Lisa?", "Leonardo da Vinci"),
+        ("What is the capital of Canada?", "Ottawa"),
+        ("What is the tallest mountain on Earth?", "Mount Everest"),
+        ("What is the chemical symbol for sodium?", "Na"),
+        ("How many continents are there on Earth?", "Seven"),
+        (
+            "What is the speed of light in a vacuum (approx, km/s)?",
+            "299792",
+        ),
+    ];
+    let mut cases = Vec::with_capacity(optimize.len() + test.len());
+    for (i, (question, expected)) in optimize.iter().enumerate() {
+        // Alternate Train/Val; both count as the optimization split.
+        let split = if i % 2 == 0 { Split::Train } else { Split::Val };
+        cases.push(FactualCase {
+            question: (*question).to_string(),
+            expected_answer: (*expected).to_string(),
+            split,
+        });
+    }
+    for (question, expected) in test {
+        cases.push(FactualCase {
+            question: question.to_string(),
+            expected_answer: expected.to_string(),
+            split: Split::Test,
+        });
+    }
+    cases
+}
+
+/// Build the Anthropic provider config for the live RSI round, honoring an
+/// optional `BEATER_ANTHROPIC_BASE_URL` override.
+///
+/// Default: the real `https://api.anthropic.com/v1/messages` endpoint. When the
+/// env var is set (and non-empty) its value replaces `endpoint_url`, so the live
+/// `rsi-round` command can be driven against a mock Anthropic server in tests/CI
+/// without real network — every other field (cost cap, retry policy) and the BYOK
+/// key gate are unchanged. This is a testing seam, not a feature surface.
+fn anthropic_provider_config() -> HttpJudgeProviderConfig {
+    let mut config = HttpJudgeProviderConfig::anthropic_default();
+    if let Some(base_url) = std::env::var("BEATER_ANTHROPIC_BASE_URL")
+        .ok()
+        .map(|url| url.trim().to_string())
+        .filter(|url| !url.is_empty())
+    {
+        config.endpoint_url = base_url;
+    }
+    config
+}
+
+/// Drive one LIVE, Anthropic-backed RSI optimization round end-to-end and build
+/// the same JSON report shape as `run_rsi_round_fixture`, plus the model used.
+///
+/// REAL Anthropic calls: the proposer rewrite and the per-case baseline/candidate
+/// answers all hit `https://api.anthropic.com/v1/messages`. Requires a BYOK key in
+/// `ANTHROPIC_API_KEY`; the no-network proof remains `rsi-round-fixture`.
+async fn run_rsi_round_live(
+    model: String,
+    goal: String,
+    current_prompt: String,
+) -> anyhow::Result<serde_json::Value> {
+    // BYOK gate: a clean error, not a panic, and no network call without a key.
+    let api_key = std::env::var("ANTHROPIC_API_KEY")
+        .ok()
+        .filter(|key| !key.trim().is_empty())
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "rsi-round needs a real Anthropic key: set ANTHROPIC_API_KEY (BYOK). For a \
+                 no-network demo use `beaterctl rsi-round-fixture`."
+            )
+        })?;
+    let credentials = ProviderCredentials::new("anthropic", api_key);
+
+    // Real Anthropic provider, used as both the proposer's TextGenerator and the
+    // evaluator's model. The model-forcing wrapper makes LlmRewrite's hardcoded
+    // proposer model resolve to the operator-chosen `--model`.
+    //
+    // The endpoint defaults to the real Anthropic messages API. A test/dev harness
+    // can point it at a mock server with `BEATER_ANTHROPIC_BASE_URL` to exercise
+    // this exact live path end-to-end without real network — the URL replaces the
+    // default `endpoint_url`, nothing else changes (same BYOK key gate, same
+    // request shaping). Unset (the default) keeps the real API.
+    let provider = AnthropicJudgeProvider::new(anthropic_provider_config());
+    let proposer = ModelForcingGenerator {
+        inner: provider.clone(),
+        model: model.clone(),
+    };
+
+    // The seeded failing examples motivating the round (the same factual scenario
+    // the fixture uses), used to build the reflective brief for the proposer.
+    let failures = vec![
+        FailureExample::from_parts(
+            "Who wrote the novel '1984'?",
+            Some("George Orwell".to_string()),
+            "I am not certain, possibly Aldous Huxley.",
+            0.0,
+            None,
+        ),
+        FailureExample::from_parts(
+            "What is the capital of Australia?",
+            Some("Canberra".to_string()),
+            "Sydney.",
+            0.0,
+            None,
+        ),
+        FailureExample::from_parts(
+            "How many moons does Mars have?",
+            Some("Two".to_string()),
+            "I think it has one moon.",
+            0.0,
+            None,
+        ),
+    ];
+
+    let cases = live_factual_cases();
+    let optimize_cases = cases.iter().filter(|c| c.split != Split::Test).count();
+    let test_cases = cases.iter().filter(|c| c.split == Split::Test).count();
+
+    let evaluator = ModelCandidateEvaluator {
+        generator: provider,
+        credentials: credentials.clone(),
+        model: model.clone(),
+        baseline_prompt: current_prompt.clone(),
+        cases,
+    };
+
+    let cfg = OptimizationRoundConfig::new(
+        goal,
+        current_prompt,
+        failures,
+        // Opaque case payloads (the evaluator uses its own seeded FactualCases);
+        // sized to match so the round's bookkeeping lines up with the scores.
+        (0..(optimize_cases + test_cases))
+            .map(|i| json!({ "case": i }))
+            .collect(),
+        OptimizerStrategy::LlmRewrite,
+        GatePolicy {
+            min_sample_size: 6,
+            max_regression: 0.0,
+            alpha: 0.05,
+            comparison_count: 1,
+        },
+    );
+
+    let outcome = run_optimization_round(cfg, &proposer, credentials, &evaluator)
+        .await
+        .context("run live anthropic-backed rsi optimization round")?;
+
+    let evaluated: Vec<serde_json::Value> = outcome
+        .evaluated
+        .iter()
+        .map(|evaluation| {
+            json!({
+                "candidate": {
+                    "kind": evaluation.candidate.kind,
+                    "target": evaluation.candidate.target,
+                    "description": evaluation.candidate.description,
+                    "proposed_by": evaluation.candidate.proposed_by,
+                },
+                "gate_decision": evaluation.gate.decision.name(),
+                "gate": {
+                    "sample_size": evaluation.gate.sample_size,
+                    "baseline_mean": evaluation.gate.baseline_mean,
+                    "candidate_mean": evaluation.gate.candidate_mean,
+                    "delta": evaluation.gate.delta,
+                    "ci_low": evaluation.gate.ci_low,
+                    "ci_high": evaluation.gate.ci_high,
+                    "p_value": evaluation.gate.p_value,
+                },
+                "overfit_flag": evaluation.overfit.overfit,
+                "overfit": {
+                    "optimize_lift": evaluation.overfit.optimize_lift,
+                    "holdout_lift": evaluation.overfit.holdout_lift,
+                    "gap": evaluation.overfit.gap,
+                    "gap_ci_low": evaluation.overfit.gap_ci_low,
+                    "gap_ci_high": evaluation.overfit.gap_ci_high,
+                },
+                "accepted": evaluation.accepted,
+            })
+        })
+        .collect();
+
+    Ok(json!({
+        "model": model,
+        "accepted_candidate": outcome.accepted.map(|candidate| json!({
+            "kind": candidate.kind,
+            "target": candidate.target,
+            "description": candidate.description,
+            "proposed_by": candidate.proposed_by,
+        })),
+        "evaluated": evaluated,
+    }))
+}
+
+/// Emit a completed RSI optimization `round_report` as ONE canonical Beater
+/// trace into the `--data-dir` store, then read it back to prove it landed —
+/// dogfooding the exact ingest path `smoke` uses.
+///
+/// Construction mirrors [`beater_ingest::smoke_trace`]: an [`IngestService`] is
+/// built over the same `(FsArtifactStore, SqliteTraceStore, local SqliteDurableBus,
+/// IngestPolicy::default())` quartet, and each span is sent through
+/// [`IngestService::ingest_native`] as a [`NativeIngestRequest`] (the service
+/// builds the `RawEnvelope` + `CanonicalTraceBatch` internally, exactly as
+/// `smoke_trace` relies on). The emitted shape is:
+///   * root span `AgentRun` ("rsi optimization round") with goal/strategy/model/
+///     n_candidates/accepted attributes,
+///   * one `AgentPlan` proposal child carrying the candidate target/description,
+///   * one `EvaluatorRun` child per evaluated candidate carrying the gate delta,
+///     p-value, decision, overfit flag, and acceptance.
+///
+/// The trace is then read back with `traces.get_trace(...)` (as the smoke
+/// fixtures do) and `trace_id` + `trace_span_count` are injected into
+/// `round_report`.
+async fn record_rsi_round_trace(
+    data_dir: &Path,
+    command: &str,
+    model: &str,
+    goal: &str,
+    round_report: &mut serde_json::Value,
+) -> anyhow::Result<()> {
+    // Same store quartet `smoke` builds the IngestService over.
+    let artifacts = Arc::new(FsArtifactStore::new(data_dir.join("artifacts"))?);
+    let traces = Arc::new(SqliteTraceStore::open(data_dir.join("traces.sqlite"))?);
+    let bus = local_bus(data_dir)?;
+    let service = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+
+    let tenant = TenantId::new("demo")?;
+    let project = ProjectId::new("demo")?;
+    let environment = EnvironmentId::new("local")?;
+    let scope = TenantScope::new(tenant.clone(), project.clone(), environment.clone());
+
+    // A unique, whitespace-free trace id so repeated runs into the same data-dir
+    // never collide (the smoke fixture reuses a fixed id; an RSI round is a
+    // distinct, repeatable event).
+    let nonce = Utc::now().timestamp_nanos_opt().unwrap_or_default();
+    let trace_id = TraceId::new(format!("rsi-round-{nonce}"))?;
+    let root_span_id = SpanId::new(format!("rsi-root-{nonce}"))?;
+
+    let accepted_candidate = round_report.get("accepted_candidate").cloned();
+    let accepted = accepted_candidate
+        .as_ref()
+        .is_some_and(|value| value.is_object());
+    let evaluated = round_report
+        .get("evaluated")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+
+    // --- root span: AgentRun ------------------------------------------------
+    let root_attributes: CanonicalAttrs = [
+        ("rsi.command".to_string(), json!(command)),
+        ("rsi.goal".to_string(), json!(goal)),
+        ("rsi.strategy".to_string(), json!("llm_rewrite")),
+        ("rsi.model".to_string(), json!(model)),
+        ("rsi.n_candidates".to_string(), json!(evaluated.len())),
+        ("rsi.accepted".to_string(), json!(accepted)),
+    ]
+    .into_iter()
+    .collect();
+    service
+        .ingest_native(NativeIngestRequest {
+            scope: scope.clone(),
+            trace_id: trace_id.clone(),
+            span_id: root_span_id.clone(),
+            parent_span_id: None,
+            seq: 1,
+            kind: AgentSpanKind::AgentRun,
+            name: "rsi optimization round".to_string(),
+            status: SpanStatus::Ok,
+            start_time: Some(Utc::now()),
+            end_time: Some(Utc::now()),
+            model: None,
+            cost: None,
+            tokens: None,
+            input: Some(json!({ "goal": goal, "command": command })),
+            output: Some(json!({ "accepted": accepted })),
+            attributes: root_attributes,
+            redaction_class: RedactionClass::Internal,
+            idempotency_key: None,
+            auth_context: None,
+        })
+        .await
+        .context("ingest rsi round root span")?;
+
+    // --- proposal child: AgentPlan -----------------------------------------
+    // The proposed candidate is the (single) evaluated candidate; fall back to the
+    // accepted candidate if present.
+    let proposal_candidate = evaluated
+        .first()
+        .and_then(|evaluation| evaluation.get("candidate").cloned())
+        .or(accepted_candidate.clone());
+    let mut seq: u64 = 2;
+    service
+        .ingest_native(NativeIngestRequest {
+            scope: scope.clone(),
+            trace_id: trace_id.clone(),
+            span_id: SpanId::new(format!("rsi-proposal-{nonce}"))?,
+            parent_span_id: Some(root_span_id.clone()),
+            seq,
+            kind: AgentSpanKind::AgentPlan,
+            name: "propose candidate".to_string(),
+            status: SpanStatus::Ok,
+            start_time: Some(Utc::now()),
+            end_time: Some(Utc::now()),
+            model: None,
+            cost: None,
+            tokens: None,
+            input: Some(json!({ "goal": goal })),
+            output: proposal_candidate.clone(),
+            attributes: [
+                (
+                    "rsi.candidate.kind".to_string(),
+                    proposal_candidate
+                        .as_ref()
+                        .and_then(|c| c.get("kind").cloned())
+                        .unwrap_or(json!(null)),
+                ),
+                (
+                    "rsi.candidate.target".to_string(),
+                    proposal_candidate
+                        .as_ref()
+                        .and_then(|c| c.get("target").cloned())
+                        .unwrap_or(json!(null)),
+                ),
+                (
+                    "rsi.candidate.description".to_string(),
+                    proposal_candidate
+                        .as_ref()
+                        .and_then(|c| c.get("description").cloned())
+                        .unwrap_or(json!(null)),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+            redaction_class: RedactionClass::Internal,
+            idempotency_key: None,
+            auth_context: None,
+        })
+        .await
+        .context("ingest rsi round proposal span")?;
+
+    // --- one EvaluatorRun child per evaluated candidate --------------------
+    for (index, evaluation) in evaluated.iter().enumerate() {
+        seq += 1;
+        let gate = evaluation.get("gate").cloned().unwrap_or(json!({}));
+        let attributes: CanonicalAttrs = [
+            (
+                "rsi.gate.decision".to_string(),
+                evaluation
+                    .get("gate_decision")
+                    .cloned()
+                    .unwrap_or(json!(null)),
+            ),
+            (
+                "rsi.gate.delta".to_string(),
+                gate.get("delta").cloned().unwrap_or(json!(null)),
+            ),
+            (
+                "rsi.gate.p_value".to_string(),
+                gate.get("p_value").cloned().unwrap_or(json!(null)),
+            ),
+            (
+                "rsi.overfit_flag".to_string(),
+                evaluation
+                    .get("overfit_flag")
+                    .cloned()
+                    .unwrap_or(json!(null)),
+            ),
+            (
+                "rsi.accepted".to_string(),
+                evaluation.get("accepted").cloned().unwrap_or(json!(null)),
+            ),
+        ]
+        .into_iter()
+        .collect();
+        service
+            .ingest_native(NativeIngestRequest {
+                scope: scope.clone(),
+                trace_id: trace_id.clone(),
+                span_id: SpanId::new(format!("rsi-eval-{nonce}-{index}"))?,
+                parent_span_id: Some(root_span_id.clone()),
+                seq,
+                kind: AgentSpanKind::EvaluatorRun,
+                name: "evaluate candidate".to_string(),
+                status: SpanStatus::Ok,
+                start_time: Some(Utc::now()),
+                end_time: Some(Utc::now()),
+                model: None,
+                cost: None,
+                tokens: None,
+                input: evaluation.get("candidate").cloned(),
+                output: Some(json!({
+                    "gate_decision": evaluation.get("gate_decision"),
+                    "accepted": evaluation.get("accepted"),
+                })),
+                attributes,
+                redaction_class: RedactionClass::Internal,
+                idempotency_key: None,
+                auth_context: None,
+            })
+            .await
+            .context("ingest rsi round evaluator span")?;
+    }
+
+    // Read the trace back from the store, exactly as the smoke fixtures do, to
+    // confirm it landed and is queryable.
+    let trace = traces
+        .get_trace(tenant.clone(), trace_id.clone())
+        .await
+        .context("read back recorded rsi round trace")?;
+
+    if let Some(object) = round_report.as_object_mut() {
+        object.insert("trace_id".to_string(), json!(trace_id.as_str()));
+        object.insert("trace_span_count".to_string(), json!(trace.spans.len()));
+        object.insert(
+            "trace_data_dir".to_string(),
+            json!(data_dir.display().to_string()),
+        );
+    }
+    Ok(())
+}
+
 fn calibration_fixture_cases(
     tenant: &TenantId,
     project: &ProjectId,
@@ -2643,6 +3734,7 @@ fn judge_fixture_request(
             trace: None,
         },
         provider_secret_id,
+        cache_namespace: None,
     }
 }
 
@@ -2728,7 +3820,7 @@ struct UnavailableTraceStore;
 impl TraceStore for UnavailableTraceStore {
     async fn write_batch(
         &self,
-        _batch: CanonicalTraceBatch,
+        _batch: Arc<CanonicalTraceBatch>,
     ) -> beater_store::StoreResult<WriteAck> {
         Err(StoreError::Backend("trace store unavailable".to_string()))
     }
@@ -2832,5 +3924,115 @@ mod tests {
         };
         assert!(err.to_string().contains("doesNotExist"), "got: {err}");
         Ok(())
+    }
+
+    // --- token_match_score: token-boundary grading edge cases ---------------
+    //
+    // Each assertion locks down a brittleness the old `substring_match_score`
+    // exhibited: substring false-positives ("Au" in "because"/"Australia",
+    // "Na" in "national", "Two" in "between"/"network") and the thousands-comma
+    // false-negative ("299792" vs "299,792").
+
+    #[test]
+    fn token_match_au_is_a_whole_token_not_a_substring() {
+        // True positive: "Au" stands alone as a token after stripping the period.
+        assert_eq!(token_match_score("The symbol is Au.", "Au"), 1.0);
+        // False positive killed: "au" lives inside "because" but is not its own token.
+        assert_eq!(
+            token_match_score("Gold is used because it shines", "Au"),
+            0.0
+        );
+        // False positive killed: "Au" inside "Australia" must not match.
+        assert_eq!(token_match_score("I visited Australia once", "Au"), 0.0);
+    }
+
+    #[test]
+    fn token_match_na_is_not_matched_inside_national() {
+        // False positive killed: "na" inside "national" is not a standalone token.
+        assert_eq!(token_match_score("We sang the national anthem", "Na"), 0.0);
+        // True positive: "Na" as its own token (sodium symbol) matches.
+        assert_eq!(token_match_score("The symbol is Na.", "Na"), 1.0);
+    }
+
+    #[test]
+    fn token_match_two_is_not_matched_inside_between_or_network() {
+        // False positives killed: "two" inside "between" and "network".
+        assert_eq!(token_match_score("It sits between the poles", "Two"), 0.0);
+        assert_eq!(token_match_score("routed over the network", "Two"), 0.0);
+        // True positive: a standalone "two" token matches.
+        assert_eq!(token_match_score("It has two moons", "Two"), 1.0);
+    }
+
+    #[test]
+    fn token_match_number_ignores_thousands_comma() {
+        // False negative fixed: "299,792" normalizes to the bare token "299792".
+        assert_eq!(
+            token_match_score("light travels about 299,792 km/s", "299792"),
+            1.0
+        );
+        // And a plainly written number still matches.
+        assert_eq!(token_match_score("about 299792 km/s", "299792"), 1.0);
+        // A genuinely different number does not match.
+        assert_eq!(token_match_score("about 300000 km/s", "299792"), 0.0);
+    }
+
+    #[test]
+    fn token_match_multiword_requires_consecutive_tokens() {
+        // True positive: consecutive tokens, even with trailing punctuation/number.
+        assert_eq!(
+            token_match_score("The tallest is Mount Everest, at 8849m", "Mount Everest"),
+            1.0
+        );
+        // True positive: three consecutive tokens.
+        assert_eq!(
+            token_match_score("Painted by Leonardo da Vinci in Italy", "Leonardo da Vinci"),
+            1.0
+        );
+        // False positive killed: the same tokens out of order / not contiguous.
+        assert_eq!(
+            token_match_score("Everest is a mountain; mount it carefully", "Mount Everest"),
+            0.0
+        );
+    }
+
+    #[test]
+    fn token_match_canberra_after_punctuation() {
+        // Punctuation stripping lets "Canberra" match after a sentence boundary.
+        assert_eq!(
+            token_match_score("The capital is Canberra.", "Canberra"),
+            1.0
+        );
+    }
+
+    #[test]
+    fn token_match_is_case_insensitive() {
+        assert_eq!(
+            token_match_score("george ORWELL wrote it", "George Orwell"),
+            1.0
+        );
+        assert_eq!(token_match_score("GEORGE orwell", "george ORWELL"), 1.0);
+    }
+
+    #[test]
+    fn token_match_ignores_leading_and_trailing_punctuation() {
+        assert_eq!(token_match_score("...Canberra!!!", "canberra"), 1.0);
+        assert_eq!(token_match_score("'Au'", "au"), 1.0);
+    }
+
+    #[test]
+    fn token_match_clearly_wrong_answer_scores_zero() {
+        assert_eq!(token_match_score("The capital is Sydney.", "Canberra"), 0.0);
+        assert_eq!(
+            token_match_score("Possibly Aldous Huxley wrote it", "George Orwell"),
+            0.0
+        );
+    }
+
+    #[test]
+    fn token_match_empty_expected_scores_zero() {
+        // Empty expected (or all-punctuation expected) yields no tokens -> 0.0,
+        // so a vacuous expected never trivially "matches" every answer.
+        assert_eq!(token_match_score("anything at all", ""), 0.0);
+        assert_eq!(token_match_score("anything at all", "  ,. "), 0.0);
     }
 }

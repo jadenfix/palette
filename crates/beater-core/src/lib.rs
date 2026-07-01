@@ -4,6 +4,9 @@ use sha2::{Digest, Sha256};
 use std::fmt::{Display, Formatter};
 use std::time::SystemTime;
 
+mod merkle;
+pub use merkle::{corpus_root, CorpusRoot, MerkleError, MerkleLeaf};
+
 pub type Timestamp = DateTime<Utc>;
 
 pub trait Clock: Send + Sync {

@@ -50,6 +50,14 @@ class DatasetVersionSnapshotTest {
     }
 
     /**
+     * Test the property 'corpusRoot'
+     */
+    @Test
+    void corpusRootTest() {
+        // TODO: test corpusRoot
+    }
+
+    /**
      * Test the property 'createdAt'
      */
     @Test

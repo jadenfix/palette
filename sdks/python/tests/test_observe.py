@@ -106,6 +106,77 @@ def test_wrap_openai_emits_llm_span(exporter):
     assert "hello there" in span.attributes[Attr.OUTPUT_VALUE]
 
 
+def test_wrap_groq_emits_openai_compatible_llm_span(exporter):
+    class _Completions:
+        def create(self, **kwargs):
+            return {
+                "model": "llama-3.3-70b-versatile",
+                "usage": {"prompt_tokens": 5, "completion_tokens": 3},
+                "choices": [{"message": {"content": "groq answer"}}],
+            }
+
+    class _Chat:
+        completions = _Completions()
+
+    class _Client:
+        chat = _Chat()
+
+    client = beater.wrap_groq(_Client())
+    client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": "hi"}],
+    )
+
+    span = _by_name(exporter.get_finished_spans(), "groq.chat.completions.create")
+    assert span.attributes[Attr.LLM_PROVIDER] == "groq"
+    assert span.attributes[Attr.LLM_MODEL_NAME] == "llama-3.3-70b-versatile"
+    assert span.attributes[Attr.LLM_TOKEN_PROMPT] == 5
+    assert span.attributes[Attr.LLM_TOKEN_COMPLETION] == 3
+    assert "groq answer" in span.attributes[Attr.OUTPUT_VALUE]
+
+
+def test_wrap_mistral_emits_openai_compatible_llm_span(exporter):
+    class _Usage:
+        input_tokens = 13
+        output_tokens = 8
+
+    class _Message:
+        content = "mistral answer"
+
+    class _Choice:
+        message = _Message()
+
+    class _Resp:
+        model = "mistral-large-latest"
+        usage = _Usage()
+        choices = [_Choice()]
+
+    class _Completions:
+        def create(self, request):
+            return _Resp()
+
+    class _Chat:
+        completions = _Completions()
+
+    class _Client:
+        chat = _Chat()
+
+    client = beater.wrap_mistral(_Client())
+    client.chat.completions.create(
+        {
+            "model": "mistral-large-latest",
+            "messages": [{"role": "user", "content": "hi"}],
+        }
+    )
+
+    span = _by_name(exporter.get_finished_spans(), "mistral.chat.completions.create")
+    assert span.attributes[Attr.LLM_PROVIDER] == "mistral"
+    assert span.attributes[Attr.LLM_MODEL_NAME] == "mistral-large-latest"
+    assert span.attributes[Attr.LLM_TOKEN_PROMPT] == 13
+    assert span.attributes[Attr.LLM_TOKEN_COMPLETION] == 8
+    assert "mistral answer" in span.attributes[Attr.OUTPUT_VALUE]
+
+
 def test_semconv_kinds_match_normalizer():
     # Guard: every kind the SDK can emit is one the server normalizer accepts.
     expected = {

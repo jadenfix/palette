@@ -21,6 +21,7 @@ typedef struct run_judge_eval_http_request_t run_judge_eval_http_request_t;
 
 
 typedef struct run_judge_eval_http_request_t {
+    char *cache_namespace; // string
     struct evaluation_case_t *_case; //model
     struct evaluator_spec_t *evaluator; //model
     char *provider_secret_id; // string
@@ -29,6 +30,7 @@ typedef struct run_judge_eval_http_request_t {
 } run_judge_eval_http_request_t;
 
 __attribute__((deprecated)) run_judge_eval_http_request_t *run_judge_eval_http_request_create(
+    char *cache_namespace,
     evaluation_case_t *_case,
     evaluator_spec_t *evaluator,
     char *provider_secret_id

@@ -40,6 +40,7 @@ tonic.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
+axum.workspace = true
 
 [lints]
 workspace = true

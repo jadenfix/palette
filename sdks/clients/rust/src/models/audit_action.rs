@@ -16,6 +16,14 @@ use serde::{Deserialize, Serialize};
 pub enum AuditAction {
     #[serde(rename = "pii_unmask")]
     PiiUnmask,
+    #[serde(rename = "api_key_create")]
+    ApiKeyCreate,
+    #[serde(rename = "api_key_revoke")]
+    ApiKeyRevoke,
+    #[serde(rename = "provider_secret_create")]
+    ProviderSecretCreate,
+    #[serde(rename = "provider_secret_revoke")]
+    ProviderSecretRevoke,
 
 }
 
@@ -23,6 +31,10 @@ impl std::fmt::Display for AuditAction {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::PiiUnmask => write!(f, "pii_unmask"),
+            Self::ApiKeyCreate => write!(f, "api_key_create"),
+            Self::ApiKeyRevoke => write!(f, "api_key_revoke"),
+            Self::ProviderSecretCreate => write!(f, "provider_secret_create"),
+            Self::ProviderSecretRevoke => write!(f, "provider_secret_revoke"),
         }
     }
 }

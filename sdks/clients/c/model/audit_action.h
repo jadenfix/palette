@@ -18,7 +18,7 @@ typedef struct audit_action_t audit_action_t;
 
 // Enum  for audit_action
 
-typedef enum { beater_api_audit_action__NULL = 0, beater_api_audit_action__pii_unmask } beater_api_audit_action__e;
+typedef enum { beater_api_audit_action__NULL = 0, beater_api_audit_action__pii_unmask, beater_api_audit_action__api_key_create, beater_api_audit_action__api_key_revoke, beater_api_audit_action__provider_secret_create, beater_api_audit_action__provider_secret_revoke } beater_api_audit_action__e;
 
 char* audit_action_audit_action_ToString(beater_api_audit_action__e audit_action);
 

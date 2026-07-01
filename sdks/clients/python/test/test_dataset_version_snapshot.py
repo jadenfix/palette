@@ -55,6 +55,7 @@ class TestDatasetVersionSnapshot(unittest.TestCase):
                         trace = null, 
                         trace_schema_version = 0, )
                     ],
+                corpus_root = '',
                 created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
                 dataset_id = '',
                 project_id = '',
@@ -83,6 +84,7 @@ class TestDatasetVersionSnapshot(unittest.TestCase):
                         trace = null, 
                         trace_schema_version = 0, )
                     ],
+                corpus_root = '',
                 created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
                 dataset_id = '',
                 project_id = '',

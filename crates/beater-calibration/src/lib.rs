@@ -599,12 +599,12 @@ mod tests {
         let dataset = DatasetId::new("dataset")?;
         let version = DatasetVersionId::new("version")?;
         let evaluator = EvaluatorVersionId::new("judge-v1")?;
-        let snapshot = DatasetVersionSnapshot {
-            tenant_id: tenant.clone(),
-            project_id: project.clone(),
-            dataset_id: dataset.clone(),
-            version_id: version.clone(),
-            cases: vec![
+        let snapshot = DatasetVersionSnapshot::try_new(
+            tenant.clone(),
+            project.clone(),
+            dataset.clone(),
+            version.clone(),
+            vec![
                 fixture_case(
                     &tenant,
                     &project,
@@ -638,8 +638,8 @@ mod tests {
                     json!("f"),
                 )?,
             ],
-            created_at: Utc::now(),
-        };
+            Utc::now(),
+        )?;
         let eval_report = DatasetEvalReport {
             report_id: "eval-report".to_string(),
             tenant_id: tenant.clone(),
@@ -695,6 +695,99 @@ mod tests {
             .await?
             .ok_or_else(|| anyhow!("missing latest report"))?;
         assert_eq!(latest.calibration_report_id, stored.calibration_report_id);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn calibration_report_store_scopes_reads_by_tenant_and_project() -> anyhow::Result<()> {
+        let store = SqliteCalibrationStore::in_memory()?;
+        let tenant = TenantId::new("tenant-a")?;
+        let other_tenant = TenantId::new("tenant-b")?;
+        let project = ProjectId::new("project-a")?;
+        let other_project = ProjectId::new("project-b")?;
+        let dataset = DatasetId::new("dataset")?;
+        let version = DatasetVersionId::new("version")?;
+        let evaluator = EvaluatorVersionId::new("judge-v1")?;
+        let now = Utc::now();
+
+        let target = calibration_report(CalibrationReportFixture {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            dataset_id: dataset.clone(),
+            dataset_version_id: version.clone(),
+            evaluator_version_id: evaluator.clone(),
+            calibration_report_id: "shared-report",
+            eval_report_id: "target-eval",
+            created_at: now,
+        })?;
+        let other_tenant_report = calibration_report(CalibrationReportFixture {
+            tenant_id: other_tenant.clone(),
+            project_id: project.clone(),
+            dataset_id: dataset.clone(),
+            dataset_version_id: version.clone(),
+            evaluator_version_id: evaluator.clone(),
+            calibration_report_id: "shared-report",
+            eval_report_id: "other-tenant-eval",
+            created_at: now + chrono::Duration::seconds(60),
+        })?;
+        let other_project_report = calibration_report(CalibrationReportFixture {
+            tenant_id: tenant.clone(),
+            project_id: other_project.clone(),
+            dataset_id: dataset.clone(),
+            dataset_version_id: version.clone(),
+            evaluator_version_id: evaluator.clone(),
+            calibration_report_id: "shared-report",
+            eval_report_id: "other-project-eval",
+            created_at: now + chrono::Duration::seconds(120),
+        })?;
+
+        store.write_report(target.clone()).await?;
+        store.write_report(other_tenant_report.clone()).await?;
+        store.write_report(other_project_report.clone()).await?;
+
+        let loaded = store
+            .get_report(
+                tenant.clone(),
+                project.clone(),
+                target.calibration_report_id.clone(),
+            )
+            .await?;
+        assert_eq!(loaded.eval_report_id, "target-eval");
+        assert_eq!(loaded.tenant_id, tenant);
+        assert_eq!(loaded.project_id, project);
+
+        let latest = store
+            .latest_report(
+                loaded.tenant_id.clone(),
+                loaded.project_id.clone(),
+                dataset.clone(),
+                version.clone(),
+                Some(evaluator.clone()),
+            )
+            .await?
+            .ok_or_else(|| anyhow!("missing target latest report"))?;
+        assert_eq!(latest.eval_report_id, "target-eval");
+
+        let latest_without_evaluator = store
+            .latest_report(
+                loaded.tenant_id.clone(),
+                loaded.project_id.clone(),
+                dataset,
+                version,
+                None,
+            )
+            .await?
+            .ok_or_else(|| anyhow!("missing target latest report without evaluator filter"))?;
+        assert_eq!(latest_without_evaluator.eval_report_id, "target-eval");
+
+        let missing_scope = store
+            .get_report(
+                other_tenant,
+                other_project,
+                target.calibration_report_id.clone(),
+            )
+            .await;
+        assert!(matches!(missing_scope, Err(StoreError::NotFound(_))));
         Ok(())
     }
 
@@ -759,6 +852,45 @@ mod tests {
             judge_score,
             judge_result_label: None,
             evidence: json!({}),
+        })
+    }
+
+    struct CalibrationReportFixture {
+        tenant_id: TenantId,
+        project_id: ProjectId,
+        dataset_id: DatasetId,
+        dataset_version_id: DatasetVersionId,
+        evaluator_version_id: EvaluatorVersionId,
+        calibration_report_id: &'static str,
+        eval_report_id: &'static str,
+        created_at: Timestamp,
+    }
+
+    fn calibration_report(fixture: CalibrationReportFixture) -> anyhow::Result<CalibrationReport> {
+        Ok(CalibrationReport {
+            calibration_report_id: CalibrationReportId::new(fixture.calibration_report_id)?,
+            tenant_id: fixture.tenant_id,
+            project_id: fixture.project_id,
+            dataset_id: fixture.dataset_id,
+            dataset_version_id: fixture.dataset_version_id,
+            evaluator_version_id: fixture.evaluator_version_id,
+            eval_report_id: fixture.eval_report_id.to_string(),
+            policy: CalibrationPolicy::default(),
+            sample_count: 1,
+            observed_agreement: 1.0,
+            expected_agreement: 1.0,
+            cohen_kappa: 1.0,
+            brier_score: 0.0,
+            expected_calibration_error: 0.0,
+            reliability_bins: Vec::new(),
+            confusion: CalibrationConfusion {
+                human_pass_judge_pass: 1,
+                human_pass_judge_fail: 0,
+                human_fail_judge_pass: 0,
+                human_fail_judge_fail: 0,
+            },
+            items: vec![calibration_item("case-1", CalibrationLabel::Pass, 1.0)?],
+            created_at: fixture.created_at,
         })
     }
 

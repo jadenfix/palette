@@ -23,6 +23,7 @@ dataset_version_snapshot_t* instantiate_dataset_version_snapshot(int include_opt
   if (include_optional) {
     dataset_version_snapshot = dataset_version_snapshot_create(
       list_createList(),
+      "0",
       "2013-10-20T19:20:30+01:00",
       "0",
       "0",
@@ -32,6 +33,7 @@ dataset_version_snapshot_t* instantiate_dataset_version_snapshot(int include_opt
   } else {
     dataset_version_snapshot = dataset_version_snapshot_create(
       list_createList(),
+      "0",
       "2013-10-20T19:20:30+01:00",
       "0",
       "0",

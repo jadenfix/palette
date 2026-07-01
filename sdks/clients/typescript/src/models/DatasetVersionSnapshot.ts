@@ -34,6 +34,14 @@ export interface DatasetVersionSnapshot {
      */
     cases: Array<DatasetCase>;
     /**
+     * A content-addressed Merkle root naming the exact contents of a corpus.
+     * 
+     * Serialized as its lowercase-hex SHA-256 string.
+     * @type {string}
+     * @memberof DatasetVersionSnapshot
+     */
+    corpusRoot: string;
+    /**
      * 
      * @type {Date}
      * @memberof DatasetVersionSnapshot
@@ -70,6 +78,7 @@ export interface DatasetVersionSnapshot {
  */
 export function instanceOfDatasetVersionSnapshot(value: object): value is DatasetVersionSnapshot {
     if (!('cases' in value) || value['cases'] === undefined) return false;
+    if (!('corpusRoot' in value) || value['corpusRoot'] === undefined) return false;
     if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
     if (!('datasetId' in value) || value['datasetId'] === undefined) return false;
     if (!('projectId' in value) || value['projectId'] === undefined) return false;
@@ -89,6 +98,7 @@ export function DatasetVersionSnapshotFromJSONTyped(json: any, ignoreDiscriminat
     return {
         
         'cases': ((json['cases'] as Array<any>).map(DatasetCaseFromJSON)),
+        'corpusRoot': json['corpus_root'],
         'createdAt': (new Date(json['created_at'])),
         'datasetId': json['dataset_id'],
         'projectId': json['project_id'],
@@ -109,6 +119,7 @@ export function DatasetVersionSnapshotToJSONTyped(value?: DatasetVersionSnapshot
     return {
         
         'cases': ((value['cases'] as Array<any>).map(DatasetCaseToJSON)),
+        'corpus_root': value['corpusRoot'],
         'created_at': ((value['createdAt']).toISOString()),
         'dataset_id': value['datasetId'],
         'project_id': value['projectId'],

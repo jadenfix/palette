@@ -98,6 +98,12 @@ Class | Method | HTTP request | Description
 *ArchiveApi* | [**query_archive_spans**](docs/ArchiveApi.md#query_archive_spans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans | 
 *AuditApi* | [**list_audit_events**](docs/AuditApi.md#list_audit_events) | **GET** /v1/audit/{tenant_id}/{project_id} | 
 *CalibrationsApi* | [**run_calibration**](docs/CalibrationsApi.md#run_calibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} | 
+*ConnectorsApi* | [**connect_connector**](docs/ConnectorsApi.md#connect_connector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect | 
+*ConnectorsApi* | [**connector_status**](docs/ConnectorsApi.md#connector_status) | **GET** /v1/connectors/{tenant_id}/{project_id}/status | 
+*ConnectorsApi* | [**get_connector_skills**](docs/ConnectorsApi.md#get_connector_skills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills | 
+*ConnectorsApi* | [**invoke_connector_tool**](docs/ConnectorsApi.md#invoke_connector_tool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke | 
+*ConnectorsApi* | [**list_connector_tools**](docs/ConnectorsApi.md#list_connector_tools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools | 
+*ConnectorsApi* | [**list_connectors**](docs/ConnectorsApi.md#list_connectors) | **GET** /v1/connectors/{tenant_id}/{project_id} | 
 *DatasetsApi* | [**create_dataset**](docs/DatasetsApi.md#create_dataset) | **POST** /v1/datasets/{tenant_id}/{project_id} | 
 *DatasetsApi* | [**create_dataset_version**](docs/DatasetsApi.md#create_dataset_version) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions | 
 *DatasetsApi* | [**promote_dataset_case_from_trace**](docs/DatasetsApi.md#promote_dataset_case_from_trace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace | 
@@ -119,6 +125,12 @@ Class | Method | HTTP request | Description
 *JudgeApi* | [**evaluate_judge**](docs/JudgeApi.md#evaluate_judge) | **POST** /v1/judge/{tenant_id}/{project_id}/evaluate | 
 *JudgeApi* | [**list_judge_ledger**](docs/JudgeApi.md#list_judge_ledger) | **GET** /v1/judge/{tenant_id}/{project_id}/ledger | 
 *OnlineApi* | [**decide_online_sampling**](docs/OnlineApi.md#decide_online_sampling) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling | 
+*PromptsApi* | [**add_prompt_version**](docs/PromptsApi.md#add_prompt_version) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions | 
+*PromptsApi* | [**create_prompt**](docs/PromptsApi.md#create_prompt) | **POST** /v1/prompts/{tenant_id}/{project_id} | 
+*PromptsApi* | [**diff_prompt_versions**](docs/PromptsApi.md#diff_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff | 
+*PromptsApi* | [**get_prompt**](docs/PromptsApi.md#get_prompt) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} | 
+*PromptsApi* | [**list_prompt_versions**](docs/PromptsApi.md#list_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions | 
+*PromptsApi* | [**list_prompts**](docs/PromptsApi.md#list_prompts) | **GET** /v1/prompts/{tenant_id}/{project_id} | 
 *ProviderSecretsApi* | [**create_provider_secret**](docs/ProviderSecretsApi.md#create_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} | 
 *ProviderSecretsApi* | [**list_provider_secrets**](docs/ProviderSecretsApi.md#list_provider_secrets) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} | 
 *ProviderSecretsApi* | [**revoke_provider_secret**](docs/ProviderSecretsApi.md#revoke_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke | 
@@ -137,6 +149,7 @@ Class | Method | HTTP request | Description
 
 ## Documentation For Models
 
+ - [AddPromptVersionRequest](docs/AddPromptVersionRequest.md)
  - [AlertDecision](docs/AlertDecision.md)
  - [AlertInput](docs/AlertInput.md)
  - [AlertLinks](docs/AlertLinks.md)
@@ -161,12 +174,19 @@ Class | Method | HTTP request | Description
  - [CanonicalSpan](docs/CanonicalSpan.md)
  - [CaseExperimentScore](docs/CaseExperimentScore.md)
  - [CaseOutputOverrideRequest](docs/CaseOutputOverrideRequest.md)
+ - [ConnectConnectorRequest](docs/ConnectConnectorRequest.md)
+ - [ConnectionLink](docs/ConnectionLink.md)
+ - [ConnectionStatus](docs/ConnectionStatus.md)
+ - [ConnectorSkillsResponse](docs/ConnectorSkillsResponse.md)
+ - [ConnectorTool](docs/ConnectorTool.md)
  - [CreateApiKeyHttpRequest](docs/CreateApiKeyHttpRequest.md)
  - [CreateDatasetRequest](docs/CreateDatasetRequest.md)
  - [CreateDatasetVersionRequest](docs/CreateDatasetVersionRequest.md)
  - [CreateGateRequest](docs/CreateGateRequest.md)
+ - [CreatePromptRequest](docs/CreatePromptRequest.md)
  - [CreateProviderSecretHttpRequest](docs/CreateProviderSecretHttpRequest.md)
  - [CreateReviewQueueHttpRequest](docs/CreateReviewQueueHttpRequest.md)
+ - [CreatedPrompt](docs/CreatedPrompt.md)
  - [Currency](docs/Currency.md)
  - [Dataset](docs/Dataset.md)
  - [DatasetCase](docs/DatasetCase.md)
@@ -174,6 +194,8 @@ Class | Method | HTTP request | Description
  - [DatasetVersionSnapshot](docs/DatasetVersionSnapshot.md)
  - [DeadLetter](docs/DeadLetter.md)
  - [DeadLetterReplayReport](docs/DeadLetterReplayReport.md)
+ - [DiffLine](docs/DiffLine.md)
+ - [DiffLineKind](docs/DiffLineKind.md)
  - [EnqueueReviewTaskFromTraceHttpRequest](docs/EnqueueReviewTaskFromTraceHttpRequest.md)
  - [ErrorResponse](docs/ErrorResponse.md)
  - [EvalReproducibility](docs/EvalReproducibility.md)
@@ -205,6 +227,7 @@ Class | Method | HTTP request | Description
  - [InconclusivePolicy](docs/InconclusivePolicy.md)
  - [IngestOutcome](docs/IngestOutcome.md)
  - [IngestQueueStatus](docs/IngestQueueStatus.md)
+ - [InvokeConnectorRequest](docs/InvokeConnectorRequest.md)
  - [JudgeAuditRecord](docs/JudgeAuditRecord.md)
  - [JudgeBrokerOutcome](docs/JudgeBrokerOutcome.md)
  - [MaintenanceWindow](docs/MaintenanceWindow.md)
@@ -217,6 +240,14 @@ Class | Method | HTTP request | Description
  - [PageRunSummaryItemsInner](docs/PageRunSummaryItemsInner.md)
  - [PromoteReviewAnnotationHttpRequest](docs/PromoteReviewAnnotationHttpRequest.md)
  - [PromoteTraceCaseRequest](docs/PromoteTraceCaseRequest.md)
+ - [Prompt](docs/Prompt.md)
+ - [PromptListResponse](docs/PromptListResponse.md)
+ - [PromptTemplate](docs/PromptTemplate.md)
+ - [PromptVariable](docs/PromptVariable.md)
+ - [PromptVersion](docs/PromptVersion.md)
+ - [PromptVersionDiff](docs/PromptVersionDiff.md)
+ - [PromptVersionListResponse](docs/PromptVersionListResponse.md)
+ - [PromptVersionMetadata](docs/PromptVersionMetadata.md)
  - [ProviderSecretMetadata](docs/ProviderSecretMetadata.md)
  - [PublishAck](docs/PublishAck.md)
  - [QueuedTraceWork](docs/QueuedTraceWork.md)
@@ -253,6 +284,8 @@ Class | Method | HTTP request | Description
  - [SubmitReviewAnnotationHttpRequest](docs/SubmitReviewAnnotationHttpRequest.md)
  - [TenantScope](docs/TenantScope.md)
  - [TokenCounts](docs/TokenCounts.md)
+ - [ToolExecution](docs/ToolExecution.md)
+ - [Toolkit](docs/Toolkit.md)
  - [TraceIngestedDrainReport](docs/TraceIngestedDrainReport.md)
  - [TraceIngestedReconcileReport](docs/TraceIngestedReconcileReport.md)
  - [TraceView](docs/TraceView.md)

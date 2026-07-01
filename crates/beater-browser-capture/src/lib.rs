@@ -17,7 +17,9 @@
 use beater_browser::{
     semconv, BrowserAction, BrowserDriver, LlmDecision, Observation, StepStatus, StepTriple,
 };
-use beater_core::{EnvironmentId, Money, ProjectId, TenantId, Timestamp, TokenCounts, TraceId};
+use beater_core::{
+    EnvironmentId, Money, ProjectId, SpanId, TenantId, Timestamp, TokenCounts, TraceId,
+};
 use beater_replay::{ReplayEvent, ReplayEventKind, SqliteReplayStore};
 use beater_schema::{
     AgentSpanKind, ArtifactRef, CanonicalSpan, ModelRef, RedactionClass, SpanStatus,
@@ -64,6 +66,7 @@ pub struct RecordedStep {
 /// Internal input for assembling one [`CanonicalSpan`].
 struct SpanParts {
     span_id: String,
+    parent_span_id: Option<SpanId>,
     kind: AgentSpanKind,
     name: String,
     status: SpanStatus,
@@ -160,6 +163,7 @@ where
         let mut spans = Vec::new();
 
         // 1) Record the LLM decision (the prompt) as a Provider cassette + llm.call span.
+        let mut decision_parent_span_id = None;
         if let Some(decision) = &decision {
             let request = decision.prompt.clone();
             let response = json!({
@@ -200,6 +204,7 @@ where
                 .unwrap_or(step_start);
             let span = self.build_span(SpanParts {
                 span_id: format!("browser-decision-{step_seq}"),
+                parent_span_id: None,
                 kind: AgentSpanKind::LlmCall,
                 name: "browser.decision".to_string(),
                 status: SpanStatus::Ok,
@@ -217,6 +222,7 @@ where
                 attributes,
                 raw_ref,
             })?;
+            decision_parent_span_id = Some(span.span_id.clone());
             spans.push(span);
         }
 
@@ -310,6 +316,7 @@ where
         };
         let span = self.build_span(SpanParts {
             span_id: format!("browser-step-{step_seq}"),
+            parent_span_id: decision_parent_span_id,
             kind: AgentSpanKind::ToolCall,
             name: format!("browser.{}", action.verb()),
             status: span_status,
@@ -394,7 +401,7 @@ where
             environment_id: self.ctx.environment_id.clone(),
             trace_id: self.ctx.trace_id.clone(),
             span_id,
-            parent_span_id: None,
+            parent_span_id: parts.parent_span_id,
             seq,
             kind: parts.kind,
             name: parts.name,
@@ -496,11 +503,16 @@ pub fn browser_trace_from_spans(spans: &[CanonicalSpan]) -> Value {
                 _ => "ok".to_string(),
             });
         // Mirror the native `BrowserAction` serialization (#[serde(tag="action",
-        // content="args")]) so ingested and natively-captured browser_steps share
-        // one `action` shape: { "action": <verb>, "args": { "selector": ... } }.
+        // content="args")]) so ingested and natively-captured browser_steps
+        // share one `action` shape.
         let mut args = serde_json::Map::new();
         if let Some(selector) = attrs.get(semconv::SELECTOR).and_then(Value::as_str) {
             args.insert("selector".to_string(), json!(selector));
+        }
+        if action == "goto" {
+            if let Some(url) = attrs.get(semconv::URL).and_then(Value::as_str) {
+                args.insert("url".to_string(), json!(url));
+            }
         }
         let step = json!({
             "seq": seq,
@@ -621,6 +633,17 @@ mod tests {
         assert_eq!(ok.spans.len(), 2);
         assert_eq!(ok.spans[0].kind, AgentSpanKind::LlmCall);
         assert_eq!(ok.spans[1].kind, AgentSpanKind::ToolCall);
+        assert_eq!(ok.spans[0].parent_span_id, None);
+        assert_eq!(
+            ok.spans[1].parent_span_id.as_ref(),
+            Some(&ok.spans[0].span_id),
+            "browser-step-0 should be parented by browser-decision-0"
+        );
+        assert_eq!(
+            miss.spans[1].parent_span_id.as_ref(),
+            Some(&miss.spans[0].span_id),
+            "browser-step-1 should be parented by browser-decision-1"
+        );
         assert_eq!(ok.spans[1].status, SpanStatus::Ok);
         assert_eq!(miss.spans[1].status, SpanStatus::Error);
 
@@ -736,6 +759,36 @@ mod tests {
         assert_eq!(trace.get("latency_ms"), Some(&json!(1640)));
     }
 
+    #[tokio::test]
+    async fn no_decision_step_remains_rootless() {
+        let dir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = FsArtifactStore::new(dir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let replay = SqliteReplayStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let ctx = context();
+        let driver = MockDriver::with_conformance_fixture();
+        let mut proxy = BrowserToolProxy::new(driver, artifacts, replay, ctx);
+
+        proxy
+            .goto("https://fixture.local/page")
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let recorded = proxy
+            .step(
+                None,
+                BrowserAction::Click {
+                    selector: FIXTURE_KNOWN_SELECTOR.to_string(),
+                },
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        assert_eq!(recorded.spans.len(), 1);
+        assert_eq!(recorded.spans[0].kind, AgentSpanKind::ToolCall);
+        assert_eq!(recorded.spans[0].span_id.as_str(), "browser-step-0");
+        assert_eq!(recorded.spans[0].parent_span_id, None);
+    }
+
     async fn replay_events<D, A>(proxy: &BrowserToolProxy<D, A>) -> Vec<ReplayEvent> {
         proxy
             .replay
@@ -762,10 +815,26 @@ mod tests {
     /// Build a `tool.call` `CanonicalSpan` carrying `browser.*` attributes,
     /// mirroring what `beater-otlp` produces for an ingested external agent run.
     fn ingested_tool_span(seq: u64, selector: &str, matched: bool, url: &str) -> CanonicalSpan {
+        ingested_tool_span_with_action(seq, "click", Some(selector), matched, url)
+    }
+
+    fn ingested_goto_span(seq: u64, url: &str) -> CanonicalSpan {
+        ingested_tool_span_with_action(seq, "goto", None, true, url)
+    }
+
+    fn ingested_tool_span_with_action(
+        seq: u64,
+        action: &str,
+        selector: Option<&str>,
+        matched: bool,
+        url: &str,
+    ) -> CanonicalSpan {
         let mut attributes = BTreeMap::new();
         attributes.insert(semconv::ENGINE.to_string(), json!("chromium"));
-        attributes.insert(semconv::ACTION.to_string(), json!("click"));
-        attributes.insert(semconv::SELECTOR.to_string(), json!(selector));
+        attributes.insert(semconv::ACTION.to_string(), json!(action));
+        if let Some(selector) = selector {
+            attributes.insert(semconv::SELECTOR.to_string(), json!(selector));
+        }
         attributes.insert(semconv::SELECTOR_EXISTED.to_string(), json!(matched));
         attributes.insert(semconv::MATCHED_ELEMENT.to_string(), json!(matched));
         attributes.insert(semconv::STEP_SEQ.to_string(), json!(seq));
@@ -786,7 +855,7 @@ mod tests {
             parent_span_id: None,
             seq,
             kind: AgentSpanKind::ToolCall,
-            name: "browser.click".to_string(),
+            name: format!("browser.{action}"),
             status: if matched {
                 SpanStatus::Ok
             } else {
@@ -826,6 +895,7 @@ mod tests {
             steps[1]["outcome"]["grounding"]["matched_element"],
             json!(true)
         );
+        assert_eq!(steps[0]["action"]["args"]["selector"], json!("#cart"));
         assert_eq!(
             steps[1]["outcome"]["observation"]["url"],
             json!("https://shop/confirm")
@@ -838,5 +908,18 @@ mod tests {
             miss_step["outcome"]["grounding"]["matched_element"],
             json!(false)
         );
+    }
+
+    #[test]
+    fn projected_goto_span_preserves_native_action_url_arg() {
+        let trace = browser_trace_from_spans(&[ingested_goto_span(0, "https://shop/cart")]);
+        let step = &trace["browser_steps"][0];
+        assert_eq!(step["action"]["action"], json!("goto"));
+        assert_eq!(step["action"]["args"]["url"], json!("https://shop/cart"));
+        assert_eq!(
+            step["outcome"]["observation"]["url"],
+            json!("https://shop/cart")
+        );
+        assert_eq!(step["outcome"]["grounding"]["selector"], Value::Null);
     }
 }

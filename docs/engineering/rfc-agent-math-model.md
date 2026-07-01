@@ -123,9 +123,24 @@ need more data" instead of a false green.
 Per `CLAUDE.md`, any `/v1` endpoint auto-projects into MCP tools + 7 SDKs + CLI
 from one OpenAPI artifact. So the build-now items, once they're handlers in
 `crates/beater-api`, become agent-callable MCP tools for free — no separate math
-service, staying offline/self-hostable (R11). No new crate until there are enough
-estimators to justify extracting one; for now they live in `beater-eval` and
-`beater-calibration`.
+service, staying offline/self-hostable (R11). Item #1 has since crossed that
+threshold into shared `beater-stats` primitives, wired through `beater-eval`;
+the remaining display-only judge-trust work still belongs near
+`beater-calibration` until it needs extraction.
+
+---
+
+## Implementation status (2026-06-28)
+
+`ARCHITECTURE.md` §10.3 #5 / A6 is now the backing contract for item #1:
+power/MDE planning happens before any gate can pass, and underpowered
+comparisons return *inconclusive* rather than a false green.
+
+| Work | Status | Notes |
+|---|---|---|
+| #61 / Build now #1 required-n and MDE | Implemented | `beater-stats` owns `required_sample_size`, `minimum_detectable_effect`, and `achieved_power`; `beater-eval` reports `mde` and `required_n` on inconclusive underpowered gates. |
+| #62 / Build now #2 judge trust | Remaining | Add Cohen's kappa plus reliability diagram / ECE display. |
+| #63 / Build soon #3 critical-path latency | Remaining | Add trace-DAG longest-path latency and waterfall highlighting. |
 
 ---
 

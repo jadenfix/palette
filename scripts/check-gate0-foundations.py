@@ -69,6 +69,36 @@ def read(path: str) -> str:
     return (REPO / path).read_text()
 
 
+def check_governance_security_presence(repo: Path = REPO) -> None:
+    required_docs = ["LICENSE", "GOVERNANCE.md", "SECURITY.md", "CONTRIBUTING.md"]
+    for doc in required_docs:
+        path = repo / doc
+        if not path.is_file():
+            fail(f"{doc} is missing")
+        if not path.read_text(encoding="utf-8").strip():
+            fail(f"{doc} must not be empty")
+
+    security = (repo / "SECURITY.md").read_text(encoding="utf-8").lower()
+    private_disclosure = (
+        "coordinated disclosure" in security
+        or "private disclosure" in security
+        or "report privately" in security
+    )
+    disclosure_path = any(
+        marker in security
+        for marker in [
+            "github security advisories",
+            "report a vulnerability",
+            "private advisory",
+            "security@",
+            "contact listed in `governance.md`",
+            "contact listed in governance.md",
+        ]
+    )
+    if not private_disclosure or not disclosure_path:
+        fail("SECURITY.md must describe a private/coordinated disclosure path")
+
+
 def rust_block(text: str, start_pattern: str) -> str | None:
     start = re.compile(start_pattern)
     lines = text.splitlines()
@@ -366,9 +396,20 @@ def check_schema_owns_rollups_and_mappings() -> None:
 
     for path in ["crates/beater-store-memory/src/lib.rs", "crates/beater-store-sql/src/lib.rs"]:
         text = read(path)
-        for symbol in ["query_runs_by_materializing_spans", "span_summary"]:
-            if symbol not in text:
-                fail(f"{path} must use shared trace query helper/mapping via {symbol}")
+        # Span mapping must always go through the shared schema helper.
+        if "span_summary" not in text:
+            fail(f"{path} must use shared span mapping via span_summary")
+        # Run rollups must go through a shared run-query helper — either the
+        # materializing fallback (query_runs_by_materializing_spans) or the
+        # backend-pushdown finalizer (finalize_run_aggregates, used by the SQL
+        # backends that aggregate in the database) — never a backend-local
+        # reimplementation of the rollup.
+        shared_run_helpers = ["query_runs_by_materializing_spans", "finalize_run_aggregates"]
+        if not any(symbol in text for symbol in shared_run_helpers):
+            fail(
+                f"{path} must use a shared run-query helper "
+                f"(one of {shared_run_helpers})"
+            )
         for forbidden in ["fn roll_up_runs", "fn filter_run_summaries", "fn aggregate_run_status"]:
             if forbidden in text:
                 fail(f"{path} must not define backend-local {forbidden}")
@@ -430,6 +471,7 @@ def check_temporal_contract() -> None:
 
 
 def main() -> None:
+    check_governance_security_presence()
     check_store_crate_has_no_sqlite_dependency()
     check_trace_store_conformance_runs_on_two_backends()
     check_metadata_store_boundary()

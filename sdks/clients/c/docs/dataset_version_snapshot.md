@@ -4,6 +4,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **cases** | [**list_t**](dataset_case.md) \* |  | 
+**corpus_root** | **char \*** | A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string. | 
 **created_at** | **char \*** |  | 
 **dataset_id** | **char \*** |  | 
 **project_id** | **char \*** |  | 

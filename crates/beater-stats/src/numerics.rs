@@ -214,13 +214,19 @@ pub fn normal_quantile(p: f64) -> f64 {
 }
 
 /// Exact Binomial(n, ½) lower tail `P(X ≤ k)`, summed in log-space for stability.
+///
+/// The log binomial coefficient is carried forward by the recurrence
+/// `ln C(n,i) = ln C(n,i−1) + ln(n−i+1) − ln(i)`, so each term costs two cheap
+/// `ln` calls instead of two `ln_gamma` evaluations — an O(k) gamma-free sum that
+/// matters when the discordant-pair count `k` is large.
 pub fn binomial_lower_tail_half(k: u64, n: u64) -> f64 {
     let ln_half_pow_n = n as f64 * 0.5_f64.ln();
-    let ln_n_fact = ln_gamma(n as f64 + 1.0);
-    let mut sum = 0.0;
     let upper = k.min(n);
-    for i in 0..=upper {
-        let ln_choose = ln_n_fact - ln_gamma(i as f64 + 1.0) - ln_gamma((n - i) as f64 + 1.0);
+    // ln C(n,0) = 0, so the i = 0 term is exp(n·ln½).
+    let mut ln_choose = 0.0_f64;
+    let mut sum = ln_half_pow_n.exp();
+    for i in 1..=upper {
+        ln_choose += ((n - i + 1) as f64).ln() - (i as f64).ln();
         sum += (ln_choose + ln_half_pow_n).exp();
     }
     sum.min(1.0)
@@ -282,5 +288,28 @@ mod tests {
         assert!(close(binomial_lower_tail_half(0, 5), 0.031_25, 1e-12)); // 0.5^5
         assert!(close(binomial_lower_tail_half(5, 10), 0.623_046_875, 1e-9));
         assert!(close(binomial_lower_tail_half(10, 10), 1.0, 1e-12));
+    }
+
+    /// The incremental log-binomial recurrence must stay accurate at large `n`,
+    /// where it carries `ln C(n,i)` across many iterations. Reference values from
+    /// exact `sum(comb(n,i))/2^n`. The full tail `P(X ≤ n) = 1` also pins that the
+    /// per-term coefficients still sum to one after thousands of steps.
+    #[test]
+    fn binomial_tail_large_n_recurrence_is_accurate() {
+        // P(X ≤ 500 | n = 1000): 0.5·(1 + P(X = 500)).
+        assert!(close(
+            binomial_lower_tail_half(500, 1000),
+            0.512_612_509_089_180_4,
+            1e-9
+        ));
+        // A deep lower tail far below the median.
+        assert!(close(
+            binomial_lower_tail_half(50, 200),
+            4.196_510_437_802_38e-13,
+            1e-15
+        ));
+        // The whole distribution sums to 1 even after n steps of the recurrence.
+        assert!(close(binomial_lower_tail_half(1000, 1000), 1.0, 1e-9));
+        assert!(close(binomial_lower_tail_half(5000, 5000), 1.0, 1e-9));
     }
 }

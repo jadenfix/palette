@@ -132,6 +132,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connectors/{tenant_id}/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listConnectors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connectors/{tenant_id}/{project_id}/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["connectConnector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connectors/{tenant_id}/{project_id}/invoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["invokeConnectorTool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connectors/{tenant_id}/{project_id}/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getConnectorSkills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connectors/{tenant_id}/{project_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["connectorStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connectors/{tenant_id}/{project_id}/tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listConnectorTools"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/datasets/{tenant_id}/{project_id}": {
         parameters: {
             query?: never;
@@ -436,6 +532,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/prompts/{tenant_id}/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPrompts"];
+        put?: never;
+        post: operations["createPrompt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/prompts/{tenant_id}/{project_id}/{prompt_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPrompt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["diffPromptVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPromptVersions"];
+        put?: never;
+        post: operations["addPromptVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/provider-secrets/{tenant_id}/{project_id}": {
         parameters: {
             query?: never;
@@ -664,6 +824,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Request body for `addPromptVersion`: a new immutable template revision. */
+        AddPromptVersionRequest: {
+            created_by?: string | null;
+            message?: string | null;
+            template: components["schemas"]["PromptTemplate"];
+        };
         AgentReleaseId: string;
         /**
          * @description Canonical agent span kind such as agent.run or llm.call
@@ -772,7 +938,7 @@ export interface components {
             uri: string;
         };
         /** @enum {string} */
-        AuditAction: "pii_unmask";
+        AuditAction: "pii_unmask" | "api_key_create" | "api_key_revoke" | "provider_secret_create" | "provider_secret_revoke";
         AuditEvent: {
             action: components["schemas"]["AuditAction"];
             actor_api_key_id?: null | components["schemas"]["ApiKeyId"];
@@ -915,6 +1081,73 @@ export interface components {
             output: unknown;
             trace?: unknown;
         };
+        ConnectConnectorRequest: {
+            /** @description Toolkit slug to connect (e.g. `github`, `gmail`, `slack`). */
+            toolkit: string;
+        };
+        /** @description One-time login link returned when initiating a managed-OAuth connection. */
+        ConnectionLink: {
+            /** @description Composio connection id (`ca_…`) created for this handshake. */
+            connected_account_id: string;
+            /** @description When the link expires (RFC 3339), if provided. */
+            expires_at?: string | null;
+            /** @description URL the end user opens once to authorize the app. */
+            redirect_url: string;
+        };
+        /** @description Connection status of one app for one entity. */
+        ConnectionStatus: {
+            /** @description `true` only when an account exists and is `ACTIVE`. */
+            connected: boolean;
+            /** @description The connected-account id, when one exists. */
+            connected_account_id?: string | null;
+            /**
+             * @description Raw Composio status (`ACTIVE`, `INITIALIZING`, `FAILED`, …) or
+             *     `not_connected` when no account exists yet.
+             */
+            status: string;
+            /** @description Toolkit slug this status is for. */
+            toolkit: string;
+        };
+        /** @description Generated prompting scaffold ("skills.md") for a toolkit's tools. */
+        ConnectorSkillsResponse: {
+            /**
+             * @description Markdown document: one skill card per tool, ready to splice into an
+             *     agent's system prompt.
+             */
+            skills: string;
+            /** @description Toolkit the skills document covers. */
+            toolkit: string;
+        };
+        /**
+         * @description A single executable tool within a toolkit, carrying the metadata an agent
+         *     needs to actually *call* it: the input JSON Schema, tags, and toolkit. This
+         *     is the raw material for the prompting scaffold in [`crate::skill`].
+         */
+        ConnectorTool: {
+            /** @description What the tool does. */
+            description?: string | null;
+            /**
+             * @description JSON Schema of the tool's `arguments`, verbatim from Composio. The agent
+             *     loop uses this to construct valid calls; [`crate::skill`] renders it.
+             */
+            input_schema?: Record<string, never> | null;
+            /** @description Human display name. */
+            name: string;
+            /** @description `true` when the tool executes without a connected account. */
+            no_auth?: boolean;
+            /** @description Tool slug passed to [`ComposioClient::execute`] (e.g. `GITHUB_CREATE_AN_ISSUE`). */
+            slug: string;
+            /** @description Free-form tags Composio assigns (categories, importance, …). */
+            tags?: string[];
+            /** @description Owning toolkit slug (e.g. `github`), when known. */
+            toolkit?: string | null;
+        };
+        /**
+         * @description A content-addressed Merkle root naming the exact contents of a corpus.
+         *
+         *     Serialized as its lowercase-hex SHA-256 string.
+         */
+        CorpusRoot: string;
         CreateApiKeyHttpRequest: {
             scopes: components["schemas"]["ApiScope"][];
         };
@@ -931,6 +1164,17 @@ export interface components {
             inconclusive_policy?: null | components["schemas"]["InconclusivePolicy"];
             name: string;
         };
+        /**
+         * @description Request body for `createPrompt`: the new prompt's metadata plus its initial
+         *     (version 1) template.
+         */
+        CreatePromptRequest: {
+            created_by?: string | null;
+            description?: string | null;
+            message?: string | null;
+            name: string;
+            template: components["schemas"]["PromptTemplate"];
+        };
         CreateProviderSecretHttpRequest: {
             display_name: string;
             provider: string;
@@ -940,6 +1184,10 @@ export interface components {
             annotation_schema: unknown;
             name: string;
             queue_id?: string | null;
+        };
+        CreatedPrompt: {
+            prompt: components["schemas"]["Prompt"];
+            version: components["schemas"]["PromptVersion"];
         };
         /** @enum {string} */
         Currency: "USD";
@@ -989,6 +1237,14 @@ export interface components {
         DatasetVersionId: string;
         DatasetVersionSnapshot: {
             cases: components["schemas"]["DatasetCase"][];
+            /**
+             * @description Content-addressed Merkle root naming the exact set of cases in this
+             *     version. History-independent: identical case sets produce identical
+             *     roots regardless of case order, so the root lets a trace, eval, or
+             *     customer-facing report cite the precise corpus it ran against and lets
+             *     two parties confirm they hold the same data with one comparison.
+             */
+            corpus_root: components["schemas"]["CorpusRoot"];
             /** Format: date-time */
             created_at: string;
             dataset_id: components["schemas"]["DatasetId"];
@@ -1009,6 +1265,14 @@ export interface components {
             reset_attempts: boolean;
             tenant_id: components["schemas"]["TenantId"];
         };
+        DiffLine: {
+            kind: components["schemas"]["DiffLineKind"];
+            new_line?: number | null;
+            old_line?: number | null;
+            text: string;
+        };
+        /** @enum {string} */
+        DiffLineKind: "unchanged" | "added" | "removed";
         EnqueueReviewTaskFromTraceHttpRequest: {
             dataset_case_id?: string | null;
             dataset_id?: string | null;
@@ -1275,6 +1539,12 @@ export interface components {
             trace_ingested_depth: number;
             trace_write_depth: number;
         };
+        InvokeConnectorRequest: {
+            /** @description Arguments object matching the tool's input schema. */
+            arguments?: Record<string, never>;
+            /** @description Tool slug to execute (e.g. `GITHUB_CREATE_AN_ISSUE`). */
+            tool: string;
+        };
         JudgeAuditRecord: {
             cached: boolean;
             charged_cost: components["schemas"]["Money"];
@@ -1386,7 +1656,57 @@ export interface components {
             span_id?: string | null;
             trace_id: string;
         };
+        Prompt: {
+            /** Format: date-time */
+            created_at: string;
+            description?: string | null;
+            name: string;
+            project_id: components["schemas"]["ProjectId"];
+            prompt_id: components["schemas"]["PromptId"];
+            tenant_id: components["schemas"]["TenantId"];
+            /** Format: date-time */
+            updated_at: string;
+        };
+        PromptId: string;
+        PromptListResponse: {
+            prompts: components["schemas"]["Prompt"][];
+        };
+        PromptTemplate: {
+            body: string;
+            tags: string[];
+            variables: components["schemas"]["PromptVariable"][];
+        };
+        PromptVariable: {
+            default?: string | null;
+            description?: string | null;
+            name: string;
+            required: boolean;
+        };
+        PromptVersion: {
+            metadata: components["schemas"]["PromptVersionMetadata"];
+            project_id: components["schemas"]["ProjectId"];
+            prompt_id: components["schemas"]["PromptId"];
+            template: components["schemas"]["PromptTemplate"];
+            tenant_id: components["schemas"]["TenantId"];
+            version_id: components["schemas"]["PromptVersionId"];
+            /** Format: int32 */
+            version_number: number;
+        };
+        PromptVersionDiff: {
+            from_version_id: components["schemas"]["PromptVersionId"];
+            lines: components["schemas"]["DiffLine"][];
+            to_version_id: components["schemas"]["PromptVersionId"];
+        };
         PromptVersionId: string;
+        PromptVersionListResponse: {
+            versions: components["schemas"]["PromptVersion"][];
+        };
+        PromptVersionMetadata: {
+            /** Format: date-time */
+            created_at: string;
+            created_by?: string | null;
+            message?: string | null;
+        };
         ProviderSecretId: string;
         ProviderSecretMetadata: {
             active: boolean;
@@ -1519,6 +1839,11 @@ export interface components {
             provider_secret_id: components["schemas"]["ProviderSecretId"];
         };
         RunJudgeEvalHttpRequest: {
+            /**
+             * @description Calibration-map / judge-instrument version folded into the judge cache
+             *     key; bumping it on recalibration invalidates stale cached scores.
+             */
+            cache_namespace?: string | null;
             case: components["schemas"]["EvaluationCase"];
             evaluator: components["schemas"]["EvaluatorSpec"];
             provider_secret_id: components["schemas"]["ProviderSecretId"];
@@ -1639,6 +1964,38 @@ export interface components {
             output: number;
             /** Format: int64 */
             reasoning: number;
+        };
+        /** @description Result of executing a tool — Composio's `{successful, data, error}` envelope. */
+        ToolExecution: {
+            /** @description Tool output payload (shape is tool-specific). */
+            data?: Record<string, never>;
+            /** @description Error message when `successful` is false. */
+            error?: string | null;
+            /** @description Composio execution log id, for tracing. */
+            log_id?: string | null;
+            /** @description Whether the tool reported success. */
+            successful: boolean;
+        };
+        /**
+         * @description A connectable third-party app (Composio "toolkit"), flattened from the v3
+         *     `GET /toolkits` shape into the fields Beater exposes.
+         */
+        Toolkit: {
+            /** @description Supported auth schemes (e.g. `OAUTH2`, `API_KEY`, `NO_AUTH`). */
+            auth_schemes?: string[];
+            /** @description Short description, if the catalog provides one. */
+            description?: string | null;
+            /** @description Human display name. */
+            name: string;
+            /** @description `true` when the toolkit needs no OAuth/connection to execute. */
+            no_auth?: boolean;
+            /** @description Stable slug used everywhere else (e.g. `github`, `gmail`). */
+            slug: string;
+            /**
+             * Format: int32
+             * @description Number of tools the toolkit exposes, if known.
+             */
+            tools_count?: number | null;
         };
         TraceId: string;
         TraceIngestedDrainReport: {
@@ -2211,6 +2568,444 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listConnectors: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description Maximum number of apps to return (page size). */
+                limit: number | null;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List connectable third-party apps (catalog) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Toolkit"][];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Connector provider not configured */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    connectConnector: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectConnectorRequest"];
+            };
+        };
+        responses: {
+            /** @description One-time login link to authorize the app */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionLink"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Connector provider not configured */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    invokeConnectorTool: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvokeConnectorRequest"];
+            };
+        };
+        responses: {
+            /** @description Execute a connector tool and return its result envelope */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolExecution"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Connector provider not configured */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getConnectorSkills: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description Toolkit slug to scope the request to. */
+                toolkit: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Generated prompting scaffold (skill cards) for a toolkit */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorSkillsResponse"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Connector provider not configured */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    connectorStatus: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description Toolkit slug to scope the request to. */
+                toolkit: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Connection status of a toolkit for this project */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionStatus"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Connector provider not configured */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listConnectorTools: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description Toolkit slug to list tools for. */
+                toolkit: string;
+                /** @description Maximum number of tools to return (page size). */
+                limit: number | null;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List a toolkit's executable tools with input schemas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorTool"][];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Connector provider not configured */
+            501: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3591,6 +4386,426 @@ export interface operations {
             };
             /** @description Per-project quota exceeded or backpressure */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listPrompts: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List prompts in a project */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromptListResponse"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createPrompt: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePromptRequest"];
+            };
+        };
+        responses: {
+            /** @description Create a prompt and its initial version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedPrompt"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getPrompt: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description prompt_id */
+                prompt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get a prompt's metadata */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Prompt"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    diffPromptVersions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description prompt_id */
+                prompt_id: string;
+                from: string;
+                to: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Line diff between two prompt versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromptVersionDiff"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listPromptVersions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description prompt_id */
+                prompt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List a prompt's versions oldest-first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromptVersionListResponse"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    addPromptVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description prompt_id */
+                prompt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddPromptVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Append an immutable prompt version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromptVersion"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -43,7 +43,7 @@ WALKTHROUGH_DOCS="README.md docs/local-dev.md CONTRIBUTING.md"
 # ---------------------------------------------------------------------------
 # Step 1: all referenced scripts/*.sh and scripts/*.py exist.
 # ---------------------------------------------------------------------------
-step "1/5 scripts referenced in walkthrough docs exist"
+step "1/6 scripts referenced in walkthrough docs exist"
 
 # shellcheck disable=SC2086
 while IFS= read -r ref; do
@@ -61,7 +61,7 @@ done < <(grep -h -oE 'scripts/[A-Za-z0-9_.-]+\.(sh|py)' $WALKTHROUGH_DOCS 2>/dev
 # ---------------------------------------------------------------------------
 # Step 2: referenced examples/ paths exist.
 # ---------------------------------------------------------------------------
-step "2/5 examples/ paths referenced in walkthrough docs exist"
+step "2/6 examples/ paths referenced in walkthrough docs exist"
 
 # shellcheck disable=SC2086
 while IFS= read -r ref; do
@@ -86,7 +86,7 @@ done < <(grep -h -oE 'examples/[A-Za-z0-9_./-]+' $WALKTHROUGH_DOCS 2>/dev/null |
 # Evidence / generated artefacts that are written at proof-run time are
 # explicitly excluded because they may not be committed on every branch.
 # ---------------------------------------------------------------------------
-step "3/5 static docs/ paths referenced in walkthrough docs exist"
+step "3/6 static docs/ paths referenced in walkthrough docs exist"
 
 is_generated_evidence() {
   case "$1" in
@@ -119,7 +119,7 @@ done < <(grep -h -oE 'docs/[A-Za-z0-9_./-]+\.(md|webm|json|log)' $WALKTHROUGH_DO
 # ---------------------------------------------------------------------------
 # Step 4: .github/ paths referenced in walkthrough docs exist.
 # ---------------------------------------------------------------------------
-step "4/5 .github/ paths referenced in walkthrough docs exist"
+step "4/6 .github/ paths referenced in walkthrough docs exist"
 
 # shellcheck disable=SC2086
 while IFS= read -r ref; do
@@ -141,7 +141,7 @@ done < <(grep -h -oE '\.github/[A-Za-z0-9_./-]+' $WALKTHROUGH_DOCS 2>/dev/null |
 # Step 5: cargo xtask subcommands referenced in walkthrough docs are defined
 #         in crates/xtask/src/main.rs.
 # ---------------------------------------------------------------------------
-step "5/5 cargo xtask subcommands referenced in walkthrough docs are defined"
+step "5/6 cargo xtask subcommands referenced in walkthrough docs are defined"
 
 XTASK_SOURCE="$root/crates/xtask/src/main.rs"
 if [ ! -f "$XTASK_SOURCE" ]; then
@@ -166,6 +166,32 @@ print(''.join(w.capitalize() for w in s.split('-')))
              | grep -oE '[a-z-]+$' \
              | sort -u)
 fi
+
+# ---------------------------------------------------------------------------
+# Step 6: governance docs required by ARCHITECTURE.md §20.7 #5.11 / §24.3
+#         are present and non-empty.
+# ---------------------------------------------------------------------------
+step "6/6 governance docs required by the architecture exist"
+
+require_doc_contains() {
+  path="$1"
+  needle="$2"
+  label="$3"
+  if [ ! -f "$path" ]; then
+    err "Missing governance doc: $path"
+  elif [ ! -s "$path" ]; then
+    err "Empty governance doc: $path"
+  elif ! grep -qF "$needle" "$path"; then
+    err "$path must mention $label"
+  else
+    ok "$path  ($label)"
+  fi
+}
+
+require_doc_contains "LICENSE" "Apache License" "Apache license"
+require_doc_contains "GOVERNANCE.md" "no-rug-pull promise" "open-core governance"
+require_doc_contains "SECURITY.md" "vulnerability" "coordinated vulnerability reporting"
+require_doc_contains "CONTRIBUTING.md" "contract" "contract regeneration workflow"
 
 # ---------------------------------------------------------------------------
 # Summary

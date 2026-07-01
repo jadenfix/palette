@@ -257,6 +257,9 @@ test("dashboard page exposes the trace inspection surface", () => {
   assert.match(page, /aria-label=\{`\$\{label\} I\/O`\}/);
   assert.match(page, /spanAncestry/);
   assert.match(page, /apiHostLabel/);
+  assert.match(page, /href=\{searchHref\(data\.query\)\}/);
+  assert.match(page, /function searchHref/);
+  assert.match(page, /\/search\?/);
   assert.doesNotMatch(page, /No secondary filters/);
   assert.doesNotMatch(page, /className=\{`run-state \$\{run\.status\}`\}/);
   assert.doesNotMatch(page, /No artifact references/);
@@ -331,6 +334,45 @@ test("dashboard chrome stays dense and tool-like", () => {
   assert.doesNotMatch(css, /\.span-identity \.status \{\n  display: none;/);
 });
 
+test("dashboard search page uses generated span search", () => {
+  const page = readFileSync(join(root, "app/search/page.tsx"), "utf8");
+  const api = readFileSync(join(root, "lib/api.ts"), "utf8");
+  const css = readFileSync(join(root, "app/globals.css"), "utf8");
+
+  assert.match(page, /Span Search/);
+  assert.match(page, /Crate Dig/);
+  assert.match(page, /loadSearchData/);
+  assert.match(page, /SearchHit/);
+  assert.match(page, /SearchQuery/);
+  assert.match(page, /searchParams\?: Promise<SearchParams>/);
+  assert.match(page, /boundedLimit/);
+  assert.match(page, /Math\.min\(100, Math\.max\(1, Math\.trunc\(parsed\)\)\)/);
+  assert.match(page, /name="q"/);
+  assert.match(page, /name="trace_id"/);
+  assert.match(page, /name="span_id"/);
+  assert.match(page, /traceHitHref/);
+  assert.match(page, /params\.set\("trace", hit\.trace_id\)/);
+  assert.match(page, /params\.set\("span", hit\.span_id\)/);
+  assert.match(page, /No search hits match this query/);
+  assert.doesNotMatch(page, /"use client"/);
+
+  assert.match(api, /type SearchOperation = operations\["searchSpans"\]/);
+  assert.match(api, /type SearchQueryParams = NonNullable<SearchOperation\["parameters"\]\["query"\]>/);
+  assert.match(api, /export type SearchHit = components\["schemas"\]\["SearchHit"\]/);
+  assert.match(api, /export type SearchResponse = components\["schemas"\]\["SearchResponse"\]/);
+  assert.match(api, /searchParamsForSpanSearch/);
+  assert.match(api, /searchSpansPath/);
+  assert.match(api, /\/v1\/search\/\$\{encodeURIComponent\(path\.tenant_id\)\}\/spans/);
+  assert.match(api, /fetchJson<SearchResponse>/);
+  assert.match(api, /response: \{ hits: \[\] \}/);
+
+  assert.match(css, /\.search-filter-grid/);
+  assert.match(css, /\.search-results/);
+  assert.match(css, /\.search-row\[data-status="error"\]/);
+  assert.match(css, /\.search-hit-signals/);
+  assert.match(css, /\.search-score/);
+});
+
 test("local Gate 2 proof serves standalone CSS assets", () => {
   const proof = readFileSync(join(root, "..", "..", "scripts/gate2-proof.sh"), "utf8");
   assert.match(proof, /npm run build/);
@@ -348,16 +390,23 @@ test("dashboard client uses public beater read endpoints", () => {
   assert.match(api, /SpanOperation/);
   assert.match(api, /SpanPathParams/);
   assert.match(api, /TraceReadQuery/);
+  assert.match(api, /SearchOperation/);
+  assert.match(api, /SearchPathParams/);
   assert.match(api, /encodeURIComponent\(path\.tenant_id\)/);
   assert.match(api, /spanPath/);
+  assert.match(api, /searchSpansPath/);
+  assert.match(api, /searchParamsForSpanSearch/);
   assert.match(api, /fetchJson<CanonicalSpan>/);
+  assert.match(api, /fetchJson<SearchResponse>/);
   assert.match(api, /traceReadParams/);
   assert.match(api, /params\.set\("unmask", "true"\)/);
   assert.match(api, /params\.set\("reason"/);
   assert.match(api, /\/v1\/spans\//);
+  assert.match(api, /\/v1\/search\//);
   assert.match(api, /\/io/);
   assert.match(api, /const activeRun = query\.traceId/);
-  assert.match(api, /activeRun\?\.project_id && !query\.projectId/);
+  assert.match(api, /const activeRunMatchesTrace = activeRun !== undefined && activeRun\.trace_id === activeTraceId/);
+  assert.match(api, /activeRunMatchesTrace && activeRun\.project_id && !query\.projectId/);
   assert.match(api, /tracePath\(traceQuery, activeTraceId\)/);
   assert.match(api, /spanPath\(traceQuery, trace\.trace_id, activeSpanId\)/);
   assert.match(api, /query,\n\s+runs,/);
@@ -370,6 +419,43 @@ test("dashboard client uses public beater read endpoints", () => {
   assert.match(api, /selectedSpan = selectedSpanFromTrace;/);
   assert.match(api, /selectedIo = await fetchJson<SpanIoResponse>/);
   assert.match(api, /if \(!query\.unmask\) return params;/);
+});
+
+test("dashboard search URLs use generated searchSpans params", () => {
+  const { searchSpansPath } = loadDashboardApiModule();
+
+  assert.equal(
+    searchSpansPath({
+      tenantId: "tenant/1",
+      projectId: "demo",
+      environmentId: "local",
+      q: "prompt error",
+      traceId: "trace-1",
+      spanId: "span-1",
+      kind: "llm.call",
+      status: "error",
+      model: "gpt-4.1",
+      tool: "browser",
+      limit: 25
+    }),
+    "/v1/search/tenant%2F1/spans?q=prompt+error&project_id=demo&environment_id=local&trace_id=trace-1&span_id=span-1&kind=llm.call&status=error&model=gpt-4.1&tool=browser&limit=25"
+  );
+});
+
+test("dashboard search loader returns an empty result on API failure", async () => {
+  const { loadSearchData } = loadDashboardApiModule({
+    fetch: async () => ({
+      ok: false,
+      status: 503,
+      statusText: "Service Unavailable",
+      text: async () => JSON.stringify({ message: "search unavailable" })
+    })
+  });
+
+  const data = await loadSearchData({ tenantId: "demo", projectId: "demo", environmentId: "local" });
+
+  assert.equal(data.response.hits.length, 0);
+  assert.equal(data.error, "API 503 Service Unavailable: search unavailable");
 });
 
 test("dashboard API errors stay concise and user-facing", () => {
@@ -701,6 +787,53 @@ test("dashboard loader scopes tenant-wide trace details to the selected run proj
   );
 });
 
+test("dashboard loader does not scope explicit trace details to an unrelated fallback run", async () => {
+  const runs = {
+    items: [
+      {
+        tenant_id: "demo",
+        project_id: "project-b",
+        trace_id: "trace-2",
+        first_span_name: "other-run",
+        span_count: 1
+      }
+    ],
+    next_cursor: null
+  };
+  const span = {
+    ...spanFixture("span-1", null, "2026-01-01T00:00:00Z", 1),
+    project_id: "project-a",
+    trace_id: "trace-1",
+    kind: "llm.call"
+  };
+  const trace = { tenant_id: "demo", trace_id: "trace-1", spans: [span] };
+  const requests = [];
+  const { loadDashboardData } = loadDashboardApiModule({
+    fetch: async (url, init) => {
+      const href = String(url);
+      requests.push({ href, headers: init?.headers ?? {} });
+      if (href.includes("/v1/traces/demo?")) return okJson(runs);
+      if (href.includes("/v1/traces/demo/trace-1")) return okJson(trace);
+      if (href.includes("/v1/spans/demo/trace-1/span-1/io")) {
+        return okJson({ input: { kind: "missing" }, output: { kind: "missing" } });
+      }
+      if (href.includes("/v1/spans/demo/trace-1/span-1")) return okJson(span);
+      throw new Error(`unexpected fetch ${href}`);
+    }
+  });
+
+  const data = await loadDashboardData({ tenantId: "demo", traceId: "trace-1" });
+
+  assert.equal(data.selectedSpan?.project_id, "project-a");
+  const detailRequests = requests.filter(({ href }) => href.includes("/v1/traces/demo/trace-1") || href.includes("/v1/spans/demo/trace-1"));
+  assert.equal(detailRequests.length, 3);
+  assert.ok(
+    detailRequests.every(
+      ({ headers }) => headers["x-beater-project-id"] === undefined
+    )
+  );
+});
+
 function okJson(value) {
   return {
     ok: true,
@@ -757,6 +890,42 @@ test("generated api client is produced from the checked-in openapi snapshot", ()
   assert.match(generated, /listTraces/);
   assert.match(generated, /started_after/);
   assert.match(generated, /min_cost_micros/);
+});
+
+test("in-app docs runtime surfaces are generated from the openapi contract", () => {
+  const spec = JSON.parse(readFileSync(join(root, "openapi/beater-read-api.json"), "utf8"));
+  const operationIds = Object.values(spec.paths)
+    .flatMap((methods) => Object.values(methods))
+    .map((operation) => operation.operationId)
+    .filter(Boolean);
+
+  assert.ok(operationIds.includes("listTraces"));
+  assert.ok(operationIds.includes("createDataset"));
+
+  const openapiRoute = readFileSync(join(root, "app/api/openapi/route.ts"), "utf8");
+  assert.match(openapiRoute, /openapi", "beater-read-api\.json"/);
+  assert.match(openapiRoute, /readFile\(specPath, "utf8"\)/);
+  assert.match(openapiRoute, /"content-type": "application\/json"/);
+
+  const docsPage = readFileSync(join(root, "app/docs/page.tsx"), "utf8");
+  assert.match(docsPage, /setAttribute\("data-url", "\/api\/openapi"\)/);
+  assert.match(docsPage, /@scalar\/api-reference/);
+  assert.doesNotMatch(docsPage, /beater-read-api\.json/);
+
+  const mcpPage = readFileSync(join(root, "app/docs/mcp/page.tsx"), "utf8");
+  assert.match(mcpPage, /fetch\("\/api\/openapi"\)/);
+  assert.match(mcpPage, /spec\.paths/);
+  assert.match(mcpPage, /op\?\.operationId/);
+  assert.match(mcpPage, /name: op\.operationId/);
+  assert.match(mcpPage, /tool name = operationId/);
+
+  const quickstartsPage = readFileSync(join(root, "app/docs/quickstarts/page.tsx"), "utf8");
+  assert.match(quickstartsPage, /href="\/docs"/);
+  assert.match(quickstartsPage, /one OpenAPI contract/);
+  assert.match(quickstartsPage, /MCP server/);
+  assert.match(quickstartsPage, /tools\/list/);
+  assert.match(quickstartsPage, /CLI/);
+  assert.match(quickstartsPage, /Control-plane clients \(7 languages\)/);
 });
 
 test("browser proof covers all canonical span kinds and can record a demo", () => {

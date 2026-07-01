@@ -37,6 +37,7 @@ never a fork of the data model or a paywall on the SDK protocol.
 | Tail-based sampling, DLQ, replay | Yes | Yes |
 | Eval / judge / gates / calibration | Yes | Yes |
 | Dashboard (Next.js UI) | Yes | Yes (hosted control plane) |
+| Security primitives (scoped keys, audit events, redaction) | Yes | Yes (managed governance/export UX) |
 | Self-host usage telemetry | Opt-out (off by default) | n/a |
 | SSO / SCIM / enterprise RBAC | Community RBAC primitives | Managed enterprise add-ons |
 | SLA, dedicated support, hosted scale | Community support | Commercial |

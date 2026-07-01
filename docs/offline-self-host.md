@@ -20,6 +20,9 @@ point at). Beater itself never phones home:
 - External backends (Postgres, NATS, MinIO, ClickHouse) are **opt-in** behind
   compose profiles. The default path uses embedded SQLite + the local
   filesystem, so there is nothing extra to reach over the network.
+- Vercel is not required for self-host. The dashboard runs in the local compose
+  `dashboard` service and talks to the local `beaterd`; hosted Vercel deploys
+  are dashboard/control-plane surfaces only, not the `beaterd` runtime.
 - The compose quickstart explicitly runs `beaterd --auth-mode local` for offline
   demo ergonomics. Run `beaterd` with its default `--auth-mode required` and
   bootstrap API keys before exposing it beyond local development.

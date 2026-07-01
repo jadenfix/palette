@@ -6,12 +6,15 @@ type TraceListOperation = operations["listTraces"];
 type TraceOperation = operations["getTrace"];
 type SpanOperation = operations["getSpan"];
 type SpanIoOperation = operations["getSpanIo"];
+type SearchOperation = operations["searchSpans"];
 type TraceListQuery = NonNullable<TraceListOperation["parameters"]["query"]>;
 type TraceListPathParams = TraceListOperation["parameters"]["path"];
 type TracePathParams = TraceOperation["parameters"]["path"];
 type TraceReadQuery = NonNullable<TraceOperation["parameters"]["query"]>;
 type SpanPathParams = SpanOperation["parameters"]["path"];
 type SpanIoPathParams = SpanIoOperation["parameters"]["path"];
+type SearchQueryParams = NonNullable<SearchOperation["parameters"]["query"]>;
+type SearchPathParams = SearchOperation["parameters"]["path"];
 
 export type RunSummary = components["schemas"]["RunSummary"];
 export type RunSummaryPage = components["schemas"]["Page_RunSummary"];
@@ -20,6 +23,8 @@ export type CanonicalSpan = components["schemas"]["CanonicalSpan"];
 export type TraceView = components["schemas"]["TraceView"];
 export type SpanIoResponse = components["schemas"]["SpanIoResponse"];
 export type SpanIoValue = SpanIoResponse["input"];
+export type SearchHit = components["schemas"]["SearchHit"];
+export type SearchResponse = components["schemas"]["SearchResponse"];
 
 export type DashboardQuery = {
   tenantId: string;
@@ -51,6 +56,27 @@ export type DashboardData = {
   error: string | null;
 };
 
+export type SearchQuery = {
+  tenantId: string;
+  projectId?: SearchQueryParams["project_id"];
+  environmentId?: SearchQueryParams["environment_id"];
+  q?: SearchQueryParams["q"];
+  traceId?: SearchQueryParams["trace_id"];
+  spanId?: SearchQueryParams["span_id"];
+  kind?: SearchQueryParams["kind"];
+  status?: SearchQueryParams["status"];
+  model?: SearchQueryParams["model"];
+  tool?: SearchQueryParams["tool"];
+  limit?: SearchQueryParams["limit"];
+};
+
+export type SearchData = {
+  apiBaseUrl: string;
+  query: SearchQuery;
+  response: SearchResponse;
+  error: string | null;
+};
+
 export function dashboardApiBaseUrl(): string {
   return (
     process.env.BEATER_API_BASE_URL ??
@@ -59,7 +85,9 @@ export function dashboardApiBaseUrl(): string {
   ).replace(/\/$/, "");
 }
 
-export function dashboardApiHeaders(query: DashboardQuery): HeadersInit {
+export function dashboardApiHeaders(
+  query: Pick<DashboardQuery, "projectId" | "environmentId">
+): HeadersInit {
   const headers: Record<string, string> = {};
   const bearerToken = process.env.BEATER_API_TOKEN ?? process.env.BEATER_API_BEARER_TOKEN;
   const apiKey = process.env.BEATER_API_KEY;
@@ -90,6 +118,28 @@ export function traceListPath(query: DashboardQuery): string {
   const params = searchParamsForTraceList(query);
   const suffix = params.toString();
   return `/v1/traces/${encodeURIComponent(path.tenant_id)}${suffix ? `?${suffix}` : ""}`;
+}
+
+export function searchParamsForSpanSearch(query: SearchQuery): URLSearchParams {
+  const params = new URLSearchParams();
+  if (query.q) params.set("q", query.q);
+  if (query.projectId) params.set("project_id", query.projectId);
+  if (query.environmentId) params.set("environment_id", query.environmentId);
+  if (query.traceId) params.set("trace_id", query.traceId);
+  if (query.spanId) params.set("span_id", query.spanId);
+  if (query.kind) params.set("kind", query.kind);
+  if (query.status) params.set("status", query.status);
+  if (query.model) params.set("model", query.model);
+  if (query.tool) params.set("tool", query.tool);
+  if (query.limit !== undefined) params.set("limit", String(query.limit));
+  return params;
+}
+
+export function searchSpansPath(query: SearchQuery): string {
+  const path: SearchPathParams = { tenant_id: query.tenantId };
+  const params = searchParamsForSpanSearch(query);
+  const suffix = params.toString();
+  return `/v1/search/${encodeURIComponent(path.tenant_id)}/spans${suffix ? `?${suffix}` : ""}`;
 }
 
 export function tracePath(query: DashboardQuery, traceId: string): string {
@@ -135,6 +185,24 @@ function traceReadParams(query: DashboardQuery): URLSearchParams {
   return params;
 }
 
+export async function loadSearchData(query: SearchQuery): Promise<SearchData> {
+  const apiBaseUrl = dashboardApiBaseUrl();
+  try {
+    const response = await fetchJson<SearchResponse>(
+      `${apiBaseUrl}${searchSpansPath(query)}`,
+      dashboardApiHeaders(query)
+    );
+    return { apiBaseUrl, query, response, error: null };
+  } catch (error) {
+    return {
+      apiBaseUrl,
+      query,
+      response: { hits: [] },
+      error: errorMessage(error)
+    };
+  }
+}
+
 export async function loadDashboardData(query: DashboardQuery): Promise<DashboardData> {
   const apiBaseUrl = dashboardApiBaseUrl();
   const headers = dashboardApiHeaders(query);
@@ -157,8 +225,11 @@ export async function loadDashboardData(query: DashboardQuery): Promise<Dashboar
     ? runs.items.find((run) => run.trace_id === query.traceId) ?? runs.items[0]
     : runs.items[0];
   const activeTraceId = query.traceId || activeRun?.trace_id;
+  const activeRunMatchesTrace = activeRun !== undefined && activeRun.trace_id === activeTraceId;
   const traceQuery =
-    activeRun?.project_id && !query.projectId ? { ...query, projectId: activeRun.project_id } : query;
+    activeRunMatchesTrace && activeRun.project_id && !query.projectId
+      ? { ...query, projectId: activeRun.project_id }
+      : query;
   let trace: TraceView | null = null;
   let selectedSpan: CanonicalSpan | null = null;
   let selectedIo: SpanIoResponse | null = null;

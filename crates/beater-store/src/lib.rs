@@ -8,6 +8,7 @@ use beater_schema::{
     RawEnvelope, RunFilter, RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck,
 };
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 pub type StoreResult<T> = Result<T, StoreError>;
 
@@ -85,7 +86,14 @@ pub trait ArtifactStore: Send + Sync {
 
 #[async_trait]
 pub trait TraceStore: Send + Sync {
-    async fn write_batch(&self, batch: CanonicalTraceBatch) -> StoreResult<WriteAck>;
+    /// Persist a canonical trace batch.
+    ///
+    /// The batch is passed as an `Arc` so the hottest write path (ingest) can
+    /// share it with the durable-retry fallback queue without deep-cloning the
+    /// full span/attribute payload on every call. Implementations that need
+    /// owned values should `Arc::try_unwrap` (zero-copy when uniquely held) and
+    /// only deep-clone the inner batch as a fallback.
+    async fn write_batch(&self, batch: Arc<CanonicalTraceBatch>) -> StoreResult<WriteAck>;
 
     async fn get_trace(&self, tenant: TenantId, trace: TraceId) -> StoreResult<TraceView>;
 
@@ -339,6 +347,16 @@ pub struct QuotaReservationRequest {
     pub limit: u64,
     pub window_start: Timestamp,
     pub reset_at: Timestamp,
+    /// Optional client-supplied token that makes a reservation idempotent within
+    /// its window. Concurrency between *distinct* reservers is already race-free
+    /// (the limiter serializes the read-modify-write), but a client that retries
+    /// the *same logical reservation* after a network timeout would otherwise be
+    /// counted twice — the retry is a legitimately new request to the server. When
+    /// a key is supplied the limiter records the outcome under
+    /// `(tenant, project, window_start, idempotency_key)`, and a retry replays the
+    /// original decision without advancing the counter again. `None` preserves the
+    /// historical behavior for callers that do not retry.
+    pub idempotency_key: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

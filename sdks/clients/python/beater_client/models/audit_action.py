@@ -27,6 +27,10 @@ class AuditAction(str, Enum):
     allowed enum values
     """
     PII_UNMASK = 'pii_unmask'
+    API_KEY_CREATE = 'api_key_create'
+    API_KEY_REVOKE = 'api_key_revoke'
+    PROVIDER_SECRET_CREATE = 'provider_secret_create'
+    PROVIDER_SECRET_REVOKE = 'provider_secret_revoke'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

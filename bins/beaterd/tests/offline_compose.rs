@@ -97,6 +97,52 @@ fn beaterd_self_host_telemetry_is_opt_out_so_no_outbound_call_by_default() {
 }
 
 #[test]
+fn smoke_compose_script_keeps_runtime_loop_local() {
+    // §22.2 / §24.1: the containerized self-host smoke loop must exercise the
+    // local compose stack without introducing Beater Cloud or deploy surfaces.
+    let script = read(&repo_root().join("scripts/smoke-compose.sh"));
+
+    for local_probe in [
+        "api_url=\"http://127.0.0.1:$host_http_port\"",
+        "dashboard_url=\"http://127.0.0.1:$host_dashboard_port\"",
+        "wait_url \"$api_url/health\" \"beaterd\"",
+        "wait_url \"$dashboard_url/?tenant=demo&project=demo&environment=local\" \"dashboard\"",
+    ] {
+        assert!(
+            script.contains(local_probe),
+            "smoke-compose.sh must keep host probes on local loopback: {local_probe}"
+        );
+    }
+
+    for compose_step in [
+        "compose up -d --build beaterd dashboard",
+        "compose run --rm beaterctl",
+        "compose run --rm otel-python-smoke",
+    ] {
+        assert!(
+            script.contains(compose_step),
+            "smoke-compose.sh must exercise compose service {compose_step}"
+        );
+    }
+
+    let lower_script = script.to_ascii_lowercase();
+    for forbidden in [
+        "BEATER_SELF_HOST_TELEMETRY",
+        "beater.cloud",
+        "beater.dev",
+        "vercel",
+        "docker push",
+        "docker login",
+        "docker compose --profile",
+    ] {
+        assert!(
+            !lower_script.contains(&forbidden.to_ascii_lowercase()),
+            "smoke-compose.sh must not reference outbound/deploy surface {forbidden}"
+        );
+    }
+}
+
+#[test]
 fn offline_self_host_doc_documents_the_provider_only_egress() {
     // The offline posture is documented for operators who firewall egress.
     let doc = read(&repo_root().join("docs/offline-self-host.md"));

@@ -637,8 +637,10 @@ dependencies = [
  "beater-archive",
  "beater-audit",
  "beater-auth",
+ "beater-billing",
  "beater-bus",
  "beater-calibration",
+ "beater-composio",
  "beater-core",
  "beater-datasets",
  "beater-eval",
@@ -649,6 +651,7 @@ dependencies = [
  "beater-judge",
  "beater-oauth",
  "beater-otlp",
+ "beater-prompts",
  "beater-replay",
  "beater-sandbox",
  "beater-schema",
@@ -732,14 +735,55 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-autonomy"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beater-core",
+ "beater-schema",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 1.0.69",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
 name = "beater-bench"
 version = "0.1.0"
 dependencies = [
  "beater-core",
  "beater-schema",
+ "beater-store",
+ "beater-store-memory",
  "chrono",
  "criterion",
  "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "beater-billing"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "beater-core",
+ "beater-security",
+ "beater-store",
+ "beater-usage",
+ "chrono",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "utoipa",
+ "uuid",
 ]
 
 [[package]]
@@ -819,6 +863,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-browser-triage"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beater-core",
+ "beater-schema",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 1.0.69",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
 name = "beater-browser-webdriver"
 version = "0.1.0"
 dependencies = [
@@ -869,6 +930,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-composio"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "utoipa",
+]
+
+[[package]]
 name = "beater-core"
 version = "0.1.0"
 dependencies = [
@@ -903,10 +978,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-delegation"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beater-core",
+ "beater-schema",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 1.0.69",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "beater-design"
+version = "0.1.0"
+dependencies = [
+ "beater-core",
+ "serde",
+ "thiserror 1.0.69",
+ "utoipa",
+]
+
+[[package]]
 name = "beater-eval"
 version = "0.1.0"
 dependencies = [
  "beater-core",
+ "beater-design",
  "beater-schema",
  "beater-stats",
  "regex",
@@ -922,6 +1025,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "axum 0.7.9",
  "beater-core",
  "beater-datasets",
  "beater-eval",
@@ -989,6 +1093,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-identity"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beater-core",
+ "beater-schema",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 1.0.69",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "beater-incidents"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beater-core",
+ "beater-schema",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 1.0.69",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
 name = "beater-ingest"
 version = "0.1.0"
 dependencies = [
@@ -1034,6 +1172,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-knowledge"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beater-core",
+ "beater-schema",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 1.0.69",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
 name = "beater-langfuse"
 version = "0.1.0"
 dependencies = [
@@ -1062,6 +1217,7 @@ dependencies = [
  "beater-api",
  "beater-archive",
  "beater-audit",
+ "beater-auth",
  "beater-bus",
  "beater-calibration",
  "beater-core",
@@ -1073,6 +1229,7 @@ dependencies = [
  "beater-judge",
  "beater-search",
  "beater-secrets",
+ "beater-security",
  "beater-store-obj",
  "beater-store-sql",
  "beater-usage",
@@ -1095,6 +1252,7 @@ dependencies = [
  "beater-core",
  "beater-store",
  "chrono",
+ "http 1.4.2",
  "rand_core 0.6.4",
  "rusqlite",
  "serde",
@@ -1149,6 +1307,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "beater-prompts"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beater-core",
+ "chrono",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "beater-receipts"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beater-core",
+ "beater-schema",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 1.0.69",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
 name = "beater-replay"
 version = "0.1.0"
 dependencies = [
@@ -1178,6 +1369,23 @@ dependencies = [
  "thiserror 1.0.69",
  "wasmtime",
  "wat",
+]
+
+[[package]]
+name = "beater-scenarios"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "beater-core",
+ "beater-schema",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 1.0.69",
+ "utoipa",
+ "uuid",
 ]
 
 [[package]]
@@ -1254,6 +1462,7 @@ dependencies = [
 name = "beater-stats"
 version = "0.1.0"
 dependencies = [
+ "rayon",
  "thiserror 1.0.69",
 ]
 
@@ -1302,6 +1511,7 @@ dependencies = [
  "beater-core",
  "beater-schema",
  "beater-store",
+ "blake3",
  "tempfile",
  "tokio",
  "uuid",
@@ -1369,6 +1579,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "axum 0.7.9",
  "beater-alerts",
  "beater-api",
  "beater-audit",
@@ -1414,8 +1625,10 @@ dependencies = [
  "beater-archive",
  "beater-audit",
  "beater-auth",
+ "beater-billing",
  "beater-bus",
  "beater-calibration",
+ "beater-composio",
  "beater-core",
  "beater-datasets",
  "beater-experiments",
@@ -1428,6 +1641,7 @@ dependencies = [
  "beater-oauth",
  "beater-oauth-server",
  "beater-otlp",
+ "beater-prompts",
  "beater-replay",
  "beater-schema",
  "beater-search",

@@ -19,6 +19,9 @@
 //! | [`mcnemar_exact_p`] | §10.3 | paired binary outcome |
 //! | [`required_sample_size`] / [`minimum_detectable_effect`] / [`achieved_power`] | §10.3 #5 | power / MDE / minimum-sample planning |
 //! | [`holm_bonferroni`] / [`benjamini_hochberg`] | §10.3 #4 | multiple-comparison corrections |
+//! | [`cuped_adjust`] | §10.3 #4 | CUPED variance reduction via a pre-experiment covariate |
+//! | [`hoeffding_race`] | §10.3 / #436 | best-arm identification: eliminate confidently-dominated candidates |
+//! | [`SequentialMeanTest`] / [`evalue_one_sided_mean`] | §10.3 #6 / #436 | always-valid sequential inference (e-values); peek-and-stop |
 //!
 //! The paired layer ([`compare_paired`]) is what the **experiment gate** calls
 //! today: it picks **Student's paired t** for continuous metrics and the **exact
@@ -28,8 +31,11 @@
 //! critical value (`z = 1.96 / 2.576`) and reported no p-value at all, so its
 //! *nominal* alpha did not equal its *actual* alpha.
 //!
-//! Anytime-valid / sequential inference (mSPRT, §10.3 #6) is the **required
-//! follow-on phase** and is not included here; see §10.3 phasing note.
+//! Anytime-valid / sequential inference (§10.3 #6) is provided by
+//! [`SequentialMeanTest`] — a test-martingale / e-value process whose "reject
+//! when `E_n ≥ 1/α`" rule controls type-I error under arbitrary optional stopping
+//! (Ville's inequality), so an eval can peek case-by-case and stop as soon as the
+//! evidence crosses the bound.
 //!
 //! ## Design invariants
 //!
@@ -38,22 +44,47 @@
 //!   so results are deterministic and can be committed to a test oracle.
 //! * **No heavyweight deps** — the normal/Student-t quantiles, incomplete beta,
 //!   exact binomial tail, and normal CDF are hand-rolled (see [`numerics`] and the
-//!   helpers below) so the crate pulls in only `thiserror`.
+//!   helpers below) so the crate needs no numerics/linear-algebra stack: its only
+//!   dependencies are `thiserror` and `rayon`. The default-on `parallel` feature
+//!   uses `rayon` to fan the bootstrap's independent resamples across cores
+//!   without changing any result; `--no-default-features` drops `rayon` and runs
+//!   the bootstrap single-threaded.
+//! * **Efficient by construction** — quantitative kernels avoid wasted work: the
+//!   bootstrap seeds each resample independently (so the work parallelises) and
+//!   quickselects only the two percentile endpoints it needs instead of fully
+//!   sorting the resample distribution.
 
+mod bca;
+mod clustered;
+mod cuped;
 mod mcnemar;
 mod multiplicity;
 mod numerics;
 mod overfit;
 mod paired;
 mod power;
+mod racing;
+mod sequential;
+mod wilcoxon;
 
+pub use bca::{bootstrap_bca_ci, paired_bootstrap_test, PairedBootstrapOutcome};
+pub use clustered::{
+    clustered_bootstrap_ci, clustered_standard_error, iid_standard_error, ClusteredStandardError,
+};
+pub use cuped::{cuped_adjust, CupedOutcome};
 pub use mcnemar::mcnemar_exact_p;
 pub use multiplicity::{benjamini_hochberg, holm_bonferroni, MultiplicityDecision};
 pub use overfit::{
     assess_generalization_gap, GapAssessment, Ladder, Thresholdout, ThresholdoutAnswer,
 };
 pub use paired::paired_t_test;
-pub use power::{achieved_power, minimum_detectable_effect, required_sample_size, DEFAULT_POWER};
+pub use power::{
+    achieved_power, mcnemar_achieved_power, mcnemar_required_discordant, minimum_detectable_effect,
+    required_sample_size, DEFAULT_POWER,
+};
+pub use racing::{hoeffding_race, ArmSummary, RaceOutcome};
+pub use sequential::{evalue_one_sided_mean, recommended_lambda, SequentialMeanTest};
+pub use wilcoxon::{wilcoxon_signed_rank, WilcoxonOutcome};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error type
@@ -359,8 +390,11 @@ pub fn two_proportion_z_test(
 /// # Reproducibility
 ///
 /// A `seed` is required so that a reported CI can be committed to a test oracle
-/// and re-derived from the raw samples.  The internal RNG is a 64-bit xorshift
-/// (period 2⁶⁴−1), which is sufficient for up to `~10_000` resamples.
+/// and re-derived from the raw samples.  Each resample is driven by its own
+/// 64-bit xorshift substream (period 2⁶⁴−1) seeded from `(seed, resample_index)`
+/// via SplitMix64, so the i-th draw is a pure function of its index. The result
+/// is therefore identical whether the resamples are evaluated sequentially or, under
+/// the optional `parallel` feature, across cores.
 ///
 /// # Arguments
 ///
@@ -420,23 +454,51 @@ pub fn bootstrap_diff_ci(
 
     let observed_est = mean(sample_a) - mean(sample_b);
 
-    let mut rng = Xorshift64::new(seed);
-    let mut diffs: Vec<f64> = Vec::with_capacity(n_resamples);
-
-    for _ in 0..n_resamples {
-        let ra = resample_mean(sample_a, &mut rng);
-        let rb = resample_mean(sample_b, &mut rng);
-        diffs.push(ra - rb);
-    }
-
-    diffs.sort_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
+    // Each resample draws from an *independent* RNG substream seeded
+    // deterministically from `(seed, i)`. This makes the i-th resample a pure
+    // function of its index — the result no longer depends on iteration order, so
+    // the loop can be evaluated in any order (sequentially, or in parallel under
+    // the `parallel` feature) and still produce a bit-identical, reproducible CI.
+    // Per-substream seeding via SplitMix64 also avoids the inter-stream
+    // correlation a single split xorshift stream can exhibit in parallel Monte
+    // Carlo. `into_par_iter().map().collect()` preserves index order, so the two
+    // paths are numerically identical.
+    let mut diffs: Vec<f64> = {
+        #[cfg(feature = "parallel")]
+        {
+            use rayon::prelude::*;
+            (0..n_resamples)
+                .into_par_iter()
+                .map(|i| resample_diff(sample_a, sample_b, seed, i))
+                .collect()
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            (0..n_resamples)
+                .map(|i| resample_diff(sample_a, sample_b, seed, i))
+                .collect()
+        }
+    };
 
     let alpha = 1.0 - confidence;
-    let lo_idx = ((alpha / 2.0) * n_resamples as f64).floor() as usize;
-    let hi_idx = ((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize;
+    let lo_idx = (((alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
+    let hi_idx = (((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
 
-    let lower = diffs[lo_idx.min(n_resamples - 1)];
-    let upper = diffs[hi_idx.min(n_resamples - 1)];
+    // Only the two percentile order statistics are needed, so quickselect them in
+    // expected O(n_resamples) instead of fully sorting in O(n_resamples log n).
+    // `select_nth_unstable_by` leaves the chosen index holding the value it would
+    // occupy in a fully sorted slice, with all smaller elements ahead of it — so
+    // selecting `lo_idx` within that left partition yields the lower endpoint
+    // without a second full pass. All values are finite (validated above), so
+    // `total_cmp` is a total order.
+    diffs.select_nth_unstable_by(hi_idx, |x, y| x.total_cmp(y));
+    let upper = diffs[hi_idx];
+    let lower = if lo_idx < hi_idx {
+        diffs[..hi_idx].select_nth_unstable_by(lo_idx, |x, y| x.total_cmp(y));
+        diffs[lo_idx]
+    } else {
+        diffs[lo_idx]
+    };
 
     Ok(BootstrapInterval {
         lower,
@@ -547,6 +609,111 @@ fn mcnemar_outcome(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// §10.3 #3 — paired test selection by metric type AND satisfied assumptions
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Which paired test a data-driven selector recommends. This is `beater-stats`'
+/// own advice type, deliberately decoupled from [`TestKind`] / the gate's
+/// `StatisticalTest` contract enum: surfacing Wilcoxon/bootstrap through the
+/// persisted report is the follow-on contract change (roadmap PR-A4), which maps
+/// this recommendation onto the wire types. Keeping the recommendation separate
+/// lets the estimators and the selection logic land without touching `/v1`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PairedTestChoice {
+    /// Paired binary outcome → exact McNemar.
+    McnemarExact,
+    /// Continuous, ~normal paired differences → Student's paired t.
+    PairedT,
+    /// Continuous, non-normal differences → Wilcoxon signed-rank.
+    WilcoxonSignedRank,
+    /// Small N / unclear assumptions → paired bootstrap.
+    PairedBootstrap,
+}
+
+/// Below this many pairs the normality of the difference distribution cannot be
+/// assessed reliably, so the selector prefers the assumption-light paired
+/// bootstrap (§10.3 #3, "Any, assumptions unclear / small N").
+const SMALL_N_THRESHOLD: usize = 8;
+
+/// Recommend a paired test for `(baseline, candidate)` by metric type and
+/// satisfied assumptions (§10.3 #3):
+///
+/// * both samples binary → [`PairedTestChoice::McnemarExact`];
+/// * otherwise, fewer than [`SMALL_N_THRESHOLD`] pairs → [`PairedTestChoice::PairedBootstrap`];
+/// * otherwise, difference distribution looks ~normal → [`PairedTestChoice::PairedT`];
+/// * otherwise → [`PairedTestChoice::WilcoxonSignedRank`].
+///
+/// The normality screen is a moment-based heuristic (`|skew| < 1` and
+/// `|excess kurtosis| < 2`); a pre-registered design may override the choice in
+/// the gate. Returns advice only — it runs no test.
+///
+/// # Errors
+///
+/// [`StatsError::MismatchedLengths`], [`StatsError::TooFewSamples`] (`n < 2`), or
+/// [`StatsError::NonFinite`].
+pub fn recommend_paired_test(
+    baseline: &[f64],
+    candidate: &[f64],
+) -> Result<PairedTestChoice, StatsError> {
+    if baseline.len() != candidate.len() {
+        return Err(StatsError::MismatchedLengths {
+            baseline: baseline.len(),
+            candidate: candidate.len(),
+        });
+    }
+    let n = baseline.len();
+    if n < 2 {
+        return Err(StatsError::TooFewSamples { got: n, need: 2 });
+    }
+    for v in baseline.iter().chain(candidate.iter()) {
+        if !v.is_finite() {
+            return Err(StatsError::NonFinite);
+        }
+    }
+
+    if is_binary(baseline) && is_binary(candidate) {
+        return Ok(PairedTestChoice::McnemarExact);
+    }
+
+    let differences: Vec<f64> = candidate
+        .iter()
+        .zip(baseline.iter())
+        .map(|(c, b)| c - b)
+        .collect();
+
+    if n < SMALL_N_THRESHOLD {
+        return Ok(PairedTestChoice::PairedBootstrap);
+    }
+    if looks_normal(&differences) {
+        Ok(PairedTestChoice::PairedT)
+    } else {
+        Ok(PairedTestChoice::WilcoxonSignedRank)
+    }
+}
+
+/// Moment-based normality screen: `true` when the sample skewness and excess
+/// kurtosis are both small (`|g₁| < 1`, `|g₂| < 2`). A (near-)constant sample has
+/// no defined shape and is treated as normal — the degenerate paired-t path
+/// handles it. Not a formal test; a deliberately cheap, dependency-free screen.
+pub(crate) fn looks_normal(values: &[f64]) -> bool {
+    let n = values.len();
+    if n < 3 {
+        return true;
+    }
+    let m = mean(values);
+    let nf = n as f64;
+    let m2 = values.iter().map(|v| (v - m).powi(2)).sum::<f64>() / nf;
+    if m2 <= 1e-18 {
+        return true;
+    }
+    let m3 = values.iter().map(|v| (v - m).powi(3)).sum::<f64>() / nf;
+    let m4 = values.iter().map(|v| (v - m).powi(4)).sum::<f64>() / nf;
+    let skew = m3 / m2.powf(1.5);
+    let excess_kurtosis = m4 / (m2 * m2) - 3.0;
+    skew.abs() < 1.0 && excess_kurtosis.abs() < 2.0
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Math helpers — normal CDF and quantile (no external deps)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -596,12 +763,23 @@ fn erfc_approx(x: f64) -> f64 {
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
-struct Xorshift64 {
+pub(crate) struct Xorshift64 {
     state: u64,
 }
 
+/// SplitMix64 finalizer (Steele et al., 2014) — a fast bijective bit-mixer used
+/// to expand a `(seed, index)` pair into a well-distributed 64-bit substream seed.
+/// Adjacent inputs map to uncorrelated outputs, which is what lets each bootstrap
+/// resample own an independent RNG keyed by its index.
+fn splitmix64(mut z: u64) -> u64 {
+    z = z.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^ (z >> 31)
+}
+
 impl Xorshift64 {
-    fn new(seed: u64) -> Self {
+    pub(crate) fn new(seed: u64) -> Self {
         // Avoid the forbidden all-zero state
         Self {
             state: if seed == 0 {
@@ -612,8 +790,16 @@ impl Xorshift64 {
         }
     }
 
+    /// Seed an independent substream for resample `index` of a bootstrap keyed by
+    /// `seed`. The double SplitMix64 mix decorrelates both the base seed and the
+    /// index so neighbouring resamples do not share low-order structure.
+    fn for_resample(seed: u64, index: usize) -> Self {
+        let mixed = splitmix64(seed) ^ splitmix64((index as u64).wrapping_add(1));
+        Self::new(splitmix64(mixed))
+    }
+
     /// Returns the next pseudo-random `u64`.
-    fn next_u64(&mut self) -> u64 {
+    pub(crate) fn next_u64(&mut self) -> u64 {
         let mut x = self.state;
         x ^= x << 13;
         x ^= x >> 7;
@@ -623,7 +809,7 @@ impl Xorshift64 {
     }
 
     /// Returns a `usize` in `[0, n)`.
-    fn next_index(&mut self, n: usize) -> usize {
+    pub(crate) fn next_index(&mut self, n: usize) -> usize {
         (self.next_u64() % n as u64) as usize
     }
 }
@@ -668,6 +854,16 @@ fn resample_mean(xs: &[f64], rng: &mut Xorshift64) -> f64 {
         sum += xs[rng.next_index(n)];
     }
     sum / n as f64
+}
+
+/// One bootstrap difference `mean(resample_a) − mean(resample_b)` for resample
+/// `index`, computed from an index-keyed RNG substream so it is a pure,
+/// order-independent function of `(seed, index)`.
+fn resample_diff(sample_a: &[f64], sample_b: &[f64], seed: u64, index: usize) -> f64 {
+    let mut rng = Xorshift64::for_resample(seed, index);
+    let ra = resample_mean(sample_a, &mut rng);
+    let rb = resample_mean(sample_b, &mut rng);
+    ra - rb
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -731,6 +927,55 @@ mod tests {
         let out = compare_paired(&data, &data, 0.05).unwrap_or_else(|err| panic!("{err}"));
         assert!((out.estimate).abs() < 1e-12);
         assert!((out.p_value - 1.0).abs() < 1e-9);
+    }
+
+    // ── recommend_paired_test (§10.3 #3 dispatch) ─────────────────────────────
+
+    #[test]
+    fn recommends_mcnemar_for_binary() {
+        let baseline = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0];
+        let candidate = [1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0];
+        let choice =
+            recommend_paired_test(&baseline, &candidate).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(choice, PairedTestChoice::McnemarExact);
+    }
+
+    #[test]
+    fn recommends_bootstrap_for_small_n() {
+        let baseline = [0.5, 0.6, 0.55];
+        let candidate = [0.7, 0.8, 0.75];
+        let choice =
+            recommend_paired_test(&baseline, &candidate).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(choice, PairedTestChoice::PairedBootstrap);
+    }
+
+    #[test]
+    fn recommends_paired_t_for_normalish_continuous() {
+        // Roughly symmetric differences with light tails.
+        let baseline = [0.50, 0.55, 0.48, 0.52, 0.51, 0.49, 0.53, 0.47, 0.50, 0.52];
+        let candidate = [0.60, 0.64, 0.59, 0.62, 0.61, 0.58, 0.63, 0.57, 0.60, 0.62];
+        let choice =
+            recommend_paired_test(&baseline, &candidate).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(choice, PairedTestChoice::PairedT);
+    }
+
+    #[test]
+    fn recommends_wilcoxon_for_skewed_continuous() {
+        // One huge outlier difference makes the difference distribution skewed and
+        // heavy-tailed, so the normality screen fails → Wilcoxon.
+        let baseline = [0.0; 12];
+        let candidate = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 9.0];
+        let choice =
+            recommend_paired_test(&baseline, &candidate).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(choice, PairedTestChoice::WilcoxonSignedRank);
+    }
+
+    #[test]
+    fn recommend_rejects_mismatched_lengths() {
+        assert!(matches!(
+            recommend_paired_test(&[0.0, 1.0, 1.0], &[1.0, 1.0]),
+            Err(StatsError::MismatchedLengths { .. })
+        ));
     }
 
     // ── normal_cdf / normal_quantile ─────────────────────────────────────────
@@ -943,6 +1188,68 @@ mod tests {
 
     // ── Bootstrap CI ─────────────────────────────────────────────────────────
 
+    /// The quickselect endpoint extraction must agree with a full sort for any
+    /// input, including ties. This brute-forces the reference across several
+    /// configurations: regenerate the exact resample diffs, sort them, and index
+    /// the same percentile positions the implementation uses.
+    #[test]
+    fn bootstrap_quickselect_matches_full_sort() {
+        let a = vec![0.9, 0.8, 0.85, 0.88, 0.92, 0.7];
+        let b = vec![0.6, 0.65, 0.7, 0.62, 0.68, 0.5];
+        for &(confidence, n_resamples, seed) in &[
+            (0.95, 1usize, 3u64),
+            (0.95, 2, 3),
+            (0.95, 3, 9),
+            (0.90, 257, 1),
+            (0.99, 1000, 42),
+        ] {
+            let ci = bootstrap_diff_ci(&a, &b, confidence, n_resamples, seed)
+                .unwrap_or_else(|err| panic!("{err}"));
+
+            // Reference: regenerate the identical diffs and fully sort them.
+            let mut diffs: Vec<f64> = (0..n_resamples)
+                .map(|i| resample_diff(&a, &b, seed, i))
+                .collect();
+            diffs.sort_by(|x, y| x.total_cmp(y));
+            let alpha = 1.0 - confidence;
+            let lo = (((alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
+            let hi =
+                (((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
+
+            assert_eq!(
+                ci.lower, diffs[lo],
+                "lower mismatch @ {confidence}/{n_resamples}"
+            );
+            assert_eq!(
+                ci.upper, diffs[hi],
+                "upper mismatch @ {confidence}/{n_resamples}"
+            );
+            assert!(ci.lower <= ci.upper, "endpoints out of order");
+        }
+    }
+
+    /// Tiny resample counts and tied/degenerate samples must not panic and must
+    /// return ordered, finite endpoints.
+    #[test]
+    fn bootstrap_small_counts_and_ties_are_safe() {
+        // Identical samples → every resampled difference is exactly 0.
+        let tied = vec![0.5, 0.5, 0.5];
+        for n_resamples in [1usize, 2, 3, 7] {
+            let ci = bootstrap_diff_ci(&tied, &tied, 0.95, n_resamples, 11)
+                .unwrap_or_else(|err| panic!("{err}"));
+            assert_eq!(ci.lower, 0.0);
+            assert_eq!(ci.upper, 0.0);
+            assert_eq!(ci.estimate, 0.0);
+            assert_eq!(ci.n_resamples, n_resamples);
+        }
+        // Distinct samples with the smallest possible resample count.
+        let a = vec![1.0, 2.0, 3.0];
+        let b = vec![0.0, 0.5, 1.0];
+        let ci = bootstrap_diff_ci(&a, &b, 0.95, 1, 5).unwrap_or_else(|err| panic!("{err}"));
+        assert!(ci.lower.is_finite() && ci.upper.is_finite());
+        assert!(ci.lower <= ci.upper);
+    }
+
     /// Determinism: same seed → identical CI.
     #[test]
     fn bootstrap_deterministic_with_seed() {
@@ -952,6 +1259,25 @@ mod tests {
         let ci2 = bootstrap_diff_ci(&a, &b, 0.95, 1000, 42).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(ci1.lower, ci2.lower);
         assert_eq!(ci1.upper, ci2.upper);
+    }
+
+    /// Golden output: pins the exact percentile endpoints for a fixed
+    /// `(samples, confidence, n_resamples, seed)`. Because the per-index resample
+    /// seeding makes the bootstrap order-independent, the sequential build and the
+    /// `--features parallel` build must both reproduce these values — CI runs both
+    /// configurations, so any divergence between the two paths fails here.
+    #[test]
+    fn bootstrap_golden_values_are_path_independent() {
+        let a = vec![0.9, 0.8, 0.85, 0.88, 0.92];
+        let b = vec![0.6, 0.65, 0.7, 0.62, 0.68];
+        let ci = bootstrap_diff_ci(&a, &b, 0.95, 2000, 42).unwrap_or_else(|err| panic!("{err}"));
+        assert!((ci.lower - 0.17).abs() < 1e-12, "lower = {}", ci.lower);
+        assert!((ci.upper - 0.268).abs() < 1e-12, "upper = {}", ci.upper);
+        assert!(
+            (ci.estimate - 0.22).abs() < 1e-12,
+            "estimate = {}",
+            ci.estimate
+        );
     }
 
     /// Different seeds → (almost certainly) different CIs.

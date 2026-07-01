@@ -14,6 +14,7 @@ members = [
   "crates/beater-langfuse",
   "crates/beater-eval",
   "crates/beater-stats",
+  "crates/beater-design",
   "crates/beater-replay",
   "crates/beater-security",
   "crates/beater-auth",
@@ -21,6 +22,7 @@ members = [
   "crates/beater-oauth",
   "crates/beater-oauth-server",
   "crates/beater-secrets",
+  "crates/beater-composio",
   "crates/beater-judge",
   "crates/beater-sandbox",
   "crates/beater-browser",
@@ -30,20 +32,29 @@ members = [
   "crates/beater-browser-capture",
   "crates/beater-browser-harness",
   "crates/beater-search",
-  "crates/beater-stats",
   "crates/beater-archive",
   "crates/beater-datasets",
   "crates/beater-experiments",
   "crates/beater-gates",
   "crates/beater-guardrails",
+  "crates/beater-prompts",
   "crates/beater-human",
   "crates/beater-calibration",
   "crates/beater-alerts",
   "crates/beater-usage",
+  "crates/beater-billing",
   "crates/beater-audit",
   "crates/beater-api",
   "crates/beater-bench",
   "crates/beater-mcp",
+  "crates/beater-scenarios",
+  "crates/beater-identity",
+  "crates/beater-receipts",
+  "crates/beater-delegation",
+  "crates/beater-autonomy",
+  "crates/beater-incidents",
+  "crates/beater-knowledge",
+  "crates/beater-browser-triage",
   "bins/beaterd",
   "bins/beaterctl",
   "crates/xtask",
@@ -90,6 +101,7 @@ parquet = "=58.3.0"
 percent-encoding = "2"
 prost = "0.14"
 rand_core = { version = "0.6", features = ["std"] }
+rayon = "1"
 regex = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 rusqlite = { version = "0.32", features = ["bundled"] }
@@ -114,3 +126,17 @@ unsafe_code = "forbid"
 [workspace.lints.clippy]
 unwrap_used = "deny"
 expect_used = "deny"
+
+# Local build-time tuning. The dominant cost of an edit→build→test loop is
+# codegen + linking, and full debuginfo is the biggest avoidable slice of it
+# (the macOS linker is especially sensitive). `line-tables-only` keeps panic
+# and backtrace file:line info (RUST_BACKTRACE still resolves) while dropping
+# variable-level debuginfo that a normal loop never reads. Set `debug = true`
+# locally when you actually need to step through code in a debugger.
+[profile.dev]
+debug = "line-tables-only"
+
+# `cargo test` builds use the test profile (which derives from dev); pin the
+# same setting so the test loop gets the win too.
+[profile.test]
+debug = "line-tables-only"

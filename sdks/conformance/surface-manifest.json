@@ -1,0 +1,353 @@
+{
+  "schema_version": 1,
+  "architecture_refs": [
+    "ARCHITECTURE.md#20.8-6.5",
+    "ARCHITECTURE.md#22.5-sdk-parity"
+  ],
+  "generated_client_participants": [
+    {
+      "language": "c",
+      "client_path": "sdks/clients/c",
+      "conformance_script": "sdks/conformance/c/run.sh",
+      "required_files": [
+        "sdks/conformance/c/main.c"
+      ]
+    },
+    {
+      "language": "cpp",
+      "client_path": "sdks/clients/cpp",
+      "conformance_script": "sdks/conformance/cpp/run.sh",
+      "required_files": [
+        "sdks/conformance/cpp/CMakeLists.txt",
+        "sdks/conformance/cpp/main.cpp"
+      ]
+    },
+    {
+      "language": "go",
+      "client_path": "sdks/clients/go",
+      "conformance_script": "sdks/conformance/go/run.sh",
+      "required_files": [
+        "sdks/conformance/go/go.mod",
+        "sdks/conformance/go/main.go"
+      ]
+    },
+    {
+      "language": "java",
+      "client_path": "sdks/clients/java",
+      "conformance_script": "sdks/conformance/java/run.sh",
+      "required_files": [
+        "sdks/conformance/java/pom.xml",
+        "sdks/conformance/java/src/main/java/ai/beater/conformance/Conformance.java"
+      ]
+    },
+    {
+      "language": "python",
+      "client_path": "sdks/clients/python",
+      "conformance_script": "sdks/conformance/python/run.sh",
+      "required_files": [
+        "sdks/conformance/python/conformance.py"
+      ]
+    },
+    {
+      "language": "rust",
+      "client_path": "sdks/clients/rust",
+      "conformance_script": "sdks/conformance/rust/run.sh",
+      "required_files": [
+        "sdks/conformance/rust/Cargo.toml",
+        "sdks/conformance/rust/src/main.rs"
+      ]
+    },
+    {
+      "language": "typescript",
+      "client_path": "sdks/clients/typescript",
+      "conformance_script": "sdks/conformance/typescript/run.sh",
+      "required_files": [
+        "sdks/conformance/typescript/conformance.ts"
+      ]
+    }
+  ],
+  "ergonomic_sdk_participants": [
+    {
+      "language": "go",
+      "package_path": "sdks/go",
+      "semconv_file": "sdks/go/semconv.go",
+      "source_files": [
+        "sdks/go/beater.go",
+        "sdks/go/config.go",
+        "sdks/go/semconv.go"
+      ],
+      "capability_tokens": {
+        "init": [
+          "func Init("
+        ],
+        "config_from_env": [
+          "func ConfigFromEnv()"
+        ],
+        "observe": [
+          "func Observe("
+        ],
+        "set_input": [
+          "func SetInput("
+        ],
+        "set_output": [
+          "func SetOutput("
+        ],
+        "flush": [
+          "func Flush("
+        ],
+        "shutdown": [
+          "return func(ctx context.Context) error"
+        ],
+        "auth_header": [
+          "\"authorization\"",
+          "\"Bearer \""
+        ],
+        "otlp_http_path": [
+          "\"/v1/otlp/\"",
+          "\"/v1/traces\""
+        ],
+        "error_status": [
+          "RecordError",
+          "codes.Error"
+        ]
+      }
+    },
+    {
+      "language": "java",
+      "package_path": "sdks/java",
+      "semconv_file": "sdks/java/src/main/java/ai/beater/sdk/SemConv.java",
+      "source_files": [
+        "sdks/java/src/main/java/ai/beater/sdk/Beater.java",
+        "sdks/java/src/main/java/ai/beater/sdk/BeaterConfig.java",
+        "sdks/java/src/main/java/ai/beater/sdk/SemConv.java"
+      ],
+      "capability_tokens": {
+        "init": [
+          "void init(BeaterConfig"
+        ],
+        "config_from_env": [
+          "fromEnv()"
+        ],
+        "observe": [
+          "observe(String name, String kind"
+        ],
+        "set_input": [
+          "setInput(Object value)"
+        ],
+        "set_output": [
+          "setOutput(Object value)"
+        ],
+        "flush": [
+          "void flush()"
+        ],
+        "shutdown": [
+          "void shutdown()"
+        ],
+        "auth_header": [
+          "\"authorization\"",
+          "\"Bearer \""
+        ],
+        "otlp_http_path": [
+          "\"/v1/otlp/\"",
+          "\"/v1/traces\""
+        ],
+        "error_status": [
+          "recordException",
+          "StatusCode.ERROR"
+        ]
+      }
+    },
+    {
+      "language": "python",
+      "package_path": "sdks/python",
+      "semconv_file": "sdks/python/beater/semconv.py",
+      "source_files": [
+        "sdks/python/beater/__init__.py",
+        "sdks/python/beater/config.py",
+        "sdks/python/beater/observe.py",
+        "sdks/python/beater/tracing.py",
+        "sdks/python/beater/semconv.py"
+      ],
+      "capability_tokens": {
+        "init": [
+          "def init("
+        ],
+        "config_from_env": [
+          "def resolve("
+        ],
+        "observe": [
+          "def observe("
+        ],
+        "span": [
+          "def span("
+        ],
+        "set_input": [
+          "def set_input("
+        ],
+        "set_output": [
+          "def set_output("
+        ],
+        "flush": [
+          "def flush("
+        ],
+        "shutdown": [
+          "def shutdown("
+        ],
+        "auth_header": [
+          "\"authorization\"",
+          "\"Bearer "
+        ],
+        "otlp_http_path": [
+          "/v1/otlp/",
+          "/v1/traces"
+        ],
+        "error_status": [
+          "record_exception",
+          "StatusCode.ERROR"
+        ]
+      }
+    },
+    {
+      "language": "rust",
+      "package_path": "sdks/rust",
+      "semconv_file": "sdks/rust/src/semconv.rs",
+      "source_files": [
+        "sdks/rust/src/config.rs",
+        "sdks/rust/src/lib.rs",
+        "sdks/rust/src/semconv.rs"
+      ],
+      "capability_tokens": {
+        "init": [
+          "pub fn init("
+        ],
+        "config_from_env": [
+          "pub fn from_env()"
+        ],
+        "observe": [
+          "pub fn observe<"
+        ],
+        "observe_async": [
+          "pub async fn observe_async"
+        ],
+        "span": [
+          "pub fn span("
+        ],
+        "set_input": [
+          "pub fn set_input("
+        ],
+        "set_output": [
+          "pub fn set_output("
+        ],
+        "flush": [
+          "pub fn flush()"
+        ],
+        "shutdown": [
+          "pub fn shutdown()"
+        ],
+        "auth_header": [
+          "\"authorization\"",
+          "\"Bearer {api_key}\""
+        ],
+        "otlp_http_path": [
+          "\"{base}/v1/otlp/",
+          "/v1/traces\""
+        ],
+        "error_status": [
+          "Status::error"
+        ]
+      }
+    },
+    {
+      "language": "typescript",
+      "package_path": "sdks/typescript",
+      "semconv_file": "sdks/typescript/src/semconv.ts",
+      "source_files": [
+        "sdks/typescript/src/config.ts",
+        "sdks/typescript/src/index.ts",
+        "sdks/typescript/src/observe.ts",
+        "sdks/typescript/src/tracing.ts",
+        "sdks/typescript/src/semconv.ts"
+      ],
+      "capability_tokens": {
+        "init": [
+          "function init("
+        ],
+        "config_from_env": [
+          "function resolveConfig("
+        ],
+        "observe": [
+          "function observe<"
+        ],
+        "span": [
+          "function span<"
+        ],
+        "set_input": [
+          "function setInput("
+        ],
+        "set_output": [
+          "function setOutput("
+        ],
+        "flush": [
+          "function flush("
+        ],
+        "shutdown": [
+          "function shutdown("
+        ],
+        "auth_header": [
+          "\"authorization\"",
+          "`Bearer ${config.apiKey}`"
+        ],
+        "otlp_http_path": [
+          "/v1/otlp/",
+          "/v1/traces"
+        ],
+        "error_status": [
+          "recordException",
+          "SpanStatusCode.ERROR"
+        ]
+      }
+    }
+  ],
+  "required_env_vars": [
+    "BEATER_BASE_URL",
+    "BEATER_TENANT_ID",
+    "BEATER_PROJECT_ID",
+    "BEATER_ENVIRONMENT_ID",
+    "BEATER_API_KEY",
+    "BEATER_SERVICE_NAME",
+    "BEATER_RELEASE_ID"
+  ],
+  "required_span_kind_values": [
+    "agent.run",
+    "agent.turn",
+    "agent.plan",
+    "agent.step",
+    "llm.call",
+    "tool.call",
+    "mcp.request",
+    "retrieval.query",
+    "memory.read",
+    "memory.write",
+    "guardrail.check"
+  ],
+  "required_attribute_values": [
+    "openinference.span.kind",
+    "beater.seq",
+    "agent.release_id",
+    "input.value",
+    "output.value",
+    "llm.provider",
+    "llm.model_name",
+    "llm.token_count.prompt",
+    "llm.token_count.completion",
+    "llm.token_count.reasoning",
+    "llm.token_count.cache_read",
+    "llm.cost.amount_micros",
+    "llm.cost.currency"
+  ],
+  "required_ingest_header_values": [
+    "x-beater-tenant-id",
+    "x-beater-project-id",
+    "x-beater-environment-id"
+  ]
+}

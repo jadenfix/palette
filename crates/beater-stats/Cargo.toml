@@ -6,14 +6,26 @@ license.workspace = true
 repository.workspace = true
 description = "Pure-math statistics primitives for Beater agent evals (Wilson CI, two-proportion z-test, bootstrap CI, paired-t, exact McNemar, multiplicity correction)."
 
-# The only runtime dependency is `thiserror` for the error enum; all math
-# (normal/Student-t quantiles, incomplete beta, exact binomial tail, bootstrap)
-# is self-contained so the crate pulls in no async/network or heavyweight
-# numerics stack.  See §6.3 and §10.3 in ARCHITECTURE.md for the statistical
-# contracts implemented here.
+# All math (normal/Student-t quantiles, incomplete beta, exact binomial tail,
+# bootstrap) is self-contained: the crate pulls in no async/network stack and no
+# heavyweight numerics library.  Its runtime dependencies are `thiserror` (error
+# enum) and, via the default-on `parallel` feature, `rayon`.  See §6.3 and §10.3
+# in ARCHITECTURE.md for the statistical contracts implemented here.
+#
+# The `parallel` feature (enabled by default) uses `rayon` so the bootstrap
+# evaluates its independent resamples across cores.  It is purely an accelerator:
+# resamples are seeded per-index, so the parallel and sequential paths return
+# bit-identical, reproducible intervals.  Build with `--no-default-features` to
+# drop `rayon` and run the bootstrap single-threaded (e.g. for a thiserror-only
+# dependency footprint).
+
+[features]
+default = ["parallel"]
+parallel = ["dep:rayon"]
 
 [dependencies]
 thiserror = { workspace = true }
+rayon = { workspace = true, optional = true }
 
 [lints]
 workspace = true

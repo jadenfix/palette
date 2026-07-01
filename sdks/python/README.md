@@ -3,7 +3,7 @@
 Ergonomic, OpenTelemetry-native agent observability for [Beater](https://github.com/beater/beater).
 
 This is the **Layer 2** (hand-written, ergonomic) SDK: `@observe` decorators,
-drop-in OpenAI/Anthropic wrappers, and LangChain/LlamaIndex callbacks. The
+drop-in provider wrappers, and LangChain/LlamaIndex callbacks. The
 **Layer 1** generated control-plane client (datasets, experiments, gates, evals,
 usage, etc.) is published separately as `beater_client`, generated from the
 Beater OpenAPI contract so it never drifts from the API.
@@ -14,6 +14,8 @@ Beater OpenAPI contract so it never drifts from the API.
 pip install beater-sdk                 # core (OTLP/HTTP export)
 pip install "beater-sdk[openai]"       # + OpenAI wrapper
 pip install "beater-sdk[anthropic]"    # + Anthropic wrapper
+pip install "beater-sdk[groq]"         # + Groq SDK for wrap_groq()
+pip install "beater-sdk[mistral]"      # + OpenAI client for Mistral's compatible endpoint
 pip install "beater-sdk[langchain]"    # + LangChain callback
 pip install "beater-sdk[llamaindex]"   # + LlamaIndex callback
 pip install "beater-sdk[grpc]"         # OTLP/gRPC export instead of HTTP
@@ -35,7 +37,52 @@ All `init()` arguments fall back to `BEATER_*` env vars
 `BEATER_ENVIRONMENT_ID`, `BEATER_API_KEY`), so `beater.init()` works with no args
 when the environment is configured.
 
+## Zero-code env bootstrap
+
+For apps launched with OpenTelemetry Python auto-instrumentation, select the
+Beater configurator and provide only environment variables. No application code
+edits are required. Install the OpenTelemetry launcher and instrumentors
+separately for the libraries your app uses.
+
+```bash
+export BEATER_BASE_URL=http://127.0.0.1:8080
+export BEATER_TENANT_ID=demo
+export BEATER_PROJECT_ID=demo
+export BEATER_ENVIRONMENT_ID=local
+export BEATER_SERVICE_NAME=my-agent
+export OTEL_PYTHON_CONFIGURATOR=beater
+
+opentelemetry-instrument python app.py
+```
+
+If provider constructor auto-instrumentation is installed, enable it explicitly:
+
+```bash
+export BEATER_AUTO_INSTRUMENT=openai,anthropic
+```
+
+The bootstrap module is safe to import; it initializes tracing only when the
+`beater` OpenTelemetry configurator runs or `beater.bootstrap.bootstrap_from_env()`
+is called directly.
+
 ## Drop-in provider wrappers
+
+Auto-instrument installed provider clients:
+
+```python
+import beater
+
+beater.init()
+beater.instrument(providers=["openai", "anthropic"])
+
+from openai import OpenAI
+
+client = OpenAI()
+# every client.chat.completions.create(...) is now an llm.call span
+# with model + token counts
+```
+
+Or wrap one client explicitly:
 
 ```python
 from openai import OpenAI
@@ -45,15 +92,26 @@ client = beater.wrap_openai(OpenAI())
 
 from anthropic import Anthropic
 client = beater.wrap_anthropic(Anthropic())
+
+from groq import Groq
+client = beater.wrap_groq(Groq())
+
+from openai import OpenAI
+mistral_client = OpenAI(base_url="https://api.mistral.ai/v1")
+client = beater.wrap_mistral(mistral_client)
 ```
 
 ## Framework callbacks
 
+The framework adapters are part of the SDK's public surface (importable straight
+from `beater`, matching the TypeScript SDK). Each one imports its framework
+lazily, so `import beater` never requires LangChain or LlamaIndex to be installed.
+
 ```python
-from beater.integrations.langchain import BeaterCallbackHandler
+from beater import BeaterCallbackHandler
 chain.invoke(inputs, config={"callbacks": [BeaterCallbackHandler()]})
 
-from beater.integrations.llamaindex import BeaterLlamaIndexHandler
+from beater import BeaterLlamaIndexHandler
 from llama_index.core import Settings
 from llama_index.core.callbacks import CallbackManager
 Settings.callback_manager = CallbackManager([BeaterLlamaIndexHandler()])

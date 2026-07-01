@@ -61,6 +61,14 @@ public:
     void unsetCases();
     void setCases(const std::vector<std::shared_ptr<DatasetCase>>& value);
 
+    /// <summary>
+    /// A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string.
+    /// </summary>
+    utility::string_t getCorpusRoot() const;
+    bool corpusRootIsSet() const;
+    void unsetCorpus_root();
+    void setCorpusRoot(const utility::string_t& value);
+
     utility::datetime getCreatedAt() const;
     bool createdAtIsSet() const;
     void unsetCreated_at();
@@ -90,6 +98,9 @@ public:
 protected:
     std::vector<std::shared_ptr<DatasetCase>> m_Cases;
     bool m_CasesIsSet;
+
+    utility::string_t m_Corpus_root;
+    bool m_Corpus_rootIsSet;
 
     utility::datetime m_Created_at;
     bool m_Created_atIsSet;

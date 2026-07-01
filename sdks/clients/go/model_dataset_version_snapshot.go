@@ -23,6 +23,8 @@ var _ MappedNullable = &DatasetVersionSnapshot{}
 // DatasetVersionSnapshot struct for DatasetVersionSnapshot
 type DatasetVersionSnapshot struct {
 	Cases []DatasetCase `json:"cases"`
+	// A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string.
+	CorpusRoot string `json:"corpus_root"`
 	CreatedAt time.Time `json:"created_at"`
 	DatasetId string `json:"dataset_id"`
 	ProjectId string `json:"project_id"`
@@ -36,9 +38,10 @@ type _DatasetVersionSnapshot DatasetVersionSnapshot
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewDatasetVersionSnapshot(cases []DatasetCase, createdAt time.Time, datasetId string, projectId string, tenantId string, versionId string) *DatasetVersionSnapshot {
+func NewDatasetVersionSnapshot(cases []DatasetCase, corpusRoot string, createdAt time.Time, datasetId string, projectId string, tenantId string, versionId string) *DatasetVersionSnapshot {
 	this := DatasetVersionSnapshot{}
 	this.Cases = cases
+	this.CorpusRoot = corpusRoot
 	this.CreatedAt = createdAt
 	this.DatasetId = datasetId
 	this.ProjectId = projectId
@@ -77,6 +80,30 @@ func (o *DatasetVersionSnapshot) GetCasesOk() ([]DatasetCase, bool) {
 // SetCases sets field value
 func (o *DatasetVersionSnapshot) SetCases(v []DatasetCase) {
 	o.Cases = v
+}
+
+// GetCorpusRoot returns the CorpusRoot field value
+func (o *DatasetVersionSnapshot) GetCorpusRoot() string {
+	if o == nil {
+		var ret string
+		return ret
+	}
+
+	return o.CorpusRoot
+}
+
+// GetCorpusRootOk returns a tuple with the CorpusRoot field value
+// and a boolean to check if the value has been set.
+func (o *DatasetVersionSnapshot) GetCorpusRootOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.CorpusRoot, true
+}
+
+// SetCorpusRoot sets field value
+func (o *DatasetVersionSnapshot) SetCorpusRoot(v string) {
+	o.CorpusRoot = v
 }
 
 // GetCreatedAt returns the CreatedAt field value
@@ -210,6 +237,7 @@ func (o DatasetVersionSnapshot) MarshalJSON() ([]byte, error) {
 func (o DatasetVersionSnapshot) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["cases"] = o.Cases
+	toSerialize["corpus_root"] = o.CorpusRoot
 	toSerialize["created_at"] = o.CreatedAt
 	toSerialize["dataset_id"] = o.DatasetId
 	toSerialize["project_id"] = o.ProjectId
@@ -224,6 +252,7 @@ func (o *DatasetVersionSnapshot) UnmarshalJSON(data []byte) (err error) {
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"cases",
+		"corpus_root",
 		"created_at",
 		"dataset_id",
 		"project_id",

@@ -5,7 +5,7 @@ use beater_core::{
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 pub const RAW_SCHEMA_VERSION: u32 = 1;
 pub const CANONICAL_SCHEMA_VERSION: u32 = 1;
@@ -695,17 +695,19 @@ pub fn span_release_id(span: &CanonicalSpan) -> Option<String> {
 
 pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary> {
     let mut runs = Vec::<RunSummary>::new();
+    let mut dedup = Vec::<RunDedup<'_>>::new();
     // Index (project_id, trace_id) -> position in `runs` so each span resolves
     // its run in O(1) instead of a linear scan over all runs seen so far. This
     // turns the rollup from O(spans × runs) into O(spans); push order — and
     // therefore the final sort — is unchanged. Keys borrow the ids out of
     // `spans` (which outlives `index`), so the hot path allocates nothing per
     // span — important when the common shape is many spans across few runs.
-    let mut index = std::collections::HashMap::<(&str, &str), usize>::new();
+    let mut index = HashMap::<(&str, &str), usize>::new();
     for span in &spans {
         let key = (span.project_id.as_str(), span.trace_id.as_str());
         if let Some(&pos) = index.get(&key) {
             let run = &mut runs[pos];
+            let dedup = &mut dedup[pos];
             run.span_count += 1;
             if span.started_at < run.started_at {
                 run.started_at = span.started_at;
@@ -713,8 +715,12 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
             }
             run.status = aggregate_run_status(&run.status, &span.status);
             run.total_cost = merge_cost(run.total_cost.clone(), span.cost.clone());
-            push_model(&mut run.models, span.model.clone());
-            push_release_id(&mut run.release_ids, span.release_id.clone());
+            push_model(&mut run.models, &mut dedup.models, span.model.as_ref());
+            push_release_id(
+                &mut run.release_ids,
+                &mut dedup.release_ids,
+                span.release_id.as_deref(),
+            );
             run.ended_at = match (run.ended_at, span.ended_at) {
                 (Some(left), Some(right)) => Some(left.max(right)),
                 (None, Some(right)) => Some(right),
@@ -723,6 +729,15 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
             run.duration_ms = run_duration_ms(run.started_at, run.ended_at);
         } else {
             let ended_at = span.ended_at;
+            let mut run_dedup = RunDedup::default();
+            let mut models = Vec::new();
+            let mut release_ids = Vec::new();
+            push_model(&mut models, &mut run_dedup.models, span.model.as_ref());
+            push_release_id(
+                &mut release_ids,
+                &mut run_dedup.release_ids,
+                span.release_id.as_deref(),
+            );
             index.insert(key, runs.len());
             runs.push(RunSummary {
                 tenant_id: tenant.clone(),
@@ -735,9 +750,10 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
                 ended_at,
                 duration_ms: run_duration_ms(span.started_at, ended_at),
                 total_cost: span.cost.clone(),
-                models: span.model.clone().into_iter().collect(),
-                release_ids: span.release_id.clone().into_iter().collect(),
+                models,
+                release_ids,
             });
+            dedup.push(run_dedup);
         }
     }
 
@@ -745,18 +761,33 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
     runs
 }
 
+#[derive(Default)]
+struct RunDedup<'a> {
+    models: HashSet<(&'a str, &'a str)>,
+    release_ids: HashSet<&'a str>,
+}
+
 pub fn filter_run_summaries(
     runs: Vec<RunSummary>,
     spans: &[SpanSummary],
     filter: &RunFilter,
 ) -> Vec<RunSummary> {
-    let kind_trace_ids = filter.kind.as_ref().map(|kind| {
-        spans
-            .iter()
-            .filter(|span| &span.kind == kind)
-            .map(|span| (span.project_id.clone(), span.trace_id.clone()))
-            .collect::<BTreeSet<_>>()
-    });
+    // Build the kind-filter membership set in a single borrow-keyed pass over
+    // the spans (no owned `(String, String)` clones — the keys borrow out of
+    // `spans`, which outlives this set). Skip the span traversal entirely when
+    // there is no `kind` filter, or when no runs survive to be checked against
+    // it, so the kind path never scans spans needlessly.
+    let kind_trace_ids = filter
+        .kind
+        .as_ref()
+        .filter(|_| !runs.is_empty())
+        .map(|kind| {
+            spans
+                .iter()
+                .filter(|span| &span.kind == kind)
+                .map(|span| (span.project_id.as_str(), span.trace_id.as_str()))
+                .collect::<HashSet<_>>()
+        });
     runs.into_iter()
         .filter(|run| match &filter.trace_id {
             Some(trace_id) => &run.trace_id == trace_id,
@@ -809,7 +840,9 @@ pub fn filter_run_summaries(
             None => true,
         })
         .filter(|run| match &kind_trace_ids {
-            Some(trace_ids) => trace_ids.contains(&(run.project_id.clone(), run.trace_id.clone())),
+            Some(trace_ids) => {
+                trace_ids.contains(&(run.project_id.as_str(), run.trace_id.as_str()))
+            }
             None => true,
         })
         .collect()
@@ -838,24 +871,29 @@ fn merge_cost(current: Option<Money>, next: Option<Money>) -> Option<Money> {
     }
 }
 
-fn push_model(models: &mut Vec<ModelRef>, model: Option<ModelRef>) {
+fn push_model<'a>(
+    models: &mut Vec<ModelRef>,
+    seen: &mut HashSet<(&'a str, &'a str)>,
+    model: Option<&'a ModelRef>,
+) {
     let Some(model) = model else {
         return;
     };
-    if !models
-        .iter()
-        .any(|existing| existing.provider == model.provider && existing.name == model.name)
-    {
-        models.push(model);
+    if seen.insert((model.provider.as_str(), model.name.as_str())) {
+        models.push(model.clone());
     }
 }
 
-fn push_release_id(release_ids: &mut Vec<String>, release_id: Option<String>) {
+fn push_release_id<'a>(
+    release_ids: &mut Vec<String>,
+    seen: &mut HashSet<&'a str>,
+    release_id: Option<&'a str>,
+) {
     let Some(release_id) = release_id else {
         return;
     };
-    if !release_ids.contains(&release_id) {
-        release_ids.push(release_id);
+    if seen.insert(release_id) {
+        release_ids.push(release_id.to_string());
     }
 }
 
@@ -1062,5 +1100,61 @@ mod tests {
         assert_eq!(ok_runs.len(), 1);
         assert_eq!(ok_runs[0].project_id.as_str(), project.as_str());
         assert_eq!(ok_runs[0].trace_id, other_trace);
+    }
+
+    #[test]
+    fn run_kind_filter_is_project_scoped_for_reused_trace_ids() {
+        let tenant = TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}"));
+        let project = ProjectId::new("project").unwrap_or_else(|err| panic!("{err}"));
+        let other_project = ProjectId::new("other-project").unwrap_or_else(|err| panic!("{err}"));
+        let trace = TraceId::new("shared-trace").unwrap_or_else(|err| panic!("{err}"));
+        let started_at = Utc
+            .with_ymd_and_hms(2026, 1, 1, 0, 0, 0)
+            .single()
+            .unwrap_or_else(|| panic!("valid timestamp"));
+        let spans = vec![
+            SpanSummary {
+                tenant_id: tenant.clone(),
+                project_id: project.clone(),
+                trace_id: trace.clone(),
+                span_id: SpanId::new("project-root").unwrap_or_else(|err| panic!("{err}")),
+                kind: AgentSpanKind::AgentRun,
+                name: "project root".to_string(),
+                status: SpanStatus::Ok,
+                started_at,
+                ended_at: Some(started_at),
+                model: None,
+                cost: None,
+                release_id: None,
+            },
+            SpanSummary {
+                tenant_id: tenant.clone(),
+                project_id: other_project.clone(),
+                trace_id: trace.clone(),
+                span_id: SpanId::new("other-project-step").unwrap_or_else(|err| panic!("{err}")),
+                kind: AgentSpanKind::AgentStep,
+                name: "other project step".to_string(),
+                status: SpanStatus::Ok,
+                started_at,
+                ended_at: Some(started_at),
+                model: None,
+                cost: None,
+                release_id: None,
+            },
+        ];
+
+        let runs = roll_up_runs(tenant, spans.clone());
+        let filtered = filter_run_summaries(
+            runs,
+            &spans,
+            &RunFilter {
+                kind: Some(AgentSpanKind::AgentStep),
+                ..RunFilter::default()
+            },
+        );
+
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].project_id, other_project);
+        assert_eq!(filtered[0].trace_id, trace);
     }
 }

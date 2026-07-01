@@ -1,0 +1,29 @@
+name: offline-self-host-docs
+
+# Supersede an in-flight run when a PR branch is pushed again, so the shared CI
+# runner pool is not starved by stacked redundant runs. main pushes are never
+# cancelled (their CI history must stay complete).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/offline-self-host-docs.yml"
+      - "docs/offline-self-host.md"
+      - "scripts/check-offline-self-host-docs.py"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-self-host-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify offline self-host docs
+        run: python3 scripts/check-offline-self-host-docs.py

@@ -72,6 +72,12 @@ Category | Method | HTTP request | Description
 *ArchiveAPI* | [**ArchiveAPI_queryArchiveSpans**](docs/ArchiveAPI.md#ArchiveAPI_queryArchiveSpans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans | 
 *AuditAPI* | [**AuditAPI_listAuditEvents**](docs/AuditAPI.md#AuditAPI_listAuditEvents) | **GET** /v1/audit/{tenant_id}/{project_id} | 
 *CalibrationsAPI* | [**CalibrationsAPI_runCalibration**](docs/CalibrationsAPI.md#CalibrationsAPI_runCalibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} | 
+*ConnectorsAPI* | [**ConnectorsAPI_connectConnector**](docs/ConnectorsAPI.md#ConnectorsAPI_connectConnector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect | 
+*ConnectorsAPI* | [**ConnectorsAPI_connectorStatus**](docs/ConnectorsAPI.md#ConnectorsAPI_connectorStatus) | **GET** /v1/connectors/{tenant_id}/{project_id}/status | 
+*ConnectorsAPI* | [**ConnectorsAPI_getConnectorSkills**](docs/ConnectorsAPI.md#ConnectorsAPI_getConnectorSkills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills | 
+*ConnectorsAPI* | [**ConnectorsAPI_invokeConnectorTool**](docs/ConnectorsAPI.md#ConnectorsAPI_invokeConnectorTool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke | 
+*ConnectorsAPI* | [**ConnectorsAPI_listConnectorTools**](docs/ConnectorsAPI.md#ConnectorsAPI_listConnectorTools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools | 
+*ConnectorsAPI* | [**ConnectorsAPI_listConnectors**](docs/ConnectorsAPI.md#ConnectorsAPI_listConnectors) | **GET** /v1/connectors/{tenant_id}/{project_id} | 
 *DatasetsAPI* | [**DatasetsAPI_createDataset**](docs/DatasetsAPI.md#DatasetsAPI_createDataset) | **POST** /v1/datasets/{tenant_id}/{project_id} | 
 *DatasetsAPI* | [**DatasetsAPI_createDatasetVersion**](docs/DatasetsAPI.md#DatasetsAPI_createDatasetVersion) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions | 
 *DatasetsAPI* | [**DatasetsAPI_promoteDatasetCaseFromTrace**](docs/DatasetsAPI.md#DatasetsAPI_promoteDatasetCaseFromTrace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace | 
@@ -93,6 +99,12 @@ Category | Method | HTTP request | Description
 *JudgeAPI* | [**JudgeAPI_evaluateJudge**](docs/JudgeAPI.md#JudgeAPI_evaluateJudge) | **POST** /v1/judge/{tenant_id}/{project_id}/evaluate | 
 *JudgeAPI* | [**JudgeAPI_listJudgeLedger**](docs/JudgeAPI.md#JudgeAPI_listJudgeLedger) | **GET** /v1/judge/{tenant_id}/{project_id}/ledger | 
 *OnlineAPI* | [**OnlineAPI_decideOnlineSampling**](docs/OnlineAPI.md#OnlineAPI_decideOnlineSampling) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling | 
+*PromptsAPI* | [**PromptsAPI_addPromptVersion**](docs/PromptsAPI.md#PromptsAPI_addPromptVersion) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions | 
+*PromptsAPI* | [**PromptsAPI_createPrompt**](docs/PromptsAPI.md#PromptsAPI_createPrompt) | **POST** /v1/prompts/{tenant_id}/{project_id} | 
+*PromptsAPI* | [**PromptsAPI_diffPromptVersions**](docs/PromptsAPI.md#PromptsAPI_diffPromptVersions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff | 
+*PromptsAPI* | [**PromptsAPI_getPrompt**](docs/PromptsAPI.md#PromptsAPI_getPrompt) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} | 
+*PromptsAPI* | [**PromptsAPI_listPromptVersions**](docs/PromptsAPI.md#PromptsAPI_listPromptVersions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions | 
+*PromptsAPI* | [**PromptsAPI_listPrompts**](docs/PromptsAPI.md#PromptsAPI_listPrompts) | **GET** /v1/prompts/{tenant_id}/{project_id} | 
 *ProviderSecretsAPI* | [**ProviderSecretsAPI_createProviderSecret**](docs/ProviderSecretsAPI.md#ProviderSecretsAPI_createProviderSecret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} | 
 *ProviderSecretsAPI* | [**ProviderSecretsAPI_listProviderSecrets**](docs/ProviderSecretsAPI.md#ProviderSecretsAPI_listProviderSecrets) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} | 
 *ProviderSecretsAPI* | [**ProviderSecretsAPI_revokeProviderSecret**](docs/ProviderSecretsAPI.md#ProviderSecretsAPI_revokeProviderSecret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke | 
@@ -111,6 +123,7 @@ Category | Method | HTTP request | Description
 
 ## Documentation for Models
 
+ - [add_prompt_version_request_t](docs/add_prompt_version_request.md)
  - [alert_decision_t](docs/alert_decision.md)
  - [alert_input_t](docs/alert_input.md)
  - [alert_links_t](docs/alert_links.md)
@@ -135,12 +148,19 @@ Category | Method | HTTP request | Description
  - [canonical_span_t](docs/canonical_span.md)
  - [case_experiment_score_t](docs/case_experiment_score.md)
  - [case_output_override_request_t](docs/case_output_override_request.md)
+ - [connect_connector_request_t](docs/connect_connector_request.md)
+ - [connection_link_t](docs/connection_link.md)
+ - [connection_status_t](docs/connection_status.md)
+ - [connector_skills_response_t](docs/connector_skills_response.md)
+ - [connector_tool_t](docs/connector_tool.md)
  - [create_api_key_http_request_t](docs/create_api_key_http_request.md)
  - [create_dataset_request_t](docs/create_dataset_request.md)
  - [create_dataset_version_request_t](docs/create_dataset_version_request.md)
  - [create_gate_request_t](docs/create_gate_request.md)
+ - [create_prompt_request_t](docs/create_prompt_request.md)
  - [create_provider_secret_http_request_t](docs/create_provider_secret_http_request.md)
  - [create_review_queue_http_request_t](docs/create_review_queue_http_request.md)
+ - [created_prompt_t](docs/created_prompt.md)
  - [currency_t](docs/currency.md)
  - [dataset_t](docs/dataset.md)
  - [dataset_case_t](docs/dataset_case.md)
@@ -148,6 +168,8 @@ Category | Method | HTTP request | Description
  - [dataset_version_snapshot_t](docs/dataset_version_snapshot.md)
  - [dead_letter_t](docs/dead_letter.md)
  - [dead_letter_replay_report_t](docs/dead_letter_replay_report.md)
+ - [diff_line_t](docs/diff_line.md)
+ - [diff_line_kind_t](docs/diff_line_kind.md)
  - [enqueue_review_task_from_trace_http_request_t](docs/enqueue_review_task_from_trace_http_request.md)
  - [error_response_t](docs/error_response.md)
  - [eval_reproducibility_t](docs/eval_reproducibility.md)
@@ -179,6 +201,7 @@ Category | Method | HTTP request | Description
  - [inconclusive_policy_t](docs/inconclusive_policy.md)
  - [ingest_outcome_t](docs/ingest_outcome.md)
  - [ingest_queue_status_t](docs/ingest_queue_status.md)
+ - [invoke_connector_request_t](docs/invoke_connector_request.md)
  - [judge_audit_record_t](docs/judge_audit_record.md)
  - [judge_broker_outcome_t](docs/judge_broker_outcome.md)
  - [maintenance_window_t](docs/maintenance_window.md)
@@ -191,6 +214,14 @@ Category | Method | HTTP request | Description
  - [page_run_summary_items_inner_t](docs/page_run_summary_items_inner.md)
  - [promote_review_annotation_http_request_t](docs/promote_review_annotation_http_request.md)
  - [promote_trace_case_request_t](docs/promote_trace_case_request.md)
+ - [prompt_t](docs/prompt.md)
+ - [prompt_list_response_t](docs/prompt_list_response.md)
+ - [prompt_template_t](docs/prompt_template.md)
+ - [prompt_variable_t](docs/prompt_variable.md)
+ - [prompt_version_t](docs/prompt_version.md)
+ - [prompt_version_diff_t](docs/prompt_version_diff.md)
+ - [prompt_version_list_response_t](docs/prompt_version_list_response.md)
+ - [prompt_version_metadata_t](docs/prompt_version_metadata.md)
  - [provider_secret_metadata_t](docs/provider_secret_metadata.md)
  - [publish_ack_t](docs/publish_ack.md)
  - [queued_trace_work_t](docs/queued_trace_work.md)
@@ -227,6 +258,8 @@ Category | Method | HTTP request | Description
  - [submit_review_annotation_http_request_t](docs/submit_review_annotation_http_request.md)
  - [tenant_scope_t](docs/tenant_scope.md)
  - [token_counts_t](docs/token_counts.md)
+ - [tool_execution_t](docs/tool_execution.md)
+ - [toolkit_t](docs/toolkit.md)
  - [trace_ingested_drain_report_t](docs/trace_ingested_drain_report.md)
  - [trace_ingested_reconcile_report_t](docs/trace_ingested_reconcile_report.md)
  - [trace_view_t](docs/trace_view.md)

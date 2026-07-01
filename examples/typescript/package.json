@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check frameworks/express-otlp.mjs && node --check frameworks/llamaindex-otlp.mjs"
+  }
+}

@@ -1,0 +1,38 @@
+name: sdk-parity
+
+# Supersede an in-flight run when a PR branch is pushed again, so the shared CI
+# runner pool is not starved by stacked redundant runs. main pushes are never
+# cancelled (their CI history must stay complete).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/sdk-parity.yml"
+      - "scripts/check-sdk-parity-contract.py"
+      - "scripts/check-sdk-parity.sh"
+      - "scripts/e2e-clients-live.sh"
+      - "sdks/conformance/**"
+      - "sdks/go/**"
+      - "sdks/java/**"
+      - "sdks/python/**"
+      - "sdks/rust/**"
+      - "sdks/typescript/**"
+      - "sdks/clients/**"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parity-contract:
+    name: SDK parity manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify SDK parity manifest and gate wiring
+        run: bash scripts/check-sdk-parity.sh

@@ -7,6 +7,7 @@ license.workspace = true
 [dependencies]
 utoipa = { workspace = true }
 beater-core = { path = "../beater-core" }
+beater-design = { path = "../beater-design" }
 beater-schema = { path = "../beater-schema" }
 beater-stats = { path = "../beater-stats" }
 regex.workspace = true

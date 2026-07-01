@@ -19,10 +19,10 @@ from ..tracing import get_tracer
 
 try:  # pragma: no cover - import guard
     from langchain_core.callbacks.base import BaseCallbackHandler
-except ImportError:  # pragma: no cover
+except Exception:  # pragma: no cover - missing or import-incompatible framework
     try:
         from langchain.callbacks.base import BaseCallbackHandler  # type: ignore
-    except ImportError:  # pragma: no cover
+    except Exception:  # pragma: no cover
         BaseCallbackHandler = object  # type: ignore
 
 
