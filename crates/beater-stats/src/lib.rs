@@ -19,6 +19,7 @@
 //! | [`mcnemar_exact_p`] | §10.3 | paired binary outcome |
 //! | [`required_sample_size`] / [`minimum_detectable_effect`] / [`achieved_power`] | §10.3 #5 | power / MDE / minimum-sample planning |
 //! | [`holm_bonferroni`] / [`benjamini_hochberg`] | §10.3 #4 | multiple-comparison corrections |
+//! | [`cuped_adjust`] | §10.3 #4 | CUPED variance reduction via a pre-experiment covariate |
 //!
 //! The paired layer ([`compare_paired`]) is what the **experiment gate** calls
 //! today: it picks **Student's paired t** for continuous metrics and the **exact
@@ -48,6 +49,7 @@
 
 mod bca;
 mod clustered;
+mod cuped;
 mod mcnemar;
 mod multiplicity;
 mod numerics;
@@ -60,6 +62,7 @@ pub use bca::{bootstrap_bca_ci, paired_bootstrap_test, PairedBootstrapOutcome};
 pub use clustered::{
     clustered_bootstrap_ci, clustered_standard_error, iid_standard_error, ClusteredStandardError,
 };
+pub use cuped::{cuped_adjust, CupedOutcome};
 pub use mcnemar::mcnemar_exact_p;
 pub use multiplicity::{benjamini_hochberg, holm_bonferroni, MultiplicityDecision};
 pub use overfit::{
