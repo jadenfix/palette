@@ -9,9 +9,130 @@
 //! - the exact Binomial(n, ½) lower tail (the exact McNemar p-value).
 //!
 //! References: Lanczos (1964) for `ln_gamma`; Numerical Recipes §6.4 for the
-//! incomplete-beta continued fraction; Acklam's algorithm for the normal quantile.
+//! incomplete-beta continued fraction; Acklam's algorithm for the normal quantile;
+//! Cody (1969) for `erfc`.
 
 use std::f64::consts::PI;
+
+/// Complementary error function `erfc(x)` via W. J. Cody's rational Chebyshev
+/// approximations (Math. Comp. 23, 1969; the `CALERF` reference implementation),
+/// accurate to ~1 ulp in *relative* terms over the whole real line.
+///
+/// Relative accuracy is the load-bearing property: the previous
+/// Abramowitz & Stegun §7.1.26 polynomial had only *absolute* error ≤ 1.5×10⁻⁷,
+/// so any tail probability below ~10⁻⁷ (a z-statistic beyond ≈ 5.2) came back
+/// with O(1) relative error — a reported p-value of 10⁻¹² could be wrong by
+/// orders of magnitude. Cody's three-regime form keeps ~15 significant digits
+/// all the way down to the underflow horizon (`x ≈ 26.5`, p ≈ 10⁻³⁰⁰).
+// Coefficients are kept digit-for-digit as published (CALERF), so they can be
+// audited against the reference; the extra digits round to the same f64.
+#[allow(clippy::excessive_precision)]
+pub fn erfc(x: f64) -> f64 {
+    if x.is_nan() {
+        return f64::NAN;
+    }
+    let y = x.abs();
+    let result = if y <= 0.46875 {
+        // erf(x) = x · P(y²)/Q(y²); erfc = 1 − erf.
+        const A: [f64; 5] = [
+            3.161_123_743_870_565_6,
+            1.138_641_541_510_501_56e2,
+            3.774_852_376_853_020_2e2,
+            3.209_377_589_138_469_47e3,
+            1.857_777_061_846_031_53e-1,
+        ];
+        const B: [f64; 4] = [
+            2.360_129_095_234_412_09e1,
+            2.440_246_379_344_441_73e2,
+            1.282_616_526_077_372_28e3,
+            2.844_236_833_439_170_62e3,
+        ];
+        let z = if y > 1.11e-16 { y * y } else { 0.0 };
+        let mut num = A[4] * z;
+        let mut den = z;
+        for i in 0..3 {
+            num = (num + A[i]) * z;
+            den = (den + B[i]) * z;
+        }
+        // erf on this range; the sign of x is folded in at the end.
+        return 1.0 - x * (num + A[3]) / (den + B[3]);
+    } else if y <= 4.0 {
+        // erfc(y) = e^{−y²} · P(y)/Q(y).
+        const C: [f64; 9] = [
+            5.641_884_969_886_700_9e-1,
+            8.883_149_794_388_375_9,
+            6.611_919_063_714_162_95e1,
+            2.986_351_381_974_001_31e2,
+            8.819_522_212_417_690_9e2,
+            1.712_047_612_634_070_58e3,
+            2.051_078_377_826_071_47e3,
+            1.230_339_354_797_997_25e3,
+            2.153_115_354_744_038_46e-8,
+        ];
+        const D: [f64; 8] = [
+            1.574_492_611_070_983_47e1,
+            1.176_939_508_913_124_99e2,
+            5.371_811_018_620_098_58e2,
+            1.621_389_574_566_690_19e3,
+            3.290_799_235_733_459_63e3,
+            4.362_619_090_143_247_16e3,
+            3.439_367_674_143_721_64e3,
+            1.230_339_354_803_749_42e3,
+        ];
+        let mut num = C[8] * y;
+        let mut den = y;
+        for i in 0..7 {
+            num = (num + C[i]) * y;
+            den = (den + D[i]) * y;
+        }
+        exp_neg_sq(y) * (num + C[7]) / (den + D[7])
+    } else if y < 26.543 {
+        // erfc(y) = e^{−y²}/y · (1/√π − r(1/y²)/y² · …), Cody region 3.
+        const P: [f64; 6] = [
+            3.053_266_349_612_323_44e-1,
+            3.603_448_999_498_044_39e-1,
+            1.257_817_261_112_292_46e-1,
+            1.608_378_514_874_227_66e-2,
+            6.587_491_615_298_378_03e-4,
+            1.631_538_713_730_209_78e-2,
+        ];
+        const Q: [f64; 5] = [
+            2.568_520_192_289_822_42,
+            1.872_952_849_923_460_47,
+            5.279_051_029_514_284_12e-1,
+            6.051_834_131_244_131_91e-2,
+            2.335_204_976_268_691_85e-3,
+        ];
+        const ONE_OVER_SQRT_PI: f64 = 5.641_895_835_477_562_9e-1;
+        let z = 1.0 / (y * y);
+        let mut num = P[5] * z;
+        let mut den = z;
+        for i in 0..4 {
+            num = (num + P[i]) * z;
+            den = (den + Q[i]) * z;
+        }
+        let r = z * (num + P[4]) / (den + Q[4]);
+        exp_neg_sq(y) * (ONE_OVER_SQRT_PI - r) / y
+    } else {
+        // Beyond the double-precision underflow horizon.
+        0.0
+    };
+    if x < 0.0 {
+        2.0 - result
+    } else {
+        result
+    }
+}
+
+/// `e^{−y²}` computed as `e^{−q²}·e^{−(y−q)(y+q)}` with `q = ⌊16y⌋/16`, Cody's
+/// argument-splitting trick: `q²` is exact in binary (q has ≤ 4 fractional
+/// bits), so the rounding error of forming `y²` directly — which `exp` would
+/// amplify by `y²` ulps — is avoided.
+fn exp_neg_sq(y: f64) -> f64 {
+    let q = (y * 16.0).trunc() / 16.0;
+    let del = (y - q) * (y + q);
+    (-q * q).exp() * (-del).exp()
+}
 
 /// Natural log of the gamma function via the Lanczos approximation (g = 7).
 pub fn ln_gamma(x: f64) -> f64 {
@@ -280,6 +401,47 @@ mod tests {
         assert!(close(normal_quantile(0.975), 1.959_963_98, 1e-6));
         assert!(close(normal_quantile(0.995), 2.575_829_3, 1e-6));
         assert!(close(normal_quantile(0.5), 0.0, 1e-9));
+    }
+
+    /// Cody erfc must hold ~13+ significant digits across all three regimes and
+    /// down to the underflow horizon. References are correctly-rounded values
+    /// (IEEE `erfc`, cross-checked against mpmath), kept digit-for-digit.
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn erfc_relative_accuracy_across_regimes() {
+        let cases: [(f64, f64); 10] = [
+            (0.1, 8.875_370_839_817_151_58e-1),     // region 1 (series)
+            (0.46875, 5.073_865_267_820_619_75e-1), // region boundary
+            (0.5, 4.795_001_221_869_534_81e-1),     // region 2
+            (1.0, 1.572_992_070_502_851_34e-1),
+            (2.0, 4.677_734_981_047_265_36e-3),
+            (3.0, 2.209_049_699_858_543_78e-5),
+            (4.0, 1.541_725_790_028_002_0e-8), // region 2/3 boundary
+            (5.0, 1.537_459_794_428_035_14e-12), // region 3
+            (10.0, 2.088_487_583_762_544_88e-45),
+            (20.0, 5.395_865_611_607_900_48e-176),
+        ];
+        for (x, want) in cases {
+            let got = erfc(x);
+            let rel = ((got - want) / want).abs();
+            assert!(
+                rel < 1e-12,
+                "erfc({x}) = {got:e}, want {want:e}, rel {rel:e}"
+            );
+            // Mirror identity erfc(−x) = 2 − erfc(x).
+            let neg = erfc(-x);
+            assert!(
+                ((neg - (2.0 - want)) / 2.0).abs() < 1e-14,
+                "erfc({}) = {neg}",
+                -x
+            );
+        }
+        // Beyond the underflow horizon and at the extremes.
+        assert_eq!(erfc(27.0), 0.0);
+        assert_eq!(erfc(f64::INFINITY), 0.0);
+        assert_eq!(erfc(f64::NEG_INFINITY), 2.0);
+        assert!(erfc(f64::NAN).is_nan());
+        assert!((erfc(0.0) - 1.0).abs() < 1e-15);
     }
 
     #[test]

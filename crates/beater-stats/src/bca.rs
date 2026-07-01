@@ -82,19 +82,41 @@ pub fn bootstrap_bca_ci(
 
     let theta_hat = mean(sample_a) - mean(sample_b);
 
-    let mut rng = Xorshift64::new(seed);
-    let mut replicates: Vec<f64> = Vec::with_capacity(n_resamples);
-    let mut n_below = 0usize;
-    for _ in 0..n_resamples {
-        let ra = resample_mean(sample_a, &mut rng);
-        let rb = resample_mean(sample_b, &mut rng);
-        let theta = ra - rb;
-        if theta < theta_hat {
-            n_below += 1;
+    // Replicates come from the same per-index SplitMix64 substreams as
+    // `bootstrap_diff_ci`, so each replicate is a pure function of `(seed, i)`:
+    // the result is order-independent, bit-identical between the sequential and
+    // `parallel`-feature builds, and — for the same `(samples, seed)` — the BCa
+    // replicate set equals the percentile bootstrap's.
+    let mut replicates: Vec<f64> = {
+        #[cfg(feature = "parallel")]
+        {
+            use rayon::prelude::*;
+            (0..n_resamples)
+                .into_par_iter()
+                .map(|i| crate::resample_diff(sample_a, sample_b, seed, i))
+                .collect()
         }
-        replicates.push(theta);
+        #[cfg(not(feature = "parallel"))]
+        {
+            (0..n_resamples)
+                .map(|i| crate::resample_diff(sample_a, sample_b, seed, i))
+                .collect()
+        }
+    };
+    // Bias-correction count with midrank tie handling: replicates exactly equal
+    // to θ̂ contribute ½. With a discrete statistic (e.g. means of 0/1 scores)
+    // many replicates tie with θ̂, and the strict `<` count would bias z₀
+    // downward; the midrank convention keeps z₀ ≈ 0 for a symmetric, tie-heavy
+    // bootstrap distribution.
+    let mut n_below = 0.0_f64;
+    for &theta in &replicates {
+        if theta < theta_hat {
+            n_below += 1.0;
+        } else if theta == theta_hat {
+            n_below += 0.5;
+        }
     }
-    replicates.sort_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
+    replicates.sort_by(|x, y| x.total_cmp(y));
 
     let alpha = 1.0 - confidence;
     let percentile = |q: f64| -> f64 {
@@ -107,7 +129,7 @@ pub fn bootstrap_bca_ci(
     let percentile_lo = percentile(alpha / 2.0);
     let percentile_hi = percentile(1.0 - alpha / 2.0);
 
-    let frac_below = n_below as f64 / n_resamples as f64;
+    let frac_below = n_below / n_resamples as f64;
     let z0 = if frac_below <= 0.0 || frac_below >= 1.0 {
         // Degenerate bias correction — use the percentile interval.
         return Ok(BootstrapInterval {
@@ -220,21 +242,33 @@ pub fn paired_bootstrap_test(
     }
 
     let estimate = mean(differences);
-    let mut rng = Xorshift64::new(seed);
-    let mut means: Vec<f64> = Vec::with_capacity(n_resamples);
-    let mut le_zero = 0usize;
-    let mut ge_zero = 0usize;
-    for _ in 0..n_resamples {
-        let m = resample_mean(differences, &mut rng);
-        if m <= 0.0 {
-            le_zero += 1;
+    // Per-index substreams (as in `bootstrap_diff_ci`): order-independent,
+    // reproducible, and parallel under the default `parallel` feature.
+    let mut means: Vec<f64> = {
+        #[cfg(feature = "parallel")]
+        {
+            use rayon::prelude::*;
+            (0..n_resamples)
+                .into_par_iter()
+                .map(|i| {
+                    let mut rng = Xorshift64::for_resample(seed, i);
+                    resample_mean(differences, &mut rng)
+                })
+                .collect()
         }
-        if m >= 0.0 {
-            ge_zero += 1;
+        #[cfg(not(feature = "parallel"))]
+        {
+            (0..n_resamples)
+                .map(|i| {
+                    let mut rng = Xorshift64::for_resample(seed, i);
+                    resample_mean(differences, &mut rng)
+                })
+                .collect()
         }
-        means.push(m);
-    }
-    means.sort_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
+    };
+    let le_zero = means.iter().filter(|m| **m <= 0.0).count();
+    let ge_zero = means.iter().filter(|m| **m >= 0.0).count();
+    means.sort_by(|x, y| x.total_cmp(y));
 
     let lo_idx = ((alpha / 2.0) * n_resamples as f64).floor() as usize;
     let hi_idx = ((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize;

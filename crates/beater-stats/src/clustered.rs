@@ -9,6 +9,8 @@
 //! per-observation cluster labels.
 
 use crate::{mean, StatsError, Xorshift64};
+use std::collections::HashMap;
+use std::hash::Hash;
 
 /// A cluster-robust standard error of a sample mean, with the cluster and
 /// observation counts that produced it.
@@ -61,7 +63,7 @@ pub struct ClusteredStandardError {
 /// assert_eq!(cr.n_clusters, 2);
 /// # Ok::<(), beater_stats::StatsError>(())
 /// ```
-pub fn clustered_standard_error<T: PartialEq>(
+pub fn clustered_standard_error<T: Eq + Hash>(
     values: &[f64],
     cluster_ids: &[T],
 ) -> Result<ClusteredStandardError, StatsError> {
@@ -83,18 +85,18 @@ pub fn clustered_standard_error<T: PartialEq>(
     let n = values.len();
     let avg = mean(values);
 
-    // Group residual sums by cluster, preserving first-seen order. Linear scan is
-    // fine for eval-scale N and keeps the crate dependency-free.
-    let mut labels: Vec<&T> = Vec::new();
+    // Group residual sums by cluster in O(N) via a label→slot map (the previous
+    // linear label scan was O(N·G) — quadratic when most clusters are
+    // singletons, the common per-conversation case).
+    let mut slot_of: HashMap<&T, usize> = HashMap::new();
     let mut cluster_sums: Vec<f64> = Vec::new();
     for (value, id) in values.iter().zip(cluster_ids.iter()) {
         let residual = value - avg;
-        if let Some(pos) = labels.iter().position(|l| **l == *id) {
-            cluster_sums[pos] += residual;
-        } else {
-            labels.push(id);
-            cluster_sums.push(residual);
-        }
+        let slot = *slot_of.entry(id).or_insert_with(|| {
+            cluster_sums.push(0.0);
+            cluster_sums.len() - 1
+        });
+        cluster_sums[slot] += residual;
     }
 
     let g = cluster_sums.len();
@@ -135,10 +137,12 @@ pub fn iid_standard_error(values: &[f64]) -> Result<f64, StatsError> {
 ///
 /// # Errors
 ///
-/// Same input validation as [`clustered_standard_error`], plus
+/// Same input validation as [`clustered_standard_error`] — including
+/// [`StatsError::TooFewSamples`] for fewer than two clusters, where a cluster
+/// bootstrap would silently return a zero-width interval — plus
 /// [`StatsError::InvalidParameter`] for a `confidence` outside `(0, 1)` and
 /// [`StatsError::InvalidResampleCount`] for `n_resamples == 0`.
-pub fn clustered_bootstrap_ci<T: PartialEq + Clone>(
+pub fn clustered_bootstrap_ci<T: Eq + Hash>(
     values: &[f64],
     cluster_ids: &[T],
     confidence: f64,
@@ -169,18 +173,24 @@ pub fn clustered_bootstrap_ci<T: PartialEq + Clone>(
         return Err(StatsError::InvalidResampleCount(n_resamples));
     }
 
-    // Bucket observations by cluster (first-seen order).
-    let mut labels: Vec<T> = Vec::new();
+    // Bucket observations by cluster in O(N) (first-seen order, so results are
+    // deterministic in the input order rather than in hash order).
+    let mut slot_of: HashMap<&T, usize> = HashMap::new();
     let mut buckets: Vec<Vec<f64>> = Vec::new();
     for (value, id) in values.iter().zip(cluster_ids.iter()) {
-        if let Some(pos) = labels.iter().position(|l| *l == *id) {
-            buckets[pos].push(*value);
-        } else {
-            labels.push(id.clone());
-            buckets.push(vec![*value]);
-        }
+        let slot = *slot_of.entry(id).or_insert_with(|| {
+            buckets.push(Vec::new());
+            buckets.len() - 1
+        });
+        buckets[slot].push(*value);
     }
     let g = buckets.len();
+    if g < 2 {
+        // Resampling one cluster with replacement can only ever reproduce that
+        // cluster: the between-cluster variance is unidentified, exactly as in
+        // the closed-form clustered SE.
+        return Err(StatsError::TooFewSamples { got: g, need: 2 });
+    }
 
     let observed = mean(values);
     let mut rng = Xorshift64::new(seed);
@@ -270,6 +280,14 @@ mod tests {
             cr.standard_error,
             iid
         );
+    }
+
+    #[test]
+    fn cluster_bootstrap_rejects_single_cluster() {
+        assert!(matches!(
+            clustered_bootstrap_ci(&[1.0, 2.0, 3.0], &["a", "a", "a"], 0.95, 100, 1),
+            Err(StatsError::TooFewSamples { got: 1, need: 2 })
+        ));
     }
 
     #[test]

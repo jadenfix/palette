@@ -58,8 +58,8 @@
 //! discordant pairs — the sharper calculation §10.3 #5 calls for when the
 //! discordant rate is known.
 
-use crate::numerics::{ln_gamma, normal_quantile};
-use crate::{mcnemar_exact_p, normal_cdf, validate_alpha, StatsError};
+use crate::numerics::normal_quantile;
+use crate::{normal_cdf, validate_alpha, StatsError};
 
 /// The conventional power target for sample planning (§10.3 #5). A gate that does
 /// not specify otherwise plans for an 80 % chance of detecting the effect.
@@ -219,13 +219,27 @@ fn validate_unit_prob(name: &'static str, value: f64) -> Result<(), StatsError> 
     }
 }
 
-/// Binomial pmf `C(n, k) · pᵏ · (1−p)^{n−k}`, computed in log space via
-/// [`ln_gamma`] so the coefficient does not overflow.
-fn binomial_pmf(n: u64, k: u64, p: f64) -> f64 {
-    let n_f = n as f64;
-    let k_f = k as f64;
-    let ln_coeff = ln_gamma(n_f + 1.0) - ln_gamma(k_f + 1.0) - ln_gamma(n_f - k_f + 1.0);
-    (ln_coeff + k_f * p.ln() + (n_f - k_f) * (1.0 - p).ln()).exp()
+/// The exact-McNemar critical count for `d` discordant pairs at two-sided
+/// `alpha`: the largest `k` with `2·P(X ≤ k | X ~ Binomial(d, ½)) ≤ alpha`, so
+/// the rejection region is `{k ≤ k_lo} ∪ {k ≥ d − k_lo}`. `None` when even
+/// `k = 0` cannot reject. The lower CDF is accumulated with the *same* log-space
+/// recurrence as [`crate::numerics::binomial_lower_tail_half`] (same terms, same
+/// summation order), so the region agrees exactly with the p-value
+/// [`crate::mcnemar_exact_p`] reports. The scan stops by `k = ⌈d/2⌉`, where the
+/// doubled tail is ≥ 1, so it costs `O(k_lo)` — never more than `O(d/2)`.
+fn mcnemar_critical_count(d: u64, alpha: f64) -> Option<u64> {
+    let ln_half_pow_n = d as f64 * 0.5_f64.ln();
+    let mut ln_choose = 0.0_f64;
+    let mut cdf0 = ln_half_pow_n.exp(); // P(X ≤ 0) = 2^{−d}
+    let mut k_lo = None;
+    let mut k = 0_u64;
+    while 2.0 * cdf0 <= alpha && k <= d / 2 {
+        k_lo = Some(k);
+        k += 1;
+        ln_choose += ((d - k + 1) as f64).ln() - (k as f64).ln();
+        cdf0 += (ln_choose + ln_half_pow_n).exp();
+    }
+    k_lo
 }
 
 /// **Exact** power of the two-sided exact-McNemar (sign) test, *conditional on*
@@ -235,6 +249,9 @@ fn binomial_pmf(n: u64, k: u64, p: f64) -> f64 {
 /// The rejection region is `{k : exact two-sided p(k, D−k) ≤ alpha}` over the `D`
 /// discordant pairs (the same exact p-value the gate reports), and the power is
 /// the alternative-hypothesis mass on that region under `Binomial(D, pi)`.
+/// Because the region is the symmetric pair of tails `{k ≤ k_lo} ∪ {k ≥ D − k_lo}`,
+/// the power is two `O(k_lo)` log-space tail sums — `O(D)` in the worst case,
+/// not the `O(D²)` of testing every `k`'s p-value separately.
 ///
 /// Returns `0.0` when `n_discordant == 0` (no discordant pair can ever reject).
 ///
@@ -260,12 +277,26 @@ pub fn mcnemar_achieved_power(n_discordant: u64, pi: f64, alpha: f64) -> Result<
         return Ok(0.0);
     }
     let d = n_discordant;
-    let mut power = 0.0;
-    for k in 0..=d {
-        let p0 = mcnemar_exact_p(k, d - k)?;
-        if p0 <= alpha {
-            power += binomial_pmf(d, k, pi);
+    let Some(k_lo) = mcnemar_critical_count(d, alpha) else {
+        return Ok(0.0);
+    };
+    // Alternative-hypothesis mass on both rejection tails, sharing one binomial-
+    // coefficient recurrence: for j = 0..=k_lo the lower-tail term is
+    // C(d,j)·πʲ(1−π)^{d−j} and the upper-tail term (k = d − j) is
+    // C(d,j)·π^{d−j}(1−π)ʲ. k_lo < d/2 always (the doubled H0 tail at d/2 is
+    // ≥ 1 > α), so the two tails never overlap.
+    let ln_pi = pi.ln();
+    let ln_q = (1.0 - pi).ln();
+    let d_f = d as f64;
+    let mut ln_choose = 0.0_f64;
+    let mut power = 0.0_f64;
+    for j in 0..=k_lo {
+        if j > 0 {
+            ln_choose += ((d - j + 1) as f64).ln() - (j as f64).ln();
         }
+        let j_f = j as f64;
+        power += (ln_choose + j_f * ln_pi + (d_f - j_f) * ln_q).exp();
+        power += (ln_choose + (d_f - j_f) * ln_pi + j_f * ln_q).exp();
     }
     Ok(power.clamp(0.0, 1.0))
 }
@@ -278,11 +309,31 @@ pub fn mcnemar_achieved_power(n_discordant: u64, pi: f64, alpha: f64) -> Result<
 /// also depends on the discordant rate `b + c` over all pairs, which the caller
 /// scales separately.
 ///
+/// # Sawtooth non-monotonicity
+///
+/// The exact test's power is **not** monotone in `D`: each time `D` grows past a
+/// point where the discrete critical count cannot yet advance, the power *dips*
+/// before recovering (e.g. at `pi = 0.8, α = 0.05` the power first crosses 80 %
+/// at `D = 20`, but `D = 21` has power 0.769 and `D = 22` has 0.733). Returning
+/// the first crossing would therefore hand back a `D` at which collecting *one
+/// more pair* makes the study underpowered. This function instead returns the
+/// smallest `D` that starts a run of 64 consecutive sizes all meeting the
+/// target, so the recommendation is robust to the caller landing a few pairs
+/// above the plan. (The window is a pragmatic guard: observed dips
+/// extend a handful of sizes past a crossing, far less than 64.)
+///
+/// # Cost
+///
+/// Each power evaluation is `O(D)` (see [`mcnemar_achieved_power`]), so the scan
+/// is `O(D_req²)` overall — comfortable for any realistic planning target. A
+/// normal-approximation precheck rejects effectively-null `pi` (whose exact
+/// requirement would exceed the internal cap) before scanning.
+///
 /// # Errors
 ///
 /// [`StatsError::InvalidAlpha`], [`StatsError::InvalidParameter`] for `pi ∉ (0, 1)`
 /// or `pi == 0.5` (no effect — unbounded), or `power_target ∉ (0, 1)`, or when the
-/// target is not reached within the internal cap (a degenerate request).
+/// target is not reachable within the internal cap (a degenerate request).
 pub fn mcnemar_required_discordant(
     pi: f64,
     alpha: f64,
@@ -297,12 +348,46 @@ pub fn mcnemar_required_discordant(
             value: pi,
         });
     }
-    // The exact power is monotone in D for a fixed effect, so a linear scan to the
-    // first D that clears the target is correct. The cap is a generous backstop.
     const CAP: u64 = 100_000;
-    for d in 1..=CAP {
+    /// Consecutive sizes that must all meet the target before the run's start is
+    /// returned; see "Sawtooth non-monotonicity" above.
+    const STABLE_WINDOW: u64 = 64;
+
+    // Normal-approximation estimate of the required D (sign-test planning form:
+    // H0 SD is ½, H1 SD is √(π(1−π))). If even the approximation is far beyond
+    // the cap, refuse immediately instead of burning an O(CAP²) scan.
+    let z_alpha = normal_quantile(1.0 - alpha / 2.0);
+    let z_power = normal_quantile(power_target);
+    let delta = (pi - 0.5).abs();
+    let d_norm = ((z_alpha * 0.5 + z_power * (pi * (1.0 - pi)).sqrt()) / delta).powi(2);
+    if !d_norm.is_finite() || d_norm > 1.5 * CAP as f64 {
+        return Err(StatsError::InvalidParameter {
+            name: "n_discordant",
+            value: CAP as f64,
+        });
+    }
+
+    let mut run_start: Option<u64> = None;
+    let mut run_len = 0_u64;
+    for d in 1..=CAP + STABLE_WINDOW {
         if mcnemar_achieved_power(d, pi, alpha)? >= power_target {
-            return Ok(d as usize);
+            if run_start.is_none() {
+                run_start = Some(d);
+                run_len = 0;
+            }
+            run_len += 1;
+            if run_len >= STABLE_WINDOW {
+                // run_start is Some by construction inside this branch.
+                if let Some(start) = run_start {
+                    if start <= CAP {
+                        return Ok(start as usize);
+                    }
+                    break;
+                }
+            }
+        } else {
+            run_start = None;
+            run_len = 0;
         }
     }
     Err(StatsError::InvalidParameter {
@@ -528,6 +613,72 @@ mod tests {
         assert!(large > small, "{large} !> {small}");
         assert!(large > 0.95, "well-powered at 60 discordant: {large}");
         assert!((0.0..=1.0).contains(&small));
+    }
+
+    /// Pin the exact conditional power against reference values computed with
+    /// exact rational arithmetic (Python `fractions` over the full binomial),
+    /// so the `O(k_lo)` two-tail evaluation provably matches the brute-force
+    /// "test every k's exact p-value" definition.
+    #[test]
+    fn mcnemar_power_matches_exact_rational_reference() {
+        let cases: [(u64, f64, f64); 6] = [
+            (10, 0.8, 0.375_813_836_8),
+            (25, 0.8, 0.890_877_233_059_705),
+            (40, 0.8, 0.980_592_631_171_619),
+            (60, 0.8, 0.997_956_461_188_856),
+            (50, 0.65, 0.505_979_935_486_655),
+            (120, 0.65, 0.892_428_618_525_588),
+        ];
+        for (d, pi, want) in cases {
+            let got = mcnemar_achieved_power(d, pi, 0.05).unwrap_or_else(|err| panic!("{err}"));
+            assert!(
+                (got - want).abs() < 1e-12,
+                "power(D={d}, pi={pi}) = {got}, want {want}"
+            );
+        }
+    }
+
+    /// The exact power is NOT monotone in D (discrete critical-value sawtooth):
+    /// at pi = 0.8 it first crosses 80 % at D = 20 but dips back below at 21–22.
+    /// `mcnemar_required_discordant` must not return a first-crossing D whose
+    /// immediate successors are underpowered.
+    #[test]
+    fn mcnemar_required_discordant_is_sawtooth_safe() {
+        // Exhibit the sawtooth itself.
+        let at_20 = mcnemar_achieved_power(20, 0.8, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        let at_21 = mcnemar_achieved_power(21, 0.8, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        assert!(at_20 >= 0.8, "first crossing at D=20: {at_20}");
+        assert!(at_21 < 0.8, "sawtooth dip at D=21: {at_21}");
+
+        // The recommendation must start a stable run, not the first crossing.
+        let d = mcnemar_required_discordant(0.8, 0.05, 0.8).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(d, 23, "stable-run answer (reference: exact rational scan)");
+        for extra in 0..64u64 {
+            let p = mcnemar_achieved_power(d as u64 + extra, 0.8, 0.05)
+                .unwrap_or_else(|err| panic!("{err}"));
+            assert!(
+                p >= 0.8,
+                "D={} must stay powered, got {p}",
+                d as u64 + extra
+            );
+        }
+
+        // Independent second effect size: stable answer 97, not the crossing 90.
+        let d = mcnemar_required_discordant(0.65, 0.05, 0.8).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(d, 97);
+    }
+
+    /// An effectively-null pi whose exact requirement exceeds the cap must be
+    /// refused quickly by the normal-approximation precheck.
+    #[test]
+    fn mcnemar_required_discordant_refuses_untenable_effect() {
+        assert!(matches!(
+            mcnemar_required_discordant(0.500_5, 0.05, 0.8),
+            Err(StatsError::InvalidParameter {
+                name: "n_discordant",
+                ..
+            })
+        ));
     }
 
     #[test]

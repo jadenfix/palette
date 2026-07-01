@@ -1109,20 +1109,14 @@ fn power_annotations(
 }
 
 /// Unbiased (n − 1) sample standard deviation; 0.0 for fewer than two values.
+/// Delegates to `beater-stats` so the SD used to standardize effects here is
+/// the same SD the power/MDE formulas there assume.
 fn std_dev(values: &[f64]) -> f64 {
-    if values.len() < 2 {
-        return 0.0;
-    }
-    let m = mean(values);
-    let sum_sq: f64 = values.iter().map(|v| (v - m).powi(2)).sum();
-    (sum_sq / (values.len() as f64 - 1.0)).sqrt()
+    beater_stats::sample_std_dev(values)
 }
 
 fn mean(values: &[f64]) -> f64 {
-    if values.is_empty() {
-        return 0.0;
-    }
-    values.iter().sum::<f64>() / values.len() as f64
+    beater_stats::sample_mean(values)
 }
 
 /// What the platform can still provide when an [`EvalResult`] is rerun. The

@@ -720,10 +720,13 @@ pub(crate) fn looks_normal(values: &[f64]) -> bool {
 
 /// Standard normal CDF: Φ(x) = P(Z ≤ x).
 ///
-/// Implemented using the complementary error function (erfc) approximation from
-/// Abramowitz & Stegun §7.1.26 (max |ε| < 1.5×10⁻⁷ for all finite x).
+/// Implemented on Cody's rational-Chebyshev `erfc` (see [`numerics`]), which has
+/// ~1-ulp *relative* accuracy over the whole line — so deep-tail p-values
+/// (z-statistics beyond 5–6, tail mass below 10⁻⁷) keep their significant
+/// digits instead of inheriting the O(1) relative error of the previous
+/// Abramowitz & Stegun absolute-error polynomial.
 pub fn normal_cdf(x: f64) -> f64 {
-    0.5 * erfc_approx(-x / core::f64::consts::SQRT_2)
+    0.5 * numerics::erfc(-x / core::f64::consts::SQRT_2)
 }
 
 /// Inverse normal CDF: Φ⁻¹(p). Delegates to the crate's higher-accuracy Acklam
@@ -738,25 +741,6 @@ pub fn normal_quantile(p: f64) -> f64 {
         return f64::NAN;
     }
     numerics::normal_quantile(p)
-}
-
-// Abramowitz & Stegun §7.1.26 — erfc approximation (max |ε| < 1.5×10⁻⁷)
-fn erfc_approx(x: f64) -> f64 {
-    // Works for x ≥ 0; mirror for negative x
-    let (x_abs, flip) = if x < 0.0 { (-x, true) } else { (x, false) };
-
-    let t = 1.0 / (1.0 + 0.3275911 * x_abs);
-    let poly = t
-        * (0.254_829_592
-            + t * (-0.284_496_736
-                + t * (1.421_413_741 + t * (-1.453_152_027 + t * 1.061_405_429))));
-    let erfc = poly * (-x_abs * x_abs).exp();
-
-    if flip {
-        2.0 - erfc
-    } else {
-        erfc
-    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -819,21 +803,34 @@ impl Xorshift64 {
 // Internal utilities
 // ─────────────────────────────────────────────────────────────────────────────
 
-pub(crate) fn mean(values: &[f64]) -> f64 {
+/// Arithmetic mean; `0.0` for an empty slice (callers validate emptiness where
+/// it matters). Exported so callers standardizing effects (e.g. the gate's
+/// MDE/required-N annotations) use the *same* moments this crate's power
+/// formulas assume, instead of re-rolling their own.
+pub fn sample_mean(values: &[f64]) -> f64 {
     if values.is_empty() {
         return 0.0;
     }
     values.iter().sum::<f64>() / values.len() as f64
 }
 
+pub(crate) use sample_mean as mean;
+
 /// Unbiased (n − 1) sample variance; 0.0 for fewer than two values.
-pub(crate) fn sample_variance(values: &[f64]) -> f64 {
+pub fn sample_variance(values: &[f64]) -> f64 {
     if values.len() < 2 {
         return 0.0;
     }
     let m = mean(values);
     let sum_sq: f64 = values.iter().map(|v| (v - m).powi(2)).sum();
     sum_sq / (values.len() as f64 - 1.0)
+}
+
+/// Unbiased-variance sample standard deviation `√(s²)`; 0.0 for fewer than two
+/// values. This is the SD the standardized-effect (Cohen's *d*) power
+/// machinery expects for paired differences.
+pub fn sample_std_dev(values: &[f64]) -> f64 {
+    sample_variance(values).sqrt()
 }
 
 pub(crate) fn validate_alpha(alpha: f64) -> Result<(), StatsError> {
@@ -993,6 +990,33 @@ mod tests {
         assert!((normal_cdf(2.576) - 0.99500).abs() < 1e-4);
         // symmetry
         assert!((normal_cdf(1.0) + normal_cdf(-1.0) - 1.0).abs() < 1e-7);
+    }
+
+    /// Deep-tail relative accuracy: the p-value of a very large z-statistic must
+    /// keep its significant digits (the old absolute-error erfc lost all of them
+    /// past z ≈ 5.2). References are correctly-rounded Φ(z) values, kept
+    /// digit-for-digit as computed.
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn normal_cdf_deep_tail_relative_accuracy() {
+        let cases: [(f64, f64); 5] = [
+            (-4.0, 3.167_124_183_311_996_5e-5),
+            (-6.0, 9.865_876_450_377_011_92e-10),
+            (-8.0, 6.220_960_574_271_819_37e-16),
+            (-10.0, 7.619_853_024_160_593_04e-24),
+            (-20.0, 2.753_624_118_606_331_4e-89),
+        ];
+        for (z, want) in cases {
+            let got = normal_cdf(z);
+            let rel = ((got - want) / want).abs();
+            assert!(
+                rel < 1e-10,
+                "Φ({z}) = {got:e}, want {want:e}, rel = {rel:e}"
+            );
+            // Two-sided p as the tests compute it stays meaningful too.
+            let p = 2.0 * normal_cdf(-z.abs());
+            assert!(((p - 2.0 * want) / (2.0 * want)).abs() < 1e-10);
+        }
     }
 
     #[test]
