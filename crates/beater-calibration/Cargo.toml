@@ -11,6 +11,7 @@ anyhow.workspace = true
 async-trait.workspace = true
 beater-core = { path = "../beater-core" }
 beater-datasets = { path = "../beater-datasets" }
+beater-stats = { path = "../beater-stats" }
 beater-schema = { path = "../beater-schema" }
 beater-store = { path = "../beater-store" }
 chrono.workspace = true
