@@ -36,6 +36,10 @@ public enum ApiScope {
   
   DATASET_WRITE("dataset_write"),
   
+  SCENARIO_WRITE("scenario_write"),
+  
+  SCENARIO_READ("scenario_read"),
+  
   EVAL_RUN("eval_run"),
   
   PII_UNMASK("pii_unmask"),

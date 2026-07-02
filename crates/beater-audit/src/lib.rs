@@ -22,6 +22,7 @@ pub enum AuditAction {
     ApiKeyRevoke,
     ProviderSecretCreate,
     ProviderSecretRevoke,
+    ConnectorToolInvoke,
 }
 
 impl AuditAction {
@@ -32,6 +33,7 @@ impl AuditAction {
             Self::ApiKeyRevoke => "api_key_revoke",
             Self::ProviderSecretCreate => "provider_secret_create",
             Self::ProviderSecretRevoke => "provider_secret_revoke",
+            Self::ConnectorToolInvoke => "connector_tool_invoke",
         }
     }
 }
@@ -91,6 +93,18 @@ pub struct PiiUnmaskAuditInput {
     pub environment_id: Option<EnvironmentId>,
     pub actor_api_key_id: Option<ApiKeyId>,
     pub trace_id: TraceId,
+    pub outcome: AuditOutcome,
+    pub reason: Option<String>,
+    pub attributes: Value,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ConnectorToolInvokeAuditInput {
+    pub tenant_id: TenantId,
+    pub project_id: ProjectId,
+    pub environment_id: Option<EnvironmentId>,
+    pub actor_api_key_id: Option<ApiKeyId>,
+    pub tool_slug: String,
     pub outcome: AuditOutcome,
     pub reason: Option<String>,
     pub attributes: Value,
@@ -505,6 +519,21 @@ pub fn pii_unmask_event(input: PiiUnmaskAuditInput) -> AuditEventInsert {
         action: AuditAction::PiiUnmask,
         resource_type: "trace".to_string(),
         resource_id: input.trace_id.as_str().to_string(),
+        outcome: input.outcome,
+        reason: input.reason,
+        attributes: input.attributes,
+    }
+}
+
+pub fn connector_tool_invoke_event(input: ConnectorToolInvokeAuditInput) -> AuditEventInsert {
+    AuditEventInsert {
+        tenant_id: input.tenant_id,
+        project_id: input.project_id,
+        environment_id: input.environment_id,
+        actor_api_key_id: input.actor_api_key_id,
+        action: AuditAction::ConnectorToolInvoke,
+        resource_type: "connector_tool".to_string(),
+        resource_id: input.tool_slug,
         outcome: input.outcome,
         reason: input.reason,
         attributes: input.attributes,

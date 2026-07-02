@@ -68,6 +68,21 @@ export interface CalibrationReport {
     cohenKappa: number;
     /**
      * 
+     * @type {number}
+     * @memberof CalibrationReport
+     */
+    cohenKappaCiHigh?: number | null;
+    /**
+     * Percentile-bootstrap 95% confidence interval for `cohen_kappa`
+     * (multinomial resampling of the confusion table, deterministic seed).
+     * Kappa over small calibration samples is high-variance; a bare point
+     * estimate invites over-reading. Absent on pre-uncertainty reports.
+     * @type {number}
+     * @memberof CalibrationReport
+     */
+    cohenKappaCiLow?: number | null;
+    /**
+     * 
      * @type {CalibrationConfusion}
      * @memberof CalibrationReport
      */
@@ -126,6 +141,20 @@ export interface CalibrationReport {
      * @memberof CalibrationReport
      */
     observedAgreement: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof CalibrationReport
+     */
+    observedAgreementCiHigh?: number | null;
+    /**
+     * Wilson 95% confidence interval for `observed_agreement` — the honest
+     * width of an agreement estimate over a (typically small) human-labelled
+     * sample. Absent on reports persisted before uncertainty was reported.
+     * @type {number}
+     * @memberof CalibrationReport
+     */
+    observedAgreementCiLow?: number | null;
     /**
      * 
      * @type {CalibrationPolicy}
@@ -196,6 +225,8 @@ export function CalibrationReportFromJSONTyped(json: any, ignoreDiscriminator: b
         'brierScore': json['brier_score'],
         'calibrationReportId': json['calibration_report_id'],
         'cohenKappa': json['cohen_kappa'],
+        'cohenKappaCiHigh': json['cohen_kappa_ci_high'] == null ? undefined : json['cohen_kappa_ci_high'],
+        'cohenKappaCiLow': json['cohen_kappa_ci_low'] == null ? undefined : json['cohen_kappa_ci_low'],
         'confusion': CalibrationConfusionFromJSON(json['confusion']),
         'createdAt': (new Date(json['created_at'])),
         'datasetId': json['dataset_id'],
@@ -206,6 +237,8 @@ export function CalibrationReportFromJSONTyped(json: any, ignoreDiscriminator: b
         'expectedCalibrationError': json['expected_calibration_error'],
         'items': ((json['items'] as Array<any>).map(CalibrationItemFromJSON)),
         'observedAgreement': json['observed_agreement'],
+        'observedAgreementCiHigh': json['observed_agreement_ci_high'] == null ? undefined : json['observed_agreement_ci_high'],
+        'observedAgreementCiLow': json['observed_agreement_ci_low'] == null ? undefined : json['observed_agreement_ci_low'],
         'policy': CalibrationPolicyFromJSON(json['policy']),
         'projectId': json['project_id'],
         'reliabilityBins': ((json['reliability_bins'] as Array<any>).map(ReliabilityBinFromJSON)),
@@ -228,6 +261,8 @@ export function CalibrationReportToJSONTyped(value?: CalibrationReport | null, i
         'brier_score': value['brierScore'],
         'calibration_report_id': value['calibrationReportId'],
         'cohen_kappa': value['cohenKappa'],
+        'cohen_kappa_ci_high': value['cohenKappaCiHigh'],
+        'cohen_kappa_ci_low': value['cohenKappaCiLow'],
         'confusion': CalibrationConfusionToJSON(value['confusion']),
         'created_at': ((value['createdAt']).toISOString()),
         'dataset_id': value['datasetId'],
@@ -238,6 +273,8 @@ export function CalibrationReportToJSONTyped(value?: CalibrationReport | null, i
         'expected_calibration_error': value['expectedCalibrationError'],
         'items': ((value['items'] as Array<any>).map(CalibrationItemToJSON)),
         'observed_agreement': value['observedAgreement'],
+        'observed_agreement_ci_high': value['observedAgreementCiHigh'],
+        'observed_agreement_ci_low': value['observedAgreementCiLow'],
         'policy': CalibrationPolicyToJSON(value['policy']),
         'project_id': value['projectId'],
         'reliability_bins': ((value['reliabilityBins'] as Array<any>).map(ReliabilityBinToJSON)),

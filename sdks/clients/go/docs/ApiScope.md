@@ -9,6 +9,10 @@
 
 * `DATASET_WRITE` (value: `"dataset_write"`)
 
+* `SCENARIO_WRITE` (value: `"scenario_write"`)
+
+* `SCENARIO_READ` (value: `"scenario_read"`)
+
 * `EVAL_RUN` (value: `"eval_run"`)
 
 * `PII_UNMASK` (value: `"pii_unmask"`)

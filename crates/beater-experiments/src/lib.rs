@@ -8,9 +8,9 @@ use beater_core::{
 };
 use beater_datasets::DatasetVersionSnapshot;
 use beater_eval::{
-    compare_paired_scores_with_design, conservative_gate_design, evaluate_deterministic,
-    EvaluationCase, EvaluatorSpec, ExperimentComparison, GateDecision, GatePolicy,
-    MultiplicityPolicy, ScoreResult,
+    compare_paired_scores_cuped, compare_paired_scores_with_design, conservative_gate_design,
+    evaluate_deterministic, EvaluationCase, EvaluatorSpec, ExperimentComparison, GateDecision,
+    GatePolicy, MultiplicityPolicy, ScoreResult, VarianceReduction,
 };
 use beater_judge::{
     GenerationRequest, JudgeBroker, JudgeBrokerOutcome, JudgeBrokerRequest, ProviderCredentials,
@@ -1469,6 +1469,15 @@ pub struct CaseScore {
     pub baseline_score: f64,
     /// Score of the candidate policy on the same case (paired with baseline).
     pub candidate_score: f64,
+    /// Optional pre-experiment covariate for CUPED variance reduction (§10.3 #4 /
+    /// #436 item 4), consumed by the gate only when the round's design declares
+    /// [`VarianceReduction::Cuped`]. It MUST be independent of the candidate under
+    /// test — a per-case difficulty measured before this experiment is the
+    /// canonical choice; **never** an arm's own score (that un-pairs the design,
+    /// see [`beater_stats::cuped_adjust`]). `None` disables CUPED for the case; the
+    /// gate only applies CUPED when *every* Test case carries one.
+    #[serde(default)]
+    pub covariate: Option<f64>,
 }
 
 /// Scores a proposed [`CandidateChange`] against a set of cases — the seam the
@@ -1537,6 +1546,15 @@ pub struct OptimizationRoundConfig {
     /// budget): the guard only ever *withdraws* a within-round `Pass`, never grants
     /// one, and is a no-op when the round proposes a single candidate.
     pub multiplicity: MultiplicityPolicy,
+    /// Variance-reduction policy for the held-out gate (§10.3 #4 / #436 item 4).
+    /// [`VarianceReduction::Cuped`] regresses a pre-experiment covariate (carried
+    /// per-case on [`CaseScore::covariate`]) out of the paired difference before
+    /// the gate's t-test, tightening the CI without moving the point estimate — so
+    /// a borderline-underpowered round can resolve to a `Pass` on the same data.
+    /// [`VarianceReduction::None`] (the default) leaves the gate unchanged. Like
+    /// the multiplicity guard it is safe-by-construction: it never manufactures a
+    /// win, and it is a no-op unless every Test case carries a covariate.
+    pub variance_reduction: VarianceReduction,
     /// Largest benign generalization gap for [`assess_generalization_gap`]
     /// (e.g. `0.0` — "held-out lift must not be significantly below the
     /// optimization-split lift").
@@ -1570,6 +1588,7 @@ impl OptimizationRoundConfig {
             strategy,
             gate_policy,
             multiplicity: MultiplicityPolicy::Holm,
+            variance_reduction: VarianceReduction::None,
             overfit_tolerance: 0.0,
             overfit_confidence: 0.95,
             overfit_resamples: 2000,
@@ -1868,10 +1887,17 @@ fn gate_candidate(
     // enforces `EvalDesign::permit_pass` too (a structurally-invalid design can
     // never certify a Pass). The conservative default design always permits pass,
     // so this changes no accept/reject outcome (§1 #9, §10.3).
-    let gate_design = conservative_gate_design(&cfg.gate_policy, test_baseline.len());
-    let gate = compare_paired_scores_with_design(
+    let mut gate_design = conservative_gate_design(&cfg.gate_policy, test_baseline.len());
+    gate_design.variance_reduction = cfg.variance_reduction.clone();
+    // Pre-experiment covariate for CUPED, only when *every* Test case carries one
+    // (a partial covariate is a data bug — fall back to the unadjusted gate rather
+    // than impute). `compare_paired_scores_cuped` further no-ops unless the design
+    // pre-registers CUPED, so this changes nothing for the default (None) policy.
+    let test_covariate = split_covariate(scores, Split::Test);
+    let gate = compare_paired_scores_cuped(
         &test_baseline,
         &test_candidate,
+        test_covariate.as_deref(),
         &cfg.gate_policy,
         &gate_design,
     )
@@ -1909,6 +1935,17 @@ fn split_scores(scores: &[CaseScore], split: Split) -> (Vec<f64>, Vec<f64>) {
         .filter(|s| s.split == split)
         .map(|s| (s.baseline_score, s.candidate_score))
         .unzip()
+}
+
+/// The per-case CUPED covariates for a single [`Split`], in the same case order
+/// as [`split_scores`]. Returns `Some` only when *every* case in the split carries
+/// a covariate (and the split is non-empty); a partial covariate is a data bug, so
+/// the gate falls back to the unadjusted path rather than imputing a value.
+fn split_covariate(scores: &[CaseScore], split: Split) -> Option<Vec<f64>> {
+    let in_split = scores.iter().filter(|s| s.split == split);
+    let covariates: Vec<f64> = in_split.clone().filter_map(|s| s.covariate).collect();
+    let count = in_split.count();
+    (count > 0 && covariates.len() == count).then_some(covariates)
 }
 
 #[cfg(test)]
@@ -2232,6 +2269,7 @@ mod tests {
                     split,
                     baseline_score: *b,
                     candidate_score: *c,
+                    covariate: None,
                 });
             }
             for (b, c) in &self.test {
@@ -2239,6 +2277,7 @@ mod tests {
                     split: Split::Test,
                     baseline_score: *b,
                     candidate_score: *c,
+                    covariate: None,
                 });
             }
             Ok(out)
@@ -2260,6 +2299,128 @@ mod tests {
                 comparison_count: 1,
             },
         )
+    }
+
+    /// A candidate + per-case scores where the held-out Test lift is a fixed
+    /// +0.05 buried under noise that a pre-experiment covariate almost fully
+    /// explains, plus a clean matching optimization-split lift (so there is no
+    /// generalization gap). This is the fixture the CUPED wiring test drives
+    /// straight through `gate_candidate`.
+    fn cuped_round_scores() -> Vec<CaseScore> {
+        let covariate = [0.0, 1.0, 0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6, 0.45, 0.55];
+        let candidate = [
+            0.405, 0.695, 0.435, 0.665, 0.465, 0.635, 0.495, 0.605, 0.525, 0.575, 0.54, 0.56,
+        ];
+        let mut scores = Vec::new();
+        // Held-out Test split: noisy but covariate-explained (baseline constant, so
+        // the covariate is independent of it — a valid difficulty proxy).
+        for (x, c) in covariate.iter().zip(candidate.iter()) {
+            scores.push(CaseScore {
+                split: Split::Test,
+                baseline_score: 0.5,
+                candidate_score: *c,
+                covariate: Some(*x),
+            });
+        }
+        // Optimization split: the same +0.05 mean lift, cleanly, so the
+        // generalization gap is ~0 and the anti-overfit guardrail stays quiet.
+        for i in 0..8 {
+            let split = if i % 2 == 0 { Split::Train } else { Split::Val };
+            scores.push(CaseScore {
+                split,
+                baseline_score: 0.50,
+                candidate_score: 0.55,
+                covariate: None,
+            });
+        }
+        scores
+    }
+
+    fn cuped_candidate() -> CandidateChange {
+        CandidateChange {
+            kind: ChangeKind::SystemPrompt,
+            target: "system_prompt".to_string(),
+            description: "tighten the instructions".to_string(),
+            rationale: "reduce variance on hard cases".to_string(),
+            proposed_by: OptimizerStrategy::LlmRewrite,
+        }
+    }
+
+    /// The load-bearing wiring test: the SAME held-out scores are `Inconclusive`
+    /// through the default (no variance reduction) gate, but a pre-registered CUPED
+    /// covariate — threaded via `CaseScore::covariate` and
+    /// `OptimizationRoundConfig::variance_reduction` — resolves it to a `Pass` via
+    /// the regression estimator. Proves the covariate and its population mean
+    /// actually reach `compare_paired_scores_cuped` inside `gate_candidate`.
+    #[test]
+    fn cuped_covariate_flips_the_round_gate_from_inconclusive_to_pass() {
+        let scores = cuped_round_scores();
+        let candidate = cuped_candidate();
+
+        // Default policy: no variance reduction → the noise leaves it underpowered.
+        let plain_cfg = round_config(OptimizerStrategy::LlmRewrite);
+        assert_eq!(plain_cfg.variance_reduction, VarianceReduction::None);
+        let plain =
+            gate_candidate(&candidate, &scores, &plain_cfg).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            plain.gate.decision,
+            GateDecision::Inconclusive,
+            "without CUPED the round gate is underpowered"
+        );
+        assert!(!plain.accepted);
+
+        // Same scores + a pre-registered covariate (known population mean 0.7,
+        // above this sample's 0.5) → the regression estimator corrects the lift
+        // upward and the variance-reduced CI clears the bound → Pass.
+        let mut cuped_cfg = round_config(OptimizerStrategy::LlmRewrite);
+        cuped_cfg.variance_reduction = VarianceReduction::Cuped {
+            covariate: "prior_difficulty".to_string(),
+            population_mean: 0.7,
+        };
+        let cuped =
+            gate_candidate(&candidate, &scores, &cuped_cfg).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            cuped.gate.decision,
+            GateDecision::Pass,
+            "CUPED resolves the round gate to a Pass"
+        );
+        // The regression estimator MOVES the estimate off the plain mean and the
+        // variance-reduced CI is narrower — both are how CUPED earns the Pass.
+        assert!(
+            cuped.gate.delta > plain.gate.delta,
+            "estimate corrected upward"
+        );
+        assert!(
+            cuped.gate.ci_high - cuped.gate.ci_low < plain.gate.ci_high - plain.gate.ci_low,
+            "CUPED must narrow the round gate's CI"
+        );
+        // No generalization gap in this fixture, so the Pass is a real acceptance.
+        assert!(
+            cuped.accepted,
+            "a covariate-resolved Pass with no overfit gap must be accepted"
+        );
+    }
+
+    /// A partial covariate (not every Test case carries one) must fall back to the
+    /// unadjusted gate rather than impute — identical to the default policy.
+    #[test]
+    fn cuped_round_falls_back_when_covariate_is_partial() {
+        let mut scores = cuped_round_scores();
+        // Drop the covariate on one Test case.
+        if let Some(first_test) = scores.iter_mut().find(|s| s.split == Split::Test) {
+            first_test.covariate = None;
+        }
+        let candidate = cuped_candidate();
+        let mut cfg = round_config(OptimizerStrategy::LlmRewrite);
+        cfg.variance_reduction = VarianceReduction::Cuped {
+            covariate: "prior_difficulty".to_string(),
+            population_mean: 0.7,
+        };
+        let evaluated =
+            gate_candidate(&candidate, &scores, &cfg).unwrap_or_else(|err| panic!("{err}"));
+        // Fell back to the plain paired-t, so still Inconclusive on the raw noise.
+        assert_eq!(evaluated.gate.decision, GateDecision::Inconclusive);
+        assert_eq!(evaluated.gate.test, beater_eval::StatisticalTest::PairedT);
     }
 
     /// Test A: a candidate that improves uniformly across every split clears the

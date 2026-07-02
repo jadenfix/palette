@@ -20,6 +20,10 @@ pub enum ApiScope {
     TraceRead,
     #[serde(rename = "dataset_write")]
     DatasetWrite,
+    #[serde(rename = "scenario_write")]
+    ScenarioWrite,
+    #[serde(rename = "scenario_read")]
+    ScenarioRead,
     #[serde(rename = "eval_run")]
     EvalRun,
     #[serde(rename = "pii_unmask")]
@@ -35,6 +39,8 @@ impl std::fmt::Display for ApiScope {
             Self::TraceWrite => write!(f, "trace_write"),
             Self::TraceRead => write!(f, "trace_read"),
             Self::DatasetWrite => write!(f, "dataset_write"),
+            Self::ScenarioWrite => write!(f, "scenario_write"),
+            Self::ScenarioRead => write!(f, "scenario_read"),
             Self::EvalRun => write!(f, "eval_run"),
             Self::PiiUnmask => write!(f, "pii_unmask"),
             Self::Admin => write!(f, "admin"),

@@ -38,7 +38,9 @@ public enum AuditAction {
 
   PROVIDER_SECRET_CREATE("provider_secret_create"),
 
-  PROVIDER_SECRET_REVOKE("provider_secret_revoke");
+  PROVIDER_SECRET_REVOKE("provider_secret_revoke"),
+
+  CONNECTOR_TOOL_INVOKE("connector_tool_invoke");
 
   private String value;
 

@@ -29,6 +29,8 @@ class ApiScope(str, Enum):
     TRACE_WRITE = 'trace_write'
     TRACE_READ = 'trace_read'
     DATASET_WRITE = 'dataset_write'
+    SCENARIO_WRITE = 'scenario_write'
+    SCENARIO_READ = 'scenario_read'
     EVAL_RUN = 'eval_run'
     PII_UNMASK = 'pii_unmask'
     ADMIN = 'admin'

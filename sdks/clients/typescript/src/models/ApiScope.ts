@@ -21,6 +21,8 @@ export const ApiScope = {
     TraceWrite: 'trace_write',
     TraceRead: 'trace_read',
     DatasetWrite: 'dataset_write',
+    ScenarioWrite: 'scenario_write',
+    ScenarioRead: 'scenario_read',
     EvalRun: 'eval_run',
     PiiUnmask: 'pii_unmask',
     Admin: 'admin'

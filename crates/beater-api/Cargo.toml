@@ -25,6 +25,7 @@ beater-judge = { path = "../beater-judge" }
 beater-oauth = { path = "../beater-oauth" }
 beater-otlp = { path = "../beater-otlp" }
 beater-prompts = { path = "../beater-prompts" }
+beater-scenarios = { path = "../beater-scenarios" }
 beater-schema = { path = "../beater-schema" }
 beater-search = { path = "../beater-search" }
 beater-security = { path = "../beater-security" }
@@ -38,6 +39,7 @@ percent-encoding.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 utoipa.workspace = true
+uuid.workspace = true
 
 [features]
 # Hosted-only: billing/Stripe is a hosted concern kept out of the OSS default

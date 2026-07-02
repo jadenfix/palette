@@ -9,7 +9,8 @@
 //! (the jackknife skewness of the statistic), restoring ~nominal coverage.
 
 use crate::numerics::normal_quantile;
-use crate::{mean, normal_cdf, BootstrapInterval, ConfidenceInterval, StatsError, Xorshift64};
+use crate::resampling::{percentile_endpoints, Bootstrap};
+use crate::{mean, normal_cdf, resample_mean, BootstrapInterval, ConfidenceInterval, StatsError};
 
 /// Outcome of a paired bootstrap test over per-pair differences.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -82,19 +83,28 @@ pub fn bootstrap_bca_ci(
 
     let theta_hat = mean(sample_a) - mean(sample_b);
 
-    let mut rng = Xorshift64::new(seed);
-    let mut replicates: Vec<f64> = Vec::with_capacity(n_resamples);
-    let mut n_below = 0usize;
-    for _ in 0..n_resamples {
-        let ra = resample_mean(sample_a, &mut rng);
-        let rb = resample_mean(sample_b, &mut rng);
-        let theta = ra - rb;
+    // Replicates come from the same shared engine as `bootstrap_diff_ci`, so each
+    // is a pure function of `(seed, i)`: order-independent, bit-identical between
+    // the sequential and `parallel` builds, and — for the same `(samples, seed)` —
+    // equal to the percentile bootstrap's replicate set. BCa reads several
+    // data-dependent quantiles, so it keeps the fully sorted vector below rather
+    // than quickselecting two endpoints.
+    let mut replicates = Bootstrap::new(n_resamples, seed)
+        .replicates(|rng| resample_mean(sample_a, rng) - resample_mean(sample_b, rng));
+    // Bias-correction count with midrank tie handling: replicates exactly equal
+    // to θ̂ contribute ½. With a discrete statistic (e.g. means of 0/1 scores)
+    // many replicates tie with θ̂, and the strict `<` count would bias z₀
+    // downward; the midrank convention keeps z₀ ≈ 0 for a symmetric, tie-heavy
+    // bootstrap distribution.
+    let mut n_below = 0.0_f64;
+    for &theta in &replicates {
         if theta < theta_hat {
-            n_below += 1;
+            n_below += 1.0;
+        } else if theta == theta_hat {
+            n_below += 0.5;
         }
-        replicates.push(theta);
     }
-    replicates.sort_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
+    replicates.sort_by(|x, y| x.total_cmp(y));
 
     let alpha = 1.0 - confidence;
     let percentile = |q: f64| -> f64 {
@@ -107,7 +117,7 @@ pub fn bootstrap_bca_ci(
     let percentile_lo = percentile(alpha / 2.0);
     let percentile_hi = percentile(1.0 - alpha / 2.0);
 
-    let frac_below = n_below as f64 / n_resamples as f64;
+    let frac_below = n_below / n_resamples as f64;
     let z0 = if frac_below <= 0.0 || frac_below >= 1.0 {
         // Degenerate bias correction — use the percentile interval.
         return Ok(BootstrapInterval {
@@ -220,27 +230,17 @@ pub fn paired_bootstrap_test(
     }
 
     let estimate = mean(differences);
-    let mut rng = Xorshift64::new(seed);
-    let mut means: Vec<f64> = Vec::with_capacity(n_resamples);
-    let mut le_zero = 0usize;
-    let mut ge_zero = 0usize;
-    for _ in 0..n_resamples {
-        let m = resample_mean(differences, &mut rng);
-        if m <= 0.0 {
-            le_zero += 1;
-        }
-        if m >= 0.0 {
-            ge_zero += 1;
-        }
-        means.push(m);
-    }
-    means.sort_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
+    // Resample the mean difference through the shared engine, then quickselect the
+    // two percentile endpoints.
+    let mut means =
+        Bootstrap::new(n_resamples, seed).replicates(|rng| resample_mean(differences, rng));
+    let le_zero = means.iter().filter(|m| **m <= 0.0).count();
+    let ge_zero = means.iter().filter(|m| **m >= 0.0).count();
 
-    let lo_idx = ((alpha / 2.0) * n_resamples as f64).floor() as usize;
-    let hi_idx = ((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize;
+    let (low, high) = percentile_endpoints(&mut means, alpha);
     let ci = ConfidenceInterval {
-        low: means[lo_idx.min(n_resamples - 1)],
-        high: means[hi_idx.min(n_resamples - 1)],
+        low,
+        high,
         confidence: 1.0 - alpha,
     };
 
@@ -253,16 +253,6 @@ pub fn paired_bootstrap_test(
         p_value,
         n_resamples,
     })
-}
-
-/// Mean of a with-replacement resample of `xs`, drawing `xs.len()` draws.
-fn resample_mean(xs: &[f64], rng: &mut Xorshift64) -> f64 {
-    let n = xs.len();
-    let mut sum = 0.0;
-    for _ in 0..n {
-        sum += xs[rng.next_index(n)];
-    }
-    sum / n as f64
 }
 
 #[cfg(test)]

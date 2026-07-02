@@ -8,7 +8,10 @@
 //! `cluster_key` (`beater-design`); this module only consumes the resolved
 //! per-observation cluster labels.
 
-use crate::{mean, StatsError, Xorshift64};
+use crate::numerics::{students_t_quantile, students_t_two_sided_p};
+use crate::{mean, ConfidenceInterval, StatsError, TestKind, TestOutcome};
+use std::collections::HashMap;
+use std::hash::Hash;
 
 /// A cluster-robust standard error of a sample mean, with the cluster and
 /// observation counts that produced it.
@@ -61,7 +64,7 @@ pub struct ClusteredStandardError {
 /// assert_eq!(cr.n_clusters, 2);
 /// # Ok::<(), beater_stats::StatsError>(())
 /// ```
-pub fn clustered_standard_error<T: PartialEq>(
+pub fn clustered_standard_error<T: Eq + Hash>(
     values: &[f64],
     cluster_ids: &[T],
 ) -> Result<ClusteredStandardError, StatsError> {
@@ -83,18 +86,18 @@ pub fn clustered_standard_error<T: PartialEq>(
     let n = values.len();
     let avg = mean(values);
 
-    // Group residual sums by cluster, preserving first-seen order. Linear scan is
-    // fine for eval-scale N and keeps the crate dependency-free.
-    let mut labels: Vec<&T> = Vec::new();
+    // Group residual sums by cluster in O(N) via a label→slot map (the previous
+    // linear label scan was O(N·G) — quadratic when most clusters are
+    // singletons, the common per-conversation case).
+    let mut slot_of: HashMap<&T, usize> = HashMap::new();
     let mut cluster_sums: Vec<f64> = Vec::new();
     for (value, id) in values.iter().zip(cluster_ids.iter()) {
         let residual = value - avg;
-        if let Some(pos) = labels.iter().position(|l| **l == *id) {
-            cluster_sums[pos] += residual;
-        } else {
-            labels.push(id);
-            cluster_sums.push(residual);
-        }
+        let slot = *slot_of.entry(id).or_insert_with(|| {
+            cluster_sums.push(0.0);
+            cluster_sums.len() - 1
+        });
+        cluster_sums[slot] += residual;
     }
 
     let g = cluster_sums.len();
@@ -110,6 +113,69 @@ pub fn clustered_standard_error<T: PartialEq>(
         standard_error: variance.sqrt(),
         n_clusters: g,
         n,
+    })
+}
+
+/// Cluster-robust paired t-test over per-pair `differences`, with
+/// `cluster_ids[i]` the cluster label of pair `i` (§10.3 #1).
+///
+/// The estimate is the plain mean difference; its standard error is the CR1
+/// sandwich from [`clustered_standard_error`], and the reference distribution is
+/// a Student's *t* with **`G − 1` degrees of freedom** (`G` = number of
+/// clusters), the standard finite-cluster reference for a cluster-robust mean.
+/// Using `n − 1` would pretend every observation is independent — exactly the
+/// too-small-SE failure mode clustering exists to prevent.
+///
+/// Degenerate case: when every cluster sum of residuals is zero (all clusters
+/// agree exactly), the SE is 0 and the test mirrors [`crate::paired_t_test`]'s
+/// degenerate convention (p = 1 at zero estimate, else 0; point CI).
+///
+/// # Errors
+///
+/// Same input validation as [`clustered_standard_error`] (including fewer than
+/// two clusters), plus [`StatsError::InvalidAlpha`].
+pub fn clustered_paired_t_test<T: Eq + Hash>(
+    differences: &[f64],
+    cluster_ids: &[T],
+    alpha: f64,
+) -> Result<TestOutcome, StatsError> {
+    crate::validate_alpha(alpha)?;
+    let cr = clustered_standard_error(differences, cluster_ids)?;
+    let estimate = mean(differences);
+    let df = cr.n_clusters as f64 - 1.0;
+
+    let (p_value, ci) = if cr.standard_error == 0.0 {
+        let p = if estimate == 0.0 { 1.0 } else { 0.0 };
+        (
+            p,
+            ConfidenceInterval {
+                low: estimate,
+                high: estimate,
+                confidence: 1.0 - alpha,
+            },
+        )
+    } else {
+        let t = estimate / cr.standard_error;
+        let p = students_t_two_sided_p(t, df);
+        let crit = students_t_quantile(1.0 - alpha / 2.0, df);
+        let half = crit * cr.standard_error;
+        (
+            p,
+            ConfidenceInterval {
+                low: estimate - half,
+                high: estimate + half,
+                confidence: 1.0 - alpha,
+            },
+        )
+    };
+
+    Ok(TestOutcome {
+        estimate,
+        ci: Some(ci),
+        p_value,
+        test: TestKind::ClusteredPairedT,
+        df: Some(df),
+        sample_size: differences.len(),
     })
 }
 
@@ -135,10 +201,12 @@ pub fn iid_standard_error(values: &[f64]) -> Result<f64, StatsError> {
 ///
 /// # Errors
 ///
-/// Same input validation as [`clustered_standard_error`], plus
+/// Same input validation as [`clustered_standard_error`] — including
+/// [`StatsError::TooFewSamples`] for fewer than two clusters, where a cluster
+/// bootstrap would silently return a zero-width interval — plus
 /// [`StatsError::InvalidParameter`] for a `confidence` outside `(0, 1)` and
 /// [`StatsError::InvalidResampleCount`] for `n_resamples == 0`.
-pub fn clustered_bootstrap_ci<T: PartialEq + Clone>(
+pub fn clustered_bootstrap_ci<T: Eq + Hash>(
     values: &[f64],
     cluster_ids: &[T],
     confidence: f64,
@@ -169,40 +237,47 @@ pub fn clustered_bootstrap_ci<T: PartialEq + Clone>(
         return Err(StatsError::InvalidResampleCount(n_resamples));
     }
 
-    // Bucket observations by cluster (first-seen order).
-    let mut labels: Vec<T> = Vec::new();
-    let mut buckets: Vec<Vec<f64>> = Vec::new();
+    // Reduce each cluster to its `(sum, count)` in O(N) (first-seen order, so
+    // results are deterministic in the input order rather than in hash order).
+    // Carrying only the partial sums means the resample loop below touches `G`
+    // scalars per draw instead of rescanning all `N` observations —
+    // O(n_resamples · G) rather than O(n_resamples · N) — and never materialises
+    // per-cluster value vectors.
+    let mut slot_of: HashMap<&T, usize> = HashMap::new();
+    let mut clusters: Vec<(f64, usize)> = Vec::new();
     for (value, id) in values.iter().zip(cluster_ids.iter()) {
-        if let Some(pos) = labels.iter().position(|l| *l == *id) {
-            buckets[pos].push(*value);
-        } else {
-            labels.push(id.clone());
-            buckets.push(vec![*value]);
-        }
+        let slot = *slot_of.entry(id).or_insert_with(|| {
+            clusters.push((0.0, 0));
+            clusters.len() - 1
+        });
+        clusters[slot].0 += *value;
+        clusters[slot].1 += 1;
     }
-    let g = buckets.len();
+    let g = clusters.len();
+    if g < 2 {
+        // Resampling one cluster with replacement can only ever reproduce that
+        // cluster: the between-cluster variance is unidentified, exactly as in
+        // the closed-form clustered SE.
+        return Err(StatsError::TooFewSamples { got: g, need: 2 });
+    }
 
     let observed = mean(values);
-    let mut rng = Xorshift64::new(seed);
-    let mut means: Vec<f64> = Vec::with_capacity(n_resamples);
-    for _ in 0..n_resamples {
+    // Resample whole clusters through the shared engine (per-index substreams,
+    // parallel under the `parallel` feature), then quickselect the endpoints.
+    let mut means = crate::resampling::Bootstrap::new(n_resamples, seed).replicates(|rng| {
         let mut sum = 0.0;
         let mut count = 0usize;
         for _ in 0..g {
-            let bucket = &buckets[rng.next_index(g)];
-            sum += bucket.iter().sum::<f64>();
-            count += bucket.len();
+            let (cluster_sum, cluster_len) = clusters[rng.next_index(g)];
+            sum += cluster_sum;
+            count += cluster_len;
         }
-        means.push(sum / count as f64);
-    }
-    means.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-
-    let alpha = 1.0 - confidence;
-    let lo_idx = ((alpha / 2.0) * n_resamples as f64).floor() as usize;
-    let hi_idx = ((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize;
+        sum / count as f64
+    });
+    let (lower, upper) = crate::resampling::percentile_endpoints(&mut means, 1.0 - confidence);
     Ok(crate::BootstrapInterval {
-        lower: means[lo_idx.min(n_resamples - 1)],
-        upper: means[hi_idx.min(n_resamples - 1)],
+        lower,
+        upper,
         estimate: observed,
         n_resamples,
     })
@@ -273,6 +348,76 @@ mod tests {
     }
 
     #[test]
+    fn clustered_paired_t_uses_g_minus_1_df_and_cr_se() {
+        // Two tight clusters that disagree: 6 observations but only 2 independent
+        // units. The clustered test must be far more cautious than the naive
+        // paired t over 6 "independent" points.
+        let diffs = [0.30, 0.31, 0.29, -0.30, -0.31, -0.29];
+        let clusters = ["a", "a", "a", "b", "b", "b"];
+        let out =
+            clustered_paired_t_test(&diffs, &clusters, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(out.test, crate::TestKind::ClusteredPairedT);
+        assert_eq!(out.df, Some(1.0), "df must be G − 1 = 1");
+        assert_eq!(out.sample_size, 6);
+        assert!(
+            out.p_value > 0.3,
+            "2 disagreeing clusters cannot be significant: p = {}",
+            out.p_value
+        );
+        // The naive i.i.d. paired t would (wrongly) see nothing close to this
+        // uncertainty; its CI is far narrower.
+        let naive = crate::paired_t_test(&diffs, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        let (naive_ci, cluster_ci) = (
+            naive.ci.unwrap_or_else(|| panic!("ci")),
+            out.ci.unwrap_or_else(|| panic!("ci")),
+        );
+        assert!(
+            (cluster_ci.high - cluster_ci.low) > 2.0 * (naive_ci.high - naive_ci.low),
+            "clustered CI must be much wider: {cluster_ci:?} vs {naive_ci:?}"
+        );
+    }
+
+    #[test]
+    fn clustered_paired_t_consistent_shift_across_many_clusters() {
+        // A consistent +0.2 shift across 12 independent clusters is significant.
+        let diffs: Vec<f64> = (0..24)
+            .map(|i| 0.2 + 0.01 * ((i % 3) as f64 - 1.0))
+            .collect();
+        let clusters: Vec<usize> = (0..24).map(|i| i / 2).collect();
+        let out =
+            clustered_paired_t_test(&diffs, &clusters, 0.05).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(out.df, Some(11.0));
+        assert!(out.p_value < 1e-6, "p = {}", out.p_value);
+        let ci = out.ci.unwrap_or_else(|| panic!("ci"));
+        assert!(ci.low > 0.0, "CI must exclude zero: {ci:?}");
+        assert!((out.estimate - 0.2).abs() < 1e-9);
+    }
+
+    #[test]
+    fn clustered_paired_t_degenerate_and_errors() {
+        // All cluster residual sums zero (identical clusters): degenerate SE.
+        let out = clustered_paired_t_test(&[0.1, 0.1, 0.1, 0.1], &["a", "a", "b", "b"], 0.05)
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(out.p_value, 0.0, "constant non-zero shift is a sure effect");
+        assert!(matches!(
+            clustered_paired_t_test(&[0.1, 0.2], &["a", "a"], 0.05),
+            Err(StatsError::TooFewSamples { .. })
+        ));
+        assert!(matches!(
+            clustered_paired_t_test(&[0.1, 0.2], &["a", "b"], 1.5),
+            Err(StatsError::InvalidAlpha(_))
+        ));
+    }
+
+    #[test]
+    fn cluster_bootstrap_rejects_single_cluster() {
+        assert!(matches!(
+            clustered_bootstrap_ci(&[1.0, 2.0, 3.0], &["a", "a", "a"], 0.95, 100, 1),
+            Err(StatsError::TooFewSamples { got: 1, need: 2 })
+        ));
+    }
+
+    #[test]
     fn cluster_bootstrap_is_deterministic() {
         let values = [0.0, 0.1, 1.0, 1.1, 2.0, 2.1];
         let clusters = ["a", "a", "b", "b", "c", "c"];
@@ -282,5 +427,10 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(first, second);
         assert!(first.lower <= first.estimate && first.estimate <= first.upper);
+        // Golden endpoints: reducing clusters to partial sums and the per-index
+        // resampling are both order-independent, so the sequential and
+        // `--features parallel` builds must reproduce these exactly (CI runs both).
+        assert!((first.lower - 0.05).abs() < 1e-9, "{}", first.lower);
+        assert!((first.upper - 2.05).abs() < 1e-9, "{}", first.upper);
     }
 }

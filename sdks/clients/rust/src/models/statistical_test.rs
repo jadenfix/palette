@@ -11,14 +11,22 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// StatisticalTest : The statistical test that produced an [`ExperimentComparison`]. These mirror `beater_stats::TestKind`; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
-/// The statistical test that produced an [`ExperimentComparison`]. These mirror `beater_stats::TestKind`; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
+/// StatisticalTest : The statistical test that produced an [`ExperimentComparison`]. The gate records which method was **actually executed** so a reader can tell a t-test result from an exact McNemar, Wilcoxon, bootstrap, cluster-robust, or anytime-valid sequential one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
+/// The statistical test that produced an [`ExperimentComparison`]. The gate records which method was **actually executed** so a reader can tell a t-test result from an exact McNemar, Wilcoxon, bootstrap, cluster-robust, or anytime-valid sequential one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum StatisticalTest {
     #[serde(rename = "paired_t")]
     PairedT,
     #[serde(rename = "mcnemar_exact")]
     McnemarExact,
+    #[serde(rename = "wilcoxon_signed_rank")]
+    WilcoxonSignedRank,
+    #[serde(rename = "paired_bootstrap")]
+    PairedBootstrap,
+    #[serde(rename = "clustered_paired_t")]
+    ClusteredPairedT,
+    #[serde(rename = "sequential_e_value")]
+    SequentialEValue,
 
 }
 
@@ -27,6 +35,10 @@ impl std::fmt::Display for StatisticalTest {
         match self {
             Self::PairedT => write!(f, "paired_t"),
             Self::McnemarExact => write!(f, "mcnemar_exact"),
+            Self::WilcoxonSignedRank => write!(f, "wilcoxon_signed_rank"),
+            Self::PairedBootstrap => write!(f, "paired_bootstrap"),
+            Self::ClusteredPairedT => write!(f, "clustered_paired_t"),
+            Self::SequentialEValue => write!(f, "sequential_e_value"),
         }
     }
 }

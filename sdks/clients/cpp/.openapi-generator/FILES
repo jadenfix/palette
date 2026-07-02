@@ -31,6 +31,7 @@ include/beater-client/api/OnlineApi.h
 include/beater-client/api/PromptsApi.h
 include/beater-client/api/ProviderSecretsApi.h
 include/beater-client/api/ReviewsApi.h
+include/beater-client/api/ScenariosApi.h
 include/beater-client/api/SearchApi.h
 include/beater-client/api/SpansApi.h
 include/beater-client/api/TracesApi.h
@@ -72,6 +73,7 @@ include/beater-client/model/CreateGateRequest.h
 include/beater-client/model/CreatePromptRequest.h
 include/beater-client/model/CreateProviderSecretHttpRequest.h
 include/beater-client/model/CreateReviewQueueHttpRequest.h
+include/beater-client/model/CreateScenarioRequest.h
 include/beater-client/model/CreatedPrompt.h
 include/beater-client/model/Currency.h
 include/beater-client/model/Dataset.h
@@ -104,6 +106,7 @@ include/beater-client/model/EvaluatorLane.h
 include/beater-client/model/EvaluatorSpec.h
 include/beater-client/model/ExperimentComparison.h
 include/beater-client/model/ExperimentRunReport.h
+include/beater-client/model/FailureMode.h
 include/beater-client/model/GateDecision.h
 include/beater-client/model/GateDefinition.h
 include/beater-client/model/GatePolicy.h
@@ -116,7 +119,10 @@ include/beater-client/model/IngestQueueStatus.h
 include/beater-client/model/InvokeConnectorRequest.h
 include/beater-client/model/JudgeAuditRecord.h
 include/beater-client/model/JudgeBrokerOutcome.h
+include/beater-client/model/ListScenariosResponse.h
 include/beater-client/model/MaintenanceWindow.h
+include/beater-client/model/MineScenariosRequest.h
+include/beater-client/model/MineScenariosResponse.h
 include/beater-client/model/ModelRef.h
 include/beater-client/model/Money.h
 include/beater-client/model/NativeIngestRequest.h
@@ -124,6 +130,7 @@ include/beater-client/model/OnlineSamplingPolicy.h
 include/beater-client/model/OtlpIngestOutcome.h
 include/beater-client/model/Page_RunSummary.h
 include/beater-client/model/Page_RunSummary_items_inner.h
+include/beater-client/model/PerturbationKnobs.h
 include/beater-client/model/PromoteReviewAnnotationHttpRequest.h
 include/beater-client/model/PromoteTraceCaseRequest.h
 include/beater-client/model/Prompt.h
@@ -156,9 +163,12 @@ include/beater-client/model/RunJudgeExperimentRequest.h
 include/beater-client/model/RunSummary.h
 include/beater-client/model/SamplingDecision.h
 include/beater-client/model/SamplingReason.h
+include/beater-client/model/Scenario.h
+include/beater-client/model/ScenarioCluster.h
 include/beater-client/model/ScoreResult.h
 include/beater-client/model/SearchHit.h
 include/beater-client/model/SearchResponse.h
+include/beater-client/model/Signature.h
 include/beater-client/model/SpanIoResponse.h
 include/beater-client/model/SpanIoValue.h
 include/beater-client/model/SpanIoValue_oneOf.h
@@ -206,6 +216,7 @@ src/api/OnlineApi.cpp
 src/api/PromptsApi.cpp
 src/api/ProviderSecretsApi.cpp
 src/api/ReviewsApi.cpp
+src/api/ScenariosApi.cpp
 src/api/SearchApi.cpp
 src/api/SpansApi.cpp
 src/api/TracesApi.cpp
@@ -247,6 +258,7 @@ src/model/CreateGateRequest.cpp
 src/model/CreatePromptRequest.cpp
 src/model/CreateProviderSecretHttpRequest.cpp
 src/model/CreateReviewQueueHttpRequest.cpp
+src/model/CreateScenarioRequest.cpp
 src/model/CreatedPrompt.cpp
 src/model/Currency.cpp
 src/model/Dataset.cpp
@@ -279,6 +291,7 @@ src/model/EvaluatorLane.cpp
 src/model/EvaluatorSpec.cpp
 src/model/ExperimentComparison.cpp
 src/model/ExperimentRunReport.cpp
+src/model/FailureMode.cpp
 src/model/GateDecision.cpp
 src/model/GateDefinition.cpp
 src/model/GatePolicy.cpp
@@ -291,7 +304,10 @@ src/model/IngestQueueStatus.cpp
 src/model/InvokeConnectorRequest.cpp
 src/model/JudgeAuditRecord.cpp
 src/model/JudgeBrokerOutcome.cpp
+src/model/ListScenariosResponse.cpp
 src/model/MaintenanceWindow.cpp
+src/model/MineScenariosRequest.cpp
+src/model/MineScenariosResponse.cpp
 src/model/ModelRef.cpp
 src/model/Money.cpp
 src/model/NativeIngestRequest.cpp
@@ -299,6 +315,7 @@ src/model/OnlineSamplingPolicy.cpp
 src/model/OtlpIngestOutcome.cpp
 src/model/Page_RunSummary.cpp
 src/model/Page_RunSummary_items_inner.cpp
+src/model/PerturbationKnobs.cpp
 src/model/PromoteReviewAnnotationHttpRequest.cpp
 src/model/PromoteTraceCaseRequest.cpp
 src/model/Prompt.cpp
@@ -331,9 +348,12 @@ src/model/RunJudgeExperimentRequest.cpp
 src/model/RunSummary.cpp
 src/model/SamplingDecision.cpp
 src/model/SamplingReason.cpp
+src/model/Scenario.cpp
+src/model/ScenarioCluster.cpp
 src/model/ScoreResult.cpp
 src/model/SearchHit.cpp
 src/model/SearchResponse.cpp
+src/model/Signature.cpp
 src/model/SpanIoResponse.cpp
 src/model/SpanIoValue.cpp
 src/model/SpanIoValue_oneOf.cpp

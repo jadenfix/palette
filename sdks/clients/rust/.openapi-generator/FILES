@@ -46,6 +46,7 @@ docs/CreateGateRequest.md
 docs/CreatePromptRequest.md
 docs/CreateProviderSecretHttpRequest.md
 docs/CreateReviewQueueHttpRequest.md
+docs/CreateScenarioRequest.md
 docs/CreatedPrompt.md
 docs/Currency.md
 docs/Dataset.md
@@ -81,6 +82,7 @@ docs/EvaluatorSpec.md
 docs/ExperimentComparison.md
 docs/ExperimentRunReport.md
 docs/ExperimentsApi.md
+docs/FailureMode.md
 docs/GateDecision.md
 docs/GateDefinition.md
 docs/GatePolicy.md
@@ -97,7 +99,10 @@ docs/InvokeConnectorRequest.md
 docs/JudgeApi.md
 docs/JudgeAuditRecord.md
 docs/JudgeBrokerOutcome.md
+docs/ListScenariosResponse.md
 docs/MaintenanceWindow.md
+docs/MineScenariosRequest.md
+docs/MineScenariosResponse.md
 docs/ModelRef.md
 docs/Money.md
 docs/NativeIngestRequest.md
@@ -106,6 +111,7 @@ docs/OnlineSamplingPolicy.md
 docs/OtlpIngestOutcome.md
 docs/PageRunSummary.md
 docs/PageRunSummaryItemsInner.md
+docs/PerturbationKnobs.md
 docs/PromoteReviewAnnotationHttpRequest.md
 docs/PromoteTraceCaseRequest.md
 docs/Prompt.md
@@ -141,10 +147,14 @@ docs/RunJudgeExperimentRequest.md
 docs/RunSummary.md
 docs/SamplingDecision.md
 docs/SamplingReason.md
+docs/Scenario.md
+docs/ScenarioCluster.md
+docs/ScenariosApi.md
 docs/ScoreResult.md
 docs/SearchApi.md
 docs/SearchHit.md
 docs/SearchResponse.md
+docs/Signature.md
 docs/SpanIoResponse.md
 docs/SpanIoValue.md
 docs/SpanIoValueOneOf.md
@@ -189,6 +199,7 @@ src/apis/online_api.rs
 src/apis/prompts_api.rs
 src/apis/provider_secrets_api.rs
 src/apis/reviews_api.rs
+src/apis/scenarios_api.rs
 src/apis/search_api.rs
 src/apis/spans_api.rs
 src/apis/traces_api.rs
@@ -231,6 +242,7 @@ src/models/create_gate_request.rs
 src/models/create_prompt_request.rs
 src/models/create_provider_secret_http_request.rs
 src/models/create_review_queue_http_request.rs
+src/models/create_scenario_request.rs
 src/models/created_prompt.rs
 src/models/currency.rs
 src/models/dataset.rs
@@ -263,6 +275,7 @@ src/models/evaluator_lane.rs
 src/models/evaluator_spec.rs
 src/models/experiment_comparison.rs
 src/models/experiment_run_report.rs
+src/models/failure_mode.rs
 src/models/gate_decision.rs
 src/models/gate_definition.rs
 src/models/gate_policy.rs
@@ -275,7 +288,10 @@ src/models/ingest_queue_status.rs
 src/models/invoke_connector_request.rs
 src/models/judge_audit_record.rs
 src/models/judge_broker_outcome.rs
+src/models/list_scenarios_response.rs
 src/models/maintenance_window.rs
+src/models/mine_scenarios_request.rs
+src/models/mine_scenarios_response.rs
 src/models/mod.rs
 src/models/model_ref.rs
 src/models/money.rs
@@ -284,6 +300,7 @@ src/models/online_sampling_policy.rs
 src/models/otlp_ingest_outcome.rs
 src/models/page_run_summary.rs
 src/models/page_run_summary_items_inner.rs
+src/models/perturbation_knobs.rs
 src/models/promote_review_annotation_http_request.rs
 src/models/promote_trace_case_request.rs
 src/models/prompt.rs
@@ -316,9 +333,12 @@ src/models/run_judge_experiment_request.rs
 src/models/run_summary.rs
 src/models/sampling_decision.rs
 src/models/sampling_reason.rs
+src/models/scenario.rs
+src/models/scenario_cluster.rs
 src/models/score_result.rs
 src/models/search_hit.rs
 src/models/search_response.rs
+src/models/signature.rs
 src/models/span_io_response.rs
 src/models/span_io_value.rs
 src/models/span_io_value_one_of.rs

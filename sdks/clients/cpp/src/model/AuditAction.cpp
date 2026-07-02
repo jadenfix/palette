@@ -34,6 +34,8 @@ AuditAction::eAuditAction toEnum(const EnumUnderlyingType& val)
         return AuditAction::eAuditAction::AuditAction_PROVIDER_SECRET_CREATE;
     if (val == utility::conversions::to_string_t(U("provider_secret_revoke")))
         return AuditAction::eAuditAction::AuditAction_PROVIDER_SECRET_REVOKE;
+    if (val == utility::conversions::to_string_t(U("connector_tool_invoke")))
+        return AuditAction::eAuditAction::AuditAction_CONNECTOR_TOOL_INVOKE;
     return {};
 }
 
@@ -51,6 +53,8 @@ EnumUnderlyingType fromEnum(AuditAction::eAuditAction e)
         return U("provider_secret_create");
     case AuditAction::eAuditAction::AuditAction_PROVIDER_SECRET_REVOKE:
         return U("provider_secret_revoke");
+    case AuditAction::eAuditAction::AuditAction_CONNECTOR_TOOL_INVOKE:
+        return U("connector_tool_invoke");
     default:
         break;
     }

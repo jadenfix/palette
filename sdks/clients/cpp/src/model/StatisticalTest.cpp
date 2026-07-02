@@ -28,6 +28,14 @@ StatisticalTest::eStatisticalTest toEnum(const EnumUnderlyingType& val)
         return StatisticalTest::eStatisticalTest::StatisticalTest_PAIRED_T;
     if (val == utility::conversions::to_string_t(U("mcnemar_exact")))
         return StatisticalTest::eStatisticalTest::StatisticalTest_MCNEMAR_EXACT;
+    if (val == utility::conversions::to_string_t(U("wilcoxon_signed_rank")))
+        return StatisticalTest::eStatisticalTest::StatisticalTest_WILCOXON_SIGNED_RANK;
+    if (val == utility::conversions::to_string_t(U("paired_bootstrap")))
+        return StatisticalTest::eStatisticalTest::StatisticalTest_PAIRED_BOOTSTRAP;
+    if (val == utility::conversions::to_string_t(U("clustered_paired_t")))
+        return StatisticalTest::eStatisticalTest::StatisticalTest_CLUSTERED_PAIRED_T;
+    if (val == utility::conversions::to_string_t(U("sequential_e_value")))
+        return StatisticalTest::eStatisticalTest::StatisticalTest_SEQUENTIAL_E_VALUE;
     return {};
 }
 
@@ -39,6 +47,14 @@ EnumUnderlyingType fromEnum(StatisticalTest::eStatisticalTest e)
         return U("paired_t");
     case StatisticalTest::eStatisticalTest::StatisticalTest_MCNEMAR_EXACT:
         return U("mcnemar_exact");
+    case StatisticalTest::eStatisticalTest::StatisticalTest_WILCOXON_SIGNED_RANK:
+        return U("wilcoxon_signed_rank");
+    case StatisticalTest::eStatisticalTest::StatisticalTest_PAIRED_BOOTSTRAP:
+        return U("paired_bootstrap");
+    case StatisticalTest::eStatisticalTest::StatisticalTest_CLUSTERED_PAIRED_T:
+        return U("clustered_paired_t");
+    case StatisticalTest::eStatisticalTest::StatisticalTest_SEQUENTIAL_E_VALUE:
+        return U("sequential_e_value");
     default:
         break;
     }

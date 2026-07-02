@@ -34,6 +34,7 @@ from beater_client.api.online_api import OnlineApi
 from beater_client.api.prompts_api import PromptsApi
 from beater_client.api.provider_secrets_api import ProviderSecretsApi
 from beater_client.api.reviews_api import ReviewsApi
+from beater_client.api.scenarios_api import ScenariosApi
 from beater_client.api.search_api import SearchApi
 from beater_client.api.spans_api import SpansApi
 from beater_client.api.traces_api import TracesApi
@@ -88,6 +89,7 @@ from beater_client.models.create_gate_request import CreateGateRequest
 from beater_client.models.create_prompt_request import CreatePromptRequest
 from beater_client.models.create_provider_secret_http_request import CreateProviderSecretHttpRequest
 from beater_client.models.create_review_queue_http_request import CreateReviewQueueHttpRequest
+from beater_client.models.create_scenario_request import CreateScenarioRequest
 from beater_client.models.created_prompt import CreatedPrompt
 from beater_client.models.currency import Currency
 from beater_client.models.dataset import Dataset
@@ -120,6 +122,7 @@ from beater_client.models.evaluator_lane import EvaluatorLane
 from beater_client.models.evaluator_spec import EvaluatorSpec
 from beater_client.models.experiment_comparison import ExperimentComparison
 from beater_client.models.experiment_run_report import ExperimentRunReport
+from beater_client.models.failure_mode import FailureMode
 from beater_client.models.gate_decision import GateDecision
 from beater_client.models.gate_definition import GateDefinition
 from beater_client.models.gate_policy import GatePolicy
@@ -132,7 +135,10 @@ from beater_client.models.ingest_queue_status import IngestQueueStatus
 from beater_client.models.invoke_connector_request import InvokeConnectorRequest
 from beater_client.models.judge_audit_record import JudgeAuditRecord
 from beater_client.models.judge_broker_outcome import JudgeBrokerOutcome
+from beater_client.models.list_scenarios_response import ListScenariosResponse
 from beater_client.models.maintenance_window import MaintenanceWindow
+from beater_client.models.mine_scenarios_request import MineScenariosRequest
+from beater_client.models.mine_scenarios_response import MineScenariosResponse
 from beater_client.models.model_ref import ModelRef
 from beater_client.models.money import Money
 from beater_client.models.native_ingest_request import NativeIngestRequest
@@ -140,6 +146,7 @@ from beater_client.models.online_sampling_policy import OnlineSamplingPolicy
 from beater_client.models.otlp_ingest_outcome import OtlpIngestOutcome
 from beater_client.models.page_run_summary import PageRunSummary
 from beater_client.models.page_run_summary_items_inner import PageRunSummaryItemsInner
+from beater_client.models.perturbation_knobs import PerturbationKnobs
 from beater_client.models.promote_review_annotation_http_request import PromoteReviewAnnotationHttpRequest
 from beater_client.models.promote_trace_case_request import PromoteTraceCaseRequest
 from beater_client.models.prompt import Prompt
@@ -172,9 +179,12 @@ from beater_client.models.run_judge_experiment_request import RunJudgeExperiment
 from beater_client.models.run_summary import RunSummary
 from beater_client.models.sampling_decision import SamplingDecision
 from beater_client.models.sampling_reason import SamplingReason
+from beater_client.models.scenario import Scenario
+from beater_client.models.scenario_cluster import ScenarioCluster
 from beater_client.models.score_result import ScoreResult
 from beater_client.models.search_hit import SearchHit
 from beater_client.models.search_response import SearchResponse
+from beater_client.models.signature import Signature
 from beater_client.models.span_io_response import SpanIoResponse
 from beater_client.models.span_io_value import SpanIoValue
 from beater_client.models.span_io_value_one_of import SpanIoValueOneOf

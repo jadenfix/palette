@@ -14,9 +14,18 @@
 //!    [`Scenario`].
 
 use std::collections::BTreeSet;
+use std::fs;
+use std::path::Path;
+use std::sync::{Arc, Mutex};
 
-use beater_core::{sha256_json_hash, JsonHashError, TenantScope, Timestamp, TraceId};
+use anyhow::{anyhow, Context};
+use async_trait::async_trait;
+use beater_core::{
+    sha256_json_hash, JsonHashError, ProjectId, TenantId, TenantScope, Timestamp, TraceId,
+};
 use beater_schema::{AgentSpanKind, CanonicalSpan, RedactionClass, SpanStatus};
+use beater_store::{IntoStoreResult, StoreResult};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
 /// Errors that can occur while mining scenarios.
@@ -461,6 +470,172 @@ pub fn promote_cluster_to_scenario(
     })
 }
 
+/// Persistence for mined [`Scenario`]s.
+#[async_trait]
+pub trait ScenarioStore: Send + Sync {
+    async fn put_scenario(&self, scenario: Scenario) -> StoreResult<Scenario>;
+
+    async fn get_scenario(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        scenario_id: &str,
+    ) -> StoreResult<Option<Scenario>>;
+
+    async fn list_scenarios(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> StoreResult<Vec<Scenario>>;
+}
+
+/// A SQLite-backed [`ScenarioStore`].
+#[derive(Clone)]
+pub struct SqliteScenarioStore {
+    conn: Arc<Mutex<Connection>>,
+}
+
+impl SqliteScenarioStore {
+    pub fn in_memory() -> anyhow::Result<Self> {
+        let connection = Connection::open_in_memory().context("open in-memory scenario sqlite")?;
+        let store = Self {
+            conn: Arc::new(Mutex::new(connection)),
+        };
+        store.init()?;
+        Ok(store)
+    }
+
+    pub fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {
+        let path = path.as_ref();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)
+                .with_context(|| format!("create scenario sqlite dir {}", parent.display()))?;
+        }
+        let connection = Connection::open(path)
+            .with_context(|| format!("open sqlite scenario store {}", path.display()))?;
+        let store = Self {
+            conn: Arc::new(Mutex::new(connection)),
+        };
+        store.init()?;
+        Ok(store)
+    }
+
+    fn init(&self) -> anyhow::Result<()> {
+        let connection = self.lock()?;
+        connection
+            .execute_batch(
+                r#"
+                PRAGMA journal_mode = WAL;
+                PRAGMA foreign_keys = ON;
+
+                CREATE TABLE IF NOT EXISTS scenarios (
+                    scenario_id TEXT PRIMARY KEY,
+                    tenant_id TEXT NOT NULL,
+                    project_id TEXT NOT NULL,
+                    body TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                "#,
+            )
+            .context("initialize sqlite scenario store")?;
+        Ok(())
+    }
+
+    fn lock(&self) -> anyhow::Result<std::sync::MutexGuard<'_, Connection>> {
+        self.conn
+            .lock()
+            .map_err(|err| anyhow!("sqlite scenario connection mutex poisoned: {err}"))
+    }
+}
+
+#[async_trait]
+impl ScenarioStore for SqliteScenarioStore {
+    async fn put_scenario(&self, scenario: Scenario) -> StoreResult<Scenario> {
+        let body = serde_json::to_string(&scenario)
+            .context("serialize scenario")
+            .into_store()?;
+        let connection = self.lock().into_store()?;
+        connection
+            .execute(
+                r#"
+                INSERT OR REPLACE INTO scenarios
+                  (scenario_id, tenant_id, project_id, body, created_at)
+                VALUES (?1, ?2, ?3, ?4, ?5)
+                "#,
+                params![
+                    scenario.scenario_id,
+                    scenario.scope.tenant_id.as_str(),
+                    scenario.scope.project_id.as_str(),
+                    body,
+                    scenario.created_at.to_rfc3339()
+                ],
+            )
+            .context("insert scenario")
+            .into_store()?;
+        Ok(scenario)
+    }
+
+    async fn get_scenario(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+        scenario_id: &str,
+    ) -> StoreResult<Option<Scenario>> {
+        let connection = self.lock().into_store()?;
+        let body = connection
+            .query_row(
+                r#"
+                SELECT body
+                FROM scenarios
+                WHERE tenant_id = ?1 AND project_id = ?2 AND scenario_id = ?3
+                "#,
+                params![tenant_id.as_str(), project_id.as_str(), scenario_id],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .context("query scenario")
+            .into_store()?;
+        body.map(|body| serde_json::from_str(&body).context("decode scenario"))
+            .transpose()
+            .into_store()
+    }
+
+    async fn list_scenarios(
+        &self,
+        tenant_id: &TenantId,
+        project_id: &ProjectId,
+    ) -> StoreResult<Vec<Scenario>> {
+        let connection = self.lock().into_store()?;
+        let mut statement = connection
+            .prepare(
+                r#"
+                SELECT body
+                FROM scenarios
+                WHERE tenant_id = ?1 AND project_id = ?2
+                ORDER BY created_at ASC, scenario_id ASC
+                "#,
+            )
+            .context("prepare list scenarios")
+            .into_store()?;
+        let rows = statement
+            .query_map(params![tenant_id.as_str(), project_id.as_str()], |row| {
+                row.get::<_, String>(0)
+            })
+            .context("query scenarios")
+            .into_store()?;
+        let mut scenarios = Vec::new();
+        for row in rows {
+            let body = row.context("read scenario row").into_store()?;
+            scenarios.push(
+                serde_json::from_str(&body)
+                    .context("decode scenario")
+                    .into_store()?,
+            );
+        }
+        Ok(scenarios)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -732,5 +907,79 @@ mod tests {
         let json = serde_json::to_string(&FailureMode::GuardrailBlock)?;
         assert_eq!(json, "\"guardrail_block\"");
         Ok(())
+    }
+
+    fn scope_for(tenant: &str, project: &str) -> TenantScope {
+        TenantScope::new(
+            TenantId::new(tenant).unwrap_or_else(|e| panic!("{e}")),
+            ProjectId::new(project).unwrap_or_else(|e| panic!("{e}")),
+            EnvironmentId::new("e1").unwrap_or_else(|e| panic!("{e}")),
+        )
+    }
+
+    fn scenario_in(scope: TenantScope, scenario_id: &str) -> Scenario {
+        Scenario {
+            scenario_id: scenario_id.to_string(),
+            scope,
+            title: "Tool failures".to_string(),
+            failure_mode: FailureMode::ToolError,
+            source_trace_ids: vec![TraceId::new("a").unwrap_or_else(|e| panic!("{e}"))],
+            exemplar_trace_id: TraceId::new("a").unwrap_or_else(|e| panic!("{e}")),
+            recurrence_count: 1,
+            perturbation_knobs: PerturbationKnobs::for_failure_mode(FailureMode::ToolError),
+            expected_outcome: None,
+            redaction_class: RedactionClass::Internal,
+            created_at: now(),
+        }
+    }
+
+    #[tokio::test]
+    async fn scenario_store_round_trips_put_get() {
+        let store = SqliteScenarioStore::in_memory().unwrap_or_else(|e| panic!("{e}"));
+        let scope = scope_for("t1", "p1");
+        let scenario = scenario_in(scope.clone(), "scenario-1");
+        let stored = store
+            .put_scenario(scenario.clone())
+            .await
+            .unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(stored, scenario);
+        let fetched = store
+            .get_scenario(&scope.tenant_id, &scope.project_id, "scenario-1")
+            .await
+            .unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(fetched, Some(scenario));
+    }
+
+    #[tokio::test]
+    async fn scenario_store_list_is_tenant_project_scoped() {
+        let store = SqliteScenarioStore::in_memory().unwrap_or_else(|e| panic!("{e}"));
+        let scope_a = scope_for("t1", "p1");
+        let scope_b = scope_for("t1", "p2");
+        store
+            .put_scenario(scenario_in(scope_a.clone(), "a1"))
+            .await
+            .unwrap_or_else(|e| panic!("{e}"));
+        store
+            .put_scenario(scenario_in(scope_b.clone(), "b1"))
+            .await
+            .unwrap_or_else(|e| panic!("{e}"));
+
+        let listed = store
+            .list_scenarios(&scope_a.tenant_id, &scope_a.project_id)
+            .await
+            .unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].scenario_id, "a1");
+    }
+
+    #[tokio::test]
+    async fn scenario_store_get_missing_is_none() {
+        let store = SqliteScenarioStore::in_memory().unwrap_or_else(|e| panic!("{e}"));
+        let scope = scope_for("t1", "p1");
+        let fetched = store
+            .get_scenario(&scope.tenant_id, &scope.project_id, "nope")
+            .await
+            .unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(fetched, None);
     }
 }

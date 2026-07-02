@@ -83,8 +83,23 @@ pub struct CalibrationReport {
     pub policy: CalibrationPolicy,
     pub sample_count: usize,
     pub observed_agreement: f64,
+    /// Wilson 95% confidence interval for `observed_agreement` — the honest
+    /// width of an agreement estimate over a (typically small) human-labelled
+    /// sample. Absent on reports persisted before uncertainty was reported.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub observed_agreement_ci_low: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub observed_agreement_ci_high: Option<f64>,
     pub expected_agreement: f64,
     pub cohen_kappa: f64,
+    /// Percentile-bootstrap 95% confidence interval for `cohen_kappa`
+    /// (multinomial resampling of the confusion table, deterministic seed).
+    /// Kappa over small calibration samples is high-variance; a bare point
+    /// estimate invites over-reading. Absent on pre-uncertainty reports.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cohen_kappa_ci_low: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cohen_kappa_ci_high: Option<f64>,
     pub brier_score: f64,
     pub expected_calibration_error: f64,
     pub reliability_bins: Vec<ReliabilityBin>,
@@ -338,13 +353,30 @@ pub fn calibrate_eval_report(
     if sample_count == 0 {
         return Err(anyhow!("cannot calibrate an empty report"));
     }
-    let observed_agreement =
-        items.iter().filter(|item| item.agreed).count() as f64 / sample_count as f64;
+    let agreed_count = items.iter().filter(|item| item.agreed).count();
+    let observed_agreement = agreed_count as f64 / sample_count as f64;
     let expected_agreement = expected_agreement(&confusion, sample_count);
-    let cohen_kappa = cohen_kappa(observed_agreement, expected_agreement);
+    let cohen_kappa = beater_stats::cohen_kappa_binary(agreement_counts(&confusion))
+        .map_err(|err| anyhow!("cohen kappa: {err}"))?;
     let brier_score = brier_score(&items)?;
     let reliability_bins = reliability_bins(&items, RELIABILITY_BIN_COUNT)?;
     let expected_calibration_error = expected_calibration_error(&reliability_bins, sample_count);
+
+    // Uncertainty for the two headline agreement numbers (beater-stats): a
+    // Wilson interval for the observed agreement and a deterministic-seed
+    // bootstrap interval for kappa. A calibration verdict over a small
+    // human-labelled sample without a width is exactly the kind of
+    // point-estimate over-reading the report exists to prevent.
+    let agreement_ci =
+        beater_stats::wilson_interval(agreed_count as u64, sample_count as u64, beater_stats::Z_95)
+            .map_err(|err| anyhow!("agreement interval: {err}"))?;
+    let kappa_ci = beater_stats::cohen_kappa_ci(
+        agreement_counts(&confusion),
+        0.05,
+        KAPPA_BOOTSTRAP_RESAMPLES,
+        KAPPA_BOOTSTRAP_SEED,
+    )
+    .map_err(|err| anyhow!("kappa interval: {err}"))?;
 
     Ok(CalibrationReport {
         calibration_report_id: CalibrationReportId::new(Uuid::new_v4().to_string())?,
@@ -357,8 +389,12 @@ pub fn calibrate_eval_report(
         policy,
         sample_count,
         observed_agreement,
+        observed_agreement_ci_low: Some(agreement_ci.lower),
+        observed_agreement_ci_high: Some(agreement_ci.upper),
         expected_agreement,
         cohen_kappa,
+        cohen_kappa_ci_low: Some(kappa_ci.low),
+        cohen_kappa_ci_high: Some(kappa_ci.high),
         brier_score,
         expected_calibration_error,
         reliability_bins,
@@ -366,6 +402,24 @@ pub fn calibrate_eval_report(
         items,
         created_at: Utc::now(),
     })
+}
+
+/// Deterministic seed for the kappa bootstrap interval: calibration reports
+/// must be reproducible from the labelled items alone.
+const KAPPA_BOOTSTRAP_SEED: u64 = 0xCA11_B12A_7E5E_ED00;
+
+/// Bootstrap resamples for the kappa interval.
+const KAPPA_BOOTSTRAP_RESAMPLES: usize = 10_000;
+
+/// The human-vs-judge confusion table as a `beater-stats` agreement table
+/// (rater A = human, rater B = judge).
+fn agreement_counts(confusion: &CalibrationConfusion) -> beater_stats::AgreementCounts {
+    beater_stats::AgreementCounts {
+        both_pass: confusion.human_pass_judge_pass as u64,
+        a_pass_b_fail: confusion.human_pass_judge_fail as u64,
+        a_fail_b_pass: confusion.human_fail_judge_pass as u64,
+        both_fail: confusion.human_fail_judge_fail as u64,
+    }
 }
 
 fn ensure_report_matches_snapshot(
@@ -454,17 +508,6 @@ fn expected_agreement(confusion: &CalibrationConfusion, sample_count: usize) -> 
     let judge_pass = (confusion.human_pass_judge_pass + confusion.human_fail_judge_pass) as f64 / n;
     let judge_fail = (confusion.human_pass_judge_fail + confusion.human_fail_judge_fail) as f64 / n;
     human_pass * judge_pass + human_fail * judge_fail
-}
-
-fn cohen_kappa(observed_agreement: f64, expected_agreement: f64) -> f64 {
-    let denominator = 1.0 - expected_agreement;
-    if denominator.abs() < f64::EPSILON {
-        if (observed_agreement - 1.0).abs() < f64::EPSILON {
-            return 1.0;
-        }
-        return 0.0;
-    }
-    (observed_agreement - expected_agreement) / denominator
 }
 
 pub fn brier_score(items: &[CalibrationItem]) -> anyhow::Result<f64> {
@@ -664,6 +707,28 @@ mod tests {
         assert_eq!(report.observed_agreement, 0.5);
         assert_eq!(report.expected_agreement, 0.5);
         assert_eq!(report.cohen_kappa, 0.0);
+        // Uncertainty is reported alongside the point estimates: a Wilson
+        // interval for the agreement and a bootstrap interval for kappa, both
+        // honestly wide at n = 4.
+        let agree_lo = report
+            .observed_agreement_ci_low
+            .ok_or_else(|| anyhow!("missing agreement CI low"))?;
+        let agree_hi = report
+            .observed_agreement_ci_high
+            .ok_or_else(|| anyhow!("missing agreement CI high"))?;
+        assert!(agree_lo <= 0.5 && 0.5 <= agree_hi);
+        assert!(
+            agree_hi - agree_lo > 0.4,
+            "n=4 must be wide: [{agree_lo}, {agree_hi}]"
+        );
+        let kappa_lo = report
+            .cohen_kappa_ci_low
+            .ok_or_else(|| anyhow!("missing kappa CI low"))?;
+        let kappa_hi = report
+            .cohen_kappa_ci_high
+            .ok_or_else(|| anyhow!("missing kappa CI high"))?;
+        assert!(kappa_lo <= 0.0 && 0.0 <= kappa_hi);
+        assert!((-1.0..=1.0).contains(&kappa_lo) && (-1.0..=1.0).contains(&kappa_hi));
         assert_eq!(report.confusion.human_pass_judge_pass, 1);
         assert_eq!(report.confusion.human_pass_judge_fail, 1);
         assert_eq!(report.confusion.human_fail_judge_pass, 1);
@@ -823,6 +888,47 @@ mod tests {
         Ok(())
     }
 
+    /// The crate's item-shaped Brier/ECE must agree exactly with the shared
+    /// `beater-stats` primitives on the same data — one implementation of the
+    /// math, two views of it.
+    #[test]
+    fn proper_scoring_metrics_match_beater_stats() -> anyhow::Result<()> {
+        let items = vec![
+            calibration_item("case-1", CalibrationLabel::Fail, 0.0)?,
+            calibration_item("case-2", CalibrationLabel::Pass, 1.0)?,
+            calibration_item("case-3", CalibrationLabel::Fail, 0.25)?,
+            calibration_item("case-4", CalibrationLabel::Pass, 0.75)?,
+            calibration_item("case-5", CalibrationLabel::Pass, 0.55)?,
+            calibration_item("case-6", CalibrationLabel::Fail, 0.45)?,
+        ];
+        let predictions: Vec<f64> = items.iter().map(|i| i.judge_score).collect();
+        let outcomes: Vec<f64> = items
+            .iter()
+            .map(|i| match i.human_label {
+                CalibrationLabel::Pass => 1.0,
+                CalibrationLabel::Fail => 0.0,
+            })
+            .collect();
+
+        let local_brier = brier_score(&items)?;
+        let stats_brier =
+            beater_stats::brier_score(&predictions, &outcomes).map_err(|err| anyhow!("{err}"))?;
+        assert!((local_brier - stats_brier).abs() < 1e-15);
+
+        for bin_count in [2usize, 4, 10] {
+            let bins = reliability_bins(&items, bin_count)?;
+            let local_ece = expected_calibration_error(&bins, items.len());
+            let stats_ece =
+                beater_stats::expected_calibration_error(&predictions, &outcomes, bin_count)
+                    .map_err(|err| anyhow!("{err}"))?;
+            assert!(
+                (local_ece - stats_ece).abs() < 1e-15,
+                "bin_count={bin_count}: {local_ece} vs {stats_ece}"
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn proper_scoring_rejects_invalid_probability_scores() -> anyhow::Result<()> {
         let items = vec![calibration_item("case-1", CalibrationLabel::Pass, 1.2)?];
@@ -878,8 +984,12 @@ mod tests {
             policy: CalibrationPolicy::default(),
             sample_count: 1,
             observed_agreement: 1.0,
+            observed_agreement_ci_low: None,
+            observed_agreement_ci_high: None,
             expected_agreement: 1.0,
             cohen_kappa: 1.0,
+            cohen_kappa_ci_low: None,
+            cohen_kappa_ci_high: None,
             brier_score: 0.0,
             expected_calibration_error: 0.0,
             reliability_bins: Vec::new(),

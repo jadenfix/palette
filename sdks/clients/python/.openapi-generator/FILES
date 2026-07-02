@@ -23,6 +23,7 @@ beater_client/api/online_api.py
 beater_client/api/prompts_api.py
 beater_client/api/provider_secrets_api.py
 beater_client/api/reviews_api.py
+beater_client/api/scenarios_api.py
 beater_client/api/search_api.py
 beater_client/api/spans_api.py
 beater_client/api/traces_api.py
@@ -69,6 +70,7 @@ beater_client/models/create_gate_request.py
 beater_client/models/create_prompt_request.py
 beater_client/models/create_provider_secret_http_request.py
 beater_client/models/create_review_queue_http_request.py
+beater_client/models/create_scenario_request.py
 beater_client/models/created_prompt.py
 beater_client/models/currency.py
 beater_client/models/dataset.py
@@ -101,6 +103,7 @@ beater_client/models/evaluator_lane.py
 beater_client/models/evaluator_spec.py
 beater_client/models/experiment_comparison.py
 beater_client/models/experiment_run_report.py
+beater_client/models/failure_mode.py
 beater_client/models/gate_decision.py
 beater_client/models/gate_definition.py
 beater_client/models/gate_policy.py
@@ -113,7 +116,10 @@ beater_client/models/ingest_queue_status.py
 beater_client/models/invoke_connector_request.py
 beater_client/models/judge_audit_record.py
 beater_client/models/judge_broker_outcome.py
+beater_client/models/list_scenarios_response.py
 beater_client/models/maintenance_window.py
+beater_client/models/mine_scenarios_request.py
+beater_client/models/mine_scenarios_response.py
 beater_client/models/model_ref.py
 beater_client/models/money.py
 beater_client/models/native_ingest_request.py
@@ -121,6 +127,7 @@ beater_client/models/online_sampling_policy.py
 beater_client/models/otlp_ingest_outcome.py
 beater_client/models/page_run_summary.py
 beater_client/models/page_run_summary_items_inner.py
+beater_client/models/perturbation_knobs.py
 beater_client/models/promote_review_annotation_http_request.py
 beater_client/models/promote_trace_case_request.py
 beater_client/models/prompt.py
@@ -153,9 +160,12 @@ beater_client/models/run_judge_experiment_request.py
 beater_client/models/run_summary.py
 beater_client/models/sampling_decision.py
 beater_client/models/sampling_reason.py
+beater_client/models/scenario.py
+beater_client/models/scenario_cluster.py
 beater_client/models/score_result.py
 beater_client/models/search_hit.py
 beater_client/models/search_response.py
+beater_client/models/signature.py
 beater_client/models/span_io_response.py
 beater_client/models/span_io_value.py
 beater_client/models/span_io_value_one_of.py
@@ -222,6 +232,7 @@ docs/CreateGateRequest.md
 docs/CreatePromptRequest.md
 docs/CreateProviderSecretHttpRequest.md
 docs/CreateReviewQueueHttpRequest.md
+docs/CreateScenarioRequest.md
 docs/CreatedPrompt.md
 docs/Currency.md
 docs/Dataset.md
@@ -257,6 +268,7 @@ docs/EvaluatorSpec.md
 docs/ExperimentComparison.md
 docs/ExperimentRunReport.md
 docs/ExperimentsApi.md
+docs/FailureMode.md
 docs/GateDecision.md
 docs/GateDefinition.md
 docs/GatePolicy.md
@@ -273,7 +285,10 @@ docs/InvokeConnectorRequest.md
 docs/JudgeApi.md
 docs/JudgeAuditRecord.md
 docs/JudgeBrokerOutcome.md
+docs/ListScenariosResponse.md
 docs/MaintenanceWindow.md
+docs/MineScenariosRequest.md
+docs/MineScenariosResponse.md
 docs/ModelRef.md
 docs/Money.md
 docs/NativeIngestRequest.md
@@ -282,6 +297,7 @@ docs/OnlineSamplingPolicy.md
 docs/OtlpIngestOutcome.md
 docs/PageRunSummary.md
 docs/PageRunSummaryItemsInner.md
+docs/PerturbationKnobs.md
 docs/PromoteReviewAnnotationHttpRequest.md
 docs/PromoteTraceCaseRequest.md
 docs/Prompt.md
@@ -317,10 +333,14 @@ docs/RunJudgeExperimentRequest.md
 docs/RunSummary.md
 docs/SamplingDecision.md
 docs/SamplingReason.md
+docs/Scenario.md
+docs/ScenarioCluster.md
+docs/ScenariosApi.md
 docs/ScoreResult.md
 docs/SearchApi.md
 docs/SearchHit.md
 docs/SearchResponse.md
+docs/Signature.md
 docs/SpanIoResponse.md
 docs/SpanIoValue.md
 docs/SpanIoValueOneOf.md
@@ -395,6 +415,7 @@ test/test_create_gate_request.py
 test/test_create_prompt_request.py
 test/test_create_provider_secret_http_request.py
 test/test_create_review_queue_http_request.py
+test/test_create_scenario_request.py
 test/test_created_prompt.py
 test/test_currency.py
 test/test_dataset.py
@@ -430,6 +451,7 @@ test/test_evaluator_spec.py
 test/test_experiment_comparison.py
 test/test_experiment_run_report.py
 test/test_experiments_api.py
+test/test_failure_mode.py
 test/test_gate_decision.py
 test/test_gate_definition.py
 test/test_gate_policy.py
@@ -446,7 +468,10 @@ test/test_invoke_connector_request.py
 test/test_judge_api.py
 test/test_judge_audit_record.py
 test/test_judge_broker_outcome.py
+test/test_list_scenarios_response.py
 test/test_maintenance_window.py
+test/test_mine_scenarios_request.py
+test/test_mine_scenarios_response.py
 test/test_model_ref.py
 test/test_money.py
 test/test_native_ingest_request.py
@@ -455,6 +480,7 @@ test/test_online_sampling_policy.py
 test/test_otlp_ingest_outcome.py
 test/test_page_run_summary.py
 test/test_page_run_summary_items_inner.py
+test/test_perturbation_knobs.py
 test/test_promote_review_annotation_http_request.py
 test/test_promote_trace_case_request.py
 test/test_prompt.py
@@ -490,10 +516,14 @@ test/test_run_judge_experiment_request.py
 test/test_run_summary.py
 test/test_sampling_decision.py
 test/test_sampling_reason.py
+test/test_scenario.py
+test/test_scenario_cluster.py
+test/test_scenarios_api.py
 test/test_score_result.py
 test/test_search_api.py
 test/test_search_hit.py
 test/test_search_response.py
+test/test_signature.py
 test/test_span_io_response.py
 test/test_span_io_value.py
 test/test_span_io_value_one_of.py

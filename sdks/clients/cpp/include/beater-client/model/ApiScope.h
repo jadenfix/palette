@@ -51,6 +51,8 @@ public:
         ApiScope_TRACE_WRITE,
         ApiScope_TRACE_READ,
         ApiScope_DATASET_WRITE,
+        ApiScope_SCENARIO_WRITE,
+        ApiScope_SCENARIO_READ,
         ApiScope_EVAL_RUN,
         ApiScope_PII_UNMASK,
         ApiScope_ADMIN,

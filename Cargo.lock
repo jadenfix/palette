@@ -654,6 +654,7 @@ dependencies = [
  "beater-prompts",
  "beater-replay",
  "beater-sandbox",
+ "beater-scenarios",
  "beater-schema",
  "beater-search",
  "beater-secrets",
@@ -673,6 +674,7 @@ dependencies = [
  "tokio",
  "tower",
  "utoipa",
+ "uuid",
  "wat",
 ]
 
@@ -919,6 +921,7 @@ dependencies = [
  "beater-core",
  "beater-datasets",
  "beater-schema",
+ "beater-stats",
  "beater-store",
  "chrono",
  "rusqlite",
@@ -1376,14 +1379,18 @@ name = "beater-scenarios"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "beater-core",
  "beater-schema",
+ "beater-store",
  "chrono",
+ "rusqlite",
  "serde",
  "serde_json",
  "sha2 0.10.9",
  "tempfile",
  "thiserror 1.0.69",
+ "tokio",
  "utoipa",
  "uuid",
 ]
@@ -1643,6 +1650,7 @@ dependencies = [
  "beater-otlp",
  "beater-prompts",
  "beater-replay",
+ "beater-scenarios",
  "beater-schema",
  "beater-search",
  "beater-secrets",

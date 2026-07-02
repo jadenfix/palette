@@ -270,6 +270,41 @@ pub enum WeightingPolicy {
     HorvitzThompson,
 }
 
+/// Variance-reduction policy for the paired estimate (§10.3 #4 / #436 item 4).
+///
+/// CUPED regresses a pre-experiment covariate out of the paired difference,
+/// shrinking the confidence interval so a gate gets more power at the same sample
+/// size. The one-sample regression estimator centres on the covariate's **known
+/// population mean** μ_x, so it *moves* the point estimate off the raw sample mean
+/// by −θ(x̄ − μ_x) (that shift is what makes the variance-reduced interval a valid
+/// one for `E[d]` — see `beater_stats::cuped_paired_t_test`); it is unbiased for
+/// `E[d]` but not mean-preserving. Declaring the policy here — *before* scoring —
+/// is what keeps it honest: the covariate and μ_x are pre-registered, so they
+/// cannot be fished for after seeing the scores.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case", tag = "kind")]
+pub enum VarianceReduction {
+    /// No adjustment — the plain paired estimate. The default; changes nothing.
+    None,
+    /// CUPED with a named pre-experiment covariate and its **known population
+    /// mean**. The name is provenance (which covariate); `population_mean` is the
+    /// covariate's mean over the whole case population (e.g. difficulty averaged
+    /// over the entire dataset). Both are part of the hashed commitment.
+    ///
+    /// The population mean is load-bearing, not decorative: the regression
+    /// estimator centres on it, and a *one-sample* CUPED that instead centres on
+    /// the sample mean is degenerate and under-covers (see
+    /// `beater_stats::cuped_paired_t_test`). The covariate MUST also be independent
+    /// of the treatment (never an arm's own outcome) — a provenance property the
+    /// type system cannot enforce, so it is the covariate producer's responsibility.
+    Cuped {
+        /// The pre-registered covariate's name (provenance).
+        covariate: String,
+        /// The covariate's known mean over the whole case population, `μ_x`.
+        population_mean: f64,
+    },
+}
+
 /// Anytime-valid vs fixed-horizon monitoring (§10.3 #6). Online streams are
 /// peeked at continuously; a fixed-horizon test under peeking inflates false
 /// positives 5–10×, so an online design must use a sequential stopping rule.
@@ -380,6 +415,17 @@ pub struct EvalDesign {
     /// Monotonic method/version so a persisted design is reproducible as the
     /// resolution logic evolves.
     pub analysis_version: u32,
+    /// Variance-reduction policy applied to the paired estimate. `None` (the
+    /// default) leaves the estimate untouched. Declared here so a CUPED covariate
+    /// is pre-registered rather than chosen post-hoc.
+    #[serde(default = "default_variance_reduction")]
+    pub variance_reduction: VarianceReduction,
+}
+
+/// The default variance-reduction policy: none. A free function so `#[serde(default)]`
+/// can fill it in when reading a design persisted before this field existed.
+fn default_variance_reduction() -> VarianceReduction {
+    VarianceReduction::None
 }
 
 /// The analysis version stamped by [`EvalDesign::conservative_superiority`] and
@@ -426,6 +472,7 @@ impl EvalDesign {
             split: DatasetSplit::Test,
             gate_may_read_split: true,
             analysis_version: CURRENT_ANALYSIS_VERSION,
+            variance_reduction: VarianceReduction::None,
         }
     }
 
@@ -489,6 +536,21 @@ impl EvalDesign {
                 });
             }
             seen.push(metric.key.as_str());
+        }
+        // A CUPED policy must name its covariate and pin a finite population mean.
+        if let VarianceReduction::Cuped {
+            covariate,
+            population_mean,
+        } = &self.variance_reduction
+        {
+            if covariate.trim().is_empty() {
+                return Err(DesignError::EmptyCovariateKey);
+            }
+            if !population_mean.is_finite() {
+                return Err(DesignError::NonFiniteCovariateMean {
+                    value: *population_mean,
+                });
+            }
         }
         Ok(())
     }
@@ -657,6 +719,10 @@ pub enum DesignError {
     EmptyMetricKey,
     #[error("duplicate metric key in family: {key}")]
     DuplicateMetricKey { key: String },
+    #[error("CUPED variance reduction requires a non-empty covariate name")]
+    EmptyCovariateKey,
+    #[error("CUPED population covariate mean must be finite, got {value}")]
+    NonFiniteCovariateMean { value: f64 },
 }
 
 /// A reason a design cannot yield a conclusive `pass` — the gate must return
@@ -761,6 +827,69 @@ mod tests {
         let ha = a.design_hash().unwrap_or_else(|err| panic!("{err}"));
         let hb = b.design_hash().unwrap_or_else(|err| panic!("{err}"));
         assert_ne!(ha, hb, "a changed alpha must change the commitment");
+
+        // The pre-registered CUPED policy (covariate + its known μ_x) is part of the
+        // hashed commitment — that is the whole anti-fishing guarantee, so pin it:
+        // changing the variance-reduction policy, the covariate name, or μ_x must all
+        // move the hash. Guards against a future serde change silently dropping the
+        // field from `design_hash`.
+        let mut c = base();
+        c.variance_reduction = VarianceReduction::Cuped {
+            covariate: "prior_difficulty".to_string(),
+            population_mean: 0.5,
+        };
+        let hc = c.design_hash().unwrap_or_else(|err| panic!("{err}"));
+        assert_ne!(
+            ha, hc,
+            "declaring a CUPED policy must change the commitment"
+        );
+
+        let mut d = base();
+        d.variance_reduction = VarianceReduction::Cuped {
+            covariate: "prior_difficulty".to_string(),
+            population_mean: 0.6, // same covariate, different known μ_x.
+        };
+        let hd = d.design_hash().unwrap_or_else(|err| panic!("{err}"));
+        assert_ne!(
+            hc, hd,
+            "changing the pre-registered μ_x must change the commitment"
+        );
+
+        let mut e = base();
+        e.variance_reduction = VarianceReduction::Cuped {
+            covariate: "other_difficulty".to_string(), // different covariate, same μ_x.
+            population_mean: 0.5,
+        };
+        let he = e.design_hash().unwrap_or_else(|err| panic!("{err}"));
+        assert_ne!(
+            hc, he,
+            "changing the pre-registered covariate must change the commitment"
+        );
+    }
+
+    #[test]
+    fn cuped_policy_requires_a_named_covariate_and_finite_mean() {
+        let mut design = base();
+        design.variance_reduction = VarianceReduction::Cuped {
+            covariate: "  ".to_string(),
+            population_mean: 0.5,
+        };
+        assert_eq!(design.validate(), Err(DesignError::EmptyCovariateKey));
+        design.variance_reduction = VarianceReduction::Cuped {
+            covariate: "prior_difficulty".to_string(),
+            population_mean: f64::NAN,
+        };
+        assert!(matches!(
+            design.validate(),
+            Err(DesignError::NonFiniteCovariateMean { .. })
+        ));
+        design.variance_reduction = VarianceReduction::Cuped {
+            covariate: "prior_difficulty".to_string(),
+            population_mean: 0.5,
+        };
+        assert!(design.validate().is_ok());
+        // A CUPED policy never forbids a pass — it estimates the same E[d].
+        assert!(design.permit_pass().is_ok());
     }
 
     // ── structural validation ────────────────────────────────────────────────

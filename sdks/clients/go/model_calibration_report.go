@@ -25,6 +25,9 @@ type CalibrationReport struct {
 	BrierScore float64 `json:"brier_score"`
 	CalibrationReportId string `json:"calibration_report_id"`
 	CohenKappa float64 `json:"cohen_kappa"`
+	CohenKappaCiHigh NullableFloat64 `json:"cohen_kappa_ci_high,omitempty"`
+	// Percentile-bootstrap 95% confidence interval for `cohen_kappa` (multinomial resampling of the confusion table, deterministic seed). Kappa over small calibration samples is high-variance; a bare point estimate invites over-reading. Absent on pre-uncertainty reports.
+	CohenKappaCiLow NullableFloat64 `json:"cohen_kappa_ci_low,omitempty"`
 	Confusion CalibrationConfusion `json:"confusion"`
 	CreatedAt time.Time `json:"created_at"`
 	DatasetId string `json:"dataset_id"`
@@ -35,6 +38,9 @@ type CalibrationReport struct {
 	ExpectedCalibrationError float64 `json:"expected_calibration_error"`
 	Items []CalibrationItem `json:"items"`
 	ObservedAgreement float64 `json:"observed_agreement"`
+	ObservedAgreementCiHigh NullableFloat64 `json:"observed_agreement_ci_high,omitempty"`
+	// Wilson 95% confidence interval for `observed_agreement` — the honest width of an agreement estimate over a (typically small) human-labelled sample. Absent on reports persisted before uncertainty was reported.
+	ObservedAgreementCiLow NullableFloat64 `json:"observed_agreement_ci_low,omitempty"`
 	Policy CalibrationPolicy `json:"policy"`
 	ProjectId string `json:"project_id"`
 	ReliabilityBins []ReliabilityBin `json:"reliability_bins"`
@@ -149,6 +155,90 @@ func (o *CalibrationReport) GetCohenKappaOk() (*float64, bool) {
 // SetCohenKappa sets field value
 func (o *CalibrationReport) SetCohenKappa(v float64) {
 	o.CohenKappa = v
+}
+
+// GetCohenKappaCiHigh returns the CohenKappaCiHigh field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *CalibrationReport) GetCohenKappaCiHigh() float64 {
+	if o == nil || IsNil(o.CohenKappaCiHigh.Get()) {
+		var ret float64
+		return ret
+	}
+	return *o.CohenKappaCiHigh.Get()
+}
+
+// GetCohenKappaCiHighOk returns a tuple with the CohenKappaCiHigh field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *CalibrationReport) GetCohenKappaCiHighOk() (*float64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.CohenKappaCiHigh.Get(), o.CohenKappaCiHigh.IsSet()
+}
+
+// HasCohenKappaCiHigh returns a boolean if a field has been set.
+func (o *CalibrationReport) HasCohenKappaCiHigh() bool {
+	if o != nil && o.CohenKappaCiHigh.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetCohenKappaCiHigh gets a reference to the given NullableFloat64 and assigns it to the CohenKappaCiHigh field.
+func (o *CalibrationReport) SetCohenKappaCiHigh(v float64) {
+	o.CohenKappaCiHigh.Set(&v)
+}
+// SetCohenKappaCiHighNil sets the value for CohenKappaCiHigh to be an explicit nil
+func (o *CalibrationReport) SetCohenKappaCiHighNil() {
+	o.CohenKappaCiHigh.Set(nil)
+}
+
+// UnsetCohenKappaCiHigh ensures that no value is present for CohenKappaCiHigh, not even an explicit nil
+func (o *CalibrationReport) UnsetCohenKappaCiHigh() {
+	o.CohenKappaCiHigh.Unset()
+}
+
+// GetCohenKappaCiLow returns the CohenKappaCiLow field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *CalibrationReport) GetCohenKappaCiLow() float64 {
+	if o == nil || IsNil(o.CohenKappaCiLow.Get()) {
+		var ret float64
+		return ret
+	}
+	return *o.CohenKappaCiLow.Get()
+}
+
+// GetCohenKappaCiLowOk returns a tuple with the CohenKappaCiLow field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *CalibrationReport) GetCohenKappaCiLowOk() (*float64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.CohenKappaCiLow.Get(), o.CohenKappaCiLow.IsSet()
+}
+
+// HasCohenKappaCiLow returns a boolean if a field has been set.
+func (o *CalibrationReport) HasCohenKappaCiLow() bool {
+	if o != nil && o.CohenKappaCiLow.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetCohenKappaCiLow gets a reference to the given NullableFloat64 and assigns it to the CohenKappaCiLow field.
+func (o *CalibrationReport) SetCohenKappaCiLow(v float64) {
+	o.CohenKappaCiLow.Set(&v)
+}
+// SetCohenKappaCiLowNil sets the value for CohenKappaCiLow to be an explicit nil
+func (o *CalibrationReport) SetCohenKappaCiLowNil() {
+	o.CohenKappaCiLow.Set(nil)
+}
+
+// UnsetCohenKappaCiLow ensures that no value is present for CohenKappaCiLow, not even an explicit nil
+func (o *CalibrationReport) UnsetCohenKappaCiLow() {
+	o.CohenKappaCiLow.Unset()
 }
 
 // GetConfusion returns the Confusion field value
@@ -391,6 +481,90 @@ func (o *CalibrationReport) SetObservedAgreement(v float64) {
 	o.ObservedAgreement = v
 }
 
+// GetObservedAgreementCiHigh returns the ObservedAgreementCiHigh field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *CalibrationReport) GetObservedAgreementCiHigh() float64 {
+	if o == nil || IsNil(o.ObservedAgreementCiHigh.Get()) {
+		var ret float64
+		return ret
+	}
+	return *o.ObservedAgreementCiHigh.Get()
+}
+
+// GetObservedAgreementCiHighOk returns a tuple with the ObservedAgreementCiHigh field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *CalibrationReport) GetObservedAgreementCiHighOk() (*float64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.ObservedAgreementCiHigh.Get(), o.ObservedAgreementCiHigh.IsSet()
+}
+
+// HasObservedAgreementCiHigh returns a boolean if a field has been set.
+func (o *CalibrationReport) HasObservedAgreementCiHigh() bool {
+	if o != nil && o.ObservedAgreementCiHigh.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetObservedAgreementCiHigh gets a reference to the given NullableFloat64 and assigns it to the ObservedAgreementCiHigh field.
+func (o *CalibrationReport) SetObservedAgreementCiHigh(v float64) {
+	o.ObservedAgreementCiHigh.Set(&v)
+}
+// SetObservedAgreementCiHighNil sets the value for ObservedAgreementCiHigh to be an explicit nil
+func (o *CalibrationReport) SetObservedAgreementCiHighNil() {
+	o.ObservedAgreementCiHigh.Set(nil)
+}
+
+// UnsetObservedAgreementCiHigh ensures that no value is present for ObservedAgreementCiHigh, not even an explicit nil
+func (o *CalibrationReport) UnsetObservedAgreementCiHigh() {
+	o.ObservedAgreementCiHigh.Unset()
+}
+
+// GetObservedAgreementCiLow returns the ObservedAgreementCiLow field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *CalibrationReport) GetObservedAgreementCiLow() float64 {
+	if o == nil || IsNil(o.ObservedAgreementCiLow.Get()) {
+		var ret float64
+		return ret
+	}
+	return *o.ObservedAgreementCiLow.Get()
+}
+
+// GetObservedAgreementCiLowOk returns a tuple with the ObservedAgreementCiLow field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *CalibrationReport) GetObservedAgreementCiLowOk() (*float64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.ObservedAgreementCiLow.Get(), o.ObservedAgreementCiLow.IsSet()
+}
+
+// HasObservedAgreementCiLow returns a boolean if a field has been set.
+func (o *CalibrationReport) HasObservedAgreementCiLow() bool {
+	if o != nil && o.ObservedAgreementCiLow.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetObservedAgreementCiLow gets a reference to the given NullableFloat64 and assigns it to the ObservedAgreementCiLow field.
+func (o *CalibrationReport) SetObservedAgreementCiLow(v float64) {
+	o.ObservedAgreementCiLow.Set(&v)
+}
+// SetObservedAgreementCiLowNil sets the value for ObservedAgreementCiLow to be an explicit nil
+func (o *CalibrationReport) SetObservedAgreementCiLowNil() {
+	o.ObservedAgreementCiLow.Set(nil)
+}
+
+// UnsetObservedAgreementCiLow ensures that no value is present for ObservedAgreementCiLow, not even an explicit nil
+func (o *CalibrationReport) UnsetObservedAgreementCiLow() {
+	o.ObservedAgreementCiLow.Unset()
+}
+
 // GetPolicy returns the Policy field value
 func (o *CalibrationReport) GetPolicy() CalibrationPolicy {
 	if o == nil {
@@ -524,6 +698,12 @@ func (o CalibrationReport) ToMap() (map[string]interface{}, error) {
 	toSerialize["brier_score"] = o.BrierScore
 	toSerialize["calibration_report_id"] = o.CalibrationReportId
 	toSerialize["cohen_kappa"] = o.CohenKappa
+	if o.CohenKappaCiHigh.IsSet() {
+		toSerialize["cohen_kappa_ci_high"] = o.CohenKappaCiHigh.Get()
+	}
+	if o.CohenKappaCiLow.IsSet() {
+		toSerialize["cohen_kappa_ci_low"] = o.CohenKappaCiLow.Get()
+	}
 	toSerialize["confusion"] = o.Confusion
 	toSerialize["created_at"] = o.CreatedAt
 	toSerialize["dataset_id"] = o.DatasetId
@@ -534,6 +714,12 @@ func (o CalibrationReport) ToMap() (map[string]interface{}, error) {
 	toSerialize["expected_calibration_error"] = o.ExpectedCalibrationError
 	toSerialize["items"] = o.Items
 	toSerialize["observed_agreement"] = o.ObservedAgreement
+	if o.ObservedAgreementCiHigh.IsSet() {
+		toSerialize["observed_agreement_ci_high"] = o.ObservedAgreementCiHigh.Get()
+	}
+	if o.ObservedAgreementCiLow.IsSet() {
+		toSerialize["observed_agreement_ci_low"] = o.ObservedAgreementCiLow.Get()
+	}
 	toSerialize["policy"] = o.Policy
 	toSerialize["project_id"] = o.ProjectId
 	toSerialize["reliability_bins"] = o.ReliabilityBins

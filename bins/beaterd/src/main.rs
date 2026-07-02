@@ -11,7 +11,7 @@ use beater_auth::SqliteApiKeyStore;
 use beater_billing::SqliteBillingStore;
 use beater_bus::{DeadLetter, DurableBus, InMemoryBus, SqliteDurableBus};
 use beater_calibration::SqliteCalibrationStore;
-use beater_composio::HttpComposioClient;
+use beater_composio::{ConnectorToolPolicy, HttpComposioClient};
 use beater_core::{IdempotencyKey, Money, Page, PageRequest, ProjectId, TenantId, TraceId};
 use beater_datasets::SqliteDatasetStore;
 use beater_experiments::SqliteExperimentStore;
@@ -29,6 +29,7 @@ use beater_oauth::SqliteOAuthStore;
 use beater_oauth_server::OAuthServerState;
 use beater_otlp::{OtlpGrpcTraceService, TraceServiceServer};
 use beater_prompts::SqlitePromptRegistry;
+use beater_scenarios::SqliteScenarioStore;
 use beater_schema::{
     ArtifactRef, AuthContext, CanonicalTraceBatch, RawEnvelope, RedactionClass, RunFilter,
     RunSummary, SpanFilter, SpanSummary, TraceView, WriteAck,
@@ -103,6 +104,14 @@ struct Args {
     auth_mode: AuthModeArg,
     #[arg(long, env = "BEATER_PROVIDER_SECRET_KEY")]
     provider_secret_key: Option<String>,
+    /// Comma-separated connector tool slugs allowed to execute even when they
+    /// are external-write, destructive, messaging, payment, secret, or unknown
+    /// risk. Deny entries still win.
+    #[arg(long, env = "BEATER_CONNECTOR_ALLOW_TOOLS", value_delimiter = ',')]
+    connector_allow_tools: Vec<String>,
+    /// Comma-separated connector tool slugs that must never execute.
+    #[arg(long, env = "BEATER_CONNECTOR_DENY_TOOLS", value_delimiter = ',')]
+    connector_deny_tools: Vec<String>,
     #[arg(long, value_enum, default_value_t = JudgeProviderArg::Keyword)]
     judge_provider: JudgeProviderArg,
     #[arg(long, env = "BEATER_JUDGE_BUDGET_MICROS", default_value_t = 1_000_000)]
@@ -263,6 +272,7 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|| args.data_dir.join("quotas.sqlite"));
     let metadata_db_path = args.data_dir.join("metadata.sqlite");
     let dataset_db_path = args.data_dir.join("datasets.sqlite");
+    let scenario_db_path = args.data_dir.join("scenarios.sqlite");
     let experiment_db_path = args.data_dir.join("experiments.sqlite");
     let gate_db_path = args.data_dir.join("gates.sqlite");
     let review_db_path = args.data_dir.join("reviews.sqlite");
@@ -281,6 +291,7 @@ async fn main() -> anyhow::Result<()> {
         quota_path.clone(),
         metadata_db_path.clone(),
         dataset_db_path.clone(),
+        scenario_db_path.clone(),
         experiment_db_path.clone(),
         gate_db_path.clone(),
         review_db_path.clone(),
@@ -325,6 +336,7 @@ async fn main() -> anyhow::Result<()> {
     )?);
     let archive = ParquetTraceArchive::new(args.data_dir.join("archive"))?;
     let datasets = Arc::new(SqliteDatasetStore::open(dataset_db_path)?);
+    let scenarios = Arc::new(SqliteScenarioStore::open(scenario_db_path)?);
     let experiments = Arc::new(SqliteExperimentStore::open(experiment_db_path)?);
     let gates = Arc::new(SqliteGateStore::open(gate_db_path)?);
     let human_reviews = Arc::new(SqliteHumanReviewStore::open(review_db_path)?);
@@ -455,6 +467,7 @@ async fn main() -> anyhow::Result<()> {
     let otlp_grpc = OtlpGrpcTraceService::new(ingest.clone(), otlp_default_scope);
     let mut state =
         ApiState::with_integrations(ingest, traces, search, archive, datasets, experiments)
+            .with_scenarios(scenarios)
             .with_metadata(metadata)
             .with_gates(gates)
             .with_human_reviews(human_reviews)
@@ -462,7 +475,12 @@ async fn main() -> anyhow::Result<()> {
             .with_usage(usage)
             .with_audit(audit)
             .with_prompts(prompts)
-            .with_judge(provider_secrets, judge_broker, judge_ledger);
+            .with_judge(provider_secrets, judge_broker, judge_ledger)
+            .with_connector_tool_policy(
+                ConnectorToolPolicy::default()
+                    .with_allowed_tools(args.connector_allow_tools.clone())
+                    .with_denied_tools(args.connector_deny_tools.clone()),
+            );
     // Billing/Stripe is hosted-only and compiled in only under the `billing`
     // feature; the OSS daemon neither opens a billing store nor wires the
     // Stripe webhook route.
@@ -475,6 +493,13 @@ async fn main() -> anyhow::Result<()> {
     // 501 and beaterd runs with zero third-party cloud dependency (OSS default).
     if let Some(connectors) = HttpComposioClient::from_env() {
         state = state.with_connectors(Arc::new(connectors));
+    }
+    if !args.connector_allow_tools.is_empty() || !args.connector_deny_tools.is_empty() {
+        eprintln!(
+            "connector tool policy configured: allow={} deny={}",
+            args.connector_allow_tools.len(),
+            args.connector_deny_tools.len()
+        );
     }
     // Build the API-key store once (strict auth only) and share it between the
     // `/v1` auth path and the session-authorized `/auth/api-keys` endpoints.

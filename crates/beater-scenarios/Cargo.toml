@@ -7,9 +7,12 @@ repository.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+async-trait.workspace = true
 beater-core = { path = "../beater-core" }
 beater-schema = { path = "../beater-schema" }
+beater-store = { path = "../beater-store" }
 chrono.workspace = true
+rusqlite.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
@@ -19,6 +22,7 @@ uuid.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
+tokio.workspace = true
 
 [lints]
 workspace = true

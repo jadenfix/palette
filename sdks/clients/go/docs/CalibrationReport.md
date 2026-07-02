@@ -7,6 +7,8 @@ Name | Type | Description | Notes
 **BrierScore** | **float64** |  | 
 **CalibrationReportId** | **string** |  | 
 **CohenKappa** | **float64** |  | 
+**CohenKappaCiHigh** | Pointer to **NullableFloat64** |  | [optional] 
+**CohenKappaCiLow** | Pointer to **NullableFloat64** | Percentile-bootstrap 95% confidence interval for &#x60;cohen_kappa&#x60; (multinomial resampling of the confusion table, deterministic seed). Kappa over small calibration samples is high-variance; a bare point estimate invites over-reading. Absent on pre-uncertainty reports. | [optional] 
 **Confusion** | [**CalibrationConfusion**](CalibrationConfusion.md) |  | 
 **CreatedAt** | **time.Time** |  | 
 **DatasetId** | **string** |  | 
@@ -17,6 +19,8 @@ Name | Type | Description | Notes
 **ExpectedCalibrationError** | **float64** |  | 
 **Items** | [**[]CalibrationItem**](CalibrationItem.md) |  | 
 **ObservedAgreement** | **float64** |  | 
+**ObservedAgreementCiHigh** | Pointer to **NullableFloat64** |  | [optional] 
+**ObservedAgreementCiLow** | Pointer to **NullableFloat64** | Wilson 95% confidence interval for &#x60;observed_agreement&#x60; — the honest width of an agreement estimate over a (typically small) human-labelled sample. Absent on reports persisted before uncertainty was reported. | [optional] 
 **Policy** | [**CalibrationPolicy**](CalibrationPolicy.md) |  | 
 **ProjectId** | **string** |  | 
 **ReliabilityBins** | [**[]ReliabilityBin**](ReliabilityBin.md) |  | 
@@ -102,6 +106,76 @@ and a boolean to check if the value has been set.
 SetCohenKappa sets CohenKappa field to given value.
 
 
+### GetCohenKappaCiHigh
+
+`func (o *CalibrationReport) GetCohenKappaCiHigh() float64`
+
+GetCohenKappaCiHigh returns the CohenKappaCiHigh field if non-nil, zero value otherwise.
+
+### GetCohenKappaCiHighOk
+
+`func (o *CalibrationReport) GetCohenKappaCiHighOk() (*float64, bool)`
+
+GetCohenKappaCiHighOk returns a tuple with the CohenKappaCiHigh field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetCohenKappaCiHigh
+
+`func (o *CalibrationReport) SetCohenKappaCiHigh(v float64)`
+
+SetCohenKappaCiHigh sets CohenKappaCiHigh field to given value.
+
+### HasCohenKappaCiHigh
+
+`func (o *CalibrationReport) HasCohenKappaCiHigh() bool`
+
+HasCohenKappaCiHigh returns a boolean if a field has been set.
+
+### SetCohenKappaCiHighNil
+
+`func (o *CalibrationReport) SetCohenKappaCiHighNil(b bool)`
+
+ SetCohenKappaCiHighNil sets the value for CohenKappaCiHigh to be an explicit nil
+
+### UnsetCohenKappaCiHigh
+`func (o *CalibrationReport) UnsetCohenKappaCiHigh()`
+
+UnsetCohenKappaCiHigh ensures that no value is present for CohenKappaCiHigh, not even an explicit nil
+### GetCohenKappaCiLow
+
+`func (o *CalibrationReport) GetCohenKappaCiLow() float64`
+
+GetCohenKappaCiLow returns the CohenKappaCiLow field if non-nil, zero value otherwise.
+
+### GetCohenKappaCiLowOk
+
+`func (o *CalibrationReport) GetCohenKappaCiLowOk() (*float64, bool)`
+
+GetCohenKappaCiLowOk returns a tuple with the CohenKappaCiLow field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetCohenKappaCiLow
+
+`func (o *CalibrationReport) SetCohenKappaCiLow(v float64)`
+
+SetCohenKappaCiLow sets CohenKappaCiLow field to given value.
+
+### HasCohenKappaCiLow
+
+`func (o *CalibrationReport) HasCohenKappaCiLow() bool`
+
+HasCohenKappaCiLow returns a boolean if a field has been set.
+
+### SetCohenKappaCiLowNil
+
+`func (o *CalibrationReport) SetCohenKappaCiLowNil(b bool)`
+
+ SetCohenKappaCiLowNil sets the value for CohenKappaCiLow to be an explicit nil
+
+### UnsetCohenKappaCiLow
+`func (o *CalibrationReport) UnsetCohenKappaCiLow()`
+
+UnsetCohenKappaCiLow ensures that no value is present for CohenKappaCiLow, not even an explicit nil
 ### GetConfusion
 
 `func (o *CalibrationReport) GetConfusion() CalibrationConfusion`
@@ -302,6 +376,76 @@ and a boolean to check if the value has been set.
 SetObservedAgreement sets ObservedAgreement field to given value.
 
 
+### GetObservedAgreementCiHigh
+
+`func (o *CalibrationReport) GetObservedAgreementCiHigh() float64`
+
+GetObservedAgreementCiHigh returns the ObservedAgreementCiHigh field if non-nil, zero value otherwise.
+
+### GetObservedAgreementCiHighOk
+
+`func (o *CalibrationReport) GetObservedAgreementCiHighOk() (*float64, bool)`
+
+GetObservedAgreementCiHighOk returns a tuple with the ObservedAgreementCiHigh field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetObservedAgreementCiHigh
+
+`func (o *CalibrationReport) SetObservedAgreementCiHigh(v float64)`
+
+SetObservedAgreementCiHigh sets ObservedAgreementCiHigh field to given value.
+
+### HasObservedAgreementCiHigh
+
+`func (o *CalibrationReport) HasObservedAgreementCiHigh() bool`
+
+HasObservedAgreementCiHigh returns a boolean if a field has been set.
+
+### SetObservedAgreementCiHighNil
+
+`func (o *CalibrationReport) SetObservedAgreementCiHighNil(b bool)`
+
+ SetObservedAgreementCiHighNil sets the value for ObservedAgreementCiHigh to be an explicit nil
+
+### UnsetObservedAgreementCiHigh
+`func (o *CalibrationReport) UnsetObservedAgreementCiHigh()`
+
+UnsetObservedAgreementCiHigh ensures that no value is present for ObservedAgreementCiHigh, not even an explicit nil
+### GetObservedAgreementCiLow
+
+`func (o *CalibrationReport) GetObservedAgreementCiLow() float64`
+
+GetObservedAgreementCiLow returns the ObservedAgreementCiLow field if non-nil, zero value otherwise.
+
+### GetObservedAgreementCiLowOk
+
+`func (o *CalibrationReport) GetObservedAgreementCiLowOk() (*float64, bool)`
+
+GetObservedAgreementCiLowOk returns a tuple with the ObservedAgreementCiLow field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetObservedAgreementCiLow
+
+`func (o *CalibrationReport) SetObservedAgreementCiLow(v float64)`
+
+SetObservedAgreementCiLow sets ObservedAgreementCiLow field to given value.
+
+### HasObservedAgreementCiLow
+
+`func (o *CalibrationReport) HasObservedAgreementCiLow() bool`
+
+HasObservedAgreementCiLow returns a boolean if a field has been set.
+
+### SetObservedAgreementCiLowNil
+
+`func (o *CalibrationReport) SetObservedAgreementCiLowNil(b bool)`
+
+ SetObservedAgreementCiLowNil sets the value for ObservedAgreementCiLow to be an explicit nil
+
+### UnsetObservedAgreementCiLow
+`func (o *CalibrationReport) UnsetObservedAgreementCiLow()`
+
+UnsetObservedAgreementCiLow ensures that no value is present for ObservedAgreementCiLow, not even an explicit nil
 ### GetPolicy
 
 `func (o *CalibrationReport) GetPolicy() CalibrationPolicy`

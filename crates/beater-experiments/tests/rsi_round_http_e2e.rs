@@ -36,7 +36,7 @@ use axum::{
     routing::post,
     Router,
 };
-use beater_eval::{GateDecision, GatePolicy};
+use beater_eval::{GateDecision, GatePolicy, VarianceReduction};
 use beater_experiments::{
     run_optimization_round, CandidateChange, CandidateEvaluator, CaseScore, FailureExample,
     OptimizationRoundConfig, OptimizerError, OptimizerStrategy, Split,
@@ -429,6 +429,7 @@ impl<G: TextGenerator> CandidateEvaluator for HttpModelEvaluator<G> {
                 split: case.split,
                 baseline_score: substring_match_score(&baseline, &case.expected),
                 candidate_score: substring_match_score(&candidate_answer, &case.expected),
+                covariate: None,
             });
         }
         Ok(scores)
@@ -690,6 +691,7 @@ impl CandidateEvaluator for ScriptedEvaluator {
                 split,
                 baseline_score: *b,
                 candidate_score: *c,
+                covariate: None,
             });
         }
         for (b, c) in &self.test {
@@ -697,6 +699,7 @@ impl CandidateEvaluator for ScriptedEvaluator {
                 split: Split::Test,
                 baseline_score: *b,
                 candidate_score: *c,
+                covariate: None,
             });
         }
         Ok(out)
@@ -1119,6 +1122,7 @@ impl CandidateEvaluator for TargetedEvaluator {
                 split,
                 baseline_score: b,
                 candidate_score: c,
+                covariate: None,
             });
         }
         for _ in 0..6 {
@@ -1126,6 +1130,7 @@ impl CandidateEvaluator for TargetedEvaluator {
                 split: Split::Test,
                 baseline_score: b,
                 candidate_score: c,
+                covariate: None,
             });
         }
         Ok(out)
@@ -1186,5 +1191,154 @@ async fn empty_failures_round_still_proposes_and_gates() {
     assert!(
         outcome.accepted.is_some(),
         "a generalizing candidate is accepted"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// CUPED variance reduction (§10.3 #4 / #436 item 4) end-to-end.
+//
+// A worked sample of the whole path: a real HTTP proposer, the public
+// `run_optimization_round` entrypoint, and a per-case pre-experiment difficulty
+// covariate carried on `CaseScore::covariate`. The held-out lift is a genuine but
+// small +0.05 buried under noise that the difficulty proxy almost fully explains,
+// so the raw paired-t is underpowered — until a *pre-registered* CUPED covariate
+// regresses the noise out.
+// ---------------------------------------------------------------------------
+
+/// A scripted evaluator that emits, per held-out Test case, a `(baseline,
+/// candidate, difficulty)` triple — `difficulty` is a pre-experiment covariate
+/// (independent of the candidate: baseline is constant, so it is a pure
+/// case-hardness proxy, never an arm's own score). The optimization split carries
+/// the same clean +0.05 lift so there is no generalization gap for the
+/// anti-overfit guardrail to trip on. These are the exact values the
+/// `beater-experiments` unit test proves flip the gate, so the outcome is
+/// deterministic over the real HTTP seam.
+#[derive(Clone)]
+struct DifficultyCovariateEvaluator;
+
+impl DifficultyCovariateEvaluator {
+    /// 12 held-out cases: `(difficulty, candidate_score)`, baseline fixed at 0.50.
+    /// The candidate score tracks difficulty tightly, so almost all of the
+    /// case-to-case spread in the paired lift is explained by the covariate.
+    const HELD_OUT: [(f64, f64); 12] = [
+        (0.0, 0.405),
+        (1.0, 0.695),
+        (0.1, 0.435),
+        (0.9, 0.665),
+        (0.2, 0.465),
+        (0.8, 0.635),
+        (0.3, 0.495),
+        (0.7, 0.605),
+        (0.4, 0.525),
+        (0.6, 0.575),
+        (0.45, 0.54),
+        (0.55, 0.56),
+    ];
+}
+
+#[async_trait]
+impl CandidateEvaluator for DifficultyCovariateEvaluator {
+    async fn evaluate(
+        &self,
+        _candidate: &CandidateChange,
+        _cases: &[Value],
+    ) -> Result<Vec<CaseScore>, String> {
+        let mut out = Vec::new();
+        for (difficulty, candidate_score) in Self::HELD_OUT {
+            out.push(CaseScore {
+                split: Split::Test,
+                baseline_score: 0.50,
+                candidate_score,
+                covariate: Some(difficulty),
+            });
+        }
+        // Optimization split: the same +0.05 mean lift, cleanly, so the
+        // generalization gap is ~0 (no covariate needed off the held-out split).
+        for i in 0..8 {
+            let split = if i % 2 == 0 { Split::Train } else { Split::Val };
+            out.push(CaseScore {
+                split,
+                baseline_score: 0.50,
+                candidate_score: 0.55,
+                covariate: None,
+            });
+        }
+        Ok(out)
+    }
+}
+
+/// Runs one round through the real HTTP proposer with the given variance-reduction
+/// policy and returns the outcome. A fresh mock server per call keeps the two
+/// rounds independent.
+async fn run_round_with_variance_reduction(
+    policy: VarianceReduction,
+) -> beater_experiments::OptimizationOutcome {
+    let state = MockState::new(ProposerBehavior::Rewrite, EvalPolicy::Unused);
+    let endpoint = spawn(state, Wire::Anthropic).await;
+    let provider = AnthropicJudgeProvider::new(provider_config(endpoint));
+    let mut cfg = round_config(OptimizerStrategy::LlmRewrite);
+    cfg.variance_reduction = policy;
+    run_optimization_round(cfg, &provider, creds(), &DifficultyCovariateEvaluator)
+        .await
+        .unwrap_or_else(|e| panic!("{e}"))
+}
+
+/// The sample, end-to-end: the SAME held-out scores are `Inconclusive` (and not
+/// accepted) under the default no-variance-reduction policy, but resolve to a
+/// `Pass` (and are accepted) once the round pre-registers a CUPED difficulty
+/// covariate — proving the covariate and its known population mean actually reach
+/// the gate through the public `run_optimization_round` entrypoint, over real HTTP.
+#[tokio::test]
+async fn cuped_difficulty_covariate_resolves_the_round_over_real_http() {
+    // Baseline policy: no variance reduction → the noise leaves the gate underpowered.
+    let plain = run_round_with_variance_reduction(VarianceReduction::None).await;
+    assert_eq!(
+        plain.evaluated[0].gate.decision,
+        GateDecision::Inconclusive,
+        "without CUPED the held-out gate is underpowered"
+    );
+    assert!(
+        plain.accepted.is_none(),
+        "an inconclusive round accepts nothing"
+    );
+
+    // Pre-registered CUPED covariate (known population difficulty mean 0.7): the
+    // regression estimator regresses the noise out and the tightened CI clears the
+    // bound → Pass, and with no generalization gap the candidate is accepted.
+    let cuped = run_round_with_variance_reduction(VarianceReduction::Cuped {
+        covariate: "prior_difficulty".to_string(),
+        population_mean: 0.7,
+    })
+    .await;
+    let evaluation = &cuped.evaluated[0];
+    assert_eq!(
+        evaluation.gate.decision,
+        GateDecision::Pass,
+        "a pre-registered CUPED covariate resolves the same round to a Pass"
+    );
+    // The wire `test` stays `PairedT` by design — a paired t on CUPED-adjusted
+    // differences is still a paired t, and "CUPED was applied" is recorded in the
+    // pre-registered design, not the wire result (that is why the /v1 contract is
+    // unchanged). So CUPED is observable here through its *effect*, not a new enum:
+    // the regression estimator moves the point estimate off the raw delta...
+    assert_eq!(evaluation.gate.test, beater_eval::StatisticalTest::PairedT);
+    assert!(
+        evaluation.gate.delta > plain.evaluated[0].gate.delta,
+        "the known-mean regression estimator must move the delta upward \
+         (plain {:.4} vs cuped {:.4})",
+        plain.evaluated[0].gate.delta,
+        evaluation.gate.delta
+    );
+    // ...and the variance-reduced CI is strictly narrower than the raw paired-t CI
+    // — together, the mechanism by which CUPED earns the Pass on the same data.
+    let plain_width = plain.evaluated[0].gate.ci_high - plain.evaluated[0].gate.ci_low;
+    let cuped_width = evaluation.gate.ci_high - evaluation.gate.ci_low;
+    assert!(
+        cuped_width < plain_width,
+        "CUPED must narrow the gate CI (plain {plain_width:.4} vs cuped {cuped_width:.4})"
+    );
+    assert!(
+        cuped.accepted.is_some(),
+        "a covariate-resolved Pass with no overfit gap must be accepted"
     );
 }

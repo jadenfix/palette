@@ -708,6 +708,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/scenarios/{tenant_id}/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listScenarios"];
+        put?: never;
+        post: operations["createScenario"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scenarios/{tenant_id}/{project_id}/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["mineScenarios"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scenarios/{tenant_id}/{project_id}/{scenario_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getScenario"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/search/{tenant_id}/spans": {
         parameters: {
             query?: never;
@@ -888,7 +936,7 @@ export interface components {
         };
         ApiKeyId: string;
         /** @enum {string} */
-        ApiScope: "trace_write" | "trace_read" | "dataset_write" | "eval_run" | "pii_unmask" | "admin";
+        ApiScope: "trace_write" | "trace_read" | "dataset_write" | "scenario_write" | "scenario_read" | "eval_run" | "pii_unmask" | "admin";
         ArchiveManifest: {
             /** Format: date-time */
             created_at: string;
@@ -938,7 +986,7 @@ export interface components {
             uri: string;
         };
         /** @enum {string} */
-        AuditAction: "pii_unmask" | "api_key_create" | "api_key_revoke" | "provider_secret_create" | "provider_secret_revoke";
+        AuditAction: "pii_unmask" | "api_key_create" | "api_key_revoke" | "provider_secret_create" | "provider_secret_revoke" | "connector_tool_invoke";
         AuditEvent: {
             action: components["schemas"]["AuditAction"];
             actor_api_key_id?: null | components["schemas"]["ApiKeyId"];
@@ -1003,6 +1051,16 @@ export interface components {
             calibration_report_id: components["schemas"]["CalibrationReportId"];
             /** Format: double */
             cohen_kappa: number;
+            /** Format: double */
+            cohen_kappa_ci_high?: number | null;
+            /**
+             * Format: double
+             * @description Percentile-bootstrap 95% confidence interval for `cohen_kappa`
+             *     (multinomial resampling of the confusion table, deterministic seed).
+             *     Kappa over small calibration samples is high-variance; a bare point
+             *     estimate invites over-reading. Absent on pre-uncertainty reports.
+             */
+            cohen_kappa_ci_low?: number | null;
             confusion: components["schemas"]["CalibrationConfusion"];
             /** Format: date-time */
             created_at: string;
@@ -1017,6 +1075,15 @@ export interface components {
             items: components["schemas"]["CalibrationItem"][];
             /** Format: double */
             observed_agreement: number;
+            /** Format: double */
+            observed_agreement_ci_high?: number | null;
+            /**
+             * Format: double
+             * @description Wilson 95% confidence interval for `observed_agreement` — the honest
+             *     width of an agreement estimate over a (typically small) human-labelled
+             *     sample. Absent on reports persisted before uncertainty was reported.
+             */
+            observed_agreement_ci_low?: number | null;
             policy: components["schemas"]["CalibrationPolicy"];
             project_id: components["schemas"]["ProjectId"];
             reliability_bins: components["schemas"]["ReliabilityBin"][];
@@ -1184,6 +1251,13 @@ export interface components {
             annotation_schema: unknown;
             name: string;
             queue_id?: string | null;
+        };
+        CreateScenarioRequest: {
+            exemplar_trace_id?: string | null;
+            expected_outcome?: string | null;
+            failure_mode?: null | components["schemas"]["FailureMode"];
+            source_trace_ids: string[];
+            title: string;
         };
         CreatedPrompt: {
             prompt: components["schemas"]["Prompt"];
@@ -1461,6 +1535,11 @@ export interface components {
             project_id: components["schemas"]["ProjectId"];
             tenant_id: components["schemas"]["TenantId"];
         };
+        /**
+         * @description A deterministically-inferred class of failure.
+         * @enum {string}
+         */
+        FailureMode: "tool_error" | "timeout" | "guardrail_block" | "wrong_output" | "retrieval_miss" | "other";
         /** @enum {string} */
         GateDecision: "pass" | "fail_regression" | "inconclusive";
         GateDefinition: {
@@ -1569,11 +1648,23 @@ export interface components {
             result: components["schemas"]["ScoreResult"];
         };
         JudgeCallId: string;
+        ListScenariosResponse: {
+            next_cursor?: string | null;
+            scenarios: components["schemas"]["Scenario"][];
+        };
         MaintenanceWindow: {
             /** Format: date-time */
             ends_at: string;
             /** Format: date-time */
             starts_at: string;
+        };
+        MineScenariosRequest: {
+            /** Format: double */
+            jaccard_threshold?: number | null;
+            trace_ids: string[];
+        };
+        MineScenariosResponse: {
+            clusters: components["schemas"]["ScenarioCluster"][];
         };
         ModelRef: {
             name: string;
@@ -1645,6 +1736,21 @@ export interface components {
                 trace_id: components["schemas"]["TraceId"];
             }[];
             next_cursor?: string | null;
+        };
+        /** @description Tunable knobs describing how a scenario may be perturbed during replay. */
+        PerturbationKnobs: {
+            /** @description Force an auth failure on a dependency. */
+            auth_failure: boolean;
+            /** @description Inject a contradictory context source. */
+            contradictory_source: boolean;
+            /** @description Attempt a prompt-injection payload. */
+            prompt_injection: boolean;
+            /** @description Serve a stale version of a context source. */
+            stale_source: boolean;
+            /** @description Force a timeout on a dependency. */
+            timeout: boolean;
+            /** @description Present a tool whose schema mismatches expectations. */
+            tool_schema_mismatch: boolean;
         };
         ProjectId: string;
         PromoteReviewAnnotationHttpRequest: {
@@ -1884,6 +1990,47 @@ export interface components {
         };
         /** @enum {string} */
         SamplingReason: "error_trace" | "slow_trace" | "high_cost_trace" | "routine_sampled" | "routine_dropped";
+        /** @description A reusable failure scenario mined from production traces. */
+        Scenario: {
+            /**
+             * Format: date-time
+             * @description When the scenario was created.
+             */
+            created_at: string;
+            /** @description The representative trace. */
+            exemplar_trace_id: components["schemas"]["TraceId"];
+            /** @description Expected outcome for replay assertions, if known. */
+            expected_outcome?: string | null;
+            /** @description The dominant failure mode this scenario reproduces. */
+            failure_mode: components["schemas"]["FailureMode"];
+            /** @description Suggested perturbation knobs for replay. */
+            perturbation_knobs: components["schemas"]["PerturbationKnobs"];
+            /** @description How many traces exhibited this scenario. */
+            recurrence_count: number;
+            /** @description Redaction classification of the scenario payload. */
+            redaction_class: components["schemas"]["RedactionClass"];
+            /** @description Stable, deterministic identifier for the scenario. */
+            scenario_id: string;
+            /** @description Tenant/project/environment scope this scenario belongs to. */
+            scope: components["schemas"]["TenantScope"];
+            /** @description Trace ids the scenario was mined from, sorted ascending. */
+            source_trace_ids: components["schemas"]["TraceId"][];
+            /** @description Human-readable title. */
+            title: string;
+        };
+        /** @description A cluster of failing traces that share a similar failure signature. */
+        ScenarioCluster: {
+            /** @description The most common failure mode across members. */
+            dominant_failure_mode: components["schemas"]["FailureMode"];
+            /** @description The representative trace for the cluster. */
+            exemplar_trace_id: components["schemas"]["TraceId"];
+            /** @description All member trace ids, sorted ascending. */
+            member_trace_ids: components["schemas"]["TraceId"][];
+            /** @description The signature of the cluster's exemplar. */
+            signature: components["schemas"]["Signature"];
+            /** @description Number of member traces. */
+            size: number;
+        };
         ScoreResult: {
             evidence: unknown;
             label?: string | null;
@@ -1908,6 +2055,19 @@ export interface components {
             hits: components["schemas"]["SearchHit"][];
         };
         Sha256Hash: string;
+        /**
+         * @description A structural fingerprint of a trace's failure shape.
+         *
+         *     Two traces with the same ordered failing-span shingles share a [`Signature`]
+         *     (and therefore the same [`Signature::hash`]). The `shingles` set is also used
+         *     for Jaccard similarity during clustering.
+         */
+        Signature: {
+            /** @description Stable sha256 hash of the ordered shingles. */
+            hash: string;
+            /** @description Ordered `(kind|status)` shingles of failing spans. */
+            shingles: string[];
+        };
         SpanId: string;
         SpanIoResponse: {
             input: components["schemas"]["SpanIoValue"];
@@ -1935,14 +2095,15 @@ export interface components {
         /** @enum {string} */
         SpanStatus: "ok" | "error" | "unset";
         /**
-         * @description The statistical test that produced an [`ExperimentComparison`]. These mirror
-         *     `beater_stats::TestKind`; the gate records which method was actually used so a
-         *     reader can tell a t-test result from an exact McNemar one. The old single
-         *     `PairedNormalApproximation` (a hard-coded-z normal approximation with no
-         *     p-value) is gone — see `beater-stats`.
+         * @description The statistical test that produced an [`ExperimentComparison`]. The gate
+         *     records which method was **actually executed** so a reader can tell a
+         *     t-test result from an exact McNemar, Wilcoxon, bootstrap, cluster-robust, or
+         *     anytime-valid sequential one. The old single `PairedNormalApproximation`
+         *     (a hard-coded-z normal approximation with no p-value) is gone — see
+         *     `beater-stats`.
          * @enum {string}
          */
-        StatisticalTest: "paired_t" | "mcnemar_exact";
+        StatisticalTest: "paired_t" | "mcnemar_exact" | "wilcoxon_signed_rank" | "paired_bootstrap" | "clustered_paired_t" | "sequential_e_value";
         SubmitReviewAnnotationHttpRequest: {
             annotation_id?: string | null;
             payload: unknown;
@@ -5351,6 +5512,281 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetCase"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listScenarios: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+            };
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List scenarios */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListScenariosResponse"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createScenario: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateScenarioRequest"];
+            };
+        };
+        responses: {
+            /** @description Create a scenario */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Scenario"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    mineScenarios: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MineScenariosRequest"];
+            };
+        };
+        responses: {
+            /** @description Mine scenario clusters from traces */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MineScenariosResponse"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getScenario: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+                /** @description scenario_id */
+                scenario_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get a scenario */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Scenario"];
                 };
             };
             /** @description Invalid request, scope, or filter */

@@ -1,0 +1,92 @@
+name: eval-gate-action
+
+# Proof gate for the repo-root "Beater Eval Gate" composite action (#154).
+#
+# Two layers, so a regression in either the renderer or the action wiring
+# cannot land silently:
+#   1. `render-selfcheck` exercises render_verdict.py against synthetic
+#      reports covering all three GateDecision variants (pass /
+#      fail_regression / inconclusive) — fast, no Rust build.
+#   2. `action-selftest` runs the action itself end-to-end in demo-fixture
+#      mode (`beaterctl gate-run-fixture` seeds a gate whose latest
+#      experiment is a regression) and asserts the emitted outputs:
+#      verdict=fail, passed=false. `fail-on-gate-failure: false` keeps the
+#      failing verdict from failing the selftest step itself.
+
+# Supersede an in-flight run when a PR branch is pushed again, so the shared CI
+# runner pool is not starved by stacked redundant runs. main pushes are never
+# cancelled (their CI history must stay complete).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+on:
+  pull_request:
+    paths:
+      - "action.yml"
+      - "scripts/gate-action/**"
+      - ".github/workflows/eval-gate-action.yml"
+  merge_group:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_NET_RETRY: "10"
+  CARGO_HTTP_MULTIPLEXING: "false"
+  RUST_BACKTRACE: "1"
+
+jobs:
+  render-selfcheck:
+    name: renderer self-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Render all three verdicts from synthetic reports
+        run: python3 scripts/gate-action/test_render.py
+
+  action-selftest:
+    name: action end-to-end (demo fixture)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      # Debug profile: the fixture workload is milliseconds of SQLite, so
+      # build time dominates and release optimization buys nothing here.
+      # Passing beaterctl-path also exercises the prebuilt-binary input.
+      - name: Build beaterctl
+        run: cargo build -q -p beaterctl
+      - name: Run the eval gate action against the demo fixture
+        id: gate
+        uses: ./
+        with:
+          data-dir: ${{ runner.temp }}/beater-selftest
+          demo-fixture: "true"
+          beaterctl-path: target/debug/beaterctl
+          # The fixture's latest experiment is a regression on purpose; the
+          # selftest asserts on outputs instead of failing the step.
+          fail-on-gate-failure: "false"
+          comment-tag: selftest
+      - name: Assert the fixture regression produced verdict=fail
+        env:
+          VERDICT: ${{ steps.gate.outputs.verdict }}
+          PASSED: ${{ steps.gate.outputs.passed }}
+          DECISION: ${{ steps.gate.outputs.decision }}
+          REASON: ${{ steps.gate.outputs.reason }}
+          REPORT_PATH: ${{ steps.gate.outputs.report-path }}
+        run: |
+          set -euo pipefail
+          echo "verdict=${VERDICT} passed=${PASSED} decision=${DECISION}"
+          test "${VERDICT}" = "fail"
+          test "${PASSED}" = "false"
+          test "${DECISION}" = "fail_regression"
+          test -n "${REASON}"
+          test -s "${REPORT_PATH}"

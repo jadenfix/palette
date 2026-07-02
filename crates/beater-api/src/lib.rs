@@ -9,8 +9,8 @@ use beater_alerts::{
 };
 use beater_archive::{ArchiveManifest, ArchiveQuery, ArchivedSpanRow, ParquetTraceArchive};
 use beater_audit::{
-    pii_unmask_event, AuditAction, AuditEvent, AuditEventInsert, AuditOutcome, AuditStore,
-    PiiUnmaskAuditInput,
+    connector_tool_invoke_event, pii_unmask_event, AuditAction, AuditEvent, AuditEventInsert,
+    AuditOutcome, AuditStore, ConnectorToolInvokeAuditInput, PiiUnmaskAuditInput,
 };
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, RevokedApiKey};
 #[cfg(feature = "billing")]
@@ -26,15 +26,15 @@ use beater_calibration::{
 };
 use beater_composio::{
     skill, ComposioClient, ComposioError, ConnectionLink, ConnectionStatus, ConnectorTool,
-    ToolExecution, Toolkit,
+    ConnectorToolPolicy, ConnectorToolPolicyDecision, ToolExecution, Toolkit,
 };
 #[cfg(feature = "billing")]
 use beater_core::OrganizationId;
 use beater_core::{
-    AgentReleaseId, AnnotationId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetId, DatasetVersionId,
-    EnvironmentId, EvaluatorVersionId, ExperimentRunId, GateId, Page, PageRequest, ProjectId,
-    PromptId, PromptVersionId, ProviderSecretId, ReviewQueueId, ReviewTaskId, Sha256Hash, SpanId,
-    TenantId, TenantScope, TraceId,
+    sha256_json_hash, AgentReleaseId, AnnotationId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetId,
+    DatasetVersionId, EnvironmentId, EvaluatorVersionId, ExperimentRunId, GateId, Page,
+    PageRequest, ProjectId, PromptId, PromptVersionId, ProviderSecretId, ReviewQueueId,
+    ReviewTaskId, Sha256Hash, SpanId, TenantId, TenantScope, TraceId,
 };
 use beater_datasets::{
     evaluate_dataset_version, evaluate_dataset_version_with_judge, promote_trace_span_to_case,
@@ -66,6 +66,10 @@ use beater_otlp::{decode_export_trace_request, export_to_raw_trace_ingest_reques
 use beater_prompts::{
     AddPromptVersion, CreatePrompt, CreatedPrompt, Prompt, PromptRegistry, PromptRegistryError,
     PromptTemplate, PromptVersion, PromptVersionDiff,
+};
+use beater_scenarios::{
+    cluster_failures, FailureMode, PerturbationKnobs, Scenario, ScenarioCluster, ScenarioStore,
+    TraceSummary,
 };
 use beater_schema::{
     AgentSpanKind, ArtifactRef, AuthContext, CanonicalSpan, RedactionClass, RunFilter, RunSummary,
@@ -115,6 +119,7 @@ pub struct ApiState {
     search: Arc<dyn SearchIndex>,
     archive: Option<ParquetTraceArchive>,
     datasets: Option<Arc<dyn DatasetStore>>,
+    scenarios: Option<Arc<dyn ScenarioStore>>,
     experiments: Option<Arc<dyn ExperimentStore>>,
     gates: Option<Arc<dyn GateStore>>,
     human_reviews: Option<Arc<dyn HumanReviewStore>>,
@@ -123,6 +128,11 @@ pub struct ApiState {
     auth_mode: AuthMode,
     api_keys: Option<Arc<dyn ApiKeyStore>>,
     provider_secrets: Option<Arc<dyn ProviderSecretStore>>,
+    /// Beater-owned policy gate for connector execution. The connector provider
+    /// supplies metadata and performs execution; this policy decides whether a
+    /// caller may use a specific external tool before execution reaches the
+    /// provider.
+    connector_tool_policy: ConnectorToolPolicy,
     judge_broker: Option<Arc<dyn JudgeBroker>>,
     judge_ledger: Option<Arc<dyn JudgeLedgerStore>>,
     usage: Option<Arc<dyn UsageLedgerStore>>,
@@ -161,6 +171,7 @@ impl ApiState {
             search: Arc::new(NoopSearchIndex),
             archive: None,
             datasets: None,
+            scenarios: None,
             experiments: None,
             gates: None,
             human_reviews: None,
@@ -169,6 +180,7 @@ impl ApiState {
             auth_mode: AuthMode::Disabled,
             api_keys: None,
             provider_secrets: None,
+            connector_tool_policy: ConnectorToolPolicy::default(),
             judge_broker: None,
             judge_ledger: None,
             usage: None,
@@ -254,6 +266,11 @@ impl ApiState {
         self
     }
 
+    pub fn with_scenarios(mut self, scenarios: Arc<dyn ScenarioStore>) -> Self {
+        self.scenarios = Some(scenarios);
+        self
+    }
+
     pub fn with_experiments(mut self, experiments: Arc<dyn ExperimentStore>) -> Self {
         self.experiments = Some(experiments);
         self
@@ -278,6 +295,11 @@ impl ApiState {
 
     pub fn with_gates(mut self, gates: Arc<dyn GateStore>) -> Self {
         self.gates = Some(gates);
+        self
+    }
+
+    pub fn with_connector_tool_policy(mut self, policy: ConnectorToolPolicy) -> Self {
+        self.connector_tool_policy = policy;
         self
     }
 
@@ -346,9 +368,10 @@ impl ApiState {
 ///
 /// Billing/Stripe routes are hosted-only and compiled in only under the
 /// `billing` feature, so the count is feature-aware: the open-source default
-/// build registers 53 `/v1` routes (41 base + 6 always-on `/v1/connectors`
-/// routes + 6 `/v1/prompts` routes); the hosted `billing` build adds 8.
-pub const V1_ROUTE_COUNT: usize = if cfg!(feature = "billing") { 61 } else { 53 };
+/// build registers 57 `/v1` routes (41 base + 6 always-on `/v1/connectors`
+/// routes + 6 `/v1/prompts` routes + 4 `/v1/scenarios` routes); the hosted
+/// `billing` build adds 8.
+pub const V1_ROUTE_COUNT: usize = if cfg!(feature = "billing") { 65 } else { 57 };
 
 /// See [`V1_ROUTE_COUNT`].
 pub fn v1_route_count() -> usize {
@@ -465,6 +488,18 @@ pub fn router(state: ApiState) -> Router {
             get(diff_prompt_versions_route),
         )
         .route("/v1/datasets/:tenant_id/:project_id", post(create_dataset))
+        .route(
+            "/v1/scenarios/:tenant_id/:project_id",
+            post(create_scenario).get(list_scenarios),
+        )
+        .route(
+            "/v1/scenarios/:tenant_id/:project_id/mine",
+            post(mine_scenarios),
+        )
+        .route(
+            "/v1/scenarios/:tenant_id/:project_id/:scenario_id",
+            get(get_scenario),
+        )
         .route(
             "/v1/datasets/:tenant_id/:project_id/:dataset_id/cases/from-trace",
             post(promote_dataset_case),
@@ -1188,9 +1223,13 @@ async fn connector_skills_route(
         .list_tools(&query.toolkit, CONNECTOR_TOOL_LIMIT)
         .await
         .map_err(map_composio_err)?;
+    let allowed_tools: Vec<ConnectorTool> = tools
+        .into_iter()
+        .filter(|tool| state.connector_tool_policy.evaluate(tool).allowed)
+        .collect();
     Ok(Json(ConnectorSkillsResponse {
         toolkit: query.toolkit,
-        skills: skill::skills_doc(&tools),
+        skills: skill::skills_doc(&allowed_tools),
     }))
 }
 
@@ -1312,13 +1351,82 @@ async fn invoke_connector_tool_route(
     let connectors = connector_client(&state)?;
     let tenant_id = TenantId::new(tenant_id)?;
     let project_id = ProjectId::new(project_id)?;
-    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
+    let auth =
+        authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun)
+            .await?;
+    let tool = connectors
+        .get_tool(&request.tool)
+        .await
+        .map_err(map_composio_err)?;
+    if !tool.slug.eq_ignore_ascii_case(request.tool.trim()) {
+        return Err(ApiError::internal(format!(
+            "connector provider returned metadata for {} while resolving {}",
+            tool.slug, request.tool
+        )));
+    }
+    let policy_decision = state.connector_tool_policy.evaluate(&tool);
+    record_connector_tool_policy_audit_if_configured(
+        &state,
+        &tenant_id,
+        &project_id,
+        &auth,
+        &tool,
+        &request.arguments,
+        &policy_decision,
+    )
+    .await?;
+    if !policy_decision.allowed {
+        return Err(ApiError::forbidden(policy_decision.reason));
+    }
     let user_id = connector_user_id(&tenant_id, &project_id);
     let execution = connectors
         .execute(&request.tool, &user_id, request.arguments)
         .await
         .map_err(map_composio_err)?;
     Ok(Json(execution))
+}
+
+async fn record_connector_tool_policy_audit_if_configured(
+    state: &ApiState,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+    auth: &AuthDecision,
+    tool: &ConnectorTool,
+    arguments: &serde_json::Value,
+    policy_decision: &ConnectorToolPolicyDecision,
+) -> Result<(), ApiError> {
+    let Some(audit) = state.audit.as_ref().cloned() else {
+        return Ok(());
+    };
+    let arguments_hash = sha256_json_hash(arguments)
+        .map_err(|err| ApiError::internal(format!("hash connector tool arguments: {err}")))?;
+    let outcome = if policy_decision.allowed {
+        AuditOutcome::Allowed
+    } else {
+        AuditOutcome::Denied
+    };
+    audit
+        .append_event(connector_tool_invoke_event(ConnectorToolInvokeAuditInput {
+            tenant_id: tenant_id.clone(),
+            project_id: project_id.clone(),
+            environment_id: auth.environment_id.clone(),
+            actor_api_key_id: auth.context.api_key_id.clone(),
+            tool_slug: tool.slug.clone(),
+            outcome,
+            reason: Some(policy_decision.reason.clone()),
+            attributes: serde_json::json!({
+                "arguments_hash": arguments_hash.as_str(),
+                "approval_id": policy_decision.approval_id,
+                "connector": "composio",
+                "no_auth": tool.no_auth,
+                "policy_decision": if policy_decision.allowed { "allowed" } else { "denied" },
+                "risk_class": policy_decision.risk_class.as_str(),
+                "tool": tool.slug,
+                "toolkit": tool.toolkit,
+            }),
+        }))
+        .await?;
+    Ok(())
 }
 
 #[utoipa::path(
@@ -2890,6 +2998,236 @@ async fn create_dataset(
 
 #[utoipa::path(
     post,
+    path = "/v1/scenarios/{tenant_id}/{project_id}",
+    tag = "scenarios",
+    operation_id = "createScenario",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    request_body = CreateScenarioRequest,
+    responses(
+        (status = 200, description = "Create a scenario", body = Scenario),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+    )
+)]
+async fn create_scenario(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+    Json(request): Json<CreateScenarioRequest>,
+) -> Result<Json<Scenario>, ApiError> {
+    let scenarios = scenario_store(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::ScenarioWrite,
+    )
+    .await?;
+    let scope = TenantScope::new(tenant_id, project_id, EnvironmentId::new("default")?);
+    let failure_mode = request.failure_mode.unwrap_or(FailureMode::Other);
+    let mut source_trace_ids = request
+        .source_trace_ids
+        .into_iter()
+        .map(TraceId::new)
+        .collect::<Result<Vec<_>, _>>()?;
+    source_trace_ids.sort();
+    let exemplar_trace_id = match request.exemplar_trace_id {
+        Some(id) => TraceId::new(id)?,
+        None => source_trace_ids.first().cloned().ok_or_else(|| {
+            ApiError::bad_request("scenario needs at least one source trace".to_string())
+        })?,
+    };
+    let scenario = Scenario {
+        scenario_id: uuid::Uuid::new_v4().to_string(),
+        scope,
+        title: request.title,
+        failure_mode,
+        recurrence_count: source_trace_ids.len(),
+        source_trace_ids,
+        exemplar_trace_id,
+        perturbation_knobs: PerturbationKnobs::for_failure_mode(failure_mode),
+        expected_outcome: request.expected_outcome,
+        redaction_class: RedactionClass::Internal,
+        created_at: Utc::now(),
+    };
+    let scenario = scenarios.put_scenario(scenario).await?;
+    Ok(Json(scenario))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/scenarios/{tenant_id}/{project_id}",
+    tag = "scenarios",
+    operation_id = "listScenarios",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ListScenariosQuery,
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "List scenarios", body = ListScenariosResponse),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+    )
+)]
+async fn list_scenarios(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+    axum::extract::Query(params): axum::extract::Query<ListScenariosQuery>,
+) -> Result<Json<ListScenariosResponse>, ApiError> {
+    let scenarios = scenario_store(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::ScenarioRead,
+    )
+    .await?;
+    // Store returns scenarios ordered by (created_at, scenario_id); paginate with
+    // an opaque cursor equal to the last scenario_id returned on the prior page.
+    let limit = params.limit.unwrap_or(50).clamp(1, 200) as usize;
+    let all = scenarios.list_scenarios(&tenant_id, &project_id).await?;
+    let start = match params.cursor.as_deref() {
+        Some(cursor) => all
+            .iter()
+            .position(|s| s.scenario_id == cursor)
+            .map(|i| i + 1)
+            .unwrap_or(all.len()),
+        None => 0,
+    };
+    let page: Vec<Scenario> = all.iter().skip(start).take(limit).cloned().collect();
+    let next_cursor = if start + page.len() < all.len() {
+        page.last().map(|s| s.scenario_id.clone())
+    } else {
+        None
+    };
+    Ok(Json(ListScenariosResponse {
+        scenarios: page,
+        next_cursor,
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/scenarios/{tenant_id}/{project_id}/{scenario_id}",
+    tag = "scenarios",
+    operation_id = "getScenario",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("scenario_id" = String, Path, description = "scenario_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "Get a scenario", body = Scenario),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+    )
+)]
+async fn get_scenario(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id, scenario_id)): Path<(String, String, String)>,
+) -> Result<Json<Scenario>, ApiError> {
+    let scenarios = scenario_store(&state)?;
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::ScenarioRead,
+    )
+    .await?;
+    let scenario = scenarios
+        .get_scenario(&tenant_id, &project_id, &scenario_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found(format!("scenario {scenario_id} not found")))?;
+    Ok(Json(scenario))
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/scenarios/{tenant_id}/{project_id}/mine",
+    tag = "scenarios",
+    operation_id = "mineScenarios",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    request_body = MineScenariosRequest,
+    responses(
+        (status = 200, description = "Mine scenario clusters from traces", body = MineScenariosResponse),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 404, description = "Resource not found", body = ErrorResponse),
+    )
+)]
+async fn mine_scenarios(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+    Json(request): Json<MineScenariosRequest>,
+) -> Result<Json<MineScenariosResponse>, ApiError> {
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::ScenarioRead,
+    )
+    .await?;
+    let mut summaries = Vec::with_capacity(request.trace_ids.len());
+    for id in request.trace_ids {
+        let trace_id = TraceId::new(id)?;
+        let trace = state
+            .traces
+            .get_project_trace(tenant_id.clone(), project_id.clone(), trace_id)
+            .await?;
+        if let Some(summary) = TraceSummary::from_spans(&trace.spans) {
+            summaries.push(summary);
+        }
+    }
+    let clusters = cluster_failures(&summaries, request.jaccard_threshold.unwrap_or(0.6))
+        .map_err(|err| ApiError::bad_request(err.to_string()))?;
+    Ok(Json(MineScenariosResponse { clusters }))
+}
+
+#[utoipa::path(
+    post,
     path = "/v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace",
     tag = "datasets",
     operation_id = "promoteDatasetCaseFromTrace",
@@ -3908,6 +4246,10 @@ fn prompt_registry(state: &ApiState) -> Result<Arc<dyn PromptRegistry>, ApiError
     require(&state.prompts, "prompt registry")
 }
 
+fn scenario_store(state: &ApiState) -> Result<Arc<dyn ScenarioStore>, ApiError> {
+    require(&state.scenarios, "scenario store")
+}
+
 fn provider_secret_store(state: &ApiState) -> Result<Arc<dyn ProviderSecretStore>, ApiError> {
     require(&state.provider_secrets, "provider secret store")
 }
@@ -4032,6 +4374,40 @@ struct ArchiveQueryResponse {
 #[derive(Clone, Debug, Deserialize, ToSchema)]
 struct CreateDatasetRequest {
     name: String,
+}
+
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+struct CreateScenarioRequest {
+    title: String,
+    failure_mode: Option<FailureMode>,
+    source_trace_ids: Vec<String>,
+    exemplar_trace_id: Option<String>,
+    expected_outcome: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+struct MineScenariosRequest {
+    trace_ids: Vec<String>,
+    jaccard_threshold: Option<f64>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+struct ListScenariosQuery {
+    limit: Option<u32>,
+    cursor: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+struct ListScenariosResponse {
+    scenarios: Vec<Scenario>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    next_cursor: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+struct MineScenariosResponse {
+    clusters: Vec<ScenarioCluster>,
 }
 
 #[derive(Clone, Debug, Deserialize, ToSchema)]

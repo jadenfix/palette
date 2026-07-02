@@ -182,6 +182,7 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     for rel in [
         "README.md",
         "docs/demos/gate2-outside-runner-card.md",
+        "docs/demos/gate2-clean-clone-runbook.md",
         "docs/demos/gate2-outside-person-proof.md",
         "scripts/generate-gate2-outside-proof.py",
     ] {
@@ -193,8 +194,18 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
         );
     }
 
-    let readme = fs::read_to_string(root.join("README.md"))
-        .unwrap_or_else(|err| panic!("read README.md: {err}"));
+    // The detailed clean-clone runbook moved out of the (now concise) README
+    // (#548) into the Gate 2 docs set; assert the outside-run documentation
+    // contract against README plus that set so it tracks the content wherever
+    // the docs keep it.
+    let readme = [
+        "README.md",
+        "docs/demos/gate2-outside-runner-card.md",
+        "docs/demos/gate2-clean-clone-runbook.md",
+        "docs/demos/gate2-outside-person-proof.md",
+    ]
+    .map(|rel| fs::read_to_string(root.join(rel)).unwrap_or_else(|err| panic!("read {rel}: {err}")))
+    .join("\n");
     assert!(readme.contains(canonical_outside_command()));
     assert!(canonical_outside_command().contains("cd ./beater"));
     assert!(!canonical_outside_command().contains("cd beater"));
@@ -208,9 +219,11 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(
         readme.contains("[Gate 2 Outside Runner Card](docs/demos/gate2-outside-runner-card.md)")
     );
-    assert!(readme.contains(
-        "[docs/demos/gate2-outside-runner-card.md](docs/demos/gate2-outside-runner-card.md)"
-    ));
+    // The path-literal runner-card reference lives in the clean-clone runbook,
+    // which sits inside docs/demos/ — so its link target is card-relative.
+    assert!(
+        readme.contains("[docs/demos/gate2-outside-runner-card.md](gate2-outside-runner-card.md)")
+    );
     assert!(readme.contains("curl, `ffprobe`,\nand SHA tooling"));
     assert!(readme.contains("Docker Compose v2, `curl`, `ffprobe`, local Docker daemon"));
     assert!(readme.contains("requires `python3` 3.9+ before the timed run"));
@@ -1275,13 +1288,21 @@ fn gate2_public_handoff_verifier_rejects_missing_quickstart_timing_guard() {
     let registry = tempdir("create registry fixture dir");
     write_registry_fixtures(registry.path());
     let fixture_repo = write_public_handoff_fixture_repo();
-    let readme_path = fixture_repo.path().join("README.md");
-    replace(
-        &readme_path,
-        "not wait for the script to finish",
-        "wait for the script to finish",
-    );
-    git_success(fixture_repo.path(), &["add", "README.md"]);
+    // Strip the "seconds remaining" timing guidance from every handoff doc
+    // that carries it (guidance is enforced across the Gate 2 doc set).
+    let mut changed = false;
+    for rel in [
+        "README.md",
+        "docs/demos/gate2-outside-runner-card.md",
+        "docs/demos/gate2-clean-clone-runbook.md",
+        "docs/demos/gate2-outside-person-proof.md",
+    ] {
+        let path = fixture_repo.path().join(rel);
+        changed |= replace_if_present(&path, "seconds remaining", "time remaining");
+        changed |= replace_if_present(&path, "seconds\nremaining", "time\nremaining");
+    }
+    assert!(changed, "fixture docs no longer carry the timing guidance");
+    git_success(fixture_repo.path(), &["add", "."]);
     git_success(
         fixture_repo.path(),
         &["commit", "-m", "break quickstart timing guard"],
@@ -1293,7 +1314,7 @@ fn gate2_public_handoff_verifier_rejects_missing_quickstart_timing_guard() {
 
     assert_failure(
         output,
-        "README.md must contain quickstart handoff guidance for outside runners",
+        "must contain quickstart handoff guidance for outside runners: 'seconds remaining'",
     );
 }
 
@@ -1302,18 +1323,30 @@ fn gate2_public_handoff_verifier_rejects_unfiltered_quickstart_handoff_docs() {
     let registry = tempdir("create registry fixture dir");
     write_registry_fixtures(registry.path());
     let fixture_repo = write_public_handoff_fixture_repo();
-    let readme_path = fixture_repo.path().join("README.md");
-    replace(
-        &readme_path,
-        "open that filtered\ntrace-list URL",
-        "open the printed dashboard URL",
+    // Strip the filtered trace-list guidance from every handoff doc that
+    // carries it (guidance is enforced across the Gate 2 doc set), covering
+    // line-wrapped variants of the phrase.
+    let mut changed = false;
+    for rel in [
+        "README.md",
+        "docs/demos/gate2-outside-runner-card.md",
+        "docs/demos/gate2-clean-clone-runbook.md",
+        "docs/demos/gate2-outside-person-proof.md",
+    ] {
+        let path = fixture_repo.path().join(rel);
+        for (from, to) in [
+            ("open that filtered", "open the printed"),
+            ("open that\nfiltered", "open the\nprinted"),
+            ("open\nthat filtered", "open\nthe printed"),
+        ] {
+            changed |= replace_if_present(&path, from, to);
+        }
+    }
+    assert!(
+        changed,
+        "fixture docs no longer carry the filtered-URL guidance"
     );
-    replace(
-        &readme_path,
-        "open that filtered trace-list URL",
-        "open the printed dashboard URL",
-    );
-    git_success(fixture_repo.path(), &["add", "README.md"]);
+    git_success(fixture_repo.path(), &["add", "."]);
     git_success(
         fixture_repo.path(),
         &["commit", "-m", "break filtered quickstart guidance"],
@@ -1325,7 +1358,7 @@ fn gate2_public_handoff_verifier_rejects_unfiltered_quickstart_handoff_docs() {
 
     assert_failure(
         output,
-        "README.md must contain quickstart handoff guidance for outside runners",
+        "must contain quickstart handoff guidance for outside runners: 'open that filtered trace-list URL'",
     );
 }
 
@@ -6032,6 +6065,21 @@ fn replace(path: &Path, from: &str, to: &str) {
         .unwrap_or_else(|err| panic!("write {}: {err}", path.display()));
 }
 
+/// Replace `from` with `to` in `path` when present; returns whether anything
+/// changed. Handoff guidance is enforced across the Gate 2 doc set, so
+/// rejection fixtures must strip a phrase from every doc that carries it
+/// (including line-wrapped variants) rather than assuming one file.
+fn replace_if_present(path: &Path, from: &str, to: &str) -> bool {
+    let text =
+        fs::read_to_string(path).unwrap_or_else(|err| panic!("read {}: {err}", path.display()));
+    if !text.contains(from) {
+        return false;
+    }
+    fs::write(path, text.replace(from, to))
+        .unwrap_or_else(|err| panic!("write {}: {err}", path.display()));
+    true
+}
+
 fn append(path: &Path, suffix: &str) {
     let mut text =
         fs::read_to_string(path).unwrap_or_else(|err| panic!("read {}: {err}", path.display()));
@@ -6146,6 +6194,7 @@ fn write_public_handoff_fixture_repo() -> TempDir {
         "docker-compose.yml",
         "docker-compose.prebuilt.yml",
         "docs/demos/gate2-outside-runner-card.md",
+        "docs/demos/gate2-clean-clone-runbook.md",
         "docs/demos/gate2-outside-person-proof.md",
         "docs/demos/gate2-compose-browser-demo.md",
         "docs/demos/gate2-compose-stopwatch.md",

@@ -15,5 +15,7 @@
 
 * `PROVIDER_SECRET_REVOKE` (value: `"provider_secret_revoke"`)
 
+* `CONNECTOR_TOOL_INVOKE` (value: `"connector_tool_invoke"`)
+
 
 

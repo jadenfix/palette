@@ -53,6 +53,7 @@ public:
         AuditAction_API_KEY_REVOKE,
         AuditAction_PROVIDER_SECRET_CREATE,
         AuditAction_PROVIDER_SECRET_REVOKE,
+        AuditAction_CONNECTOR_TOOL_INVOKE,
     };
 
     eAuditAction getValue() const;

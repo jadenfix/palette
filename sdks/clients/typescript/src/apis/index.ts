@@ -17,6 +17,7 @@ export * from './OnlineApi';
 export * from './PromptsApi';
 export * from './ProviderSecretsApi';
 export * from './ReviewsApi';
+export * from './ScenariosApi';
 export * from './SearchApi';
 export * from './SpansApi';
 export * from './TracesApi';

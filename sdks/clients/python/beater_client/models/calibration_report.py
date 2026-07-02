@@ -19,7 +19,7 @@ import json
 
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt, StrictStr
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Annotated
 from beater_client.models.calibration_confusion import CalibrationConfusion
 from beater_client.models.calibration_item import CalibrationItem
@@ -35,6 +35,8 @@ class CalibrationReport(BaseModel):
     brier_score: Union[StrictFloat, StrictInt]
     calibration_report_id: StrictStr
     cohen_kappa: Union[StrictFloat, StrictInt]
+    cohen_kappa_ci_high: Optional[Union[StrictFloat, StrictInt]] = None
+    cohen_kappa_ci_low: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, description="Percentile-bootstrap 95% confidence interval for `cohen_kappa` (multinomial resampling of the confusion table, deterministic seed). Kappa over small calibration samples is high-variance; a bare point estimate invites over-reading. Absent on pre-uncertainty reports.")
     confusion: CalibrationConfusion
     created_at: datetime
     dataset_id: StrictStr
@@ -45,12 +47,14 @@ class CalibrationReport(BaseModel):
     expected_calibration_error: Union[StrictFloat, StrictInt]
     items: List[CalibrationItem]
     observed_agreement: Union[StrictFloat, StrictInt]
+    observed_agreement_ci_high: Optional[Union[StrictFloat, StrictInt]] = None
+    observed_agreement_ci_low: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, description="Wilson 95% confidence interval for `observed_agreement` — the honest width of an agreement estimate over a (typically small) human-labelled sample. Absent on reports persisted before uncertainty was reported.")
     policy: CalibrationPolicy
     project_id: StrictStr
     reliability_bins: List[ReliabilityBin]
     sample_count: Annotated[int, Field(strict=True, ge=0)]
     tenant_id: StrictStr
-    __properties: ClassVar[List[str]] = ["brier_score", "calibration_report_id", "cohen_kappa", "confusion", "created_at", "dataset_id", "dataset_version_id", "eval_report_id", "evaluator_version_id", "expected_agreement", "expected_calibration_error", "items", "observed_agreement", "policy", "project_id", "reliability_bins", "sample_count", "tenant_id"]
+    __properties: ClassVar[List[str]] = ["brier_score", "calibration_report_id", "cohen_kappa", "cohen_kappa_ci_high", "cohen_kappa_ci_low", "confusion", "created_at", "dataset_id", "dataset_version_id", "eval_report_id", "evaluator_version_id", "expected_agreement", "expected_calibration_error", "items", "observed_agreement", "observed_agreement_ci_high", "observed_agreement_ci_low", "policy", "project_id", "reliability_bins", "sample_count", "tenant_id"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -111,6 +115,26 @@ class CalibrationReport(BaseModel):
                 if _item_reliability_bins:
                     _items.append(_item_reliability_bins.to_dict())
             _dict['reliability_bins'] = _items
+        # set to None if cohen_kappa_ci_high (nullable) is None
+        # and model_fields_set contains the field
+        if self.cohen_kappa_ci_high is None and "cohen_kappa_ci_high" in self.model_fields_set:
+            _dict['cohen_kappa_ci_high'] = None
+
+        # set to None if cohen_kappa_ci_low (nullable) is None
+        # and model_fields_set contains the field
+        if self.cohen_kappa_ci_low is None and "cohen_kappa_ci_low" in self.model_fields_set:
+            _dict['cohen_kappa_ci_low'] = None
+
+        # set to None if observed_agreement_ci_high (nullable) is None
+        # and model_fields_set contains the field
+        if self.observed_agreement_ci_high is None and "observed_agreement_ci_high" in self.model_fields_set:
+            _dict['observed_agreement_ci_high'] = None
+
+        # set to None if observed_agreement_ci_low (nullable) is None
+        # and model_fields_set contains the field
+        if self.observed_agreement_ci_low is None and "observed_agreement_ci_low" in self.model_fields_set:
+            _dict['observed_agreement_ci_low'] = None
+
         return _dict
 
     @classmethod
@@ -126,6 +150,8 @@ class CalibrationReport(BaseModel):
             "brier_score": obj.get("brier_score"),
             "calibration_report_id": obj.get("calibration_report_id"),
             "cohen_kappa": obj.get("cohen_kappa"),
+            "cohen_kappa_ci_high": obj.get("cohen_kappa_ci_high"),
+            "cohen_kappa_ci_low": obj.get("cohen_kappa_ci_low"),
             "confusion": CalibrationConfusion.from_dict(obj["confusion"]) if obj.get("confusion") is not None else None,
             "created_at": obj.get("created_at"),
             "dataset_id": obj.get("dataset_id"),
@@ -136,6 +162,8 @@ class CalibrationReport(BaseModel):
             "expected_calibration_error": obj.get("expected_calibration_error"),
             "items": [CalibrationItem.from_dict(_item) for _item in obj["items"]] if obj.get("items") is not None else None,
             "observed_agreement": obj.get("observed_agreement"),
+            "observed_agreement_ci_high": obj.get("observed_agreement_ci_high"),
+            "observed_agreement_ci_low": obj.get("observed_agreement_ci_low"),
             "policy": CalibrationPolicy.from_dict(obj["policy"]) if obj.get("policy") is not None else None,
             "project_id": obj.get("project_id"),
             "reliability_bins": [ReliabilityBin.from_dict(_item) for _item in obj["reliability_bins"]] if obj.get("reliability_bins") is not None else None,

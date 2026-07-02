@@ -20,6 +20,7 @@
 //! | [`required_sample_size`] / [`minimum_detectable_effect`] / [`achieved_power`] | §10.3 #5 | power / MDE / minimum-sample planning |
 //! | [`holm_bonferroni`] / [`benjamini_hochberg`] | §10.3 #4 | multiple-comparison corrections |
 //! | [`cuped_adjust`] | §10.3 #4 | CUPED variance reduction via a pre-experiment covariate |
+//! | [`cuped_paired_t_test`] | §10.3 #4 | Paired t-test on CUPED-adjusted differences (df n−2) |
 //! | [`hoeffding_race`] | §10.3 / #436 | best-arm identification: eliminate confidently-dominated candidates |
 //! | [`SequentialMeanTest`] / [`evalue_one_sided_mean`] | §10.3 #6 / #436 | always-valid sequential inference (e-values); peek-and-stop |
 //!
@@ -54,8 +55,10 @@
 //!   quickselects only the two percentile endpoints it needs instead of fully
 //!   sorting the resample distribution.
 
+mod agreement;
 mod bca;
 mod clustered;
+mod confseq;
 mod cuped;
 mod mcnemar;
 mod multiplicity;
@@ -64,14 +67,20 @@ mod overfit;
 mod paired;
 mod power;
 mod racing;
+mod resampling;
 mod sequential;
 mod wilcoxon;
 
+pub use agreement::{
+    brier_score, cohen_kappa_binary, cohen_kappa_ci, expected_calibration_error, AgreementCounts,
+};
 pub use bca::{bootstrap_bca_ci, paired_bootstrap_test, PairedBootstrapOutcome};
 pub use clustered::{
-    clustered_bootstrap_ci, clustered_standard_error, iid_standard_error, ClusteredStandardError,
+    clustered_bootstrap_ci, clustered_paired_t_test, clustered_standard_error, iid_standard_error,
+    ClusteredStandardError,
 };
-pub use cuped::{cuped_adjust, CupedOutcome};
+pub use confseq::{confidence_sequence_mean, ConfidenceSequenceOutcome};
+pub use cuped::{cuped_adjust, cuped_paired_t_test, CupedOutcome};
 pub use mcnemar::mcnemar_exact_p;
 pub use multiplicity::{benjamini_hochberg, holm_bonferroni, MultiplicityDecision};
 pub use overfit::{
@@ -181,6 +190,9 @@ pub enum TestKind {
     PairedT,
     /// Exact McNemar test (paired binary outcome).
     McnemarExact,
+    /// Cluster-robust paired t-test (CR1 sandwich SE, `G − 1` df) for
+    /// non-independent paired observations (§10.3 #1).
+    ClusteredPairedT,
 }
 
 /// The result of a hypothesis test: the point estimate (always the mean
@@ -454,51 +466,12 @@ pub fn bootstrap_diff_ci(
 
     let observed_est = mean(sample_a) - mean(sample_b);
 
-    // Each resample draws from an *independent* RNG substream seeded
-    // deterministically from `(seed, i)`. This makes the i-th resample a pure
-    // function of its index — the result no longer depends on iteration order, so
-    // the loop can be evaluated in any order (sequentially, or in parallel under
-    // the `parallel` feature) and still produce a bit-identical, reproducible CI.
-    // Per-substream seeding via SplitMix64 also avoids the inter-stream
-    // correlation a single split xorshift stream can exhibit in parallel Monte
-    // Carlo. `into_par_iter().map().collect()` preserves index order, so the two
-    // paths are numerically identical.
-    let mut diffs: Vec<f64> = {
-        #[cfg(feature = "parallel")]
-        {
-            use rayon::prelude::*;
-            (0..n_resamples)
-                .into_par_iter()
-                .map(|i| resample_diff(sample_a, sample_b, seed, i))
-                .collect()
-        }
-        #[cfg(not(feature = "parallel"))]
-        {
-            (0..n_resamples)
-                .map(|i| resample_diff(sample_a, sample_b, seed, i))
-                .collect()
-        }
-    };
-
-    let alpha = 1.0 - confidence;
-    let lo_idx = (((alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
-    let hi_idx = (((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
-
-    // Only the two percentile order statistics are needed, so quickselect them in
-    // expected O(n_resamples) instead of fully sorting in O(n_resamples log n).
-    // `select_nth_unstable_by` leaves the chosen index holding the value it would
-    // occupy in a fully sorted slice, with all smaller elements ahead of it — so
-    // selecting `lo_idx` within that left partition yields the lower endpoint
-    // without a second full pass. All values are finite (validated above), so
-    // `total_cmp` is a total order.
-    diffs.select_nth_unstable_by(hi_idx, |x, y| x.total_cmp(y));
-    let upper = diffs[hi_idx];
-    let lower = if lo_idx < hi_idx {
-        diffs[..hi_idx].select_nth_unstable_by(lo_idx, |x, y| x.total_cmp(y));
-        diffs[lo_idx]
-    } else {
-        diffs[lo_idx]
-    };
+    // Resample the difference of means through the shared engine: independent
+    // per-index substreams (reproducible, order-independent, parallel under the
+    // `parallel` feature), then quickselect just the two percentile endpoints.
+    let mut diffs = resampling::Bootstrap::new(n_resamples, seed)
+        .replicates(|rng| resample_mean(sample_a, rng) - resample_mean(sample_b, rng));
+    let (lower, upper) = resampling::percentile_endpoints(&mut diffs, 1.0 - confidence);
 
     Ok(BootstrapInterval {
         lower,
@@ -719,10 +692,13 @@ pub(crate) fn looks_normal(values: &[f64]) -> bool {
 
 /// Standard normal CDF: Φ(x) = P(Z ≤ x).
 ///
-/// Implemented using the complementary error function (erfc) approximation from
-/// Abramowitz & Stegun §7.1.26 (max |ε| < 1.5×10⁻⁷ for all finite x).
+/// Implemented on Cody's rational-Chebyshev `erfc` (see [`numerics`]), which has
+/// ~1-ulp *relative* accuracy over the whole line — so deep-tail p-values
+/// (z-statistics beyond 5–6, tail mass below 10⁻⁷) keep their significant
+/// digits instead of inheriting the O(1) relative error of the previous
+/// Abramowitz & Stegun absolute-error polynomial.
 pub fn normal_cdf(x: f64) -> f64 {
-    0.5 * erfc_approx(-x / core::f64::consts::SQRT_2)
+    0.5 * numerics::erfc(-x / core::f64::consts::SQRT_2)
 }
 
 /// Inverse normal CDF: Φ⁻¹(p). Delegates to the crate's higher-accuracy Acklam
@@ -737,25 +713,6 @@ pub fn normal_quantile(p: f64) -> f64 {
         return f64::NAN;
     }
     numerics::normal_quantile(p)
-}
-
-// Abramowitz & Stegun §7.1.26 — erfc approximation (max |ε| < 1.5×10⁻⁷)
-fn erfc_approx(x: f64) -> f64 {
-    // Works for x ≥ 0; mirror for negative x
-    let (x_abs, flip) = if x < 0.0 { (-x, true) } else { (x, false) };
-
-    let t = 1.0 / (1.0 + 0.3275911 * x_abs);
-    let poly = t
-        * (0.254_829_592
-            + t * (-0.284_496_736
-                + t * (1.421_413_741 + t * (-1.453_152_027 + t * 1.061_405_429))));
-    let erfc = poly * (-x_abs * x_abs).exp();
-
-    if flip {
-        2.0 - erfc
-    } else {
-        erfc
-    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -818,21 +775,34 @@ impl Xorshift64 {
 // Internal utilities
 // ─────────────────────────────────────────────────────────────────────────────
 
-pub(crate) fn mean(values: &[f64]) -> f64 {
+/// Arithmetic mean; `0.0` for an empty slice (callers validate emptiness where
+/// it matters). Exported so callers standardizing effects (e.g. the gate's
+/// MDE/required-N annotations) use the *same* moments this crate's power
+/// formulas assume, instead of re-rolling their own.
+pub fn sample_mean(values: &[f64]) -> f64 {
     if values.is_empty() {
         return 0.0;
     }
     values.iter().sum::<f64>() / values.len() as f64
 }
 
+pub(crate) use sample_mean as mean;
+
 /// Unbiased (n − 1) sample variance; 0.0 for fewer than two values.
-pub(crate) fn sample_variance(values: &[f64]) -> f64 {
+pub fn sample_variance(values: &[f64]) -> f64 {
     if values.len() < 2 {
         return 0.0;
     }
     let m = mean(values);
     let sum_sq: f64 = values.iter().map(|v| (v - m).powi(2)).sum();
     sum_sq / (values.len() as f64 - 1.0)
+}
+
+/// Unbiased-variance sample standard deviation `√(s²)`; 0.0 for fewer than two
+/// values. This is the SD the standardized-effect (Cohen's *d*) power
+/// machinery expects for paired differences.
+pub fn sample_std_dev(values: &[f64]) -> f64 {
+    sample_variance(values).sqrt()
 }
 
 pub(crate) fn validate_alpha(alpha: f64) -> Result<(), StatsError> {
@@ -847,23 +817,16 @@ fn is_binary(values: &[f64]) -> bool {
     values.iter().all(|v| *v == 0.0 || *v == 1.0)
 }
 
-fn resample_mean(xs: &[f64], rng: &mut Xorshift64) -> f64 {
+/// Mean of a with-replacement resample of `xs`, drawing `xs.len()` indices from
+/// `rng`. The shared building block every bootstrap statistic is expressed in
+/// terms of (see [`resampling::Bootstrap`]).
+pub(crate) fn resample_mean(xs: &[f64], rng: &mut Xorshift64) -> f64 {
     let n = xs.len();
     let mut sum = 0.0;
     for _ in 0..n {
         sum += xs[rng.next_index(n)];
     }
     sum / n as f64
-}
-
-/// One bootstrap difference `mean(resample_a) − mean(resample_b)` for resample
-/// `index`, computed from an index-keyed RNG substream so it is a pure,
-/// order-independent function of `(seed, index)`.
-fn resample_diff(sample_a: &[f64], sample_b: &[f64], seed: u64, index: usize) -> f64 {
-    let mut rng = Xorshift64::for_resample(seed, index);
-    let ra = resample_mean(sample_a, &mut rng);
-    let rb = resample_mean(sample_b, &mut rng);
-    ra - rb
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -992,6 +955,33 @@ mod tests {
         assert!((normal_cdf(2.576) - 0.99500).abs() < 1e-4);
         // symmetry
         assert!((normal_cdf(1.0) + normal_cdf(-1.0) - 1.0).abs() < 1e-7);
+    }
+
+    /// Deep-tail relative accuracy: the p-value of a very large z-statistic must
+    /// keep its significant digits (the old absolute-error erfc lost all of them
+    /// past z ≈ 5.2). References are correctly-rounded Φ(z) values, kept
+    /// digit-for-digit as computed.
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn normal_cdf_deep_tail_relative_accuracy() {
+        let cases: [(f64, f64); 5] = [
+            (-4.0, 3.167_124_183_311_996_5e-5),
+            (-6.0, 9.865_876_450_377_011_92e-10),
+            (-8.0, 6.220_960_574_271_819_37e-16),
+            (-10.0, 7.619_853_024_160_593_04e-24),
+            (-20.0, 2.753_624_118_606_331_4e-89),
+        ];
+        for (z, want) in cases {
+            let got = normal_cdf(z);
+            let rel = ((got - want) / want).abs();
+            assert!(
+                rel < 1e-10,
+                "Φ({z}) = {got:e}, want {want:e}, rel = {rel:e}"
+            );
+            // Two-sided p as the tests compute it stays meaningful too.
+            let p = 2.0 * normal_cdf(-z.abs());
+            assert!(((p - 2.0 * want) / (2.0 * want)).abs() < 1e-10);
+        }
     }
 
     #[test]
@@ -1206,10 +1196,10 @@ mod tests {
             let ci = bootstrap_diff_ci(&a, &b, confidence, n_resamples, seed)
                 .unwrap_or_else(|err| panic!("{err}"));
 
-            // Reference: regenerate the identical diffs and fully sort them.
-            let mut diffs: Vec<f64> = (0..n_resamples)
-                .map(|i| resample_diff(&a, &b, seed, i))
-                .collect();
+            // Reference: regenerate the identical replicates through the engine and
+            // fully sort them, so this pins quickselect == sort-and-index.
+            let mut diffs = resampling::Bootstrap::new(n_resamples, seed)
+                .replicates(|rng| resample_mean(&a, rng) - resample_mean(&b, rng));
             diffs.sort_by(|x, y| x.total_cmp(y));
             let alpha = 1.0 - confidence;
             let lo = (((alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);

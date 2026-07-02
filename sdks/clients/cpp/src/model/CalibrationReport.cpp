@@ -26,6 +26,10 @@ CalibrationReport::CalibrationReport()
     m_Calibration_report_idIsSet = false;
     m_Cohen_kappa = 0.0;
     m_Cohen_kappaIsSet = false;
+    m_Cohen_kappa_ci_high = 0.0;
+    m_Cohen_kappa_ci_highIsSet = false;
+    m_Cohen_kappa_ci_low = 0.0;
+    m_Cohen_kappa_ci_lowIsSet = false;
     m_ConfusionIsSet = false;
     m_Created_at = utility::datetime();
     m_Created_atIsSet = false;
@@ -44,6 +48,10 @@ CalibrationReport::CalibrationReport()
     m_ItemsIsSet = false;
     m_Observed_agreement = 0.0;
     m_Observed_agreementIsSet = false;
+    m_Observed_agreement_ci_high = 0.0;
+    m_Observed_agreement_ci_highIsSet = false;
+    m_Observed_agreement_ci_low = 0.0;
+    m_Observed_agreement_ci_lowIsSet = false;
     m_PolicyIsSet = false;
     m_Project_id = utility::conversions::to_string_t("");
     m_Project_idIsSet = false;
@@ -80,6 +88,16 @@ web::json::value CalibrationReport::toJson() const
     {   
         
         val[utility::conversions::to_string_t(U("cohen_kappa"))] = ModelBase::toJson(m_Cohen_kappa);
+    }
+    if(m_Cohen_kappa_ci_highIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("cohen_kappa_ci_high"))] = ModelBase::toJson(m_Cohen_kappa_ci_high);
+    }
+    if(m_Cohen_kappa_ci_lowIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("cohen_kappa_ci_low"))] = ModelBase::toJson(m_Cohen_kappa_ci_low);
     }
     if(m_ConfusionIsSet)
     {   
@@ -130,6 +148,16 @@ web::json::value CalibrationReport::toJson() const
     {   
         
         val[utility::conversions::to_string_t(U("observed_agreement"))] = ModelBase::toJson(m_Observed_agreement);
+    }
+    if(m_Observed_agreement_ci_highIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("observed_agreement_ci_high"))] = ModelBase::toJson(m_Observed_agreement_ci_high);
+    }
+    if(m_Observed_agreement_ci_lowIsSet)
+    {   
+        
+        val[utility::conversions::to_string_t(U("observed_agreement_ci_low"))] = ModelBase::toJson(m_Observed_agreement_ci_low);
     }
     if(m_PolicyIsSet)
     {   
@@ -193,6 +221,28 @@ bool CalibrationReport::fromJson(const web::json::value& val)
             double refVal_setCohenKappa;
             ok &= ModelBase::fromJson(fieldValue, refVal_setCohenKappa);
             setCohenKappa(refVal_setCohenKappa);
+            
+        }
+    }
+    if(val.has_field(utility::conversions::to_string_t(U("cohen_kappa_ci_high"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("cohen_kappa_ci_high")));
+        if(!fieldValue.is_null())
+        {
+            double refVal_setCohenKappaCiHigh;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setCohenKappaCiHigh);
+            setCohenKappaCiHigh(refVal_setCohenKappaCiHigh);
+            
+        }
+    }
+    if(val.has_field(utility::conversions::to_string_t(U("cohen_kappa_ci_low"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("cohen_kappa_ci_low")));
+        if(!fieldValue.is_null())
+        {
+            double refVal_setCohenKappaCiLow;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setCohenKappaCiLow);
+            setCohenKappaCiLow(refVal_setCohenKappaCiLow);
             
         }
     }
@@ -306,6 +356,28 @@ bool CalibrationReport::fromJson(const web::json::value& val)
             
         }
     }
+    if(val.has_field(utility::conversions::to_string_t(U("observed_agreement_ci_high"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("observed_agreement_ci_high")));
+        if(!fieldValue.is_null())
+        {
+            double refVal_setObservedAgreementCiHigh;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setObservedAgreementCiHigh);
+            setObservedAgreementCiHigh(refVal_setObservedAgreementCiHigh);
+            
+        }
+    }
+    if(val.has_field(utility::conversions::to_string_t(U("observed_agreement_ci_low"))))
+    {
+        const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("observed_agreement_ci_low")));
+        if(!fieldValue.is_null())
+        {
+            double refVal_setObservedAgreementCiLow;
+            ok &= ModelBase::fromJson(fieldValue, refVal_setObservedAgreementCiLow);
+            setObservedAgreementCiLow(refVal_setObservedAgreementCiLow);
+            
+        }
+    }
     if(val.has_field(utility::conversions::to_string_t(U("policy"))))
     {
         const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("policy")));
@@ -383,6 +455,14 @@ void CalibrationReport::toMultipart(std::shared_ptr<MultipartFormData> multipart
     {
         multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("cohen_kappa")), m_Cohen_kappa));
     }
+    if(m_Cohen_kappa_ci_highIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("cohen_kappa_ci_high")), m_Cohen_kappa_ci_high));
+    }
+    if(m_Cohen_kappa_ci_lowIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("cohen_kappa_ci_low")), m_Cohen_kappa_ci_low));
+    }
     if(m_ConfusionIsSet)
     {
         multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("confusion")), m_Confusion));
@@ -422,6 +502,14 @@ void CalibrationReport::toMultipart(std::shared_ptr<MultipartFormData> multipart
     if(m_Observed_agreementIsSet)
     {
         multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("observed_agreement")), m_Observed_agreement));
+    }
+    if(m_Observed_agreement_ci_highIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("observed_agreement_ci_high")), m_Observed_agreement_ci_high));
+    }
+    if(m_Observed_agreement_ci_lowIsSet)
+    {
+        multipart->add(ModelBase::toHttpContent(namePrefix + utility::conversions::to_string_t(U("observed_agreement_ci_low")), m_Observed_agreement_ci_low));
     }
     if(m_PolicyIsSet)
     {
@@ -471,6 +559,18 @@ bool CalibrationReport::fromMultiPart(std::shared_ptr<MultipartFormData> multipa
         double refVal_setCohenKappa;
         ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("cohen_kappa"))), refVal_setCohenKappa );
         setCohenKappa(refVal_setCohenKappa);
+    }
+    if(multipart->hasContent(utility::conversions::to_string_t(U("cohen_kappa_ci_high"))))
+    {
+        double refVal_setCohenKappaCiHigh;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("cohen_kappa_ci_high"))), refVal_setCohenKappaCiHigh );
+        setCohenKappaCiHigh(refVal_setCohenKappaCiHigh);
+    }
+    if(multipart->hasContent(utility::conversions::to_string_t(U("cohen_kappa_ci_low"))))
+    {
+        double refVal_setCohenKappaCiLow;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("cohen_kappa_ci_low"))), refVal_setCohenKappaCiLow );
+        setCohenKappaCiLow(refVal_setCohenKappaCiLow);
     }
     if(multipart->hasContent(utility::conversions::to_string_t(U("confusion"))))
     {
@@ -531,6 +631,18 @@ bool CalibrationReport::fromMultiPart(std::shared_ptr<MultipartFormData> multipa
         double refVal_setObservedAgreement;
         ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("observed_agreement"))), refVal_setObservedAgreement );
         setObservedAgreement(refVal_setObservedAgreement);
+    }
+    if(multipart->hasContent(utility::conversions::to_string_t(U("observed_agreement_ci_high"))))
+    {
+        double refVal_setObservedAgreementCiHigh;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("observed_agreement_ci_high"))), refVal_setObservedAgreementCiHigh );
+        setObservedAgreementCiHigh(refVal_setObservedAgreementCiHigh);
+    }
+    if(multipart->hasContent(utility::conversions::to_string_t(U("observed_agreement_ci_low"))))
+    {
+        double refVal_setObservedAgreementCiLow;
+        ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("observed_agreement_ci_low"))), refVal_setObservedAgreementCiLow );
+        setObservedAgreementCiLow(refVal_setObservedAgreementCiLow);
     }
     if(multipart->hasContent(utility::conversions::to_string_t(U("policy"))))
     {
@@ -626,6 +738,46 @@ bool CalibrationReport::cohenKappaIsSet() const
 void CalibrationReport::unsetCohen_kappa()
 {
     m_Cohen_kappaIsSet = false;
+}
+double CalibrationReport::getCohenKappaCiHigh() const
+{
+    return m_Cohen_kappa_ci_high;
+}
+
+void CalibrationReport::setCohenKappaCiHigh(double value)
+{
+    m_Cohen_kappa_ci_high = value;
+    m_Cohen_kappa_ci_highIsSet = true;
+}
+
+bool CalibrationReport::cohenKappaCiHighIsSet() const
+{
+    return m_Cohen_kappa_ci_highIsSet;
+}
+
+void CalibrationReport::unsetCohen_kappa_ci_high()
+{
+    m_Cohen_kappa_ci_highIsSet = false;
+}
+double CalibrationReport::getCohenKappaCiLow() const
+{
+    return m_Cohen_kappa_ci_low;
+}
+
+void CalibrationReport::setCohenKappaCiLow(double value)
+{
+    m_Cohen_kappa_ci_low = value;
+    m_Cohen_kappa_ci_lowIsSet = true;
+}
+
+bool CalibrationReport::cohenKappaCiLowIsSet() const
+{
+    return m_Cohen_kappa_ci_lowIsSet;
+}
+
+void CalibrationReport::unsetCohen_kappa_ci_low()
+{
+    m_Cohen_kappa_ci_lowIsSet = false;
 }
 std::shared_ptr<CalibrationConfusion> CalibrationReport::getConfusion() const
 {
@@ -833,6 +985,46 @@ bool CalibrationReport::observedAgreementIsSet() const
 void CalibrationReport::unsetObserved_agreement()
 {
     m_Observed_agreementIsSet = false;
+}
+double CalibrationReport::getObservedAgreementCiHigh() const
+{
+    return m_Observed_agreement_ci_high;
+}
+
+void CalibrationReport::setObservedAgreementCiHigh(double value)
+{
+    m_Observed_agreement_ci_high = value;
+    m_Observed_agreement_ci_highIsSet = true;
+}
+
+bool CalibrationReport::observedAgreementCiHighIsSet() const
+{
+    return m_Observed_agreement_ci_highIsSet;
+}
+
+void CalibrationReport::unsetObserved_agreement_ci_high()
+{
+    m_Observed_agreement_ci_highIsSet = false;
+}
+double CalibrationReport::getObservedAgreementCiLow() const
+{
+    return m_Observed_agreement_ci_low;
+}
+
+void CalibrationReport::setObservedAgreementCiLow(double value)
+{
+    m_Observed_agreement_ci_low = value;
+    m_Observed_agreement_ci_lowIsSet = true;
+}
+
+bool CalibrationReport::observedAgreementCiLowIsSet() const
+{
+    return m_Observed_agreement_ci_lowIsSet;
+}
+
+void CalibrationReport::unsetObserved_agreement_ci_low()
+{
+    m_Observed_agreement_ci_lowIsSet = false;
 }
 std::shared_ptr<CalibrationPolicy> CalibrationReport::getPolicy() const
 {

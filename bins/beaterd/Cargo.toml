@@ -29,6 +29,7 @@ beater-langfuse = { path = "../../crates/beater-langfuse" }
 beater-mcp = { path = "../../crates/beater-mcp" }
 beater-otlp = { path = "../../crates/beater-otlp" }
 beater-prompts = { path = "../../crates/beater-prompts" }
+beater-scenarios = { path = "../../crates/beater-scenarios" }
 beater-search = { path = "../../crates/beater-search" }
 beater-secrets = { path = "../../crates/beater-secrets" }
 beater-schema = { path = "../../crates/beater-schema" }

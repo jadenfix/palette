@@ -26,6 +26,8 @@ typedef struct calibration_report_t {
     double brier_score; //numeric
     char *calibration_report_id; // string
     double cohen_kappa; //numeric
+    double cohen_kappa_ci_high; //numeric
+    double cohen_kappa_ci_low; //numeric
     struct calibration_confusion_t *confusion; //model
     char *created_at; //date time
     char *dataset_id; // string
@@ -36,6 +38,8 @@ typedef struct calibration_report_t {
     double expected_calibration_error; //numeric
     list_t *items; //nonprimitive container
     double observed_agreement; //numeric
+    double observed_agreement_ci_high; //numeric
+    double observed_agreement_ci_low; //numeric
     struct calibration_policy_t *policy; //model
     char *project_id; // string
     list_t *reliability_bins; //nonprimitive container
@@ -49,6 +53,8 @@ __attribute__((deprecated)) calibration_report_t *calibration_report_create(
     double brier_score,
     char *calibration_report_id,
     double cohen_kappa,
+    double cohen_kappa_ci_high,
+    double cohen_kappa_ci_low,
     calibration_confusion_t *confusion,
     char *created_at,
     char *dataset_id,
@@ -59,6 +65,8 @@ __attribute__((deprecated)) calibration_report_t *calibration_report_create(
     double expected_calibration_error,
     list_t *items,
     double observed_agreement,
+    double observed_agreement_ci_high,
+    double observed_agreement_ci_low,
     calibration_policy_t *policy,
     char *project_id,
     list_t *reliability_bins,

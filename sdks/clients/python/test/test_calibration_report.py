@@ -38,6 +38,8 @@ class TestCalibrationReport(unittest.TestCase):
                 brier_score = 1.337,
                 calibration_report_id = '',
                 cohen_kappa = 1.337,
+                cohen_kappa_ci_high = 1.337,
+                cohen_kappa_ci_low = 1.337,
                 confusion = beater_client.models.calibration_confusion.CalibrationConfusion(
                     human_fail_judge_fail = 0, 
                     human_fail_judge_pass = 0, 
@@ -61,6 +63,8 @@ class TestCalibrationReport(unittest.TestCase):
                         judge_score = 1.337, )
                     ],
                 observed_agreement = 1.337,
+                observed_agreement_ci_high = 1.337,
+                observed_agreement_ci_low = 1.337,
                 policy = beater_client.models.calibration_policy.CalibrationPolicy(
                     pass_threshold = 1.337, ),
                 project_id = '',

@@ -23,6 +23,8 @@ const (
 	APISCOPE_TRACE_WRITE ApiScope = "trace_write"
 	APISCOPE_TRACE_READ ApiScope = "trace_read"
 	APISCOPE_DATASET_WRITE ApiScope = "dataset_write"
+	APISCOPE_SCENARIO_WRITE ApiScope = "scenario_write"
+	APISCOPE_SCENARIO_READ ApiScope = "scenario_read"
 	APISCOPE_EVAL_RUN ApiScope = "eval_run"
 	APISCOPE_PII_UNMASK ApiScope = "pii_unmask"
 	APISCOPE_ADMIN ApiScope = "admin"
@@ -33,6 +35,8 @@ var AllowedApiScopeEnumValues = []ApiScope{
 	"trace_write",
 	"trace_read",
 	"dataset_write",
+	"scenario_write",
+	"scenario_read",
 	"eval_run",
 	"pii_unmask",
 	"admin",

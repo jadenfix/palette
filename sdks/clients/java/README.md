@@ -210,6 +210,14 @@ Class | Method | HTTP request | Description
 *ReviewsApi* | [**promoteReviewAnnotationWithHttpInfo**](docs/ReviewsApi.md#promoteReviewAnnotationWithHttpInfo) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote | 
 *ReviewsApi* | [**submitReviewAnnotation**](docs/ReviewsApi.md#submitReviewAnnotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations | 
 *ReviewsApi* | [**submitReviewAnnotationWithHttpInfo**](docs/ReviewsApi.md#submitReviewAnnotationWithHttpInfo) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations | 
+*ScenariosApi* | [**createScenario**](docs/ScenariosApi.md#createScenario) | **POST** /v1/scenarios/{tenant_id}/{project_id} | 
+*ScenariosApi* | [**createScenarioWithHttpInfo**](docs/ScenariosApi.md#createScenarioWithHttpInfo) | **POST** /v1/scenarios/{tenant_id}/{project_id} | 
+*ScenariosApi* | [**getScenario**](docs/ScenariosApi.md#getScenario) | **GET** /v1/scenarios/{tenant_id}/{project_id}/{scenario_id} | 
+*ScenariosApi* | [**getScenarioWithHttpInfo**](docs/ScenariosApi.md#getScenarioWithHttpInfo) | **GET** /v1/scenarios/{tenant_id}/{project_id}/{scenario_id} | 
+*ScenariosApi* | [**listScenarios**](docs/ScenariosApi.md#listScenarios) | **GET** /v1/scenarios/{tenant_id}/{project_id} | 
+*ScenariosApi* | [**listScenariosWithHttpInfo**](docs/ScenariosApi.md#listScenariosWithHttpInfo) | **GET** /v1/scenarios/{tenant_id}/{project_id} | 
+*ScenariosApi* | [**mineScenarios**](docs/ScenariosApi.md#mineScenarios) | **POST** /v1/scenarios/{tenant_id}/{project_id}/mine | 
+*ScenariosApi* | [**mineScenariosWithHttpInfo**](docs/ScenariosApi.md#mineScenariosWithHttpInfo) | **POST** /v1/scenarios/{tenant_id}/{project_id}/mine | 
 *SearchApi* | [**searchSpans**](docs/SearchApi.md#searchSpans) | **GET** /v1/search/{tenant_id}/spans | 
 *SearchApi* | [**searchSpansWithHttpInfo**](docs/SearchApi.md#searchSpansWithHttpInfo) | **GET** /v1/search/{tenant_id}/spans | 
 *SpansApi* | [**getSpan**](docs/SpansApi.md#getSpan) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} | 
@@ -263,6 +271,7 @@ Class | Method | HTTP request | Description
  - [CreatePromptRequest](docs/CreatePromptRequest.md)
  - [CreateProviderSecretHttpRequest](docs/CreateProviderSecretHttpRequest.md)
  - [CreateReviewQueueHttpRequest](docs/CreateReviewQueueHttpRequest.md)
+ - [CreateScenarioRequest](docs/CreateScenarioRequest.md)
  - [CreatedPrompt](docs/CreatedPrompt.md)
  - [Currency](docs/Currency.md)
  - [Dataset](docs/Dataset.md)
@@ -295,6 +304,7 @@ Class | Method | HTTP request | Description
  - [EvaluatorSpec](docs/EvaluatorSpec.md)
  - [ExperimentComparison](docs/ExperimentComparison.md)
  - [ExperimentRunReport](docs/ExperimentRunReport.md)
+ - [FailureMode](docs/FailureMode.md)
  - [GateDecision](docs/GateDecision.md)
  - [GateDefinition](docs/GateDefinition.md)
  - [GatePolicy](docs/GatePolicy.md)
@@ -307,7 +317,10 @@ Class | Method | HTTP request | Description
  - [InvokeConnectorRequest](docs/InvokeConnectorRequest.md)
  - [JudgeAuditRecord](docs/JudgeAuditRecord.md)
  - [JudgeBrokerOutcome](docs/JudgeBrokerOutcome.md)
+ - [ListScenariosResponse](docs/ListScenariosResponse.md)
  - [MaintenanceWindow](docs/MaintenanceWindow.md)
+ - [MineScenariosRequest](docs/MineScenariosRequest.md)
+ - [MineScenariosResponse](docs/MineScenariosResponse.md)
  - [ModelRef](docs/ModelRef.md)
  - [Money](docs/Money.md)
  - [NativeIngestRequest](docs/NativeIngestRequest.md)
@@ -315,6 +328,7 @@ Class | Method | HTTP request | Description
  - [OtlpIngestOutcome](docs/OtlpIngestOutcome.md)
  - [PageRunSummary](docs/PageRunSummary.md)
  - [PageRunSummaryItemsInner](docs/PageRunSummaryItemsInner.md)
+ - [PerturbationKnobs](docs/PerturbationKnobs.md)
  - [PromoteReviewAnnotationHttpRequest](docs/PromoteReviewAnnotationHttpRequest.md)
  - [PromoteTraceCaseRequest](docs/PromoteTraceCaseRequest.md)
  - [Prompt](docs/Prompt.md)
@@ -347,9 +361,12 @@ Class | Method | HTTP request | Description
  - [RunSummary](docs/RunSummary.md)
  - [SamplingDecision](docs/SamplingDecision.md)
  - [SamplingReason](docs/SamplingReason.md)
+ - [Scenario](docs/Scenario.md)
+ - [ScenarioCluster](docs/ScenarioCluster.md)
  - [ScoreResult](docs/ScoreResult.md)
  - [SearchHit](docs/SearchHit.md)
  - [SearchResponse](docs/SearchResponse.md)
+ - [Signature](docs/Signature.md)
  - [SpanIoResponse](docs/SpanIoResponse.md)
  - [SpanIoValue](docs/SpanIoValue.md)
  - [SpanIoValueOneOf](docs/SpanIoValueOneOf.md)

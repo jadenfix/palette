@@ -20,7 +20,7 @@ from typing_extensions import Self
 
 class StatisticalTest(str, Enum):
     """
-    The statistical test that produced an [`ExperimentComparison`]. These mirror `beater_stats::TestKind`; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
+    The statistical test that produced an [`ExperimentComparison`]. The gate records which method was **actually executed** so a reader can tell a t-test result from an exact McNemar, Wilcoxon, bootstrap, cluster-robust, or anytime-valid sequential one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
     """
 
     """
@@ -28,6 +28,10 @@ class StatisticalTest(str, Enum):
     """
     PAIRED_T = 'paired_t'
     MCNEMAR_EXACT = 'mcnemar_exact'
+    WILCOXON_SIGNED_RANK = 'wilcoxon_signed_rank'
+    PAIRED_BOOTSTRAP = 'paired_bootstrap'
+    CLUSTERED_PAIRED_T = 'clustered_paired_t'
+    SEQUENTIAL_E_VALUE = 'sequential_e_value'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

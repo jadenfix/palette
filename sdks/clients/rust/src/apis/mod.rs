@@ -107,6 +107,7 @@ pub mod online_api;
 pub mod prompts_api;
 pub mod provider_secrets_api;
 pub mod reviews_api;
+pub mod scenarios_api;
 pub mod search_api;
 pub mod spans_api;
 pub mod traces_api;

@@ -37,6 +37,8 @@ api/ProviderSecretsAPI.c
 api/ProviderSecretsAPI.h
 api/ReviewsAPI.c
 api/ReviewsAPI.h
+api/ScenariosAPI.c
+api/ScenariosAPI.h
 api/SearchAPI.c
 api/SearchAPI.h
 api/SpansAPI.c
@@ -62,6 +64,7 @@ docs/OnlineAPI.md
 docs/PromptsAPI.md
 docs/ProviderSecretsAPI.md
 docs/ReviewsAPI.md
+docs/ScenariosAPI.md
 docs/SearchAPI.md
 docs/SpansAPI.md
 docs/TracesAPI.md
@@ -103,6 +106,7 @@ docs/create_gate_request.md
 docs/create_prompt_request.md
 docs/create_provider_secret_http_request.md
 docs/create_review_queue_http_request.md
+docs/create_scenario_request.md
 docs/created_prompt.md
 docs/currency.md
 docs/dataset.md
@@ -135,6 +139,7 @@ docs/evaluator_lane.md
 docs/evaluator_spec.md
 docs/experiment_comparison.md
 docs/experiment_run_report.md
+docs/failure_mode.md
 docs/gate_decision.md
 docs/gate_definition.md
 docs/gate_policy.md
@@ -147,7 +152,10 @@ docs/ingest_queue_status.md
 docs/invoke_connector_request.md
 docs/judge_audit_record.md
 docs/judge_broker_outcome.md
+docs/list_scenarios_response.md
 docs/maintenance_window.md
+docs/mine_scenarios_request.md
+docs/mine_scenarios_response.md
 docs/model_ref.md
 docs/money.md
 docs/native_ingest_request.md
@@ -155,6 +163,7 @@ docs/online_sampling_policy.md
 docs/otlp_ingest_outcome.md
 docs/page_run_summary.md
 docs/page_run_summary_items_inner.md
+docs/perturbation_knobs.md
 docs/promote_review_annotation_http_request.md
 docs/promote_trace_case_request.md
 docs/prompt.md
@@ -187,9 +196,12 @@ docs/run_judge_experiment_request.md
 docs/run_summary.md
 docs/sampling_decision.md
 docs/sampling_reason.md
+docs/scenario.md
+docs/scenario_cluster.md
 docs/score_result.md
 docs/search_hit.md
 docs/search_response.md
+docs/signature.md
 docs/span_io_response.md
 docs/span_io_value.md
 docs/span_io_value_one_of.md
@@ -294,6 +306,8 @@ model/create_provider_secret_http_request.c
 model/create_provider_secret_http_request.h
 model/create_review_queue_http_request.c
 model/create_review_queue_http_request.h
+model/create_scenario_request.c
+model/create_scenario_request.h
 model/created_prompt.c
 model/created_prompt.h
 model/currency.c
@@ -358,6 +372,8 @@ model/experiment_comparison.c
 model/experiment_comparison.h
 model/experiment_run_report.c
 model/experiment_run_report.h
+model/failure_mode.c
+model/failure_mode.h
 model/gate_decision.c
 model/gate_decision.h
 model/gate_definition.c
@@ -382,8 +398,14 @@ model/judge_audit_record.c
 model/judge_audit_record.h
 model/judge_broker_outcome.c
 model/judge_broker_outcome.h
+model/list_scenarios_response.c
+model/list_scenarios_response.h
 model/maintenance_window.c
 model/maintenance_window.h
+model/mine_scenarios_request.c
+model/mine_scenarios_request.h
+model/mine_scenarios_response.c
+model/mine_scenarios_response.h
 model/model_ref.c
 model/model_ref.h
 model/money.c
@@ -400,6 +422,8 @@ model/page_run_summary.c
 model/page_run_summary.h
 model/page_run_summary_items_inner.c
 model/page_run_summary_items_inner.h
+model/perturbation_knobs.c
+model/perturbation_knobs.h
 model/promote_review_annotation_http_request.c
 model/promote_review_annotation_http_request.h
 model/promote_trace_case_request.c
@@ -464,12 +488,18 @@ model/sampling_decision.c
 model/sampling_decision.h
 model/sampling_reason.c
 model/sampling_reason.h
+model/scenario.c
+model/scenario.h
+model/scenario_cluster.c
+model/scenario_cluster.h
 model/score_result.c
 model/score_result.h
 model/search_hit.c
 model/search_hit.h
 model/search_response.c
 model/search_response.h
+model/signature.c
+model/signature.h
 model/span_io_response.c
 model/span_io_response.h
 model/span_io_value.c
@@ -554,6 +584,7 @@ unit-test/test_create_gate_request.c
 unit-test/test_create_prompt_request.c
 unit-test/test_create_provider_secret_http_request.c
 unit-test/test_create_review_queue_http_request.c
+unit-test/test_create_scenario_request.c
 unit-test/test_created_prompt.c
 unit-test/test_currency.c
 unit-test/test_dataset.c
@@ -586,6 +617,7 @@ unit-test/test_evaluator_lane.c
 unit-test/test_evaluator_spec.c
 unit-test/test_experiment_comparison.c
 unit-test/test_experiment_run_report.c
+unit-test/test_failure_mode.c
 unit-test/test_gate_decision.c
 unit-test/test_gate_definition.c
 unit-test/test_gate_policy.c
@@ -598,7 +630,10 @@ unit-test/test_ingest_queue_status.c
 unit-test/test_invoke_connector_request.c
 unit-test/test_judge_audit_record.c
 unit-test/test_judge_broker_outcome.c
+unit-test/test_list_scenarios_response.c
 unit-test/test_maintenance_window.c
+unit-test/test_mine_scenarios_request.c
+unit-test/test_mine_scenarios_response.c
 unit-test/test_model_ref.c
 unit-test/test_money.c
 unit-test/test_native_ingest_request.c
@@ -606,6 +641,7 @@ unit-test/test_online_sampling_policy.c
 unit-test/test_otlp_ingest_outcome.c
 unit-test/test_page_run_summary.c
 unit-test/test_page_run_summary_items_inner.c
+unit-test/test_perturbation_knobs.c
 unit-test/test_promote_review_annotation_http_request.c
 unit-test/test_promote_trace_case_request.c
 unit-test/test_prompt.c
@@ -638,9 +674,12 @@ unit-test/test_run_judge_experiment_request.c
 unit-test/test_run_summary.c
 unit-test/test_sampling_decision.c
 unit-test/test_sampling_reason.c
+unit-test/test_scenario.c
+unit-test/test_scenario_cluster.c
 unit-test/test_score_result.c
 unit-test/test_search_hit.c
 unit-test/test_search_response.c
+unit-test/test_signature.c
 unit-test/test_span_io_response.c
 unit-test/test_span_io_value.c
 unit-test/test_span_io_value_one_of.c

@@ -20,6 +20,7 @@ api_online.go
 api_prompts.go
 api_provider_secrets.go
 api_reviews.go
+api_scenarios.go
 api_search.go
 api_spans.go
 api_traces.go
@@ -69,6 +70,7 @@ docs/CreateGateRequest.md
 docs/CreatePromptRequest.md
 docs/CreateProviderSecretHttpRequest.md
 docs/CreateReviewQueueHttpRequest.md
+docs/CreateScenarioRequest.md
 docs/CreatedPrompt.md
 docs/Currency.md
 docs/Dataset.md
@@ -104,6 +106,7 @@ docs/EvaluatorSpec.md
 docs/ExperimentComparison.md
 docs/ExperimentRunReport.md
 docs/ExperimentsAPI.md
+docs/FailureMode.md
 docs/GateDecision.md
 docs/GateDefinition.md
 docs/GatePolicy.md
@@ -120,7 +123,10 @@ docs/InvokeConnectorRequest.md
 docs/JudgeAPI.md
 docs/JudgeAuditRecord.md
 docs/JudgeBrokerOutcome.md
+docs/ListScenariosResponse.md
 docs/MaintenanceWindow.md
+docs/MineScenariosRequest.md
+docs/MineScenariosResponse.md
 docs/ModelRef.md
 docs/Money.md
 docs/NativeIngestRequest.md
@@ -129,6 +135,7 @@ docs/OnlineSamplingPolicy.md
 docs/OtlpIngestOutcome.md
 docs/PageRunSummary.md
 docs/PageRunSummaryItemsInner.md
+docs/PerturbationKnobs.md
 docs/PromoteReviewAnnotationHttpRequest.md
 docs/PromoteTraceCaseRequest.md
 docs/Prompt.md
@@ -164,10 +171,14 @@ docs/RunJudgeExperimentRequest.md
 docs/RunSummary.md
 docs/SamplingDecision.md
 docs/SamplingReason.md
+docs/Scenario.md
+docs/ScenarioCluster.md
+docs/ScenariosAPI.md
 docs/ScoreResult.md
 docs/SearchAPI.md
 docs/SearchHit.md
 docs/SearchResponse.md
+docs/Signature.md
 docs/SpanIoResponse.md
 docs/SpanIoValue.md
 docs/SpanIoValueOneOf.md
@@ -232,6 +243,7 @@ model_create_gate_request.go
 model_create_prompt_request.go
 model_create_provider_secret_http_request.go
 model_create_review_queue_http_request.go
+model_create_scenario_request.go
 model_created_prompt.go
 model_currency.go
 model_dataset.go
@@ -264,6 +276,7 @@ model_evaluator_lane.go
 model_evaluator_spec.go
 model_experiment_comparison.go
 model_experiment_run_report.go
+model_failure_mode.go
 model_gate_decision.go
 model_gate_definition.go
 model_gate_policy.go
@@ -276,7 +289,10 @@ model_ingest_queue_status.go
 model_invoke_connector_request.go
 model_judge_audit_record.go
 model_judge_broker_outcome.go
+model_list_scenarios_response.go
 model_maintenance_window.go
+model_mine_scenarios_request.go
+model_mine_scenarios_response.go
 model_model_ref.go
 model_money.go
 model_native_ingest_request.go
@@ -284,6 +300,7 @@ model_online_sampling_policy.go
 model_otlp_ingest_outcome.go
 model_page_run_summary.go
 model_page_run_summary_items_inner.go
+model_perturbation_knobs.go
 model_promote_review_annotation_http_request.go
 model_promote_trace_case_request.go
 model_prompt.go
@@ -316,9 +333,12 @@ model_run_judge_experiment_request.go
 model_run_summary.go
 model_sampling_decision.go
 model_sampling_reason.go
+model_scenario.go
+model_scenario_cluster.go
 model_score_result.go
 model_search_hit.go
 model_search_response.go
+model_signature.go
 model_span_io_response.go
 model_span_io_value.go
 model_span_io_value_one_of.go
@@ -358,6 +378,7 @@ test/api_online_test.go
 test/api_prompts_test.go
 test/api_provider_secrets_test.go
 test/api_reviews_test.go
+test/api_scenarios_test.go
 test/api_search_test.go
 test/api_spans_test.go
 test/api_traces_test.go

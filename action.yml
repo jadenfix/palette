@@ -1,0 +1,215 @@
+name: "Beater Eval Gate"
+description: >-
+  Run a Beater statistical eval gate in CI and post a pass / fail /
+  INCONCLUSIVE verdict — with effect size, confidence interval, p-value, and
+  (when underpowered) the minimum detectable effect and how many more cases
+  would make the comparison conclusive — to the step summary and, optionally,
+  a sticky PR comment. Runs entirely against the local `--data-dir` store:
+  no Beater server, no API keys.
+author: "Beater"
+branding:
+  icon: "check-circle"
+  color: "green"
+
+inputs:
+  data-dir:
+    description: >-
+      Beater data directory holding gates.sqlite / experiments.sqlite,
+      produced by the eval steps earlier in the job (or by demo-fixture mode).
+    required: false
+    default: ".beater"
+  tenant-id:
+    description: "Tenant id the gate belongs to."
+    required: false
+    default: "demo"
+  project-id:
+    description: "Project id the gate belongs to."
+    required: false
+    default: "demo"
+  gate-id:
+    description: "Gate id to run."
+    required: false
+    default: "main"
+  experiment-run-id:
+    description: >-
+      Specific experiment run to gate on. Empty = the gate's latest
+      experiment run.
+    required: false
+    default: ""
+  beaterctl-path:
+    description: >-
+      Path to a prebuilt beaterctl binary. Empty = build it from this
+      action's checkout with cargo (requires a Rust toolchain on the runner;
+      the first uncached build is slow — prefer a prebuilt binary or a cargo
+      cache in latency-sensitive workflows).
+    required: false
+    default: ""
+  demo-fixture:
+    description: >-
+      "true" seeds the deterministic demo gate + experiments
+      (`beaterctl gate-run-fixture`) into data-dir before running. Zero-config
+      demo/self-test mode; uses tenant/project/gate demo/demo/main.
+    required: false
+    default: "false"
+  fail-on-gate-failure:
+    description: >-
+      "true" (default) fails the step when the gate does not pass, so the
+      gate can be a required check. "false" always succeeds and only reports
+      — the verdict is still available via outputs.
+    required: false
+    default: "true"
+  github-token:
+    description: >-
+      Token used to upsert a sticky verdict comment on the pull request.
+      Empty = no comment (the step summary is always written). Needs
+      `pull-requests: write`.
+    required: false
+    default: ""
+  comment-tag:
+    description: >-
+      Marker distinguishing this gate's sticky comment when a workflow runs
+      several gates on one PR.
+    required: false
+    default: "default"
+
+outputs:
+  verdict:
+    description: "pass | fail | inconclusive"
+    value: ${{ steps.render.outputs.verdict }}
+  passed:
+    description: "true when the gate passed under its inconclusive policy"
+    value: ${{ steps.render.outputs.passed }}
+  decision:
+    description: "Raw GateDecision: pass | fail_regression | inconclusive"
+    value: ${{ steps.render.outputs.decision }}
+  reason:
+    description: "The gate's human-readable reason string"
+    value: ${{ steps.render.outputs.reason }}
+  report-path:
+    description: "Path to the raw gate-run JSON report"
+    value: ${{ steps.gate.outputs.report-path }}
+
+# Every `${{ inputs.* }}` below is passed to bash via `env:`, never spliced
+# into the script text: interpolation into a `run:` body happens before bash
+# parses it, so a crafted input value could otherwise inject shell commands.
+runs:
+  using: "composite"
+  steps:
+    - name: Resolve beaterctl
+      id: resolve
+      shell: bash
+      env:
+        BEATERCTL_INPUT: ${{ inputs.beaterctl-path }}
+      run: |
+        set -euo pipefail
+        if [ -n "$BEATERCTL_INPUT" ]; then
+          BEATERCTL="$BEATERCTL_INPUT"
+        else
+          echo "::group::Building beaterctl from ${GITHUB_ACTION_PATH}"
+          # Pin --target-dir: a consumer job exporting CARGO_TARGET_DIR would
+          # otherwise relocate the build and break the path below.
+          cargo build --release -q -p beaterctl \
+            --manifest-path "${GITHUB_ACTION_PATH}/Cargo.toml" \
+            --target-dir "${GITHUB_ACTION_PATH}/target"
+          echo "::endgroup::"
+          BEATERCTL="${GITHUB_ACTION_PATH}/target/release/beaterctl"
+        fi
+        "$BEATERCTL" --help >/dev/null
+        echo "beaterctl=$BEATERCTL" >> "$GITHUB_OUTPUT"
+
+    - name: Seed demo fixture
+      if: ${{ inputs.demo-fixture == 'true' }}
+      shell: bash
+      env:
+        BEATERCTL: ${{ steps.resolve.outputs.beaterctl }}
+        DATA_DIR: ${{ inputs.data-dir }}
+      run: |
+        set -euo pipefail
+        "$BEATERCTL" gate-run-fixture --data-dir "$DATA_DIR" >/dev/null
+
+    - name: Run the gate
+      id: gate
+      shell: bash
+      env:
+        BEATERCTL: ${{ steps.resolve.outputs.beaterctl }}
+        DATA_DIR: ${{ inputs.data-dir }}
+        TENANT_ID: ${{ inputs.tenant-id }}
+        PROJECT_ID: ${{ inputs.project-id }}
+        GATE_ID: ${{ inputs.gate-id }}
+        EXPERIMENT_RUN_ID: ${{ inputs.experiment-run-id }}
+      run: |
+        set -euo pipefail
+        REPORT="$(mktemp "${RUNNER_TEMP}/beater-gate-report.XXXXXX.json")"
+        ARGS=(gate-run
+          --data-dir "$DATA_DIR"
+          --tenant-id "$TENANT_ID"
+          --project-id "$PROJECT_ID"
+          --gate-id "$GATE_ID")
+        if [ -n "$EXPERIMENT_RUN_ID" ]; then
+          ARGS+=(--experiment-run-id "$EXPERIMENT_RUN_ID")
+        fi
+        # gate-run exits 1 on a non-passing gate; capture instead of aborting
+        # so the verdict is rendered either way.
+        GATE_EXIT=0
+        "$BEATERCTL" "${ARGS[@]}" > "$REPORT" || GATE_EXIT=$?
+        if [ ! -s "$REPORT" ]; then
+          echo "gate-run produced no report (exit ${GATE_EXIT})" >&2
+          exit "$GATE_EXIT"
+        fi
+        echo "report-path=$REPORT" >> "$GITHUB_OUTPUT"
+
+    - name: Render verdict
+      id: render
+      shell: bash
+      env:
+        REPORT: ${{ steps.gate.outputs.report-path }}
+        COMMENT_TAG: ${{ inputs.comment-tag }}
+      run: |
+        set -euo pipefail
+        COMMENT_FILE="$(mktemp "${RUNNER_TEMP}/beater-gate-comment.XXXXXX.md")"
+        python3 "${GITHUB_ACTION_PATH}/scripts/gate-action/render_verdict.py" \
+          --report "$REPORT" \
+          --summary "$GITHUB_STEP_SUMMARY" \
+          --outputs "$GITHUB_OUTPUT" \
+          --comment-file "$COMMENT_FILE" \
+          --comment-tag "$COMMENT_TAG"
+        echo "comment-file=$COMMENT_FILE" >> "$GITHUB_OUTPUT"
+
+    - name: Upsert sticky PR comment
+      if: ${{ inputs.github-token != '' && github.event_name == 'pull_request' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        # Built as an env value (not spliced into the script), and matched in
+        # jq via env.MARKER so quotes/backslashes in the tag cannot break the
+        # filter program.
+        MARKER: "<!-- beater-eval-gate:${{ inputs.comment-tag }} -->"
+        BODY_FILE: ${{ steps.render.outputs.comment-file }}
+      run: |
+        set -euo pipefail
+        EXISTING=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+          --paginate --jq '.[] | select(.body | startswith(env.MARKER)) | .id' | head -n1)
+        if [ -n "$EXISTING" ]; then
+          gh api --method PATCH \
+            "repos/${GITHUB_REPOSITORY}/issues/comments/${EXISTING}" \
+            -F "body=@${BODY_FILE}" >/dev/null
+        else
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            -F "body=@${BODY_FILE}" >/dev/null
+        fi
+
+    - name: Enforce gate result
+      if: ${{ inputs.fail-on-gate-failure == 'true' }}
+      shell: bash
+      env:
+        PASSED: ${{ steps.render.outputs.passed }}
+        VERDICT: ${{ steps.render.outputs.verdict }}
+        REASON: ${{ steps.render.outputs.reason }}
+      run: |
+        set -euo pipefail
+        if [ "$PASSED" != "true" ]; then
+          echo "Beater eval gate verdict: ${VERDICT} — ${REASON}" >&2
+          exit 1
+        fi

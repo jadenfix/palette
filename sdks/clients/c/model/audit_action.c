@@ -5,13 +5,13 @@
 
 
 char* audit_action_audit_action_ToString(beater_api_audit_action__e audit_action) {
-    char *audit_actionArray[] =  { "NULL", "pii_unmask", "api_key_create", "api_key_revoke", "provider_secret_create", "provider_secret_revoke" };
+    char *audit_actionArray[] =  { "NULL", "pii_unmask", "api_key_create", "api_key_revoke", "provider_secret_create", "provider_secret_revoke", "connector_tool_invoke" };
     return audit_actionArray[audit_action];
 }
 
 beater_api_audit_action__e audit_action_audit_action_FromString(char* audit_action) {
     int stringToReturn = 0;
-    char *audit_actionArray[] =  { "NULL", "pii_unmask", "api_key_create", "api_key_revoke", "provider_secret_create", "provider_secret_revoke" };
+    char *audit_actionArray[] =  { "NULL", "pii_unmask", "api_key_create", "api_key_revoke", "provider_secret_create", "provider_secret_revoke", "connector_tool_invoke" };
     size_t sizeofArray = sizeof(audit_actionArray) / sizeof(audit_actionArray[0]);
     while(stringToReturn < sizeofArray) {
         if(strcmp(audit_action, audit_actionArray[stringToReturn]) == 0) {

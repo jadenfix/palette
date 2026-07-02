@@ -28,7 +28,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;
 
+pub mod policy;
 pub mod skill;
+
+pub use policy::{
+    classify_connector_tool, ConnectorToolPolicy, ConnectorToolPolicyDecision,
+    ConnectorToolRiskClass,
+};
 
 /// Default Composio v3 API base URL.
 pub const DEFAULT_BASE_URL: &str = "https://backend.composio.dev/api/v3";
