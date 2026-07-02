@@ -108,14 +108,24 @@ impl SequentialMeanTest {
         self.log_e.exp()
     }
 
-    /// Whether `H0` can be rejected at level `alpha` right now, i.e. `E_n ≥ 1/α`.
-    /// Valid to call after every observation (that is the whole point).
+    /// Whether `H0` is rejected at level `alpha`: has the e-process **ever**
+    /// reached `1/α`, i.e. `sup_{s ≤ n} E_s ≥ 1/α`. Valid to call after every
+    /// observation (that is the whole point), and consistent with
+    /// [`anytime_p_value`](Self::anytime_p_value): `reject(α)` ⟺
+    /// `anytime_p_value() ≤ α`.
+    ///
+    /// Using the running supremum implements the standard first-crossing rule —
+    /// a rejection, once made, stands even if later observations pull `E_n`
+    /// back below the boundary. This is exactly the event Ville's inequality
+    /// bounds (`P_{H0}(∃n: E_n ≥ 1/α) ≤ α`), so type-I control is unchanged; a
+    /// current-value check would merely *forget* a legitimate earlier rejection
+    /// when polled after the fact.
     pub fn reject(&self, alpha: f64) -> Result<bool, StatsError> {
         if !alpha.is_finite() || alpha <= 0.0 || alpha >= 1.0 {
             return Err(StatsError::InvalidAlpha(alpha));
         }
-        // Compare in log space to avoid overflow: ln E_n ≥ ln(1/α) = −ln α.
-        Ok(self.log_e >= -alpha.ln())
+        // Compare in log space to avoid overflow: ln sup E ≥ ln(1/α) = −ln α.
+        Ok(self.log_e_max >= -alpha.ln())
     }
 
     /// The anytime-valid p-value `min(1, 1 / sup_{s ≤ n} E_s)`.
@@ -273,6 +283,12 @@ mod tests {
             test.anytime_p_value() <= p_at_peak,
             "running-sup p must not increase: {} > {p_at_peak}",
             test.anytime_p_value()
+        );
+        // reject() is consistent with the p-value: the first-crossing rejection
+        // stands even though the current e-value fell back below the boundary.
+        assert!(
+            test.reject(0.05).unwrap_or_else(|err| panic!("{err}")),
+            "a made rejection must stand after later shrinkage"
         );
     }
 
