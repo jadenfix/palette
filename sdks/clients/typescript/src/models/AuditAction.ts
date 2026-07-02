@@ -22,7 +22,8 @@ export const AuditAction = {
     ApiKeyCreate: 'api_key_create',
     ApiKeyRevoke: 'api_key_revoke',
     ProviderSecretCreate: 'provider_secret_create',
-    ProviderSecretRevoke: 'provider_secret_revoke'
+    ProviderSecretRevoke: 'provider_secret_revoke',
+    ConnectorToolInvoke: 'connector_tool_invoke'
 } as const;
 export type AuditAction = typeof AuditAction[keyof typeof AuditAction];
 

@@ -31,6 +31,7 @@ class AuditAction(str, Enum):
     API_KEY_REVOKE = 'api_key_revoke'
     PROVIDER_SECRET_CREATE = 'provider_secret_create'
     PROVIDER_SECRET_REVOKE = 'provider_secret_revoke'
+    CONNECTOR_TOOL_INVOKE = 'connector_tool_invoke'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

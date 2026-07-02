@@ -10,16 +10,21 @@
 use async_trait::async_trait;
 use axum::body::{to_bytes, Body};
 use beater_api::{router, ApiState};
+use beater_audit::{AuditAction, AuditOutcome, AuditStore, SqliteAuditStore};
+use beater_auth::{ApiKeyStore, CreateApiKeyRequest, SqliteApiKeyStore};
 use beater_bus::InMemoryBus;
 use beater_composio::{
     skill, ComposioClient, ComposioError, ConnectionLink, ConnectionStatus, ConnectorTool,
-    ToolExecution, Toolkit,
+    ConnectorToolPolicy, ToolExecution, Toolkit,
 };
+use beater_core::{EnvironmentId, ProjectId, TenantId};
 use beater_ingest::{IngestPolicy, IngestService};
+use beater_security::ApiScope;
 use beater_store_obj::FsArtifactStore;
 use beater_store_sql::SqliteTraceStore;
-use http::{Request, StatusCode};
+use http::{HeaderName, HeaderValue, Request, StatusCode};
 use serde_json::{json, Value};
+use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
 
@@ -36,6 +41,7 @@ impl FakeComposio {
     fn calls(&self) -> Vec<String> {
         self.calls.lock().unwrap().clone()
     }
+
     fn issue_tool(toolkit: &str) -> ConnectorTool {
         ConnectorTool {
             slug: "GITHUB_CREATE_AN_ISSUE".to_string(),
@@ -48,6 +54,25 @@ impl FakeComposio {
                 "type": "object",
                 "required": ["title"],
                 "properties": { "title": {"type": "string", "description": "Issue title"} }
+            })),
+        }
+    }
+
+    fn read_tool(toolkit: &str) -> ConnectorTool {
+        ConnectorTool {
+            slug: "GITHUB_GET_REPOSITORY".to_string(),
+            name: "Get a repository".to_string(),
+            description: Some("Get repository metadata.".to_string()),
+            no_auth: false,
+            toolkit: Some(toolkit.to_string()),
+            tags: vec![],
+            input_schema: Some(json!({
+                "type": "object",
+                "required": ["owner", "repo"],
+                "properties": {
+                    "owner": {"type": "string"},
+                    "repo": {"type": "string"}
+                }
             })),
         }
     }
@@ -73,12 +98,19 @@ impl ComposioClient for FakeComposio {
         limit: u32,
     ) -> Result<Vec<ConnectorTool>, ComposioError> {
         self.record(format!("list_tools:{toolkit_slug}:{limit}"));
-        Ok(vec![Self::issue_tool(toolkit_slug)])
+        Ok(vec![
+            Self::read_tool(toolkit_slug),
+            Self::issue_tool(toolkit_slug),
+        ])
     }
 
     async fn get_tool(&self, tool_slug: &str) -> Result<ConnectorTool, ComposioError> {
         self.record(format!("get_tool:{tool_slug}"));
-        Ok(Self::issue_tool("github"))
+        if tool_slug == "GITHUB_GET_REPOSITORY" || tool_slug == "GITHUB_DELETE_REPOSITORY" {
+            Ok(Self::read_tool("github"))
+        } else {
+            Ok(Self::issue_tool("github"))
+        }
     }
 
     async fn connect(
@@ -120,6 +152,31 @@ impl ComposioClient for FakeComposio {
 }
 
 fn state_with(connectors: Option<Arc<FakeComposio>>) -> ApiState {
+    state_with_options(connectors, ConnectorToolPolicy::default(), None, None)
+}
+
+fn state_with_policy(
+    connectors: Option<Arc<FakeComposio>>,
+    policy: ConnectorToolPolicy,
+) -> ApiState {
+    state_with_options(connectors, policy, None, None)
+}
+
+fn state_with_audit_and_auth(
+    connectors: Option<Arc<FakeComposio>>,
+    policy: ConnectorToolPolicy,
+    audit: Arc<SqliteAuditStore>,
+    api_keys: Arc<SqliteApiKeyStore>,
+) -> ApiState {
+    state_with_options(connectors, policy, Some(audit), Some(api_keys))
+}
+
+fn state_with_options(
+    connectors: Option<Arc<FakeComposio>>,
+    policy: ConnectorToolPolicy,
+    audit: Option<Arc<SqliteAuditStore>>,
+    api_keys: Option<Arc<SqliteApiKeyStore>>,
+) -> ApiState {
     // `into_path()` keeps the temp dir alive for the test process; connector
     // endpoints never touch artifacts, so cleanup timing is irrelevant.
     let dir = tempfile::tempdir().unwrap().keep();
@@ -127,9 +184,15 @@ fn state_with(connectors: Option<Arc<FakeComposio>>) -> ApiState {
     let traces = Arc::new(SqliteTraceStore::in_memory().unwrap());
     let bus = Arc::new(InMemoryBus::new(32));
     let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
-    let mut state = ApiState::new(ingest, traces);
+    let mut state = ApiState::new(ingest, traces).with_connector_tool_policy(policy);
     if let Some(c) = connectors {
         state = state.with_connectors(c as Arc<dyn ComposioClient>);
+    }
+    if let Some(audit) = audit {
+        state = state.with_audit(audit);
+    }
+    if let Some(api_keys) = api_keys {
+        state = state.require_auth(api_keys);
     }
     state
 }
@@ -140,15 +203,31 @@ async fn send(
     uri: &str,
     body: Option<Value>,
 ) -> (StatusCode, Value) {
+    send_with_headers(state, method, uri, body, &[]).await
+}
+
+async fn send_with_headers(
+    state: ApiState,
+    method: &str,
+    uri: &str,
+    body: Option<Value>,
+    headers: &[(&str, String)],
+) -> (StatusCode, Value) {
     let app = router(state);
     let req = Request::builder().method(method).uri(uri);
-    let req = match body {
+    let mut req = match body {
         Some(b) => req
             .header("content-type", "application/json")
             .body(Body::from(serde_json::to_vec(&b).unwrap())),
         None => req.body(Body::empty()),
     }
     .unwrap();
+    for (name, value) in headers {
+        req.headers_mut().insert(
+            HeaderName::from_bytes(name.as_bytes()).unwrap_or_else(|err| panic!("{err}")),
+            HeaderValue::from_str(value).unwrap_or_else(|err| panic!("{err}")),
+        );
+    }
     let resp = app.oneshot(req).await.unwrap();
     let status = resp.status();
     let bytes = to_bytes(resp.into_body(), 1 << 20).await.unwrap();
@@ -186,10 +265,10 @@ async fn lists_tools_with_input_schema() {
     .await;
     assert_eq!(status, StatusCode::OK);
     let tools: Vec<ConnectorTool> = serde_json::from_value(body).unwrap();
-    assert_eq!(tools[0].slug, "GITHUB_CREATE_AN_ISSUE");
+    assert_eq!(tools[0].slug, "GITHUB_GET_REPOSITORY");
     // The agent loop needs the schema to construct a valid call.
     assert_eq!(
-        tools[0].input_schema.as_ref().unwrap()["properties"]["title"]["type"],
+        tools[1].input_schema.as_ref().unwrap()["properties"]["title"]["type"],
         "string"
     );
 }
@@ -197,7 +276,10 @@ async fn lists_tools_with_input_schema() {
 #[tokio::test]
 async fn generates_skill_scaffold() {
     let (status, body) = send(
-        state_with(Some(Arc::new(FakeComposio::default()))),
+        state_with_policy(
+            Some(Arc::new(FakeComposio::default())),
+            ConnectorToolPolicy::default().with_allowed_tools(["GITHUB_CREATE_AN_ISSUE"]),
+        ),
         "GET",
         "/v1/connectors/acme/proj/skills?toolkit=github",
         None,
@@ -211,6 +293,21 @@ async fn generates_skill_scaffold() {
     assert!(skills.contains("When to use:"));
     assert!(skills.contains(skill::INVOKE_OPERATION));
     assert!(skills.contains("`title` (string, required)"));
+}
+
+#[tokio::test]
+async fn skills_omit_denied_high_risk_tools() {
+    let (status, body) = send(
+        state_with(Some(Arc::new(FakeComposio::default()))),
+        "GET",
+        "/v1/connectors/acme/proj/skills?toolkit=github",
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let skills = body["skills"].as_str().unwrap();
+    assert!(skills.contains("GITHUB_GET_REPOSITORY"));
+    assert!(!skills.contains("GITHUB_CREATE_AN_ISSUE"));
 }
 
 #[tokio::test]
@@ -254,7 +351,10 @@ async fn reports_connection_status() {
 async fn invokes_tool_and_scopes_entity_per_project() {
     let fake = Arc::new(FakeComposio::default());
     let (status, body) = send(
-        state_with(Some(fake.clone())),
+        state_with_policy(
+            Some(fake.clone()),
+            ConnectorToolPolicy::default().with_allowed_tools(["GITHUB_CREATE_AN_ISSUE"]),
+        ),
         "POST",
         "/v1/connectors/acme/proj/invoke",
         Some(json!({ "tool": "GITHUB_CREATE_AN_ISSUE", "arguments": { "title": "bug" } })),
@@ -268,6 +368,100 @@ async fn invokes_tool_and_scopes_entity_per_project() {
     assert!(fake.calls().iter().any(|c| c
         .starts_with("execute:GITHUB_CREATE_AN_ISSUE:beater:acme:proj:")
         && c.contains("\"title\":\"bug\"")));
+}
+
+#[tokio::test]
+async fn invokes_read_only_tool_without_explicit_allow() {
+    let fake = Arc::new(FakeComposio::default());
+    let (status, body) = send(
+        state_with(Some(fake.clone())),
+        "POST",
+        "/v1/connectors/acme/proj/invoke",
+        Some(json!({ "tool": "GITHUB_GET_REPOSITORY", "arguments": { "owner": "acme", "repo": "repo" } })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let exec: ToolExecution = serde_json::from_value(body).unwrap();
+    assert!(exec.successful);
+    let calls = fake.calls();
+    assert!(calls.iter().any(|c| c == "get_tool:GITHUB_GET_REPOSITORY"));
+    assert!(calls
+        .iter()
+        .any(|c| c.starts_with("execute:GITHUB_GET_REPOSITORY:beater:acme:proj:")));
+}
+
+#[tokio::test]
+async fn rejects_provider_tool_metadata_slug_mismatch() {
+    let fake = Arc::new(FakeComposio::default());
+    let (status, _) = send(
+        state_with(Some(fake.clone())),
+        "POST",
+        "/v1/connectors/acme/proj/invoke",
+        Some(json!({ "tool": "GITHUB_DELETE_REPOSITORY", "arguments": { "repo": "repo" } })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+    let calls = fake.calls();
+    assert!(calls
+        .iter()
+        .any(|c| c == "get_tool:GITHUB_DELETE_REPOSITORY"));
+    assert!(!calls.iter().any(|c| c.starts_with("execute:")));
+}
+
+#[tokio::test]
+async fn eval_run_key_denies_high_risk_tool_without_allow_policy_and_audits() {
+    let fake = Arc::new(FakeComposio::default());
+    let audit = Arc::new(SqliteAuditStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+    let api_keys = Arc::new(SqliteApiKeyStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+    let mut scopes = BTreeSet::new();
+    scopes.insert(ApiScope::EvalRun);
+    let key = api_keys
+        .create_key(CreateApiKeyRequest {
+            tenant_id: TenantId::new("acme").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new("proj").unwrap_or_else(|err| panic!("{err}")),
+            environment_id: EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            scopes,
+        })
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+
+    let (status, _) = send_with_headers(
+        state_with_audit_and_auth(
+            Some(fake.clone()),
+            ConnectorToolPolicy::default(),
+            audit.clone(),
+            api_keys,
+        ),
+        "POST",
+        "/v1/connectors/acme/proj/invoke",
+        Some(json!({ "tool": "GITHUB_CREATE_AN_ISSUE", "arguments": { "title": "bug" } })),
+        &[
+            ("authorization", format!("Bearer {}", key.secret)),
+            ("x-beater-environment-id", "prod".to_string()),
+        ],
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let calls = fake.calls();
+    assert!(calls.iter().any(|c| c == "get_tool:GITHUB_CREATE_AN_ISSUE"));
+    assert!(!calls.iter().any(|c| c.starts_with("execute:")));
+
+    let events = audit
+        .list_events(
+            TenantId::new("acme").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("proj").unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].action, AuditAction::ConnectorToolInvoke);
+    assert_eq!(events[0].outcome, AuditOutcome::Denied);
+    assert_eq!(events[0].resource_id, "GITHUB_CREATE_AN_ISSUE");
+    assert_eq!(events[0].attributes["risk_class"], "external_write");
+    assert_eq!(events[0].attributes["policy_decision"], "denied");
+    assert!(events[0].attributes["arguments_hash"].is_string());
+    assert!(!events[0].attributes.to_string().contains("bug"));
 }
 
 #[tokio::test]
@@ -309,10 +503,11 @@ async fn missing_toolkit_query_is_rejected() {
 #[tokio::test]
 async fn rsi_tool_add_then_execute_flow() {
     let fake = Arc::new(FakeComposio::default());
+    let policy = ConnectorToolPolicy::default().with_allowed_tools(["GITHUB_CREATE_AN_ISSUE"]);
 
     // 1. Discover tools for a toolkit the loop wants to add.
     let (status, body) = send(
-        state_with(Some(fake.clone())),
+        state_with_policy(Some(fake.clone()), policy.clone()),
         "GET",
         "/v1/connectors/acme/proj/tools?toolkit=github",
         None,
@@ -320,7 +515,10 @@ async fn rsi_tool_add_then_execute_flow() {
     .await;
     assert_eq!(status, StatusCode::OK);
     let tools: Vec<ConnectorTool> = serde_json::from_value(body).unwrap();
-    let chosen = &tools[0];
+    let chosen = tools
+        .iter()
+        .find(|tool| tool.slug == "GITHUB_CREATE_AN_ISSUE")
+        .expect("issue tool");
 
     // 2. Emit the tools.json entry the RSI ToolAdd writes — must be complete.
     let entry = skill::tool_definition_json(chosen);
@@ -338,7 +536,7 @@ async fn rsi_tool_add_then_execute_flow() {
 
     // 3. The agent now executes the freshly-added tool via the same surface.
     let (status, body) = send(
-        state_with(Some(fake.clone())),
+        state_with_policy(Some(fake.clone()), policy),
         "POST",
         "/v1/connectors/acme/proj/invoke",
         Some(json!({

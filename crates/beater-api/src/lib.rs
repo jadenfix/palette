@@ -9,8 +9,8 @@ use beater_alerts::{
 };
 use beater_archive::{ArchiveManifest, ArchiveQuery, ArchivedSpanRow, ParquetTraceArchive};
 use beater_audit::{
-    pii_unmask_event, AuditAction, AuditEvent, AuditEventInsert, AuditOutcome, AuditStore,
-    PiiUnmaskAuditInput,
+    connector_tool_invoke_event, pii_unmask_event, AuditAction, AuditEvent, AuditEventInsert,
+    AuditOutcome, AuditStore, ConnectorToolInvokeAuditInput, PiiUnmaskAuditInput,
 };
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, RevokedApiKey};
 #[cfg(feature = "billing")]
@@ -26,15 +26,15 @@ use beater_calibration::{
 };
 use beater_composio::{
     skill, ComposioClient, ComposioError, ConnectionLink, ConnectionStatus, ConnectorTool,
-    ToolExecution, Toolkit,
+    ConnectorToolPolicy, ConnectorToolPolicyDecision, ToolExecution, Toolkit,
 };
 #[cfg(feature = "billing")]
 use beater_core::OrganizationId;
 use beater_core::{
-    AgentReleaseId, AnnotationId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetId, DatasetVersionId,
-    EnvironmentId, EvaluatorVersionId, ExperimentRunId, GateId, Page, PageRequest, ProjectId,
-    PromptId, PromptVersionId, ProviderSecretId, ReviewQueueId, ReviewTaskId, Sha256Hash, SpanId,
-    TenantId, TenantScope, TraceId,
+    sha256_json_hash, AgentReleaseId, AnnotationId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetId,
+    DatasetVersionId, EnvironmentId, EvaluatorVersionId, ExperimentRunId, GateId, Page,
+    PageRequest, ProjectId, PromptId, PromptVersionId, ProviderSecretId, ReviewQueueId,
+    ReviewTaskId, Sha256Hash, SpanId, TenantId, TenantScope, TraceId,
 };
 use beater_datasets::{
     evaluate_dataset_version, evaluate_dataset_version_with_judge, promote_trace_span_to_case,
@@ -128,6 +128,11 @@ pub struct ApiState {
     auth_mode: AuthMode,
     api_keys: Option<Arc<dyn ApiKeyStore>>,
     provider_secrets: Option<Arc<dyn ProviderSecretStore>>,
+    /// Beater-owned policy gate for connector execution. The connector provider
+    /// supplies metadata and performs execution; this policy decides whether a
+    /// caller may use a specific external tool before execution reaches the
+    /// provider.
+    connector_tool_policy: ConnectorToolPolicy,
     judge_broker: Option<Arc<dyn JudgeBroker>>,
     judge_ledger: Option<Arc<dyn JudgeLedgerStore>>,
     usage: Option<Arc<dyn UsageLedgerStore>>,
@@ -175,6 +180,7 @@ impl ApiState {
             auth_mode: AuthMode::Disabled,
             api_keys: None,
             provider_secrets: None,
+            connector_tool_policy: ConnectorToolPolicy::default(),
             judge_broker: None,
             judge_ledger: None,
             usage: None,
@@ -289,6 +295,11 @@ impl ApiState {
 
     pub fn with_gates(mut self, gates: Arc<dyn GateStore>) -> Self {
         self.gates = Some(gates);
+        self
+    }
+
+    pub fn with_connector_tool_policy(mut self, policy: ConnectorToolPolicy) -> Self {
+        self.connector_tool_policy = policy;
         self
     }
 
@@ -1212,9 +1223,13 @@ async fn connector_skills_route(
         .list_tools(&query.toolkit, CONNECTOR_TOOL_LIMIT)
         .await
         .map_err(map_composio_err)?;
+    let allowed_tools: Vec<ConnectorTool> = tools
+        .into_iter()
+        .filter(|tool| state.connector_tool_policy.evaluate(tool).allowed)
+        .collect();
     Ok(Json(ConnectorSkillsResponse {
         toolkit: query.toolkit,
-        skills: skill::skills_doc(&tools),
+        skills: skill::skills_doc(&allowed_tools),
     }))
 }
 
@@ -1336,13 +1351,82 @@ async fn invoke_connector_tool_route(
     let connectors = connector_client(&state)?;
     let tenant_id = TenantId::new(tenant_id)?;
     let project_id = ProjectId::new(project_id)?;
-    authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun).await?;
+    let auth =
+        authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::EvalRun)
+            .await?;
+    let tool = connectors
+        .get_tool(&request.tool)
+        .await
+        .map_err(map_composio_err)?;
+    if !tool.slug.eq_ignore_ascii_case(request.tool.trim()) {
+        return Err(ApiError::internal(format!(
+            "connector provider returned metadata for {} while resolving {}",
+            tool.slug, request.tool
+        )));
+    }
+    let policy_decision = state.connector_tool_policy.evaluate(&tool);
+    record_connector_tool_policy_audit_if_configured(
+        &state,
+        &tenant_id,
+        &project_id,
+        &auth,
+        &tool,
+        &request.arguments,
+        &policy_decision,
+    )
+    .await?;
+    if !policy_decision.allowed {
+        return Err(ApiError::forbidden(policy_decision.reason));
+    }
     let user_id = connector_user_id(&tenant_id, &project_id);
     let execution = connectors
         .execute(&request.tool, &user_id, request.arguments)
         .await
         .map_err(map_composio_err)?;
     Ok(Json(execution))
+}
+
+async fn record_connector_tool_policy_audit_if_configured(
+    state: &ApiState,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+    auth: &AuthDecision,
+    tool: &ConnectorTool,
+    arguments: &serde_json::Value,
+    policy_decision: &ConnectorToolPolicyDecision,
+) -> Result<(), ApiError> {
+    let Some(audit) = state.audit.as_ref().cloned() else {
+        return Ok(());
+    };
+    let arguments_hash = sha256_json_hash(arguments)
+        .map_err(|err| ApiError::internal(format!("hash connector tool arguments: {err}")))?;
+    let outcome = if policy_decision.allowed {
+        AuditOutcome::Allowed
+    } else {
+        AuditOutcome::Denied
+    };
+    audit
+        .append_event(connector_tool_invoke_event(ConnectorToolInvokeAuditInput {
+            tenant_id: tenant_id.clone(),
+            project_id: project_id.clone(),
+            environment_id: auth.environment_id.clone(),
+            actor_api_key_id: auth.context.api_key_id.clone(),
+            tool_slug: tool.slug.clone(),
+            outcome,
+            reason: Some(policy_decision.reason.clone()),
+            attributes: serde_json::json!({
+                "arguments_hash": arguments_hash.as_str(),
+                "approval_id": policy_decision.approval_id,
+                "connector": "composio",
+                "no_auth": tool.no_auth,
+                "policy_decision": if policy_decision.allowed { "allowed" } else { "denied" },
+                "risk_class": policy_decision.risk_class.as_str(),
+                "tool": tool.slug,
+                "toolkit": tool.toolkit,
+            }),
+        }))
+        .await?;
+    Ok(())
 }
 
 #[utoipa::path(

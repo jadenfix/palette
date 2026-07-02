@@ -91,10 +91,33 @@ pub fn wilcoxon_signed_rank(
     let m = nonzero.len();
 
     // Hodges-Lehmann estimate + distribution-free CI use ALL Walsh averages
-    // (including zero differences), which is the standard pseudo-median.
-    let walsh = walsh_averages(differences);
-    let estimate = median_sorted(&sorted(&walsh));
-    let ci = signed_rank_ci(&walsh, n, alpha);
+    // (including zero differences), which is the standard pseudo-median. Only a
+    // handful of Walsh *order statistics* are needed (the median for the HL
+    // estimate, the C-th/(M+1−C)-th for the CI), so above a size threshold they
+    // are selected in O(n log n) each — two-pointer counting over the sorted
+    // differences plus a bisection over the f64 bit order — instead of
+    // materializing and sorting all M = n(n+1)/2 averages, which is O(n²)
+    // memory (40 GB at n = 100 000). Both paths return identical values.
+    let mut sorted_d = differences.to_vec();
+    sorted_d.sort_by(|a, b| a.total_cmp(b));
+    let m_total = n * (n + 1) / 2;
+    let materialized: Option<Vec<f64>> = if n <= WALSH_MATERIALIZE_MAX {
+        Some(sorted(&walsh_averages(differences)))
+    } else {
+        None
+    };
+    let kth = |k: usize| -> f64 {
+        match &materialized {
+            Some(w) => w[k - 1],
+            None => kth_walsh(&sorted_d, k),
+        }
+    };
+    let estimate = if m_total % 2 == 1 {
+        kth(m_total / 2 + 1)
+    } else {
+        (kth(m_total / 2) + kth(m_total / 2 + 1)) / 2.0
+    };
+    let ci = signed_rank_ci(&kth, m_total, n, alpha);
 
     if m == 0 {
         // Every difference is zero: no evidence of any effect.
@@ -153,25 +176,88 @@ fn sorted(values: &[f64]) -> Vec<f64> {
     v
 }
 
-fn median_sorted(sorted: &[f64]) -> f64 {
-    let n = sorted.len();
-    if n == 0 {
-        return 0.0;
+/// Largest pair count for which the Walsh averages are materialized and sorted
+/// outright (≤ ~525k averages). Above this, the needed order statistics are
+/// selected without materialization (see [`kth_walsh`]).
+const WALSH_MATERIALIZE_MAX: usize = 1024;
+
+/// `#{(i ≤ j) : (d[i] + d[j]) / 2 ≤ t}` over ascending-sorted `d`, in `O(n)` by
+/// a two-pointer sweep: for growing `i` the largest admissible `j` only
+/// shrinks. The comparison is done as `d[i] + d[j] ≤ 2t`, which is exactly
+/// equivalent to `(d[i] + d[j])/2 ≤ t` in binary floating point (halving and
+/// doubling are exact), so the count steps at precisely the same values the
+/// materialized Walsh averages take.
+fn count_walsh_le(sorted_d: &[f64], t: f64) -> usize {
+    let n = sorted_d.len();
+    let two_t = 2.0 * t;
+    let mut count = 0usize;
+    let mut j = n;
+    for i in 0..n {
+        while j > i && sorted_d[j - 1] + sorted_d[i] > two_t {
+            j -= 1;
+        }
+        if j <= i {
+            // Even (d[i]+d[i])/2 exceeds t; later i are larger still.
+            break;
+        }
+        count += j - i;
     }
-    if n % 2 == 1 {
-        sorted[n / 2]
+    count
+}
+
+/// Monotone bijection from finite `f64` to `u64` (the standard sign-flip bit
+/// trick): `a ≤ b  ⟺  key(a) ≤ key(b)` under `total_cmp` order.
+fn f64_key(x: f64) -> u64 {
+    let b = x.to_bits();
+    if b >> 63 == 1 {
+        !b
     } else {
-        (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
+        b | (1 << 63)
     }
 }
 
-/// Distribution-free CI for the pseudo-median from the sorted Walsh averages,
-/// using the normal approximation to the signed-rank null for the rank index
-/// `C = ⌊ n(n+1)/4 − z·√(n(n+1)(2n+1)/24) ⌋`. The interval is
-/// `[W₍C₎, W₍M+1−C₎]` (1-indexed). `None` when `C < 1` (too few pairs).
-fn signed_rank_ci(walsh: &[f64], n: usize, alpha: f64) -> Option<ConfidenceInterval> {
-    let sorted = sorted(walsh);
-    let m_total = sorted.len();
+fn f64_unkey(k: u64) -> f64 {
+    if k >> 63 == 1 {
+        f64::from_bits(k & !(1 << 63))
+    } else {
+        f64::from_bits(!k)
+    }
+}
+
+/// The `k`-th smallest (1-indexed) Walsh average of ascending-sorted `d`,
+/// without materializing the `n(n+1)/2` averages: bisect over the *bit order*
+/// of `f64` between the smallest and largest Walsh average, counting with
+/// [`count_walsh_le`]. Because the count function is a step function that jumps
+/// exactly at Walsh-average values and the bisection converges to the smallest
+/// float whose count reaches `k`, the result is the exact order statistic —
+/// bit-identical (up to `−0.0 == +0.0`) to indexing the sorted materialized
+/// list. `O(n)` per count, ≤ 64 bisection steps.
+fn kth_walsh(sorted_d: &[f64], k: usize) -> f64 {
+    let n = sorted_d.len();
+    let mut lo = f64_key(sorted_d[0]); // smallest Walsh average is d[0]
+    let mut hi = f64_key(sorted_d[n - 1]); // largest is d[n−1]
+    while lo < hi {
+        let mid = lo + (hi - lo) / 2;
+        if count_walsh_le(sorted_d, f64_unkey(mid)) >= k {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    f64_unkey(lo)
+}
+
+/// Distribution-free CI for the pseudo-median from Walsh-average order
+/// statistics, using the normal approximation to the signed-rank null for the
+/// rank index `C = ⌊ n(n+1)/4 − z·√(n(n+1)(2n+1)/24) ⌋`. The interval is
+/// `[W₍C₎, W₍M+1−C₎]` (1-indexed order statistics fetched through `kth`).
+/// `None` when `C < 1` (too few pairs).
+fn signed_rank_ci(
+    kth: &dyn Fn(usize) -> f64,
+    m_total: usize,
+    n: usize,
+    alpha: f64,
+) -> Option<ConfidenceInterval> {
     let nn = n as f64;
     let mean_w = nn * (nn + 1.0) / 4.0;
     let sd_w = (nn * (nn + 1.0) * (2.0 * nn + 1.0) / 24.0).sqrt();
@@ -184,11 +270,9 @@ fn signed_rank_ci(walsh: &[f64], n: usize, alpha: f64) -> Option<ConfidenceInter
     if c == 0 || c > m_total {
         return None;
     }
-    let lower = sorted[c - 1];
-    let upper = sorted[m_total - c];
     Some(ConfidenceInterval {
-        low: lower,
-        high: upper,
+        low: kth(c),
+        high: kth(m_total + 1 - c),
         confidence: 1.0 - alpha,
     })
 }
@@ -346,6 +430,71 @@ mod tests {
             "ties must trigger the normal approximation"
         );
         assert!(out.p_value > 0.0 && out.p_value <= 1.0);
+    }
+
+    /// The selection path (`kth_walsh`) must agree exactly with indexing the
+    /// sorted materialized Walsh averages, for every k, including data with
+    /// ties, zeros, and negatives.
+    #[test]
+    fn kth_walsh_matches_materialized_for_all_k() {
+        let mut rng = crate::Xorshift64::new(0x57A7_5EED);
+        for n in [2usize, 3, 5, 17, 40] {
+            let diffs: Vec<f64> = (0..n)
+                .map(|_| {
+                    let u = (rng.next_u64() >> 11) as f64 / (1u64 << 53) as f64;
+                    // Mix in exact ties and zeros.
+                    ((u - 0.5) * 8.0).round() / 4.0
+                })
+                .collect();
+            let mut sorted_d = diffs.clone();
+            sorted_d.sort_by(|a, b| a.total_cmp(b));
+            let mut walsh = walsh_averages(&diffs);
+            walsh.sort_by(|a, b| a.total_cmp(b));
+            for k in 1..=walsh.len() {
+                let got = kth_walsh(&sorted_d, k);
+                // Numeric equality: the bisection may land on −0.0 where the
+                // materialized list holds +0.0 (they are equal, bit order aside).
+                assert!(
+                    got == walsh[k - 1],
+                    "n={n}, k={k}: selection {got} vs materialized {}",
+                    walsh[k - 1]
+                );
+            }
+        }
+    }
+
+    /// End-to-end: a call large enough to take the selection path must produce
+    /// the identical outcome to the materialized computation.
+    #[test]
+    fn large_n_selection_path_matches_materialized_outcome() {
+        let n = WALSH_MATERIALIZE_MAX + 7; // forces the selection path
+        let mut rng = crate::Xorshift64::new(42);
+        let diffs: Vec<f64> = (0..n)
+            .map(|_| {
+                let u = (rng.next_u64() >> 11) as f64 / (1u64 << 53) as f64;
+                u - 0.45 // slight positive shift, plenty of sign diversity
+            })
+            .collect();
+        let out = wilcoxon_signed_rank(&diffs, 0.05).unwrap_or_else(|err| panic!("{err}"));
+
+        // Reference: materialize and sort all Walsh averages.
+        let mut walsh = walsh_averages(&diffs);
+        walsh.sort_by(|a, b| a.total_cmp(b));
+        let m_total = walsh.len();
+        let est_ref = if m_total % 2 == 1 {
+            walsh[m_total / 2]
+        } else {
+            (walsh[m_total / 2 - 1] + walsh[m_total / 2]) / 2.0
+        };
+        assert_eq!(out.estimate, est_ref, "HL estimate must match exactly");
+
+        let ci = out.ci.unwrap_or_else(|| panic!("expected a CI at n={n}"));
+        let nn = n as f64;
+        let z = normal_quantile(0.975);
+        let c = (nn * (nn + 1.0) / 4.0 - z * (nn * (nn + 1.0) * (2.0 * nn + 1.0) / 24.0).sqrt())
+            .floor() as usize;
+        assert_eq!(ci.low, walsh[c - 1], "CI low must match exactly");
+        assert_eq!(ci.high, walsh[m_total - c], "CI high must match exactly");
     }
 
     #[test]

@@ -8629,7 +8629,8 @@
           "api_key_create",
           "api_key_revoke",
           "provider_secret_create",
-          "provider_secret_revoke"
+          "provider_secret_revoke",
+          "connector_tool_invoke"
         ]
       },
       "AuditEvent": {

@@ -24,6 +24,8 @@ pub enum AuditAction {
     ProviderSecretCreate,
     #[serde(rename = "provider_secret_revoke")]
     ProviderSecretRevoke,
+    #[serde(rename = "connector_tool_invoke")]
+    ConnectorToolInvoke,
 
 }
 
@@ -35,6 +37,7 @@ impl std::fmt::Display for AuditAction {
             Self::ApiKeyRevoke => write!(f, "api_key_revoke"),
             Self::ProviderSecretCreate => write!(f, "provider_secret_create"),
             Self::ProviderSecretRevoke => write!(f, "provider_secret_revoke"),
+            Self::ConnectorToolInvoke => write!(f, "connector_tool_invoke"),
         }
     }
 }

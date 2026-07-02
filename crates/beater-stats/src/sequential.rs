@@ -46,6 +46,9 @@ pub struct SequentialMeanTest {
     penalty: f64,
     /// `ln E_n`, accumulated for numerical stability.
     log_e: f64,
+    /// Running maximum `ln sup_{s ≤ n} E_s` — the e-process' high-water mark,
+    /// which is what the anytime-valid p-value is allowed to use.
+    log_e_max: f64,
     n: usize,
 }
 
@@ -77,6 +80,7 @@ impl SequentialMeanTest {
             lambda,
             penalty: lambda * lambda * sigma * sigma / 2.0,
             log_e: 0.0,
+            log_e_max: 0.0,
             n: 0,
         })
     }
@@ -89,6 +93,7 @@ impl SequentialMeanTest {
         }
         // ln E_n += λ (x − μ0) − λ²σ²/2.
         self.log_e += self.lambda * (x - self.mu0) - self.penalty;
+        self.log_e_max = self.log_e_max.max(self.log_e);
         self.n += 1;
         Ok(())
     }
@@ -103,20 +108,35 @@ impl SequentialMeanTest {
         self.log_e.exp()
     }
 
-    /// Whether `H0` can be rejected at level `alpha` right now, i.e. `E_n ≥ 1/α`.
-    /// Valid to call after every observation (that is the whole point).
+    /// Whether `H0` is rejected at level `alpha`: has the e-process **ever**
+    /// reached `1/α`, i.e. `sup_{s ≤ n} E_s ≥ 1/α`. Valid to call after every
+    /// observation (that is the whole point), and consistent with
+    /// [`anytime_p_value`](Self::anytime_p_value): `reject(α)` ⟺
+    /// `anytime_p_value() ≤ α`.
+    ///
+    /// Using the running supremum implements the standard first-crossing rule —
+    /// a rejection, once made, stands even if later observations pull `E_n`
+    /// back below the boundary. This is exactly the event Ville's inequality
+    /// bounds (`P_{H0}(∃n: E_n ≥ 1/α) ≤ α`), so type-I control is unchanged; a
+    /// current-value check would merely *forget* a legitimate earlier rejection
+    /// when polled after the fact.
     pub fn reject(&self, alpha: f64) -> Result<bool, StatsError> {
         if !alpha.is_finite() || alpha <= 0.0 || alpha >= 1.0 {
             return Err(StatsError::InvalidAlpha(alpha));
         }
-        // Compare in log space to avoid overflow: ln E_n ≥ ln(1/α) = −ln α.
-        Ok(self.log_e >= -alpha.ln())
+        // Compare in log space to avoid overflow: ln sup E ≥ ln(1/α) = −ln α.
+        Ok(self.log_e_max >= -alpha.ln())
     }
 
-    /// The anytime-valid p-value `min(1, 1/E_n)`: valid to report at any stopping
-    /// time, unlike a fixed-horizon p-value.
+    /// The anytime-valid p-value `min(1, 1 / sup_{s ≤ n} E_s)`.
+    ///
+    /// Using the e-process' running **supremum** (not just the current `E_n`) is
+    /// still valid by Ville's inequality — `P_{H0}(sup_s E_s ≥ 1/α) ≤ α` — and is
+    /// uniformly at least as small as `1/E_n`: evidence that once crossed a level
+    /// is never given back just because later observations pulled `E_n` down.
+    /// Like everything here, it is valid at any data-dependent stopping time.
     pub fn anytime_p_value(&self) -> f64 {
-        (-self.log_e).exp().min(1.0)
+        (-self.log_e_max).exp().min(1.0)
     }
 }
 
@@ -238,6 +258,38 @@ mod tests {
         }
         assert!(!test.reject(0.05).unwrap_or_else(|err| panic!("{err}")));
         assert!(test.e_value() < 1.0);
+    }
+
+    /// The anytime p-value uses the e-process' running supremum: evidence that
+    /// crossed a level is not surrendered when later observations pull the
+    /// current e-value back down (still valid under Ville's inequality).
+    #[test]
+    fn anytime_p_value_keeps_its_high_water_mark() {
+        let mut test = SequentialMeanTest::new(0.5, 1.0, 0.5).unwrap_or_else(|err| panic!("{err}"));
+        for _ in 0..60 {
+            test.observe(0.9).unwrap_or_else(|err| panic!("{err}"));
+        }
+        let p_at_peak = test.anytime_p_value();
+        assert!(p_at_peak < 0.05, "p at peak = {p_at_peak}");
+        // A run of null-ish data shrinks E_n but must not loosen the p-value.
+        for _ in 0..200 {
+            test.observe(0.5).unwrap_or_else(|err| panic!("{err}"));
+        }
+        assert!(
+            test.e_value() < 1.0 / p_at_peak,
+            "E_n itself must have shrunk"
+        );
+        assert!(
+            test.anytime_p_value() <= p_at_peak,
+            "running-sup p must not increase: {} > {p_at_peak}",
+            test.anytime_p_value()
+        );
+        // reject() is consistent with the p-value: the first-crossing rejection
+        // stands even though the current e-value fell back below the boundary.
+        assert!(
+            test.reject(0.05).unwrap_or_else(|err| panic!("{err}")),
+            "a made rejection must stand after later shrinkage"
+        );
     }
 
     #[test]

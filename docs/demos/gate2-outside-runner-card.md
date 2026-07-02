@@ -3,6 +3,9 @@
 Use this card for the unaided Gate 2 run. It is intentionally shorter than the
 full proof template.
 
+Full wrapper, prebuilt-image, validation, and troubleshooting reference:
+[Gate 2 Clean-Clone Runbook](gate2-clean-clone-runbook.md).
+
 ## Before You Start
 
 Use a machine with:

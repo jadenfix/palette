@@ -713,10 +713,43 @@ def require_file_lacks(
             )
 
 
+HANDOFF_GUIDANCE_DOCS = [
+    "README.md",
+    "docs/demos/gate2-outside-runner-card.md",
+    "docs/demos/gate2-clean-clone-runbook.md",
+    "docs/demos/gate2-outside-person-proof.md",
+]
+
+
+def require_docs_contain(
+    clone_dir: Path,
+    rels: list[str],
+    snippets: list[str],
+    *,
+    contract: str,
+) -> None:
+    """Require each snippet somewhere in the combined doc set.
+
+    The concise README (#548) delegates the detailed clean-clone runbook to the
+    Gate 2 docs set, so handoff guidance is enforced against the union of those
+    docs rather than pinned to one file's prose.
+    """
+    haystack = " ".join(
+        re.sub(r"\s+", " ", (clone_dir / rel).read_text()) for rel in rels
+    )
+    label = " + ".join(rels)
+    for snippet in snippets:
+        needle = re.sub(r"\s+", " ", snippet)
+        if needle not in haystack:
+            raise SystemExit(
+                f"{label} must contain {contract} for outside runners: {snippet!r}"
+            )
+
+
 def require_public_handoff_timing_guard(clone_dir: Path) -> None:
-    require_file_contains(
+    require_docs_contain(
         clone_dir,
-        "README.md",
+        HANDOFF_GUIDANCE_DOCS,
         [
             "As soon as the first `Open this quickstart trace-list URL first:` URL appears",
             "open that filtered trace-list URL",
@@ -738,7 +771,6 @@ def require_public_handoff_timing_guard(clone_dir: Path) -> None:
             'git commit -m "add gate2 outside proof"',
         ],
         contract="quickstart handoff guidance",
-        normalize_whitespace=True,
     )
     require_file_contains(
         clone_dir,
@@ -822,6 +854,7 @@ def require_public_handoff_timing_guard(clone_dir: Path) -> None:
         "README.md",
         "docs/demos/gate2-outside-person-proof.md",
         "docs/demos/gate2-outside-runner-card.md",
+        "docs/demos/gate2-clean-clone-runbook.md",
     ]:
         require_file_lacks(
             clone_dir,

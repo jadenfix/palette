@@ -7,9 +7,17 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 client="$(cd "$here/../../clients/java" && pwd)"
 
-# Keg-only JDK + Maven from Homebrew.
-export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
-export JAVA_HOME="/opt/homebrew/opt/openjdk"
+# Prefer a keg-only JDK + Maven from Homebrew when present (macOS dev boxes);
+# otherwise fall back to the ambient JDK/JAVA_HOME (Linux CI, containers).
+if [ -d "/opt/homebrew/opt/openjdk" ]; then
+  export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
+  export JAVA_HOME="/opt/homebrew/opt/openjdk"
+elif [ -z "${JAVA_HOME:-}" ] && command -v java >/dev/null 2>&1; then
+  # Derive JAVA_HOME from the running JVM so mvn's launcher is satisfied. Use the
+  # JVM's own reported java.home (portable across Linux and macOS/BSD, unlike
+  # `readlink -f`).
+  export JAVA_HOME="$(java -XshowSettings:properties -version 2>&1 | awk -F'= ' '/java.home/{print $2; exit}')"
+fi
 
 : "${BEATER_BASE_URL:?BEATER_BASE_URL must be set (live beaterd)}"
 
