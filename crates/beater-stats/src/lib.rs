@@ -65,6 +65,7 @@ mod overfit;
 mod paired;
 mod power;
 mod racing;
+mod resampling;
 mod sequential;
 mod wilcoxon;
 
@@ -455,51 +456,12 @@ pub fn bootstrap_diff_ci(
 
     let observed_est = mean(sample_a) - mean(sample_b);
 
-    // Each resample draws from an *independent* RNG substream seeded
-    // deterministically from `(seed, i)`. This makes the i-th resample a pure
-    // function of its index — the result no longer depends on iteration order, so
-    // the loop can be evaluated in any order (sequentially, or in parallel under
-    // the `parallel` feature) and still produce a bit-identical, reproducible CI.
-    // Per-substream seeding via SplitMix64 also avoids the inter-stream
-    // correlation a single split xorshift stream can exhibit in parallel Monte
-    // Carlo. `into_par_iter().map().collect()` preserves index order, so the two
-    // paths are numerically identical.
-    let mut diffs: Vec<f64> = {
-        #[cfg(feature = "parallel")]
-        {
-            use rayon::prelude::*;
-            (0..n_resamples)
-                .into_par_iter()
-                .map(|i| resample_diff(sample_a, sample_b, seed, i))
-                .collect()
-        }
-        #[cfg(not(feature = "parallel"))]
-        {
-            (0..n_resamples)
-                .map(|i| resample_diff(sample_a, sample_b, seed, i))
-                .collect()
-        }
-    };
-
-    let alpha = 1.0 - confidence;
-    let lo_idx = (((alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
-    let hi_idx = (((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);
-
-    // Only the two percentile order statistics are needed, so quickselect them in
-    // expected O(n_resamples) instead of fully sorting in O(n_resamples log n).
-    // `select_nth_unstable_by` leaves the chosen index holding the value it would
-    // occupy in a fully sorted slice, with all smaller elements ahead of it — so
-    // selecting `lo_idx` within that left partition yields the lower endpoint
-    // without a second full pass. All values are finite (validated above), so
-    // `total_cmp` is a total order.
-    diffs.select_nth_unstable_by(hi_idx, |x, y| x.total_cmp(y));
-    let upper = diffs[hi_idx];
-    let lower = if lo_idx < hi_idx {
-        diffs[..hi_idx].select_nth_unstable_by(lo_idx, |x, y| x.total_cmp(y));
-        diffs[lo_idx]
-    } else {
-        diffs[lo_idx]
-    };
+    // Resample the difference of means through the shared engine: independent
+    // per-index substreams (reproducible, order-independent, parallel under the
+    // `parallel` feature), then quickselect just the two percentile endpoints.
+    let mut diffs = resampling::Bootstrap::new(n_resamples, seed)
+        .replicates(|rng| resample_mean(sample_a, rng) - resample_mean(sample_b, rng));
+    let (lower, upper) = resampling::percentile_endpoints(&mut diffs, 1.0 - confidence);
 
     Ok(BootstrapInterval {
         lower,
@@ -845,23 +807,16 @@ fn is_binary(values: &[f64]) -> bool {
     values.iter().all(|v| *v == 0.0 || *v == 1.0)
 }
 
-fn resample_mean(xs: &[f64], rng: &mut Xorshift64) -> f64 {
+/// Mean of a with-replacement resample of `xs`, drawing `xs.len()` indices from
+/// `rng`. The shared building block every bootstrap statistic is expressed in
+/// terms of (see [`resampling::Bootstrap`]).
+pub(crate) fn resample_mean(xs: &[f64], rng: &mut Xorshift64) -> f64 {
     let n = xs.len();
     let mut sum = 0.0;
     for _ in 0..n {
         sum += xs[rng.next_index(n)];
     }
     sum / n as f64
-}
-
-/// One bootstrap difference `mean(resample_a) − mean(resample_b)` for resample
-/// `index`, computed from an index-keyed RNG substream so it is a pure,
-/// order-independent function of `(seed, index)`.
-fn resample_diff(sample_a: &[f64], sample_b: &[f64], seed: u64, index: usize) -> f64 {
-    let mut rng = Xorshift64::for_resample(seed, index);
-    let ra = resample_mean(sample_a, &mut rng);
-    let rb = resample_mean(sample_b, &mut rng);
-    ra - rb
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1231,10 +1186,10 @@ mod tests {
             let ci = bootstrap_diff_ci(&a, &b, confidence, n_resamples, seed)
                 .unwrap_or_else(|err| panic!("{err}"));
 
-            // Reference: regenerate the identical diffs and fully sort them.
-            let mut diffs: Vec<f64> = (0..n_resamples)
-                .map(|i| resample_diff(&a, &b, seed, i))
-                .collect();
+            // Reference: regenerate the identical replicates through the engine and
+            // fully sort them, so this pins quickselect == sort-and-index.
+            let mut diffs = resampling::Bootstrap::new(n_resamples, seed)
+                .replicates(|rng| resample_mean(&a, rng) - resample_mean(&b, rng));
             diffs.sort_by(|x, y| x.total_cmp(y));
             let alpha = 1.0 - confidence;
             let lo = (((alpha / 2.0) * n_resamples as f64).floor() as usize).min(n_resamples - 1);

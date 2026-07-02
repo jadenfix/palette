@@ -8,7 +8,7 @@
 //! `cluster_key` (`beater-design`); this module only consumes the resolved
 //! per-observation cluster labels.
 
-use crate::{mean, StatsError, Xorshift64};
+use crate::{mean, StatsError};
 use std::collections::HashMap;
 use std::hash::Hash;
 
@@ -173,18 +173,23 @@ pub fn clustered_bootstrap_ci<T: Eq + Hash>(
         return Err(StatsError::InvalidResampleCount(n_resamples));
     }
 
-    // Bucket observations by cluster in O(N) (first-seen order, so results are
-    // deterministic in the input order rather than in hash order).
+    // Reduce each cluster to its `(sum, count)` in O(N) (first-seen order, so
+    // results are deterministic in the input order rather than in hash order).
+    // Carrying only the partial sums means the resample loop below touches `G`
+    // scalars per draw instead of rescanning all `N` observations —
+    // O(n_resamples · G) rather than O(n_resamples · N) — and never materialises
+    // per-cluster value vectors.
     let mut slot_of: HashMap<&T, usize> = HashMap::new();
-    let mut buckets: Vec<Vec<f64>> = Vec::new();
+    let mut clusters: Vec<(f64, usize)> = Vec::new();
     for (value, id) in values.iter().zip(cluster_ids.iter()) {
         let slot = *slot_of.entry(id).or_insert_with(|| {
-            buckets.push(Vec::new());
-            buckets.len() - 1
+            clusters.push((0.0, 0));
+            clusters.len() - 1
         });
-        buckets[slot].push(*value);
+        clusters[slot].0 += *value;
+        clusters[slot].1 += 1;
     }
-    let g = buckets.len();
+    let g = clusters.len();
     if g < 2 {
         // Resampling one cluster with replacement can only ever reproduce that
         // cluster: the between-cluster variance is unidentified, exactly as in
@@ -193,26 +198,22 @@ pub fn clustered_bootstrap_ci<T: Eq + Hash>(
     }
 
     let observed = mean(values);
-    let mut rng = Xorshift64::new(seed);
-    let mut means: Vec<f64> = Vec::with_capacity(n_resamples);
-    for _ in 0..n_resamples {
+    // Resample whole clusters through the shared engine (per-index substreams,
+    // parallel under the `parallel` feature), then quickselect the endpoints.
+    let mut means = crate::resampling::Bootstrap::new(n_resamples, seed).replicates(|rng| {
         let mut sum = 0.0;
         let mut count = 0usize;
         for _ in 0..g {
-            let bucket = &buckets[rng.next_index(g)];
-            sum += bucket.iter().sum::<f64>();
-            count += bucket.len();
+            let (cluster_sum, cluster_len) = clusters[rng.next_index(g)];
+            sum += cluster_sum;
+            count += cluster_len;
         }
-        means.push(sum / count as f64);
-    }
-    means.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-
-    let alpha = 1.0 - confidence;
-    let lo_idx = ((alpha / 2.0) * n_resamples as f64).floor() as usize;
-    let hi_idx = ((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize;
+        sum / count as f64
+    });
+    let (lower, upper) = crate::resampling::percentile_endpoints(&mut means, 1.0 - confidence);
     Ok(crate::BootstrapInterval {
-        lower: means[lo_idx.min(n_resamples - 1)],
-        upper: means[hi_idx.min(n_resamples - 1)],
+        lower,
+        upper,
         estimate: observed,
         n_resamples,
     })
@@ -300,5 +301,10 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(first, second);
         assert!(first.lower <= first.estimate && first.estimate <= first.upper);
+        // Golden endpoints: reducing clusters to partial sums and the per-index
+        // resampling are both order-independent, so the sequential and
+        // `--features parallel` builds must reproduce these exactly (CI runs both).
+        assert!((first.lower - 0.05).abs() < 1e-9, "{}", first.lower);
+        assert!((first.upper - 2.05).abs() < 1e-9, "{}", first.upper);
     }
 }

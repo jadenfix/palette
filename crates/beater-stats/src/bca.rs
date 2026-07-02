@@ -9,7 +9,8 @@
 //! (the jackknife skewness of the statistic), restoring ~nominal coverage.
 
 use crate::numerics::normal_quantile;
-use crate::{mean, normal_cdf, BootstrapInterval, ConfidenceInterval, StatsError, Xorshift64};
+use crate::resampling::{percentile_endpoints, Bootstrap};
+use crate::{mean, normal_cdf, resample_mean, BootstrapInterval, ConfidenceInterval, StatsError};
 
 /// Outcome of a paired bootstrap test over per-pair differences.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -82,27 +83,14 @@ pub fn bootstrap_bca_ci(
 
     let theta_hat = mean(sample_a) - mean(sample_b);
 
-    // Replicates come from the same per-index SplitMix64 substreams as
-    // `bootstrap_diff_ci`, so each replicate is a pure function of `(seed, i)`:
-    // the result is order-independent, bit-identical between the sequential and
-    // `parallel`-feature builds, and — for the same `(samples, seed)` — the BCa
-    // replicate set equals the percentile bootstrap's.
-    let mut replicates: Vec<f64> = {
-        #[cfg(feature = "parallel")]
-        {
-            use rayon::prelude::*;
-            (0..n_resamples)
-                .into_par_iter()
-                .map(|i| crate::resample_diff(sample_a, sample_b, seed, i))
-                .collect()
-        }
-        #[cfg(not(feature = "parallel"))]
-        {
-            (0..n_resamples)
-                .map(|i| crate::resample_diff(sample_a, sample_b, seed, i))
-                .collect()
-        }
-    };
+    // Replicates come from the same shared engine as `bootstrap_diff_ci`, so each
+    // is a pure function of `(seed, i)`: order-independent, bit-identical between
+    // the sequential and `parallel` builds, and — for the same `(samples, seed)` —
+    // equal to the percentile bootstrap's replicate set. BCa reads several
+    // data-dependent quantiles, so it keeps the fully sorted vector below rather
+    // than quickselecting two endpoints.
+    let mut replicates = Bootstrap::new(n_resamples, seed)
+        .replicates(|rng| resample_mean(sample_a, rng) - resample_mean(sample_b, rng));
     // Bias-correction count with midrank tie handling: replicates exactly equal
     // to θ̂ contribute ½. With a discrete statistic (e.g. means of 0/1 scores)
     // many replicates tie with θ̂, and the strict `<` count would bias z₀
@@ -242,39 +230,17 @@ pub fn paired_bootstrap_test(
     }
 
     let estimate = mean(differences);
-    // Per-index substreams (as in `bootstrap_diff_ci`): order-independent,
-    // reproducible, and parallel under the default `parallel` feature.
-    let mut means: Vec<f64> = {
-        #[cfg(feature = "parallel")]
-        {
-            use rayon::prelude::*;
-            (0..n_resamples)
-                .into_par_iter()
-                .map(|i| {
-                    let mut rng = Xorshift64::for_resample(seed, i);
-                    resample_mean(differences, &mut rng)
-                })
-                .collect()
-        }
-        #[cfg(not(feature = "parallel"))]
-        {
-            (0..n_resamples)
-                .map(|i| {
-                    let mut rng = Xorshift64::for_resample(seed, i);
-                    resample_mean(differences, &mut rng)
-                })
-                .collect()
-        }
-    };
+    // Resample the mean difference through the shared engine, then quickselect the
+    // two percentile endpoints.
+    let mut means =
+        Bootstrap::new(n_resamples, seed).replicates(|rng| resample_mean(differences, rng));
     let le_zero = means.iter().filter(|m| **m <= 0.0).count();
     let ge_zero = means.iter().filter(|m| **m >= 0.0).count();
-    means.sort_by(|x, y| x.total_cmp(y));
 
-    let lo_idx = ((alpha / 2.0) * n_resamples as f64).floor() as usize;
-    let hi_idx = ((1.0 - alpha / 2.0) * n_resamples as f64).floor() as usize;
+    let (low, high) = percentile_endpoints(&mut means, alpha);
     let ci = ConfidenceInterval {
-        low: means[lo_idx.min(n_resamples - 1)],
-        high: means[hi_idx.min(n_resamples - 1)],
+        low,
+        high,
         confidence: 1.0 - alpha,
     };
 
@@ -287,16 +253,6 @@ pub fn paired_bootstrap_test(
         p_value,
         n_resamples,
     })
-}
-
-/// Mean of a with-replacement resample of `xs`, drawing `xs.len()` draws.
-fn resample_mean(xs: &[f64], rng: &mut Xorshift64) -> f64 {
-    let n = xs.len();
-    let mut sum = 0.0;
-    for _ in 0..n {
-        sum += xs[rng.next_index(n)];
-    }
-    sum / n as f64
 }
 
 #[cfg(test)]
