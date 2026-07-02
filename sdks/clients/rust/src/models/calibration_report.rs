@@ -19,6 +19,11 @@ pub struct CalibrationReport {
     pub calibration_report_id: String,
     #[serde(rename = "cohen_kappa")]
     pub cohen_kappa: f64,
+    #[serde(rename = "cohen_kappa_ci_high", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub cohen_kappa_ci_high: Option<Option<f64>>,
+    /// Percentile-bootstrap 95% confidence interval for `cohen_kappa` (multinomial resampling of the confusion table, deterministic seed). Kappa over small calibration samples is high-variance; a bare point estimate invites over-reading. Absent on pre-uncertainty reports.
+    #[serde(rename = "cohen_kappa_ci_low", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub cohen_kappa_ci_low: Option<Option<f64>>,
     #[serde(rename = "confusion")]
     pub confusion: Box<models::CalibrationConfusion>,
     #[serde(rename = "created_at")]
@@ -39,6 +44,11 @@ pub struct CalibrationReport {
     pub items: Vec<models::CalibrationItem>,
     #[serde(rename = "observed_agreement")]
     pub observed_agreement: f64,
+    #[serde(rename = "observed_agreement_ci_high", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub observed_agreement_ci_high: Option<Option<f64>>,
+    /// Wilson 95% confidence interval for `observed_agreement` — the honest width of an agreement estimate over a (typically small) human-labelled sample. Absent on reports persisted before uncertainty was reported.
+    #[serde(rename = "observed_agreement_ci_low", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub observed_agreement_ci_low: Option<Option<f64>>,
     #[serde(rename = "policy")]
     pub policy: Box<models::CalibrationPolicy>,
     #[serde(rename = "project_id")]
@@ -57,6 +67,8 @@ impl CalibrationReport {
             brier_score,
             calibration_report_id,
             cohen_kappa,
+            cohen_kappa_ci_high: None,
+            cohen_kappa_ci_low: None,
             confusion: Box::new(confusion),
             created_at,
             dataset_id,
@@ -67,6 +79,8 @@ impl CalibrationReport {
             expected_calibration_error,
             items,
             observed_agreement,
+            observed_agreement_ci_high: None,
+            observed_agreement_ci_low: None,
             policy: Box::new(policy),
             project_id,
             reliability_bins,

@@ -32,6 +32,10 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.openapitools.jackson.nullable.JsonNullable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.util.NoSuchElementException;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -43,6 +47,8 @@ import ai.beater.client.ApiClient;
   CalibrationReport.JSON_PROPERTY_BRIER_SCORE,
   CalibrationReport.JSON_PROPERTY_CALIBRATION_REPORT_ID,
   CalibrationReport.JSON_PROPERTY_COHEN_KAPPA,
+  CalibrationReport.JSON_PROPERTY_COHEN_KAPPA_CI_HIGH,
+  CalibrationReport.JSON_PROPERTY_COHEN_KAPPA_CI_LOW,
   CalibrationReport.JSON_PROPERTY_CONFUSION,
   CalibrationReport.JSON_PROPERTY_CREATED_AT,
   CalibrationReport.JSON_PROPERTY_DATASET_ID,
@@ -53,6 +59,8 @@ import ai.beater.client.ApiClient;
   CalibrationReport.JSON_PROPERTY_EXPECTED_CALIBRATION_ERROR,
   CalibrationReport.JSON_PROPERTY_ITEMS,
   CalibrationReport.JSON_PROPERTY_OBSERVED_AGREEMENT,
+  CalibrationReport.JSON_PROPERTY_OBSERVED_AGREEMENT_CI_HIGH,
+  CalibrationReport.JSON_PROPERTY_OBSERVED_AGREEMENT_CI_LOW,
   CalibrationReport.JSON_PROPERTY_POLICY,
   CalibrationReport.JSON_PROPERTY_PROJECT_ID,
   CalibrationReport.JSON_PROPERTY_RELIABILITY_BINS,
@@ -72,6 +80,12 @@ public class CalibrationReport {
   public static final String JSON_PROPERTY_COHEN_KAPPA = "cohen_kappa";
   @javax.annotation.Nonnull
   private Double cohenKappa;
+
+  public static final String JSON_PROPERTY_COHEN_KAPPA_CI_HIGH = "cohen_kappa_ci_high";
+  private JsonNullable<Double> cohenKappaCiHigh = JsonNullable.<Double>undefined();
+
+  public static final String JSON_PROPERTY_COHEN_KAPPA_CI_LOW = "cohen_kappa_ci_low";
+  private JsonNullable<Double> cohenKappaCiLow = JsonNullable.<Double>undefined();
 
   public static final String JSON_PROPERTY_CONFUSION = "confusion";
   @javax.annotation.Nonnull
@@ -112,6 +126,12 @@ public class CalibrationReport {
   public static final String JSON_PROPERTY_OBSERVED_AGREEMENT = "observed_agreement";
   @javax.annotation.Nonnull
   private Double observedAgreement;
+
+  public static final String JSON_PROPERTY_OBSERVED_AGREEMENT_CI_HIGH = "observed_agreement_ci_high";
+  private JsonNullable<Double> observedAgreementCiHigh = JsonNullable.<Double>undefined();
+
+  public static final String JSON_PROPERTY_OBSERVED_AGREEMENT_CI_LOW = "observed_agreement_ci_low";
+  private JsonNullable<Double> observedAgreementCiLow = JsonNullable.<Double>undefined();
 
   public static final String JSON_PROPERTY_POLICY = "policy";
   @javax.annotation.Nonnull
@@ -205,6 +225,70 @@ public class CalibrationReport {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setCohenKappa(@javax.annotation.Nonnull Double cohenKappa) {
     this.cohenKappa = cohenKappa;
+  }
+
+
+  public CalibrationReport cohenKappaCiHigh(@javax.annotation.Nullable Double cohenKappaCiHigh) {
+    this.cohenKappaCiHigh = JsonNullable.<Double>of(cohenKappaCiHigh);
+    return this;
+  }
+
+  /**
+   * Get cohenKappaCiHigh
+   * @return cohenKappaCiHigh
+   */
+  @javax.annotation.Nullable
+  @JsonIgnore
+  public Double getCohenKappaCiHigh() {
+        return cohenKappaCiHigh.orElse(null);
+  }
+
+  @JsonProperty(JSON_PROPERTY_COHEN_KAPPA_CI_HIGH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public JsonNullable<Double> getCohenKappaCiHigh_JsonNullable() {
+    return cohenKappaCiHigh;
+  }
+  
+  @JsonProperty(JSON_PROPERTY_COHEN_KAPPA_CI_HIGH)
+  public void setCohenKappaCiHigh_JsonNullable(JsonNullable<Double> cohenKappaCiHigh) {
+    this.cohenKappaCiHigh = cohenKappaCiHigh;
+  }
+
+  public void setCohenKappaCiHigh(@javax.annotation.Nullable Double cohenKappaCiHigh) {
+    this.cohenKappaCiHigh = JsonNullable.<Double>of(cohenKappaCiHigh);
+  }
+
+
+  public CalibrationReport cohenKappaCiLow(@javax.annotation.Nullable Double cohenKappaCiLow) {
+    this.cohenKappaCiLow = JsonNullable.<Double>of(cohenKappaCiLow);
+    return this;
+  }
+
+  /**
+   * Percentile-bootstrap 95% confidence interval for &#x60;cohen_kappa&#x60; (multinomial resampling of the confusion table, deterministic seed). Kappa over small calibration samples is high-variance; a bare point estimate invites over-reading. Absent on pre-uncertainty reports.
+   * @return cohenKappaCiLow
+   */
+  @javax.annotation.Nullable
+  @JsonIgnore
+  public Double getCohenKappaCiLow() {
+        return cohenKappaCiLow.orElse(null);
+  }
+
+  @JsonProperty(JSON_PROPERTY_COHEN_KAPPA_CI_LOW)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public JsonNullable<Double> getCohenKappaCiLow_JsonNullable() {
+    return cohenKappaCiLow;
+  }
+  
+  @JsonProperty(JSON_PROPERTY_COHEN_KAPPA_CI_LOW)
+  public void setCohenKappaCiLow_JsonNullable(JsonNullable<Double> cohenKappaCiLow) {
+    this.cohenKappaCiLow = cohenKappaCiLow;
+  }
+
+  public void setCohenKappaCiLow(@javax.annotation.Nullable Double cohenKappaCiLow) {
+    this.cohenKappaCiLow = JsonNullable.<Double>of(cohenKappaCiLow);
   }
 
 
@@ -456,6 +540,70 @@ public class CalibrationReport {
   }
 
 
+  public CalibrationReport observedAgreementCiHigh(@javax.annotation.Nullable Double observedAgreementCiHigh) {
+    this.observedAgreementCiHigh = JsonNullable.<Double>of(observedAgreementCiHigh);
+    return this;
+  }
+
+  /**
+   * Get observedAgreementCiHigh
+   * @return observedAgreementCiHigh
+   */
+  @javax.annotation.Nullable
+  @JsonIgnore
+  public Double getObservedAgreementCiHigh() {
+        return observedAgreementCiHigh.orElse(null);
+  }
+
+  @JsonProperty(JSON_PROPERTY_OBSERVED_AGREEMENT_CI_HIGH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public JsonNullable<Double> getObservedAgreementCiHigh_JsonNullable() {
+    return observedAgreementCiHigh;
+  }
+  
+  @JsonProperty(JSON_PROPERTY_OBSERVED_AGREEMENT_CI_HIGH)
+  public void setObservedAgreementCiHigh_JsonNullable(JsonNullable<Double> observedAgreementCiHigh) {
+    this.observedAgreementCiHigh = observedAgreementCiHigh;
+  }
+
+  public void setObservedAgreementCiHigh(@javax.annotation.Nullable Double observedAgreementCiHigh) {
+    this.observedAgreementCiHigh = JsonNullable.<Double>of(observedAgreementCiHigh);
+  }
+
+
+  public CalibrationReport observedAgreementCiLow(@javax.annotation.Nullable Double observedAgreementCiLow) {
+    this.observedAgreementCiLow = JsonNullable.<Double>of(observedAgreementCiLow);
+    return this;
+  }
+
+  /**
+   * Wilson 95% confidence interval for &#x60;observed_agreement&#x60; — the honest width of an agreement estimate over a (typically small) human-labelled sample. Absent on reports persisted before uncertainty was reported.
+   * @return observedAgreementCiLow
+   */
+  @javax.annotation.Nullable
+  @JsonIgnore
+  public Double getObservedAgreementCiLow() {
+        return observedAgreementCiLow.orElse(null);
+  }
+
+  @JsonProperty(JSON_PROPERTY_OBSERVED_AGREEMENT_CI_LOW)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public JsonNullable<Double> getObservedAgreementCiLow_JsonNullable() {
+    return observedAgreementCiLow;
+  }
+  
+  @JsonProperty(JSON_PROPERTY_OBSERVED_AGREEMENT_CI_LOW)
+  public void setObservedAgreementCiLow_JsonNullable(JsonNullable<Double> observedAgreementCiLow) {
+    this.observedAgreementCiLow = observedAgreementCiLow;
+  }
+
+  public void setObservedAgreementCiLow(@javax.annotation.Nullable Double observedAgreementCiLow) {
+    this.observedAgreementCiLow = JsonNullable.<Double>of(observedAgreementCiLow);
+  }
+
+
   public CalibrationReport policy(@javax.annotation.Nonnull CalibrationPolicy policy) {
     this.policy = policy;
     return this;
@@ -600,6 +748,8 @@ public class CalibrationReport {
     return Objects.equals(this.brierScore, calibrationReport.brierScore) &&
         Objects.equals(this.calibrationReportId, calibrationReport.calibrationReportId) &&
         Objects.equals(this.cohenKappa, calibrationReport.cohenKappa) &&
+        equalsNullable(this.cohenKappaCiHigh, calibrationReport.cohenKappaCiHigh) &&
+        equalsNullable(this.cohenKappaCiLow, calibrationReport.cohenKappaCiLow) &&
         Objects.equals(this.confusion, calibrationReport.confusion) &&
         Objects.equals(this.createdAt, calibrationReport.createdAt) &&
         Objects.equals(this.datasetId, calibrationReport.datasetId) &&
@@ -610,6 +760,8 @@ public class CalibrationReport {
         Objects.equals(this.expectedCalibrationError, calibrationReport.expectedCalibrationError) &&
         Objects.equals(this.items, calibrationReport.items) &&
         Objects.equals(this.observedAgreement, calibrationReport.observedAgreement) &&
+        equalsNullable(this.observedAgreementCiHigh, calibrationReport.observedAgreementCiHigh) &&
+        equalsNullable(this.observedAgreementCiLow, calibrationReport.observedAgreementCiLow) &&
         Objects.equals(this.policy, calibrationReport.policy) &&
         Objects.equals(this.projectId, calibrationReport.projectId) &&
         Objects.equals(this.reliabilityBins, calibrationReport.reliabilityBins) &&
@@ -617,9 +769,20 @@ public class CalibrationReport {
         Objects.equals(this.tenantId, calibrationReport.tenantId);
   }
 
+  private static <T> boolean equalsNullable(JsonNullable<T> a, JsonNullable<T> b) {
+    return a == b || (a != null && b != null && a.isPresent() && b.isPresent() && Objects.deepEquals(a.get(), b.get()));
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(brierScore, calibrationReportId, cohenKappa, confusion, createdAt, datasetId, datasetVersionId, evalReportId, evaluatorVersionId, expectedAgreement, expectedCalibrationError, items, observedAgreement, policy, projectId, reliabilityBins, sampleCount, tenantId);
+    return Objects.hash(brierScore, calibrationReportId, cohenKappa, hashCodeNullable(cohenKappaCiHigh), hashCodeNullable(cohenKappaCiLow), confusion, createdAt, datasetId, datasetVersionId, evalReportId, evaluatorVersionId, expectedAgreement, expectedCalibrationError, items, observedAgreement, hashCodeNullable(observedAgreementCiHigh), hashCodeNullable(observedAgreementCiLow), policy, projectId, reliabilityBins, sampleCount, tenantId);
+  }
+
+  private static <T> int hashCodeNullable(JsonNullable<T> a) {
+    if (a == null) {
+      return 1;
+    }
+    return a.isPresent() ? Arrays.deepHashCode(new Object[]{a.get()}) : 31;
   }
 
   @Override
@@ -629,6 +792,8 @@ public class CalibrationReport {
     sb.append("    brierScore: ").append(toIndentedString(brierScore)).append("\n");
     sb.append("    calibrationReportId: ").append(toIndentedString(calibrationReportId)).append("\n");
     sb.append("    cohenKappa: ").append(toIndentedString(cohenKappa)).append("\n");
+    sb.append("    cohenKappaCiHigh: ").append(toIndentedString(cohenKappaCiHigh)).append("\n");
+    sb.append("    cohenKappaCiLow: ").append(toIndentedString(cohenKappaCiLow)).append("\n");
     sb.append("    confusion: ").append(toIndentedString(confusion)).append("\n");
     sb.append("    createdAt: ").append(toIndentedString(createdAt)).append("\n");
     sb.append("    datasetId: ").append(toIndentedString(datasetId)).append("\n");
@@ -639,6 +804,8 @@ public class CalibrationReport {
     sb.append("    expectedCalibrationError: ").append(toIndentedString(expectedCalibrationError)).append("\n");
     sb.append("    items: ").append(toIndentedString(items)).append("\n");
     sb.append("    observedAgreement: ").append(toIndentedString(observedAgreement)).append("\n");
+    sb.append("    observedAgreementCiHigh: ").append(toIndentedString(observedAgreementCiHigh)).append("\n");
+    sb.append("    observedAgreementCiLow: ").append(toIndentedString(observedAgreementCiLow)).append("\n");
     sb.append("    policy: ").append(toIndentedString(policy)).append("\n");
     sb.append("    projectId: ").append(toIndentedString(projectId)).append("\n");
     sb.append("    reliabilityBins: ").append(toIndentedString(reliabilityBins)).append("\n");
@@ -706,6 +873,16 @@ public class CalibrationReport {
       joiner.add(String.format("%scohen_kappa%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getCohenKappa()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
+    // add `cohen_kappa_ci_high` to the URL query string
+    if (getCohenKappaCiHigh() != null) {
+      joiner.add(String.format("%scohen_kappa_ci_high%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getCohenKappaCiHigh()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `cohen_kappa_ci_low` to the URL query string
+    if (getCohenKappaCiLow() != null) {
+      joiner.add(String.format("%scohen_kappa_ci_low%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getCohenKappaCiLow()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
     // add `confusion` to the URL query string
     if (getConfusion() != null) {
       joiner.add(getConfusion().toUrlQueryString(prefix + "confusion" + suffix));
@@ -759,6 +936,16 @@ public class CalibrationReport {
     // add `observed_agreement` to the URL query string
     if (getObservedAgreement() != null) {
       joiner.add(String.format("%sobserved_agreement%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getObservedAgreement()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `observed_agreement_ci_high` to the URL query string
+    if (getObservedAgreementCiHigh() != null) {
+      joiner.add(String.format("%sobserved_agreement_ci_high%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getObservedAgreementCiHigh()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `observed_agreement_ci_low` to the URL query string
+    if (getObservedAgreementCiLow() != null) {
+      joiner.add(String.format("%sobserved_agreement_ci_low%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getObservedAgreementCiLow()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `policy` to the URL query string

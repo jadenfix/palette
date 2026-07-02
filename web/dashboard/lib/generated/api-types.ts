@@ -1051,6 +1051,16 @@ export interface components {
             calibration_report_id: components["schemas"]["CalibrationReportId"];
             /** Format: double */
             cohen_kappa: number;
+            /** Format: double */
+            cohen_kappa_ci_high?: number | null;
+            /**
+             * Format: double
+             * @description Percentile-bootstrap 95% confidence interval for `cohen_kappa`
+             *     (multinomial resampling of the confusion table, deterministic seed).
+             *     Kappa over small calibration samples is high-variance; a bare point
+             *     estimate invites over-reading. Absent on pre-uncertainty reports.
+             */
+            cohen_kappa_ci_low?: number | null;
             confusion: components["schemas"]["CalibrationConfusion"];
             /** Format: date-time */
             created_at: string;
@@ -1065,6 +1075,15 @@ export interface components {
             items: components["schemas"]["CalibrationItem"][];
             /** Format: double */
             observed_agreement: number;
+            /** Format: double */
+            observed_agreement_ci_high?: number | null;
+            /**
+             * Format: double
+             * @description Wilson 95% confidence interval for `observed_agreement` — the honest
+             *     width of an agreement estimate over a (typically small) human-labelled
+             *     sample. Absent on reports persisted before uncertainty was reported.
+             */
+            observed_agreement_ci_low?: number | null;
             policy: components["schemas"]["CalibrationPolicy"];
             project_id: components["schemas"]["ProjectId"];
             reliability_bins: components["schemas"]["ReliabilityBin"][];
@@ -2076,14 +2095,15 @@ export interface components {
         /** @enum {string} */
         SpanStatus: "ok" | "error" | "unset";
         /**
-         * @description The statistical test that produced an [`ExperimentComparison`]. These mirror
-         *     `beater_stats::TestKind`; the gate records which method was actually used so a
-         *     reader can tell a t-test result from an exact McNemar one. The old single
-         *     `PairedNormalApproximation` (a hard-coded-z normal approximation with no
-         *     p-value) is gone — see `beater-stats`.
+         * @description The statistical test that produced an [`ExperimentComparison`]. The gate
+         *     records which method was **actually executed** so a reader can tell a
+         *     t-test result from an exact McNemar, Wilcoxon, bootstrap, cluster-robust, or
+         *     anytime-valid sequential one. The old single `PairedNormalApproximation`
+         *     (a hard-coded-z normal approximation with no p-value) is gone — see
+         *     `beater-stats`.
          * @enum {string}
          */
-        StatisticalTest: "paired_t" | "mcnemar_exact";
+        StatisticalTest: "paired_t" | "mcnemar_exact" | "wilcoxon_signed_rank" | "paired_bootstrap" | "clustered_paired_t" | "sequential_e_value";
         SubmitReviewAnnotationHttpRequest: {
             annotation_id?: string | null;
             payload: unknown;

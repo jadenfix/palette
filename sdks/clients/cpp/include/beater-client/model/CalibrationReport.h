@@ -77,6 +77,19 @@ public:
     void unsetCohen_kappa();
     void setCohenKappa(double value);
 
+    double getCohenKappaCiHigh() const;
+    bool cohenKappaCiHighIsSet() const;
+    void unsetCohen_kappa_ci_high();
+    void setCohenKappaCiHigh(double value);
+
+    /// <summary>
+    /// Percentile-bootstrap 95% confidence interval for &#x60;cohen_kappa&#x60; (multinomial resampling of the confusion table, deterministic seed). Kappa over small calibration samples is high-variance; a bare point estimate invites over-reading. Absent on pre-uncertainty reports.
+    /// </summary>
+    double getCohenKappaCiLow() const;
+    bool cohenKappaCiLowIsSet() const;
+    void unsetCohen_kappa_ci_low();
+    void setCohenKappaCiLow(double value);
+
     std::shared_ptr<CalibrationConfusion> getConfusion() const;
     bool confusionIsSet() const;
     void unsetConfusion();
@@ -127,6 +140,19 @@ public:
     void unsetObserved_agreement();
     void setObservedAgreement(double value);
 
+    double getObservedAgreementCiHigh() const;
+    bool observedAgreementCiHighIsSet() const;
+    void unsetObserved_agreement_ci_high();
+    void setObservedAgreementCiHigh(double value);
+
+    /// <summary>
+    /// Wilson 95% confidence interval for &#x60;observed_agreement&#x60; — the honest width of an agreement estimate over a (typically small) human-labelled sample. Absent on reports persisted before uncertainty was reported.
+    /// </summary>
+    double getObservedAgreementCiLow() const;
+    bool observedAgreementCiLowIsSet() const;
+    void unsetObserved_agreement_ci_low();
+    void setObservedAgreementCiLow(double value);
+
     std::shared_ptr<CalibrationPolicy> getPolicy() const;
     bool policyIsSet() const;
     void unsetPolicy();
@@ -163,6 +189,12 @@ protected:
     double m_Cohen_kappa;
     bool m_Cohen_kappaIsSet;
 
+    double m_Cohen_kappa_ci_high;
+    bool m_Cohen_kappa_ci_highIsSet;
+
+    double m_Cohen_kappa_ci_low;
+    bool m_Cohen_kappa_ci_lowIsSet;
+
     std::shared_ptr<CalibrationConfusion> m_Confusion;
     bool m_ConfusionIsSet;
 
@@ -192,6 +224,12 @@ protected:
 
     double m_Observed_agreement;
     bool m_Observed_agreementIsSet;
+
+    double m_Observed_agreement_ci_high;
+    bool m_Observed_agreement_ci_highIsSet;
+
+    double m_Observed_agreement_ci_low;
+    bool m_Observed_agreement_ci_lowIsSet;
 
     std::shared_ptr<CalibrationPolicy> m_Policy;
     bool m_PolicyIsSet;

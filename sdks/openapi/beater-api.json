@@ -8905,6 +8905,21 @@
             "type": "number",
             "format": "double"
           },
+          "cohen_kappa_ci_high": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "cohen_kappa_ci_low": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Percentile-bootstrap 95% confidence interval for `cohen_kappa`\n(multinomial resampling of the confusion table, deterministic seed).\nKappa over small calibration samples is high-variance; a bare point\nestimate invites over-reading. Absent on pre-uncertainty reports."
+          },
           "confusion": {
             "$ref": "#/components/schemas/CalibrationConfusion"
           },
@@ -8941,6 +8956,21 @@
           "observed_agreement": {
             "type": "number",
             "format": "double"
+          },
+          "observed_agreement_ci_high": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "observed_agreement_ci_low": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Wilson 95% confidence interval for `observed_agreement` — the honest\nwidth of an agreement estimate over a (typically small) human-labelled\nsample. Absent on reports persisted before uncertainty was reported."
           },
           "policy": {
             "$ref": "#/components/schemas/CalibrationPolicy"
@@ -12591,10 +12621,14 @@
       },
       "StatisticalTest": {
         "type": "string",
-        "description": "The statistical test that produced an [`ExperimentComparison`]. These mirror\n`beater_stats::TestKind`; the gate records which method was actually used so a\nreader can tell a t-test result from an exact McNemar one. The old single\n`PairedNormalApproximation` (a hard-coded-z normal approximation with no\np-value) is gone — see `beater-stats`.",
+        "description": "The statistical test that produced an [`ExperimentComparison`]. The gate\nrecords which method was **actually executed** so a reader can tell a\nt-test result from an exact McNemar, Wilcoxon, bootstrap, cluster-robust, or\nanytime-valid sequential one. The old single `PairedNormalApproximation`\n(a hard-coded-z normal approximation with no p-value) is gone — see\n`beater-stats`.",
         "enum": [
           "paired_t",
-          "mcnemar_exact"
+          "mcnemar_exact",
+          "wilcoxon_signed_rank",
+          "paired_bootstrap",
+          "clustered_paired_t",
+          "sequential_e_value"
         ]
       },
       "SubmitReviewAnnotationHttpRequest": {

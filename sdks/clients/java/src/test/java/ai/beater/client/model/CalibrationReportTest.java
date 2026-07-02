@@ -26,6 +26,10 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.openapitools.jackson.nullable.JsonNullable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -66,6 +70,22 @@ class CalibrationReportTest {
     @Test
     void cohenKappaTest() {
         // TODO: test cohenKappa
+    }
+
+    /**
+     * Test the property 'cohenKappaCiHigh'
+     */
+    @Test
+    void cohenKappaCiHighTest() {
+        // TODO: test cohenKappaCiHigh
+    }
+
+    /**
+     * Test the property 'cohenKappaCiLow'
+     */
+    @Test
+    void cohenKappaCiLowTest() {
+        // TODO: test cohenKappaCiLow
     }
 
     /**
@@ -146,6 +166,22 @@ class CalibrationReportTest {
     @Test
     void observedAgreementTest() {
         // TODO: test observedAgreement
+    }
+
+    /**
+     * Test the property 'observedAgreementCiHigh'
+     */
+    @Test
+    void observedAgreementCiHighTest() {
+        // TODO: test observedAgreementCiHigh
+    }
+
+    /**
+     * Test the property 'observedAgreementCiLow'
+     */
+    @Test
+    void observedAgreementCiLowTest() {
+        // TODO: test observedAgreementCiLow
     }
 
     /**

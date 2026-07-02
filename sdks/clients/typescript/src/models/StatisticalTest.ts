@@ -14,16 +14,21 @@
 
 
 /**
- * The statistical test that produced an [`ExperimentComparison`]. These mirror
- * `beater_stats::TestKind`; the gate records which method was actually used so a
- * reader can tell a t-test result from an exact McNemar one. The old single
- * `PairedNormalApproximation` (a hard-coded-z normal approximation with no
- * p-value) is gone — see `beater-stats`.
+ * The statistical test that produced an [`ExperimentComparison`]. The gate
+ * records which method was **actually executed** so a reader can tell a
+ * t-test result from an exact McNemar, Wilcoxon, bootstrap, cluster-robust, or
+ * anytime-valid sequential one. The old single `PairedNormalApproximation`
+ * (a hard-coded-z normal approximation with no p-value) is gone — see
+ * `beater-stats`.
  * @export
  */
 export const StatisticalTest = {
     PairedT: 'paired_t',
-    McnemarExact: 'mcnemar_exact'
+    McnemarExact: 'mcnemar_exact',
+    WilcoxonSignedRank: 'wilcoxon_signed_rank',
+    PairedBootstrap: 'paired_bootstrap',
+    ClusteredPairedT: 'clustered_paired_t',
+    SequentialEValue: 'sequential_e_value'
 } as const;
 export type StatisticalTest = typeof StatisticalTest[keyof typeof StatisticalTest];
 

@@ -12,7 +12,7 @@
 /*
  * StatisticalTest.h
  *
- * The statistical test that produced an [&#x60;ExperimentComparison&#x60;]. These mirror &#x60;beater_stats::TestKind&#x60;; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single &#x60;PairedNormalApproximation&#x60; (a hard-coded-z normal approximation with no p-value) is gone — see &#x60;beater-stats&#x60;.
+ * The statistical test that produced an [&#x60;ExperimentComparison&#x60;]. The gate records which method was **actually executed** so a reader can tell a t-test result from an exact McNemar, Wilcoxon, bootstrap, cluster-robust, or anytime-valid sequential one. The old single &#x60;PairedNormalApproximation&#x60; (a hard-coded-z normal approximation with no p-value) is gone — see &#x60;beater-stats&#x60;.
  */
 
 #ifndef ORG_OPENAPITOOLS_CLIENT_MODEL_StatisticalTest_H_
@@ -50,6 +50,10 @@ public:
     {
         StatisticalTest_PAIRED_T,
         StatisticalTest_MCNEMAR_EXACT,
+        StatisticalTest_WILCOXON_SIGNED_RANK,
+        StatisticalTest_PAIRED_BOOTSTRAP,
+        StatisticalTest_CLUSTERED_PAIRED_T,
+        StatisticalTest_SEQUENTIAL_E_VALUE,
     };
 
     eStatisticalTest getValue() const;

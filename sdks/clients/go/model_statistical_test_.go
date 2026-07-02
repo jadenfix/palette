@@ -15,19 +15,27 @@ import (
 	"fmt"
 )
 
-// StatisticalTest The statistical test that produced an [`ExperimentComparison`]. These mirror `beater_stats::TestKind`; the gate records which method was actually used so a reader can tell a t-test result from an exact McNemar one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
+// StatisticalTest The statistical test that produced an [`ExperimentComparison`]. The gate records which method was **actually executed** so a reader can tell a t-test result from an exact McNemar, Wilcoxon, bootstrap, cluster-robust, or anytime-valid sequential one. The old single `PairedNormalApproximation` (a hard-coded-z normal approximation with no p-value) is gone — see `beater-stats`.
 type StatisticalTest string
 
 // List of StatisticalTest
 const (
 	STATISTICALTEST_PAIRED_T StatisticalTest = "paired_t"
 	STATISTICALTEST_MCNEMAR_EXACT StatisticalTest = "mcnemar_exact"
+	STATISTICALTEST_WILCOXON_SIGNED_RANK StatisticalTest = "wilcoxon_signed_rank"
+	STATISTICALTEST_PAIRED_BOOTSTRAP StatisticalTest = "paired_bootstrap"
+	STATISTICALTEST_CLUSTERED_PAIRED_T StatisticalTest = "clustered_paired_t"
+	STATISTICALTEST_SEQUENTIAL_E_VALUE StatisticalTest = "sequential_e_value"
 )
 
 // All allowed values of StatisticalTest enum
 var AllowedStatisticalTestEnumValues = []StatisticalTest{
 	"paired_t",
 	"mcnemar_exact",
+	"wilcoxon_signed_rank",
+	"paired_bootstrap",
+	"clustered_paired_t",
+	"sequential_e_value",
 }
 
 func (v *StatisticalTest) UnmarshalJSON(src []byte) error {

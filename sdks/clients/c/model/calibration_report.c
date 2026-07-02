@@ -9,6 +9,8 @@ static calibration_report_t *calibration_report_create_internal(
     double brier_score,
     char *calibration_report_id,
     double cohen_kappa,
+    double cohen_kappa_ci_high,
+    double cohen_kappa_ci_low,
     calibration_confusion_t *confusion,
     char *created_at,
     char *dataset_id,
@@ -19,6 +21,8 @@ static calibration_report_t *calibration_report_create_internal(
     double expected_calibration_error,
     list_t *items,
     double observed_agreement,
+    double observed_agreement_ci_high,
+    double observed_agreement_ci_low,
     calibration_policy_t *policy,
     char *project_id,
     list_t *reliability_bins,
@@ -32,6 +36,8 @@ static calibration_report_t *calibration_report_create_internal(
     calibration_report_local_var->brier_score = brier_score;
     calibration_report_local_var->calibration_report_id = calibration_report_id;
     calibration_report_local_var->cohen_kappa = cohen_kappa;
+    calibration_report_local_var->cohen_kappa_ci_high = cohen_kappa_ci_high;
+    calibration_report_local_var->cohen_kappa_ci_low = cohen_kappa_ci_low;
     calibration_report_local_var->confusion = confusion;
     calibration_report_local_var->created_at = created_at;
     calibration_report_local_var->dataset_id = dataset_id;
@@ -42,6 +48,8 @@ static calibration_report_t *calibration_report_create_internal(
     calibration_report_local_var->expected_calibration_error = expected_calibration_error;
     calibration_report_local_var->items = items;
     calibration_report_local_var->observed_agreement = observed_agreement;
+    calibration_report_local_var->observed_agreement_ci_high = observed_agreement_ci_high;
+    calibration_report_local_var->observed_agreement_ci_low = observed_agreement_ci_low;
     calibration_report_local_var->policy = policy;
     calibration_report_local_var->project_id = project_id;
     calibration_report_local_var->reliability_bins = reliability_bins;
@@ -56,6 +64,8 @@ __attribute__((deprecated)) calibration_report_t *calibration_report_create(
     double brier_score,
     char *calibration_report_id,
     double cohen_kappa,
+    double cohen_kappa_ci_high,
+    double cohen_kappa_ci_low,
     calibration_confusion_t *confusion,
     char *created_at,
     char *dataset_id,
@@ -66,6 +76,8 @@ __attribute__((deprecated)) calibration_report_t *calibration_report_create(
     double expected_calibration_error,
     list_t *items,
     double observed_agreement,
+    double observed_agreement_ci_high,
+    double observed_agreement_ci_low,
     calibration_policy_t *policy,
     char *project_id,
     list_t *reliability_bins,
@@ -76,6 +88,8 @@ __attribute__((deprecated)) calibration_report_t *calibration_report_create(
         brier_score,
         calibration_report_id,
         cohen_kappa,
+        cohen_kappa_ci_high,
+        cohen_kappa_ci_low,
         confusion,
         created_at,
         dataset_id,
@@ -86,6 +100,8 @@ __attribute__((deprecated)) calibration_report_t *calibration_report_create(
         expected_calibration_error,
         items,
         observed_agreement,
+        observed_agreement_ci_high,
+        observed_agreement_ci_low,
         policy,
         project_id,
         reliability_bins,
@@ -187,6 +203,22 @@ cJSON *calibration_report_convertToJSON(calibration_report_t *calibration_report
     }
     if(cJSON_AddNumberToObject(item, "cohen_kappa", calibration_report->cohen_kappa) == NULL) {
     goto fail; //Numeric
+    }
+
+
+    // calibration_report->cohen_kappa_ci_high
+    if(calibration_report->cohen_kappa_ci_high) {
+    if(cJSON_AddNumberToObject(item, "cohen_kappa_ci_high", calibration_report->cohen_kappa_ci_high) == NULL) {
+    goto fail; //Numeric
+    }
+    }
+
+
+    // calibration_report->cohen_kappa_ci_low
+    if(calibration_report->cohen_kappa_ci_low) {
+    if(cJSON_AddNumberToObject(item, "cohen_kappa_ci_low", calibration_report->cohen_kappa_ci_low) == NULL) {
+    goto fail; //Numeric
+    }
     }
 
 
@@ -294,6 +326,22 @@ cJSON *calibration_report_convertToJSON(calibration_report_t *calibration_report
     }
     if(cJSON_AddNumberToObject(item, "observed_agreement", calibration_report->observed_agreement) == NULL) {
     goto fail; //Numeric
+    }
+
+
+    // calibration_report->observed_agreement_ci_high
+    if(calibration_report->observed_agreement_ci_high) {
+    if(cJSON_AddNumberToObject(item, "observed_agreement_ci_high", calibration_report->observed_agreement_ci_high) == NULL) {
+    goto fail; //Numeric
+    }
+    }
+
+
+    // calibration_report->observed_agreement_ci_low
+    if(calibration_report->observed_agreement_ci_low) {
+    if(cJSON_AddNumberToObject(item, "observed_agreement_ci_low", calibration_report->observed_agreement_ci_low) == NULL) {
+    goto fail; //Numeric
+    }
     }
 
 
@@ -425,6 +473,30 @@ calibration_report_t *calibration_report_parseFromJSON(cJSON *calibration_report
     if(!cJSON_IsNumber(cohen_kappa))
     {
     goto end; //Numeric
+    }
+
+    // calibration_report->cohen_kappa_ci_high
+    cJSON *cohen_kappa_ci_high = cJSON_GetObjectItemCaseSensitive(calibration_reportJSON, "cohen_kappa_ci_high");
+    if (cJSON_IsNull(cohen_kappa_ci_high)) {
+        cohen_kappa_ci_high = NULL;
+    }
+    if (cohen_kappa_ci_high) { 
+    if(!cJSON_IsNumber(cohen_kappa_ci_high))
+    {
+    goto end; //Numeric
+    }
+    }
+
+    // calibration_report->cohen_kappa_ci_low
+    cJSON *cohen_kappa_ci_low = cJSON_GetObjectItemCaseSensitive(calibration_reportJSON, "cohen_kappa_ci_low");
+    if (cJSON_IsNull(cohen_kappa_ci_low)) {
+        cohen_kappa_ci_low = NULL;
+    }
+    if (cohen_kappa_ci_low) { 
+    if(!cJSON_IsNumber(cohen_kappa_ci_low))
+    {
+    goto end; //Numeric
+    }
     }
 
     // calibration_report->confusion
@@ -586,6 +658,30 @@ calibration_report_t *calibration_report_parseFromJSON(cJSON *calibration_report
     goto end; //Numeric
     }
 
+    // calibration_report->observed_agreement_ci_high
+    cJSON *observed_agreement_ci_high = cJSON_GetObjectItemCaseSensitive(calibration_reportJSON, "observed_agreement_ci_high");
+    if (cJSON_IsNull(observed_agreement_ci_high)) {
+        observed_agreement_ci_high = NULL;
+    }
+    if (observed_agreement_ci_high) { 
+    if(!cJSON_IsNumber(observed_agreement_ci_high))
+    {
+    goto end; //Numeric
+    }
+    }
+
+    // calibration_report->observed_agreement_ci_low
+    cJSON *observed_agreement_ci_low = cJSON_GetObjectItemCaseSensitive(calibration_reportJSON, "observed_agreement_ci_low");
+    if (cJSON_IsNull(observed_agreement_ci_low)) {
+        observed_agreement_ci_low = NULL;
+    }
+    if (observed_agreement_ci_low) { 
+    if(!cJSON_IsNumber(observed_agreement_ci_low))
+    {
+    goto end; //Numeric
+    }
+    }
+
     // calibration_report->policy
     cJSON *policy = cJSON_GetObjectItemCaseSensitive(calibration_reportJSON, "policy");
     if (cJSON_IsNull(policy)) {
@@ -675,6 +771,8 @@ calibration_report_t *calibration_report_parseFromJSON(cJSON *calibration_report
         brier_score->valuedouble,
         strdup(calibration_report_id->valuestring),
         cohen_kappa->valuedouble,
+        cohen_kappa_ci_high ? cohen_kappa_ci_high->valuedouble : 0,
+        cohen_kappa_ci_low ? cohen_kappa_ci_low->valuedouble : 0,
         confusion_local_nonprim,
         strdup(created_at->valuestring),
         strdup(dataset_id->valuestring),
@@ -685,6 +783,8 @@ calibration_report_t *calibration_report_parseFromJSON(cJSON *calibration_report
         expected_calibration_error->valuedouble,
         itemsList,
         observed_agreement->valuedouble,
+        observed_agreement_ci_high ? observed_agreement_ci_high->valuedouble : 0,
+        observed_agreement_ci_low ? observed_agreement_ci_low->valuedouble : 0,
         policy_local_nonprim,
         strdup(project_id->valuestring),
         reliability_binsList,

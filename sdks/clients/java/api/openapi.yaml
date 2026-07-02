@@ -6604,7 +6604,7 @@ components:
         evidence: ""
         judge_label: null
         human_label: pass
-        judge_score: 3.616076749251911
+        judge_score: 4.145608029883936
         dataset_case_id: dataset_case_id
         agreed: true
         judge_result_label: judge_result_label
@@ -6638,7 +6638,7 @@ components:
       type: string
     CalibrationPolicy:
       example:
-        pass_threshold: 4.145608029883936
+        pass_threshold: 1.4894159098541704
       properties:
         pass_threshold:
           format: double
@@ -6650,32 +6650,36 @@ components:
         evaluator_version_id: evaluator_version_id
         tenant_id: tenant_id
         eval_report_id: eval_report_id
+        observed_agreement_ci_high: 1.2315135367772556
+        cohen_kappa_ci_high: 1.4658129805029452
         dataset_id: dataset_id
         dataset_version_id: dataset_version_id
         created_at: 2000-01-23T04:56:07.000+00:00
-        expected_agreement: 7.061401241503109
-        expected_calibration_error: 9.301444243932576
-        observed_agreement: 2.027123023002322
+        expected_agreement: 3.616076749251911
+        expected_calibration_error: 2.027123023002322
+        observed_agreement: 7.386281948385884
         reliability_bins:
-        - calibration_gap: 1.0246457001441578
-          lower_bound: 1.4894159098541704
-          mean_confidence: 6.84685269835264
+        - calibration_gap: 1.1730742509559433
+          lower_bound: 4.965218492984954
+          mean_confidence: 5.025004791520295
           bin_index: 0
           sample_count: 0
-          accuracy: 7.386281948385884
-          upper_bound: 1.1730742509559433
-        - calibration_gap: 1.0246457001441578
-          lower_bound: 1.4894159098541704
-          mean_confidence: 6.84685269835264
+          accuracy: 6.84685269835264
+          upper_bound: 9.369310271410669
+        - calibration_gap: 1.1730742509559433
+          lower_bound: 4.965218492984954
+          mean_confidence: 5.025004791520295
           bin_index: 0
           sample_count: 0
-          accuracy: 7.386281948385884
-          upper_bound: 1.1730742509559433
+          accuracy: 6.84685269835264
+          upper_bound: 9.369310271410669
         project_id: project_id
         brier_score: 0.8008281904610115
         calibration_report_id: calibration_report_id
+        observed_agreement_ci_low: 1.0246457001441578
         sample_count: 0
         cohen_kappa: 6.027456183070403
+        cohen_kappa_ci_low: 5.962133916683182
         confusion:
           human_pass_judge_fail: 0
           human_fail_judge_pass: 0
@@ -6685,19 +6689,19 @@ components:
         - evidence: ""
           judge_label: null
           human_label: pass
-          judge_score: 3.616076749251911
+          judge_score: 4.145608029883936
           dataset_case_id: dataset_case_id
           agreed: true
           judge_result_label: judge_result_label
         - evidence: ""
           judge_label: null
           human_label: pass
-          judge_score: 3.616076749251911
+          judge_score: 4.145608029883936
           dataset_case_id: dataset_case_id
           agreed: true
           judge_result_label: judge_result_label
         policy:
-          pass_threshold: 4.145608029883936
+          pass_threshold: 1.4894159098541704
       properties:
         brier_score:
           format: double
@@ -6706,6 +6710,19 @@ components:
           type: string
         cohen_kappa:
           format: double
+          type: number
+        cohen_kappa_ci_high:
+          format: double
+          nullable: true
+          type: number
+        cohen_kappa_ci_low:
+          description: |-
+            Percentile-bootstrap 95% confidence interval for `cohen_kappa`
+            (multinomial resampling of the confusion table, deterministic seed).
+            Kappa over small calibration samples is high-variance; a bare point
+            estimate invites over-reading. Absent on pre-uncertainty reports.
+          format: double
+          nullable: true
           type: number
         confusion:
           $ref: '#/components/schemas/CalibrationConfusion'
@@ -6732,6 +6749,18 @@ components:
           type: array
         observed_agreement:
           format: double
+          type: number
+        observed_agreement_ci_high:
+          format: double
+          nullable: true
+          type: number
+        observed_agreement_ci_low:
+          description: |-
+            Wilson 95% confidence interval for `observed_agreement` — the honest
+            width of an agreement estimate over a (typically small) human-labelled
+            sample. Absent on reports persisted before uncertainty was reported.
+          format: double
+          nullable: true
           type: number
         policy:
           $ref: '#/components/schemas/CalibrationPolicy'
@@ -9304,13 +9333,13 @@ components:
       type: string
     ReliabilityBin:
       example:
-        calibration_gap: 1.0246457001441578
-        lower_bound: 1.4894159098541704
-        mean_confidence: 6.84685269835264
+        calibration_gap: 1.1730742509559433
+        lower_bound: 4.965218492984954
+        mean_confidence: 5.025004791520295
         bin_index: 0
         sample_count: 0
-        accuracy: 7.386281948385884
-        upper_bound: 1.1730742509559433
+        accuracy: 6.84685269835264
+        upper_bound: 9.369310271410669
       properties:
         accuracy:
           format: double
@@ -10091,14 +10120,19 @@ components:
       type: string
     StatisticalTest:
       description: |-
-        The statistical test that produced an [`ExperimentComparison`]. These mirror
-        `beater_stats::TestKind`; the gate records which method was actually used so a
-        reader can tell a t-test result from an exact McNemar one. The old single
-        `PairedNormalApproximation` (a hard-coded-z normal approximation with no
-        p-value) is gone — see `beater-stats`.
+        The statistical test that produced an [`ExperimentComparison`]. The gate
+        records which method was **actually executed** so a reader can tell a
+        t-test result from an exact McNemar, Wilcoxon, bootstrap, cluster-robust, or
+        anytime-valid sequential one. The old single `PairedNormalApproximation`
+        (a hard-coded-z normal approximation with no p-value) is gone — see
+        `beater-stats`.
       enum:
       - paired_t
       - mcnemar_exact
+      - wilcoxon_signed_rank
+      - paired_bootstrap
+      - clustered_paired_t
+      - sequential_e_value
       type: string
     SubmitReviewAnnotationHttpRequest:
       example:
