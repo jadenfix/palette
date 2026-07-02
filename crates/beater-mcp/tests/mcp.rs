@@ -201,8 +201,8 @@ fn tool_set_equals_spec_v1_operations() {
         !tools.contains("help"),
         "the synthetic help tool must not appear in spec-coverage tool_names()"
     );
-    // Sanity: the spec covers 57 /v1 operations.
-    assert_eq!(tools.len(), 57, "expected 57 tools, got {}", tools.len());
+    // Sanity: the spec covers 58 /v1 operations.
+    assert_eq!(tools.len(), 58, "expected 58 tools, got {}", tools.len());
 }
 
 #[tokio::test]
@@ -233,8 +233,8 @@ async fn initialize_and_tools_list_over_mcp_route() {
     .await;
     assert_eq!(status, StatusCode::OK);
     let tools = listed["result"]["tools"].as_array().expect("tools array");
-    // 57 spec-derived tools + the synthetic `help` meta tool.
-    assert_eq!(tools.len(), 58);
+    // 58 spec-derived tools + the synthetic `help` meta tool.
+    assert_eq!(tools.len(), 59);
     // Each tool has the required MCP shape.
     for tool in tools {
         assert!(tool["name"].is_string());
@@ -495,8 +495,8 @@ async fn tools_list_exposes_output_schema_and_annotations() {
     let app = beater_mcp::router(state);
     let tools = list_tools(&app).await;
     let methods = spec_op_methods();
-    // 57 spec-derived tools + the synthetic `help` meta tool.
-    assert_eq!(tools.len(), 58);
+    // 58 spec-derived tools + the synthetic `help` meta tool.
+    assert_eq!(tools.len(), 59);
 
     // The six list endpoints return top-level JSON arrays, which MCP forbids as
     // structured output, so they advertise no outputSchema.
@@ -816,11 +816,11 @@ async fn help_overview_lists_every_spec_tool() {
     assert!(structured.is_object(), "structuredContent is an object");
     assert_eq!(structured["server"]["name"], "beater-mcp");
     assert_eq!(
-        structured["toolCount"], 57,
-        "overview covers all 57 spec tools"
+        structured["toolCount"], 58,
+        "overview covers all 58 spec tools"
     );
     let listed = structured["tools"].as_array().expect("tools array");
-    assert_eq!(listed.len(), 57);
+    assert_eq!(listed.len(), 58);
     // Each entry is a compact {name, method, description} summary.
     for entry in listed {
         assert!(entry["name"].is_string());
