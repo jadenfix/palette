@@ -1267,7 +1267,19 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     }
     assert!(outside_proof.contains("SHA256 against the committed artifact"));
 
-    let readme = read(root.join("README.md"));
+    // The detailed clean-clone runbook moved out of the (now concise) README
+    // (#548) into the Gate 2 docs set: the runner card, the clean-clone
+    // runbook, and the outside-person proof. Assert the documentation contract
+    // against README plus that set, so the contract tracks the content
+    // wherever the docs keep it rather than pinning its prose location.
+    let readme = [
+        "README.md",
+        "docs/demos/gate2-outside-runner-card.md",
+        "docs/demos/gate2-clean-clone-runbook.md",
+        "docs/demos/gate2-outside-person-proof.md",
+    ]
+    .map(|path| read(root.join(path)))
+    .join("\n");
     assert!(readme.contains("docs/demos/gate2-outside-person-proof.md"));
     assert!(readme.contains("gate2-outside-local-preflight.sh"));
     assert!(readme.contains("before `t=\"$(date +%s)\"`"));
@@ -1557,7 +1569,7 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(quickstart_e2e.contains("Span metrics"));
     assert!(quickstart_e2e.contains("Latency"));
 
-    let readme = read(root.join("README.md"));
+    // `readme` is still the combined Gate 2 doc set bound above.
     assert!(readme.contains("docs/demos/gate2-outside-runner-card.md"));
     assert!(readme
         .contains("As soon as the first `Open this quickstart trace-list URL first:` URL appears"));
