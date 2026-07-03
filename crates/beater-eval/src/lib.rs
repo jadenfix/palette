@@ -1042,8 +1042,125 @@ pub struct DesignedComparisonInputs<'a> {
     pub covariate: Option<&'a [f64]>,
     /// Per-case cluster labels resolving the design's `cluster_key`. Required
     /// (aligned one-to-one) for a design that pre-registers clustering to be
-    /// able to certify a `Pass`.
+    /// able to certify a `Pass`. Build this with [`resolve_cluster_ids`] rather
+    /// than by hand so an unresolvable key is surfaced instead of silently
+    /// dropped.
     pub cluster_ids: Option<&'a [String]>,
+}
+
+/// The per-case identifiers a caller can offer so a pre-registered
+/// [`beater_design::ClusterKey`] can be resolved into concrete cluster labels
+/// for [`compare_paired_scores_designed`].
+///
+/// A caller fills in whichever identifiers it has for a case; a `DatasetCase`,
+/// for example, supplies `trace_id` from its `source_trace_id`. Keeping this a
+/// caller-provided bag of strings (rather than a concrete case type) is what
+/// lets `beater-eval` resolve clustering without depending on `beater-datasets`
+/// or the trace store — the resolution is pure and the layering stays clean.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct CaseClusterIds<'a> {
+    /// The case's originating trace, for [`beater_design::ClusterKey::Trace`].
+    pub trace_id: Option<&'a str>,
+    /// The multi-turn conversation the case belongs to, for
+    /// [`beater_design::ClusterKey::Conversation`].
+    pub conversation_id: Option<&'a str>,
+    /// The prompt template the case was generated from, for
+    /// [`beater_design::ClusterKey::PromptTemplate`].
+    pub prompt_template_id: Option<&'a str>,
+    /// The shared-seed group, for [`beater_design::ClusterKey::SeedGroup`].
+    pub seed_group_id: Option<&'a str>,
+    /// The value of the named custom attribute, for
+    /// [`beater_design::ClusterKey::Custom`] — the caller looks the value up by
+    /// the key's `name` and supplies it here.
+    pub custom: Option<&'a str>,
+}
+
+/// The outcome of resolving a design's `cluster_key` against the per-case
+/// identifiers a caller could offer (see [`resolve_cluster_ids`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ClusterResolution {
+    /// The design does not pre-register clustering (`cluster_key == None`); no
+    /// cluster labels are needed and the offline i.i.d. path is correct.
+    NotClustered,
+    /// The `cluster_key` resolved to a per-case label for every case.
+    Resolved(Vec<String>),
+    /// The `cluster_key` is set but the per-case identifier it names was absent
+    /// for at least one case, so clustered execution cannot be honored — the
+    /// executor will refuse to certify a `Pass` rather than fall back to
+    /// too-small i.i.d. standard errors (§10.3 #1).
+    Unresolvable(beater_design::ClusterKey),
+}
+
+impl ClusterResolution {
+    /// The per-case labels to hand [`DesignedComparisonInputs::cluster_ids`]:
+    /// `Some` only when fully [`Resolved`](ClusterResolution::Resolved).
+    /// `NotClustered` and `Unresolvable` both map to `None`, which the executor
+    /// already handles correctly (run offline when unclustered; refuse a `Pass`
+    /// when a set key could not be honored).
+    pub fn labels(&self) -> Option<&[String]> {
+        match self {
+            ClusterResolution::Resolved(labels) => Some(labels),
+            ClusterResolution::NotClustered | ClusterResolution::Unresolvable(_) => None,
+        }
+    }
+}
+
+/// Resolve a pre-registered [`EvalDesign::cluster_key`] into the per-case
+/// cluster labels [`compare_paired_scores_designed`] needs, from the
+/// identifiers a caller can offer.
+///
+/// This is the bridge between the declarative design manifest and the executor:
+/// `beater-design` records *which* key clusters the observations, and this
+/// function turns that key plus a caller's per-case identifiers into the actual
+/// labels — or reports that the key cannot be honored, so a clustered design is
+/// safely refused instead of analyzed with i.i.d. standard errors.
+///
+/// * [`ClusterKey::Case`](beater_design::ClusterKey::Case) always resolves:
+///   each case is its own cluster (labelled by index), which the CR1 SE reduces
+///   to the i.i.d. SE up to the finite-cluster correction.
+/// * `Trace`/`Conversation`/`PromptTemplate`/`SeedGroup`/`Custom` resolve only
+///   when the corresponding [`CaseClusterIds`] field is present for **every**
+///   case; a single gap makes the whole design unresolvable (all-or-nothing, so
+///   clusters are never silently split).
+///
+/// Pass one [`CaseClusterIds`] per score pair. The per-case-vs-score length is
+/// re-checked by [`compare_paired_scores_designed`] (a mismatch drops the
+/// labels and refuses a `Pass`), so this function is a pure, total mapping.
+pub fn resolve_cluster_ids(
+    design: &EvalDesign,
+    per_case: &[CaseClusterIds<'_>],
+) -> ClusterResolution {
+    use beater_design::ClusterKey;
+
+    let Some(key) = design.cluster_key.clone() else {
+        return ClusterResolution::NotClustered;
+    };
+
+    // `ClusterKey::Case` needs no external identifier — each case is its own
+    // cluster, labelled by position.
+    if let ClusterKey::Case = key {
+        let labels = (0..per_case.len()).map(|i| i.to_string()).collect();
+        return ClusterResolution::Resolved(labels);
+    }
+
+    // Every other key selects one per-case identifier; it must be present for
+    // all cases or the design cannot be honored.
+    let mut labels = Vec::with_capacity(per_case.len());
+    for ids in per_case {
+        let value = match &key {
+            ClusterKey::Case => unreachable!("handled above"),
+            ClusterKey::Trace => ids.trace_id,
+            ClusterKey::Conversation => ids.conversation_id,
+            ClusterKey::PromptTemplate => ids.prompt_template_id,
+            ClusterKey::SeedGroup => ids.seed_group_id,
+            ClusterKey::Custom { .. } => ids.custom,
+        };
+        match value {
+            Some(label) => labels.push(label.to_owned()),
+            None => return ClusterResolution::Unresolvable(key),
+        }
+    }
+    ClusterResolution::Resolved(labels)
 }
 
 /// Deterministic seed for the gate's paired-bootstrap path: gate decisions must
@@ -2746,6 +2863,199 @@ mod tests {
             out.decision,
             GateDecision::Inconclusive,
             "an unhonorable sequential pre-registration must block Pass: {out:?}"
+        );
+    }
+
+    // ── resolve_cluster_ids: the design→executor cluster-label bridge ───────
+
+    #[test]
+    fn resolve_cluster_ids_maps_no_key_to_not_clustered() {
+        let design = conservative_gate_design(&GatePolicy::default(), 4);
+        let per_case = vec![CaseClusterIds::default(); 4];
+        let resolution = resolve_cluster_ids(&design, &per_case);
+        assert_eq!(resolution, ClusterResolution::NotClustered);
+        assert_eq!(resolution.labels(), None);
+    }
+
+    #[test]
+    fn resolve_cluster_ids_case_key_is_always_resolvable_by_index() {
+        let mut design = conservative_gate_design(&GatePolicy::default(), 3);
+        design.cluster_key = Some(beater_design::ClusterKey::Case);
+        let per_case = vec![CaseClusterIds::default(); 3];
+        let resolution = resolve_cluster_ids(&design, &per_case);
+        assert_eq!(
+            resolution,
+            ClusterResolution::Resolved(vec!["0".into(), "1".into(), "2".into()])
+        );
+    }
+
+    #[test]
+    fn resolve_cluster_ids_trace_key_reads_the_trace_id() {
+        let mut design = conservative_gate_design(&GatePolicy::default(), 4);
+        design.cluster_key = Some(beater_design::ClusterKey::Trace);
+        // Two conversations, two turns each — the multi-turn case §10.3 #1 is about.
+        let per_case = vec![
+            CaseClusterIds {
+                trace_id: Some("conv-a"),
+                ..Default::default()
+            },
+            CaseClusterIds {
+                trace_id: Some("conv-a"),
+                ..Default::default()
+            },
+            CaseClusterIds {
+                trace_id: Some("conv-b"),
+                ..Default::default()
+            },
+            CaseClusterIds {
+                trace_id: Some("conv-b"),
+                ..Default::default()
+            },
+        ];
+        assert_eq!(
+            resolve_cluster_ids(&design, &per_case),
+            ClusterResolution::Resolved(vec![
+                "conv-a".into(),
+                "conv-a".into(),
+                "conv-b".into(),
+                "conv-b".into(),
+            ])
+        );
+    }
+
+    #[test]
+    fn resolve_cluster_ids_is_all_or_nothing_on_a_gap() {
+        let mut design = conservative_gate_design(&GatePolicy::default(), 3);
+        design.cluster_key = Some(beater_design::ClusterKey::Trace);
+        let per_case = vec![
+            CaseClusterIds {
+                trace_id: Some("t1"),
+                ..Default::default()
+            },
+            CaseClusterIds::default(), // gap: no trace id for this case
+            CaseClusterIds {
+                trace_id: Some("t3"),
+                ..Default::default()
+            },
+        ];
+        assert_eq!(
+            resolve_cluster_ids(&design, &per_case),
+            ClusterResolution::Unresolvable(beater_design::ClusterKey::Trace)
+        );
+    }
+
+    #[test]
+    fn resolve_cluster_ids_custom_key_reads_the_custom_field() {
+        let mut design = conservative_gate_design(&GatePolicy::default(), 2);
+        design.cluster_key = Some(beater_design::ClusterKey::Custom {
+            name: "tenant".into(),
+        });
+        let per_case = vec![
+            CaseClusterIds {
+                custom: Some("acme"),
+                ..Default::default()
+            },
+            CaseClusterIds {
+                custom: Some("acme"),
+                ..Default::default()
+            },
+        ];
+        assert_eq!(
+            resolve_cluster_ids(&design, &per_case),
+            ClusterResolution::Resolved(vec!["acme".into(), "acme".into()])
+        );
+    }
+
+    /// End-to-end: resolving trace ids and feeding them through the executor
+    /// makes a trace-clustered design actually usable — two conversations can't
+    /// certify a win, many independent conversations can, and a design whose
+    /// key can't be resolved is refused. This is what "the executor is ready
+    /// for cluster labels" means in practice.
+    #[test]
+    fn resolved_trace_cluster_flows_through_the_executor() {
+        let policy = GatePolicy {
+            min_sample_size: 2,
+            ..GatePolicy::default()
+        };
+        let mut design = conservative_gate_design(&policy, 6);
+        design.unit_of_analysis = beater_design::UnitOfAnalysis::Conversation;
+        design.cluster_key = Some(beater_design::ClusterKey::Trace);
+
+        // Six turns across two conversations, all improving: i.i.d. would pass.
+        let baseline = vec![0.5; 6];
+        let candidate = vec![0.80, 0.81, 0.79, 0.55, 0.54, 0.56];
+        let traces = ["c1", "c1", "c1", "c2", "c2", "c2"];
+        let per_case: Vec<CaseClusterIds> = traces
+            .iter()
+            .map(|t| CaseClusterIds {
+                trace_id: Some(*t),
+                ..Default::default()
+            })
+            .collect();
+        let resolution = resolve_cluster_ids(&design, &per_case);
+        let out = compare_paired_scores_designed(
+            &DesignedComparisonInputs {
+                baseline: &baseline,
+                candidate: &candidate,
+                covariate: None,
+                cluster_ids: resolution.labels(),
+            },
+            &policy,
+            &design,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(out.test, StatisticalTest::ClusteredPairedT);
+        assert_ne!(
+            out.decision,
+            GateDecision::Pass,
+            "two conversations cannot certify a win: {out:?}"
+        );
+
+        // Twelve independent single-turn conversations with a consistent lift.
+        let baseline = vec![0.5; 12];
+        let candidate = vec![0.7; 12];
+        let traces: Vec<String> = (0..12).map(|i| format!("conv-{i}")).collect();
+        let per_case: Vec<CaseClusterIds> = traces
+            .iter()
+            .map(|t| CaseClusterIds {
+                trace_id: Some(t.as_str()),
+                ..Default::default()
+            })
+            .collect();
+        let resolution = resolve_cluster_ids(&design, &per_case);
+        let out = compare_paired_scores_designed(
+            &DesignedComparisonInputs {
+                baseline: &baseline,
+                candidate: &candidate,
+                covariate: None,
+                cluster_ids: resolution.labels(),
+            },
+            &policy,
+            &design,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(out.test, StatisticalTest::ClusteredPairedT);
+        assert_eq!(out.decision, GateDecision::Pass, "{out:?}");
+
+        // Unresolved: no trace ids at all → executor refuses to certify a Pass.
+        let per_case = vec![CaseClusterIds::default(); 12];
+        let resolution = resolve_cluster_ids(&design, &per_case);
+        assert!(matches!(resolution, ClusterResolution::Unresolvable(_)));
+        let out = compare_paired_scores_designed(
+            &DesignedComparisonInputs {
+                baseline: &baseline,
+                candidate: &candidate,
+                covariate: None,
+                cluster_ids: resolution.labels(),
+            },
+            &policy,
+            &design,
+        )
+        .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            out.decision,
+            GateDecision::Inconclusive,
+            "an unresolvable cluster key must block Pass: {out:?}"
         );
     }
 }
