@@ -15,6 +15,55 @@ crates/beater-api handlers  (#[utoipa::path] + ToSchema on the real types)
    └── web/dashboard /docs    rendered API reference + tool catalog
 ```
 
+## Quickstart (for consumers)
+
+Want to *call* the Beater API from your language? Install the generated
+control-plane client, point it at your Beater host, set an API key, and go. Each
+client's full, per-endpoint method reference lives in its own README (linked
+below).
+
+| Language | Install | Import / namespace | Reference |
+| --- | --- | --- | --- |
+| Python | `pip install beater_client` | `import beater_client` | [README](clients/python/README.md) |
+| TypeScript | `npm install @beater/client` | `import { Configuration, DatasetsApi } from '@beater/client'` | [README](clients/typescript/README.md) |
+| Go | `go get github.com/jadenfix/beater/sdks/clients/go` | `import beaterclient ".../sdks/clients/go"` | [README](clients/go/README.md) |
+| Java | Maven `ai.beater:beater-client:0.1.0` | `import ai.beater.client.api.DatasetsApi;` | [README](clients/java/README.md) |
+| Kotlin | Gradle `implementation("ai.beater:beater-client-kotlin:0.1.0")` | `import ai.beater.client.kotlin.apis.DatasetsApi` | [README](clients/kotlin/README.md) |
+| Rust | `cargo add beater-client` | `use beater_client::apis::datasets_api;` | [README](clients/rust/README.md) |
+| Ruby | `gem install beater_client` | `require 'beater_client'` (module `BeaterClient`) | [README](clients/ruby/README.md) |
+| PHP | `composer require beater/client` | namespace `Beater\Client` | [README](clients/php/README.md) |
+| C# | `dotnet add package Beater.Client` | `using Beater.Client.Api;` | [README](clients/csharp/README.md) |
+| C | build from source | — | [README](clients/c/README.md) |
+| C++ | build from source | — | [README](clients/cpp/README.md) |
+
+> **Registry availability.** Packages publish on the first tagged release (see
+> [Publishing](#publishing-zero-config-secret-gated)); until then, build from
+> `sdks/clients/<lang>/`. C/C++ have no central registry and always ship as
+> source + release tarballs.
+
+**Configure host + auth.** The spec is pre-1.0 and ships no `servers` block, so
+every client defaults its base URL to `http://localhost`; set your host and API
+key on the client's `Configuration`/`ApiClient` object. Python, as the pattern
+for the others:
+
+```python
+import beater_client
+
+cfg = beater_client.Configuration(host="https://your-beater-host")  # else defaults to http://localhost
+cfg.api_key["ApiKeyAuth"] = "YOUR_API_KEY"          # or cfg.access_token = "..." for bearer
+
+with beater_client.ApiClient(cfg) as api:
+    health = beater_client.HealthApi(api).health()
+    datasets = beater_client.DatasetsApi(api)
+    # ... typed calls per resource (datasets, experiments, gates, evals, traces, ...)
+```
+
+The same shape holds in every language: build a config with the host + key,
+construct a resource API object (`DatasetsApi`, `TracesApi`, …), call typed
+methods. See each client's linked README for the exact constructor and method
+names. For live, runnable examples in all 11 languages, see
+[`sdks/conformance/<lang>/`](conformance/).
+
 ## Two layers
 
 **Layer 1 — generated control-plane clients** (`sdks/clients/<lang>/`): typed

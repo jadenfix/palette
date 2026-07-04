@@ -70,6 +70,9 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          OSSRH_URL: ${{ secrets.OSSRH_URL }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
           RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
           PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}

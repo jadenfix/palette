@@ -12,7 +12,7 @@ We have all watched open-source infrastructure get relicensed out from under the
 people who depend on it. Beater commits, in public and before launch, that this
 will not happen here:
 
-1. **The license will not be revoked.** The `beaterd` server, all 7 SDK clients,
+1. **The license will not be revoked.** The `beaterd` server, all 11 SDK clients,
    the MCP tools, the CLI, the canonical schema, and the dashboard are licensed
    under **Apache-2.0** and will remain under an OSI-approved permissive license.
    We will not move the open core to BSL, SSPL, Elastic License, or any

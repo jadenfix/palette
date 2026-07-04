@@ -72,6 +72,7 @@ case "$target" in
     ;;
   java)
     [ -n "${OSSRH_USERNAME:-}" ] || skip OSSRH_USERNAME
+    [ -n "${OSSRH_PASSWORD:-}" ] || skip OSSRH_PASSWORD
     (cd sdks/clients/java && mvn --batch-mode versions:set -DnewVersion="$version" -DgenerateBackupPoms=false && mvn --batch-mode deploy -DskipTests)
     ;;
   ruby)
@@ -104,10 +105,20 @@ case "$target" in
       --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
     ;;
   kotlin)
-    # Kotlin publishes to Maven Central via the same OSSRH credentials as Java.
-    # The artifact version is stamped at generation time (artifactVersion).
+    # Kotlin publishes to Maven Central via the same OSSRH credentials as Java,
+    # plus a GPG signing key (Central requires signed artifacts). The generated
+    # client's build.gradle only applies `maven-publish` with no publication or
+    # repository, so publishing is supplied by an init script (kept out of the
+    # regenerated tree). The artifact version is stamped at generation time
+    # (artifactVersion). Skip clearly if any required secret is missing rather
+    # than uploading nothing and reporting a false success.
     [ -n "${OSSRH_USERNAME:-}" ] || skip OSSRH_USERNAME
-    (cd sdks/clients/kotlin && gradle --no-daemon --console=plain publish)
+    [ -n "${OSSRH_PASSWORD:-}" ] || skip OSSRH_PASSWORD
+    [ -n "${SIGNING_KEY:-}" ] || skip SIGNING_KEY
+    init_script="$root/sdks/config/maven-central.init.gradle"
+    # Use the client's pinned wrapper via `sh` so a missing exec bit doesn't matter.
+    (cd sdks/clients/kotlin && sh ./gradlew --no-daemon --console=plain \
+      --init-script "$init_script" publish)
     ;;
   *)
     echo "Unknown target: $target" >&2; exit 1 ;;

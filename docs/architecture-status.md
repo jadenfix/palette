@@ -249,7 +249,7 @@ in a material way:
 
 2. **`sdks/python-browser-use/` and `sdks/ts-stagehand/` are top-level under `sdks/`, NOT under `sdks/clients/`.**
    The initial ledger mistakenly listed them as `sdks/clients/python-browser-use/` and
-   `sdks/clients/ts-stagehand/`. Only the seven generated clients live under `sdks/clients/`;
+   `sdks/clients/ts-stagehand/`. Only the eleven generated clients live under `sdks/clients/`;
    these two are top-level SDK directories alongside `sdks/python/`, `sdks/typescript/`, and `sdks/rust/`.
 
 3. **`beater-bus` is built (not just planned).** ARCH §3.1 and the `Cargo.toml`

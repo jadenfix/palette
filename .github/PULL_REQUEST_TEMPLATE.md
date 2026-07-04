@@ -1,6 +1,6 @@
 <!--
 Thanks for contributing to Beater! Please read CONTRIBUTING.md first.
-The HTTP API, the 7 SDK clients, the MCP tools, the CLI, and the docs are ALL
+The HTTP API, the 11 SDK clients, the MCP tools, the CLI, and the docs are ALL
 generated from one artifact: sdks/openapi/beater-api.json.
 -->
 
@@ -22,7 +22,7 @@ generated from one artifact: sdks/openapi/beater-api.json.
       kind, or attribute — **OR** —
 - [ ] It does, and I regenerated everything in the same change:
   - [ ] `cargo xtask regen-spec` (OpenAPI spec + dashboard snapshot)
-  - [ ] `scripts/regen-sdks.sh` (all 7 generated clients)
+  - [ ] `scripts/regen-sdks.sh` (all 11 generated clients)
   - [ ] `cargo xtask regen-semconv` (if span kinds / attributes changed)
 - [ ] `scripts/check-contract-sync.sh` passes locally (no drift)
 

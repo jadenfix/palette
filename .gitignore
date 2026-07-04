@@ -13,6 +13,10 @@ yarn-error.log*
 
 # SDK build artifacts (generated clients + conformance)
 sdks/**/build/
+# .NET build output left under sdks/clients/csharp when the C# conformance builds
+# the client via ProjectReference (the generated .gitignore misses bin/obj dirs).
+sdks/**/bin/
+sdks/**/obj/
 # Gradle caches: the Kotlin conformance uses sdks/clients/kotlin as a composite
 # included build, which writes a .gradle cache into that dir. Never commit it --
 # regen wipes and regenerates the client, so a committed cache reads as drift.

@@ -76,7 +76,13 @@ run_generator() {
 
 if [[ -n "$GENERATOR_JAR" ]]; then
   echo "==> Using local generator JAR ($GENERATOR_JAR)"
-  java -jar "$GENERATOR_JAR" version >/dev/null
+  # Assert the JAR is the pinned version -- a different generator would emit
+  # divergent clients and silently break the zero-drift guarantee.
+  jar_version="$(java -jar "$GENERATOR_JAR" version 2>/dev/null | tr -d '[:space:]')"
+  if [[ "$jar_version" != "$GENERATOR_VERSION" ]]; then
+    echo "ERROR: BEATER_OPENAPI_GENERATOR_JAR is version '$jar_version', expected '$GENERATOR_VERSION'" >&2
+    exit 1
+  fi
 else
   echo "==> Pulling generator image ($GENERATOR_IMAGE)"
   docker pull -q "$GENERATOR_IMAGE" >/dev/null

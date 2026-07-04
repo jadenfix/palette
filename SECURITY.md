@@ -40,7 +40,7 @@ Please include:
 
 ## Scope
 
-In scope: the Rust workspace (`crates/*`, `bins/*`), the 7 generated SDK clients
+In scope: the Rust workspace (`crates/*`, `bins/*`), the 11 generated SDK clients
 and the native Rust SDK (`sdks/*`), the MCP server (`beater-mcp`), the CLI
 (`beaterctl`), the dashboard (`web/dashboard`), the OpenAPI/semconv contract
 artifacts, and the hosted edition.

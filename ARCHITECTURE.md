@@ -3465,7 +3465,7 @@ its single source without a gate going red.** The three drift surfaces of §1 #2
    handlers in `beater-api` (Mixing Board) generate `sdks/openapi/beater-api.json`
    via `cargo xtask regen-spec`; that spec then generates the 11 clients
    (`scripts/regen-sdks.sh`). `check-contract-sync.sh` proves, in one command:
-   spec == served routes (`openapi_coverage`), spec == all 7 regenerated clients
+   spec == served routes (`openapi_coverage`), spec == all 11 regenerated clients
    (`regen-sdks.sh --check`), the API-shape audit, and an additive-only `oasdiff`
    breaking check. **MCP tools and the `beater api` CLI are not separately
    regenerated** — they resolve operations from the spec *at runtime*, so a spec

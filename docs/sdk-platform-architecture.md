@@ -1,6 +1,6 @@
 # Beater Client Platform — Architecture & API Design
 
-How the **API, MCP server, CLI, and 7 language SDKs** stay coherent, simple, and
+How the **API, MCP server, CLI, and 11 language SDKs** stay coherent, simple, and
 impossible to drift. One contract, generated outward.
 
 ## Principle: one source of truth, generated outward
@@ -25,7 +25,7 @@ and `oasdiff` blocks breaking changes. Drift is a merge-blocker, not a hope.
   (`datasets`, `traces`, ...) and a globally-unique camelCase `operationId`
   (`createDataset`, `listTraces`, `runJudgeEval`). Tags -> SDK API classes;
   operationIds -> method names. Uniqueness avoids single-package collisions
-  (Go/C/Java) so names are consistent across all 7 languages without per-language
+  (Go/C/Java) so names are consistent across all 11 languages without per-language
   hacks.
 - **Uniform error model.** Every non-2xx is one `ApiErrorBody { error, status }`
   -> one typed error per SDK.
