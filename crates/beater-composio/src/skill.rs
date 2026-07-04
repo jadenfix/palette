@@ -72,8 +72,13 @@ fn sanitize_untrusted(input: &str) -> String {
     }
     let cleaned = cleaned.trim();
 
+    // Escape a leading markdown block marker so a value can't turn itself into a
+    // heading, blockquote, list item, or table row/cell. Interior markers are
+    // inert once newlines are collapsed to spaces above.
     let mut out = match cleaned.chars().next() {
-        Some('#') | Some('>') => format!("\\{cleaned}"),
+        Some('#') | Some('>') | Some('-') | Some('*') | Some('+') | Some('|') => {
+            format!("\\{cleaned}")
+        }
         _ => cleaned.to_string(),
     };
 
@@ -87,7 +92,11 @@ fn sanitize_untrusted(input: &str) -> String {
 /// Render a single tool as a markdown skill card.
 pub fn skill_card(tool: &ConnectorTool) -> String {
     let mut out = String::new();
-    out.push_str(&format!("### {} (`{}`)\n", tool.name, tool.slug));
+    out.push_str(&format!(
+        "### {} (`{}`)\n",
+        sanitize_untrusted(&tool.name),
+        sanitize_untrusted(&tool.slug)
+    ));
     if let Some(desc) = tool.description.as_deref().filter(|d| !d.is_empty()) {
         out.push_str(&sanitize_untrusted(desc));
         out.push_str("\n\n");
@@ -328,6 +337,36 @@ mod tests {
         assert!(!card.contains("\n# Injected heading"));
         // The leading '#' is escaped instead.
         assert!(card.contains("\\# Injected heading"));
+    }
+
+    #[test]
+    fn sanitizes_header_name_and_slug_injection() {
+        let mut t = github_issue_tool();
+        // Untrusted provider name/slug must not break out of the card header
+        // (backtick escaping the code span, or injecting a new markdown line).
+        t.name = "Evil\n## Injected heading".to_string();
+        t.slug = "bad`slug".to_string();
+        let card = skill_card(&t);
+        let header = card.lines().next().unwrap_or_default();
+        // Name newline is collapsed, so no second heading line is introduced.
+        assert!(!card.contains("\n## Injected heading"));
+        assert!(header.contains("Evil ## Injected heading"));
+        // Slug backtick can't close the header code span early.
+        assert!(!header.contains("bad`slug"));
+        assert!(header.contains("bad'slug"));
+    }
+
+    #[test]
+    fn sanitizes_leading_list_and_table_markers() {
+        for (marker, payload) in [("-", "- fake list item"), ("|", "| col | col |")] {
+            let mut t = github_issue_tool();
+            t.description = Some(payload.to_string());
+            let card = skill_card(&t);
+            assert!(
+                card.contains(&format!("\\{payload}")),
+                "leading '{marker}' should be escaped in: {card}"
+            );
+        }
     }
 
     #[test]
