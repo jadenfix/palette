@@ -201,13 +201,19 @@ impl<C: Clock> StripeSync<C> {
             serde_json::from_slice(raw).map_err(|err| StripeError::Malformed(err.to_string()))?;
         let object_id = event.data.object.id.clone();
 
-        // 2. Dedup by event id (UNIQUE). A repeat delivery is acknowledged but
-        //    not re-applied.
+        // 2. Dedup by event id. A repeat delivery is only a true duplicate once
+        //    the event was actually *applied*. If a prior `apply_effect` failed
+        //    the event is recorded-but-unapplied, so we fall through and retry
+        //    rather than silently dropping the effect. This is safe because
+        //    `apply_effect` is idempotent — lifecycle status writes are no-ops
+        //    on unchanged state and the adjustment insert is `INSERT OR IGNORE`
+        //    on a deterministic id — so retrying, or a concurrent redelivery
+        //    that races between record and mark, cannot double-apply.
         let newly_recorded = self
             .store
             .record_stripe_event(&event.id, &object_id, event.created)
             .await?;
-        if !newly_recorded {
+        if !newly_recorded && self.store.stripe_event_applied(&event.id).await? {
             return Ok(EventApplication::Duplicate);
         }
 
@@ -266,8 +272,10 @@ impl<C: Clock> StripeSync<C> {
         }
 
         // Always record an append-only adjustment capturing the synced event, so
-        // the local ledger reflects exactly the events Stripe applied. Exactly
-        // one is written per event id thanks to the dedup guard above.
+        // the local ledger reflects exactly the events Stripe applied. The id is
+        // deterministic (`adj_stripe_{event_id}`) and the store uses
+        // `INSERT OR IGNORE`, so exactly one row exists per event id even under
+        // apply retries or concurrent redelivery.
         let amount = Money::usd_micros(object.amount_micros.unwrap_or(0));
         let kind = match event.event_type.as_str() {
             "invoice.payment_succeeded" => AdjustmentKind::Charge,
@@ -326,6 +334,178 @@ mod tests {
                     .push(push.clone());
             }
             Ok(())
+        }
+    }
+
+    /// A `BillingStore` decorator that fails the first `n` `append_adjustment`
+    /// calls (simulating a transient `apply_effect` failure) and otherwise
+    /// delegates to a real SQLite store. Everything else passes straight through,
+    /// so the recorded-but-unapplied dedup row survives the failure exactly as it
+    /// would in production.
+    struct FailingAppendStore {
+        inner: SqliteBillingStore,
+        remaining_failures: Mutex<u32>,
+        remaining_mark_failures: Mutex<u32>,
+    }
+
+    impl FailingAppendStore {
+        fn new(inner: SqliteBillingStore, failures: u32) -> Self {
+            Self {
+                inner,
+                remaining_failures: Mutex::new(failures),
+                remaining_mark_failures: Mutex::new(0),
+            }
+        }
+
+        /// Let `append_adjustment` succeed but fail the first `failures`
+        /// `mark_stripe_event_applied` calls — the window where the adjustment
+        /// row is already written but the event is not yet marked applied.
+        fn failing_mark(inner: SqliteBillingStore, failures: u32) -> Self {
+            Self {
+                inner,
+                remaining_failures: Mutex::new(0),
+                remaining_mark_failures: Mutex::new(failures),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl BillingStore for FailingAppendStore {
+        async fn put_plan(&self, plan: crate::Plan) -> beater_store::StoreResult<()> {
+            self.inner.put_plan(plan).await
+        }
+        async fn get_plan(
+            &self,
+            plan_id: &crate::PlanId,
+        ) -> beater_store::StoreResult<Option<crate::Plan>> {
+            self.inner.get_plan(plan_id).await
+        }
+        async fn list_plans(&self) -> beater_store::StoreResult<Vec<crate::Plan>> {
+            self.inner.list_plans().await
+        }
+        async fn create_subscription(
+            &self,
+            subscription: crate::Subscription,
+        ) -> beater_store::StoreResult<crate::Subscription> {
+            self.inner.create_subscription(subscription).await
+        }
+        async fn get_subscription(
+            &self,
+            org_id: &OrganizationId,
+        ) -> beater_store::StoreResult<Option<crate::Subscription>> {
+            self.inner.get_subscription(org_id).await
+        }
+        async fn change_subscription_plan(
+            &self,
+            org_id: &OrganizationId,
+            expected_version: i64,
+            new_plan_id: &crate::PlanId,
+            adjustments: &[BillingAdjustment],
+        ) -> beater_store::StoreResult<crate::Subscription> {
+            self.inner
+                .change_subscription_plan(org_id, expected_version, new_plan_id, adjustments)
+                .await
+        }
+        async fn set_subscription_status(
+            &self,
+            org_id: &OrganizationId,
+            status: SubscriptionStatus,
+        ) -> beater_store::StoreResult<Option<crate::Subscription>> {
+            self.inner.set_subscription_status(org_id, status).await
+        }
+        async fn insert_invoice_if_absent(
+            &self,
+            invoice: crate::Invoice,
+        ) -> beater_store::StoreResult<crate::Invoice> {
+            self.inner.insert_invoice_if_absent(invoice).await
+        }
+        async fn get_invoice(
+            &self,
+            org_id: &OrganizationId,
+            period_key: &str,
+        ) -> beater_store::StoreResult<Option<crate::Invoice>> {
+            self.inner.get_invoice(org_id, period_key).await
+        }
+        async fn list_invoices(
+            &self,
+            org_id: &OrganizationId,
+        ) -> beater_store::StoreResult<Vec<crate::Invoice>> {
+            self.inner.list_invoices(org_id).await
+        }
+        async fn finalize_invoice(
+            &self,
+            org_id: &OrganizationId,
+            period_key: &str,
+        ) -> beater_store::StoreResult<crate::Invoice> {
+            self.inner.finalize_invoice(org_id, period_key).await
+        }
+        async fn set_invoice_status(
+            &self,
+            org_id: &OrganizationId,
+            period_key: &str,
+            status: InvoiceStatus,
+        ) -> beater_store::StoreResult<crate::Invoice> {
+            self.inner
+                .set_invoice_status(org_id, period_key, status)
+                .await
+        }
+        async fn append_adjustment(
+            &self,
+            adjustment: BillingAdjustment,
+        ) -> beater_store::StoreResult<BillingAdjustment> {
+            {
+                let mut remaining = self
+                    .remaining_failures
+                    .lock()
+                    .map_err(|err| beater_store::StoreError::backend(err.to_string()))?;
+                if *remaining > 0 {
+                    *remaining -= 1;
+                    return Err(beater_store::StoreError::backend(
+                        "simulated transient append failure",
+                    ));
+                }
+            }
+            self.inner.append_adjustment(adjustment).await
+        }
+        async fn list_adjustments(
+            &self,
+            org_id: &OrganizationId,
+        ) -> beater_store::StoreResult<Vec<BillingAdjustment>> {
+            self.inner.list_adjustments(org_id).await
+        }
+        async fn record_stripe_event(
+            &self,
+            event_id: &str,
+            object_id: &str,
+            created: i64,
+        ) -> beater_store::StoreResult<bool> {
+            self.inner
+                .record_stripe_event(event_id, object_id, created)
+                .await
+        }
+        async fn last_applied_stripe_created(
+            &self,
+            object_id: &str,
+        ) -> beater_store::StoreResult<Option<i64>> {
+            self.inner.last_applied_stripe_created(object_id).await
+        }
+        async fn mark_stripe_event_applied(&self, event_id: &str) -> beater_store::StoreResult<()> {
+            {
+                let mut remaining = self
+                    .remaining_mark_failures
+                    .lock()
+                    .map_err(|err| beater_store::StoreError::backend(err.to_string()))?;
+                if *remaining > 0 {
+                    *remaining -= 1;
+                    return Err(beater_store::StoreError::backend(
+                        "simulated transient mark-applied failure",
+                    ));
+                }
+            }
+            self.inner.mark_stripe_event_applied(event_id).await
+        }
+        async fn stripe_event_applied(&self, event_id: &str) -> beater_store::StoreResult<bool> {
+            self.inner.stripe_event_applied(event_id).await
         }
     }
 
@@ -508,6 +688,123 @@ mod tests {
             .lock()
             .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         assert_eq!(effective.len(), 1, "duplicate push is a no-op on Stripe");
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn failed_apply_recovers_on_redelivery_not_lost() -> anyhow::Result<()> {
+        // The first delivery records the dedup row, then `apply_effect` fails, so
+        // the event is recorded-but-unapplied. Redelivery must NOT be treated as a
+        // duplicate: it re-runs the effect so the charge is not permanently lost.
+        let inner = SqliteBillingStore::in_memory()?;
+        let store = Arc::new(FailingAppendStore::new(inner.clone(), 1));
+        let sync = sync(store)?;
+        let org = OrganizationId::new("org-1").map_err(|e| anyhow::anyhow!(e.to_string()))?;
+
+        let body = event_json("evt_lost", 1000, "invoice.payment_succeeded", "org-1");
+        let header = signed_header(&body)?;
+
+        // First delivery: apply_effect fails at append -> error propagates and the
+        // event is left unapplied.
+        let first = sync.apply_event(&body, &header).await;
+        assert!(first.is_err(), "first delivery fails inside apply_effect");
+        assert!(
+            inner.list_adjustments(&org).await?.is_empty(),
+            "nothing applied when the effect failed"
+        );
+        assert!(
+            !inner.stripe_event_applied("evt_lost").await?,
+            "event recorded but not marked applied after failure"
+        );
+
+        // Redelivery of the SAME event id: recovers instead of dropping the effect.
+        let second = sync.apply_event(&body, &header).await?;
+        assert_eq!(
+            second,
+            EventApplication::Applied,
+            "redelivery re-applies the previously failed effect"
+        );
+        assert_eq!(
+            inner.list_adjustments(&org).await?.len(),
+            1,
+            "the charge is recovered, not lost"
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn adjustment_written_then_mark_fails_recovers_without_poison_pill() -> anyhow::Result<()>
+    {
+        // The dangerous window: apply_effect fully succeeds (adjustment row is
+        // written) but the subsequent mark_stripe_event_applied fails/crashes.
+        // The event is recorded-but-unapplied AND the deterministic adjustment
+        // row already exists. Redelivery re-runs apply_effect, so the adjustment
+        // insert must be idempotent (INSERT OR IGNORE) rather than a PRIMARY KEY
+        // violation that would 500 on every future redelivery (a poison pill).
+        let inner = SqliteBillingStore::in_memory()?;
+        let store = Arc::new(FailingAppendStore::failing_mark(inner.clone(), 1));
+        let sync = sync(store)?;
+        let org = OrganizationId::new("org-1").map_err(|e| anyhow::anyhow!(e.to_string()))?;
+
+        let body = event_json("evt_mark", 1000, "invoice.payment_succeeded", "org-1");
+        let header = signed_header(&body)?;
+
+        // First delivery: adjustment is written, then mark fails -> error.
+        let first = sync.apply_event(&body, &header).await;
+        assert!(first.is_err(), "first delivery fails at mark-applied");
+        assert_eq!(
+            inner.list_adjustments(&org).await?.len(),
+            1,
+            "the adjustment row was written before mark failed"
+        );
+        assert!(
+            !inner.stripe_event_applied("evt_mark").await?,
+            "event recorded but not yet marked applied"
+        );
+
+        // Redelivery must recover, not permanently 500 on the PRIMARY KEY.
+        let second = sync.apply_event(&body, &header).await?;
+        assert_eq!(
+            second,
+            EventApplication::Applied,
+            "redelivery recovers instead of poisoning on the duplicate adjustment id"
+        );
+        assert_eq!(
+            inner.list_adjustments(&org).await?.len(),
+            1,
+            "idempotent insert keeps exactly one adjustment"
+        );
+        assert!(
+            inner.stripe_event_applied("evt_mark").await?,
+            "event is now marked applied"
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn already_applied_redelivery_is_duplicate() -> anyhow::Result<()> {
+        // An event that was genuinely applied must be a no-op on redelivery.
+        let store = Arc::new(SqliteBillingStore::in_memory()?);
+        let sync = sync(store.clone())?;
+        let org = OrganizationId::new("org-1").map_err(|e| anyhow::anyhow!(e.to_string()))?;
+
+        let body = event_json("evt_applied", 1000, "invoice.payment_succeeded", "org-1");
+        let header = signed_header(&body)?;
+
+        assert_eq!(
+            sync.apply_event(&body, &header).await?,
+            EventApplication::Applied
+        );
+        assert_eq!(
+            sync.apply_event(&body, &header).await?,
+            EventApplication::Duplicate,
+            "an already-applied event is a duplicate on redelivery"
+        );
+        assert_eq!(
+            store.list_adjustments(&org).await?.len(),
+            1,
+            "the effect is not applied twice"
+        );
         Ok(())
     }
 }
