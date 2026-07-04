@@ -41,16 +41,15 @@ below).
 > `sdks/clients/<lang>/`. C/C++ have no central registry and always ship as
 > source + release tarballs.
 
-**Configure host + auth.** The spec is pre-1.0 and ships no `servers` block, so
-every client defaults its base URL to `http://localhost`; set your host and API
-key on the client's `Configuration`/`ApiClient` object. Python, as the pattern
+**Configure the host.** The spec is pre-1.0 and ships no `servers` block, so
+every client defaults its base URL to `http://localhost`; point it at your Beater
+host via the client's `Configuration`/`ApiClient` object. Python, as the pattern
 for the others:
 
 ```python
 import beater_client
 
 cfg = beater_client.Configuration(host="https://your-beater-host")  # else defaults to http://localhost
-cfg.api_key["ApiKeyAuth"] = "YOUR_API_KEY"          # or cfg.access_token = "..." for bearer
 
 with beater_client.ApiClient(cfg) as api:
     health = beater_client.HealthApi(api).health()
@@ -58,11 +57,18 @@ with beater_client.ApiClient(cfg) as api:
     # ... typed calls per resource (datasets, experiments, gates, evals, traces, ...)
 ```
 
-The same shape holds in every language: build a config with the host + key,
-construct a resource API object (`DatasetsApi`, `TracesApi`, …), call typed
-methods. See each client's linked README for the exact constructor and method
-names. For live, runnable examples in all 11 languages, see
+The same shape holds in every language: build a config with the host, construct
+a resource API object (`DatasetsApi`, `TracesApi`, …), call typed methods. See
+each client's linked README for the exact constructor and method names. For live,
+runnable examples in all 11 languages, see
 [`sdks/conformance/<lang>/`](conformance/).
+
+> **Auth is not modeled in the spec yet.** The contract ships no
+> `securitySchemes`, so the generated clients don't attach an auth header — the
+> `Configuration` api-key/bearer setters exist but are inert until a scheme is
+> added to the OpenAPI. Adding `servers` + `securitySchemes` (+ a `security`
+> requirement) in `crates/beater-api` and regenerating is the follow-up that
+> makes auth work uniformly across all 11 clients.
 
 ## Two layers
 
@@ -128,9 +134,15 @@ secrets:
 | rust | crates.io | `CARGO_REGISTRY_TOKEN` |
 | python | PyPI | `PYPI_TOKEN` |
 | typescript | npm | `NPM_TOKEN` |
-| java, kotlin | Maven Central (OSSRH) | `OSSRH_USERNAME`, `OSSRH_PASSWORD` |
+| java, kotlin | Maven Central (OSSRH) | `OSSRH_USERNAME`, `OSSRH_PASSWORD`, `OSSRH_URL`; kotlin also `SIGNING_KEY` (+ `SIGNING_PASSWORD` if the key is protected) |
 | ruby | RubyGems | `RUBYGEMS_API_KEY` |
 | csharp | NuGet | `NUGET_API_KEY` |
 | go | pkg.go.dev | none (module proxy serves the git tag) |
 | php | Packagist | none required (serves the git tag); optional `PACKAGIST_USERNAME` + `PACKAGIST_API_TOKEN` to force reindex |
 | c, cpp | — | no central registry; shipped as source + release tarballs |
+
+> **Maven Central note.** The `java`/`kotlin` arms upload signed artifacts to your
+> OSSRH **staging** repo (`OSSRH_URL`); promoting a staging repo to Central still
+> needs a close+release step (the Central Portal UI/API or the gradle-nexus
+> publish-plugin). So a green release means "staged", not necessarily "live on
+> Central" — wire the promotion step for a fully hands-off release.

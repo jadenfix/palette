@@ -114,6 +114,7 @@ case "$target" in
     # than uploading nothing and reporting a false success.
     [ -n "${OSSRH_USERNAME:-}" ] || skip OSSRH_USERNAME
     [ -n "${OSSRH_PASSWORD:-}" ] || skip OSSRH_PASSWORD
+    [ -n "${OSSRH_URL:-}" ] || skip OSSRH_URL
     [ -n "${SIGNING_KEY:-}" ] || skip SIGNING_KEY
     init_script="$root/sdks/config/maven-central.init.gradle"
     # Use the client's pinned wrapper via `sh` so a missing exec bit doesn't matter.

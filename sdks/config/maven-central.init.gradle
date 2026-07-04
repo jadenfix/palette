@@ -56,9 +56,15 @@ allprojects {
             }
             repositories {
                 maven {
+                    // OSSRH_URL is required (no baked default): the legacy
+                    // s01.oss.sonatype.org host is sunset; supply your current
+                    // endpoint (Central Portal OSSRH bridge or your staging URL).
+                    // `publish` uploads SIGNED artifacts to this STAGING repo; a
+                    // release still needs a close+release / Portal promotion step
+                    // (e.g. the gradle-nexus publish-plugin or the Central UI) --
+                    // uploading here does not by itself sync to Maven Central.
                     name = 'OSSRH'
                     url = System.getenv('OSSRH_URL')
-                        ?: 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
                     credentials {
                         username = System.getenv('OSSRH_USERNAME')
                         password = System.getenv('OSSRH_PASSWORD')

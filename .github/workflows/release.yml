@@ -50,6 +50,11 @@ jobs:
         target: [rust, python, typescript, go, java, ruby, php, csharp, kotlin]
     steps:
       - uses: actions/checkout@v7
+      - name: Set up .NET 8 (csharp)
+        if: matrix.target == 'csharp'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
       - name: Resolve release version
         env:
           DISPATCH_VERSION: ${{ inputs.version }}
