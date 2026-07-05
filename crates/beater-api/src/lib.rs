@@ -6215,6 +6215,10 @@ mod tests {
         use std::collections::BTreeSet;
 
         let store = SqliteOAuthStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        // RBAC is disabled on this default state, so `authorize_oauth`'s RBAC
+        // step is a no-op and these assertions isolate the token/scope checks.
+        let (ingest, traces, _fixture_tempdir) = api_state_fixture();
+        let state = ApiState::new(ingest, traces);
         let now = Utc::now();
         let tenant = TenantId::new("acme").unwrap_or_else(|err| panic!("{err}"));
         let project = ProjectId::new("proj").unwrap_or_else(|err| panic!("{err}"));
@@ -6236,6 +6240,7 @@ mod tests {
 
         // Correct tenant + scope -> authorized; identity is OAuth (no api_key_id).
         let decision = authorize_oauth(
+            &state,
             &store,
             &issued.access_token,
             Some(resource),
@@ -6265,6 +6270,7 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err:?}"));
         assert!(
             authorize_oauth(
+                &state,
                 &store,
                 &no_mcp.access_token,
                 Some(resource),
@@ -6293,6 +6299,7 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err:?}"));
         assert!(
             authorize_oauth(
+                &state,
                 &store,
                 &admin_without_mcp.access_token,
                 Some(resource),
@@ -6321,6 +6328,7 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err:?}"));
         assert!(
             authorize_oauth(
+                &state,
                 &store,
                 &admin_with_mcp.access_token,
                 Some(resource),
@@ -6348,6 +6356,7 @@ mod tests {
             .await
             .unwrap_or_else(|err| panic!("{err:?}"));
         authorize_oauth(
+            &state,
             &store,
             &trace_write_with_mcp.access_token,
             Some(resource),
@@ -6363,6 +6372,7 @@ mod tests {
         let other = TenantId::new("evil").unwrap_or_else(|err| panic!("{err}"));
         assert!(
             authorize_oauth(
+                &state,
                 &store,
                 &issued.access_token,
                 Some(resource),
@@ -6378,6 +6388,7 @@ mod tests {
         // Missing scope -> forbidden.
         assert!(
             authorize_oauth(
+                &state,
                 &store,
                 &issued.access_token,
                 Some(resource),
@@ -6393,6 +6404,7 @@ mod tests {
         // Wrong resource audience -> rejected.
         assert!(
             authorize_oauth(
+                &state,
                 &store,
                 &issued.access_token,
                 Some("https://other.example.com"),
@@ -6408,6 +6420,7 @@ mod tests {
         // Garbage token -> rejected.
         assert!(
             authorize_oauth(
+                &state,
                 &store,
                 "bao_nope_nope",
                 Some(resource),
