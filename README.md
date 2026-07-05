@@ -180,3 +180,11 @@ vulnerabilities privately via [SECURITY.md](SECURITY.md).
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+## Ecosystem
+
+Beater is part of the [ecosystem](https://github.com/jadenfix/ecosystem) — a family of Rust-first, local-first agent-infrastructure projects. It is fully standalone: ingest is plain OpenTelemetry, so it observes, evals, and CI-gates any agent with no sibling project required. Within the family it can connect for:
+
+- ingesting traces from sibling runtimes ([beater.js](https://github.com/jadenfix/beater.js) runs, [tempo](https://github.com/jadenfix/tempo) browsing sessions, [beaterOS](https://github.com/jadenfix/beaterOS) receipts) over the same OTEL boundary
+- gating changes across the whole family with its eval/CI loop
+- a shared canonical span format with [ReplayKit](https://github.com/jadenfix/ReplayKit) for deep fork/patch/replay debugging (roadmap)
