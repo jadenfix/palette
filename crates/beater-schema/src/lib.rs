@@ -1105,6 +1105,7 @@ mod tests {
                 }),
                 cost: Some(Money::usd_micros(300)),
                 release_id: Some("release-a".to_string()),
+                sampling_weight: None,
             },
             SpanSummary {
                 tenant_id: tenant.clone(),
@@ -1119,6 +1120,7 @@ mod tests {
                 model: None,
                 cost: Some(Money::usd_micros(200)),
                 release_id: Some("release-a".to_string()),
+                sampling_weight: None,
             },
             SpanSummary {
                 tenant_id: tenant.clone(),
@@ -1136,6 +1138,7 @@ mod tests {
                 }),
                 cost: Some(Money::usd_micros(50)),
                 release_id: Some("release-b".to_string()),
+                sampling_weight: None,
             },
             SpanSummary {
                 tenant_id: tenant.clone(),
@@ -1151,6 +1154,7 @@ mod tests {
                 model: None,
                 cost: Some(Money::usd_micros(25)),
                 release_id: Some("release-c".to_string()),
+                sampling_weight: None,
             },
         ];
 
@@ -1237,6 +1241,7 @@ mod tests {
                 model: None,
                 cost: None,
                 release_id: None,
+                sampling_weight: None,
             },
             SpanSummary {
                 tenant_id: tenant.clone(),
@@ -1251,6 +1256,7 @@ mod tests {
                 model: None,
                 cost: None,
                 release_id: None,
+                sampling_weight: None,
             },
         ];
 
@@ -1267,5 +1273,135 @@ mod tests {
         assert_eq!(filtered.len(), 1);
         assert_eq!(filtered[0].project_id, other_project);
         assert_eq!(filtered[0].trace_id, trace);
+    }
+
+    fn cost_span(cost_micros: i64, sampling_weight: Option<f64>) -> SpanSummary {
+        SpanSummary {
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            trace_id: TraceId::new("trace").unwrap_or_else(|err| panic!("{err}")),
+            span_id: SpanId::new("span").unwrap_or_else(|err| panic!("{err}")),
+            kind: AgentSpanKind::LlmCall,
+            name: "call".to_string(),
+            status: SpanStatus::Ok,
+            started_at: Utc
+                .timestamp_opt(1_700_000_000, 0)
+                .single()
+                .unwrap_or_else(|| panic!("valid timestamp")),
+            ended_at: None,
+            model: None,
+            cost: Some(Money::usd_micros(cost_micros)),
+            release_id: None,
+            sampling_weight,
+        }
+    }
+
+    #[test]
+    fn weighted_rollup_is_inverse_probability_weighted_not_naive_mean() {
+        // Two routine spans kept at p=0.1 (weight 10) cost 100 each; one certain
+        // keep (weight 1) costs 1000. Naive mean = (100+100+1000)/3 = 400. The
+        // Horvitz-Thompson mean weights the under-sampled routine traffic up:
+        // (10*100 + 10*100 + 1*1000)/(10+10+1) = 3000/21 ≈ 142.857.
+        let spans = vec![
+            cost_span(100, Some(10.0)),
+            cost_span(100, Some(10.0)),
+            cost_span(1000, Some(1.0)),
+        ];
+        let estimate = weighted_mean_span_cost_micros(&spans)
+            .unwrap_or_else(|| panic!("estimate defined"));
+        assert_eq!(estimate.weighting, RollupWeighting::HorvitzThompson);
+        assert!(!estimate.is_biased());
+        assert!((estimate.value - 3000.0 / 21.0).abs() < 1e-9);
+        // ... and it is NOT the biased naive mean of 400.
+        assert!((estimate.value - 400.0).abs() > 1.0);
+    }
+
+    #[test]
+    fn unweighted_rollup_is_flagged_biased() {
+        // Any span missing a sampling_weight makes the whole roll-up un-debiasable.
+        let spans = vec![
+            cost_span(100, Some(10.0)),
+            cost_span(1000, None),
+        ];
+        let estimate = weighted_mean_span_cost_micros(&spans)
+            .unwrap_or_else(|| panic!("estimate defined"));
+        assert_eq!(estimate.weighting, RollupWeighting::BiasedUnweighted);
+        assert!(estimate.is_biased());
+        // Plain unweighted mean: (100 + 1000) / 2 = 550.
+        assert!((estimate.value - 550.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn empty_rollup_has_no_estimate() {
+        assert!(weighted_mean_span_cost_micros(&[]).is_none());
+        assert!(weighted_population_mean(&[]).is_none());
+    }
+
+    fn fixture_span(sampling_weight: Option<f64>) -> CanonicalSpan {
+        let artifact = ArtifactRef {
+            artifact_id: ArtifactId::new("artifact").unwrap_or_else(|err| panic!("{err}")),
+            uri: "mem://artifact".to_string(),
+            sha256: Sha256Hash::new("abc").unwrap_or_else(|err| panic!("{err}")),
+            size_bytes: 3,
+            mime_type: "application/json".to_string(),
+            redaction_class: RedactionClass::Internal,
+        };
+        CanonicalSpan {
+            schema_version: CANONICAL_SCHEMA_VERSION,
+            normalizer_version: "beater-native-v1".to_string(),
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            environment_id: EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            trace_id: TraceId::new("trace").unwrap_or_else(|err| panic!("{err}")),
+            span_id: SpanId::new("span").unwrap_or_else(|err| panic!("{err}")),
+            parent_span_id: None,
+            seq: 0,
+            kind: AgentSpanKind::LlmCall,
+            name: "call".to_string(),
+            status: SpanStatus::Ok,
+            start_time: Utc
+                .timestamp_opt(1_700_000_000, 0)
+                .single()
+                .unwrap_or_else(|| panic!("valid timestamp")),
+            end_time: None,
+            model: None,
+            cost: None,
+            tokens: None,
+            input_ref: None,
+            output_ref: None,
+            attributes: BTreeMap::new(),
+            unmapped_attrs: Value::Null,
+            raw_ref: artifact,
+            sampling_weight,
+        }
+    }
+
+    #[test]
+    fn sampling_weight_serde_round_trips_and_defaults_to_none() {
+        // Present weight survives a JSON round trip.
+        let weighted = fixture_span(Some(10.0));
+        let json = serde_json::to_string(&weighted).unwrap_or_else(|err| panic!("{err}"));
+        assert!(json.contains("sampling_weight"));
+        let back: CanonicalSpan =
+            serde_json::from_str(&json).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(back.sampling_weight, Some(10.0));
+        assert_eq!(back, weighted);
+
+        // None is skipped on the wire (no field emitted).
+        let unweighted = fixture_span(None);
+        let json = serde_json::to_string(&unweighted).unwrap_or_else(|err| panic!("{err}"));
+        assert!(!json.contains("sampling_weight"));
+
+        // An old payload that predates the field parses, defaulting to None.
+        let back: CanonicalSpan =
+            serde_json::from_str(&json).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(back.sampling_weight, None);
+        assert_eq!(back, unweighted);
+    }
+
+    #[test]
+    fn span_summary_carries_sampling_weight() {
+        let summary = span_summary(fixture_span(Some(4.0)));
+        assert_eq!(summary.sampling_weight, Some(4.0));
     }
 }

@@ -1467,6 +1467,7 @@ mod tests {
             attributes: BTreeMap::new(),
             unmapped_attrs: json!({}),
             raw_ref: fixture_artifact(),
+            sampling_weight: None,
         }
     }
 

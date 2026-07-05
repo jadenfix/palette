@@ -416,6 +416,7 @@ where
             attributes: parts.attributes,
             unmapped_attrs: json!({}),
             raw_ref: parts.raw_ref,
+            sampling_weight: None,
         })
     }
 }
@@ -871,6 +872,7 @@ mod tests {
             attributes,
             unmapped_attrs: json!({}),
             raw_ref: dummy_artifact(),
+            sampling_weight: None,
         }
     }
 

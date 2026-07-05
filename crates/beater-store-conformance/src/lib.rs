@@ -1424,6 +1424,7 @@ fn fixture_rollup_batch(
             attributes,
             unmapped_attrs: json!({}),
             raw_ref: body_ref.clone(),
+            sampling_weight: None,
         }
     };
 
@@ -1572,6 +1573,7 @@ fn canonical_span(fixture: CanonicalSpanFixture<'_>) -> CanonicalSpan {
         attributes: BTreeMap::new(),
         unmapped_attrs: json!({}),
         raw_ref: fixture.raw_ref,
+        sampling_weight: None,
     }
 }
 

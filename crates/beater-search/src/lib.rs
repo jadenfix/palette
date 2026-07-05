@@ -1803,6 +1803,7 @@ mod tests {
                 mime_type: "application/json".to_string(),
                 redaction_class: beater_schema::RedactionClass::Internal,
             },
+            sampling_weight: None,
         }
     }
 }

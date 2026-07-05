@@ -952,6 +952,7 @@ mod tests {
                 mime_type: "application/x-protobuf".to_string(),
                 redaction_class: RedactionClass::Internal,
             },
+            sampling_weight: None,
         }
     }
 

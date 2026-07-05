@@ -1574,6 +1574,7 @@ mod tests {
                 mime_type: "application/json".to_string(),
                 redaction_class: RedactionClass::Internal,
             },
+            sampling_weight: None,
         }
     }
 

@@ -6177,6 +6177,7 @@ mod tests {
             attributes,
             unmapped_attrs,
             raw_ref: redaction_fixture_artifact(redaction_class),
+            sampling_weight: None,
         }
     }
 

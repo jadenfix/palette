@@ -249,6 +249,7 @@ fn fixture_span(config: &SpanFixtureConfig, index: usize) -> CanonicalSpan {
         attributes,
         unmapped_attrs: Value::Object(serde_json::Map::new()),
         raw_ref: artifact_ref(config, &trace_id, &span_id, "raw", index, 512),
+        sampling_weight: None,
     }
 }
 

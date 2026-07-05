@@ -478,6 +478,7 @@ mod tests {
             }),
             cost: cost.map(Money::usd_micros),
             release_id: release.map(ToString::to_string),
+            sampling_weight: None,
         }
     }
 

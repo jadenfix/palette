@@ -583,6 +583,7 @@ mod tests {
             attributes: BTreeMap::new(),
             unmapped_attrs: serde_json::Value::Null,
             raw_ref: artifact(uri),
+            sampling_weight: None,
         }
     }
 
@@ -705,6 +706,7 @@ mod tests {
                     model: span.model.clone(),
                     cost: span.cost.clone(),
                     release_id: None,
+                    sampling_weight: None,
                 })
                 .collect();
             let next_cursor = if end < self.spans.len() {

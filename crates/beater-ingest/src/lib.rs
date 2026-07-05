@@ -1168,6 +1168,7 @@ impl IngestService {
             attributes: canonical_attrs,
             unmapped_attrs,
             raw_ref,
+            sampling_weight: None,
         };
         let trace_ids = BTreeSet::from([span.trace_id.clone()]);
         Ok(PreparedTraceBatch {
@@ -1289,6 +1290,7 @@ impl IngestService {
                 attributes: canonical_attrs,
                 unmapped_attrs,
                 raw_ref: raw_ref.clone(),
+                sampling_weight: None,
             };
             trace_ids.insert(span.trace_id.clone());
             spans.push(span);
@@ -4171,6 +4173,7 @@ mod tests {
                 mime_type: "application/json".to_string(),
                 redaction_class: RedactionClass::Internal,
             },
+            sampling_weight: None,
         }
     }
 

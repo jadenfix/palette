@@ -1443,6 +1443,7 @@ mod tests {
             attributes,
             unmapped_attrs: json!({"source": "fixture"}),
             raw_ref: artifact_ref(tenant, project, "raw"),
+            sampling_weight: None,
         }
     }
 

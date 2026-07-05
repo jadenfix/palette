@@ -221,5 +221,6 @@ fn canonical_span(
         attributes: BTreeMap::new(),
         unmapped_attrs: json!({}),
         raw_ref,
+        sampling_weight: None,
     }
 }

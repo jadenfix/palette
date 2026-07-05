@@ -543,6 +543,7 @@ mod tests {
             attributes,
             unmapped_attrs: json!({}),
             raw_ref: artifact,
+            sampling_weight: None,
         }
     }
 
