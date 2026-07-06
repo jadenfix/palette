@@ -526,7 +526,7 @@ async fn rsi_tool_add_then_execute_flow() {
     assert_eq!(entry["source"], "composio");
     assert_eq!(
         entry["symbol"],
-        "invokeConnectorTool(GITHUB_CREATE_AN_ISSUE)"
+        "invokeConnectorTool(\"GITHUB_CREATE_AN_ISSUE\")"
     );
     assert!(entry["input_schema"]["properties"]["title"].is_object());
     assert!(entry["skill_card"]
