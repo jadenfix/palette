@@ -43,7 +43,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push beaterd
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           target: runtime
@@ -56,7 +56,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=beaterd-${{ matrix.suffix }}
 
       - name: Build beaterctl tools target
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           target: tools
@@ -69,7 +69,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=beaterctl-tools-${{ matrix.suffix }}
 
       - name: Build and push dashboard
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: ./web/dashboard
           platforms: ${{ matrix.platform }}
@@ -81,7 +81,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=dashboard-${{ matrix.suffix }}
 
       - name: Build and push dashboard e2e runner
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: ./web/dashboard
           target: e2e
@@ -96,7 +96,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=dashboard-e2e-${{ matrix.suffix }}
 
       - name: Build and push OTEL Python runner
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: ./examples/python
           platforms: ${{ matrix.platform }}
