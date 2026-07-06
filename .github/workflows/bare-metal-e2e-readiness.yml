@@ -1,0 +1,278 @@
+name: bare-metal-e2e-readiness
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: Git ref (branch, tag, or SHA) to validate
+        required: false
+        default: ""
+      expected_classes:
+        description: Required hardware classes (comma-separated, use ~prefix to reject)
+        required: false
+        default: bare-metal
+      require_bare_metal:
+        description: Require host to be explicitly bare-metal
+        required: false
+        type: boolean
+        default: true
+      cuda_matrix:
+        description: JSON array for CUDA requirement matrix (e.g. [false,true])
+        required: false
+        default: "[false]"
+      gpu_matrix:
+        description: JSON array for GPU requirement matrix (e.g. [false,true])
+        required: false
+        default: "[false]"
+      liveness_matrix:
+        description: JSON array for liveness smoke matrix (e.g. [true,false])
+        required: false
+        default: "[true]"
+      lane_target_name:
+        description: Optional target profile label for artifact isolation
+        required: false
+        default: ""
+      min_memory_gib:
+        description: Minimum host memory in GiB
+        required: false
+        default: "8"
+      min_cpu_threads:
+        description: Minimum logical CPU cores
+        required: false
+        default: "2"
+      min_physical_cores:
+        description: Minimum physical CPU cores
+        required: false
+        default: "0"
+      require_avx2:
+        description: Require AVX2 support
+        required: false
+        type: boolean
+        default: false
+      check_gate2_readiness:
+        description: Run check-gate2-outside-readiness.py in this lane
+        required: false
+        type: boolean
+        default: false
+      run_gate2_compose_stopwatch:
+        description: Run Gate 2 compose stopwatch proof in this lane
+        required: false
+        type: boolean
+        default: false
+      run_e2e_clients_live:
+        description: Run scripts/e2e-clients-live.sh for language runtime conformance
+        required: false
+        type: boolean
+        default: false
+      e2e_clients_live_require:
+        description: Comma-separated required languages from e2e-clients-live.sh (supported: python,typescript,rust,go,c,java,cpp,c++)
+        required: false
+        default: ""
+      emit_bare_metal_recommendations:
+        description: Emit bare-metal optimization profile recommendations
+        required: false
+        type: boolean
+        default: false
+      apply_bare_metal_optimizations:
+        description: Export recommended bare-metal build/test tuning env for this run
+        required: false
+        type: boolean
+        default: false
+      gate2_registry_fixture:
+        description: Optional path to registry fixture for check-gate2-outside-readiness.py
+        required: false
+        default: ""
+      allow_non_main_readiness:
+        description: Allow non-main branch in readiness validation
+        required: false
+        type: boolean
+        default: true
+      allow_dirty_worktree:
+        description: Allow dirty worktree in readiness validation
+        required: false
+        type: boolean
+        default: false
+      summary_path:
+        description: Relative path for machine-readable report
+        required: false
+        default: bare-metal-readiness-summary.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beater-bare-metal-e2e-readiness-${{ github.workflow }}-${{ inputs.lane_target_name || 'lane-default' }}-${{ inputs.target_ref || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  readiness:
+    name: Bare-metal readiness gate${{ inputs.lane_target_name != '' && format(' ({0})', inputs.lane_target_name) || '' }} [cuda-${{ matrix.require_cuda }}|gpu-${{ matrix.require_gpu }}|live-${{ matrix.run_live_smoke }}]
+    runs-on: [self-hosted, bare-metal, linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        require_cuda: ${{ fromJson(inputs.cuda_matrix) }}
+        require_gpu: ${{ fromJson(inputs.gpu_matrix) }}
+        run_live_smoke: ${{ fromJson(inputs.liveness_matrix) }}
+    environment:
+      name: beater-hardware-e2e-gate
+    timeout-minutes: 120
+    env:
+      CARGO_NET_RETRY: "10"
+      CARGO_HTTP_MULTIPLEXING: "false"
+      LANE_TARGET: ${{ inputs.lane_target_name }}
+      SUMMARY_PATH: ${{ github.workspace }}/${{ inputs.lane_target_name != '' && format('{0}-{1}', inputs.lane_target_name, inputs.summary_path) || inputs.summary_path }}
+      GATE2_COMPOSE_STOPWATCH_PATH: ${{ github.workspace }}/${{ inputs.lane_target_name != '' && format('{0}-', inputs.lane_target_name) || '' }}gate2-compose-stopwatch-cuda-${{ matrix.require_cuda }}-gpu-${{ matrix.require_gpu }}-live-${{ matrix.run_live_smoke }}.md
+      GATE2_COMPOSE_LOG_PATH: ${{ github.workspace }}/${{ inputs.lane_target_name != '' && format('{0}-', inputs.lane_target_name) || '' }}gate2-compose-stopwatch-cuda-${{ matrix.require_cuda }}-gpu-${{ matrix.require_gpu }}-live-${{ matrix.run_live_smoke }}.compose.log
+      GATE2_TERMINAL_LOG_PATH: ${{ github.workspace }}/${{ inputs.lane_target_name != '' && format('{0}-', inputs.lane_target_name) || '' }}gate2-compose-stopwatch-cuda-${{ matrix.require_cuda }}-gpu-${{ matrix.require_gpu }}-live-${{ matrix.run_live_smoke }}.terminal.log
+      OPT_REPORT_PATH: ${{ github.workspace }}/${{ inputs.lane_target_name != '' && format('{0}-', inputs.lane_target_name) || '' }}bare-metal-optimize-env.txt
+      E2E_CLIENTS_LIVE_LOG_DIR: ${{ github.workspace }}/${{ inputs.lane_target_name != '' && format('{0}-', inputs.lane_target_name) || '' }}e2e-clients-live
+    steps:
+      - name: Resolve target ref
+        run: |
+          TARGET_REF="${{ inputs.target_ref != '' && inputs.target_ref || github.sha }}"
+          echo "TARGET_REF=${TARGET_REF}" >> "$GITHUB_ENV"
+
+      - name: Checkout target
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TARGET_REF }}
+          fetch-depth: 1
+
+      - name: Install Rust for live-smoke
+        if: ${{ matrix.run_live_smoke }}
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Bare-metal optimization profile
+        run: |
+          set -euo pipefail
+          optimization_report="${OPT_REPORT_PATH}"
+
+          if [[ "${{ inputs.emit_bare_metal_recommendations }}" == "true" || "${{ inputs.apply_bare_metal_optimizations }}" == "true" ]]; then
+            echo "Writing bare-metal optimization recommendations to $optimization_report"
+            bash scripts/bare-metal-optimize-env.sh | tee "$optimization_report"
+          fi
+
+          if [[ "${{ inputs.apply_bare_metal_optimizations }}" == "true" ]]; then
+            bash scripts/bare-metal-optimize-env.sh --emit-env >> "$GITHUB_ENV"
+          fi
+
+      - name: Run bare-metal readiness checks
+        run: |
+          set -euo pipefail
+          ARGS=(
+            --lane-target-name "${{ inputs.lane_target_name }}"
+            --summary-json "$SUMMARY_PATH"
+            --expected-classes "${{ inputs.expected_classes }}"
+            --min-memory-gib "${{ inputs.min_memory_gib }}"
+            --min-cpu-threads "${{ inputs.min_cpu_threads }}"
+            --min-physical-cores "${{ inputs.min_physical_cores }}"
+          )
+
+          if [[ "${{ inputs.require_bare_metal }}" == "true" ]]; then
+            ARGS+=(--require-bare-metal)
+          fi
+          if [[ "${{ matrix.require_cuda }}" == "true" ]]; then
+            ARGS+=(--require-cuda)
+          fi
+          if [[ "${{ matrix.require_gpu }}" == "true" ]]; then
+            ARGS+=(--require-gpu)
+          fi
+          if [[ "${{ inputs.require_avx2 }}" == "true" ]]; then
+            ARGS+=(--require-avx2)
+          fi
+          if [[ "${{ inputs.allow_non_main_readiness }}" == "true" ]]; then
+            ARGS+=(--allow-non-main)
+          fi
+          if [[ "${{ inputs.allow_dirty_worktree }}" == "true" ]]; then
+            ARGS+=(--allow-dirty)
+          fi
+          if [[ "${{ inputs.check_gate2_readiness }}" == "true" ]]; then
+            ARGS+=(--check-gate2-readiness)
+            if [[ -n "${{ inputs.gate2_registry_fixture }}" ]]; then
+              ARGS+=(--gate2-registry-fixture "${{ inputs.gate2_registry_fixture }}")
+            fi
+          fi
+          if [[ "${{ inputs.run_e2e_clients_live }}" == "true" ]]; then
+            ARGS+=(--run-e2e-clients-live)
+            if [[ -n "${{ inputs.e2e_clients_live_require }}" ]]; then
+              ARGS+=(--e2e-clients-live-require "${{ inputs.e2e_clients_live_require }}")
+            fi
+            ARGS+=(--e2e-clients-live-log-dir "${E2E_CLIENTS_LIVE_LOG_DIR}")
+          fi
+          if [[ "${{ matrix.run_live_smoke }}" == "true" ]]; then
+            ARGS+=(--run-live-smoke)
+          fi
+          if [[ "${{ inputs.run_gate2_compose_stopwatch }}" == "true" ]]; then
+            ARGS+=(
+              --run-gate2-compose-stopwatch
+              --gate2-compose-stopwatch-proof "$GATE2_COMPOSE_STOPWATCH_PATH"
+              --gate2-compose-stopwatch-compose-log "$GATE2_COMPOSE_LOG_PATH"
+              --gate2-compose-stopwatch-terminal-log "$GATE2_TERMINAL_LOG_PATH"
+            )
+          fi
+
+          command -v python3 >/dev/null || { echo "python3 is required"; exit 1; }
+          python3 scripts/check-bare-metal-readiness.py "${ARGS[@]}"
+
+      - name: Validate readiness artifact
+        if: always()
+        run: |
+          set -euo pipefail
+          command -v python3 >/dev/null || { echo "python3 is required"; exit 1; }
+          extra_args=()
+          if [[ "${{ matrix.require_cuda }}" == "true" ]]; then
+            extra_args+=(--require-cuda)
+          fi
+          if [[ "${{ matrix.require_gpu }}" == "true" ]]; then
+            extra_args+=(--require-gpu)
+          fi
+          if [[ "${{ inputs.require_avx2 }}" == "true" ]]; then
+            extra_args+=(--require-avx2)
+          fi
+          if [[ "${{ inputs.require_bare_metal }}" == "true" ]]; then
+            extra_args+=(--require-bare-metal)
+          fi
+          if [[ "${{ matrix.run_live_smoke }}" == "true" ]]; then
+            extra_args+=(--require-live)
+          fi
+          if [[ "${{ inputs.run_gate2_compose_stopwatch }}" == "true" ]]; then
+            extra_args+=(--require-gate2)
+          fi
+          if [[ "${{ inputs.run_e2e_clients_live }}" == "true" ]]; then
+            extra_args+=(--require-e2e)
+            if [[ -n "${{ inputs.e2e_clients_live_require }}" ]]; then
+              extra_args+=(--expect-e2e-langs "${{ inputs.e2e_clients_live_require }}")
+            fi
+            extra_args+=(--require-e2e-log-dir "${E2E_CLIENTS_LIVE_LOG_DIR}")
+          fi
+          if [[ "${{ inputs.run_gate2_compose_stopwatch }}" == "true" ]]; then
+            extra_args+=(--require-gate2-proof "${GATE2_COMPOSE_STOPWATCH_PATH}")
+            extra_args+=(--require-gate2-compose-log "${GATE2_COMPOSE_LOG_PATH}")
+            extra_args+=(--require-gate2-terminal-log "${GATE2_TERMINAL_LOG_PATH}")
+          fi
+
+          python3 scripts/bare-metal-assert-report.py \
+            --summary "$SUMMARY_PATH" \
+            --lane-target-name "${{ inputs.lane_target_name }}" \
+            --expect-memory-gib "${{ inputs.min_memory_gib }}" \
+            --expect-cpu-threads "${{ inputs.min_cpu_threads }}" \
+            --expect-physical-cores "${{ inputs.min_physical_cores }}" \
+            "${extra_args[@]}"
+
+      - name: Upload readiness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bare-metal-readiness-${{ github.run_id }}-${{ inputs.lane_target_name != '' && format('{0}-', inputs.lane_target_name) || '' }}cuda-${{ matrix.require_cuda }}-gpu-${{ matrix.require_gpu }}-live-${{ matrix.run_live_smoke }}
+          path: |
+            ${{ env.SUMMARY_PATH }}
+            ${{ env.OPT_REPORT_PATH }}
+            ${{ env.GATE2_COMPOSE_STOPWATCH_PATH }}
+            ${{ env.GATE2_COMPOSE_LOG_PATH }}
+            ${{ env.GATE2_TERMINAL_LOG_PATH }}
+            ${{ env.E2E_CLIENTS_LIVE_LOG_DIR }}
+          if-no-files-found: warn

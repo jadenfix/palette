@@ -1,0 +1,89 @@
+{
+  "lane": "bare-metal",
+  "runtime": {
+    "host": "linux",
+    "runner_labels": ["self-hosted", "bare-metal", "linux"]
+  },
+  "targets": [
+    {
+      "name": "cpu-lean",
+      "expected_classes": ["bare-metal", "x86_64-linux"],
+      "min_memory_gib": 8,
+      "min_cpu_threads": 2,
+      "min_physical_cores": 1,
+      "require_bare_metal": true,
+      "require_cuda": false,
+      "require_gpu": false,
+      "require_avx2": false,
+      "run_live_smoke": true,
+      "emit_bare_metal_recommendations": true,
+      "apply_bare_metal_optimizations": false
+    },
+    {
+      "name": "gpu-lean",
+      "expected_classes": ["bare-metal", "gpu", "x86_64-linux"],
+      "min_memory_gib": 16,
+      "min_cpu_threads": 4,
+      "min_physical_cores": 2,
+      "require_bare_metal": true,
+      "require_cuda": false,
+      "require_gpu": true,
+      "require_avx2": true,
+      "run_live_smoke": true,
+      "emit_bare_metal_recommendations": true,
+      "apply_bare_metal_optimizations": true,
+      "check_gate2_readiness": true
+    },
+    {
+      "name": "cuda",
+      "expected_classes": ["bare-metal", "gpu", "cuda", "x86_64-linux"],
+      "min_memory_gib": 32,
+      "min_cpu_threads": 8,
+      "min_physical_cores": 4,
+      "require_bare_metal": true,
+      "require_cuda": true,
+      "require_gpu": true,
+      "require_avx2": true,
+      "run_live_smoke": true,
+      "emit_bare_metal_recommendations": true,
+      "apply_bare_metal_optimizations": true,
+      "check_gate2_readiness": true,
+      "run_e2e_clients_live": true,
+      "e2e_clients_live_require": "python,typescript,rust,go,cpp,java",
+      "run_gate2_compose_stopwatch": true
+    },
+    {
+      "name": "arm64-lean",
+      "expected_classes": ["bare-metal", "arm64-linux"],
+      "min_memory_gib": 12,
+      "min_cpu_threads": 4,
+      "min_physical_cores": 2,
+      "require_bare_metal": true,
+      "require_cuda": false,
+      "require_gpu": false,
+      "require_avx2": false,
+      "run_live_smoke": true,
+      "emit_bare_metal_recommendations": true,
+      "apply_bare_metal_optimizations": true,
+      "check_gate2_readiness": true
+    },
+    {
+      "name": "cuda-pro",
+      "expected_classes": ["bare-metal", "gpu", "cuda", "x86_64-linux", "memory-pro"],
+      "min_memory_gib": 128,
+      "min_cpu_threads": 16,
+      "min_physical_cores": 12,
+      "require_bare_metal": true,
+      "require_cuda": true,
+      "require_gpu": true,
+      "require_avx2": true,
+      "run_live_smoke": true,
+      "emit_bare_metal_recommendations": true,
+      "apply_bare_metal_optimizations": true,
+      "check_gate2_readiness": true,
+      "run_e2e_clients_live": true,
+      "e2e_clients_live_require": "python,typescript,rust,go,cpp,java,c",
+      "run_gate2_compose_stopwatch": true
+    }
+  ]
+}
