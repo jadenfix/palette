@@ -4,8 +4,8 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use beater_alerts::{
-    decide_trace_sampling, AlertDecision, AlertEngine, AlertInput, AlertPolicy,
-    OnlineSamplingPolicy, SamplingDecision,
+    decide_trace_sampling, validate_webhook_endpoint_url, AlertDecision, AlertEngine, AlertInput,
+    AlertPolicy, OnlineSamplingPolicy, SamplingDecision,
 };
 use beater_archive::{ArchiveManifest, ArchiveQuery, ArchivedSpanRow, ParquetTraceArchive};
 use beater_audit::{
@@ -62,7 +62,11 @@ use beater_judge::{
     JudgeBroker, JudgeBrokerError, JudgeBrokerOutcome, JudgeBrokerRequest, JudgeLedgerStore,
 };
 use beater_oauth::OAuthStore;
-use beater_otlp::{decode_export_trace_request, export_to_raw_trace_ingest_request};
+use beater_otlp::{
+    decode_export_trace_request, decode_export_trace_request_json, export_scope_hints,
+    export_to_raw_trace_ingest_request, export_to_raw_trace_ingest_request_with_mime_type,
+    OtlpScopeHints,
+};
 use beater_prompts::{
     AddPromptVersion, CreatePrompt, CreatedPrompt, Prompt, PromptRegistry, PromptRegistryError,
     PromptTemplate, PromptVersion, PromptVersionDiff,
@@ -102,6 +106,7 @@ use utoipa::{IntoParams, ToSchema};
 pub mod openapi;
 
 const API_KEY_HEADER: &str = "x-beater-api-key";
+const TENANT_ID_HEADER: &str = "x-beater-tenant-id";
 const PROJECT_ID_HEADER: &str = "x-beater-project-id";
 const ENVIRONMENT_ID_HEADER: &str = "x-beater-environment-id";
 
@@ -368,10 +373,10 @@ impl ApiState {
 ///
 /// Billing/Stripe routes are hosted-only and compiled in only under the
 /// `billing` feature, so the count is feature-aware: the open-source default
-/// build registers 57 `/v1` routes (41 base + 6 always-on `/v1/connectors`
+/// build registers 58 `/v1` routes (42 base + 6 always-on `/v1/connectors`
 /// routes + 6 `/v1/prompts` routes + 4 `/v1/scenarios` routes); the hosted
 /// `billing` build adds 8.
-pub const V1_ROUTE_COUNT: usize = if cfg!(feature = "billing") { 65 } else { 57 };
+pub const V1_ROUTE_COUNT: usize = if cfg!(feature = "billing") { 66 } else { 58 };
 
 /// See [`V1_ROUTE_COUNT`].
 pub fn v1_route_count() -> usize {
@@ -383,6 +388,7 @@ pub fn router(state: ApiState) -> Router {
         .route("/health", get(health))
         .route("/openapi.json", get(openapi_json))
         .route("/v1/traces/native", post(ingest_native))
+        .route("/v1/traces", post(ingest_otlp_json_collector))
         .route(
             "/v1/api-keys/:tenant_id/:project_id/:environment_id",
             post(create_api_key_route),
@@ -1660,6 +1666,17 @@ async fn create_subscription_route(
     let plan_id = PlanId::new(request.plan_id).map_err(ApiError::from)?;
     let period_start = parse_required_timestamp(&request.period_start, "period_start")?;
     let period_end = parse_required_timestamp(&request.period_end, "period_end")?;
+    if period_end <= period_start {
+        return Err(ApiError::bad_request(
+            "period_end must be after period_start".to_string(),
+        ));
+    }
+    if billing.get_plan(&plan_id).await?.is_none() {
+        return Err(ApiError::not_found(format!(
+            "plan {} not found",
+            plan_id.as_str()
+        )));
+    }
     let status = match request.status.as_deref() {
         None | Some("active") => SubscriptionStatus::Active,
         Some(other) => SubscriptionStatus::parse(other).ok_or_else(|| {
@@ -2123,6 +2140,68 @@ async fn ingest_otlp_http(
     let raw_request =
         export_to_raw_trace_ingest_request(scope.clone(), body.to_vec(), export, auth.context)
             .map_err(invalid_otlp_export)?;
+    let buffered = ingest_buffered(&params)?;
+    let outcome = if buffered {
+        state.ingest.buffer_raw_trace_batch(raw_request).await?
+    } else {
+        state.ingest.ingest_raw_trace_batch(raw_request).await?
+    };
+    Ok(Json(OtlpIngestOutcome {
+        accepted_raw: outcome.ack.accepted_raw,
+        accepted_spans: outcome.ack.accepted_spans,
+        duplicate_raw: outcome.ack.duplicate_raw,
+        duplicate_spans: outcome.ack.duplicate_spans,
+        downstream_queued: outcome.downstream_queued,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/traces",
+    tag = "ingest",
+    operation_id = "ingestOtlpJsonCollector",
+    params(
+        IngestDurabilityQuery,
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-tenant-id" = Option<String>, Header, description = "Tenant scope override for collector-style OTLP JSON"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Project scope override for collector-style OTLP JSON"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Environment scope override for collector-style OTLP JSON"),
+    ),
+    responses(
+        (status = 200, description = "Ingest collector-style OTLP/HTTP JSON traces", body = OtlpIngestOutcome),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 413, description = "Payload or attribute cardinality too large", body = ErrorResponse),
+        (status = 429, description = "Per-project quota exceeded or backpressure", body = ErrorResponse),
+    )
+)]
+async fn ingest_otlp_json_collector(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Query(params): Query<IngestDurabilityQuery>,
+    body: Bytes,
+) -> Result<Json<OtlpIngestOutcome>, ApiError> {
+    let export = decode_export_trace_request_json(&body).map_err(invalid_otlp_export)?;
+    let scope = collector_otlp_scope(&headers, export_scope_hints(&export))?;
+    let auth = authorize(
+        &state,
+        &headers,
+        &scope.tenant_id,
+        &scope.project_id,
+        &scope.environment_id,
+        ApiScope::TraceWrite,
+    )
+    .await?;
+    let raw_request = export_to_raw_trace_ingest_request_with_mime_type(
+        scope.clone(),
+        body.to_vec(),
+        export,
+        auth.context,
+        "application/json",
+    )
+    .map_err(invalid_otlp_export)?;
     let buffered = ingest_buffered(&params)?;
     let outcome = if buffered {
         state.ingest.buffer_raw_trace_batch(raw_request).await?
@@ -4227,6 +4306,8 @@ async fn evaluate_alert(
     if trace.spans.is_empty() {
         return Err(ApiError::not_found("trace not found for alert".to_string()));
     }
+    validate_webhook_endpoint_url(&request.policy.endpoint_url)
+        .map_err(|error| ApiError::bad_request(error.to_string()))?;
     let decision = state.alerts.evaluate(&request.policy, request.input)?;
     Ok(Json(decision))
 }
@@ -5388,6 +5469,47 @@ fn ingest_buffered(params: &IngestDurabilityQuery) -> Result<bool, ApiError> {
     }
 }
 
+fn collector_otlp_scope(
+    headers: &HeaderMap,
+    hints: OtlpScopeHints,
+) -> Result<TenantScope, ApiError> {
+    let tenant_id = header_string(headers, TENANT_ID_HEADER)
+        .or(hints.tenant_id)
+        .ok_or_else(|| {
+            ApiError::bad_request(format!(
+                "collector OTLP JSON requires {TENANT_ID_HEADER} header or beater.tenant_id resource attribute"
+            ))
+        })?;
+    let project_id = header_string(headers, PROJECT_ID_HEADER)
+        .or(hints.project_id)
+        .ok_or_else(|| {
+            ApiError::bad_request(format!(
+                "collector OTLP JSON requires {PROJECT_ID_HEADER} header or beater.project_id resource attribute"
+            ))
+        })?;
+    let environment_id = header_string(headers, ENVIRONMENT_ID_HEADER)
+        .or(hints.environment_id)
+        .ok_or_else(|| {
+            ApiError::bad_request(format!(
+                "collector OTLP JSON requires {ENVIRONMENT_ID_HEADER} header, beater.environment_id resource attribute, or deployment.environment.name resource attribute"
+            ))
+        })?;
+
+    Ok(TenantScope::new(
+        TenantId::new(tenant_id)?,
+        ProjectId::new(project_id)?,
+        EnvironmentId::new(environment_id)?,
+    ))
+}
+
+fn header_string(headers: &HeaderMap, name: &str) -> Option<String> {
+    headers
+        .get(name)
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_string)
+        .filter(|value| !value.trim().is_empty())
+}
+
 fn invalid_otlp_export(error: impl std::fmt::Display) -> ApiError {
     ApiError::bad_request(format!("invalid OTLP trace export: {error}"))
 }
@@ -5948,6 +6070,124 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn api_accepts_collector_otlp_json_and_reads_canonical_trace() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let ingest = IngestService::new(
+            artifacts.clone(),
+            traces.clone(),
+            bus,
+            IngestPolicy::default(),
+        );
+        let app = router(ApiState::new(ingest, traces.clone()));
+        let body =
+            serde_json::to_vec(&fixture_otlp_json_export()).unwrap_or_else(|err| panic!("{err}"));
+
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/traces")
+                    .header("content-type", "application/json")
+                    .body(Body::from(body.clone()))
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/traces/tenant/0102030405060708090a0b0c0d0e0f10")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+        let response_body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let trace: TraceView =
+            serde_json::from_slice(&response_body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(trace.spans.len(), 1);
+        assert_eq!(trace.spans[0].kind, AgentSpanKind::AgentRun);
+        assert_eq!(trace.spans[0].raw_ref.uri, "artifact://redacted");
+        assert_eq!(
+            trace.spans[0].attributes.get("beateros.payment_mandate_id"),
+            Some(&json!("[redacted]"))
+        );
+        assert_eq!(
+            trace.spans[0].attributes.get("aether.payment_envelope_id"),
+            Some(&json!("[redacted]"))
+        );
+        assert_eq!(
+            trace.spans[0]
+                .attributes
+                .get("aether.agent_payment_authorization"),
+            Some(&json!("[redacted]"))
+        );
+
+        let stored_trace = traces
+            .get_trace(
+                TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                TraceId::new("0102030405060708090a0b0c0d0e0f10")
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            stored_trace.spans[0]
+                .attributes
+                .get("beateros.payment_mandate_id"),
+            Some(&json!("mandate-demo"))
+        );
+        assert_eq!(
+            stored_trace.spans[0]
+                .attributes
+                .get("aether.payment_envelope_id"),
+            Some(&json!("payment-envelope-demo"))
+        );
+        assert_eq!(
+            stored_trace.spans[0]
+                .attributes
+                .get("aether.agent_payment_authorization"),
+            Some(&json!("observed"))
+        );
+        assert_eq!(stored_trace.spans[0].raw_ref.mime_type, "application/json");
+        let raw_bytes = artifacts
+            .get_bytes(&stored_trace.spans[0].raw_ref)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(raw_bytes, body);
+
+        let raw_idempotency_key = IdempotencyKey::new(format!(
+            "raw:otlp:tenant:project:{}",
+            sha256_hex(&raw_bytes)
+        ))
+        .unwrap_or_else(|err| panic!("{err}"));
+        let raw = traces
+            .get_raw_envelope(
+                TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+                raw_idempotency_key,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .unwrap_or_else(|| panic!("raw otlp json envelope should be stored"));
+        assert_eq!(raw.source, SourceDialect::Otlp);
+        assert_eq!(raw.body_ref.mime_type, "application/json");
+    }
+
+    #[tokio::test]
     async fn api_rejects_malformed_otlp_http_as_bad_request() {
         let (ingest, traces, _tempdir) = api_state_fixture();
         let app = router(ApiState::new(ingest, traces));
@@ -6023,6 +6263,57 @@ mod tests {
         let bus = Arc::new(InMemoryBus::new(16));
         let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
         (ingest, traces, tempdir)
+    }
+
+    fn fixture_otlp_json_export() -> serde_json::Value {
+        json!({
+            "resourceSpans": [{
+                "resource": {
+                    "attributes": [
+                        {"key": "service.name", "value": {"stringValue": "beater.js"}},
+                        {"key": "beater.tenant_id", "value": {"stringValue": "tenant"}},
+                        {"key": "beater.project_id", "value": {"stringValue": "project"}},
+                        {"key": "deployment.environment.name", "value": {"stringValue": "prod"}}
+                    ]
+                },
+                "scopeSpans": [{
+                    "scope": {"name": "beater-agent", "version": "0.1.0"},
+                    "spans": [{
+                        "traceId": "0102030405060708090a0b0c0d0e0f10",
+                        "spanId": "1112131415161718",
+                        "name": "beater.js agent run",
+                        "kind": "SPAN_KIND_INTERNAL",
+                        "startTimeUnixNano": "1704067200000000000",
+                        "endTimeUnixNano": "1704067201000000000",
+                        "attributes": [
+                            {"key": "beater.span.kind", "value": {"stringValue": "agent.run"}},
+                            {"key": "beater.run_id", "value": {"stringValue": "run-json"}},
+                            {"key": "beateros.payment_mandate_id", "value": {"stringValue": "mandate-demo"}},
+                            {"key": "beateros.receipt_requirement", "value": {"stringValue": "required"}},
+                            {"key": "aether.payment_envelope_id", "value": {"stringValue": "payment-envelope-demo"}},
+                            {"key": "aether.agent_payment_authorization", "value": {"stringValue": "observed"}}
+                        ],
+                        "events": [
+                            {
+                                "name": "beater.input",
+                                "timeUnixNano": "1704067200000000000",
+                                "attributes": [
+                                    {"key": "beater.payload_json", "value": {"stringValue": "{\"prompt\":\"hello\"}"}}
+                                ]
+                            },
+                            {
+                                "name": "beater.output",
+                                "timeUnixNano": "1704067201000000000",
+                                "attributes": [
+                                    {"key": "beater.payload_json", "value": {"stringValue": "{\"answer\":\"world\"}"}}
+                                ]
+                            }
+                        ],
+                        "status": {"code": "STATUS_CODE_OK"}
+                    }]
+                }]
+            }]
+        })
     }
 
     fn assert_api_state_optional_defaults(state: &ApiState) {

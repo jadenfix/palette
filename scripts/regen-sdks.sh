@@ -12,6 +12,15 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 
+cleanup_paths=()
+cleanup() {
+  local path
+  for path in "${cleanup_paths[@]}"; do
+    rm -rf "$path"
+  done
+}
+trap cleanup EXIT
+
 # Pin the generator for reproducible output.
 GENERATOR_IMAGE="openapitools/openapi-generator-cli:v7.11.0"
 SPEC="sdks/openapi/beater-api.json"
@@ -22,6 +31,45 @@ if [[ "${1:-}" == "--check" ]]; then
   CHECK_MODE=1
 fi
 
+snapshot_check_target() {
+  local target="$1"
+  mkdir -p "$check_snapshot/$(dirname "$target")"
+  if [[ -e "$target" ]]; then
+    cp -a "$target" "$check_snapshot/$target"
+  fi
+}
+
+check_target_drifted() {
+  local target="$1"
+  local before="$check_snapshot/$target"
+  if [[ ! -e "$before" || ! -e "$target" ]]; then
+    [[ -e "$before" || -e "$target" ]]
+    return
+  fi
+  ! diff -qr "$before" "$target" >/dev/null
+}
+
+check_snapshot=""
+if [[ "$CHECK_MODE" == "1" ]]; then
+  check_snapshot="$(mktemp -d "${TMPDIR:-/tmp}/beater-sdk-check-before.XXXXXX")"
+  cleanup_paths+=("$check_snapshot")
+  snapshot_check_target "$SPEC"
+  snapshot_check_target "web/dashboard/openapi/beater-read-api.json"
+  snapshot_check_target "sdks/clients"
+fi
+
+normalize_generated_text_files() {
+  local out="$1"
+  shift
+
+  local file
+  for file in "$@"; do
+    if [[ -f "$out/$file" ]]; then
+      perl -0pi -e 's/[ \t]+$//mg; s/\n+\z/\n/' "$out/$file"
+    fi
+  done
+}
+
 # Optional release version for the generated clients (default keeps configs' 0.1.0).
 VERSION="${BEATER_SDK_VERSION:-}"
 version_props=()
@@ -31,7 +79,7 @@ fi
 
 echo "==> Regenerating OpenAPI spec from beater-api handlers"
 tmp_spec="$(mktemp "${TMPDIR:-/tmp}/beater-openapi.XXXXXX")"
-trap 'rm -f "$tmp_spec"' EXIT
+cleanup_paths+=("$tmp_spec")
 cargo run -q -p beater-api --example dump_openapi > "$tmp_spec"
 mv "$tmp_spec" "$SPEC"
 # Keep the dashboard snapshot identical to the canonical spec.
@@ -71,21 +119,65 @@ for lang in "${LANGS[@]}"; do
     fi
   fi
 
-  # The Java generator emits a trailing space in this regenerated enum header.
-  # Normalize the touched file so `regen --check` and `git diff --check` agree.
-  if [[ "$lang" == "java" ]]; then
-    java_audit_action="$out/src/main/java/ai/beater/client/model/AuditAction.java"
-    if [[ -f "$java_audit_action" ]]; then
-      perl -0pi -e 's/[ \t]+$//mg; s/\n+\z/\n/' "$java_audit_action"
-    fi
-  fi
+  # Several generator templates emit trailing spaces in markdown tables,
+  # method stubs, and comments for the touched ingest operation. Normalize
+  # those files so `regen --check` and `git diff --check` agree without
+  # hand-editing generated clients or churning unrelated generated output.
+  case "$lang" in
+    c)
+      normalize_generated_text_files "$out" \
+        README.md \
+        api/IngestAPI.c \
+        api/IngestAPI.h \
+        docs/IngestAPI.md
+      ;;
+    cpp)
+      normalize_generated_text_files "$out" \
+        include/beater-client/api/IngestApi.h
+      ;;
+    go)
+      normalize_generated_text_files "$out" \
+        README.md \
+        docs/IngestAPI.md
+      ;;
+    java)
+      normalize_generated_text_files "$out" \
+        README.md \
+        docs/IngestApi.md \
+        src/main/java/ai/beater/client/api/IngestApi.java \
+        src/main/java/ai/beater/client/model/AuditAction.java \
+        src/test/java/ai/beater/client/api/IngestApiTest.java
+      ;;
+    python)
+      normalize_generated_text_files "$out" \
+        README.md \
+        beater_client/api/ingest_api.py \
+        docs/IngestApi.md
+      ;;
+    rust)
+      normalize_generated_text_files "$out" \
+        README.md \
+        docs/IngestApi.md
+      ;;
+  esac
 done
 
 if [[ "$CHECK_MODE" == "1" ]]; then
   echo "==> Checking for drift"
-  if ! git diff --quiet -- "$SPEC" web/dashboard/openapi/beater-read-api.json sdks/clients; then
+  drifted=0
+  for target in "$SPEC" "web/dashboard/openapi/beater-read-api.json" "sdks/clients"; do
+    if check_target_drifted "$target"; then
+      drifted=1
+    fi
+  done
+  if [[ "$drifted" == "1" ]]; then
     echo "ERROR: generated artifacts are stale. Run scripts/regen-sdks.sh and commit." >&2
-    git --no-pager diff --stat -- "$SPEC" sdks/clients >&2
+    echo "Differences from the pre-check generated tree:" >&2
+    diff -qr "$check_snapshot/$SPEC" "$SPEC" >&2 || true
+    diff -qr \
+      "$check_snapshot/web/dashboard/openapi/beater-read-api.json" \
+      "web/dashboard/openapi/beater-read-api.json" >&2 || true
+    diff -qr "$check_snapshot/sdks/clients" "sdks/clients" >&2 || true
     exit 1
   fi
   echo "No drift: spec and all SDK clients are current."

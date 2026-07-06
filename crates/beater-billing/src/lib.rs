@@ -512,17 +512,27 @@ impl<C: beater_core::Clock> Billing<C> {
             .usage
             .list_usage(scope.tenant_id.clone(), scope.project_id.clone())
             .await?;
-        let mut totals: BTreeMap<UsageMeter, u64> = BTreeMap::new();
+        let mut signed_totals: BTreeMap<UsageMeter, i64> = BTreeMap::new();
         for record in records {
             if record.created_at < period.start || record.created_at >= period.end {
                 continue;
             }
-            // Usage quantities are non-negative by the ledger's own invariant.
-            let quantity = u64::try_from(record.quantity).unwrap_or(0);
-            let entry = totals.entry(record.meter).or_insert(0);
-            *entry = entry.checked_add(quantity).ok_or(BillingError::Overflow)?;
+            let entry = signed_totals.entry(record.meter).or_insert(0);
+            *entry = entry
+                .checked_add(record.quantity)
+                .ok_or(BillingError::Overflow)?;
         }
-        Ok(totals)
+        signed_totals
+            .into_iter()
+            .map(|(meter, quantity)| {
+                let quantity = if quantity <= 0 {
+                    0
+                } else {
+                    u64::try_from(quantity).map_err(|_| BillingError::Overflow)?
+                };
+                Ok((meter, quantity))
+            })
+            .collect()
     }
 
     /// Finalize the invoice for `(org, period)` — idempotent. A `Draft` invoice

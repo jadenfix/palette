@@ -4,14 +4,15 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**drain_trace_ingested**](IngestApi.md#drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
-[**drain_trace_writes**](IngestApi.md#drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
-[**get_ingest_queue_status**](IngestApi.md#get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue | 
-[**import_source**](IngestApi.md#import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
-[**ingest_native**](IngestApi.md#ingest_native) | **POST** /v1/traces/native | 
-[**ingest_otlp**](IngestApi.md#ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces | 
-[**reconcile_trace**](IngestApi.md#reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile | 
-[**replay_dead_letter**](IngestApi.md#replay_dead_letter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay | 
+[**drain_trace_ingested**](IngestApi.md#drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
+[**drain_trace_writes**](IngestApi.md#drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
+[**get_ingest_queue_status**](IngestApi.md#get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |
+[**import_source**](IngestApi.md#import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |
+[**ingest_native**](IngestApi.md#ingest_native) | **POST** /v1/traces/native |
+[**ingest_otlp**](IngestApi.md#ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
+[**ingest_otlp_json_collector**](IngestApi.md#ingest_otlp_json_collector) | **POST** /v1/traces |
+[**reconcile_trace**](IngestApi.md#reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
+[**replay_dead_letter**](IngestApi.md#replay_dead_letter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
 
 
 
@@ -218,6 +219,39 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
+## ingest_otlp_json_collector
+
+> models::OtlpIngestOutcome ingest_otlp_json_collector(durability, authorization, x_beater_api_key, x_beater_tenant_id, x_beater_project_id, x_beater_environment_id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**durability** | Option<**String**> |  |  |
+**authorization** | Option<**String**> | Bearer API token for strict auth |  |
+**x_beater_api_key** | Option<**String**> | API key alternative for strict auth |  |
+**x_beater_tenant_id** | Option<**String**> | Tenant scope override for collector-style OTLP JSON |  |
+**x_beater_project_id** | Option<**String**> | Project scope override for collector-style OTLP JSON |  |
+**x_beater_environment_id** | Option<**String**> | Environment scope override for collector-style OTLP JSON |  |
+
+### Return type
+
+[**models::OtlpIngestOutcome**](OtlpIngestOutcome.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
 ## reconcile_trace
 
 > models::TraceIngestedReconcileReport reconcile_trace(tenant_id, project_id, trace_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
@@ -285,4 +319,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -173,7 +173,15 @@ def test_compose_smoke_failure_still_cleans_up() -> None:
 
     assert result.returncode == 1
     assert "Expected 'started_after' in http://127.0.0.1:8080/openapi.json" in result.stderr
-    assert docker_calls(log)[-1] == "compose -p beater-smoke down -v --remove-orphans"
+    assert (
+        "Beater compose smoke failed; capturing compose status and logs before cleanup."
+        in result.stderr
+    )
+    assert docker_calls(log)[-3:] == [
+        "compose -p beater-smoke ps",
+        "compose -p beater-smoke logs --no-color --timestamps",
+        "compose -p beater-smoke down -v --remove-orphans",
+    ]
 
 
 def main() -> None:

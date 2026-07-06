@@ -89,6 +89,7 @@ pub trait BillingStore: Send + Sync {
         &self,
         adjustment: BillingAdjustment,
     ) -> StoreResult<BillingAdjustment>;
+    async fn has_adjustment(&self, adjustment_id: &str) -> StoreResult<bool>;
     async fn list_adjustments(
         &self,
         org_id: &OrganizationId,
@@ -103,6 +104,8 @@ pub trait BillingStore: Send + Sync {
         object_id: &str,
         created: i64,
     ) -> StoreResult<bool>;
+    /// Whether a recorded event has completed its local effect application.
+    async fn is_stripe_event_applied(&self, event_id: &str) -> StoreResult<bool>;
     /// The `created` timestamp of the newest *applied* event for `object_id`.
     async fn last_applied_stripe_created(&self, object_id: &str) -> StoreResult<Option<i64>>;
     /// Mark a recorded event as applied (drives out-of-order detection).
@@ -588,6 +591,18 @@ impl BillingStore for SqliteBillingStore {
         Ok(adjustment)
     }
 
+    async fn has_adjustment(&self, adjustment_id: &str) -> StoreResult<bool> {
+        let connection = self.lock()?;
+        let exists: i64 = connection
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM billing_adjustments WHERE adjustment_id = ?1)",
+                params![adjustment_id],
+                |row| row.get(0),
+            )
+            .into_store_ctx("check adjustment exists")?;
+        Ok(exists != 0)
+    }
+
     async fn list_adjustments(
         &self,
         org_id: &OrganizationId,
@@ -626,6 +641,19 @@ impl BillingStore for SqliteBillingStore {
             )
             .into_store_ctx("record stripe event")?;
         Ok(changed == 1)
+    }
+
+    async fn is_stripe_event_applied(&self, event_id: &str) -> StoreResult<bool> {
+        let connection = self.lock()?;
+        let value: Option<i64> = connection
+            .query_row(
+                "SELECT applied FROM billing_stripe_events WHERE event_id = ?1",
+                params![event_id],
+                |row| row.get(0),
+            )
+            .optional()
+            .into_store_ctx("read stripe event applied flag")?;
+        Ok(value.unwrap_or(0) != 0)
     }
 
     async fn last_applied_stripe_created(&self, object_id: &str) -> StoreResult<Option<i64>> {
@@ -768,7 +796,9 @@ mod tests {
         assert!(store.record_stripe_event("evt_1", "sub_a", 100).await?);
         // Duplicate delivery is rejected.
         assert!(!store.record_stripe_event("evt_1", "sub_a", 100).await?);
+        assert!(!store.is_stripe_event_applied("evt_1").await?);
         store.mark_stripe_event_applied("evt_1").await?;
+        assert!(store.is_stripe_event_applied("evt_1").await?);
         assert_eq!(store.last_applied_stripe_created("sub_a").await?, Some(100));
         Ok(())
     }

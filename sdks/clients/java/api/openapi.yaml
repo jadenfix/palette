@@ -5524,6 +5524,103 @@ paths:
       - spans
       x-accepts:
       - application/json
+  /v1/traces:
+    post:
+      operationId: ingestOtlpJsonCollector
+      parameters:
+      - explode: true
+        in: query
+        name: durability
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Tenant scope override for collector-style OTLP JSON
+        explode: false
+        in: header
+        name: x-beater-tenant-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Project scope override for collector-style OTLP JSON
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Environment scope override for collector-style OTLP JSON
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtlpIngestOutcome'
+          description: Ingest collector-style OTLP/HTTP JSON traces
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+        "413":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Payload or attribute cardinality too large
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Per-project quota exceeded or backpressure
+      tags:
+      - ingest
+      x-accepts:
+      - application/json
   /v1/traces/native:
     post:
       operationId: ingestNative

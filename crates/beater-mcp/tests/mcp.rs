@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use axum::body::{to_bytes, Body};
 use axum::Router;
-use beater_api::{router, ApiState};
+use beater_api::{router, v1_route_count, ApiState};
 use beater_archive::ParquetTraceArchive;
 use beater_audit::SqliteAuditStore;
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, SqliteApiKeyStore};
@@ -201,8 +201,14 @@ fn tool_set_equals_spec_v1_operations() {
         !tools.contains("help"),
         "the synthetic help tool must not appear in spec-coverage tool_names()"
     );
-    // Sanity: the spec covers 57 /v1 operations.
-    assert_eq!(tools.len(), 57, "expected 57 tools, got {}", tools.len());
+    // Sanity: the spec-derived tool count stays tied to the router contract.
+    assert_eq!(
+        tools.len(),
+        v1_route_count(),
+        "expected {} tools, got {}",
+        v1_route_count(),
+        tools.len()
+    );
 }
 
 #[tokio::test]
@@ -233,8 +239,8 @@ async fn initialize_and_tools_list_over_mcp_route() {
     .await;
     assert_eq!(status, StatusCode::OK);
     let tools = listed["result"]["tools"].as_array().expect("tools array");
-    // 57 spec-derived tools + the synthetic `help` meta tool.
-    assert_eq!(tools.len(), 58);
+    // Spec-derived tools + the synthetic `help` meta tool.
+    assert_eq!(tools.len(), v1_route_count() + 1);
     // Each tool has the required MCP shape.
     for tool in tools {
         assert!(tool["name"].is_string());
@@ -348,7 +354,7 @@ async fn tools_call_matches_direct_http_for_traces_list() {
 }
 
 #[tokio::test]
-async fn tools_call_forwards_strict_auth_scope_headers() {
+async fn tools_call_forwards_strict_auth_and_scope_headers() {
     let (state, _tempdir) = build_state();
     let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
     let created = unwrap(
@@ -376,6 +382,37 @@ async fn tools_call_forwards_strict_auth_scope_headers() {
         }
     });
     let authorization = format!("Bearer {}", created.secret);
+
+    let scope_headers = [
+        ("x-beater-project-id", "proj-1"),
+        ("x-beater-environment-id", "env-1"),
+    ];
+
+    let (status, missing_credentials) =
+        mcp_call_with_headers(&app, call.clone(), &scope_headers).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(missing_credentials["result"]["isError"], true);
+    assert_eq!(
+        missing_credentials["result"]["_meta"]["httpStatus"],
+        StatusCode::UNAUTHORIZED.as_u16()
+    );
+
+    let (status, invalid_credentials) = mcp_call_with_headers(
+        &app,
+        call.clone(),
+        &[
+            ("authorization", "Bearer nope"),
+            ("x-beater-project-id", "proj-1"),
+            ("x-beater-environment-id", "env-1"),
+        ],
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(invalid_credentials["result"]["isError"], true);
+    assert_eq!(
+        invalid_credentials["result"]["_meta"]["httpStatus"],
+        StatusCode::UNAUTHORIZED.as_u16()
+    );
 
     let (status, missing_scope) =
         mcp_call_with_headers(&app, call.clone(), &[("authorization", &authorization)]).await;
@@ -495,8 +532,8 @@ async fn tools_list_exposes_output_schema_and_annotations() {
     let app = beater_mcp::router(state);
     let tools = list_tools(&app).await;
     let methods = spec_op_methods();
-    // 57 spec-derived tools + the synthetic `help` meta tool.
-    assert_eq!(tools.len(), 58);
+    // Spec-derived tools + the synthetic `help` meta tool.
+    assert_eq!(tools.len(), v1_route_count() + 1);
 
     // The six list endpoints return top-level JSON arrays, which MCP forbids as
     // structured output, so they advertise no outputSchema.
@@ -816,11 +853,13 @@ async fn help_overview_lists_every_spec_tool() {
     assert!(structured.is_object(), "structuredContent is an object");
     assert_eq!(structured["server"]["name"], "beater-mcp");
     assert_eq!(
-        structured["toolCount"], 57,
-        "overview covers all 57 spec tools"
+        structured["toolCount"],
+        json!(v1_route_count()),
+        "overview covers all {} spec tools",
+        v1_route_count()
     );
     let listed = structured["tools"].as_array().expect("tools array");
-    assert_eq!(listed.len(), 57);
+    assert_eq!(listed.len(), v1_route_count());
     // Each entry is a compact {name, method, description} summary.
     for entry in listed {
         assert!(entry["name"].is_string());

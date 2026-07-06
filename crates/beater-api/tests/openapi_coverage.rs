@@ -187,3 +187,38 @@ fn health_is_documented() {
         "/health must be documented",
     );
 }
+
+#[cfg(not(feature = "billing"))]
+#[test]
+fn default_openapi_does_not_advertise_hosted_billing_paths() {
+    let spec = beater_api::openapi::openapi();
+    let billing_paths: Vec<_> = spec
+        .paths
+        .paths
+        .keys()
+        .filter(|path| path.starts_with("/v1/billing") || path.starts_with("/v1/plans"))
+        .collect();
+
+    assert!(
+        billing_paths.is_empty(),
+        "default OSS OpenAPI must not advertise hosted billing paths: {billing_paths:?}",
+    );
+}
+
+#[cfg(feature = "billing")]
+#[test]
+fn billing_feature_openapi_advertises_hosted_billing_paths() {
+    let spec = beater_api::openapi::openapi();
+
+    for path in [
+        "/v1/plans",
+        "/v1/subscriptions/{org_id}",
+        "/v1/billing/invoices/{org_id}",
+        "/v1/billing/webhooks/stripe",
+    ] {
+        assert!(
+            spec.paths.paths.contains_key(path),
+            "billing OpenAPI must advertise {path}",
+        );
+    }
+}

@@ -108,6 +108,15 @@ export interface IngestOtlpRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
+export interface IngestOtlpJsonCollectorRequest {
+    durability?: string;
+    authorization?: string | null;
+    xBeaterApiKey?: string | null;
+    xBeaterTenantId?: string | null;
+    xBeaterProjectId?: string | null;
+    xBeaterEnvironmentId?: string | null;
+}
+
 export interface ReconcileTraceRequest {
     tenantId: string;
     projectId: string;
@@ -487,6 +496,54 @@ export class IngestApi extends runtime.BaseAPI {
      */
     async ingestOtlp(requestParameters: IngestOtlpRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OtlpIngestOutcome> {
         const response = await this.ingestOtlpRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async ingestOtlpJsonCollectorRaw(requestParameters: IngestOtlpJsonCollectorRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OtlpIngestOutcome>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['durability'] != null) {
+            queryParameters['durability'] = requestParameters['durability'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['authorization'] != null) {
+            headerParameters['authorization'] = String(requestParameters['authorization']);
+        }
+
+        if (requestParameters['xBeaterApiKey'] != null) {
+            headerParameters['x-beater-api-key'] = String(requestParameters['xBeaterApiKey']);
+        }
+
+        if (requestParameters['xBeaterTenantId'] != null) {
+            headerParameters['x-beater-tenant-id'] = String(requestParameters['xBeaterTenantId']);
+        }
+
+        if (requestParameters['xBeaterProjectId'] != null) {
+            headerParameters['x-beater-project-id'] = String(requestParameters['xBeaterProjectId']);
+        }
+
+        if (requestParameters['xBeaterEnvironmentId'] != null) {
+            headerParameters['x-beater-environment-id'] = String(requestParameters['xBeaterEnvironmentId']);
+        }
+
+        const response = await this.request({
+            path: `/v1/traces`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => OtlpIngestOutcomeFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async ingestOtlpJsonCollector(requestParameters: IngestOtlpJsonCollectorRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OtlpIngestOutcome> {
+        const response = await this.ingestOtlpJsonCollectorRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

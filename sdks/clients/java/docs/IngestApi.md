@@ -16,6 +16,8 @@ All URIs are relative to *http://localhost*
 | [**ingestNativeWithHttpInfo**](IngestApi.md#ingestNativeWithHttpInfo) | **POST** /v1/traces/native |  |
 | [**ingestOtlp**](IngestApi.md#ingestOtlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |  |
 | [**ingestOtlpWithHttpInfo**](IngestApi.md#ingestOtlpWithHttpInfo) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |  |
+| [**ingestOtlpJsonCollector**](IngestApi.md#ingestOtlpJsonCollector) | **POST** /v1/traces |  |
+| [**ingestOtlpJsonCollectorWithHttpInfo**](IngestApi.md#ingestOtlpJsonCollectorWithHttpInfo) | **POST** /v1/traces |  |
 | [**reconcileTrace**](IngestApi.md#reconcileTrace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |  |
 | [**reconcileTraceWithHttpInfo**](IngestApi.md#reconcileTraceWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |  |
 | [**replayDeadLetter**](IngestApi.md#replayDeadLetter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |  |
@@ -47,7 +49,7 @@ public class Example {
         IngestApi apiInstance = new IngestApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        Integer limit = 56; // Integer | 
+        Integer limit = 56; // Integer |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
@@ -127,7 +129,7 @@ public class Example {
         IngestApi apiInstance = new IngestApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        Integer limit = 56; // Integer | 
+        Integer limit = 56; // Integer |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
@@ -209,7 +211,7 @@ public class Example {
         IngestApi apiInstance = new IngestApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        Integer limit = 56; // Integer | 
+        Integer limit = 56; // Integer |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
@@ -289,7 +291,7 @@ public class Example {
         IngestApi apiInstance = new IngestApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        Integer limit = 56; // Integer | 
+        Integer limit = 56; // Integer |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
@@ -528,8 +530,8 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String environmentId = "environmentId_example"; // String | environment_id
-        ImportSourceHttpRequest importSourceHttpRequest = new ImportSourceHttpRequest(); // ImportSourceHttpRequest | 
-        String durability = "durability_example"; // String | 
+        ImportSourceHttpRequest importSourceHttpRequest = new ImportSourceHttpRequest(); // ImportSourceHttpRequest |
+        String durability = "durability_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         try {
@@ -609,8 +611,8 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String environmentId = "environmentId_example"; // String | environment_id
-        ImportSourceHttpRequest importSourceHttpRequest = new ImportSourceHttpRequest(); // ImportSourceHttpRequest | 
-        String durability = "durability_example"; // String | 
+        ImportSourceHttpRequest importSourceHttpRequest = new ImportSourceHttpRequest(); // ImportSourceHttpRequest |
+        String durability = "durability_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         try {
@@ -689,8 +691,8 @@ public class Example {
         defaultClient.setBasePath("http://localhost");
 
         IngestApi apiInstance = new IngestApi(defaultClient);
-        NativeIngestRequest nativeIngestRequest = new NativeIngestRequest(); // NativeIngestRequest | 
-        String durability = "durability_example"; // String | 
+        NativeIngestRequest nativeIngestRequest = new NativeIngestRequest(); // NativeIngestRequest |
+        String durability = "durability_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
@@ -768,8 +770,8 @@ public class Example {
         defaultClient.setBasePath("http://localhost");
 
         IngestApi apiInstance = new IngestApi(defaultClient);
-        NativeIngestRequest nativeIngestRequest = new NativeIngestRequest(); // NativeIngestRequest | 
-        String durability = "durability_example"; // String | 
+        NativeIngestRequest nativeIngestRequest = new NativeIngestRequest(); // NativeIngestRequest |
+        String durability = "durability_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
@@ -852,7 +854,7 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String environmentId = "environmentId_example"; // String | environment_id
-        String durability = "durability_example"; // String | 
+        String durability = "durability_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
@@ -935,7 +937,7 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String environmentId = "environmentId_example"; // String | environment_id
-        String durability = "durability_example"; // String | 
+        String durability = "durability_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
@@ -988,6 +990,166 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | Ingest OTLP/HTTP protobuf traces |  -  |
+| **400** | Invalid request, scope, or filter |  -  |
+| **401** | Missing or invalid credentials |  -  |
+| **403** | Credentials lack the required scope |  -  |
+| **413** | Payload or attribute cardinality too large |  -  |
+| **429** | Per-project quota exceeded or backpressure |  -  |
+
+
+## ingestOtlpJsonCollector
+
+> OtlpIngestOutcome ingestOtlpJsonCollector(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId)
+
+
+
+### Example
+
+```java
+// Import classes:
+import ai.beater.client.ApiClient;
+import ai.beater.client.ApiException;
+import ai.beater.client.Configuration;
+import ai.beater.client.models.*;
+import ai.beater.client.api.IngestApi;
+
+public class Example {
+    public static void main(String[] args) {
+        ApiClient defaultClient = Configuration.getDefaultApiClient();
+        defaultClient.setBasePath("http://localhost");
+
+        IngestApi apiInstance = new IngestApi(defaultClient);
+        String durability = "durability_example"; // String |
+        String authorization = "authorization_example"; // String | Bearer API token for strict auth
+        String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
+        String xBeaterTenantId = "xBeaterTenantId_example"; // String | Tenant scope override for collector-style OTLP JSON
+        String xBeaterProjectId = "xBeaterProjectId_example"; // String | Project scope override for collector-style OTLP JSON
+        String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Environment scope override for collector-style OTLP JSON
+        try {
+            OtlpIngestOutcome result = apiInstance.ingestOtlpJsonCollector(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
+            System.out.println(result);
+        } catch (ApiException e) {
+            System.err.println("Exception when calling IngestApi#ingestOtlpJsonCollector");
+            System.err.println("Status code: " + e.getCode());
+            System.err.println("Reason: " + e.getResponseBody());
+            System.err.println("Response headers: " + e.getResponseHeaders());
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **durability** | **String**|  | [optional] |
+| **authorization** | **String**| Bearer API token for strict auth | [optional] |
+| **xBeaterApiKey** | **String**| API key alternative for strict auth | [optional] |
+| **xBeaterTenantId** | **String**| Tenant scope override for collector-style OTLP JSON | [optional] |
+| **xBeaterProjectId** | **String**| Project scope override for collector-style OTLP JSON | [optional] |
+| **xBeaterEnvironmentId** | **String**| Environment scope override for collector-style OTLP JSON | [optional] |
+
+### Return type
+
+[**OtlpIngestOutcome**](OtlpIngestOutcome.md)
+
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Ingest collector-style OTLP/HTTP JSON traces |  -  |
+| **400** | Invalid request, scope, or filter |  -  |
+| **401** | Missing or invalid credentials |  -  |
+| **403** | Credentials lack the required scope |  -  |
+| **413** | Payload or attribute cardinality too large |  -  |
+| **429** | Per-project quota exceeded or backpressure |  -  |
+
+## ingestOtlpJsonCollectorWithHttpInfo
+
+> ApiResponse<OtlpIngestOutcome> ingestOtlpJsonCollector ingestOtlpJsonCollectorWithHttpInfo(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId)
+
+
+
+### Example
+
+```java
+// Import classes:
+import ai.beater.client.ApiClient;
+import ai.beater.client.ApiException;
+import ai.beater.client.ApiResponse;
+import ai.beater.client.Configuration;
+import ai.beater.client.models.*;
+import ai.beater.client.api.IngestApi;
+
+public class Example {
+    public static void main(String[] args) {
+        ApiClient defaultClient = Configuration.getDefaultApiClient();
+        defaultClient.setBasePath("http://localhost");
+
+        IngestApi apiInstance = new IngestApi(defaultClient);
+        String durability = "durability_example"; // String |
+        String authorization = "authorization_example"; // String | Bearer API token for strict auth
+        String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
+        String xBeaterTenantId = "xBeaterTenantId_example"; // String | Tenant scope override for collector-style OTLP JSON
+        String xBeaterProjectId = "xBeaterProjectId_example"; // String | Project scope override for collector-style OTLP JSON
+        String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Environment scope override for collector-style OTLP JSON
+        try {
+            ApiResponse<OtlpIngestOutcome> response = apiInstance.ingestOtlpJsonCollectorWithHttpInfo(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
+            System.out.println("Status code: " + response.getStatusCode());
+            System.out.println("Response headers: " + response.getHeaders());
+            System.out.println("Response body: " + response.getData());
+        } catch (ApiException e) {
+            System.err.println("Exception when calling IngestApi#ingestOtlpJsonCollector");
+            System.err.println("Status code: " + e.getCode());
+            System.err.println("Response headers: " + e.getResponseHeaders());
+            System.err.println("Reason: " + e.getResponseBody());
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **durability** | **String**|  | [optional] |
+| **authorization** | **String**| Bearer API token for strict auth | [optional] |
+| **xBeaterApiKey** | **String**| API key alternative for strict auth | [optional] |
+| **xBeaterTenantId** | **String**| Tenant scope override for collector-style OTLP JSON | [optional] |
+| **xBeaterProjectId** | **String**| Project scope override for collector-style OTLP JSON | [optional] |
+| **xBeaterEnvironmentId** | **String**| Environment scope override for collector-style OTLP JSON | [optional] |
+
+### Return type
+
+ApiResponse<[**OtlpIngestOutcome**](OtlpIngestOutcome.md)>
+
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Ingest collector-style OTLP/HTTP JSON traces |  -  |
 | **400** | Invalid request, scope, or filter |  -  |
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
@@ -1182,7 +1344,7 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String messageId = "messageId_example"; // String | message_id
-        Boolean resetAttempts = true; // Boolean | 
+        Boolean resetAttempts = true; // Boolean |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
@@ -1264,7 +1426,7 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String messageId = "messageId_example"; // String | message_id
-        Boolean resetAttempts = true; // Boolean | 
+        Boolean resetAttempts = true; // Boolean |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
@@ -1321,4 +1483,3 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
-

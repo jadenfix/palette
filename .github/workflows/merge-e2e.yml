@@ -1,13 +1,14 @@
 name: merge-e2e
 
-# Deep product-loop gate for merge candidates. This intentionally composes the
-# narrower backend/sdk/browser/live-smoke checks into one cross-surface proof.
+# Deep product-loop gate for merge candidates. The narrower backend/sdk/browser/
+# live-smoke workflows cover normal pull_request iteration; this workflow
+# intentionally composes them into one heavier cross-surface proof for the merge
+# queue, main, and explicit operator dispatch.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 on:
-  pull_request:
   merge_group:
   push:
     branches: [main]

@@ -42,9 +42,9 @@ Can an authenticated caller acquire permissions beyond those on their key?
 |---|---|---|---|
 | Wrong scope → `MissingScope` error | `crates/beater-security/src/lib.rs :: api_keys_are_hashed_scoped_and_rotatable` | `verify_api_key` with `trace_write` key checked for `pii_unmask` returns `Err(MissingScope)` | Covered |
 | Scope forgery in payload body overwritten | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | Client-supplied `auth_context` with forged `"admin"` scope is discarded; server-side auth context written to the stored artifact with the actual verified scopes | Covered |
-| `trace_write` key blocked from read routes missing scope headers | same test | `GET /v1/traces/{tenant}/{trace}` with a `trace_write`-only key and no `x-beater-project-id` returns `400 Bad Request` | Covered |
+| Trace key blocked from read routes missing scope headers | same test | `GET /v1/traces/{tenant}/{trace}` with a trace-scoped key and no `x-beater-project-id` returns `400 Bad Request` | Covered |
 | `pii_unmask` scope gate on unmask param | same test | `GET /v1/traces/{tenant}/{trace}?unmask=true` with a `trace_write+trace_read` key (no `pii_unmask`) returns `403 Forbidden`; same request with a `pii_unmask` key returns `200` with unredacted data | Covered |
-| `trace_write` key attempting admin-only endpoints | — | No test verifying a `trace_write` key is rejected by `POST /v1/api-keys/…`, `GET /v1/audit/…`, `GET /v1/usage/…` etc. | **GAP** |
+| `trace_write` key attempting admin-only endpoints | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | A same-tenant `trace_write`-only key is rejected with `403 Forbidden` by `POST /v1/api-keys/…`, `GET /v1/audit/…`, and `GET /v1/usage/…`. | Covered |
 
 ### Tenant cross-talk / IDOR
 
@@ -55,7 +55,7 @@ Can tenant A access or modify tenant B's resources using tenant A's own valid ke
 | Cross-tenant key revoke returns 404 | `crates/beater-api/tests/full_stack.rs :: api_key_revoke_is_scoped_to_path_tenant_project_environment` | Admin key scoped to `tenant-a/project-a` attempts to revoke a key belonging to `tenant-b/project-b`; returns `404 Not Found`; victim key is still active | Covered |
 | Environment mismatch on archive route → 403 | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | Archive span query with `environment_id=dev` on a key scoped to `prod` returns `403 Forbidden` | Covered |
 | Store-layer scoped revoke does not cross tenants | `crates/beater-auth/src/lib.rs :: sqlite_store_scoped_revoke_does_not_revoke_other_scope` | `revoke_key_in_scope(tenant-a, project-a, …)` on a key owned by `tenant-b/project-b` returns `None`; victim key's `active` and `rotated_at` fields unchanged | Covered |
-| Cross-tenant trace read (IDOR on read path) | — | No test that tenant-a's valid key cannot retrieve tenant-b's trace via `GET /v1/traces/{tenant-b}/{trace}`. The security review notes `verify_api_key` is called on every read route, but no regression test exercises this boundary directly. | **GAP** |
+| Cross-tenant trace read (IDOR on read path) | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | A valid `trace_read` key for `other-tenant/project/prod` receives `403 Forbidden` when it attempts `GET /v1/traces/tenant/trace` with matching project/environment scope headers. | Covered |
 
 ### API-key leakage / scope
 
@@ -68,7 +68,7 @@ Is plaintext secret material ever exposed in API responses or on disk?
 | Provider secret not stored as plaintext on disk | `crates/beater-secrets/src/encrypted.rs :: encrypted_store_round_trips_without_plaintext_in_sqlite_file` | After writing a secret, raw bytes of the SQLite file and its WAL do not contain the plaintext value | Covered |
 | Wrong AEAD key rejected | `crates/beater-secrets/src/encrypted.rs :: encrypted_store_rejects_wrong_key_material` | Opening the store with a key of different bytes returns `Err` on `get_secret` | Covered |
 | Key rotation re-wraps ciphertext | `crates/beater-secrets/src/encrypted.rs :: rotating_re_wraps_ciphertext_under_new_active_key` | After rotation, the new key alone can decrypt; the old key can no longer be used in isolation to read the row | Covered |
-| `secret_hash` absent from list/get responses | — | The create-response check exists but no test GETs or lists an already-stored key and asserts `secret_hash` is absent from the returned JSON. | **GAP** |
+| API-key read/list routes do not expose stored hashes | `crates/beater-api/tests/route_inventory.rs :: api_key_routes_do_not_expose_read_surfaces` | Current API-key HTTP surface has only create and revoke routes, so there is no list/get response that can expose `secret_hash`; the route inventory test fails if a future API-key read/list route is added without an explicit response review. | Covered |
 
 ### Replay attacks
 
@@ -86,8 +86,8 @@ Can attacker-controlled input alter query semantics?
 
 | Threat | Test (file :: function) | What it asserts | Status |
 |---|---|---|---|
-| DataFusion archive SQL injection (H6) | — | `build_query_sql` in `crates/beater-archive` assembles `tenant_id = '{}'`-style predicates by string interpolation; no regression test for quoting edge-cases or DSL injection. | **GAP** |
-| Tantivy query DSL injection / DoS (H7) | — | `?q=` / `?model=` / `?tool=` values are passed directly to the Tantivy query parser; no test for operator metacharacters (`*`, `~`, `[`, `TO`) or expensive wildcard queries. | **GAP** |
+| DataFusion archive SQL injection (H6) | `crates/beater-archive/src/lib.rs :: hostile_id_is_bound_as_literal_not_interpolated_into_sql`; `hostile_tenant_id_with_quotes_matches_no_rows`; `semicolon_injection_in_span_id_does_not_corrupt_query` | Archive filters are built with structured DataFusion `DataFrame::filter(... lit(...))` expressions, not interpolated SQL text; hostile tenant/trace/span values remain opaque literals and return zero rows rather than broadening the query. | Covered |
+| Tantivy query DSL injection / DoS (H7) | `crates/beater-search/src/lib.rs :: metacharacter_query_is_tokenized_without_parse_error`; `wildcard_syntax_is_not_executed`; `model_filter_does_not_execute_boolean_syntax`; `oversized_query_returns_error`; `cross_tenant_dsl_*` | Search builds `BooleanQuery`/`TermQuery` clauses from literal analyzer tokens, clamps result limits, rejects overlong query strings, and keeps tenant scope as a mandatory exact field clause that DSL-looking input cannot escape. | Covered |
 | OTLP attribute injection | `crates/beater-api/tests/full_stack.rs :: api_ingest_store_eval_gate_and_replay_are_integrated` (implicit) | OTLP attribute keys are checked as plain strings after storage; runtime SQLite uses bound `params!` (noted in security review as verified clean). | Covered (partial) |
 
 ### PII redaction
@@ -97,8 +97,8 @@ Is sensitive data correctly withheld from callers lacking the `pii_unmask` scope
 | Threat | Test (file :: function) | What it asserts | Status |
 |---|---|---|---|
 | `Sensitive`-class trace redacted for `trace_read` key | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | Trace with `RedactionClass::Sensitive` returns `"[redacted]"` for `input.value`/`output.value`/`raw_ref.uri` when retrieved with a `trace_read`-only key; unmasked values returned after `pii_unmask` grant | Covered |
-| OTLP/native ingest bypasses redaction (H1) | — | All writers in the OTLP, native-ingest, and browser-capture paths hardcode `RedactionClass::Internal`, which the read path treats as safe-to-show. No test asserts that an OTLP-ingested trace is redacted for a non-`pii_unmask` caller. | **GAP** |
-| Browser-captured DOM / console / prompt redacted | — | No test that browser-capture artifacts (DOM snapshots, console text, LLM prompts) are classified `Sensitive` and withheld from non-`pii_unmask` callers. | **GAP** |
+| External source ingest raw payloads are redacted | `crates/beater-api/src/lib.rs :: api_accepts_otlp_http_protobuf_and_reads_canonical_trace`; `crates/beater-api/src/lib.rs :: api_accepts_collector_otlp_json_and_reads_canonical_trace`; `crates/beater-ingest/src/lib.rs :: native_importer_preserves_raw_bytes_as_sensitive`; `crates/beater-api/tests/import_mapping.rs :: import_source_mapping_projects_foreign_trace` | OTLP protobuf, collector OTLP JSON, native-importer, and mapping-importer paths mark raw payloads `Sensitive`; non-`pii_unmask` reads return redacted raw refs/values while stored raw bytes remain durable for authorized access. Direct `/v1/traces/native` remains caller-classified by request contract. | Covered |
+| Browser-captured DOM / console / prompt redacted | `crates/beater-browser-capture/src/lib.rs :: sensitive_dom_console_and_prompt_payloads_are_artifacts_not_span_attributes`; `crates/beater-api/src/lib.rs :: redact_trace_view_redacts_sensitive_attribute_values_and_provenance` | Capture stores DOM snapshots, console-bearing step triples, screenshots, and LLM prompt artifacts as `Sensitive`; canonical span JSON carries artifact IDs/metadata without raw DOM, console text, or prompt contents. API redaction then withholds `Sensitive` artifact refs and sensitive span attributes from callers lacking `pii_unmask`. | Covered |
 
 ### SSRF / path traversal
 
@@ -107,8 +107,8 @@ Can attacker-controlled data cause the server to fetch or open unintended resour
 | Threat | Test (file :: function) | What it asserts | Status |
 |---|---|---|---|
 | FS artifact store path traversal (M2) | `crates/beater-store-obj/src/lib.rs :: path_for_uri_rejects_traversal_and_absolute_paths`; `put_bytes_rejects_tenant_id_with_path_separators`; `get_and_delete_bytes_reject_forged_malicious_uris` | `FsArtifactStore` rejects absolute `artifact:///etc/passwd`, `..`, `.`, empty paths, tenant/project IDs with path separators, and forged malicious `ArtifactRef` URIs before reads/deletes can escape the store root. | Covered |
-| Browser `goto` SSRF (M3) | — | All three browser drivers forward `start_url` verbatim; no URL allowlist and no test for `file://` or `http://169.254.169.254`. Currently latent (no MCP/API handler wires this), but no guard test exists. | **GAP** |
-| Webhook `endpoint_url` SSRF (M4) | — | `beater-alerts` accepts arbitrary tenant-supplied webhook URL with no scheme/host restriction. Delivery worker not yet implemented, so no live SSRF today — but no test blocks a private/loopback target when the worker is wired in. | **GAP** |
+| Browser `goto` SSRF (M3) | `crates/beater-browser/src/url_policy.rs :: block_private_blocks_*`; `crates/beater-browser-cdp/src/lib.rs :: goto_navigation_guard_blocks_ssrf_targets`; same test in Playwright/WebDriver drivers | Live browser drivers default to `UrlPolicy::block_private` and enforce it before `goto` / `act(Goto)` browser I/O; tests cover metadata/link-local, loopback/localhost, alternate IP encodings, and `file://` targets. | Covered |
+| Webhook `endpoint_url` SSRF (M4) | `crates/beater-alerts/src/lib.rs :: webhook_endpoint_url_policy_blocks_ssrf_targets`; `alert_engine_rejects_ssrf_webhook_endpoint_before_delivery`; `crates/beater-api/tests/full_stack.rs :: api_ingest_store_eval_gate_and_replay_are_integrated` | Alert webhook endpoints must be public HTTPS targets; loopback, private, link-local/metadata, alternate IPv4 encodings, IPv6 local targets, non-HTTPS schemes, and file URLs are rejected before delivery construction and surface as HTTP `400` through the API. | Covered |
 
 ### Secret storage at rest (key management)
 
@@ -125,27 +125,11 @@ Do alternate access paths enforce the same auth policy?
 
 | Threat | Test (file :: function) | What it asserts | Status |
 |---|---|---|---|
-| MCP auth path equals HTTP path | — | The security review states MCP tools resolve to the same `authorize()` path; the MCP tests run with auth disabled (`build_state()` does not call `.require_auth()`). No test exercises MCP with auth enabled and verifies a missing/invalid key returns 401. | **GAP** |
-| OAuth session management / PKCE / redirect URI | — | `crates/beater-oauth-server/src/lib.rs` has no `#[cfg(test)]` block. No tests for session cookie handling, PKCE code-verifier enforcement, redirect-URI allowlist, or scope grant restrictions. | **GAP** |
+| MCP auth path equals HTTP path | `crates/beater-mcp/tests/mcp.rs :: tools_call_forwards_strict_auth_and_scope_headers` | Builds MCP with `ApiState::require_auth`, calls a spec-derived tool through `/mcp`, and verifies missing credentials and invalid bearer tokens surface the underlying HTTP `401`, missing strict-auth scope headers surface `400`, and valid auth reaches the handler. | Covered |
+| OAuth session management / PKCE / redirect URI | `crates/beater-oauth-server/src/lib.rs :: auth_register_login_me_logout_flow`; `authorize_rejects_unsafe_registered_redirect_uri_without_redirecting`; `authorize_without_session_redirects_to_login`; `authorize_denies_non_member_of_tenant`; `authorize_rejects_client_with_unsupported_scope`; `authorize_rejects_plain_pkce_method_without_issuing_code`; `token_rejects_wrong_pkce_verifier_and_redirect_uri_mismatch`; `full_authorize_then_token_flow` | OAuth HTTP tests cover secure session cookie issue/clear and authenticated `/auth/me`, login redirects with `return_to`, redirect-URI allowlist enforcement without unsafe redirects, tenant membership checks, unsupported scope denial, `S256`-only authorize requests, token-endpoint PKCE verifier enforcement, redirect-URI binding, and a full authorize-to-token flow. | Covered |
 
 ---
 
 ## Summary of gaps
 
-| # | Threat category | Security review finding |
-|---|---|---|
-| 1 | `trace_write` key not tested against admin-only routes | — |
-| 2 | Cross-tenant trace read (IDOR on read path) | — |
-| 3 | `secret_hash` absent from list/get key responses | — |
-| 4 | OTLP / browser-capture redaction bypass | H1 |
-| 5 | Browser DOM / console / prompt redaction | H1 / H3 |
-| 6 | DataFusion archive SQL injection | H6 |
-| 7 | Tantivy query DSL injection / DoS | H7 |
-| 8 | Browser `goto` SSRF | M3 |
-| 9 | Webhook `endpoint_url` SSRF | M4 |
-| 10 | MCP surface with auth enabled | — |
-| 11 | OAuth session / PKCE / redirect-URI | — |
-
-Findings marked H1, H6, H7 are rated **Critical / High** in the security
-review. Recommend addressing items 4, 6, and 7 first (aligned with the
-security review's Top 5).
+No cataloged security fixture gaps remain in this document.

@@ -567,10 +567,13 @@ pub fn browser_trace_from_spans(spans: &[CanonicalSpan]) -> Value {
 mod tests {
     use super::*;
     use beater_browser::{
-        BrowserEngine, MockDriver, FIXTURE_KNOWN_SELECTOR, FIXTURE_MISSING_SELECTOR,
+        BrowserEngine, BrowserError, ConsoleMessage, Grounding, MockDriver, StepOutcome,
+        FIXTURE_KNOWN_SELECTOR, FIXTURE_MISSING_SELECTOR,
     };
     use beater_replay::SqliteReplayStore;
+    use beater_store::StoreResult;
     use beater_store_obj::FsArtifactStore;
+    use std::sync::{Arc, Mutex};
 
     fn context() -> CaptureContext {
         CaptureContext {
@@ -592,6 +595,248 @@ mod tests {
             output_tokens: Some(48),
             cost_micros: Some(3400),
             latency_ms: Some(820),
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct CapturedArtifactWrite {
+        mime_type: String,
+        redaction_class: RedactionClass,
+        bytes: Vec<u8>,
+    }
+
+    struct RecordingArtifactStore {
+        inner: FsArtifactStore,
+        writes: Arc<Mutex<Vec<CapturedArtifactWrite>>>,
+    }
+
+    impl RecordingArtifactStore {
+        fn new(root: impl Into<std::path::PathBuf>) -> StoreResult<Self> {
+            Ok(Self {
+                inner: FsArtifactStore::new(root)?,
+                writes: Arc::new(Mutex::new(Vec::new())),
+            })
+        }
+
+        fn writes(&self) -> Arc<Mutex<Vec<CapturedArtifactWrite>>> {
+            Arc::clone(&self.writes)
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl ArtifactStore for RecordingArtifactStore {
+        async fn put_bytes(
+            &self,
+            tenant_id: &TenantId,
+            project_id: &ProjectId,
+            mime_type: &str,
+            redaction_class: RedactionClass,
+            bytes: &[u8],
+        ) -> StoreResult<ArtifactRef> {
+            let artifact_ref = self
+                .inner
+                .put_bytes(
+                    tenant_id,
+                    project_id,
+                    mime_type,
+                    redaction_class.clone(),
+                    bytes,
+                )
+                .await?;
+            self.writes
+                .lock()
+                .unwrap_or_else(|err| panic!("{err}"))
+                .push(CapturedArtifactWrite {
+                    mime_type: mime_type.to_string(),
+                    redaction_class,
+                    bytes: bytes.to_vec(),
+                });
+            Ok(artifact_ref)
+        }
+
+        async fn get_bytes(&self, artifact_ref: &ArtifactRef) -> StoreResult<Vec<u8>> {
+            self.inner.get_bytes(artifact_ref).await
+        }
+
+        async fn delete_bytes(&self, artifact_ref: &ArtifactRef) -> StoreResult<()> {
+            self.inner.delete_bytes(artifact_ref).await
+        }
+    }
+
+    struct SecretBearingDriver {
+        url: String,
+    }
+
+    impl SecretBearingDriver {
+        fn new() -> Self {
+            Self { url: String::new() }
+        }
+
+        fn observation(&self, dom_secret: &str, console_secret: Option<&str>) -> Observation {
+            Observation {
+                url: self.url.clone(),
+                title: Some("Secret-bearing fixture".to_string()),
+                dom_html: Some(format!(
+                    "<main><input id=\"token\" value=\"{dom_secret}\"></main>"
+                )),
+                accessibility_tree: None,
+                console: console_secret
+                    .map(|secret| {
+                        vec![ConsoleMessage {
+                            level: "error".to_string(),
+                            text: format!("console leaked {secret}"),
+                        }]
+                    })
+                    .unwrap_or_default(),
+                network: Vec::new(),
+            }
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl BrowserDriver for SecretBearingDriver {
+        fn engine(&self) -> BrowserEngine {
+            BrowserEngine::Chromium
+        }
+
+        async fn goto(&mut self, url: &str) -> Result<Observation, BrowserError> {
+            self.url = url.to_string();
+            Ok(self.observation("dom-before-secret-7d5f", None))
+        }
+
+        async fn act(&mut self, action: &BrowserAction) -> Result<StepOutcome, BrowserError> {
+            Ok(StepOutcome {
+                status: StepStatus::Ok,
+                error: None,
+                grounding: Grounding {
+                    selector: action.selector().map(str::to_string),
+                    selector_existed: true,
+                    matched_element: true,
+                },
+                observation: self.observation("dom-after-secret-9b30", Some("console-secret-52ef")),
+            })
+        }
+
+        async fn observe(&mut self) -> Result<Observation, BrowserError> {
+            Ok(self.observation("dom-before-secret-7d5f", None))
+        }
+
+        async fn screenshot(&mut self) -> Result<Vec<u8>, BrowserError> {
+            Ok(vec![0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+        }
+
+        async fn dom(&mut self) -> Result<String, BrowserError> {
+            Ok("<main>fallback DOM should not be used</main>".to_string())
+        }
+
+        async fn close(&mut self) -> Result<(), BrowserError> {
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn sensitive_dom_console_and_prompt_payloads_are_artifacts_not_span_attributes() {
+        let dir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts =
+            RecordingArtifactStore::new(dir.path()).unwrap_or_else(|err| panic!("{err}"));
+        let writes = artifacts.writes();
+        let replay = SqliteReplayStore::in_memory().unwrap_or_else(|err| panic!("{err}"));
+        let ctx = context();
+        let driver = SecretBearingDriver::new();
+        let mut proxy = BrowserToolProxy::new(driver, artifacts, replay, ctx);
+
+        proxy
+            .goto("https://fixture.local/secrets")
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let recorded = proxy
+            .step(
+                Some(LlmDecision {
+                    model: Some("claude".to_string()),
+                    prompt: json!({
+                        "messages": [
+                            {"role": "user", "content": "prompt-secret-8182"}
+                        ]
+                    }),
+                    output: json!({"action": "click"}),
+                    reasoning: Some("reasoning-secret-1a77".to_string()),
+                    input_tokens: Some(12),
+                    output_tokens: Some(3),
+                    cost_micros: Some(42),
+                    latency_ms: Some(8),
+                }),
+                BrowserAction::Click {
+                    selector: "#token".to_string(),
+                },
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+
+        let spans_text = serde_json::to_string(&recorded.spans)
+            .unwrap_or_else(|err| panic!("serialize spans: {err}"));
+        for secret in [
+            "dom-before-secret-7d5f",
+            "dom-after-secret-9b30",
+            "console-secret-52ef",
+            "prompt-secret-8182",
+        ] {
+            assert!(
+                !spans_text.contains(secret),
+                "browser capture leaked {secret} into canonical span attributes"
+            );
+        }
+
+        let llm = &recorded.spans[0];
+        let tool = &recorded.spans[1];
+        assert_eq!(llm.raw_ref.redaction_class, RedactionClass::Sensitive);
+        assert_eq!(tool.raw_ref.redaction_class, RedactionClass::Sensitive);
+        assert_eq!(
+            llm.input_ref
+                .as_ref()
+                .unwrap_or_else(|| panic!("llm input ref"))
+                .redaction_class,
+            RedactionClass::Sensitive
+        );
+        assert_eq!(
+            tool.input_ref
+                .as_ref()
+                .unwrap_or_else(|| panic!("tool input ref"))
+                .redaction_class,
+            RedactionClass::Sensitive
+        );
+        assert_eq!(
+            tool.output_ref
+                .as_ref()
+                .unwrap_or_else(|| panic!("tool output ref"))
+                .redaction_class,
+            RedactionClass::Sensitive
+        );
+
+        let writes = writes.lock().unwrap_or_else(|err| panic!("{err}"));
+        for write in writes.iter() {
+            assert_eq!(
+                write.redaction_class,
+                RedactionClass::Sensitive,
+                "{} artifact must be classified sensitive",
+                write.mime_type
+            );
+        }
+        let artifact_payloads = writes
+            .iter()
+            .map(|write| String::from_utf8_lossy(&write.bytes))
+            .collect::<Vec<_>>()
+            .join("\n");
+        for secret in [
+            "dom-before-secret-7d5f",
+            "dom-after-secret-9b30",
+            "console-secret-52ef",
+            "prompt-secret-8182",
+        ] {
+            assert!(
+                artifact_payloads.contains(secret),
+                "expected {secret} to be retained only in sensitive artifacts"
+            );
         }
     }
 

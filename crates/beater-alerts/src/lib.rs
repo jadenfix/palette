@@ -8,6 +8,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::{ErrorKind, Write};
+use std::net::IpAddr;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -420,6 +421,7 @@ impl AlertEngine {
                 delivery: None,
             });
         }
+        validate_webhook_endpoint_url(&policy.endpoint_url)?;
         let group_key = dedupe_key(policy, &input);
         let body = alert_payload(policy, &input);
         let body_bytes = serde_json::to_vec(&body).context("serialize alert payload")?;
@@ -459,6 +461,162 @@ impl AlertEngine {
             delivery: Some(delivery),
         })
     }
+}
+
+/// Validate a tenant-supplied alert webhook target before any delivery can be
+/// constructed. This is intentionally DNS-free: literal private/loopback targets
+/// are blocked here; DNS rebinding belongs in the eventual delivery worker.
+pub fn validate_webhook_endpoint_url(endpoint_url: &str) -> anyhow::Result<()> {
+    let trimmed = endpoint_url.trim();
+    if trimmed.is_empty() {
+        anyhow::bail!("webhook endpoint_url must not be empty");
+    }
+    if trimmed != endpoint_url {
+        anyhow::bail!("webhook endpoint_url must not contain leading or trailing whitespace");
+    }
+    let (scheme, rest) = endpoint_url
+        .split_once("://")
+        .ok_or_else(|| anyhow::anyhow!("webhook endpoint_url must be an absolute HTTPS URL"))?;
+    if !scheme.eq_ignore_ascii_case("https") {
+        anyhow::bail!("webhook endpoint_url must use https");
+    }
+    let host = endpoint_host(rest, endpoint_url)?;
+    let host_for_name_checks = host.to_ascii_lowercase();
+    let host_for_name_checks = host_for_name_checks.trim_end_matches('.');
+    if host_for_name_checks == "localhost" || host_for_name_checks.ends_with(".localhost") {
+        anyhow::bail!("webhook endpoint_url must not target localhost");
+    }
+    if let Some(ip) = host
+        .parse::<IpAddr>()
+        .ok()
+        .or_else(|| parse_relaxed_ipv4(host).map(IpAddr::V4))
+    {
+        if let Some(reason) = blocked_webhook_ip_reason(&ip) {
+            anyhow::bail!("webhook endpoint_url must not target {reason}");
+        }
+    }
+    Ok(())
+}
+
+fn endpoint_host<'a>(rest: &'a str, endpoint_url: &str) -> anyhow::Result<&'a str> {
+    let without_userinfo = match rest.split_once('@') {
+        Some((_, after)) => after,
+        None => rest,
+    };
+    let host_raw = if without_userinfo.starts_with('[') {
+        let (bracketed, _) = without_userinfo
+            .split_once(']')
+            .ok_or_else(|| anyhow::anyhow!("malformed IPv6 host in webhook endpoint_url"))?;
+        let inner = &bracketed[1..];
+        inner
+            .split_once("%25")
+            .map(|(addr, _)| addr)
+            .or_else(|| inner.split_once('%').map(|(addr, _)| addr))
+            .unwrap_or(inner)
+    } else {
+        let host_and_rest = without_userinfo
+            .split_once('/')
+            .map(|(host, _)| host)
+            .unwrap_or(without_userinfo);
+        host_and_rest
+            .split_once(':')
+            .map(|(host, _)| host)
+            .unwrap_or(host_and_rest)
+    };
+    let host = host_raw
+        .split_once('?')
+        .map(|(host, _)| host)
+        .unwrap_or(host_raw)
+        .split_once('#')
+        .map(|(host, _)| host)
+        .unwrap_or(host_raw)
+        .trim();
+    if host.is_empty() {
+        anyhow::bail!("webhook endpoint_url has an empty host: {endpoint_url}");
+    }
+    Ok(host)
+}
+
+fn blocked_webhook_ip_reason(ip: &IpAddr) -> Option<&'static str> {
+    match ip {
+        IpAddr::V4(ip) => {
+            if ip.is_loopback() {
+                Some("loopback IPv4")
+            } else if ip.is_private() {
+                Some("private IPv4")
+            } else if ip.is_link_local() {
+                Some("link-local or cloud metadata IPv4")
+            } else if ip.is_unspecified() {
+                Some("unspecified IPv4")
+            } else {
+                None
+            }
+        }
+        IpAddr::V6(ip) => {
+            if let Some(mapped) = ip.to_ipv4_mapped() {
+                return blocked_webhook_ip_reason(&IpAddr::V4(mapped));
+            }
+            if ip.is_loopback() {
+                Some("loopback IPv6")
+            } else if ip.is_unique_local() {
+                Some("private IPv6")
+            } else if ip.is_unicast_link_local() {
+                Some("link-local IPv6")
+            } else if ip.is_unspecified() {
+                Some("unspecified IPv6")
+            } else {
+                None
+            }
+        }
+    }
+}
+
+fn parse_relaxed_ipv4(host: &str) -> Option<std::net::Ipv4Addr> {
+    let mut parts: Vec<&str> = host.split('.').collect();
+    if parts.len() > 1 && parts.last() == Some(&"") {
+        parts.pop();
+    }
+    if parts.is_empty() || parts.len() > 4 {
+        return None;
+    }
+    let mut nums = Vec::with_capacity(parts.len());
+    for part in &parts {
+        nums.push(parse_ipv4_part(part)?);
+    }
+    let n = nums.len();
+    if nums[..n - 1].iter().any(|&value| value > 0xff) {
+        return None;
+    }
+    let remaining_bytes = (4 - (n - 1)) as u32;
+    let max_last = (1u64 << (8 * remaining_bytes)) - 1;
+    let last = nums[n - 1];
+    if last > max_last {
+        return None;
+    }
+    let mut addr = 0u32;
+    for (index, &value) in nums[..n - 1].iter().enumerate() {
+        addr |= (value as u32) << (8 * (3 - index as u32));
+    }
+    addr |= last as u32;
+    Some(std::net::Ipv4Addr::from(addr))
+}
+
+fn parse_ipv4_part(part: &str) -> Option<u64> {
+    if part.is_empty() {
+        return None;
+    }
+    let (digits, radix) =
+        if let Some(rest) = part.strip_prefix("0x").or_else(|| part.strip_prefix("0X")) {
+            (rest, 16)
+        } else if part.len() > 1 && part.starts_with('0') {
+            (&part[1..], 8)
+        } else {
+            (part, 10)
+        };
+    if digits.is_empty() {
+        return Some(0);
+    }
+    u64::from_str_radix(digits, radix).ok()
 }
 
 fn alert_payload(policy: &AlertPolicy, input: &AlertInput) -> serde_json::Value {
@@ -944,6 +1102,48 @@ mod tests {
             suppressed.suppressed_reason.as_deref(),
             Some("maintenance_window")
         );
+    }
+
+    #[test]
+    fn webhook_endpoint_url_policy_blocks_ssrf_targets() {
+        for endpoint_url in [
+            "http://example.test/webhook",
+            "file:///etc/passwd",
+            "https://localhost/webhook",
+            "https://api.localhost/webhook",
+            "https://127.0.0.1/webhook",
+            "https://0x7f000001/webhook",
+            "https://10.0.0.1/webhook",
+            "https://192.168.1.10/webhook",
+            "https://169.254.169.254/latest/meta-data/",
+            "https://[::1]/webhook",
+            "https://[fe80::1]/webhook",
+        ] {
+            let error = validate_webhook_endpoint_url(endpoint_url)
+                .err()
+                .unwrap_or_else(|| panic!("expected webhook endpoint rejection: {endpoint_url}"));
+            assert!(
+                error.to_string().contains("webhook endpoint_url"),
+                "error should identify endpoint_url for {endpoint_url}: {error}"
+            );
+        }
+
+        validate_webhook_endpoint_url("https://example.test/webhook")
+            .unwrap_or_else(|err| panic!("{err}"));
+    }
+
+    #[test]
+    fn alert_engine_rejects_ssrf_webhook_endpoint_before_delivery() {
+        let engine = AlertEngine::new();
+        let mut policy = fixture_alert_policy(300);
+        policy.endpoint_url = "https://169.254.169.254/latest/meta-data/".to_string();
+
+        let error = engine
+            .evaluate(&policy, fixture_alert_input(Utc::now()))
+            .err()
+            .unwrap_or_else(|| panic!("expected SSRF endpoint rejection"));
+
+        assert!(error.to_string().contains("webhook endpoint_url"));
     }
 
     #[test]

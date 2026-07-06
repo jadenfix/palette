@@ -12,7 +12,7 @@
 /*
  * IngestApi.h
  *
- * 
+ *
  */
 
 #ifndef ORG_OPENAPITOOLS_CLIENT_API_IngestApi_H_
@@ -44,7 +44,7 @@ using namespace org::openapitools::client::model;
 
 
 
-class  IngestApi 
+class  IngestApi
 {
 public:
 
@@ -53,10 +53,10 @@ public:
     virtual ~IngestApi();
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <remarks>
-    /// 
+    ///
     /// </remarks>
     /// <param name="tenantId">tenant_id</param>
     /// <param name="projectId">project_id</param>
@@ -75,10 +75,10 @@ public:
         boost::optional<utility::string_t> xBeaterEnvironmentId
     ) const;
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <remarks>
-    /// 
+    ///
     /// </remarks>
     /// <param name="tenantId">tenant_id</param>
     /// <param name="projectId">project_id</param>
@@ -97,10 +97,10 @@ public:
         boost::optional<utility::string_t> xBeaterEnvironmentId
     ) const;
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <remarks>
-    /// 
+    ///
     /// </remarks>
     /// <param name="tenantId">tenant_id</param>
     /// <param name="projectId">project_id</param>
@@ -117,10 +117,10 @@ public:
         boost::optional<utility::string_t> xBeaterEnvironmentId
     ) const;
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <remarks>
-    /// 
+    ///
     /// </remarks>
     /// <param name="tenantId">tenant_id</param>
     /// <param name="projectId">project_id</param>
@@ -139,10 +139,10 @@ public:
         boost::optional<utility::string_t> xBeaterApiKey
     ) const;
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <remarks>
-    /// 
+    ///
     /// </remarks>
     /// <param name="nativeIngestRequest"></param>
     /// <param name="durability"> (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
@@ -159,10 +159,10 @@ public:
         boost::optional<utility::string_t> xBeaterEnvironmentId
     ) const;
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <remarks>
-    /// 
+    ///
     /// </remarks>
     /// <param name="tenantId">tenant_id</param>
     /// <param name="projectId">project_id</param>
@@ -183,10 +183,30 @@ public:
         boost::optional<utility::string_t> xBeaterEnvironmentId
     ) const;
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <remarks>
-    /// 
+    ///
+    /// </remarks>
+    /// <param name="durability"> (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
+    /// <param name="authorization">Bearer API token for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
+    /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
+    /// <param name="xBeaterTenantId">Tenant scope override for collector-style OTLP JSON (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
+    /// <param name="xBeaterProjectId">Project scope override for collector-style OTLP JSON (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
+    /// <param name="xBeaterEnvironmentId">Environment scope override for collector-style OTLP JSON (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
+    pplx::task<std::shared_ptr<OtlpIngestOutcome>> ingestOtlpJsonCollector(
+        boost::optional<utility::string_t> durability,
+        boost::optional<utility::string_t> authorization,
+        boost::optional<utility::string_t> xBeaterApiKey,
+        boost::optional<utility::string_t> xBeaterTenantId,
+        boost::optional<utility::string_t> xBeaterProjectId,
+        boost::optional<utility::string_t> xBeaterEnvironmentId
+    ) const;
+    /// <summary>
+    ///
+    /// </summary>
+    /// <remarks>
+    ///
     /// </remarks>
     /// <param name="tenantId">tenant_id</param>
     /// <param name="projectId">project_id</param>
@@ -205,10 +225,10 @@ public:
         boost::optional<utility::string_t> xBeaterEnvironmentId
     ) const;
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <remarks>
-    /// 
+    ///
     /// </remarks>
     /// <param name="tenantId">tenant_id</param>
     /// <param name="projectId">project_id</param>
@@ -239,4 +259,3 @@ protected:
 }
 
 #endif /* ORG_OPENAPITOOLS_CLIENT_API_IngestApi_H_ */
-

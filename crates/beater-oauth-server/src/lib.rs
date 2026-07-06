@@ -993,6 +993,13 @@ mod tests {
             .to_string()
     }
 
+    fn set_cookie(resp: &Response) -> &str {
+        resp.headers()
+            .get(SET_COOKIE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("")
+    }
+
     #[tokio::test]
     async fn auth_register_login_me_logout_flow() {
         let app = router(test_state());
@@ -1008,6 +1015,15 @@ mod tests {
         assert_eq!(resp.status(), StatusCode::OK);
         let token = cookie_token(&resp);
         assert!(token.starts_with("bs_"), "expected session cookie");
+        let session_cookie = set_cookie(&resp);
+        assert!(session_cookie.contains("Path=/"), "got {session_cookie}");
+        assert!(session_cookie.contains("HttpOnly"), "got {session_cookie}");
+        assert!(
+            session_cookie.contains("SameSite=Lax"),
+            "got {session_cookie}"
+        );
+        assert!(session_cookie.contains("Secure"), "got {session_cookie}");
+        assert!(session_cookie.contains("Max-Age="), "got {session_cookie}");
         let body = body_json(resp).await;
         let user_id = body["user_id"].as_str().unwrap_or("").to_string();
         assert_eq!(body["tenant_id"], user_id);
@@ -1061,6 +1077,12 @@ mod tests {
         // Logout -> 204 + clears cookie; the old session no longer validates.
         let resp = post_json(&app, "/auth/logout", json!({}), Some(&cookie)).await;
         assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+        let clear_cookie = set_cookie(&resp);
+        assert!(clear_cookie.contains(&format!("{SESSION_COOKIE}=")));
+        assert!(clear_cookie.contains("Max-Age=0"), "got {clear_cookie}");
+        assert!(clear_cookie.contains("HttpOnly"), "got {clear_cookie}");
+        assert!(clear_cookie.contains("SameSite=Lax"), "got {clear_cookie}");
+        assert!(clear_cookie.contains("Secure"), "got {clear_cookie}");
         let resp = ok(app
             .clone()
             .oneshot(
@@ -1643,5 +1665,159 @@ mod tests {
         assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
         let body = body_json(resp).await;
         assert_eq!(body["error"], "invalid_grant");
+    }
+
+    #[tokio::test]
+    async fn token_rejects_wrong_pkce_verifier_and_redirect_uri_mismatch() {
+        let state = test_state();
+        let now = Utc::now();
+        let registered = ok(state
+            .oauth
+            .register_client(
+                ClientRegistration {
+                    client_name: "mcp".to_string(),
+                    redirect_uris: vec!["https://app.example.test/cb".to_string()],
+                    grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
+                    scopes: BTreeSet::from(["traces:read".to_string()]),
+                    token_endpoint_auth_method: ClientAuthMethod::None,
+                },
+                now,
+            )
+            .await);
+        let client_id = registered.client.client_id.clone();
+        let tenant_scope = TenantScope::new(
+            ok(TenantId::new("demo")),
+            ok(ProjectId::new("demo")),
+            ok(EnvironmentId::new("local")),
+        );
+
+        let wrong_verifier_code = ok(state
+            .oauth
+            .issue_authorization_code(
+                AuthorizationGrant {
+                    client_id: client_id.clone(),
+                    user_id: ok(UserId::new("user-1")),
+                    redirect_uri: "https://app.example.test/cb".to_string(),
+                    scope: BTreeSet::from(["traces:read".to_string()]),
+                    tenant_scope: tenant_scope.clone(),
+                    code_challenge: challenge(),
+                },
+                now,
+            )
+            .await);
+        let redirect_mismatch_code = ok(state
+            .oauth
+            .issue_authorization_code(
+                AuthorizationGrant {
+                    client_id: client_id.clone(),
+                    user_id: ok(UserId::new("user-1")),
+                    redirect_uri: "https://app.example.test/cb".to_string(),
+                    scope: BTreeSet::from(["traces:read".to_string()]),
+                    tenant_scope,
+                    code_challenge: challenge(),
+                },
+                now,
+            )
+            .await);
+        let app = router(state);
+
+        let form = format!(
+            "grant_type=authorization_code&client_id={}&code={}&redirect_uri={}&code_verifier={}",
+            client_id.as_str(),
+            utf8_percent_encode(&wrong_verifier_code, NON_ALPHANUMERIC),
+            utf8_percent_encode("https://app.example.test/cb", NON_ALPHANUMERIC),
+            "wrong-verifier",
+        );
+        let resp = ok(app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/oauth/token")
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(Body::from(form))
+                    .unwrap_or_else(|e| panic!("{e}")),
+            )
+            .await);
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(body_json(resp).await["error"], "invalid_grant");
+
+        let form = format!(
+            "grant_type=authorization_code&client_id={}&code={}&redirect_uri={}&code_verifier={VERIFIER}",
+            client_id.as_str(),
+            utf8_percent_encode(&redirect_mismatch_code, NON_ALPHANUMERIC),
+            utf8_percent_encode("https://evil.example.test/cb", NON_ALPHANUMERIC),
+        );
+        let resp = ok(app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/oauth/token")
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(Body::from(form))
+                    .unwrap_or_else(|e| panic!("{e}")),
+            )
+            .await);
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(body_json(resp).await["error"], "invalid_grant");
+    }
+
+    #[tokio::test]
+    async fn authorize_rejects_plain_pkce_method_without_issuing_code() {
+        let state = test_state();
+        let now = Utc::now();
+        let user = ok(state.accounts.register("dev@example.test", "pw", now).await);
+        let session = ok(state
+            .accounts
+            .start_session(user.user_id.clone(), default_session_ttl(), now)
+            .await);
+        ok(state
+            .accounts
+            .put_membership(beater_accounts::OrgMembership {
+                organization_id: ok(OrganizationId::new("demo")),
+                user_id: user.user_id.clone(),
+                role: beater_accounts::OrgRole::Member,
+                created_at: now,
+            })
+            .await);
+        let registered = ok(state
+            .oauth
+            .register_client(
+                ClientRegistration {
+                    client_name: "mcp".to_string(),
+                    redirect_uris: vec!["https://app.example.test/cb".to_string()],
+                    grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
+                    scopes: BTreeSet::from(["traces:read".to_string()]),
+                    token_endpoint_auth_method: ClientAuthMethod::None,
+                },
+                now,
+            )
+            .await);
+        let client_id = registered.client.client_id.as_str().to_string();
+        let app = router(state);
+        let uri = format!(
+            "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={}&tenant_id=demo&project_id=demo&environment_id=local&code_challenge={VERIFIER}&code_challenge_method=plain",
+            utf8_percent_encode("https://app.example.test/cb", NON_ALPHANUMERIC),
+        );
+        let resp = ok(app
+            .oneshot(
+                Request::builder()
+                    .uri(uri)
+                    .header(
+                        http::header::COOKIE,
+                        format!("{SESSION_COOKIE}={}", session.token),
+                    )
+                    .body(Body::empty())
+                    .unwrap_or_else(|e| panic!("{e}")),
+            )
+            .await);
+        assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+        let loc = resp
+            .headers()
+            .get(LOCATION)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        assert!(loc.contains("error=invalid_request"), "got {loc}");
+        assert!(!loc.contains("code="), "must not issue a code: {loc}");
     }
 }

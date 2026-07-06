@@ -59,6 +59,10 @@ jobs:
             --exclude beater-browser-harness \
             --exclude beater-browser-playwright \
             --exclude beater-browser-webdriver
+      - name: Test hosted billing API feature contract
+        run: |
+          cargo test -p beater-api --features billing --test billing_api
+          cargo test -p beater-api --features billing --test openapi_coverage
       - name: Test beaterd's non-gate target
         run: cargo test -p beaterd --test sqlite_migrations
       # The examples/rust/ adoption fixtures live outside the workspace (they

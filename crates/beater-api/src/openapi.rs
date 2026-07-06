@@ -19,6 +19,7 @@ use utoipa::OpenApi;
     paths(
         crate::health,
         crate::ingest_native,
+        crate::ingest_otlp_json_collector,
         crate::ingest_otlp_http,
         crate::import_source_route,
         crate::create_api_key_route,

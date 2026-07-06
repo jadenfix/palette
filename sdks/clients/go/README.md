@@ -78,64 +78,65 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*AlertsAPI* | [**EvaluateAlert**](docs/AlertsAPI.md#evaluatealert) | **Post** /v1/alerts/{tenant_id}/{project_id}/traces/{trace_id}/webhook | 
-*ApiKeysAPI* | [**CreateApiKey**](docs/ApiKeysAPI.md#createapikey) | **Post** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} | 
-*ApiKeysAPI* | [**RevokeApiKey**](docs/ApiKeysAPI.md#revokeapikey) | **Post** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke | 
-*ArchiveAPI* | [**ArchiveTrace**](docs/ArchiveAPI.md#archivetrace) | **Post** /v1/archive/{tenant_id}/{project_id}/{trace_id} | 
-*ArchiveAPI* | [**QueryArchiveSpans**](docs/ArchiveAPI.md#queryarchivespans) | **Get** /v1/archive/{tenant_id}/{project_id}/spans | 
-*AuditAPI* | [**ListAuditEvents**](docs/AuditAPI.md#listauditevents) | **Get** /v1/audit/{tenant_id}/{project_id} | 
-*CalibrationsAPI* | [**RunCalibration**](docs/CalibrationsAPI.md#runcalibration) | **Post** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} | 
-*ConnectorsAPI* | [**ConnectConnector**](docs/ConnectorsAPI.md#connectconnector) | **Post** /v1/connectors/{tenant_id}/{project_id}/connect | 
-*ConnectorsAPI* | [**ConnectorStatus**](docs/ConnectorsAPI.md#connectorstatus) | **Get** /v1/connectors/{tenant_id}/{project_id}/status | 
-*ConnectorsAPI* | [**GetConnectorSkills**](docs/ConnectorsAPI.md#getconnectorskills) | **Get** /v1/connectors/{tenant_id}/{project_id}/skills | 
-*ConnectorsAPI* | [**InvokeConnectorTool**](docs/ConnectorsAPI.md#invokeconnectortool) | **Post** /v1/connectors/{tenant_id}/{project_id}/invoke | 
-*ConnectorsAPI* | [**ListConnectorTools**](docs/ConnectorsAPI.md#listconnectortools) | **Get** /v1/connectors/{tenant_id}/{project_id}/tools | 
-*ConnectorsAPI* | [**ListConnectors**](docs/ConnectorsAPI.md#listconnectors) | **Get** /v1/connectors/{tenant_id}/{project_id} | 
-*DatasetsAPI* | [**CreateDataset**](docs/DatasetsAPI.md#createdataset) | **Post** /v1/datasets/{tenant_id}/{project_id} | 
-*DatasetsAPI* | [**CreateDatasetVersion**](docs/DatasetsAPI.md#createdatasetversion) | **Post** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions | 
-*DatasetsAPI* | [**PromoteDatasetCaseFromTrace**](docs/DatasetsAPI.md#promotedatasetcasefromtrace) | **Post** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace | 
-*EvalsAPI* | [**RunDeterministicEval**](docs/EvalsAPI.md#rundeterministiceval) | **Post** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/deterministic | 
-*EvalsAPI* | [**RunJudgeEval**](docs/EvalsAPI.md#runjudgeeval) | **Post** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/judge | 
-*ExperimentsAPI* | [**RunDeterministicExperiment**](docs/ExperimentsAPI.md#rundeterministicexperiment) | **Post** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic | 
-*ExperimentsAPI* | [**RunJudgeExperiment**](docs/ExperimentsAPI.md#runjudgeexperiment) | **Post** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge | 
-*GatesAPI* | [**CreateGate**](docs/GatesAPI.md#creategate) | **Post** /v1/gates/{tenant_id}/{project_id} | 
-*GatesAPI* | [**RunGate**](docs/GatesAPI.md#rungate) | **Post** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run | 
-*HealthAPI* | [**Health**](docs/HealthAPI.md#health) | **Get** /health | 
-*IngestAPI* | [**DrainTraceIngested**](docs/IngestAPI.md#draintraceingested) | **Post** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
-*IngestAPI* | [**DrainTraceWrites**](docs/IngestAPI.md#draintracewrites) | **Post** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
-*IngestAPI* | [**GetIngestQueueStatus**](docs/IngestAPI.md#getingestqueuestatus) | **Get** /v1/ingest/{tenant_id}/{project_id}/queue | 
-*IngestAPI* | [**ImportSource**](docs/IngestAPI.md#importsource) | **Post** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
-*IngestAPI* | [**IngestNative**](docs/IngestAPI.md#ingestnative) | **Post** /v1/traces/native | 
-*IngestAPI* | [**IngestOtlp**](docs/IngestAPI.md#ingestotlp) | **Post** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces | 
-*IngestAPI* | [**ReconcileTrace**](docs/IngestAPI.md#reconciletrace) | **Post** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile | 
-*IngestAPI* | [**ReplayDeadLetter**](docs/IngestAPI.md#replaydeadletter) | **Post** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay | 
-*JudgeAPI* | [**EvaluateJudge**](docs/JudgeAPI.md#evaluatejudge) | **Post** /v1/judge/{tenant_id}/{project_id}/evaluate | 
-*JudgeAPI* | [**ListJudgeLedger**](docs/JudgeAPI.md#listjudgeledger) | **Get** /v1/judge/{tenant_id}/{project_id}/ledger | 
-*OnlineAPI* | [**DecideOnlineSampling**](docs/OnlineAPI.md#decideonlinesampling) | **Post** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling | 
-*PromptsAPI* | [**AddPromptVersion**](docs/PromptsAPI.md#addpromptversion) | **Post** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions | 
-*PromptsAPI* | [**CreatePrompt**](docs/PromptsAPI.md#createprompt) | **Post** /v1/prompts/{tenant_id}/{project_id} | 
-*PromptsAPI* | [**DiffPromptVersions**](docs/PromptsAPI.md#diffpromptversions) | **Get** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff | 
-*PromptsAPI* | [**GetPrompt**](docs/PromptsAPI.md#getprompt) | **Get** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} | 
-*PromptsAPI* | [**ListPromptVersions**](docs/PromptsAPI.md#listpromptversions) | **Get** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions | 
-*PromptsAPI* | [**ListPrompts**](docs/PromptsAPI.md#listprompts) | **Get** /v1/prompts/{tenant_id}/{project_id} | 
-*ProviderSecretsAPI* | [**CreateProviderSecret**](docs/ProviderSecretsAPI.md#createprovidersecret) | **Post** /v1/provider-secrets/{tenant_id}/{project_id} | 
-*ProviderSecretsAPI* | [**ListProviderSecrets**](docs/ProviderSecretsAPI.md#listprovidersecrets) | **Get** /v1/provider-secrets/{tenant_id}/{project_id} | 
-*ProviderSecretsAPI* | [**RevokeProviderSecret**](docs/ProviderSecretsAPI.md#revokeprovidersecret) | **Post** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke | 
-*ReviewsAPI* | [**CreateReviewQueue**](docs/ReviewsAPI.md#createreviewqueue) | **Post** /v1/review-queues/{tenant_id}/{project_id} | 
-*ReviewsAPI* | [**EnqueueReviewTaskFromTrace**](docs/ReviewsAPI.md#enqueuereviewtaskfromtrace) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace | 
-*ReviewsAPI* | [**ListReviewTasks**](docs/ReviewsAPI.md#listreviewtasks) | **Get** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks | 
-*ReviewsAPI* | [**PromoteReviewAnnotation**](docs/ReviewsAPI.md#promotereviewannotation) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote | 
-*ReviewsAPI* | [**SubmitReviewAnnotation**](docs/ReviewsAPI.md#submitreviewannotation) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations | 
-*ScenariosAPI* | [**CreateScenario**](docs/ScenariosAPI.md#createscenario) | **Post** /v1/scenarios/{tenant_id}/{project_id} | 
-*ScenariosAPI* | [**GetScenario**](docs/ScenariosAPI.md#getscenario) | **Get** /v1/scenarios/{tenant_id}/{project_id}/{scenario_id} | 
-*ScenariosAPI* | [**ListScenarios**](docs/ScenariosAPI.md#listscenarios) | **Get** /v1/scenarios/{tenant_id}/{project_id} | 
-*ScenariosAPI* | [**MineScenarios**](docs/ScenariosAPI.md#minescenarios) | **Post** /v1/scenarios/{tenant_id}/{project_id}/mine | 
-*SearchAPI* | [**SearchSpans**](docs/SearchAPI.md#searchspans) | **Get** /v1/search/{tenant_id}/spans | 
-*SpansAPI* | [**GetSpan**](docs/SpansAPI.md#getspan) | **Get** /v1/spans/{tenant_id}/{trace_id}/{span_id} | 
-*SpansAPI* | [**GetSpanIo**](docs/SpansAPI.md#getspanio) | **Get** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io | 
-*TracesAPI* | [**GetTrace**](docs/TracesAPI.md#gettrace) | **Get** /v1/traces/{tenant_id}/{trace_id} | 
-*TracesAPI* | [**ListTraces**](docs/TracesAPI.md#listtraces) | **Get** /v1/traces/{tenant_id} | 
-*UsageAPI* | [**GetUsageSummary**](docs/UsageAPI.md#getusagesummary) | **Get** /v1/usage/{tenant_id}/{project_id} | 
+*AlertsAPI* | [**EvaluateAlert**](docs/AlertsAPI.md#evaluatealert) | **Post** /v1/alerts/{tenant_id}/{project_id}/traces/{trace_id}/webhook |
+*ApiKeysAPI* | [**CreateApiKey**](docs/ApiKeysAPI.md#createapikey) | **Post** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} |
+*ApiKeysAPI* | [**RevokeApiKey**](docs/ApiKeysAPI.md#revokeapikey) | **Post** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke |
+*ArchiveAPI* | [**ArchiveTrace**](docs/ArchiveAPI.md#archivetrace) | **Post** /v1/archive/{tenant_id}/{project_id}/{trace_id} |
+*ArchiveAPI* | [**QueryArchiveSpans**](docs/ArchiveAPI.md#queryarchivespans) | **Get** /v1/archive/{tenant_id}/{project_id}/spans |
+*AuditAPI* | [**ListAuditEvents**](docs/AuditAPI.md#listauditevents) | **Get** /v1/audit/{tenant_id}/{project_id} |
+*CalibrationsAPI* | [**RunCalibration**](docs/CalibrationsAPI.md#runcalibration) | **Post** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |
+*ConnectorsAPI* | [**ConnectConnector**](docs/ConnectorsAPI.md#connectconnector) | **Post** /v1/connectors/{tenant_id}/{project_id}/connect |
+*ConnectorsAPI* | [**ConnectorStatus**](docs/ConnectorsAPI.md#connectorstatus) | **Get** /v1/connectors/{tenant_id}/{project_id}/status |
+*ConnectorsAPI* | [**GetConnectorSkills**](docs/ConnectorsAPI.md#getconnectorskills) | **Get** /v1/connectors/{tenant_id}/{project_id}/skills |
+*ConnectorsAPI* | [**InvokeConnectorTool**](docs/ConnectorsAPI.md#invokeconnectortool) | **Post** /v1/connectors/{tenant_id}/{project_id}/invoke |
+*ConnectorsAPI* | [**ListConnectorTools**](docs/ConnectorsAPI.md#listconnectortools) | **Get** /v1/connectors/{tenant_id}/{project_id}/tools |
+*ConnectorsAPI* | [**ListConnectors**](docs/ConnectorsAPI.md#listconnectors) | **Get** /v1/connectors/{tenant_id}/{project_id} |
+*DatasetsAPI* | [**CreateDataset**](docs/DatasetsAPI.md#createdataset) | **Post** /v1/datasets/{tenant_id}/{project_id} |
+*DatasetsAPI* | [**CreateDatasetVersion**](docs/DatasetsAPI.md#createdatasetversion) | **Post** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions |
+*DatasetsAPI* | [**PromoteDatasetCaseFromTrace**](docs/DatasetsAPI.md#promotedatasetcasefromtrace) | **Post** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace |
+*EvalsAPI* | [**RunDeterministicEval**](docs/EvalsAPI.md#rundeterministiceval) | **Post** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/deterministic |
+*EvalsAPI* | [**RunJudgeEval**](docs/EvalsAPI.md#runjudgeeval) | **Post** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/judge |
+*ExperimentsAPI* | [**RunDeterministicExperiment**](docs/ExperimentsAPI.md#rundeterministicexperiment) | **Post** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic |
+*ExperimentsAPI* | [**RunJudgeExperiment**](docs/ExperimentsAPI.md#runjudgeexperiment) | **Post** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge |
+*GatesAPI* | [**CreateGate**](docs/GatesAPI.md#creategate) | **Post** /v1/gates/{tenant_id}/{project_id} |
+*GatesAPI* | [**RunGate**](docs/GatesAPI.md#rungate) | **Post** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run |
+*HealthAPI* | [**Health**](docs/HealthAPI.md#health) | **Get** /health |
+*IngestAPI* | [**DrainTraceIngested**](docs/IngestAPI.md#draintraceingested) | **Post** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
+*IngestAPI* | [**DrainTraceWrites**](docs/IngestAPI.md#draintracewrites) | **Post** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
+*IngestAPI* | [**GetIngestQueueStatus**](docs/IngestAPI.md#getingestqueuestatus) | **Get** /v1/ingest/{tenant_id}/{project_id}/queue |
+*IngestAPI* | [**ImportSource**](docs/IngestAPI.md#importsource) | **Post** /v1/import/{tenant_id}/{project_id}/{environment_id} |
+*IngestAPI* | [**IngestNative**](docs/IngestAPI.md#ingestnative) | **Post** /v1/traces/native |
+*IngestAPI* | [**IngestOtlp**](docs/IngestAPI.md#ingestotlp) | **Post** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
+*IngestAPI* | [**IngestOtlpJsonCollector**](docs/IngestAPI.md#ingestotlpjsoncollector) | **Post** /v1/traces |
+*IngestAPI* | [**ReconcileTrace**](docs/IngestAPI.md#reconciletrace) | **Post** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
+*IngestAPI* | [**ReplayDeadLetter**](docs/IngestAPI.md#replaydeadletter) | **Post** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
+*JudgeAPI* | [**EvaluateJudge**](docs/JudgeAPI.md#evaluatejudge) | **Post** /v1/judge/{tenant_id}/{project_id}/evaluate |
+*JudgeAPI* | [**ListJudgeLedger**](docs/JudgeAPI.md#listjudgeledger) | **Get** /v1/judge/{tenant_id}/{project_id}/ledger |
+*OnlineAPI* | [**DecideOnlineSampling**](docs/OnlineAPI.md#decideonlinesampling) | **Post** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling |
+*PromptsAPI* | [**AddPromptVersion**](docs/PromptsAPI.md#addpromptversion) | **Post** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |
+*PromptsAPI* | [**CreatePrompt**](docs/PromptsAPI.md#createprompt) | **Post** /v1/prompts/{tenant_id}/{project_id} |
+*PromptsAPI* | [**DiffPromptVersions**](docs/PromptsAPI.md#diffpromptversions) | **Get** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff |
+*PromptsAPI* | [**GetPrompt**](docs/PromptsAPI.md#getprompt) | **Get** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} |
+*PromptsAPI* | [**ListPromptVersions**](docs/PromptsAPI.md#listpromptversions) | **Get** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |
+*PromptsAPI* | [**ListPrompts**](docs/PromptsAPI.md#listprompts) | **Get** /v1/prompts/{tenant_id}/{project_id} |
+*ProviderSecretsAPI* | [**CreateProviderSecret**](docs/ProviderSecretsAPI.md#createprovidersecret) | **Post** /v1/provider-secrets/{tenant_id}/{project_id} |
+*ProviderSecretsAPI* | [**ListProviderSecrets**](docs/ProviderSecretsAPI.md#listprovidersecrets) | **Get** /v1/provider-secrets/{tenant_id}/{project_id} |
+*ProviderSecretsAPI* | [**RevokeProviderSecret**](docs/ProviderSecretsAPI.md#revokeprovidersecret) | **Post** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke |
+*ReviewsAPI* | [**CreateReviewQueue**](docs/ReviewsAPI.md#createreviewqueue) | **Post** /v1/review-queues/{tenant_id}/{project_id} |
+*ReviewsAPI* | [**EnqueueReviewTaskFromTrace**](docs/ReviewsAPI.md#enqueuereviewtaskfromtrace) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace |
+*ReviewsAPI* | [**ListReviewTasks**](docs/ReviewsAPI.md#listreviewtasks) | **Get** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks |
+*ReviewsAPI* | [**PromoteReviewAnnotation**](docs/ReviewsAPI.md#promotereviewannotation) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote |
+*ReviewsAPI* | [**SubmitReviewAnnotation**](docs/ReviewsAPI.md#submitreviewannotation) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations |
+*ScenariosAPI* | [**CreateScenario**](docs/ScenariosAPI.md#createscenario) | **Post** /v1/scenarios/{tenant_id}/{project_id} |
+*ScenariosAPI* | [**GetScenario**](docs/ScenariosAPI.md#getscenario) | **Get** /v1/scenarios/{tenant_id}/{project_id}/{scenario_id} |
+*ScenariosAPI* | [**ListScenarios**](docs/ScenariosAPI.md#listscenarios) | **Get** /v1/scenarios/{tenant_id}/{project_id} |
+*ScenariosAPI* | [**MineScenarios**](docs/ScenariosAPI.md#minescenarios) | **Post** /v1/scenarios/{tenant_id}/{project_id}/mine |
+*SearchAPI* | [**SearchSpans**](docs/SearchAPI.md#searchspans) | **Get** /v1/search/{tenant_id}/spans |
+*SpansAPI* | [**GetSpan**](docs/SpansAPI.md#getspan) | **Get** /v1/spans/{tenant_id}/{trace_id}/{span_id} |
+*SpansAPI* | [**GetSpanIo**](docs/SpansAPI.md#getspanio) | **Get** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io |
+*TracesAPI* | [**GetTrace**](docs/TracesAPI.md#gettrace) | **Get** /v1/traces/{tenant_id}/{trace_id} |
+*TracesAPI* | [**ListTraces**](docs/TracesAPI.md#listtraces) | **Get** /v1/traces/{tenant_id} |
+*UsageAPI* | [**GetUsageSummary**](docs/UsageAPI.md#getusagesummary) | **Get** /v1/usage/{tenant_id}/{project_id} |
 
 
 ## Documentation For Models
@@ -318,6 +319,3 @@ Each of these functions takes a value of the given basic type and returns a poin
 * `PtrTime`
 
 ## Author
-
-
-
