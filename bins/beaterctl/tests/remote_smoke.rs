@@ -1,7 +1,15 @@
+use std::collections::BTreeSet;
 use std::net::{SocketAddr, TcpListener};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
+
+use beater_auth::{ApiKeyStore, SqliteApiKeyStore};
+use beater_core::{ProjectId, TenantId};
+use beater_security::api_key_id_from_secret;
+use beater_store::{MetadataStore, RoleBinding};
+use beater_store_sql::SqliteMetadataStore;
+use chrono::Utc;
 
 const OSS_QUERY_LAG_SLO_MS: u64 = 15_000;
 static REMOTE_SMOKE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
@@ -89,7 +97,7 @@ async fn remote_smoke_http_strict_auth_reads_back_trace() -> anyhow::Result<()> 
     let addrs = free_addrs(2)?;
     let http_addr = addrs[0];
     let grpc_addr = addrs[1];
-    let api_key = create_trace_smoke_key(tempdir.path())?;
+    let api_key = create_trace_smoke_key(tempdir.path()).await?;
     let _server = BeaterdChild::spawn_with_auth_mode(
         tempdir.path().to_path_buf(),
         http_addr,
@@ -215,7 +223,7 @@ fn run_beaterctl_smoke(
     serde_json::from_slice(&output.stdout).map_err(anyhow::Error::from)
 }
 
-fn create_trace_smoke_key(data_dir: &Path) -> anyhow::Result<String> {
+async fn create_trace_smoke_key(data_dir: &Path) -> anyhow::Result<String> {
     let output = Command::new(env!("CARGO_BIN_EXE_beaterctl"))
         .arg("api-key-create")
         .arg("--data-dir")
@@ -238,10 +246,35 @@ fn create_trace_smoke_key(data_dir: &Path) -> anyhow::Result<String> {
         String::from_utf8_lossy(&output.stderr)
     );
     let body: serde_json::Value = serde_json::from_slice(&output.stdout)?;
-    body["secret"]
+    let secret = body["secret"]
         .as_str()
         .map(str::to_string)
-        .ok_or_else(|| anyhow::anyhow!("api-key-create did not return secret: {body}"))
+        .ok_or_else(|| anyhow::anyhow!("api-key-create did not return secret: {body}"))?;
+    grant_trace_writer_role(data_dir, &secret).await?;
+    Ok(secret)
+}
+
+async fn grant_trace_writer_role(data_dir: &Path, secret: &str) -> anyhow::Result<()> {
+    let tenant_id = TenantId::new("demo")?;
+    let project_id = ProjectId::new("demo")?;
+    let metadata = SqliteMetadataStore::open(data_dir.join("metadata.sqlite"))?;
+    let api_keys = SqliteApiKeyStore::open(data_dir.join("security.sqlite"))?;
+    let api_key_id = api_key_id_from_secret(secret)?;
+    let record = api_keys
+        .get_key(api_key_id)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("created smoke API key missing from store"))?;
+    metadata
+        .put_role_binding(RoleBinding {
+            tenant_id,
+            project_id: Some(project_id),
+            principal_id: record.api_key_id.as_str().to_string(),
+            role: "trace-writer".to_string(),
+            permissions: BTreeSet::from(["trace:write".to_string()]),
+            created_at: Utc::now(),
+        })
+        .await?;
+    Ok(())
 }
 
 fn assert_lag_under_slo(smoke: &serde_json::Value) {
