@@ -43,4 +43,3 @@ instance = BeaterClient::DatasetCase.new(
   trace_schema_version: null
 )
 ```
-

@@ -23,9 +23,9 @@ import com.squareup.moshi.JsonClass
 /**
  * Request body for `addPromptVersion`: a new immutable template revision.
  *
- * @param template 
- * @param createdBy 
- * @param message 
+ * @param template
+ * @param createdBy
+ * @param message
  */
 
 
@@ -44,4 +44,3 @@ data class AddPromptVersionRequest (
 
 
 }
-

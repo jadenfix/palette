@@ -39,4 +39,3 @@ instance = BeaterClient::EvalResult.new(
   trace_id: null
 )
 ```
-

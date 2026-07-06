@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param kind 
- * @param `value` 
+ *
+ * @param kind
+ * @param `value`
  */
 
 
@@ -38,7 +38,7 @@ data class SpanIoValueOneOf (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: `inline`
      */
@@ -48,4 +48,3 @@ data class SpanIoValueOneOf (
     }
 
 }
-

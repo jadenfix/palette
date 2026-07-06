@@ -11,6 +11,3 @@
 | **tenantId** | **kotlin.String** |  |  |
 | **updatedAt** | [**java.time.OffsetDateTime**](java.time.OffsetDateTime.md) |  |  |
 | **description** | **kotlin.String** |  |  [optional] |
-
-
-

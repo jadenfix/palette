@@ -37,7 +37,7 @@ class DatasetsApiTest : ShouldSpec() {
             // uncomment below to test createDataset
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-            //val createDatasetRequest : CreateDatasetRequest =  // CreateDatasetRequest | 
+            //val createDatasetRequest : CreateDatasetRequest =  // CreateDatasetRequest |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -52,7 +52,7 @@ class DatasetsApiTest : ShouldSpec() {
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
             //val datasetId : kotlin.String = datasetId_example // kotlin.String | dataset_id
-            //val createDatasetVersionRequest : CreateDatasetVersionRequest =  // CreateDatasetVersionRequest | 
+            //val createDatasetVersionRequest : CreateDatasetVersionRequest =  // CreateDatasetVersionRequest |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -67,7 +67,7 @@ class DatasetsApiTest : ShouldSpec() {
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
             //val datasetId : kotlin.String = datasetId_example // kotlin.String | dataset_id
-            //val promoteTraceCaseRequest : PromoteTraceCaseRequest =  // PromoteTraceCaseRequest | 
+            //val promoteTraceCaseRequest : PromoteTraceCaseRequest =  // PromoteTraceCaseRequest |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope

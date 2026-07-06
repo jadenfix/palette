@@ -8,6 +8,3 @@
 | **text** | **kotlin.String** |  |  |
 | **newLine** | **kotlin.Int** |  |  [optional] |
 | **oldLine** | **kotlin.Int** |  |  [optional] |
-
-
-

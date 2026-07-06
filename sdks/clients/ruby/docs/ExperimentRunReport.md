@@ -39,4 +39,3 @@ instance = BeaterClient::ExperimentRunReport.new(
   tenant_id: null
 )
 ```
-

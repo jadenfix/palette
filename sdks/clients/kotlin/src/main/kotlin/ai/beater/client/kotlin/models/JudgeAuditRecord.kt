@@ -21,22 +21,22 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param cached 
- * @param chargedCost 
- * @param createdAt 
- * @param evaluatorId 
- * @param judgeCallId 
- * @param model 
- * @param projectId 
- * @param provider 
- * @param providerCost 
- * @param providerSecretId 
- * @param requestHash 
- * @param responseHash 
- * @param score 
- * @param tenantId 
+ *
+ * @param cached
+ * @param chargedCost
+ * @param createdAt
+ * @param evaluatorId
+ * @param judgeCallId
+ * @param model
+ * @param projectId
+ * @param provider
+ * @param providerCost
+ * @param providerSecretId
+ * @param requestHash
+ * @param responseHash
+ * @param score
+ * @param tenantId
  */
 
 
@@ -88,4 +88,3 @@ data class JudgeAuditRecord (
 
 
 }
-

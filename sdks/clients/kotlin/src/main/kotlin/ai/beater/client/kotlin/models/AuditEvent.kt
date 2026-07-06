@@ -22,20 +22,20 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param action 
- * @param attributes 
- * @param auditEventId 
- * @param createdAt 
- * @param outcome 
- * @param projectId 
- * @param resourceId 
- * @param resourceType 
- * @param tenantId 
- * @param actorApiKeyId 
- * @param environmentId 
- * @param reason 
+ *
+ * @param action
+ * @param attributes
+ * @param auditEventId
+ * @param createdAt
+ * @param outcome
+ * @param projectId
+ * @param resourceId
+ * @param resourceType
+ * @param tenantId
+ * @param actorApiKeyId
+ * @param environmentId
+ * @param reason
  */
 
 
@@ -81,4 +81,3 @@ data class AuditEvent (
 
 
 }
-

@@ -24,7 +24,7 @@ require 'beater_client'
 api_instance = BeaterClient::DatasetsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
-create_dataset_request = BeaterClient::CreateDatasetRequest.new({name: 'name_example'}) # CreateDatasetRequest | 
+create_dataset_request = BeaterClient::CreateDatasetRequest.new({name: 'name_example'}) # CreateDatasetRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -33,7 +33,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.create_dataset(tenant_id, project_id, create_dataset_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -49,7 +49,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.create_dataset_with_http_info(tenant_id, project_id, create_dataset_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -101,7 +101,7 @@ api_instance = BeaterClient::DatasetsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 dataset_id = 'dataset_id_example' # String | dataset_id
-create_dataset_version_request = BeaterClient::CreateDatasetVersionRequest.new # CreateDatasetVersionRequest | 
+create_dataset_version_request = BeaterClient::CreateDatasetVersionRequest.new # CreateDatasetVersionRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -110,7 +110,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.create_dataset_version(tenant_id, project_id, dataset_id, create_dataset_version_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -126,7 +126,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.create_dataset_version_with_http_info(tenant_id, project_id, dataset_id, create_dataset_version_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -179,7 +179,7 @@ api_instance = BeaterClient::DatasetsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 dataset_id = 'dataset_id_example' # String | dataset_id
-promote_trace_case_request = BeaterClient::PromoteTraceCaseRequest.new({trace_id: 'trace_id_example'}) # PromoteTraceCaseRequest | 
+promote_trace_case_request = BeaterClient::PromoteTraceCaseRequest.new({trace_id: 'trace_id_example'}) # PromoteTraceCaseRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -188,7 +188,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.promote_dataset_case_from_trace(tenant_id, project_id, dataset_id, promote_trace_case_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -204,7 +204,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.promote_dataset_case_from_trace_with_http_info(tenant_id, project_id, dataset_id, promote_trace_case_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -239,4 +239,3 @@ No authorization required
 
 - **Content-Type**: application/json
 - **Accept**: application/json
-

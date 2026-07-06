@@ -23,11 +23,11 @@ import com.squareup.moshi.JsonClass
 /**
  * Request body for `createPrompt`: the new prompt's metadata plus its initial (version 1) template.
  *
- * @param name 
- * @param template 
- * @param createdBy 
- * @param description 
- * @param message 
+ * @param name
+ * @param template
+ * @param createdBy
+ * @param description
+ * @param message
  */
 
 
@@ -52,4 +52,3 @@ data class CreatePromptRequest (
 
 
 }
-

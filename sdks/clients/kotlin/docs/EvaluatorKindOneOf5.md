@@ -13,6 +13,3 @@
 | Name | Value |
 | ---- | ----- |
 | type | latency_budget_ms |
-
-
-

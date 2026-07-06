@@ -27,27 +27,27 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param attributes 
+ *
+ * @param attributes
  * @param kind Canonical agent span kind such as agent.run or llm.call
- * @param name 
- * @param redactionClass 
- * @param scope 
- * @param seq 
- * @param spanId 
- * @param status 
- * @param traceId 
- * @param authContext 
- * @param cost 
- * @param endTime 
- * @param idempotencyKey 
- * @param input 
- * @param model 
- * @param output 
- * @param parentSpanId 
- * @param startTime 
- * @param tokens 
+ * @param name
+ * @param redactionClass
+ * @param scope
+ * @param seq
+ * @param spanId
+ * @param status
+ * @param traceId
+ * @param authContext
+ * @param cost
+ * @param endTime
+ * @param idempotencyKey
+ * @param input
+ * @param model
+ * @param output
+ * @param parentSpanId
+ * @param startTime
+ * @param tokens
  */
 
 
@@ -115,4 +115,3 @@ data class NativeIngestRequest (
 
 
 }
-

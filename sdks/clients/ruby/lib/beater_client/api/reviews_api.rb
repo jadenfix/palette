@@ -21,7 +21,7 @@ module BeaterClient
     end
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param create_review_queue_http_request [CreateReviewQueueHttpRequest] 
+    # @param create_review_queue_http_request [CreateReviewQueueHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -35,7 +35,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param create_review_queue_http_request [CreateReviewQueueHttpRequest] 
+    # @param create_review_queue_http_request [CreateReviewQueueHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -110,7 +110,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param queue_id [String] queue_id
-    # @param enqueue_review_task_from_trace_http_request [EnqueueReviewTaskFromTraceHttpRequest] 
+    # @param enqueue_review_task_from_trace_http_request [EnqueueReviewTaskFromTraceHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -125,7 +125,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param queue_id [String] queue_id
-    # @param enqueue_review_task_from_trace_http_request [EnqueueReviewTaskFromTraceHttpRequest] 
+    # @param enqueue_review_task_from_trace_http_request [EnqueueReviewTaskFromTraceHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -205,7 +205,7 @@ module BeaterClient
     # @param project_id [String] project_id
     # @param queue_id [String] queue_id
     # @param [Hash] opts the optional parameters
-    # @option opts [ReviewTaskState] :state 
+    # @option opts [ReviewTaskState] :state
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -220,7 +220,7 @@ module BeaterClient
     # @param project_id [String] project_id
     # @param queue_id [String] queue_id
     # @param [Hash] opts the optional parameters
-    # @option opts [ReviewTaskState] :state 
+    # @option opts [ReviewTaskState] :state
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -292,7 +292,7 @@ module BeaterClient
     # @param queue_id [String] queue_id
     # @param task_id [String] task_id
     # @param annotation_id [String] annotation_id
-    # @param promote_review_annotation_http_request [PromoteReviewAnnotationHttpRequest] 
+    # @param promote_review_annotation_http_request [PromoteReviewAnnotationHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -309,7 +309,7 @@ module BeaterClient
     # @param queue_id [String] queue_id
     # @param task_id [String] task_id
     # @param annotation_id [String] annotation_id
-    # @param promote_review_annotation_http_request [PromoteReviewAnnotationHttpRequest] 
+    # @param promote_review_annotation_http_request [PromoteReviewAnnotationHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -397,7 +397,7 @@ module BeaterClient
     # @param project_id [String] project_id
     # @param queue_id [String] queue_id
     # @param task_id [String] task_id
-    # @param submit_review_annotation_http_request [SubmitReviewAnnotationHttpRequest] 
+    # @param submit_review_annotation_http_request [SubmitReviewAnnotationHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -413,7 +413,7 @@ module BeaterClient
     # @param project_id [String] project_id
     # @param queue_id [String] queue_id
     # @param task_id [String] task_id
-    # @param submit_review_annotation_http_request [SubmitReviewAnnotationHttpRequest] 
+    # @param submit_review_annotation_http_request [SubmitReviewAnnotationHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth

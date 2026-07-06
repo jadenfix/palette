@@ -35,7 +35,7 @@ describe 'ReviewsApi' do
   # unit tests for create_review_queue
   # @param tenant_id tenant_id
   # @param project_id project_id
-  # @param create_review_queue_http_request 
+  # @param create_review_queue_http_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -52,7 +52,7 @@ describe 'ReviewsApi' do
   # @param tenant_id tenant_id
   # @param project_id project_id
   # @param queue_id queue_id
-  # @param enqueue_review_task_from_trace_http_request 
+  # @param enqueue_review_task_from_trace_http_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -70,7 +70,7 @@ describe 'ReviewsApi' do
   # @param project_id project_id
   # @param queue_id queue_id
   # @param [Hash] opts the optional parameters
-  # @option opts [ReviewTaskState] :state 
+  # @option opts [ReviewTaskState] :state
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -88,7 +88,7 @@ describe 'ReviewsApi' do
   # @param queue_id queue_id
   # @param task_id task_id
   # @param annotation_id annotation_id
-  # @param promote_review_annotation_http_request 
+  # @param promote_review_annotation_http_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -106,7 +106,7 @@ describe 'ReviewsApi' do
   # @param project_id project_id
   # @param queue_id queue_id
   # @param task_id task_id
-  # @param submit_review_annotation_http_request 
+  # @param submit_review_annotation_http_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth

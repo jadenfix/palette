@@ -25,4 +25,3 @@ instance = BeaterClient::Toolkit.new(
   tools_count: null
 )
 ```
-

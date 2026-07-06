@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param displayName 
- * @param provider 
- * @param secretValue 
+ *
+ * @param displayName
+ * @param provider
+ * @param secretValue
  */
 
 
@@ -43,4 +43,3 @@ data class CreateProviderSecretHttpRequest (
 
 
 }
-

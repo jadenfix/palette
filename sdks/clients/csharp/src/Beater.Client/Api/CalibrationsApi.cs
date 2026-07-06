@@ -28,7 +28,7 @@ namespace Beater.Client.Api
     {
         #region Synchronous Operations
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -44,10 +44,10 @@ namespace Beater.Client.Api
         CalibrationReport RunCalibration(string tenantId, string projectId, string datasetId, string versionId, RunCalibrationHttpRequest runCalibrationHttpRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -71,10 +71,10 @@ namespace Beater.Client.Api
     {
         #region Asynchronous Operations
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -91,10 +91,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<CalibrationReport> RunCalibrationAsync(string tenantId, string projectId, string datasetId, string versionId, RunCalibrationHttpRequest runCalibrationHttpRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -323,7 +323,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -343,7 +343,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -431,7 +431,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -452,7 +452,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>

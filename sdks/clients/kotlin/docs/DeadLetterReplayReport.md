@@ -9,6 +9,3 @@
 | **projectId** | **kotlin.String** |  |  |
 | **resetAttempts** | **kotlin.Boolean** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
-
-
-

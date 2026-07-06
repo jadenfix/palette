@@ -21,14 +21,14 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param artifactId 
- * @param mimeType 
- * @param redactionClass 
- * @param sha256 
- * @param sizeBytes 
- * @param uri 
+ *
+ * @param artifactId
+ * @param mimeType
+ * @param redactionClass
+ * @param sha256
+ * @param sizeBytes
+ * @param uri
  */
 
 
@@ -56,4 +56,3 @@ data class ArtifactRef (
 
 
 }
-

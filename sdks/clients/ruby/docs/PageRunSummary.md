@@ -17,4 +17,3 @@ instance = BeaterClient::PageRunSummary.new(
   next_cursor: null
 )
 ```
-

@@ -27,4 +27,3 @@ instance = BeaterClient::AlertPolicy.new(
   signing_secret: null
 )
 ```
-

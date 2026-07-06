@@ -15,4 +15,3 @@ instance = BeaterClient::CreateDatasetRequest.new(
   name: null
 )
 ```
-

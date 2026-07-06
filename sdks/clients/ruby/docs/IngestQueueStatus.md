@@ -25,4 +25,3 @@ instance = BeaterClient::IngestQueueStatus.new(
   trace_write_depth: null
 )
 ```
-

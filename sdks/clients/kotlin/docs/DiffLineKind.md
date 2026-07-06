@@ -9,6 +9,3 @@
     * `added` (value: `"added"`)
 
     * `removed` (value: `"removed"`)
-
-
-

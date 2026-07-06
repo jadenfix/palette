@@ -17,4 +17,3 @@ instance = BeaterClient::EvaluateAlertRequest.new(
   policy: null
 )
 ```
-

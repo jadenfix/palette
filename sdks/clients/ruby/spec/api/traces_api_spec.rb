@@ -36,8 +36,8 @@ describe 'TracesApi' do
   # @param tenant_id tenant_id
   # @param trace_id trace_id
   # @param [Hash] opts the optional parameters
-  # @option opts [Boolean] :unmask 
-  # @option opts [String] :reason 
+  # @option opts [Boolean] :unmask
+  # @option opts [String] :reason
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -52,21 +52,21 @@ describe 'TracesApi' do
   # unit tests for list_traces
   # @param tenant_id tenant_id
   # @param [Hash] opts the optional parameters
-  # @option opts [String] :project_id 
-  # @option opts [String] :environment_id 
-  # @option opts [String] :trace_id 
-  # @option opts [String] :kind 
-  # @option opts [String] :status 
-  # @option opts [String] :started_after 
-  # @option opts [String] :started_before 
-  # @option opts [String] :model 
-  # @option opts [String] :release 
-  # @option opts [Integer] :min_cost_micros 
-  # @option opts [Integer] :max_cost_micros 
-  # @option opts [Integer] :min_latency_ms 
-  # @option opts [Integer] :max_latency_ms 
-  # @option opts [Integer] :limit 
-  # @option opts [String] :cursor 
+  # @option opts [String] :project_id
+  # @option opts [String] :environment_id
+  # @option opts [String] :trace_id
+  # @option opts [String] :kind
+  # @option opts [String] :status
+  # @option opts [String] :started_after
+  # @option opts [String] :started_before
+  # @option opts [String] :model
+  # @option opts [String] :release
+  # @option opts [Integer] :min_cost_micros
+  # @option opts [Integer] :max_cost_micros
+  # @option opts [Integer] :min_latency_ms
+  # @option opts [Integer] :max_latency_ms
+  # @option opts [Integer] :limit
+  # @option opts [String] :cursor
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope

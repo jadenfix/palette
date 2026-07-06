@@ -23,7 +23,7 @@ require 'beater_client'
 api_instance = BeaterClient::GatesApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
-create_gate_request = BeaterClient::CreateGateRequest.new({gate_id: 'gate_id_example', name: 'name_example'}) # CreateGateRequest | 
+create_gate_request = BeaterClient::CreateGateRequest.new({gate_id: 'gate_id_example', name: 'name_example'}) # CreateGateRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -32,7 +32,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.create_gate(tenant_id, project_id, create_gate_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -48,7 +48,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.create_gate_with_http_info(tenant_id, project_id, create_gate_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -100,7 +100,7 @@ api_instance = BeaterClient::GatesApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 gate_id = 'gate_id_example' # String | gate_id
-run_gate_request = BeaterClient::RunGateRequest.new # RunGateRequest | 
+run_gate_request = BeaterClient::RunGateRequest.new # RunGateRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -109,7 +109,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.run_gate(tenant_id, project_id, gate_id, run_gate_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -125,7 +125,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.run_gate_with_http_info(tenant_id, project_id, gate_id, run_gate_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -160,4 +160,3 @@ No authorization required
 
 - **Content-Type**: application/json
 - **Accept**: application/json
-

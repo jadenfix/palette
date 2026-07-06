@@ -21,4 +21,3 @@ instance = BeaterClient::EvaluationCase.new(
   trace: null
 )
 ```
-

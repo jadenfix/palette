@@ -21,4 +21,3 @@ instance = BeaterClient::GatePolicy.new(
   min_sample_size: null
 )
 ```
-

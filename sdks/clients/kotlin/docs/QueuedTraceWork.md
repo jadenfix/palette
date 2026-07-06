@@ -7,6 +7,3 @@
 | **projectId** | **kotlin.String** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
 | **traceId** | **kotlin.String** |  |  |
-
-
-

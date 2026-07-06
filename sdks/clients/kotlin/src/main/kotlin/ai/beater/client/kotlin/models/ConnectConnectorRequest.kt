@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * @param toolkit Toolkit slug to connect (e.g. `github`, `gmail`, `slack`).
  */
@@ -36,4 +36,3 @@ data class ConnectConnectorRequest (
 
 
 }
-

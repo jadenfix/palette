@@ -17,4 +17,3 @@ instance = BeaterClient::MineScenariosRequest.new(
   trace_ids: null
 )
 ```
-

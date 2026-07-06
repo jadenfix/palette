@@ -15,6 +15,3 @@
 | **tenantId** | **kotlin.String** |  |  |
 | **tool** | **kotlin.String** |  |  |
 | **traceId** | **kotlin.String** |  |  |
-
-
-

@@ -21,10 +21,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param ack 
- * @param downstreamQueued 
+ *
+ * @param ack
+ * @param downstreamQueued
  */
 
 
@@ -40,4 +40,3 @@ data class IngestOutcome (
 
 
 }
-

@@ -28,7 +28,7 @@ namespace Beater.Client.Api
     {
         #region Synchronous Operations
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -42,10 +42,10 @@ namespace Beater.Client.Api
         ConnectionLink ConnectConnector(string tenantId, string projectId, ConnectConnectorRequest connectConnectorRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -58,7 +58,7 @@ namespace Beater.Client.Api
         /// <returns>ApiResponse of ConnectionLink</returns>
         ApiResponse<ConnectionLink> ConnectConnectorWithHttpInfo(string tenantId, string projectId, ConnectConnectorRequest connectConnectorRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -72,10 +72,10 @@ namespace Beater.Client.Api
         ConnectionStatus ConnectorStatus(string tenantId, string projectId, string toolkit, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -88,7 +88,7 @@ namespace Beater.Client.Api
         /// <returns>ApiResponse of ConnectionStatus</returns>
         ApiResponse<ConnectionStatus> ConnectorStatusWithHttpInfo(string tenantId, string projectId, string toolkit, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -102,10 +102,10 @@ namespace Beater.Client.Api
         ConnectorSkillsResponse GetConnectorSkills(string tenantId, string projectId, string toolkit, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -118,7 +118,7 @@ namespace Beater.Client.Api
         /// <returns>ApiResponse of ConnectorSkillsResponse</returns>
         ApiResponse<ConnectorSkillsResponse> GetConnectorSkillsWithHttpInfo(string tenantId, string projectId, string toolkit, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -132,10 +132,10 @@ namespace Beater.Client.Api
         ToolExecution InvokeConnectorTool(string tenantId, string projectId, InvokeConnectorRequest invokeConnectorRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -148,7 +148,7 @@ namespace Beater.Client.Api
         /// <returns>ApiResponse of ToolExecution</returns>
         ApiResponse<ToolExecution> InvokeConnectorToolWithHttpInfo(string tenantId, string projectId, InvokeConnectorRequest invokeConnectorRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -163,10 +163,10 @@ namespace Beater.Client.Api
         List<ConnectorTool> ListConnectorTools(string tenantId, string projectId, string toolkit, int? limit = default(int?), string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -180,7 +180,7 @@ namespace Beater.Client.Api
         /// <returns>ApiResponse of List&lt;ConnectorTool&gt;</returns>
         ApiResponse<List<ConnectorTool>> ListConnectorToolsWithHttpInfo(string tenantId, string projectId, string toolkit, int? limit = default(int?), string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -194,10 +194,10 @@ namespace Beater.Client.Api
         List<Toolkit> ListConnectors(string tenantId, string projectId, int? limit = default(int?), string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -219,10 +219,10 @@ namespace Beater.Client.Api
     {
         #region Asynchronous Operations
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -237,10 +237,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<ConnectionLink> ConnectConnectorAsync(string tenantId, string projectId, ConnectConnectorRequest connectConnectorRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -254,10 +254,10 @@ namespace Beater.Client.Api
         /// <returns>Task of ApiResponse (ConnectionLink)</returns>
         System.Threading.Tasks.Task<ApiResponse<ConnectionLink>> ConnectConnectorWithHttpInfoAsync(string tenantId, string projectId, ConnectConnectorRequest connectConnectorRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -272,10 +272,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<ConnectionStatus> ConnectorStatusAsync(string tenantId, string projectId, string toolkit, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -289,10 +289,10 @@ namespace Beater.Client.Api
         /// <returns>Task of ApiResponse (ConnectionStatus)</returns>
         System.Threading.Tasks.Task<ApiResponse<ConnectionStatus>> ConnectorStatusWithHttpInfoAsync(string tenantId, string projectId, string toolkit, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -307,10 +307,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<ConnectorSkillsResponse> GetConnectorSkillsAsync(string tenantId, string projectId, string toolkit, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -324,10 +324,10 @@ namespace Beater.Client.Api
         /// <returns>Task of ApiResponse (ConnectorSkillsResponse)</returns>
         System.Threading.Tasks.Task<ApiResponse<ConnectorSkillsResponse>> GetConnectorSkillsWithHttpInfoAsync(string tenantId, string projectId, string toolkit, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -342,10 +342,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<ToolExecution> InvokeConnectorToolAsync(string tenantId, string projectId, InvokeConnectorRequest invokeConnectorRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -359,10 +359,10 @@ namespace Beater.Client.Api
         /// <returns>Task of ApiResponse (ToolExecution)</returns>
         System.Threading.Tasks.Task<ApiResponse<ToolExecution>> InvokeConnectorToolWithHttpInfoAsync(string tenantId, string projectId, InvokeConnectorRequest invokeConnectorRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -378,10 +378,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<List<ConnectorTool>> ListConnectorToolsAsync(string tenantId, string projectId, string toolkit, int? limit = default(int?), string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -396,10 +396,10 @@ namespace Beater.Client.Api
         /// <returns>Task of ApiResponse (List&lt;ConnectorTool&gt;)</returns>
         System.Threading.Tasks.Task<ApiResponse<List<ConnectorTool>>> ListConnectorToolsWithHttpInfoAsync(string tenantId, string projectId, string toolkit, int? limit = default(int?), string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -414,10 +414,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<List<Toolkit>> ListConnectorsAsync(string tenantId, string projectId, int? limit = default(int?), string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -644,7 +644,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -662,7 +662,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -738,7 +738,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -757,7 +757,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -837,7 +837,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -855,7 +855,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -930,7 +930,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -949,7 +949,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1028,7 +1028,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1046,7 +1046,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1121,7 +1121,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1140,7 +1140,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1219,7 +1219,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1237,7 +1237,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1313,7 +1313,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1332,7 +1332,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1412,7 +1412,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1431,7 +1431,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1511,7 +1511,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1531,7 +1531,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1615,7 +1615,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1633,7 +1633,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1707,7 +1707,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1726,7 +1726,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>

@@ -17,4 +17,3 @@ instance = BeaterClient::AuthContext.new(
   scopes: null
 )
 ```
-

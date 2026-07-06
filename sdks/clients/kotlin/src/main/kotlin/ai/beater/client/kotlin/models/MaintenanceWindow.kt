@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param endsAt 
- * @param startsAt 
+ *
+ * @param endsAt
+ * @param startsAt
  */
 
 
@@ -39,4 +39,3 @@ data class MaintenanceWindow (
 
 
 }
-

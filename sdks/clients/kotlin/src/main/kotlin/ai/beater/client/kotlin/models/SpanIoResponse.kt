@@ -21,13 +21,13 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param input 
- * @param output 
- * @param spanId 
- * @param tenantId 
- * @param traceId 
+ *
+ * @param input
+ * @param output
+ * @param spanId
+ * @param tenantId
+ * @param traceId
  */
 
 
@@ -52,4 +52,3 @@ data class SpanIoResponse (
 
 
 }
-

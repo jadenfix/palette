@@ -37,4 +37,3 @@ instance = BeaterClient::ReviewTask.new(
   updated_at: null
 )
 ```
-

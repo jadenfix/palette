@@ -31,20 +31,20 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param type 
- * @param pattern 
- * @param abs 
- * @param rel 
- * @param maxMicros 
- * @param maxMs 
- * @param model 
- * @param rubric 
- * @param maxSteps 
- * @param minRatio 
- * @param domContains 
- * @param urlContains 
+ *
+ * @param type
+ * @param pattern
+ * @param abs
+ * @param rel
+ * @param maxMicros
+ * @param maxMs
+ * @param model
+ * @param rubric
+ * @param maxSteps
+ * @param minRatio
+ * @param domContains
+ * @param urlContains
  */
 
 
@@ -89,7 +89,7 @@ data class EvaluatorKind (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: exact_match,regex_match,numeric_tolerance,json_object,cost_budget,latency_budget_ms,llm_judge,browser_task_success,browser_step_efficiency,browser_grounding,browser_recovery
      */
@@ -109,4 +109,3 @@ data class EvaluatorKind (
     }
 
 }
-

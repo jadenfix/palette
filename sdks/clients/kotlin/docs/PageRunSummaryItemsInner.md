@@ -16,6 +16,3 @@
 | **durationMs** | **kotlin.Long** |  |  [optional] |
 | **endedAt** | [**java.time.OffsetDateTime**](java.time.OffsetDateTime.md) |  |  [optional] |
 | **totalCost** | [**Money**](Money.md) |  |  [optional] |
-
-
-

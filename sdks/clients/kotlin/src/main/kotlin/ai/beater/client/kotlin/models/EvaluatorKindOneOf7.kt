@@ -22,9 +22,9 @@ import com.squareup.moshi.JsonClass
 /**
  * Browser world-state success: asserts the final step's observed page (url and/or DOM) matches the configured target — NOT the agent's self-reported \"done\". Reads `trace.browser_steps`.
  *
- * @param type 
- * @param domContains 
- * @param urlContains 
+ * @param type
+ * @param domContains
+ * @param urlContains
  */
 
 
@@ -42,7 +42,7 @@ data class EvaluatorKindOneOf7 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: browser_task_success
      */
@@ -52,4 +52,3 @@ data class EvaluatorKindOneOf7 (
     }
 
 }
-

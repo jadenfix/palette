@@ -21,4 +21,3 @@ instance = BeaterClient::CalibrationConfusion.new(
   human_pass_judge_pass: null
 )
 ```
-

@@ -27,4 +27,3 @@ instance = BeaterClient::TraceIngestedDrainReport.new(
   trace_refs: null
 )
 ```
-

@@ -22,10 +22,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param input 
- * @param policy 
+ *
+ * @param input
+ * @param policy
  */
 
 
@@ -41,4 +41,3 @@ data class EvaluateAlertRequest (
 
 
 }
-

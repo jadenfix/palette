@@ -20,13 +20,13 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param createdAt 
- * @param datasetId 
- * @param name 
- * @param projectId 
- * @param tenantId 
+ *
+ * @param createdAt
+ * @param datasetId
+ * @param name
+ * @param projectId
+ * @param tenantId
  */
 
 
@@ -51,4 +51,3 @@ data class Dataset (
 
 
 }
-

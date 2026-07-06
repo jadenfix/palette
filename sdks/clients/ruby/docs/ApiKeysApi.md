@@ -24,7 +24,7 @@ api_instance = BeaterClient::ApiKeysApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 environment_id = 'environment_id_example' # String | environment_id
-create_api_key_http_request = BeaterClient::CreateApiKeyHttpRequest.new({scopes: [BeaterClient::ApiScope::TRACE_WRITE]}) # CreateApiKeyHttpRequest | 
+create_api_key_http_request = BeaterClient::CreateApiKeyHttpRequest.new({scopes: [BeaterClient::ApiScope::TRACE_WRITE]}) # CreateApiKeyHttpRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -33,7 +33,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.create_api_key(tenant_id, project_id, environment_id, create_api_key_http_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -49,7 +49,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.create_api_key_with_http_info(tenant_id, project_id, environment_id, create_api_key_http_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -111,7 +111,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.revoke_api_key(tenant_id, project_id, environment_id, api_key_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -127,7 +127,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.revoke_api_key_with_http_info(tenant_id, project_id, environment_id, api_key_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -162,4 +162,3 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
-

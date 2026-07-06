@@ -17,6 +17,3 @@
 | **nonReproducibleReason** | **kotlin.String** |  |  [optional] |
 | **spanId** | **kotlin.String** |  |  [optional] |
 | **tokens** | [**TokenCounts**](TokenCounts.md) |  |  [optional] |
-
-
-

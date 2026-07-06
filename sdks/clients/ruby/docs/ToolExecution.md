@@ -21,4 +21,3 @@ instance = BeaterClient::ToolExecution.new(
   successful: null
 )
 ```
-

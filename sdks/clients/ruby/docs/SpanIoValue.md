@@ -50,4 +50,3 @@ BeaterClient::SpanIoValue.build(data_that_doesnt_match)
 - `SpanIoValueOneOf2`
 - `SpanIoValueOneOf3`
 - `nil` (if no type matches)
-

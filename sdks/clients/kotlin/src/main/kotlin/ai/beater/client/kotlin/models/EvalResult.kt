@@ -23,21 +23,21 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param createdAt 
- * @param evalResultId 
- * @param evidence 
- * @param projectId 
- * @param reproducibility 
- * @param score 
- * @param tenantId 
- * @param traceId 
- * @param cost 
- * @param label 
- * @param nonReproducibleReason 
- * @param spanId 
- * @param tokens 
+ *
+ * @param createdAt
+ * @param evalResultId
+ * @param evidence
+ * @param projectId
+ * @param reproducibility
+ * @param score
+ * @param tenantId
+ * @param traceId
+ * @param cost
+ * @param label
+ * @param nonReproducibleReason
+ * @param spanId
+ * @param tokens
  */
 
 
@@ -86,4 +86,3 @@ data class EvalResult (
 
 
 }
-

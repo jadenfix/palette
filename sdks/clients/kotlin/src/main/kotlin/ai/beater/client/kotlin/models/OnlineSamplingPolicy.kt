@@ -20,12 +20,12 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param keepErrors 
- * @param sampleRatePerMille 
- * @param highCostMicrosThreshold 
- * @param slowMsThreshold 
+ *
+ * @param keepErrors
+ * @param sampleRatePerMille
+ * @param highCostMicrosThreshold
+ * @param slowMsThreshold
  */
 
 
@@ -47,4 +47,3 @@ data class OnlineSamplingPolicy (
 
 
 }
-

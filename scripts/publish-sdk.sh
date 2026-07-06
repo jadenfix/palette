@@ -84,17 +84,11 @@ case "$target" in
     (cd sdks/clients/ruby && gem build beater_client.gemspec -o beater_client.gem && gem push beater_client.gem)
     ;;
   php)
-    # Packagist serves from the git tag (like Go): pushing v${version} makes it
-    # available. If a Packagist API user/token is wired, ping the update hook so
-    # the new tag is indexed immediately; otherwise no-op with a clear message.
-    if [ -n "${PACKAGIST_USERNAME:-}" ] && [ -n "${PACKAGIST_API_TOKEN:-}" ]; then
-      curl -fsS -XPOST -H'content-type:application/json' \
-        "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_API_TOKEN}" \
-        -d'{"repository":{"url":"https://github.com/jadenfix/beater"}}' >/dev/null
-      echo "php: pinged Packagist update hook for tag v${version}"
-    else
-      echo "php: tag v${version} pushed; Packagist serves sdks/clients/php from the tag (set PACKAGIST_USERNAME/PACKAGIST_API_TOKEN to force reindex)"
-    fi
+    # Packagist expects composer.json at the VCS repository root. This monorepo
+    # only has the generated PHP package under sdks/clients/php, so a root repo
+    # tag is not publishable until a split/package repository is wired.
+    echo "SKIP php: Packagist publishing needs a dedicated package repository with sdks/clients/php at its root"
+    exit 0
     ;;
   csharp)
     [ -n "${NUGET_API_KEY:-}" ] || skip NUGET_API_KEY

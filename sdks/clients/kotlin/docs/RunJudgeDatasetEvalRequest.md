@@ -11,6 +11,3 @@
 | **providerSecretId** | **kotlin.String** |  |  |
 | **codeHash** | **kotlin.String** |  |  [optional] |
 | **promptVersionId** | **kotlin.String** |  |  [optional] |
-
-
-

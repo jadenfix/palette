@@ -39,4 +39,3 @@ instance = BeaterClient::TraceWriteDrainReport.new(
   written_spans: null
 )
 ```
-

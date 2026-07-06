@@ -24,8 +24,8 @@ api_instance = BeaterClient::TracesApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 trace_id = 'trace_id_example' # String | trace_id
 opts = {
-  unmask: true, # Boolean | 
-  reason: 'reason_example', # String | 
+  unmask: true, # Boolean |
+  reason: 'reason_example', # String |
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
   x_beater_project_id: 'x_beater_project_id_example', # String | Strict-auth project scope
@@ -33,7 +33,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.get_trace(tenant_id, trace_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -49,7 +49,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.get_trace_with_http_info(tenant_id, trace_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -101,21 +101,21 @@ require 'beater_client'
 api_instance = BeaterClient::TracesApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 opts = {
-  project_id: 'project_id_example', # String | 
-  environment_id: 'environment_id_example', # String | 
-  trace_id: 'trace_id_example', # String | 
-  kind: 'kind_example', # String | 
-  status: 'status_example', # String | 
-  started_after: 'started_after_example', # String | 
-  started_before: 'started_before_example', # String | 
-  model: 'model_example', # String | 
-  release: 'release_example', # String | 
-  min_cost_micros: 789, # Integer | 
-  max_cost_micros: 789, # Integer | 
-  min_latency_ms: 789, # Integer | 
-  max_latency_ms: 789, # Integer | 
-  limit: 56, # Integer | 
-  cursor: 'cursor_example', # String | 
+  project_id: 'project_id_example', # String |
+  environment_id: 'environment_id_example', # String |
+  trace_id: 'trace_id_example', # String |
+  kind: 'kind_example', # String |
+  status: 'status_example', # String |
+  started_after: 'started_after_example', # String |
+  started_before: 'started_before_example', # String |
+  model: 'model_example', # String |
+  release: 'release_example', # String |
+  min_cost_micros: 789, # Integer |
+  max_cost_micros: 789, # Integer |
+  min_latency_ms: 789, # Integer |
+  max_latency_ms: 789, # Integer |
+  limit: 56, # Integer |
+  cursor: 'cursor_example', # String |
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
   x_beater_project_id: 'x_beater_project_id_example', # String | Strict-auth project scope
@@ -123,7 +123,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.list_traces(tenant_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -139,7 +139,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.list_traces_with_http_info(tenant_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -186,4 +186,3 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
-

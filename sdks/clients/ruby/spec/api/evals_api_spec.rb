@@ -37,7 +37,7 @@ describe 'EvalsApi' do
   # @param project_id project_id
   # @param dataset_id dataset_id
   # @param version_id version_id
-  # @param run_deterministic_eval_request 
+  # @param run_deterministic_eval_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -55,7 +55,7 @@ describe 'EvalsApi' do
   # @param project_id project_id
   # @param dataset_id dataset_id
   # @param version_id version_id
-  # @param run_judge_dataset_eval_request 
+  # @param run_judge_dataset_eval_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth

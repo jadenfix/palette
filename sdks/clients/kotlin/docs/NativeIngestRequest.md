@@ -23,6 +23,3 @@
 | **parentSpanId** | **kotlin.String** |  |  [optional] |
 | **startTime** | [**java.time.OffsetDateTime**](java.time.OffsetDateTime.md) |  |  [optional] |
 | **tokens** | [**TokenCounts**](TokenCounts.md) |  |  [optional] |
-
-
-

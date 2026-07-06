@@ -41,11 +41,11 @@ namespace Example
             var tenantId = "tenantId_example";  // string | tenant_id
             var projectId = "projectId_example";  // string | project_id
             var promptId = "promptId_example";  // string | prompt_id
-            var addPromptVersionRequest = new AddPromptVersionRequest(); // AddPromptVersionRequest | 
-            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional) 
-            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional) 
-            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional) 
-            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional) 
+            var addPromptVersionRequest = new AddPromptVersionRequest(); // AddPromptVersionRequest |
+            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional)
+            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional)
+            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional)
+            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional)
 
             try
             {
@@ -149,11 +149,11 @@ namespace Example
             var apiInstance = new PromptsApi(httpClient, config, httpClientHandler);
             var tenantId = "tenantId_example";  // string | tenant_id
             var projectId = "projectId_example";  // string | project_id
-            var createPromptRequest = new CreatePromptRequest(); // CreatePromptRequest | 
-            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional) 
-            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional) 
-            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional) 
-            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional) 
+            var createPromptRequest = new CreatePromptRequest(); // CreatePromptRequest |
+            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional)
+            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional)
+            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional)
+            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional)
 
             try
             {
@@ -256,12 +256,12 @@ namespace Example
             var tenantId = "tenantId_example";  // string | tenant_id
             var projectId = "projectId_example";  // string | project_id
             var promptId = "promptId_example";  // string | prompt_id
-            var from = "from_example";  // string | 
-            var to = "to_example";  // string | 
-            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional) 
-            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional) 
-            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional) 
-            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional) 
+            var from = "from_example";  // string |
+            var to = "to_example";  // string |
+            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional)
+            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional)
+            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional)
+            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional)
 
             try
             {
@@ -367,10 +367,10 @@ namespace Example
             var tenantId = "tenantId_example";  // string | tenant_id
             var projectId = "projectId_example";  // string | project_id
             var promptId = "promptId_example";  // string | prompt_id
-            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional) 
-            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional) 
-            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional) 
-            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional) 
+            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional)
+            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional)
+            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional)
+            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional)
 
             try
             {
@@ -474,10 +474,10 @@ namespace Example
             var tenantId = "tenantId_example";  // string | tenant_id
             var projectId = "projectId_example";  // string | project_id
             var promptId = "promptId_example";  // string | prompt_id
-            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional) 
-            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional) 
-            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional) 
-            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional) 
+            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional)
+            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional)
+            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional)
+            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional)
 
             try
             {
@@ -580,10 +580,10 @@ namespace Example
             var apiInstance = new PromptsApi(httpClient, config, httpClientHandler);
             var tenantId = "tenantId_example";  // string | tenant_id
             var projectId = "projectId_example";  // string | project_id
-            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional) 
-            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional) 
-            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional) 
-            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional) 
+            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional)
+            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional)
+            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional)
+            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional)
 
             try
             {
@@ -654,4 +654,3 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

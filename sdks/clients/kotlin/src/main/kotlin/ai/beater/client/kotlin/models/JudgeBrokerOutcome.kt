@@ -23,11 +23,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param audit 
- * @param remainingBudget 
- * @param result 
+ *
+ * @param audit
+ * @param remainingBudget
+ * @param result
  */
 
 
@@ -46,4 +46,3 @@ data class JudgeBrokerOutcome (
 
 
 }
-

@@ -20,24 +20,24 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param agentReleaseId 
- * @param datasetCaseId 
- * @param datasetVersionId 
- * @param evaluatorVersionId 
- * @param inputArtifactHashes 
- * @param judgeParameters 
- * @param normalizerVersion 
- * @param traceSchemaVersion 
- * @param codeHash 
- * @param judgeModelId 
- * @param judgeProvider 
- * @param judgeRubricVersion 
- * @param judgeSeed 
- * @param promptVersionId 
- * @param wasiAbiVersion 
- * @param wasmHash 
+ *
+ * @param agentReleaseId
+ * @param datasetCaseId
+ * @param datasetVersionId
+ * @param evaluatorVersionId
+ * @param inputArtifactHashes
+ * @param judgeParameters
+ * @param normalizerVersion
+ * @param traceSchemaVersion
+ * @param codeHash
+ * @param judgeModelId
+ * @param judgeProvider
+ * @param judgeRubricVersion
+ * @param judgeSeed
+ * @param promptVersionId
+ * @param wasiAbiVersion
+ * @param wasmHash
  */
 
 
@@ -95,4 +95,3 @@ data class EvalReproducibility (
 
 
 }
-

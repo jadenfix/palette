@@ -7,6 +7,3 @@
 | **evidence** | [**kotlin.Any**](.md) |  |  |
 | **score** | **kotlin.Double** |  |  |
 | **label** | **kotlin.String** |  |  [optional] |
-
-
-

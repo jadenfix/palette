@@ -21,11 +21,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param failedAt 
- * @param message 
- * @param reason 
+ *
+ * @param failedAt
+ * @param message
+ * @param reason
  */
 
 
@@ -44,4 +44,3 @@ data class DeadLetter (
 
 
 }
-

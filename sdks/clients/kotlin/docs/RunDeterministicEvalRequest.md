@@ -11,6 +11,3 @@
 | **codeHash** | **kotlin.String** |  |  [optional] |
 | **promptVersionId** | **kotlin.String** |  |  [optional] |
 | **wasmHash** | **kotlin.String** |  |  [optional] |
-
-
-

@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param projectId 
- * @param tenantId 
- * @param traceId 
+ *
+ * @param projectId
+ * @param tenantId
+ * @param traceId
  */
 
 
@@ -43,4 +43,3 @@ data class QueuedTraceWork (
 
 
 }
-

@@ -28,7 +28,7 @@ namespace Beater.Client.Api
     {
         #region Synchronous Operations
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -43,10 +43,10 @@ namespace Beater.Client.Api
         PromptVersion AddPromptVersion(string tenantId, string projectId, string promptId, AddPromptVersionRequest addPromptVersionRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -60,7 +60,7 @@ namespace Beater.Client.Api
         /// <returns>ApiResponse of PromptVersion</returns>
         ApiResponse<PromptVersion> AddPromptVersionWithHttpInfo(string tenantId, string projectId, string promptId, AddPromptVersionRequest addPromptVersionRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -74,10 +74,10 @@ namespace Beater.Client.Api
         CreatedPrompt CreatePrompt(string tenantId, string projectId, CreatePromptRequest createPromptRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -90,7 +90,7 @@ namespace Beater.Client.Api
         /// <returns>ApiResponse of CreatedPrompt</returns>
         ApiResponse<CreatedPrompt> CreatePromptWithHttpInfo(string tenantId, string projectId, CreatePromptRequest createPromptRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -106,10 +106,10 @@ namespace Beater.Client.Api
         PromptVersionDiff DiffPromptVersions(string tenantId, string projectId, string promptId, string from, string to, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -124,7 +124,7 @@ namespace Beater.Client.Api
         /// <returns>ApiResponse of PromptVersionDiff</returns>
         ApiResponse<PromptVersionDiff> DiffPromptVersionsWithHttpInfo(string tenantId, string projectId, string promptId, string from, string to, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -138,10 +138,10 @@ namespace Beater.Client.Api
         Prompt GetPrompt(string tenantId, string projectId, string promptId, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -154,7 +154,7 @@ namespace Beater.Client.Api
         /// <returns>ApiResponse of Prompt</returns>
         ApiResponse<Prompt> GetPromptWithHttpInfo(string tenantId, string projectId, string promptId, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -168,10 +168,10 @@ namespace Beater.Client.Api
         PromptVersionListResponse ListPromptVersions(string tenantId, string projectId, string promptId, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -184,7 +184,7 @@ namespace Beater.Client.Api
         /// <returns>ApiResponse of PromptVersionListResponse</returns>
         ApiResponse<PromptVersionListResponse> ListPromptVersionsWithHttpInfo(string tenantId, string projectId, string promptId, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -197,10 +197,10 @@ namespace Beater.Client.Api
         PromptListResponse ListPrompts(string tenantId, string projectId, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -221,10 +221,10 @@ namespace Beater.Client.Api
     {
         #region Asynchronous Operations
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -240,10 +240,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<PromptVersion> AddPromptVersionAsync(string tenantId, string projectId, string promptId, AddPromptVersionRequest addPromptVersionRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -258,10 +258,10 @@ namespace Beater.Client.Api
         /// <returns>Task of ApiResponse (PromptVersion)</returns>
         System.Threading.Tasks.Task<ApiResponse<PromptVersion>> AddPromptVersionWithHttpInfoAsync(string tenantId, string projectId, string promptId, AddPromptVersionRequest addPromptVersionRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -276,10 +276,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<CreatedPrompt> CreatePromptAsync(string tenantId, string projectId, CreatePromptRequest createPromptRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -293,10 +293,10 @@ namespace Beater.Client.Api
         /// <returns>Task of ApiResponse (CreatedPrompt)</returns>
         System.Threading.Tasks.Task<ApiResponse<CreatedPrompt>> CreatePromptWithHttpInfoAsync(string tenantId, string projectId, CreatePromptRequest createPromptRequest, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -313,10 +313,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<PromptVersionDiff> DiffPromptVersionsAsync(string tenantId, string projectId, string promptId, string from, string to, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -332,10 +332,10 @@ namespace Beater.Client.Api
         /// <returns>Task of ApiResponse (PromptVersionDiff)</returns>
         System.Threading.Tasks.Task<ApiResponse<PromptVersionDiff>> DiffPromptVersionsWithHttpInfoAsync(string tenantId, string projectId, string promptId, string from, string to, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -350,10 +350,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<Prompt> GetPromptAsync(string tenantId, string projectId, string promptId, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -367,10 +367,10 @@ namespace Beater.Client.Api
         /// <returns>Task of ApiResponse (Prompt)</returns>
         System.Threading.Tasks.Task<ApiResponse<Prompt>> GetPromptWithHttpInfoAsync(string tenantId, string projectId, string promptId, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -385,10 +385,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<PromptVersionListResponse> ListPromptVersionsAsync(string tenantId, string projectId, string promptId, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -402,10 +402,10 @@ namespace Beater.Client.Api
         /// <returns>Task of ApiResponse (PromptVersionListResponse)</returns>
         System.Threading.Tasks.Task<ApiResponse<PromptVersionListResponse>> ListPromptVersionsWithHttpInfoAsync(string tenantId, string projectId, string promptId, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -419,10 +419,10 @@ namespace Beater.Client.Api
         System.Threading.Tasks.Task<PromptListResponse> ListPromptsAsync(string tenantId, string projectId, string? authorization = default(string?), string? xBeaterApiKey = default(string?), string? xBeaterProjectId = default(string?), string? xBeaterEnvironmentId = default(string?), System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken));
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
-        /// 
+        ///
         /// </remarks>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -648,7 +648,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -667,7 +667,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -749,7 +749,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -769,7 +769,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -855,7 +855,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -873,7 +873,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -949,7 +949,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -968,7 +968,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1048,7 +1048,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1068,7 +1068,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1155,7 +1155,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1176,7 +1176,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1267,7 +1267,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1285,7 +1285,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1360,7 +1360,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1379,7 +1379,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1458,7 +1458,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1476,7 +1476,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1551,7 +1551,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1570,7 +1570,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1649,7 +1649,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1666,7 +1666,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1735,7 +1735,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>
@@ -1753,7 +1753,7 @@ namespace Beater.Client.Api
         }
 
         /// <summary>
-        ///  
+        ///
         /// </summary>
         /// <exception cref="Beater.Client.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="tenantId">tenant_id</param>

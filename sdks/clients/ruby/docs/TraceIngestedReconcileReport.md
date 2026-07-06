@@ -27,4 +27,3 @@ instance = BeaterClient::TraceIngestedReconcileReport.new(
   trace_id: null
 )
 ```
-

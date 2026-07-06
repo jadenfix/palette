@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param name 
- * @param provider 
+ *
+ * @param name
+ * @param provider
  */
 
 
@@ -39,4 +39,3 @@ data class ModelRef (
 
 
 }
-

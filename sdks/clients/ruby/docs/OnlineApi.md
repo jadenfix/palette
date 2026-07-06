@@ -23,7 +23,7 @@ api_instance = BeaterClient::OnlineApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 trace_id = 'trace_id_example' # String | trace_id
-online_sampling_policy = BeaterClient::OnlineSamplingPolicy.new({keep_errors: false, sample_rate_per_mille: 37}) # OnlineSamplingPolicy | 
+online_sampling_policy = BeaterClient::OnlineSamplingPolicy.new({keep_errors: false, sample_rate_per_mille: 37}) # OnlineSamplingPolicy |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -32,7 +32,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.decide_online_sampling(tenant_id, project_id, trace_id, online_sampling_policy, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -48,7 +48,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.decide_online_sampling_with_http_info(tenant_id, project_id, trace_id, online_sampling_policy, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -83,4 +83,3 @@ No authorization required
 
 - **Content-Type**: application/json
 - **Accept**: application/json
-

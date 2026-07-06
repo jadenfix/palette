@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param accepted 
- * @param duplicate 
+ *
+ * @param accepted
+ * @param duplicate
  */
 
 
@@ -39,4 +39,3 @@ data class PublishAck (
 
 
 }
-

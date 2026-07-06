@@ -1098,7 +1098,7 @@ class TracesApi
         if ($limit !== null && $limit < 0) {
             throw new \InvalidArgumentException('invalid value for "$limit" when calling TracesApi.listTraces, must be bigger than or equal to 0.');
         }
-        
+
 
 
 

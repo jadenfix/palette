@@ -22,7 +22,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Integer] :limit 
+    # @option opts [Integer] :limit
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -36,7 +36,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Integer] :limit 
+    # @option opts [Integer] :limit
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -106,7 +106,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Integer] :limit 
+    # @option opts [Integer] :limit
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -120,7 +120,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Integer] :limit 
+    # @option opts [Integer] :limit
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -267,9 +267,9 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param environment_id [String] environment_id
-    # @param import_source_http_request [ImportSourceHttpRequest] 
+    # @param import_source_http_request [ImportSourceHttpRequest]
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :durability 
+    # @option opts [String] :durability
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @return [IngestOutcome]
@@ -281,9 +281,9 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param environment_id [String] environment_id
-    # @param import_source_http_request [ImportSourceHttpRequest] 
+    # @param import_source_http_request [ImportSourceHttpRequest]
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :durability 
+    # @option opts [String] :durability
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @return [Array<(IngestOutcome, Integer, Hash)>] IngestOutcome data, response status code and response headers
@@ -355,9 +355,9 @@ module BeaterClient
       return data, status_code, headers
     end
 
-    # @param native_ingest_request [NativeIngestRequest] 
+    # @param native_ingest_request [NativeIngestRequest]
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :durability 
+    # @option opts [String] :durability
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -368,9 +368,9 @@ module BeaterClient
       data
     end
 
-    # @param native_ingest_request [NativeIngestRequest] 
+    # @param native_ingest_request [NativeIngestRequest]
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :durability 
+    # @option opts [String] :durability
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -438,7 +438,7 @@ module BeaterClient
     # @param project_id [String] project_id
     # @param environment_id [String] environment_id
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :durability 
+    # @option opts [String] :durability
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -453,7 +453,7 @@ module BeaterClient
     # @param project_id [String] project_id
     # @param environment_id [String] environment_id
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :durability 
+    # @option opts [String] :durability
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -607,7 +607,7 @@ module BeaterClient
     # @param project_id [String] project_id
     # @param message_id [String] message_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Boolean] :reset_attempts 
+    # @option opts [Boolean] :reset_attempts
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -622,7 +622,7 @@ module BeaterClient
     # @param project_id [String] project_id
     # @param message_id [String] message_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Boolean] :reset_attempts 
+    # @option opts [Boolean] :reset_attempts
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope

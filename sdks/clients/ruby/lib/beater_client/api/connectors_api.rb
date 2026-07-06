@@ -21,7 +21,7 @@ module BeaterClient
     end
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param connect_connector_request [ConnectConnectorRequest] 
+    # @param connect_connector_request [ConnectConnectorRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -35,7 +35,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param connect_connector_request [ConnectConnectorRequest] 
+    # @param connect_connector_request [ConnectConnectorRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -277,7 +277,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param invoke_connector_request [InvokeConnectorRequest] 
+    # @param invoke_connector_request [InvokeConnectorRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -291,7 +291,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param invoke_connector_request [InvokeConnectorRequest] 
+    # @param invoke_connector_request [InvokeConnectorRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth

@@ -8,6 +8,3 @@
 | **sampleRatePerMille** | **kotlin.Int** |  |  |
 | **highCostMicrosThreshold** | **kotlin.Long** |  |  [optional] |
 | **slowMsThreshold** | **kotlin.Long** |  |  [optional] |
-
-
-

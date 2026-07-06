@@ -9,6 +9,3 @@
     * `submitted` (value: `"submitted"`)
 
     * `cancelled` (value: `"cancelled"`)
-
-
-

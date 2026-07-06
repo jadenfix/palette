@@ -6,6 +6,3 @@
 | ------------ | ------------- | ------------- | ------------- |
 | **ack** | [**WriteAck**](WriteAck.md) |  |  |
 | **downstreamQueued** | **kotlin.Boolean** |  |  |
-
-
-

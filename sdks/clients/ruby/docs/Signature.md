@@ -17,4 +17,3 @@ instance = BeaterClient::Signature.new(
   shingles: null
 )
 ```
-

@@ -61,7 +61,7 @@ api_instance = BeaterClient::AlertsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 trace_id = 'trace_id_example' # String | trace_id
-evaluate_alert_request = BeaterClient::EvaluateAlertRequest.new({input: BeaterClient::AlertInput.new({group_key: 'group_key_example', links: BeaterClient::AlertLinks.new({trace_url: 'trace_url_example'}), now: Time.now, project_id: 'project_id_example', score: 3.56, tenant_id: 'tenant_id_example', title: 'title_example', trace_id: 'trace_id_example'}), policy: BeaterClient::AlertPolicy.new({dedupe_window_seconds: 3.56, endpoint_url: 'endpoint_url_example', fire_when_score_at_or_below: 3.56, maintenance_windows: [BeaterClient::MaintenanceWindow.new({ends_at: Time.now, starts_at: Time.now})], policy_id: 'policy_id_example', severity: BeaterClient::AlertSeverity::INFO, signing_secret: 'signing_secret_example'})}) # EvaluateAlertRequest | 
+evaluate_alert_request = BeaterClient::EvaluateAlertRequest.new({input: BeaterClient::AlertInput.new({group_key: 'group_key_example', links: BeaterClient::AlertLinks.new({trace_url: 'trace_url_example'}), now: Time.now, project_id: 'project_id_example', score: 3.56, tenant_id: 'tenant_id_example', title: 'title_example', trace_id: 'trace_id_example'}), policy: BeaterClient::AlertPolicy.new({dedupe_window_seconds: 3.56, endpoint_url: 'endpoint_url_example', fire_when_score_at_or_below: 3.56, maintenance_windows: [BeaterClient::MaintenanceWindow.new({ends_at: Time.now, starts_at: Time.now})], policy_id: 'policy_id_example', severity: BeaterClient::AlertSeverity::INFO, signing_secret: 'signing_secret_example'})}) # EvaluateAlertRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -84,64 +84,64 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*BeaterClient::AlertsApi* | [**evaluate_alert**](docs/AlertsApi.md#evaluate_alert) | **POST** /v1/alerts/{tenant_id}/{project_id}/traces/{trace_id}/webhook | 
-*BeaterClient::ApiKeysApi* | [**create_api_key**](docs/ApiKeysApi.md#create_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} | 
-*BeaterClient::ApiKeysApi* | [**revoke_api_key**](docs/ApiKeysApi.md#revoke_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke | 
-*BeaterClient::ArchiveApi* | [**archive_trace**](docs/ArchiveApi.md#archive_trace) | **POST** /v1/archive/{tenant_id}/{project_id}/{trace_id} | 
-*BeaterClient::ArchiveApi* | [**query_archive_spans**](docs/ArchiveApi.md#query_archive_spans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans | 
-*BeaterClient::AuditApi* | [**list_audit_events**](docs/AuditApi.md#list_audit_events) | **GET** /v1/audit/{tenant_id}/{project_id} | 
-*BeaterClient::CalibrationsApi* | [**run_calibration**](docs/CalibrationsApi.md#run_calibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} | 
-*BeaterClient::ConnectorsApi* | [**connect_connector**](docs/ConnectorsApi.md#connect_connector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect | 
-*BeaterClient::ConnectorsApi* | [**connector_status**](docs/ConnectorsApi.md#connector_status) | **GET** /v1/connectors/{tenant_id}/{project_id}/status | 
-*BeaterClient::ConnectorsApi* | [**get_connector_skills**](docs/ConnectorsApi.md#get_connector_skills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills | 
-*BeaterClient::ConnectorsApi* | [**invoke_connector_tool**](docs/ConnectorsApi.md#invoke_connector_tool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke | 
-*BeaterClient::ConnectorsApi* | [**list_connector_tools**](docs/ConnectorsApi.md#list_connector_tools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools | 
-*BeaterClient::ConnectorsApi* | [**list_connectors**](docs/ConnectorsApi.md#list_connectors) | **GET** /v1/connectors/{tenant_id}/{project_id} | 
-*BeaterClient::DatasetsApi* | [**create_dataset**](docs/DatasetsApi.md#create_dataset) | **POST** /v1/datasets/{tenant_id}/{project_id} | 
-*BeaterClient::DatasetsApi* | [**create_dataset_version**](docs/DatasetsApi.md#create_dataset_version) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions | 
-*BeaterClient::DatasetsApi* | [**promote_dataset_case_from_trace**](docs/DatasetsApi.md#promote_dataset_case_from_trace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace | 
-*BeaterClient::EvalsApi* | [**run_deterministic_eval**](docs/EvalsApi.md#run_deterministic_eval) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/deterministic | 
-*BeaterClient::EvalsApi* | [**run_judge_eval**](docs/EvalsApi.md#run_judge_eval) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/judge | 
-*BeaterClient::ExperimentsApi* | [**run_deterministic_experiment**](docs/ExperimentsApi.md#run_deterministic_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic | 
-*BeaterClient::ExperimentsApi* | [**run_judge_experiment**](docs/ExperimentsApi.md#run_judge_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge | 
-*BeaterClient::GatesApi* | [**create_gate**](docs/GatesApi.md#create_gate) | **POST** /v1/gates/{tenant_id}/{project_id} | 
-*BeaterClient::GatesApi* | [**run_gate**](docs/GatesApi.md#run_gate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run | 
-*BeaterClient::HealthApi* | [**health**](docs/HealthApi.md#health) | **GET** /health | 
-*BeaterClient::IngestApi* | [**drain_trace_ingested**](docs/IngestApi.md#drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain | 
-*BeaterClient::IngestApi* | [**drain_trace_writes**](docs/IngestApi.md#drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain | 
-*BeaterClient::IngestApi* | [**get_ingest_queue_status**](docs/IngestApi.md#get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue | 
-*BeaterClient::IngestApi* | [**import_source**](docs/IngestApi.md#import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} | 
-*BeaterClient::IngestApi* | [**ingest_native**](docs/IngestApi.md#ingest_native) | **POST** /v1/traces/native | 
-*BeaterClient::IngestApi* | [**ingest_otlp**](docs/IngestApi.md#ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces | 
-*BeaterClient::IngestApi* | [**reconcile_trace**](docs/IngestApi.md#reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile | 
-*BeaterClient::IngestApi* | [**replay_dead_letter**](docs/IngestApi.md#replay_dead_letter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay | 
-*BeaterClient::JudgeApi* | [**evaluate_judge**](docs/JudgeApi.md#evaluate_judge) | **POST** /v1/judge/{tenant_id}/{project_id}/evaluate | 
-*BeaterClient::JudgeApi* | [**list_judge_ledger**](docs/JudgeApi.md#list_judge_ledger) | **GET** /v1/judge/{tenant_id}/{project_id}/ledger | 
-*BeaterClient::OnlineApi* | [**decide_online_sampling**](docs/OnlineApi.md#decide_online_sampling) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling | 
-*BeaterClient::PromptsApi* | [**add_prompt_version**](docs/PromptsApi.md#add_prompt_version) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions | 
-*BeaterClient::PromptsApi* | [**create_prompt**](docs/PromptsApi.md#create_prompt) | **POST** /v1/prompts/{tenant_id}/{project_id} | 
-*BeaterClient::PromptsApi* | [**diff_prompt_versions**](docs/PromptsApi.md#diff_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff | 
-*BeaterClient::PromptsApi* | [**get_prompt**](docs/PromptsApi.md#get_prompt) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} | 
-*BeaterClient::PromptsApi* | [**list_prompt_versions**](docs/PromptsApi.md#list_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions | 
-*BeaterClient::PromptsApi* | [**list_prompts**](docs/PromptsApi.md#list_prompts) | **GET** /v1/prompts/{tenant_id}/{project_id} | 
-*BeaterClient::ProviderSecretsApi* | [**create_provider_secret**](docs/ProviderSecretsApi.md#create_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} | 
-*BeaterClient::ProviderSecretsApi* | [**list_provider_secrets**](docs/ProviderSecretsApi.md#list_provider_secrets) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} | 
-*BeaterClient::ProviderSecretsApi* | [**revoke_provider_secret**](docs/ProviderSecretsApi.md#revoke_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke | 
-*BeaterClient::ReviewsApi* | [**create_review_queue**](docs/ReviewsApi.md#create_review_queue) | **POST** /v1/review-queues/{tenant_id}/{project_id} | 
-*BeaterClient::ReviewsApi* | [**enqueue_review_task_from_trace**](docs/ReviewsApi.md#enqueue_review_task_from_trace) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace | 
-*BeaterClient::ReviewsApi* | [**list_review_tasks**](docs/ReviewsApi.md#list_review_tasks) | **GET** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks | 
-*BeaterClient::ReviewsApi* | [**promote_review_annotation**](docs/ReviewsApi.md#promote_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote | 
-*BeaterClient::ReviewsApi* | [**submit_review_annotation**](docs/ReviewsApi.md#submit_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations | 
-*BeaterClient::ScenariosApi* | [**create_scenario**](docs/ScenariosApi.md#create_scenario) | **POST** /v1/scenarios/{tenant_id}/{project_id} | 
-*BeaterClient::ScenariosApi* | [**get_scenario**](docs/ScenariosApi.md#get_scenario) | **GET** /v1/scenarios/{tenant_id}/{project_id}/{scenario_id} | 
-*BeaterClient::ScenariosApi* | [**list_scenarios**](docs/ScenariosApi.md#list_scenarios) | **GET** /v1/scenarios/{tenant_id}/{project_id} | 
-*BeaterClient::ScenariosApi* | [**mine_scenarios**](docs/ScenariosApi.md#mine_scenarios) | **POST** /v1/scenarios/{tenant_id}/{project_id}/mine | 
-*BeaterClient::SearchApi* | [**search_spans**](docs/SearchApi.md#search_spans) | **GET** /v1/search/{tenant_id}/spans | 
-*BeaterClient::SpansApi* | [**get_span**](docs/SpansApi.md#get_span) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} | 
-*BeaterClient::SpansApi* | [**get_span_io**](docs/SpansApi.md#get_span_io) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io | 
-*BeaterClient::TracesApi* | [**get_trace**](docs/TracesApi.md#get_trace) | **GET** /v1/traces/{tenant_id}/{trace_id} | 
-*BeaterClient::TracesApi* | [**list_traces**](docs/TracesApi.md#list_traces) | **GET** /v1/traces/{tenant_id} | 
-*BeaterClient::UsageApi* | [**get_usage_summary**](docs/UsageApi.md#get_usage_summary) | **GET** /v1/usage/{tenant_id}/{project_id} | 
+*BeaterClient::AlertsApi* | [**evaluate_alert**](docs/AlertsApi.md#evaluate_alert) | **POST** /v1/alerts/{tenant_id}/{project_id}/traces/{trace_id}/webhook |
+*BeaterClient::ApiKeysApi* | [**create_api_key**](docs/ApiKeysApi.md#create_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} |
+*BeaterClient::ApiKeysApi* | [**revoke_api_key**](docs/ApiKeysApi.md#revoke_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke |
+*BeaterClient::ArchiveApi* | [**archive_trace**](docs/ArchiveApi.md#archive_trace) | **POST** /v1/archive/{tenant_id}/{project_id}/{trace_id} |
+*BeaterClient::ArchiveApi* | [**query_archive_spans**](docs/ArchiveApi.md#query_archive_spans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans |
+*BeaterClient::AuditApi* | [**list_audit_events**](docs/AuditApi.md#list_audit_events) | **GET** /v1/audit/{tenant_id}/{project_id} |
+*BeaterClient::CalibrationsApi* | [**run_calibration**](docs/CalibrationsApi.md#run_calibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |
+*BeaterClient::ConnectorsApi* | [**connect_connector**](docs/ConnectorsApi.md#connect_connector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |
+*BeaterClient::ConnectorsApi* | [**connector_status**](docs/ConnectorsApi.md#connector_status) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |
+*BeaterClient::ConnectorsApi* | [**get_connector_skills**](docs/ConnectorsApi.md#get_connector_skills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |
+*BeaterClient::ConnectorsApi* | [**invoke_connector_tool**](docs/ConnectorsApi.md#invoke_connector_tool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke |
+*BeaterClient::ConnectorsApi* | [**list_connector_tools**](docs/ConnectorsApi.md#list_connector_tools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools |
+*BeaterClient::ConnectorsApi* | [**list_connectors**](docs/ConnectorsApi.md#list_connectors) | **GET** /v1/connectors/{tenant_id}/{project_id} |
+*BeaterClient::DatasetsApi* | [**create_dataset**](docs/DatasetsApi.md#create_dataset) | **POST** /v1/datasets/{tenant_id}/{project_id} |
+*BeaterClient::DatasetsApi* | [**create_dataset_version**](docs/DatasetsApi.md#create_dataset_version) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions |
+*BeaterClient::DatasetsApi* | [**promote_dataset_case_from_trace**](docs/DatasetsApi.md#promote_dataset_case_from_trace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace |
+*BeaterClient::EvalsApi* | [**run_deterministic_eval**](docs/EvalsApi.md#run_deterministic_eval) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/deterministic |
+*BeaterClient::EvalsApi* | [**run_judge_eval**](docs/EvalsApi.md#run_judge_eval) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/judge |
+*BeaterClient::ExperimentsApi* | [**run_deterministic_experiment**](docs/ExperimentsApi.md#run_deterministic_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic |
+*BeaterClient::ExperimentsApi* | [**run_judge_experiment**](docs/ExperimentsApi.md#run_judge_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge |
+*BeaterClient::GatesApi* | [**create_gate**](docs/GatesApi.md#create_gate) | **POST** /v1/gates/{tenant_id}/{project_id} |
+*BeaterClient::GatesApi* | [**run_gate**](docs/GatesApi.md#run_gate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run |
+*BeaterClient::HealthApi* | [**health**](docs/HealthApi.md#health) | **GET** /health |
+*BeaterClient::IngestApi* | [**drain_trace_ingested**](docs/IngestApi.md#drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
+*BeaterClient::IngestApi* | [**drain_trace_writes**](docs/IngestApi.md#drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
+*BeaterClient::IngestApi* | [**get_ingest_queue_status**](docs/IngestApi.md#get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |
+*BeaterClient::IngestApi* | [**import_source**](docs/IngestApi.md#import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |
+*BeaterClient::IngestApi* | [**ingest_native**](docs/IngestApi.md#ingest_native) | **POST** /v1/traces/native |
+*BeaterClient::IngestApi* | [**ingest_otlp**](docs/IngestApi.md#ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
+*BeaterClient::IngestApi* | [**reconcile_trace**](docs/IngestApi.md#reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
+*BeaterClient::IngestApi* | [**replay_dead_letter**](docs/IngestApi.md#replay_dead_letter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
+*BeaterClient::JudgeApi* | [**evaluate_judge**](docs/JudgeApi.md#evaluate_judge) | **POST** /v1/judge/{tenant_id}/{project_id}/evaluate |
+*BeaterClient::JudgeApi* | [**list_judge_ledger**](docs/JudgeApi.md#list_judge_ledger) | **GET** /v1/judge/{tenant_id}/{project_id}/ledger |
+*BeaterClient::OnlineApi* | [**decide_online_sampling**](docs/OnlineApi.md#decide_online_sampling) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling |
+*BeaterClient::PromptsApi* | [**add_prompt_version**](docs/PromptsApi.md#add_prompt_version) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |
+*BeaterClient::PromptsApi* | [**create_prompt**](docs/PromptsApi.md#create_prompt) | **POST** /v1/prompts/{tenant_id}/{project_id} |
+*BeaterClient::PromptsApi* | [**diff_prompt_versions**](docs/PromptsApi.md#diff_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff |
+*BeaterClient::PromptsApi* | [**get_prompt**](docs/PromptsApi.md#get_prompt) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} |
+*BeaterClient::PromptsApi* | [**list_prompt_versions**](docs/PromptsApi.md#list_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |
+*BeaterClient::PromptsApi* | [**list_prompts**](docs/PromptsApi.md#list_prompts) | **GET** /v1/prompts/{tenant_id}/{project_id} |
+*BeaterClient::ProviderSecretsApi* | [**create_provider_secret**](docs/ProviderSecretsApi.md#create_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} |
+*BeaterClient::ProviderSecretsApi* | [**list_provider_secrets**](docs/ProviderSecretsApi.md#list_provider_secrets) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} |
+*BeaterClient::ProviderSecretsApi* | [**revoke_provider_secret**](docs/ProviderSecretsApi.md#revoke_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke |
+*BeaterClient::ReviewsApi* | [**create_review_queue**](docs/ReviewsApi.md#create_review_queue) | **POST** /v1/review-queues/{tenant_id}/{project_id} |
+*BeaterClient::ReviewsApi* | [**enqueue_review_task_from_trace**](docs/ReviewsApi.md#enqueue_review_task_from_trace) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace |
+*BeaterClient::ReviewsApi* | [**list_review_tasks**](docs/ReviewsApi.md#list_review_tasks) | **GET** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks |
+*BeaterClient::ReviewsApi* | [**promote_review_annotation**](docs/ReviewsApi.md#promote_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote |
+*BeaterClient::ReviewsApi* | [**submit_review_annotation**](docs/ReviewsApi.md#submit_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations |
+*BeaterClient::ScenariosApi* | [**create_scenario**](docs/ScenariosApi.md#create_scenario) | **POST** /v1/scenarios/{tenant_id}/{project_id} |
+*BeaterClient::ScenariosApi* | [**get_scenario**](docs/ScenariosApi.md#get_scenario) | **GET** /v1/scenarios/{tenant_id}/{project_id}/{scenario_id} |
+*BeaterClient::ScenariosApi* | [**list_scenarios**](docs/ScenariosApi.md#list_scenarios) | **GET** /v1/scenarios/{tenant_id}/{project_id} |
+*BeaterClient::ScenariosApi* | [**mine_scenarios**](docs/ScenariosApi.md#mine_scenarios) | **POST** /v1/scenarios/{tenant_id}/{project_id}/mine |
+*BeaterClient::SearchApi* | [**search_spans**](docs/SearchApi.md#search_spans) | **GET** /v1/search/{tenant_id}/spans |
+*BeaterClient::SpansApi* | [**get_span**](docs/SpansApi.md#get_span) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} |
+*BeaterClient::SpansApi* | [**get_span_io**](docs/SpansApi.md#get_span_io) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io |
+*BeaterClient::TracesApi* | [**get_trace**](docs/TracesApi.md#get_trace) | **GET** /v1/traces/{tenant_id}/{trace_id} |
+*BeaterClient::TracesApi* | [**list_traces**](docs/TracesApi.md#list_traces) | **GET** /v1/traces/{tenant_id} |
+*BeaterClient::UsageApi* | [**get_usage_summary**](docs/UsageApi.md#get_usage_summary) | **GET** /v1/usage/{tenant_id}/{project_id} |
 
 
 ## Documentation for Models
@@ -305,4 +305,3 @@ Class | Method | HTTP request | Description
 ## Documentation for Authorization
 
 Endpoints do not require authorization.
-

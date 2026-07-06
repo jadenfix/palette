@@ -23,4 +23,3 @@ instance = BeaterClient::CreatePromptRequest.new(
   template: null
 )
 ```
-

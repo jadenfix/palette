@@ -35,7 +35,7 @@ describe 'ConnectorsApi' do
   # unit tests for connect_connector
   # @param tenant_id tenant_id
   # @param project_id project_id
-  # @param connect_connector_request 
+  # @param connect_connector_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -83,7 +83,7 @@ describe 'ConnectorsApi' do
   # unit tests for invoke_connector_tool
   # @param tenant_id tenant_id
   # @param project_id project_id
-  # @param invoke_connector_request 
+  # @param invoke_connector_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth

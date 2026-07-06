@@ -22,15 +22,15 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param dedupeWindowSeconds 
- * @param endpointUrl 
- * @param fireWhenScoreAtOrBelow 
- * @param maintenanceWindows 
- * @param policyId 
- * @param severity 
- * @param signingSecret 
+ *
+ * @param dedupeWindowSeconds
+ * @param endpointUrl
+ * @param fireWhenScoreAtOrBelow
+ * @param maintenanceWindows
+ * @param policyId
+ * @param severity
+ * @param signingSecret
  */
 
 
@@ -61,4 +61,3 @@ data class AlertPolicy (
 
 
 }
-

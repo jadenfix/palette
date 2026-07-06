@@ -22,8 +22,8 @@ import com.squareup.moshi.JsonClass
 /**
  * Browser step efficiency: passes when the run used at most `max_steps` browser steps (catches looping/backtracking). Reads `trace.browser_steps`.
  *
- * @param maxSteps 
- * @param type 
+ * @param maxSteps
+ * @param type
  */
 
 
@@ -38,7 +38,7 @@ data class EvaluatorKindOneOf8 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: browser_step_efficiency
      */
@@ -48,4 +48,3 @@ data class EvaluatorKindOneOf8 (
     }
 
 }
-

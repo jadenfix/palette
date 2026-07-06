@@ -13,6 +13,3 @@
 | **title** | **kotlin.String** |  |  |
 | **traceId** | **kotlin.String** |  |  |
 | **baselineScore** | **kotlin.Double** |  |  [optional] |
-
-
-

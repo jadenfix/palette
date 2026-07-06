@@ -21,7 +21,7 @@ module BeaterClient
     end
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param create_dataset_request [CreateDatasetRequest] 
+    # @param create_dataset_request [CreateDatasetRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -35,7 +35,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param create_dataset_request [CreateDatasetRequest] 
+    # @param create_dataset_request [CreateDatasetRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -110,7 +110,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param dataset_id [String] dataset_id
-    # @param create_dataset_version_request [CreateDatasetVersionRequest] 
+    # @param create_dataset_version_request [CreateDatasetVersionRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -125,7 +125,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param dataset_id [String] dataset_id
-    # @param create_dataset_version_request [CreateDatasetVersionRequest] 
+    # @param create_dataset_version_request [CreateDatasetVersionRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -204,7 +204,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param dataset_id [String] dataset_id
-    # @param promote_trace_case_request [PromoteTraceCaseRequest] 
+    # @param promote_trace_case_request [PromoteTraceCaseRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -219,7 +219,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param dataset_id [String] dataset_id
-    # @param promote_trace_case_request [PromoteTraceCaseRequest] 
+    # @param promote_trace_case_request [PromoteTraceCaseRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth

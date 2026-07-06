@@ -11,6 +11,3 @@
 | **judgeLabel** | [**CalibrationLabel**](CalibrationLabel.md) |  |  |
 | **judgeScore** | **kotlin.Double** |  |  |
 | **judgeResultLabel** | **kotlin.String** |  |  [optional] |
-
-
-

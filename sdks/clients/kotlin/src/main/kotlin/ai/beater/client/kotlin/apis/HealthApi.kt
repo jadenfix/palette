@@ -46,8 +46,8 @@ class HealthApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @return HealthResponse
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
@@ -76,8 +76,8 @@ class HealthApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @return ApiResponse<HealthResponse?>
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception

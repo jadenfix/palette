@@ -61,4 +61,3 @@ instance = BeaterClient::ArchivedSpanRow.new(
   unmapped_json: null
 )
 ```
-

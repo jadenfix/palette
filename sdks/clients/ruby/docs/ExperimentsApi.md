@@ -25,7 +25,7 @@ tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 dataset_id = 'dataset_id_example' # String | dataset_id
 version_id = 'version_id_example' # String | version_id
-run_experiment_request = BeaterClient::RunExperimentRequest.new({baseline_outputs: [BeaterClient::CaseOutputOverrideRequest.new({case_id: 'case_id_example', output: 3.56})], baseline_release_id: 'baseline_release_id_example', candidate_outputs: [BeaterClient::CaseOutputOverrideRequest.new({case_id: 'case_id_example', output: 3.56})], candidate_release_id: 'candidate_release_id_example', evaluator_id: 'evaluator_id_example', evaluator_version_id: 'evaluator_version_id_example', kind: BeaterClient::EvaluatorKindOneOf.new({type: 'exact_match'})}) # RunExperimentRequest | 
+run_experiment_request = BeaterClient::RunExperimentRequest.new({baseline_outputs: [BeaterClient::CaseOutputOverrideRequest.new({case_id: 'case_id_example', output: 3.56})], baseline_release_id: 'baseline_release_id_example', candidate_outputs: [BeaterClient::CaseOutputOverrideRequest.new({case_id: 'case_id_example', output: 3.56})], candidate_release_id: 'candidate_release_id_example', evaluator_id: 'evaluator_id_example', evaluator_version_id: 'evaluator_version_id_example', kind: BeaterClient::EvaluatorKindOneOf.new({type: 'exact_match'})}) # RunExperimentRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -34,7 +34,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.run_deterministic_experiment(tenant_id, project_id, dataset_id, version_id, run_experiment_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -50,7 +50,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.run_deterministic_experiment_with_http_info(tenant_id, project_id, dataset_id, version_id, run_experiment_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -105,7 +105,7 @@ tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 dataset_id = 'dataset_id_example' # String | dataset_id
 version_id = 'version_id_example' # String | version_id
-run_judge_experiment_request = BeaterClient::RunJudgeExperimentRequest.new({baseline_outputs: [BeaterClient::CaseOutputOverrideRequest.new({case_id: 'case_id_example', output: 3.56})], baseline_release_id: 'baseline_release_id_example', candidate_outputs: [BeaterClient::CaseOutputOverrideRequest.new({case_id: 'case_id_example', output: 3.56})], candidate_release_id: 'candidate_release_id_example', evaluator_id: 'evaluator_id_example', evaluator_version_id: 'evaluator_version_id_example', kind: BeaterClient::EvaluatorKindOneOf.new({type: 'exact_match'}), provider_secret_id: 'provider_secret_id_example'}) # RunJudgeExperimentRequest | 
+run_judge_experiment_request = BeaterClient::RunJudgeExperimentRequest.new({baseline_outputs: [BeaterClient::CaseOutputOverrideRequest.new({case_id: 'case_id_example', output: 3.56})], baseline_release_id: 'baseline_release_id_example', candidate_outputs: [BeaterClient::CaseOutputOverrideRequest.new({case_id: 'case_id_example', output: 3.56})], candidate_release_id: 'candidate_release_id_example', evaluator_id: 'evaluator_id_example', evaluator_version_id: 'evaluator_version_id_example', kind: BeaterClient::EvaluatorKindOneOf.new({type: 'exact_match'}), provider_secret_id: 'provider_secret_id_example'}) # RunJudgeExperimentRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -114,7 +114,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.run_judge_experiment(tenant_id, project_id, dataset_id, version_id, run_judge_experiment_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -130,7 +130,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.run_judge_experiment_with_http_info(tenant_id, project_id, dataset_id, version_id, run_judge_experiment_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -166,4 +166,3 @@ No authorization required
 
 - **Content-Type**: application/json
 - **Accept**: application/json
-

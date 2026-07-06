@@ -21,17 +21,17 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param groupKey 
- * @param links 
- * @param now 
- * @param projectId 
- * @param score 
- * @param tenantId 
- * @param title 
- * @param traceId 
- * @param baselineScore 
+ *
+ * @param groupKey
+ * @param links
+ * @param now
+ * @param projectId
+ * @param score
+ * @param tenantId
+ * @param title
+ * @param traceId
+ * @param baselineScore
  */
 
 
@@ -68,4 +68,3 @@ data class AlertInput (
 
 
 }
-

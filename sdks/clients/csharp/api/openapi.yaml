@@ -10728,4 +10728,3 @@ components:
           type: string
       required:
       - kind
-

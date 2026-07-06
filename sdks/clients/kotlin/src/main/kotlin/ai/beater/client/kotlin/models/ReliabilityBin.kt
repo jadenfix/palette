@@ -20,15 +20,15 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param binIndex 
- * @param lowerBound 
- * @param sampleCount 
- * @param upperBound 
- * @param accuracy 
- * @param calibrationGap 
- * @param meanConfidence 
+ *
+ * @param binIndex
+ * @param lowerBound
+ * @param sampleCount
+ * @param upperBound
+ * @param accuracy
+ * @param calibrationGap
+ * @param meanConfidence
  */
 
 
@@ -59,4 +59,3 @@ data class ReliabilityBin (
 
 
 }
-

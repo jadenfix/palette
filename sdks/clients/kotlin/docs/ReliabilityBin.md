@@ -11,6 +11,3 @@
 | **accuracy** | **kotlin.Double** |  |  [optional] |
 | **calibrationGap** | **kotlin.Double** |  |  [optional] |
 | **meanConfidence** | **kotlin.Double** |  |  [optional] |
-
-
-

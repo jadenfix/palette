@@ -25,7 +25,7 @@ All URIs are relative to *http://localhost*
 val apiInstance = ScenariosApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
 val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-val createScenarioRequest : CreateScenarioRequest =  // CreateScenarioRequest | 
+val createScenarioRequest : CreateScenarioRequest =  // CreateScenarioRequest |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -137,8 +137,8 @@ No authorization required
 val apiInstance = ScenariosApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
 val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-val limit : kotlin.Int = 56 // kotlin.Int | 
-val cursor : kotlin.String = cursor_example // kotlin.String | 
+val limit : kotlin.Int = 56 // kotlin.Int |
+val cursor : kotlin.String = cursor_example // kotlin.String |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -195,7 +195,7 @@ No authorization required
 val apiInstance = ScenariosApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
 val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-val mineScenariosRequest : MineScenariosRequest =  // MineScenariosRequest | 
+val mineScenariosRequest : MineScenariosRequest =  // MineScenariosRequest |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -235,4 +235,3 @@ No authorization required
 
  - **Content-Type**: application/json
  - **Accept**: application/json
-

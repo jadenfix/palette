@@ -6,6 +6,3 @@
 | ------------ | ------------- | ------------- | ------------- |
 | **amountMicros** | **kotlin.Long** |  |  |
 | **currency** | [**Currency**](Currency.md) |  |  |
-
-
-

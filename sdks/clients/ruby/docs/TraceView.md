@@ -19,4 +19,3 @@ instance = BeaterClient::TraceView.new(
   trace_id: null
 )
 ```
-

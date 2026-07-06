@@ -28,7 +28,7 @@ api_instance = BeaterClient::PromptsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 prompt_id = 'prompt_id_example' # String | prompt_id
-add_prompt_version_request = BeaterClient::AddPromptVersionRequest.new({template: BeaterClient::PromptTemplate.new({body: 'body_example', tags: ['tags_example'], variables: [BeaterClient::PromptVariable.new({name: 'name_example', required: false})]})}) # AddPromptVersionRequest | 
+add_prompt_version_request = BeaterClient::AddPromptVersionRequest.new({template: BeaterClient::PromptTemplate.new({body: 'body_example', tags: ['tags_example'], variables: [BeaterClient::PromptVariable.new({name: 'name_example', required: false})]})}) # AddPromptVersionRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -37,7 +37,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.add_prompt_version(tenant_id, project_id, prompt_id, add_prompt_version_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -53,7 +53,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.add_prompt_version_with_http_info(tenant_id, project_id, prompt_id, add_prompt_version_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -105,7 +105,7 @@ require 'beater_client'
 api_instance = BeaterClient::PromptsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
-create_prompt_request = BeaterClient::CreatePromptRequest.new({name: 'name_example', template: BeaterClient::PromptTemplate.new({body: 'body_example', tags: ['tags_example'], variables: [BeaterClient::PromptVariable.new({name: 'name_example', required: false})]})}) # CreatePromptRequest | 
+create_prompt_request = BeaterClient::CreatePromptRequest.new({name: 'name_example', template: BeaterClient::PromptTemplate.new({body: 'body_example', tags: ['tags_example'], variables: [BeaterClient::PromptVariable.new({name: 'name_example', required: false})]})}) # CreatePromptRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -114,7 +114,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.create_prompt(tenant_id, project_id, create_prompt_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -130,7 +130,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.create_prompt_with_http_info(tenant_id, project_id, create_prompt_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -182,8 +182,8 @@ api_instance = BeaterClient::PromptsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 prompt_id = 'prompt_id_example' # String | prompt_id
-from = 'from_example' # String | 
-to = 'to_example' # String | 
+from = 'from_example' # String |
+to = 'to_example' # String |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -192,7 +192,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.diff_prompt_versions(tenant_id, project_id, prompt_id, from, to, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -208,7 +208,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.diff_prompt_versions_with_http_info(tenant_id, project_id, prompt_id, from, to, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -270,7 +270,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.get_prompt(tenant_id, project_id, prompt_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -286,7 +286,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.get_prompt_with_http_info(tenant_id, project_id, prompt_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -346,7 +346,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.list_prompt_versions(tenant_id, project_id, prompt_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -362,7 +362,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.list_prompt_versions_with_http_info(tenant_id, project_id, prompt_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -421,7 +421,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.list_prompts(tenant_id, project_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -437,7 +437,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.list_prompts_with_http_info(tenant_id, project_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -470,4 +470,3 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
-

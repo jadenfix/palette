@@ -32,7 +32,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.archive_trace(tenant_id, project_id, trace_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -48,7 +48,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.archive_trace_with_http_info(tenant_id, project_id, trace_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -100,12 +100,12 @@ api_instance = BeaterClient::ArchiveApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 opts = {
-  environment_id: 'environment_id_example', # String | 
-  trace_id: 'trace_id_example', # String | 
-  span_id: 'span_id_example', # String | 
-  kind: 'kind_example', # String | 
-  status: 'status_example', # String | 
-  limit: 56, # Integer | 
+  environment_id: 'environment_id_example', # String |
+  trace_id: 'trace_id_example', # String |
+  span_id: 'span_id_example', # String |
+  kind: 'kind_example', # String |
+  status: 'status_example', # String |
+  limit: 56, # Integer |
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
   x_beater_project_id: 'x_beater_project_id_example', # String | Strict-auth project scope
@@ -113,7 +113,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.query_archive_spans(tenant_id, project_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -129,7 +129,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.query_archive_spans_with_http_info(tenant_id, project_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -168,4 +168,3 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
-

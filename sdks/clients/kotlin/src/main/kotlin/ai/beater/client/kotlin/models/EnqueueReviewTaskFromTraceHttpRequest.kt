@@ -20,14 +20,14 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param traceId 
- * @param datasetCaseId 
- * @param datasetId 
- * @param priority 
- * @param spanId 
- * @param taskId 
+ *
+ * @param traceId
+ * @param datasetCaseId
+ * @param datasetId
+ * @param priority
+ * @param spanId
+ * @param taskId
  */
 
 
@@ -55,4 +55,3 @@ data class EnqueueReviewTaskFromTraceHttpRequest (
 
 
 }
-

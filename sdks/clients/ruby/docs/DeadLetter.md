@@ -19,4 +19,3 @@ instance = BeaterClient::DeadLetter.new(
   reason: null
 )
 ```
-

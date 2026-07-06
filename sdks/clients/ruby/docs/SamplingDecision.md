@@ -19,4 +19,3 @@ instance = BeaterClient::SamplingDecision.new(
   stable_score_per_mille: null
 )
 ```
-

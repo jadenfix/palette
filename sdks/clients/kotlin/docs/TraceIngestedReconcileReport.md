@@ -11,6 +11,3 @@
 | **spanCount** | **kotlin.Int** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
 | **traceId** | **kotlin.String** |  |  |
-
-
-

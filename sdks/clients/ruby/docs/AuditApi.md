@@ -30,7 +30,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.list_audit_events(tenant_id, project_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -46,7 +46,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.list_audit_events_with_http_info(tenant_id, project_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -79,4 +79,3 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
-

@@ -21,18 +21,18 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param aggregateScore 
- * @param createdAt 
- * @param datasetId 
- * @param datasetVersionId 
- * @param evaluatorVersionId 
- * @param projectId 
- * @param reportId 
- * @param resultCount 
- * @param results 
- * @param tenantId 
+ *
+ * @param aggregateScore
+ * @param createdAt
+ * @param datasetId
+ * @param datasetVersionId
+ * @param evaluatorVersionId
+ * @param projectId
+ * @param reportId
+ * @param resultCount
+ * @param results
+ * @param tenantId
  */
 
 
@@ -72,4 +72,3 @@ data class DatasetEvalReport (
 
 
 }
-

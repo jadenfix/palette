@@ -7,6 +7,3 @@
 | **emitted** | **kotlin.Boolean** |  |  |
 | **delivery** | [**WebhookDelivery**](WebhookDelivery.md) |  |  [optional] |
 | **suppressedReason** | **kotlin.String** |  |  [optional] |
-
-
-

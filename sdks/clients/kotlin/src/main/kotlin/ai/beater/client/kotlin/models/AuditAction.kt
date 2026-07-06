@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: pii_unmask,api_key_create,api_key_revoke,provider_secret_create,provider_secret_revoke,connector_tool_invoke
  */
@@ -72,4 +72,3 @@ enum class AuditAction(val value: kotlin.String) {
         }
     }
 }
-

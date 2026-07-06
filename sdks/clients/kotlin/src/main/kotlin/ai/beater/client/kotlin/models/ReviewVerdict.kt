@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: pass,fail,needs_fix,unsure
  */
@@ -66,4 +66,3 @@ enum class ReviewVerdict(val value: kotlin.String) {
         }
     }
 }
-

@@ -21,11 +21,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param body 
- * @param tags 
- * @param variables 
+ *
+ * @param body
+ * @param tags
+ * @param variables
  */
 
 
@@ -44,4 +44,3 @@ data class PromptTemplate (
 
 
 }
-

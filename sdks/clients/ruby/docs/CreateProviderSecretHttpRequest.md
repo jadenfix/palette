@@ -19,4 +19,3 @@ instance = BeaterClient::CreateProviderSecretHttpRequest.new(
   secret_value: null
 )
 ```
-

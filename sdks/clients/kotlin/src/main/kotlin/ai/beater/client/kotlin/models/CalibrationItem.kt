@@ -21,15 +21,15 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param agreed 
- * @param datasetCaseId 
- * @param evidence 
- * @param humanLabel 
- * @param judgeLabel 
- * @param judgeScore 
- * @param judgeResultLabel 
+ *
+ * @param agreed
+ * @param datasetCaseId
+ * @param evidence
+ * @param humanLabel
+ * @param judgeLabel
+ * @param judgeScore
+ * @param judgeResultLabel
  */
 
 
@@ -60,4 +60,3 @@ data class CalibrationItem (
 
 
 }
-

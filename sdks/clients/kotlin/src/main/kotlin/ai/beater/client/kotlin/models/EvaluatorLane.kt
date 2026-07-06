@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: deterministic_wasi,judge_broker,human,hybrid
  */
@@ -66,4 +66,3 @@ enum class EvaluatorLane(val value: kotlin.String) {
         }
     }
 }
-

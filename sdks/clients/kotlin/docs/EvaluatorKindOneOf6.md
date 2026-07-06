@@ -14,6 +14,3 @@
 | Name | Value |
 | ---- | ----- |
 | type | llm_judge |
-
-
-

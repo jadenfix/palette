@@ -13,6 +13,3 @@
 | **kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |  |
 | **providerSecretId** | **kotlin.String** |  |  |
 | **gatePolicy** | [**GatePolicy**](GatePolicy.md) |  |  [optional] |
-
-
-

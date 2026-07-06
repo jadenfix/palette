@@ -47,8 +47,8 @@ class UsageApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param authorization Bearer API token for strict auth (optional)
@@ -83,8 +83,8 @@ class UsageApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param authorization Bearer API token for strict auth (optional)

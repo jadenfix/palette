@@ -27,4 +27,3 @@ instance = BeaterClient::CalibrationItem.new(
   judge_score: null
 )
 ```
-

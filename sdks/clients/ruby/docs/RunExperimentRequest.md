@@ -29,4 +29,3 @@ instance = BeaterClient::RunExperimentRequest.new(
   kind: null
 )
 ```
-

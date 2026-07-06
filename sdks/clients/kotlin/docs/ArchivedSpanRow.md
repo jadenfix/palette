@@ -28,6 +28,3 @@
 | **outputUri** | **kotlin.String** |  |  [optional] |
 | **parentSpanId** | **kotlin.String** |  |  [optional] |
 | **reasoningTokens** | **kotlin.String** |  |  [optional] |
-
-
-

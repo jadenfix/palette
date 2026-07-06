@@ -12,6 +12,3 @@
 | **evaluatorVersionId** | **kotlin.String** |  |  |
 | **kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |  |
 | **gatePolicy** | [**GatePolicy**](GatePolicy.md) |  |  [optional] |
-
-
-

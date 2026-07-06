@@ -28,7 +28,7 @@ val apiInstance = PromptsApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
 val projectId : kotlin.String = projectId_example // kotlin.String | project_id
 val promptId : kotlin.String = promptId_example // kotlin.String | prompt_id
-val addPromptVersionRequest : AddPromptVersionRequest =  // AddPromptVersionRequest | 
+val addPromptVersionRequest : AddPromptVersionRequest =  // AddPromptVersionRequest |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -85,7 +85,7 @@ No authorization required
 val apiInstance = PromptsApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
 val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-val createPromptRequest : CreatePromptRequest =  // CreatePromptRequest | 
+val createPromptRequest : CreatePromptRequest =  // CreatePromptRequest |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -142,8 +142,8 @@ val apiInstance = PromptsApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
 val projectId : kotlin.String = projectId_example // kotlin.String | project_id
 val promptId : kotlin.String = promptId_example // kotlin.String | prompt_id
-val from : kotlin.String = from_example // kotlin.String | 
-val to : kotlin.String = to_example // kotlin.String | 
+val from : kotlin.String = from_example // kotlin.String |
+val to : kotlin.String = to_example // kotlin.String |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -351,4 +351,3 @@ No authorization required
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
-

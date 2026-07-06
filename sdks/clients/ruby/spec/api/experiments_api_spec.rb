@@ -37,7 +37,7 @@ describe 'ExperimentsApi' do
   # @param project_id project_id
   # @param dataset_id dataset_id
   # @param version_id version_id
-  # @param run_experiment_request 
+  # @param run_experiment_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -55,7 +55,7 @@ describe 'ExperimentsApi' do
   # @param project_id project_id
   # @param dataset_id dataset_id
   # @param version_id version_id
-  # @param run_judge_experiment_request 
+  # @param run_judge_experiment_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth

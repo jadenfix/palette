@@ -51,4 +51,3 @@ instance = BeaterClient::NativeIngestRequest.new(
   trace_id: null
 )
 ```
-

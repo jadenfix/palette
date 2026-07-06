@@ -31,4 +31,3 @@ instance = BeaterClient::AlertInput.new(
   trace_id: null
 )
 ```
-

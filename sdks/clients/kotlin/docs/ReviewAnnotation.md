@@ -13,6 +13,3 @@
 | **taskId** | **kotlin.String** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
 | **verdict** | [**ReviewVerdict**](ReviewVerdict.md) |  |  |
-
-
-

@@ -14,6 +14,3 @@
 | Name | Value |
 | ---- | ----- |
 | type | browser_task_success |
-
-
-

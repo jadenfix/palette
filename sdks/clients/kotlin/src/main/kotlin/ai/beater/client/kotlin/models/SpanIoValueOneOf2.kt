@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param kind 
- * @param reason 
+ *
+ * @param kind
+ * @param reason
  */
 
 
@@ -38,7 +38,7 @@ data class SpanIoValueOneOf2 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: redacted
      */
@@ -48,4 +48,3 @@ data class SpanIoValueOneOf2 (
     }
 
 }
-

@@ -10,6 +10,3 @@
 | **description** | **kotlin.String** | Short description, if the catalog provides one. |  [optional] |
 | **noAuth** | **kotlin.Boolean** | &#x60;true&#x60; when the toolkit needs no OAuth/connection to execute. |  [optional] |
 | **toolsCount** | **kotlin.Int** | Number of tools the toolkit exposes, if known. |  [optional] |
-
-
-

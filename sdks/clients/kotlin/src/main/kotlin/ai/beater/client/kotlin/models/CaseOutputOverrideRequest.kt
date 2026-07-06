@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param caseId 
- * @param output 
- * @param trace 
+ *
+ * @param caseId
+ * @param output
+ * @param trace
  */
 
 
@@ -43,4 +43,3 @@ data class CaseOutputOverrideRequest (
 
 
 }
-

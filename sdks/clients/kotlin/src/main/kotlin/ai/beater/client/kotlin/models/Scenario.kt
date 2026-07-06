@@ -27,7 +27,7 @@ import com.squareup.moshi.JsonClass
  * A reusable failure scenario mined from production traces.
  *
  * @param createdAt When the scenario was created.
- * @param exemplarTraceId 
+ * @param exemplarTraceId
  * @param failureMode The dominant failure mode this scenario reproduces.
  * @param perturbationKnobs Suggested perturbation knobs for replay.
  * @param recurrenceCount How many traces exhibited this scenario.
@@ -89,4 +89,3 @@ data class Scenario (
 
 
 }
-

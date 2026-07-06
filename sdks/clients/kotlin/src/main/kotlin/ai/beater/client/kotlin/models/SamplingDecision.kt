@@ -21,11 +21,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param reason 
- * @param selected 
- * @param stableScorePerMille 
+ *
+ * @param reason
+ * @param selected
+ * @param stableScorePerMille
  */
 
 
@@ -44,4 +44,3 @@ data class SamplingDecision (
 
 
 }
-

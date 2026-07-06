@@ -21,13 +21,13 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param ack 
- * @param messageId 
- * @param projectId 
- * @param resetAttempts 
- * @param tenantId 
+ *
+ * @param ack
+ * @param messageId
+ * @param projectId
+ * @param resetAttempts
+ * @param tenantId
  */
 
 
@@ -52,4 +52,3 @@ data class DeadLetterReplayReport (
 
 
 }
-

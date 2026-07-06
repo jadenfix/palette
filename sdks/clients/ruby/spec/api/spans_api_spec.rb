@@ -37,8 +37,8 @@ describe 'SpansApi' do
   # @param trace_id trace_id
   # @param span_id span_id
   # @param [Hash] opts the optional parameters
-  # @option opts [Boolean] :unmask 
-  # @option opts [String] :reason 
+  # @option opts [Boolean] :unmask
+  # @option opts [String] :reason
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -55,8 +55,8 @@ describe 'SpansApi' do
   # @param trace_id trace_id
   # @param span_id span_id
   # @param [Hash] opts the optional parameters
-  # @option opts [Boolean] :unmask 
-  # @option opts [String] :reason 
+  # @option opts [Boolean] :unmask
+  # @option opts [String] :reason
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope

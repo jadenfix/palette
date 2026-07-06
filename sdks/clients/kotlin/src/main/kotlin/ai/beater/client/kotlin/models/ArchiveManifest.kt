@@ -20,13 +20,13 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param createdAt 
- * @param path 
- * @param projectId 
- * @param spanCount 
- * @param tenantId 
+ *
+ * @param createdAt
+ * @param path
+ * @param projectId
+ * @param spanCount
+ * @param tenantId
  */
 
 
@@ -51,4 +51,3 @@ data class ArchiveManifest (
 
 
 }
-

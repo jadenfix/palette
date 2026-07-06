@@ -20,12 +20,12 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param input 
- * @param output 
- * @param reference 
- * @param trace 
+ *
+ * @param input
+ * @param output
+ * @param reference
+ * @param trace
  */
 
 
@@ -47,4 +47,3 @@ data class EvaluationCase (
 
 
 }
-

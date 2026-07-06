@@ -20,12 +20,12 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param traceUrl 
- * @param clusterUrl 
- * @param datasetUrl 
- * @param gateUrl 
+ *
+ * @param traceUrl
+ * @param clusterUrl
+ * @param datasetUrl
+ * @param gateUrl
  */
 
 
@@ -47,4 +47,3 @@ data class AlertLinks (
 
 
 }
-

@@ -21,10 +21,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param artifactRef 
- * @param kind 
+ *
+ * @param artifactRef
+ * @param kind
  */
 
 
@@ -39,7 +39,7 @@ data class SpanIoValueOneOf1 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: artifact
      */
@@ -49,4 +49,3 @@ data class SpanIoValueOneOf1 (
     }
 
 }
-

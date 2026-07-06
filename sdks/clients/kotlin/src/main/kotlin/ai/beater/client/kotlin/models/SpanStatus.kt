@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: ok,error,unset
  */
@@ -63,4 +63,3 @@ enum class SpanStatus(val value: kotlin.String) {
         }
     }
 }
-

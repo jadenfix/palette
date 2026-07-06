@@ -34,20 +34,20 @@ namespace Example
             HttpClientHandler httpClientHandler = new HttpClientHandler();
             var apiInstance = new SearchApi(httpClient, config, httpClientHandler);
             var tenantId = "tenantId_example";  // string | tenant_id
-            var q = "q_example";  // string? |  (optional) 
-            var projectId = "projectId_example";  // string? |  (optional) 
-            var environmentId = "environmentId_example";  // string? |  (optional) 
-            var traceId = "traceId_example";  // string? |  (optional) 
-            var spanId = "spanId_example";  // string? |  (optional) 
-            var kind = "kind_example";  // string? |  (optional) 
-            var status = "status_example";  // string? |  (optional) 
-            var model = "model_example";  // string? |  (optional) 
-            var tool = "tool_example";  // string? |  (optional) 
-            var limit = 56;  // int? |  (optional) 
-            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional) 
-            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional) 
-            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional) 
-            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional) 
+            var q = "q_example";  // string? |  (optional)
+            var projectId = "projectId_example";  // string? |  (optional)
+            var environmentId = "environmentId_example";  // string? |  (optional)
+            var traceId = "traceId_example";  // string? |  (optional)
+            var spanId = "spanId_example";  // string? |  (optional)
+            var kind = "kind_example";  // string? |  (optional)
+            var status = "status_example";  // string? |  (optional)
+            var model = "model_example";  // string? |  (optional)
+            var tool = "tool_example";  // string? |  (optional)
+            var limit = 56;  // int? |  (optional)
+            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional)
+            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional)
+            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional)
+            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional)
 
             try
             {
@@ -127,4 +127,3 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -24,7 +24,7 @@ require 'beater_client'
 api_instance = BeaterClient::ProviderSecretsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
-create_provider_secret_http_request = BeaterClient::CreateProviderSecretHttpRequest.new({display_name: 'display_name_example', provider: 'provider_example', secret_value: 'secret_value_example'}) # CreateProviderSecretHttpRequest | 
+create_provider_secret_http_request = BeaterClient::CreateProviderSecretHttpRequest.new({display_name: 'display_name_example', provider: 'provider_example', secret_value: 'secret_value_example'}) # CreateProviderSecretHttpRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -33,7 +33,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.create_provider_secret(tenant_id, project_id, create_provider_secret_http_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -49,7 +49,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.create_provider_secret_with_http_info(tenant_id, project_id, create_provider_secret_http_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -108,7 +108,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.list_provider_secrets(tenant_id, project_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -124,7 +124,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.list_provider_secrets_with_http_info(tenant_id, project_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -183,7 +183,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.revoke_provider_secret(tenant_id, project_id, provider_secret_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -199,7 +199,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.revoke_provider_secret_with_http_info(tenant_id, project_id, provider_secret_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -233,4 +233,3 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
-

@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param model 
- * @param rubric 
- * @param type 
+ *
+ * @param model
+ * @param rubric
+ * @param type
  */
 
 
@@ -42,7 +42,7 @@ data class EvaluatorKindOneOf6 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: llm_judge
      */
@@ -52,4 +52,3 @@ data class EvaluatorKindOneOf6 (
     }
 
 }
-

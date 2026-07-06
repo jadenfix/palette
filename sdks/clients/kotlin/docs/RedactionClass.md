@@ -11,6 +11,3 @@
     * `sensitive` (value: `"sensitive"`)
 
     * `secret` (value: `"secret"`)
-
-
-

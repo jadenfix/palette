@@ -8,6 +8,3 @@
 | **required** | **kotlin.Boolean** |  |  |
 | **default** | **kotlin.String** |  |  [optional] |
 | **description** | **kotlin.String** |  |  [optional] |
-
-
-

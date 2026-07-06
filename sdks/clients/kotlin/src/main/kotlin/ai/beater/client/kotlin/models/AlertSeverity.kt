@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: info,warning,critical
  */
@@ -63,4 +63,3 @@ enum class AlertSeverity(val value: kotlin.String) {
         }
     }
 }
-

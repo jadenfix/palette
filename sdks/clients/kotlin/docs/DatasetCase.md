@@ -19,6 +19,3 @@
 | **trace** | [**kotlin.Any**](.md) |  |  |
 | **traceSchemaVersion** | **kotlin.Int** |  |  |
 | **reference** | [**kotlin.Any**](.md) |  |  [optional] |
-
-
-

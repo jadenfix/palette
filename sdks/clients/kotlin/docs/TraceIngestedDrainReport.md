@@ -11,6 +11,3 @@
 | **invalidMessages** | **kotlin.Int** |  |  |
 | **retried** | **kotlin.Int** |  |  |
 | **traceRefs** | [**kotlin.collections.List&lt;QueuedTraceWork&gt;**](QueuedTraceWork.md) |  |  |
-
-
-

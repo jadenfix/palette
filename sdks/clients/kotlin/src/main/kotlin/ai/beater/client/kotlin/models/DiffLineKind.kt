@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: unchanged,added,removed
  */
@@ -63,4 +63,3 @@ enum class DiffLineKind(val value: kotlin.String) {
         }
     }
 }
-

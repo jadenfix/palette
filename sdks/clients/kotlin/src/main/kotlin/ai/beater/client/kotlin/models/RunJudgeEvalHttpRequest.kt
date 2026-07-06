@@ -22,11 +22,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param case 
- * @param evaluator 
- * @param providerSecretId 
+ *
+ * @param case
+ * @param evaluator
+ * @param providerSecretId
  * @param cacheNamespace Calibration-map / judge-instrument version folded into the judge cache key; bumping it on recalibration invalidates stale cached scores.
  */
 
@@ -50,4 +50,3 @@ data class RunJudgeEvalHttpRequest (
 
 
 }
-

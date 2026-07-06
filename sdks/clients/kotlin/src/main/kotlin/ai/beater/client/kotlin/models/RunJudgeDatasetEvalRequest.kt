@@ -21,15 +21,15 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param agentReleaseId 
- * @param evaluatorId 
- * @param evaluatorVersionId 
- * @param kind 
- * @param providerSecretId 
- * @param codeHash 
- * @param promptVersionId 
+ *
+ * @param agentReleaseId
+ * @param evaluatorId
+ * @param evaluatorVersionId
+ * @param kind
+ * @param providerSecretId
+ * @param codeHash
+ * @param promptVersionId
  */
 
 
@@ -60,4 +60,3 @@ data class RunJudgeDatasetEvalRequest (
 
 
 }
-

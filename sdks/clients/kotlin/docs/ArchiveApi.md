@@ -79,12 +79,12 @@ No authorization required
 val apiInstance = ArchiveApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
 val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-val environmentId : kotlin.String = environmentId_example // kotlin.String | 
-val traceId : kotlin.String = traceId_example // kotlin.String | 
-val spanId : kotlin.String = spanId_example // kotlin.String | 
-val kind : kotlin.String = kind_example // kotlin.String | 
-val status : kotlin.String = status_example // kotlin.String | 
-val limit : kotlin.Int = 56 // kotlin.Int | 
+val environmentId : kotlin.String = environmentId_example // kotlin.String |
+val traceId : kotlin.String = traceId_example // kotlin.String |
+val spanId : kotlin.String = spanId_example // kotlin.String |
+val kind : kotlin.String = kind_example // kotlin.String |
+val status : kotlin.String = status_example // kotlin.String |
+val limit : kotlin.Int = 56 // kotlin.Int |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -129,4 +129,3 @@ No authorization required
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
-

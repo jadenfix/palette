@@ -21,7 +21,7 @@ module BeaterClient
     end
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param create_scenario_request [CreateScenarioRequest] 
+    # @param create_scenario_request [CreateScenarioRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -35,7 +35,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param create_scenario_request [CreateScenarioRequest] 
+    # @param create_scenario_request [CreateScenarioRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -193,8 +193,8 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Integer] :limit 
-    # @option opts [String] :cursor 
+    # @option opts [Integer] :limit
+    # @option opts [String] :cursor
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -208,8 +208,8 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Integer] :limit 
-    # @option opts [String] :cursor 
+    # @option opts [Integer] :limit
+    # @option opts [String] :cursor
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -279,7 +279,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param mine_scenarios_request [MineScenariosRequest] 
+    # @param mine_scenarios_request [MineScenariosRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -293,7 +293,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param mine_scenarios_request [MineScenariosRequest] 
+    # @param mine_scenarios_request [MineScenariosRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth

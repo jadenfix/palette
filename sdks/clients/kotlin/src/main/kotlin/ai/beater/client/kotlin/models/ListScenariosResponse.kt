@@ -21,10 +21,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param scenarios 
- * @param nextCursor 
+ *
+ * @param scenarios
+ * @param nextCursor
  */
 
 
@@ -40,4 +40,3 @@ data class ListScenariosResponse (
 
 
 }
-

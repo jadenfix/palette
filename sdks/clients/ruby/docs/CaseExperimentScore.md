@@ -47,4 +47,3 @@ instance = BeaterClient::CaseExperimentScore.new(
   reference: null
 )
 ```
-

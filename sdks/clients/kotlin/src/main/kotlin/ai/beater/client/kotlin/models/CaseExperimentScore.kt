@@ -21,25 +21,25 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param baselineEvidence 
- * @param baselineOutput 
- * @param baselineScore 
- * @param candidateEvidence 
- * @param candidateOutput 
- * @param candidateScore 
- * @param caseId 
- * @param delta 
- * @param baselineCached 
- * @param baselineCost 
- * @param baselineJudgeCallId 
- * @param baselineTrace 
- * @param candidateCached 
- * @param candidateCost 
- * @param candidateJudgeCallId 
- * @param candidateTrace 
- * @param reference 
+ *
+ * @param baselineEvidence
+ * @param baselineOutput
+ * @param baselineScore
+ * @param candidateEvidence
+ * @param candidateOutput
+ * @param candidateScore
+ * @param caseId
+ * @param delta
+ * @param baselineCached
+ * @param baselineCost
+ * @param baselineJudgeCallId
+ * @param baselineTrace
+ * @param candidateCached
+ * @param candidateCost
+ * @param candidateJudgeCallId
+ * @param candidateTrace
+ * @param reference
  */
 
 
@@ -100,4 +100,3 @@ data class CaseExperimentScore (
 
 
 }
-

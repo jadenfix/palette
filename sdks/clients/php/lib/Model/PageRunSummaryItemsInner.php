@@ -836,5 +836,3 @@ class PageRunSummaryItemsInner implements ModelInterface, ArrayAccess, \JsonSeri
         return json_encode(ObjectSerializer::sanitizeForSerialization($this));
     }
 }
-
-

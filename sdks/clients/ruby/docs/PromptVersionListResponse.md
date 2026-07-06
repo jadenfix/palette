@@ -15,4 +15,3 @@ instance = BeaterClient::PromptVersionListResponse.new(
   versions: null
 )
 ```
-

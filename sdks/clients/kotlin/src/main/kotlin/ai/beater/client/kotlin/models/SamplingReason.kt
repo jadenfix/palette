@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: error_trace,slow_trace,high_cost_trace,routine_sampled,routine_dropped
  */
@@ -69,4 +69,3 @@ enum class SamplingReason(val value: kotlin.String) {
         }
     }
 }
-

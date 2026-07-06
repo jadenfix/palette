@@ -15,6 +15,3 @@
     * `retrieval_miss` (value: `"retrieval_miss"`)
 
     * `other` (value: `"other"`)
-
-
-

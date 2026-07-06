@@ -4,9 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**FailedAt** | **DateTime** |  | 
-**Message** | [**BusMessage**](BusMessage.md) |  | 
-**Reason** | **string** |  | 
+**FailedAt** | **DateTime** |  |
+**Message** | [**BusMessage**](BusMessage.md) |  |
+**Reason** | **string** |  |
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-

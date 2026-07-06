@@ -20,17 +20,17 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param attempts 
- * @param enqueuedAt 
- * @param idempotencyKey 
- * @param kind 
- * @param maxAttempts 
- * @param messageId 
- * @param payload 
- * @param projectId 
- * @param tenantId 
+ *
+ * @param attempts
+ * @param enqueuedAt
+ * @param idempotencyKey
+ * @param kind
+ * @param maxAttempts
+ * @param messageId
+ * @param payload
+ * @param projectId
+ * @param tenantId
  */
 
 
@@ -67,4 +67,3 @@ data class BusMessage (
 
 
 }
-

@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param quantity 
- * @param unit 
+ *
+ * @param quantity
+ * @param unit
  */
 
 
@@ -39,4 +39,3 @@ data class UsageTotal (
 
 
 }
-

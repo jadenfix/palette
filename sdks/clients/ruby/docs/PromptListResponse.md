@@ -15,4 +15,3 @@ instance = BeaterClient::PromptListResponse.new(
   prompts: null
 )
 ```
-

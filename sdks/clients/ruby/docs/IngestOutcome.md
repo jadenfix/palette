@@ -17,4 +17,3 @@ instance = BeaterClient::IngestOutcome.new(
   downstream_queued: null
 )
 ```
-

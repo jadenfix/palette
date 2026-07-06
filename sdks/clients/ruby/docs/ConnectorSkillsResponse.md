@@ -17,4 +17,3 @@ instance = BeaterClient::ConnectorSkillsResponse.new(
   toolkit: null
 )
 ```
-

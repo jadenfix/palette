@@ -19,4 +19,3 @@ instance = BeaterClient::TenantScope.new(
   tenant_id: null
 )
 ```
-

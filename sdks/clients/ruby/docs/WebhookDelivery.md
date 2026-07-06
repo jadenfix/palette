@@ -19,4 +19,3 @@ instance = BeaterClient::WebhookDelivery.new(
   headers: null
 )
 ```
-

@@ -23,4 +23,3 @@ instance = BeaterClient::CreateGateRequest.new(
   name: null
 )
 ```
-

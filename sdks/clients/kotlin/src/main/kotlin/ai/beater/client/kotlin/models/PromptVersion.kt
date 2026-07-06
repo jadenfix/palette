@@ -22,15 +22,15 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param metadata 
- * @param projectId 
- * @param promptId 
- * @param template 
- * @param tenantId 
- * @param versionId 
- * @param versionNumber 
+ *
+ * @param metadata
+ * @param projectId
+ * @param promptId
+ * @param template
+ * @param tenantId
+ * @param versionId
+ * @param versionNumber
  */
 
 
@@ -61,4 +61,3 @@ data class PromptVersion (
 
 
 }
-

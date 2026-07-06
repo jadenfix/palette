@@ -105,12 +105,12 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :environment_id 
-    # @option opts [String] :trace_id 
-    # @option opts [String] :span_id 
-    # @option opts [String] :kind 
-    # @option opts [String] :status 
-    # @option opts [Integer] :limit 
+    # @option opts [String] :environment_id
+    # @option opts [String] :trace_id
+    # @option opts [String] :span_id
+    # @option opts [String] :kind
+    # @option opts [String] :status
+    # @option opts [Integer] :limit
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -124,12 +124,12 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :environment_id 
-    # @option opts [String] :trace_id 
-    # @option opts [String] :span_id 
-    # @option opts [String] :kind 
-    # @option opts [String] :status 
-    # @option opts [Integer] :limit 
+    # @option opts [String] :environment_id
+    # @option opts [String] :trace_id
+    # @option opts [String] :span_id
+    # @option opts [String] :kind
+    # @option opts [String] :status
+    # @option opts [Integer] :limit
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope

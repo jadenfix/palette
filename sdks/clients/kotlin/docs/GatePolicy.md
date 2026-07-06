@@ -8,6 +8,3 @@
 | **comparisonCount** | **kotlin.Int** |  |  |
 | **maxRegression** | **kotlin.Double** |  |  |
 | **minSampleSize** | **kotlin.Int** |  |  |
-
-
-

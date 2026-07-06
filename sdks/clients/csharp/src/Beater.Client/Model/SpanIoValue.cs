@@ -328,7 +328,7 @@ namespace Beater.Client.Model
         /// <returns>The object converted from the JSON string</returns>
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            switch(reader.TokenType) 
+            switch(reader.TokenType)
             {
                 case JsonToken.StartObject:
                     return SpanIoValue.FromJson(JObject.Load(reader).ToString(Formatting.None));

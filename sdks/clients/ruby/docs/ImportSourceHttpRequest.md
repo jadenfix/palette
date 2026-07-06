@@ -17,4 +17,3 @@ instance = BeaterClient::ImportSourceHttpRequest.new(
   source: null
 )
 ```
-

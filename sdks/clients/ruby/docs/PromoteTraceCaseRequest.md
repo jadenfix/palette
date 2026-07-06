@@ -19,4 +19,3 @@ instance = BeaterClient::PromoteTraceCaseRequest.new(
   trace_id: null
 )
 ```
-

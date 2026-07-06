@@ -21,16 +21,16 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param createdAt 
- * @param gateId 
- * @param name 
- * @param projectId 
- * @param tenantId 
- * @param datasetId 
- * @param evaluatorVersionId 
- * @param inconclusivePolicy 
+ *
+ * @param createdAt
+ * @param gateId
+ * @param name
+ * @param projectId
+ * @param tenantId
+ * @param datasetId
+ * @param evaluatorVersionId
+ * @param inconclusivePolicy
  */
 
 
@@ -64,4 +64,3 @@ data class GateDefinition (
 
 
 }
-

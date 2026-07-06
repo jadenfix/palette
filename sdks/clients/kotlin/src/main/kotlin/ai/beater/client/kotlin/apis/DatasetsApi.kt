@@ -52,11 +52,11 @@ class DatasetsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factor
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createDatasetRequest 
+     * @param createDatasetRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -89,11 +89,11 @@ class DatasetsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factor
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createDatasetRequest 
+     * @param createDatasetRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -117,7 +117,7 @@ class DatasetsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factor
      *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createDatasetRequest 
+     * @param createDatasetRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -146,12 +146,12 @@ class DatasetsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factor
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param datasetId dataset_id
-     * @param createDatasetVersionRequest 
+     * @param createDatasetVersionRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -184,12 +184,12 @@ class DatasetsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factor
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param datasetId dataset_id
-     * @param createDatasetVersionRequest 
+     * @param createDatasetVersionRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -214,7 +214,7 @@ class DatasetsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factor
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param datasetId dataset_id
-     * @param createDatasetVersionRequest 
+     * @param createDatasetVersionRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -243,12 +243,12 @@ class DatasetsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factor
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param datasetId dataset_id
-     * @param promoteTraceCaseRequest 
+     * @param promoteTraceCaseRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -281,12 +281,12 @@ class DatasetsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factor
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param datasetId dataset_id
-     * @param promoteTraceCaseRequest 
+     * @param promoteTraceCaseRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -311,7 +311,7 @@ class DatasetsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factor
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param datasetId dataset_id
-     * @param promoteTraceCaseRequest 
+     * @param promoteTraceCaseRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)

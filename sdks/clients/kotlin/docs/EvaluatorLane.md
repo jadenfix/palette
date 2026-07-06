@@ -11,6 +11,3 @@
     * `human` (value: `"human"`)
 
     * `hybrid` (value: `"hybrid"`)
-
-
-

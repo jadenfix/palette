@@ -550,7 +550,7 @@ class IngestApi
         if ($limit !== null && $limit < 0) {
             throw new \InvalidArgumentException('invalid value for "$limit" when calling IngestApi.drainTraceIngested, must be bigger than or equal to 0.');
         }
-        
+
 
 
 
@@ -1068,7 +1068,7 @@ class IngestApi
         if ($limit !== null && $limit < 0) {
             throw new \InvalidArgumentException('invalid value for "$limit" when calling IngestApi.drainTraceWrites, must be bigger than or equal to 0.');
         }
-        
+
 
 
 

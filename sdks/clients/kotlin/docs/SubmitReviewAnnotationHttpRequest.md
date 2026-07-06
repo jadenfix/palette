@@ -8,6 +8,3 @@
 | **reviewerId** | **kotlin.String** |  |  |
 | **verdict** | [**ReviewVerdict**](ReviewVerdict.md) |  |  |
 | **annotationId** | **kotlin.String** |  |  [optional] |
-
-
-

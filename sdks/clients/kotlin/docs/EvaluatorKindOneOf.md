@@ -12,6 +12,3 @@
 | Name | Value |
 | ---- | ----- |
 | type | exact_match |
-
-
-

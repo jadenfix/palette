@@ -21,20 +21,20 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param createdAt 
- * @param priority 
- * @param projectId 
- * @param queueId 
- * @param state 
- * @param taskId 
- * @param tenantId 
- * @param traceId 
- * @param updatedAt 
- * @param datasetCaseId 
- * @param datasetId 
- * @param spanId 
+ *
+ * @param createdAt
+ * @param priority
+ * @param projectId
+ * @param queueId
+ * @param state
+ * @param taskId
+ * @param tenantId
+ * @param traceId
+ * @param updatedAt
+ * @param datasetCaseId
+ * @param datasetId
+ * @param spanId
  */
 
 
@@ -80,4 +80,3 @@ data class ReviewTask (
 
 
 }
-

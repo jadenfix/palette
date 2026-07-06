@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * @param tool Tool slug to execute (e.g. `GITHUB_CREATE_AN_ISSUE`).
  * @param arguments Arguments object matching the tool's input schema.
@@ -41,4 +41,3 @@ data class InvokeConnectorRequest (
 
 
 }
-

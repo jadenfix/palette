@@ -23,16 +23,16 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param baselineOutputs 
- * @param baselineReleaseId 
- * @param candidateOutputs 
- * @param candidateReleaseId 
- * @param evaluatorId 
- * @param evaluatorVersionId 
- * @param kind 
- * @param gatePolicy 
+ *
+ * @param baselineOutputs
+ * @param baselineReleaseId
+ * @param candidateOutputs
+ * @param candidateReleaseId
+ * @param evaluatorId
+ * @param evaluatorVersionId
+ * @param kind
+ * @param gatePolicy
  */
 
 
@@ -66,4 +66,3 @@ data class RunExperimentRequest (
 
 
 }
-

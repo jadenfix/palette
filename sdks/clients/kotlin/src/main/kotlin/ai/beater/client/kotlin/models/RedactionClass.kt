@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: `public`,`internal`,sensitive,secret
  */
@@ -66,4 +66,3 @@ enum class RedactionClass(val value: kotlin.String) {
         }
     }
 }
-

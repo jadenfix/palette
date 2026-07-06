@@ -108,13 +108,25 @@ for lang in "${LANGS[@]}"; do
     fi
   fi
 
-  # The Java generator emits a trailing space in this regenerated enum header.
-  # Normalize the touched file so `regen --check` and `git diff --check` agree.
+  # Some generator templates emit trailing blanks or extra EOF newlines. Normalize
+  # them here so `regen --check` and `git diff --check` agree.
   if [[ "$lang" == "java" ]]; then
     java_audit_action="$out/src/main/java/ai/beater/client/model/AuditAction.java"
     if [[ -f "$java_audit_action" ]]; then
       perl -0pi -e 's/[ \t]+$//mg; s/\n+\z/\n/' "$java_audit_action"
     fi
+  elif [[ "$lang" == "ruby" || "$lang" == "php" || "$lang" == "csharp" || "$lang" == "kotlin" ]]; then
+    find "$out" -type f \
+      ! -name '*.jar' \
+      ! -name '*.zip' \
+      ! -name '*.png' \
+      ! -name '*.jpg' \
+      ! -name '*.jpeg' \
+      ! -name '*.gif' \
+      ! -name '*.ico' \
+      ! -name '*.dll' \
+      ! -name '*.exe' \
+      -print0 | xargs -0 perl -0pi -e 's/[ \t]+$//mg; s/\n+\z/\n/'
   fi
 done
 

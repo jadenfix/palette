@@ -27,4 +27,3 @@ instance = BeaterClient::RunDeterministicEvalRequest.new(
   wasm_hash: null
 )
 ```
-

@@ -14,7 +14,7 @@
 #   test agents   cargo test -p beater-browser*          (browser.yml browser-tests)
 #   test algorithms cargo test -p beater-eval/-stats/-experiments/-judge/...     (eval + stats core)
 #   test contract scripts/check-contract-sync.sh         (sdk-contract.yml)
-#   update-schema regen spec + 7 SDKs + semconv, then verify no drift           (the CLAUDE.md contract workflow)
+#   update-schema regen spec + 11 SDKs + semconv, then verify no drift          (the CLAUDE.md contract workflow)
 #   build         docker image build                     (container-images.yml)
 #   dev / down    docker compose up -d / down            (local stack)
 #
@@ -191,7 +191,7 @@ cmd_ci() {
 cmd_update_schema() {
   banner "update-schema (regenerate the contract)"
   run "regen spec + dashboard snapshot" cargo xtask regen-spec
-  run "regen 7 SDK clients"             scripts/regen-sdks.sh
+  run "regen 11 SDK clients"            scripts/regen-sdks.sh
   run "regen semantic conventions"      cargo xtask regen-semconv
   run "verify no drift"                 scripts/check-contract-sync.sh
   summary
@@ -229,7 +229,7 @@ ${BOLD}Pre-push:${RST}
   ./beater-cli lint              rustfmt --check + clippy + tsc + openapi drift
   ./beater-cli test [target]     target: backend | frontend | agents | algorithms | contract | all
   ./beater-cli ci                everything CI checks, with one pass/FAIL summary
-  ./beater-cli update-schema     regen spec + 7 SDKs + semconv, then verify no drift
+  ./beater-cli update-schema     regen spec + 11 SDKs + semconv, then verify no drift
 
 ${BOLD}Stack / images:${RST}
   ./beater-cli dev [svc...]      docker compose up -d

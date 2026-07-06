@@ -11,6 +11,3 @@
 | **policyId** | **kotlin.String** |  |  |
 | **severity** | [**AlertSeverity**](AlertSeverity.md) |  |  |
 | **signingSecret** | **kotlin.String** |  |  |
-
-
-

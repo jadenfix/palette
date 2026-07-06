@@ -55,8 +55,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param limit  (optional)
@@ -92,8 +92,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param limit  (optional)
@@ -153,8 +153,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param limit  (optional)
@@ -190,8 +190,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param limit  (optional)
@@ -251,8 +251,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param authorization Bearer API token for strict auth (optional)
@@ -287,8 +287,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param authorization Bearer API token for strict auth (optional)
@@ -341,12 +341,12 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId environment_id
-     * @param importSourceHttpRequest 
+     * @param importSourceHttpRequest
      * @param durability  (optional)
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
@@ -378,12 +378,12 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId environment_id
-     * @param importSourceHttpRequest 
+     * @param importSourceHttpRequest
      * @param durability  (optional)
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
@@ -407,7 +407,7 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId environment_id
-     * @param importSourceHttpRequest 
+     * @param importSourceHttpRequest
      * @param durability  (optional)
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
@@ -438,9 +438,9 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
-     * @param nativeIngestRequest 
+     *
+     *
+     * @param nativeIngestRequest
      * @param durability  (optional)
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
@@ -474,9 +474,9 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
-     * @param nativeIngestRequest 
+     *
+     *
+     * @param nativeIngestRequest
      * @param durability  (optional)
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
@@ -499,7 +499,7 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     /**
      * To obtain the request config of the operation ingestNative
      *
-     * @param nativeIngestRequest 
+     * @param nativeIngestRequest
      * @param durability  (optional)
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
@@ -534,8 +534,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId environment_id
@@ -572,8 +572,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId environment_id
@@ -635,8 +635,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param traceId trace_id
@@ -672,8 +672,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param traceId trace_id
@@ -728,8 +728,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param messageId message_id
@@ -766,8 +766,8 @@ class IngestApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param messageId message_id

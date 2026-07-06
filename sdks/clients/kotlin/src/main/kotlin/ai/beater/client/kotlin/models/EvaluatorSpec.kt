@@ -22,11 +22,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param id 
- * @param kind 
- * @param lane 
+ *
+ * @param id
+ * @param kind
+ * @param lane
  */
 
 
@@ -45,4 +45,3 @@ data class EvaluatorSpec (
 
 
 }
-

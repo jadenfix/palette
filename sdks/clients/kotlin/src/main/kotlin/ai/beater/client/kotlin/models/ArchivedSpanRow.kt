@@ -20,32 +20,32 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param attributesJson 
- * @param environmentId 
- * @param kind 
- * @param name 
- * @param projectId 
- * @param rawUri 
- * @param seq 
- * @param spanId 
- * @param startTime 
- * @param status 
- * @param tenantId 
- * @param traceId 
- * @param unmappedJson 
- * @param costAmountMicros 
- * @param costCurrency 
- * @param endTime 
- * @param inputTokens 
- * @param inputUri 
- * @param modelName 
- * @param modelProvider 
- * @param outputTokens 
- * @param outputUri 
- * @param parentSpanId 
- * @param reasoningTokens 
+ *
+ * @param attributesJson
+ * @param environmentId
+ * @param kind
+ * @param name
+ * @param projectId
+ * @param rawUri
+ * @param seq
+ * @param spanId
+ * @param startTime
+ * @param status
+ * @param tenantId
+ * @param traceId
+ * @param unmappedJson
+ * @param costAmountMicros
+ * @param costCurrency
+ * @param endTime
+ * @param inputTokens
+ * @param inputUri
+ * @param modelName
+ * @param modelProvider
+ * @param outputTokens
+ * @param outputUri
+ * @param parentSpanId
+ * @param reasoningTokens
  */
 
 
@@ -127,4 +127,3 @@ data class ArchivedSpanRow (
 
 
 }
-

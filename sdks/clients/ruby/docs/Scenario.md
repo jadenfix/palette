@@ -35,4 +35,3 @@ instance = BeaterClient::Scenario.new(
   title: null
 )
 ```
-

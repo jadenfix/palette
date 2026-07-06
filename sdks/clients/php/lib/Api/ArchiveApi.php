@@ -1047,7 +1047,7 @@ class ArchiveApi
         if ($limit !== null && $limit < 0) {
             throw new \InvalidArgumentException('invalid value for "$limit" when calling ArchiveApi.queryArchiveSpans, must be bigger than or equal to 0.');
         }
-        
+
 
 
 

@@ -36,7 +36,7 @@ describe 'ApiKeysApi' do
   # @param tenant_id tenant_id
   # @param project_id project_id
   # @param environment_id environment_id
-  # @param create_api_key_http_request 
+  # @param create_api_key_http_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth

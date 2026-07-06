@@ -19,4 +19,3 @@ instance = BeaterClient::AlertDecision.new(
   suppressed_reason: null
 )
 ```
-

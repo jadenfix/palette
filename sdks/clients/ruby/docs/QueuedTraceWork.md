@@ -19,4 +19,3 @@ instance = BeaterClient::QueuedTraceWork.new(
   trace_id: null
 )
 ```
-

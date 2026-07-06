@@ -7,6 +7,3 @@
     * `allowed` (value: `"allowed"`)
 
     * `denied` (value: `"denied"`)
-
-
-

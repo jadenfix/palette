@@ -14,6 +14,3 @@
 | Name | Value |
 | ---- | ----- |
 | type | numeric_tolerance |
-
-
-

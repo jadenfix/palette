@@ -15,4 +15,3 @@ instance = BeaterClient::SearchResponse.new(
   hits: null
 )
 ```
-

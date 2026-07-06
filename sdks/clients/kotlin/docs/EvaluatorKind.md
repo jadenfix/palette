@@ -23,6 +23,3 @@
 | Name | Value |
 | ---- | ----- |
 | type | exact_match, regex_match, numeric_tolerance, json_object, cost_budget, latency_budget_ms, llm_judge, browser_task_success, browser_step_efficiency, browser_grounding, browser_recovery |
-
-
-

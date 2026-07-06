@@ -20,12 +20,12 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param name 
- * @param required 
- * @param default 
- * @param description 
+ *
+ * @param name
+ * @param required
+ * @param default
+ * @param description
  */
 
 
@@ -47,4 +47,3 @@ data class PromptVariable (
 
 
 }
-

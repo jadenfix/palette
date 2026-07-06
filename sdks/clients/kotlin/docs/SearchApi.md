@@ -21,16 +21,16 @@ All URIs are relative to *http://localhost*
 
 val apiInstance = SearchApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
-val q : kotlin.String = q_example // kotlin.String | 
-val projectId : kotlin.String = projectId_example // kotlin.String | 
-val environmentId : kotlin.String = environmentId_example // kotlin.String | 
-val traceId : kotlin.String = traceId_example // kotlin.String | 
-val spanId : kotlin.String = spanId_example // kotlin.String | 
-val kind : kotlin.String = kind_example // kotlin.String | 
-val status : kotlin.String = status_example // kotlin.String | 
-val model : kotlin.String = model_example // kotlin.String | 
-val tool : kotlin.String = tool_example // kotlin.String | 
-val limit : kotlin.Int = 56 // kotlin.Int | 
+val q : kotlin.String = q_example // kotlin.String |
+val projectId : kotlin.String = projectId_example // kotlin.String |
+val environmentId : kotlin.String = environmentId_example // kotlin.String |
+val traceId : kotlin.String = traceId_example // kotlin.String |
+val spanId : kotlin.String = spanId_example // kotlin.String |
+val kind : kotlin.String = kind_example // kotlin.String |
+val status : kotlin.String = status_example // kotlin.String |
+val model : kotlin.String = model_example // kotlin.String |
+val tool : kotlin.String = tool_example // kotlin.String |
+val limit : kotlin.Int = 56 // kotlin.Int |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -78,4 +78,3 @@ No authorization required
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
-

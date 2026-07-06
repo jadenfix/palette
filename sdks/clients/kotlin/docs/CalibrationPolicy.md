@@ -5,6 +5,3 @@
 | Name | Type | Description | Notes |
 | ------------ | ------------- | ------------- | ------------- |
 | **passThreshold** | **kotlin.Double** |  |  |
-
-
-

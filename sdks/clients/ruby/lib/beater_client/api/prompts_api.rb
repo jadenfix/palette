@@ -22,7 +22,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param prompt_id [String] prompt_id
-    # @param add_prompt_version_request [AddPromptVersionRequest] 
+    # @param add_prompt_version_request [AddPromptVersionRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -37,7 +37,7 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param prompt_id [String] prompt_id
-    # @param add_prompt_version_request [AddPromptVersionRequest] 
+    # @param add_prompt_version_request [AddPromptVersionRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -115,7 +115,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param create_prompt_request [CreatePromptRequest] 
+    # @param create_prompt_request [CreatePromptRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -129,7 +129,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param create_prompt_request [CreatePromptRequest] 
+    # @param create_prompt_request [CreatePromptRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -204,8 +204,8 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param prompt_id [String] prompt_id
-    # @param from [String] 
-    # @param to [String] 
+    # @param from [String]
+    # @param to [String]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -220,8 +220,8 @@ module BeaterClient
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
     # @param prompt_id [String] prompt_id
-    # @param from [String] 
-    # @param to [String] 
+    # @param from [String]
+    # @param to [String]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth

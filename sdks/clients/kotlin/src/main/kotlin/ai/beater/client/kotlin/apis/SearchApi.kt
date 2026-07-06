@@ -47,8 +47,8 @@ class SearchApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param q  (optional)
      * @param projectId  (optional)
@@ -92,8 +92,8 @@ class SearchApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param q  (optional)
      * @param projectId  (optional)

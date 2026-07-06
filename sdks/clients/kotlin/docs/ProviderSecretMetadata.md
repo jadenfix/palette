@@ -12,6 +12,3 @@
 | **providerSecretId** | **kotlin.String** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
 | **rotatedAt** | [**java.time.OffsetDateTime**](java.time.OffsetDateTime.md) |  |  [optional] |
-
-
-

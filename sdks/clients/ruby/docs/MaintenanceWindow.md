@@ -17,4 +17,3 @@ instance = BeaterClient::MaintenanceWindow.new(
   starts_at: null
 )
 ```
-

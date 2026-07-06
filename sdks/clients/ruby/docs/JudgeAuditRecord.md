@@ -41,4 +41,3 @@ instance = BeaterClient::JudgeAuditRecord.new(
   tenant_id: null
 )
 ```
-

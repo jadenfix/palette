@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param annotationSchema 
- * @param name 
- * @param queueId 
+ *
+ * @param annotationSchema
+ * @param name
+ * @param queueId
  */
 
 
@@ -43,4 +43,3 @@ data class CreateReviewQueueHttpRequest (
 
 
 }
-

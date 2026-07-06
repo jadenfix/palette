@@ -18,6 +18,3 @@
 | **responseHash** | **kotlin.String** |  |  |
 | **score** | **kotlin.Double** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
-
-
-

@@ -31,4 +31,3 @@ instance = BeaterClient::BusMessage.new(
   tenant_id: null
 )
 ```
-

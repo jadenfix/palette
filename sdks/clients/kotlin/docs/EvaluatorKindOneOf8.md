@@ -13,6 +13,3 @@
 | Name | Value |
 | ---- | ----- |
 | type | browser_step_efficiency |
-
-
-

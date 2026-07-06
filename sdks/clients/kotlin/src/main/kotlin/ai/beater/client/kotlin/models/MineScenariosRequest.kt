@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param traceIds 
- * @param jaccardThreshold 
+ *
+ * @param traceIds
+ * @param jaccardThreshold
  */
 
 
@@ -39,4 +39,3 @@ data class MineScenariosRequest (
 
 
 }
-

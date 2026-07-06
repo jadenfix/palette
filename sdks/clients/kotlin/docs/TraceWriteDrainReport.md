@@ -17,6 +17,3 @@
 | **traceRefs** | [**kotlin.collections.List&lt;QueuedTraceWork&gt;**](QueuedTraceWork.md) |  |  |
 | **writtenRaw** | **kotlin.Int** |  |  |
 | **writtenSpans** | **kotlin.Int** |  |  |
-
-
-

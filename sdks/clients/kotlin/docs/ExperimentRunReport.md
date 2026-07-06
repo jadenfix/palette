@@ -17,6 +17,3 @@
 | **projectId** | **kotlin.String** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
 | **gatePolicy** | [**GatePolicy**](GatePolicy.md) |  |  [optional] |
-
-
-

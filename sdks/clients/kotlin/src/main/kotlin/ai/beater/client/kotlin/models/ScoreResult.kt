@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param evidence 
- * @param score 
- * @param label 
+ *
+ * @param evidence
+ * @param score
+ * @param label
  */
 
 
@@ -43,4 +43,3 @@ data class ScoreResult (
 
 
 }
-

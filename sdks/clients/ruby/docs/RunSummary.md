@@ -37,4 +37,3 @@ instance = BeaterClient::RunSummary.new(
   trace_id: null
 )
 ```
-

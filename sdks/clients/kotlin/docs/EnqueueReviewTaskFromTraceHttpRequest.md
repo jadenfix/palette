@@ -10,6 +10,3 @@
 | **priority** | **kotlin.Long** |  |  [optional] |
 | **spanId** | **kotlin.String** |  |  [optional] |
 | **taskId** | **kotlin.String** |  |  [optional] |
-
-
-

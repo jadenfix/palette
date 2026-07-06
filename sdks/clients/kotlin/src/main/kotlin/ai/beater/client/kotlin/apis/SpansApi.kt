@@ -48,8 +48,8 @@ class SpansApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param traceId trace_id
      * @param spanId span_id
@@ -87,8 +87,8 @@ class SpansApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param traceId trace_id
      * @param spanId span_id
@@ -155,8 +155,8 @@ class SpansApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param traceId trace_id
      * @param spanId span_id
@@ -194,8 +194,8 @@ class SpansApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param traceId trace_id
      * @param spanId span_id

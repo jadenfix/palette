@@ -21,21 +21,21 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param consumed 
- * @param deadLettered 
- * @param downstreamPublished 
- * @param duplicateRaw 
- * @param duplicateSpans 
- * @param failedDownstreamPublishes 
- * @param failedWrites 
- * @param invalidMessages 
- * @param retried 
- * @param traceIds 
- * @param traceRefs 
- * @param writtenRaw 
- * @param writtenSpans 
+ *
+ * @param consumed
+ * @param deadLettered
+ * @param downstreamPublished
+ * @param duplicateRaw
+ * @param duplicateSpans
+ * @param failedDownstreamPublishes
+ * @param failedWrites
+ * @param invalidMessages
+ * @param retried
+ * @param traceIds
+ * @param traceRefs
+ * @param writtenRaw
+ * @param writtenSpans
  */
 
 
@@ -84,4 +84,3 @@ data class TraceWriteDrainReport (
 
 
 }
-

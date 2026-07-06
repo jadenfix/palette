@@ -35,7 +35,7 @@ describe 'DatasetsApi' do
   # unit tests for create_dataset
   # @param tenant_id tenant_id
   # @param project_id project_id
-  # @param create_dataset_request 
+  # @param create_dataset_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -52,7 +52,7 @@ describe 'DatasetsApi' do
   # @param tenant_id tenant_id
   # @param project_id project_id
   # @param dataset_id dataset_id
-  # @param create_dataset_version_request 
+  # @param create_dataset_version_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -69,7 +69,7 @@ describe 'DatasetsApi' do
   # @param tenant_id tenant_id
   # @param project_id project_id
   # @param dataset_id dataset_id
-  # @param promote_trace_case_request 
+  # @param promote_trace_case_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth

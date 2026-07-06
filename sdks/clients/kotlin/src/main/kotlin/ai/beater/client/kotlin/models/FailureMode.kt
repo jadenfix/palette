@@ -72,4 +72,3 @@ enum class FailureMode(val value: kotlin.String) {
         }
     }
 }
-

@@ -37,4 +37,3 @@ instance = BeaterClient::ExperimentComparison.new(
   test: null
 )
 ```
-

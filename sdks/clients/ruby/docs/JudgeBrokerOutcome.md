@@ -19,4 +19,3 @@ instance = BeaterClient::JudgeBrokerOutcome.new(
   result: null
 )
 ```
-

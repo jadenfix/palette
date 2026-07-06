@@ -23,4 +23,3 @@ instance = BeaterClient::DeadLetterReplayReport.new(
   tenant_id: null
 )
 ```
-

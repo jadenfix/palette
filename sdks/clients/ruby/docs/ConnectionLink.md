@@ -19,4 +19,3 @@ instance = BeaterClient::ConnectionLink.new(
   redirect_url: null
 )
 ```
-

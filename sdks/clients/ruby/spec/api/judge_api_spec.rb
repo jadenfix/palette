@@ -35,7 +35,7 @@ describe 'JudgeApi' do
   # unit tests for evaluate_judge
   # @param tenant_id tenant_id
   # @param project_id project_id
-  # @param run_judge_eval_http_request 
+  # @param run_judge_eval_http_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth

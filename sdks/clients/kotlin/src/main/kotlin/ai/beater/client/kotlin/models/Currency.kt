@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: USD
  */
@@ -57,4 +57,3 @@ enum class Currency(val value: kotlin.String) {
         }
     }
 }
-

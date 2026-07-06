@@ -53,4 +53,3 @@ instance = BeaterClient::GateRunReport.new(
   tenant_id: null
 )
 ```
-

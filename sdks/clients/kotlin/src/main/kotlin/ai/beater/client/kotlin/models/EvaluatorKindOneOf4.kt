@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param maxMicros 
- * @param type 
+ *
+ * @param maxMicros
+ * @param type
  */
 
 
@@ -38,7 +38,7 @@ data class EvaluatorKindOneOf4 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: cost_budget
      */
@@ -48,4 +48,3 @@ data class EvaluatorKindOneOf4 (
     }
 
 }
-

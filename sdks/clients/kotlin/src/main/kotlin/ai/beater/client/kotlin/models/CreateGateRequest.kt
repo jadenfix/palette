@@ -21,13 +21,13 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param gateId 
- * @param name 
- * @param datasetId 
- * @param evaluatorVersionId 
- * @param inconclusivePolicy 
+ *
+ * @param gateId
+ * @param name
+ * @param datasetId
+ * @param evaluatorVersionId
+ * @param inconclusivePolicy
  */
 
 
@@ -52,4 +52,3 @@ data class CreateGateRequest (
 
 
 }
-

@@ -23,20 +23,20 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param firstSpanName 
- * @param models 
- * @param projectId 
- * @param releaseIds 
- * @param spanCount 
- * @param startedAt 
- * @param status 
- * @param tenantId 
- * @param traceId 
- * @param durationMs 
- * @param endedAt 
- * @param totalCost 
+ *
+ * @param firstSpanName
+ * @param models
+ * @param projectId
+ * @param releaseIds
+ * @param spanCount
+ * @param startedAt
+ * @param status
+ * @param tenantId
+ * @param traceId
+ * @param durationMs
+ * @param endedAt
+ * @param totalCost
  */
 
 
@@ -82,4 +82,3 @@ data class RunSummary (
 
 
 }
-

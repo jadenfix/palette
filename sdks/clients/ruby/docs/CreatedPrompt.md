@@ -17,4 +17,3 @@ instance = BeaterClient::CreatedPrompt.new(
   version: null
 )
 ```
-

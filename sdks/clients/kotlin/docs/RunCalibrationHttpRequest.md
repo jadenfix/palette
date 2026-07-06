@@ -7,6 +7,3 @@
 | **evalReportId** | **kotlin.String** |  |  [optional] |
 | **evaluatorVersionId** | **kotlin.String** |  |  [optional] |
 | **passThreshold** | **kotlin.Double** |  |  [optional] |
-
-
-

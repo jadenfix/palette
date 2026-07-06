@@ -11,6 +11,3 @@
 | **noAuth** | **kotlin.Boolean** | &#x60;true&#x60; when the tool executes without a connected account. |  [optional] |
 | **tags** | **kotlin.collections.List&lt;kotlin.String&gt;** | Free-form tags Composio assigns (categories, importance, …). |  [optional] |
 | **toolkit** | **kotlin.String** | Owning toolkit slug (e.g. &#x60;github&#x60;), when known. |  [optional] |
-
-
-

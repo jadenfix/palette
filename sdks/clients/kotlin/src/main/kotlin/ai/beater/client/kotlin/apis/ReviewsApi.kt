@@ -55,11 +55,11 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createReviewQueueHttpRequest 
+     * @param createReviewQueueHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -92,11 +92,11 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createReviewQueueHttpRequest 
+     * @param createReviewQueueHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -120,7 +120,7 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
      *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createReviewQueueHttpRequest 
+     * @param createReviewQueueHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -149,12 +149,12 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param queueId queue_id
-     * @param enqueueReviewTaskFromTraceHttpRequest 
+     * @param enqueueReviewTaskFromTraceHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -187,12 +187,12 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param queueId queue_id
-     * @param enqueueReviewTaskFromTraceHttpRequest 
+     * @param enqueueReviewTaskFromTraceHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -217,7 +217,7 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param queueId queue_id
-     * @param enqueueReviewTaskFromTraceHttpRequest 
+     * @param enqueueReviewTaskFromTraceHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -246,8 +246,8 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param queueId queue_id
@@ -284,8 +284,8 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param queueId queue_id
@@ -347,14 +347,14 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param queueId queue_id
      * @param taskId task_id
      * @param annotationId annotation_id
-     * @param promoteReviewAnnotationHttpRequest 
+     * @param promoteReviewAnnotationHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -387,14 +387,14 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param queueId queue_id
      * @param taskId task_id
      * @param annotationId annotation_id
-     * @param promoteReviewAnnotationHttpRequest 
+     * @param promoteReviewAnnotationHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -421,7 +421,7 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
      * @param queueId queue_id
      * @param taskId task_id
      * @param annotationId annotation_id
-     * @param promoteReviewAnnotationHttpRequest 
+     * @param promoteReviewAnnotationHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -450,13 +450,13 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param queueId queue_id
      * @param taskId task_id
-     * @param submitReviewAnnotationHttpRequest 
+     * @param submitReviewAnnotationHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -489,13 +489,13 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param queueId queue_id
      * @param taskId task_id
-     * @param submitReviewAnnotationHttpRequest 
+     * @param submitReviewAnnotationHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -521,7 +521,7 @@ class ReviewsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
      * @param projectId project_id
      * @param queueId queue_id
      * @param taskId task_id
-     * @param submitReviewAnnotationHttpRequest 
+     * @param submitReviewAnnotationHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)

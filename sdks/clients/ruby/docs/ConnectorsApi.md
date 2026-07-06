@@ -27,7 +27,7 @@ require 'beater_client'
 api_instance = BeaterClient::ConnectorsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
-connect_connector_request = BeaterClient::ConnectConnectorRequest.new({toolkit: 'toolkit_example'}) # ConnectConnectorRequest | 
+connect_connector_request = BeaterClient::ConnectConnectorRequest.new({toolkit: 'toolkit_example'}) # ConnectConnectorRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -36,7 +36,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.connect_connector(tenant_id, project_id, connect_connector_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -52,7 +52,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.connect_connector_with_http_info(tenant_id, project_id, connect_connector_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -112,7 +112,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.connector_status(tenant_id, project_id, toolkit, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -128,7 +128,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.connector_status_with_http_info(tenant_id, project_id, toolkit, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -188,7 +188,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.get_connector_skills(tenant_id, project_id, toolkit, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -204,7 +204,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.get_connector_skills_with_http_info(tenant_id, project_id, toolkit, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -255,7 +255,7 @@ require 'beater_client'
 api_instance = BeaterClient::ConnectorsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
-invoke_connector_request = BeaterClient::InvokeConnectorRequest.new({tool: 'tool_example'}) # InvokeConnectorRequest | 
+invoke_connector_request = BeaterClient::InvokeConnectorRequest.new({tool: 'tool_example'}) # InvokeConnectorRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -264,7 +264,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.invoke_connector_tool(tenant_id, project_id, invoke_connector_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -280,7 +280,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.invoke_connector_tool_with_http_info(tenant_id, project_id, invoke_connector_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -341,7 +341,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.list_connector_tools(tenant_id, project_id, toolkit, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -357,7 +357,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.list_connector_tools_with_http_info(tenant_id, project_id, toolkit, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -418,7 +418,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.list_connectors(tenant_id, project_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -434,7 +434,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.list_connectors_with_http_info(tenant_id, project_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -468,4 +468,3 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
-

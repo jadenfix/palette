@@ -21,4 +21,3 @@ instance = BeaterClient::DiffLine.new(
   text: null
 )
 ```
-

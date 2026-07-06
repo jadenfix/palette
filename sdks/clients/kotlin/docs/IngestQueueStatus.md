@@ -10,6 +10,3 @@
 | **totalDepth** | **kotlin.Int** |  |  |
 | **traceIngestedDepth** | **kotlin.Int** |  |  |
 | **traceWriteDepth** | **kotlin.Int** |  |  |
-
-
-

@@ -15,4 +15,3 @@ instance = BeaterClient::RunGateRequest.new(
   experiment_run_id: null
 )
 ```
-

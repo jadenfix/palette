@@ -9,6 +9,3 @@
 | **name** | **kotlin.String** |  |  |
 | **projectId** | **kotlin.String** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
-
-
-

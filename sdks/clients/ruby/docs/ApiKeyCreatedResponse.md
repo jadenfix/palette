@@ -29,4 +29,3 @@ instance = BeaterClient::ApiKeyCreatedResponse.new(
   tenant_id: null
 )
 ```
-

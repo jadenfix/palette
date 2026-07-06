@@ -24,28 +24,28 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param baselineReleaseId 
- * @param candidateReleaseId 
- * @param comparison 
- * @param createdAt 
- * @param datasetId 
- * @param evaluatorVersionId 
- * @param experimentCreatedAt 
- * @param experimentDecision 
- * @param experimentGatePolicy 
- * @param experimentRunId 
- * @param gateId 
- * @param gateName 
- * @param gateRunId 
- * @param inconclusivePolicy 
- * @param passed 
- * @param projectId 
- * @param reason 
- * @param tenantId 
- * @param gateDatasetId 
- * @param gateEvaluatorVersionId 
+ *
+ * @param baselineReleaseId
+ * @param candidateReleaseId
+ * @param comparison
+ * @param createdAt
+ * @param datasetId
+ * @param evaluatorVersionId
+ * @param experimentCreatedAt
+ * @param experimentDecision
+ * @param experimentGatePolicy
+ * @param experimentRunId
+ * @param gateId
+ * @param gateName
+ * @param gateRunId
+ * @param inconclusivePolicy
+ * @param passed
+ * @param projectId
+ * @param reason
+ * @param tenantId
+ * @param gateDatasetId
+ * @param gateEvaluatorVersionId
  */
 
 
@@ -115,4 +115,3 @@ data class GateRunReport (
 
 
 }
-

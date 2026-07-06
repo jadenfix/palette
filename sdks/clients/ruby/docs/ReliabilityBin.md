@@ -27,4 +27,3 @@ instance = BeaterClient::ReliabilityBin.new(
   upper_bound: null
 )
 ```
-

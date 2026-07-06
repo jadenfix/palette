@@ -20,9 +20,9 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param experimentRunId 
+ *
+ * @param experimentRunId
  */
 
 
@@ -35,4 +35,3 @@ data class RunGateRequest (
 
 
 }
-

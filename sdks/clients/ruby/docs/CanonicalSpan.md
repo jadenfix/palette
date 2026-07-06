@@ -57,4 +57,3 @@ instance = BeaterClient::CanonicalSpan.new(
   unmapped_attrs: null
 )
 ```
-

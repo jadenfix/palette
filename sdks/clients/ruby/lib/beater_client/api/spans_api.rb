@@ -23,8 +23,8 @@ module BeaterClient
     # @param trace_id [String] trace_id
     # @param span_id [String] span_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Boolean] :unmask 
-    # @option opts [String] :reason 
+    # @option opts [Boolean] :unmask
+    # @option opts [String] :reason
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -39,8 +39,8 @@ module BeaterClient
     # @param trace_id [String] trace_id
     # @param span_id [String] span_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Boolean] :unmask 
-    # @option opts [String] :reason 
+    # @option opts [Boolean] :unmask
+    # @option opts [String] :reason
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -112,8 +112,8 @@ module BeaterClient
     # @param trace_id [String] trace_id
     # @param span_id [String] span_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Boolean] :unmask 
-    # @option opts [String] :reason 
+    # @option opts [Boolean] :unmask
+    # @option opts [String] :reason
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -128,8 +128,8 @@ module BeaterClient
     # @param trace_id [String] trace_id
     # @param span_id [String] span_id
     # @param [Hash] opts the optional parameters
-    # @option opts [Boolean] :unmask 
-    # @option opts [String] :reason 
+    # @option opts [Boolean] :unmask
+    # @option opts [String] :reason
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
     # @option opts [String] :x_beater_project_id Strict-auth project scope

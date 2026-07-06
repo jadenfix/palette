@@ -13,6 +13,3 @@
 | Name | Value |
 | ---- | ----- |
 | type | cost_budget |
-
-
-

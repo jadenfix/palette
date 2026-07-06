@@ -17,4 +17,3 @@ instance = BeaterClient::PublishAck.new(
   duplicate: null
 )
 ```
-

@@ -21,10 +21,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param items 
- * @param nextCursor 
+ *
+ * @param items
+ * @param nextCursor
  */
 
 
@@ -40,4 +40,3 @@ data class PageRunSummary (
 
 
 }
-

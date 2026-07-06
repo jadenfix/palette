@@ -8,6 +8,3 @@
 | **acceptedSpans** | **kotlin.Int** |  |  |
 | **duplicateRaw** | **kotlin.Int** |  |  |
 | **duplicateSpans** | **kotlin.Int** |  |  |
-
-
-

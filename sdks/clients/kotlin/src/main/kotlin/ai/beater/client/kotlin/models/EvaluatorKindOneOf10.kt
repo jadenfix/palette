@@ -22,7 +22,7 @@ import com.squareup.moshi.JsonClass
 /**
  * Browser recovery: passes when the run either hit no errors or recovered to a successful final step (catches death spirals after a failed action).
  *
- * @param type 
+ * @param type
  */
 
 
@@ -34,7 +34,7 @@ data class EvaluatorKindOneOf10 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: browser_recovery
      */
@@ -44,4 +44,3 @@ data class EvaluatorKindOneOf10 (
     }
 
 }
-

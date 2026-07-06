@@ -12,6 +12,3 @@
 | **datasetId** | **kotlin.String** |  |  [optional] |
 | **evaluatorVersionId** | **kotlin.String** |  |  [optional] |
 | **inconclusivePolicy** | [**InconclusivePolicy**](InconclusivePolicy.md) |  |  [optional] |
-
-
-

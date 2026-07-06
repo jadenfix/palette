@@ -12,4 +12,3 @@ require 'beater_client'
 
 instance = BeaterClient::EvaluatorLane.new()
 ```
-

@@ -26,7 +26,7 @@ require 'beater_client'
 api_instance = BeaterClient::ReviewsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
-create_review_queue_http_request = BeaterClient::CreateReviewQueueHttpRequest.new({annotation_schema: 3.56, name: 'name_example'}) # CreateReviewQueueHttpRequest | 
+create_review_queue_http_request = BeaterClient::CreateReviewQueueHttpRequest.new({annotation_schema: 3.56, name: 'name_example'}) # CreateReviewQueueHttpRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -35,7 +35,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.create_review_queue(tenant_id, project_id, create_review_queue_http_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -51,7 +51,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.create_review_queue_with_http_info(tenant_id, project_id, create_review_queue_http_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -103,7 +103,7 @@ api_instance = BeaterClient::ReviewsApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 queue_id = 'queue_id_example' # String | queue_id
-enqueue_review_task_from_trace_http_request = BeaterClient::EnqueueReviewTaskFromTraceHttpRequest.new({trace_id: 'trace_id_example'}) # EnqueueReviewTaskFromTraceHttpRequest | 
+enqueue_review_task_from_trace_http_request = BeaterClient::EnqueueReviewTaskFromTraceHttpRequest.new({trace_id: 'trace_id_example'}) # EnqueueReviewTaskFromTraceHttpRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -112,7 +112,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.enqueue_review_task_from_trace(tenant_id, project_id, queue_id, enqueue_review_task_from_trace_http_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -128,7 +128,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.enqueue_review_task_from_trace_with_http_info(tenant_id, project_id, queue_id, enqueue_review_task_from_trace_http_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -182,7 +182,7 @@ tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 queue_id = 'queue_id_example' # String | queue_id
 opts = {
-  state: BeaterClient::ReviewTaskState::OPEN, # ReviewTaskState | 
+  state: BeaterClient::ReviewTaskState::OPEN, # ReviewTaskState |
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
   x_beater_project_id: 'x_beater_project_id_example', # String | Strict-auth project scope
@@ -190,7 +190,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.list_review_tasks(tenant_id, project_id, queue_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -206,7 +206,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.list_review_tasks_with_http_info(tenant_id, project_id, queue_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -261,7 +261,7 @@ project_id = 'project_id_example' # String | project_id
 queue_id = 'queue_id_example' # String | queue_id
 task_id = 'task_id_example' # String | task_id
 annotation_id = 'annotation_id_example' # String | annotation_id
-promote_review_annotation_http_request = BeaterClient::PromoteReviewAnnotationHttpRequest.new({dataset_id: 'dataset_id_example'}) # PromoteReviewAnnotationHttpRequest | 
+promote_review_annotation_http_request = BeaterClient::PromoteReviewAnnotationHttpRequest.new({dataset_id: 'dataset_id_example'}) # PromoteReviewAnnotationHttpRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -270,7 +270,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.promote_review_annotation(tenant_id, project_id, queue_id, task_id, annotation_id, promote_review_annotation_http_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -286,7 +286,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.promote_review_annotation_with_http_info(tenant_id, project_id, queue_id, task_id, annotation_id, promote_review_annotation_http_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -342,7 +342,7 @@ tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 queue_id = 'queue_id_example' # String | queue_id
 task_id = 'task_id_example' # String | task_id
-submit_review_annotation_http_request = BeaterClient::SubmitReviewAnnotationHttpRequest.new({payload: 3.56, reviewer_id: 'reviewer_id_example', verdict: BeaterClient::ReviewVerdict::PASS}) # SubmitReviewAnnotationHttpRequest | 
+submit_review_annotation_http_request = BeaterClient::SubmitReviewAnnotationHttpRequest.new({payload: 3.56, reviewer_id: 'reviewer_id_example', verdict: BeaterClient::ReviewVerdict::PASS}) # SubmitReviewAnnotationHttpRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -351,7 +351,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.submit_review_annotation(tenant_id, project_id, queue_id, task_id, submit_review_annotation_http_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -367,7 +367,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.submit_review_annotation_with_http_info(tenant_id, project_id, queue_id, task_id, submit_review_annotation_http_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -403,4 +403,3 @@ No authorization required
 
 - **Content-Type**: application/json
 - **Accept**: application/json
-

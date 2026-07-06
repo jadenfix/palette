@@ -25,30 +25,30 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param attributes 
- * @param environmentId 
+ *
+ * @param attributes
+ * @param environmentId
  * @param kind Canonical agent span kind such as agent.run or llm.call
- * @param name 
- * @param normalizerVersion 
- * @param projectId 
- * @param rawRef 
- * @param schemaVersion 
- * @param seq 
- * @param spanId 
- * @param startTime 
- * @param status 
- * @param tenantId 
- * @param traceId 
- * @param unmappedAttrs 
- * @param cost 
- * @param endTime 
- * @param inputRef 
- * @param model 
- * @param outputRef 
- * @param parentSpanId 
- * @param tokens 
+ * @param name
+ * @param normalizerVersion
+ * @param projectId
+ * @param rawRef
+ * @param schemaVersion
+ * @param seq
+ * @param spanId
+ * @param startTime
+ * @param status
+ * @param tenantId
+ * @param traceId
+ * @param unmappedAttrs
+ * @param cost
+ * @param endTime
+ * @param inputRef
+ * @param model
+ * @param outputRef
+ * @param parentSpanId
+ * @param tokens
  */
 
 
@@ -125,4 +125,3 @@ data class CanonicalSpan (
 
 
 }
-

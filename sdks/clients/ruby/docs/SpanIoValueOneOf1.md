@@ -17,4 +17,3 @@ instance = BeaterClient::SpanIoValueOneOf1.new(
   kind: null
 )
 ```
-

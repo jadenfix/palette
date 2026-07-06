@@ -25,4 +25,3 @@ instance = BeaterClient::EnqueueReviewTaskFromTraceHttpRequest.new(
   trace_id: null
 )
 ```
-

@@ -25,12 +25,12 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param kind 
- * @param `value` 
- * @param artifactRef 
- * @param reason 
+ *
+ * @param kind
+ * @param `value`
+ * @param artifactRef
+ * @param reason
  */
 
 
@@ -51,7 +51,7 @@ data class SpanIoValue (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: missing
      */
@@ -61,4 +61,3 @@ data class SpanIoValue (
     }
 
 }
-

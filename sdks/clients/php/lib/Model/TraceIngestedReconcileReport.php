@@ -657,5 +657,3 @@ class TraceIngestedReconcileReport implements ModelInterface, ArrayAccess, \Json
         return json_encode(ObjectSerializer::sanitizeForSerialization($this));
     }
 }
-
-

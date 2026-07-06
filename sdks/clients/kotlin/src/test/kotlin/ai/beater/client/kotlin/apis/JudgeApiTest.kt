@@ -34,7 +34,7 @@ class JudgeApiTest : ShouldSpec() {
             // uncomment below to test evaluateJudge
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-            //val runJudgeEvalHttpRequest : RunJudgeEvalHttpRequest =  // RunJudgeEvalHttpRequest | 
+            //val runJudgeEvalHttpRequest : RunJudgeEvalHttpRequest =  // RunJudgeEvalHttpRequest |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope

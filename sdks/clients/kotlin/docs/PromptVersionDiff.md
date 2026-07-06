@@ -7,6 +7,3 @@
 | **fromVersionId** | **kotlin.String** |  |  |
 | **lines** | [**kotlin.collections.List&lt;DiffLine&gt;**](DiffLine.md) |  |  |
 | **toVersionId** | **kotlin.String** |  |  |
-
-
-

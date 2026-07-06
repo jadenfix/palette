@@ -7,6 +7,3 @@
 | **displayName** | **kotlin.String** |  |  |
 | **provider** | **kotlin.String** |  |  |
 | **secretValue** | **kotlin.String** |  |  |
-
-
-

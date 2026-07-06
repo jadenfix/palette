@@ -20,12 +20,12 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param humanFailJudgeFail 
- * @param humanFailJudgePass 
- * @param humanPassJudgeFail 
- * @param humanPassJudgePass 
+ *
+ * @param humanFailJudgeFail
+ * @param humanFailJudgePass
+ * @param humanPassJudgeFail
+ * @param humanPassJudgePass
  */
 
 
@@ -47,4 +47,3 @@ data class CalibrationConfusion (
 
 
 }
-

@@ -23,4 +23,3 @@ instance = BeaterClient::CreateScenarioRequest.new(
   title: null
 )
 ```
-

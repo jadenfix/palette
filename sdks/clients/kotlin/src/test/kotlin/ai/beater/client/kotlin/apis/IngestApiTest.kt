@@ -40,7 +40,7 @@ class IngestApiTest : ShouldSpec() {
             // uncomment below to test drainTraceIngested
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-            //val limit : kotlin.Int = 56 // kotlin.Int | 
+            //val limit : kotlin.Int = 56 // kotlin.Int |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -54,7 +54,7 @@ class IngestApiTest : ShouldSpec() {
             // uncomment below to test drainTraceWrites
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-            //val limit : kotlin.Int = 56 // kotlin.Int | 
+            //val limit : kotlin.Int = 56 // kotlin.Int |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -82,8 +82,8 @@ class IngestApiTest : ShouldSpec() {
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
             //val environmentId : kotlin.String = environmentId_example // kotlin.String | environment_id
-            //val importSourceHttpRequest : ImportSourceHttpRequest =  // ImportSourceHttpRequest | 
-            //val durability : kotlin.String = durability_example // kotlin.String | 
+            //val importSourceHttpRequest : ImportSourceHttpRequest =  // ImportSourceHttpRequest |
+            //val durability : kotlin.String = durability_example // kotlin.String |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val result : IngestOutcome = apiInstance.importSource(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey)
@@ -93,8 +93,8 @@ class IngestApiTest : ShouldSpec() {
         // to test ingestNative
         should("test ingestNative") {
             // uncomment below to test ingestNative
-            //val nativeIngestRequest : NativeIngestRequest =  // NativeIngestRequest | 
-            //val durability : kotlin.String = durability_example // kotlin.String | 
+            //val nativeIngestRequest : NativeIngestRequest =  // NativeIngestRequest |
+            //val durability : kotlin.String = durability_example // kotlin.String |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -109,7 +109,7 @@ class IngestApiTest : ShouldSpec() {
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
             //val environmentId : kotlin.String = environmentId_example // kotlin.String | environment_id
-            //val durability : kotlin.String = durability_example // kotlin.String | 
+            //val durability : kotlin.String = durability_example // kotlin.String |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -138,7 +138,7 @@ class IngestApiTest : ShouldSpec() {
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
             //val messageId : kotlin.String = messageId_example // kotlin.String | message_id
-            //val resetAttempts : kotlin.Boolean = true // kotlin.Boolean | 
+            //val resetAttempts : kotlin.Boolean = true // kotlin.Boolean |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope

@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: trace_write,trace_read,dataset_write,scenario_write,scenario_read,eval_run,pii_unmask,admin
  */
@@ -78,4 +78,3 @@ enum class ApiScope(val value: kotlin.String) {
         }
     }
 }
-

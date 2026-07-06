@@ -19,4 +19,3 @@ instance = BeaterClient::RevokedApiKey.new(
   rotated_at: null
 )
 ```
-

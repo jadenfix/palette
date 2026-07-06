@@ -19,4 +19,3 @@ instance = BeaterClient::PromptVersionMetadata.new(
   message: null
 )
 ```
-

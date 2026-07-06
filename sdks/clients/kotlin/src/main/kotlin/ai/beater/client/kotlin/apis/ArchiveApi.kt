@@ -48,8 +48,8 @@ class ArchiveApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param traceId trace_id
@@ -85,8 +85,8 @@ class ArchiveApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param traceId trace_id
@@ -141,8 +141,8 @@ class ArchiveApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId  (optional)
@@ -183,8 +183,8 @@ class ArchiveApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId  (optional)

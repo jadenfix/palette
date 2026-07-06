@@ -23,4 +23,3 @@ instance = BeaterClient::OtlpIngestOutcome.new(
   duplicate_spans: null
 )
 ```
-

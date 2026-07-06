@@ -21,4 +21,3 @@ instance = BeaterClient::OnlineSamplingPolicy.new(
   slow_ms_threshold: null
 )
 ```
-

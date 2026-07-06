@@ -10,6 +10,3 @@
 | **staleSource** | **kotlin.Boolean** | Serve a stale version of a context source. |  |
 | **timeout** | **kotlin.Boolean** | Force a timeout on a dependency. |  |
 | **toolSchemaMismatch** | **kotlin.Boolean** | Present a tool whose schema mismatches expectations. |  |
-
-
-

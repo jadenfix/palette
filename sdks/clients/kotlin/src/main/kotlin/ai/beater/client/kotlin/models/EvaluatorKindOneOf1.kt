@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param pattern 
- * @param type 
+ *
+ * @param pattern
+ * @param type
  */
 
 
@@ -38,7 +38,7 @@ data class EvaluatorKindOneOf1 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: regex_match
      */
@@ -48,4 +48,3 @@ data class EvaluatorKindOneOf1 (
     }
 
 }
-

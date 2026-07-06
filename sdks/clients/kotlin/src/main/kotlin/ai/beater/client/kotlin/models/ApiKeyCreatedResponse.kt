@@ -21,16 +21,16 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param active 
- * @param apiKeyId 
- * @param createdAt 
- * @param environmentId 
- * @param projectId 
- * @param scopes 
- * @param secret 
- * @param tenantId 
+ *
+ * @param active
+ * @param apiKeyId
+ * @param createdAt
+ * @param environmentId
+ * @param projectId
+ * @param scopes
+ * @param secret
+ * @param tenantId
  */
 
 
@@ -64,4 +64,3 @@ data class ApiKeyCreatedResponse (
 
 
 }
-

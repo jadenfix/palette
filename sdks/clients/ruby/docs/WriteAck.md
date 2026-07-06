@@ -21,4 +21,3 @@ instance = BeaterClient::WriteAck.new(
   duplicate_spans: null
 )
 ```
-

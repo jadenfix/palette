@@ -21,17 +21,17 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param annotationId 
- * @param createdAt 
- * @param payload 
- * @param projectId 
- * @param queueId 
- * @param reviewerId 
- * @param taskId 
- * @param tenantId 
- * @param verdict 
+ *
+ * @param annotationId
+ * @param createdAt
+ * @param payload
+ * @param projectId
+ * @param queueId
+ * @param reviewerId
+ * @param taskId
+ * @param tenantId
+ * @param verdict
  */
 
 
@@ -68,4 +68,3 @@ data class ReviewAnnotation (
 
 
 }
-

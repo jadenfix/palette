@@ -21,11 +21,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param spans 
- * @param tenantId 
- * @param traceId 
+ *
+ * @param spans
+ * @param tenantId
+ * @param traceId
  */
 
 
@@ -44,4 +44,3 @@ data class TraceView (
 
 
 }
-

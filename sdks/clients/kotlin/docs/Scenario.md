@@ -15,6 +15,3 @@
 | **sourceTraceIds** | **kotlin.collections.List&lt;kotlin.String&gt;** | Trace ids the scenario was mined from, sorted ascending. |  |
 | **title** | **kotlin.String** | Human-readable title. |  |
 | **expectedOutcome** | **kotlin.String** | Expected outcome for replay assertions, if known. |  [optional] |
-
-
-

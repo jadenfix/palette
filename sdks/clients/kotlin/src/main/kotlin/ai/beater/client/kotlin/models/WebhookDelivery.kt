@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param body 
- * @param endpointUrl 
- * @param headers 
+ *
+ * @param body
+ * @param endpointUrl
+ * @param headers
  */
 
 
@@ -43,4 +43,3 @@ data class WebhookDelivery (
 
 
 }
-

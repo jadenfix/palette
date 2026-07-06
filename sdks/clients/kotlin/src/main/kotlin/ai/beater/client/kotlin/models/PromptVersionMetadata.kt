@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param createdAt 
- * @param createdBy 
- * @param message 
+ *
+ * @param createdAt
+ * @param createdBy
+ * @param message
  */
 
 
@@ -43,4 +43,3 @@ data class PromptVersionMetadata (
 
 
 }
-

@@ -36,7 +36,7 @@ describe 'PromptsApi' do
   # @param tenant_id tenant_id
   # @param project_id project_id
   # @param prompt_id prompt_id
-  # @param add_prompt_version_request 
+  # @param add_prompt_version_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -52,7 +52,7 @@ describe 'PromptsApi' do
   # unit tests for create_prompt
   # @param tenant_id tenant_id
   # @param project_id project_id
-  # @param create_prompt_request 
+  # @param create_prompt_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -69,8 +69,8 @@ describe 'PromptsApi' do
   # @param tenant_id tenant_id
   # @param project_id project_id
   # @param prompt_id prompt_id
-  # @param from 
-  # @param to 
+  # @param from
+  # @param to
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth

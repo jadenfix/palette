@@ -440,5 +440,3 @@ class SpanIoValueOneOf3 implements ModelInterface, ArrayAccess, \JsonSerializabl
         return json_encode(ObjectSerializer::sanitizeForSerialization($this));
     }
 }
-
-

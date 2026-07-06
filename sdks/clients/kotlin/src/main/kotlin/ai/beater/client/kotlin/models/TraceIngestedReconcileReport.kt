@@ -20,15 +20,15 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param downstreamAccepted 
- * @param downstreamDuplicate 
- * @param downstreamQueued 
- * @param projectId 
- * @param spanCount 
- * @param tenantId 
- * @param traceId 
+ *
+ * @param downstreamAccepted
+ * @param downstreamDuplicate
+ * @param downstreamQueued
+ * @param projectId
+ * @param spanCount
+ * @param tenantId
+ * @param traceId
  */
 
 
@@ -59,4 +59,3 @@ data class TraceIngestedReconcileReport (
 
 
 }
-

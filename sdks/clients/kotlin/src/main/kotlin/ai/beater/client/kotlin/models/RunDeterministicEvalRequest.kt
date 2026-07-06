@@ -21,15 +21,15 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param agentReleaseId 
- * @param evaluatorId 
- * @param evaluatorVersionId 
- * @param kind 
- * @param codeHash 
- * @param promptVersionId 
- * @param wasmHash 
+ *
+ * @param agentReleaseId
+ * @param evaluatorId
+ * @param evaluatorVersionId
+ * @param kind
+ * @param codeHash
+ * @param promptVersionId
+ * @param wasmHash
  */
 
 
@@ -60,4 +60,3 @@ data class RunDeterministicEvalRequest (
 
 
 }
-

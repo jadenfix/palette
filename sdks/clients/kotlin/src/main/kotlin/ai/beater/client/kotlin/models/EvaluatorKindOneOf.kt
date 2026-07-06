@@ -20,9 +20,9 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param type 
+ *
+ * @param type
  */
 
 
@@ -34,7 +34,7 @@ data class EvaluatorKindOneOf (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: exact_match
      */
@@ -44,4 +44,3 @@ data class EvaluatorKindOneOf (
     }
 
 }
-

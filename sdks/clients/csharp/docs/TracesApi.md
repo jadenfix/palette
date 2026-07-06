@@ -36,12 +36,12 @@ namespace Example
             var apiInstance = new TracesApi(httpClient, config, httpClientHandler);
             var tenantId = "tenantId_example";  // string | tenant_id
             var traceId = "traceId_example";  // string | trace_id
-            var unmask = true;  // bool? |  (optional) 
-            var reason = "reason_example";  // string? |  (optional) 
-            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional) 
-            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional) 
-            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional) 
-            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional) 
+            var unmask = true;  // bool? |  (optional)
+            var reason = "reason_example";  // string? |  (optional)
+            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional)
+            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional)
+            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional)
+            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional)
 
             try
             {
@@ -144,25 +144,25 @@ namespace Example
             HttpClientHandler httpClientHandler = new HttpClientHandler();
             var apiInstance = new TracesApi(httpClient, config, httpClientHandler);
             var tenantId = "tenantId_example";  // string | tenant_id
-            var projectId = "projectId_example";  // string? |  (optional) 
-            var environmentId = "environmentId_example";  // string? |  (optional) 
-            var traceId = "traceId_example";  // string? |  (optional) 
-            var kind = "kind_example";  // string? |  (optional) 
-            var status = "status_example";  // string? |  (optional) 
-            var startedAfter = "startedAfter_example";  // string? |  (optional) 
-            var startedBefore = "startedBefore_example";  // string? |  (optional) 
-            var model = "model_example";  // string? |  (optional) 
-            var release = "release_example";  // string? |  (optional) 
-            var minCostMicros = 789L;  // long? |  (optional) 
-            var maxCostMicros = 789L;  // long? |  (optional) 
-            var minLatencyMs = 789L;  // long? |  (optional) 
-            var maxLatencyMs = 789L;  // long? |  (optional) 
-            var limit = 56;  // int? |  (optional) 
-            var cursor = "cursor_example";  // string? |  (optional) 
-            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional) 
-            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional) 
-            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional) 
-            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional) 
+            var projectId = "projectId_example";  // string? |  (optional)
+            var environmentId = "environmentId_example";  // string? |  (optional)
+            var traceId = "traceId_example";  // string? |  (optional)
+            var kind = "kind_example";  // string? |  (optional)
+            var status = "status_example";  // string? |  (optional)
+            var startedAfter = "startedAfter_example";  // string? |  (optional)
+            var startedBefore = "startedBefore_example";  // string? |  (optional)
+            var model = "model_example";  // string? |  (optional)
+            var release = "release_example";  // string? |  (optional)
+            var minCostMicros = 789L;  // long? |  (optional)
+            var maxCostMicros = 789L;  // long? |  (optional)
+            var minLatencyMs = 789L;  // long? |  (optional)
+            var maxLatencyMs = 789L;  // long? |  (optional)
+            var limit = 56;  // int? |  (optional)
+            var cursor = "cursor_example";  // string? |  (optional)
+            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional)
+            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional)
+            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional)
+            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional)
 
             try
             {
@@ -247,4 +247,3 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

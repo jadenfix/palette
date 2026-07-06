@@ -23,7 +23,7 @@ require 'beater_client'
 api_instance = BeaterClient::JudgeApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
-run_judge_eval_http_request = BeaterClient::RunJudgeEvalHttpRequest.new({_case: BeaterClient::EvaluationCase.new({input: 3.56, output: 3.56}), evaluator: BeaterClient::EvaluatorSpec.new({id: 'id_example', kind: BeaterClient::EvaluatorKindOneOf.new({type: 'exact_match'}), lane: BeaterClient::EvaluatorLane::DETERMINISTIC_WASI}), provider_secret_id: 'provider_secret_id_example'}) # RunJudgeEvalHttpRequest | 
+run_judge_eval_http_request = BeaterClient::RunJudgeEvalHttpRequest.new({_case: BeaterClient::EvaluationCase.new({input: 3.56, output: 3.56}), evaluator: BeaterClient::EvaluatorSpec.new({id: 'id_example', kind: BeaterClient::EvaluatorKindOneOf.new({type: 'exact_match'}), lane: BeaterClient::EvaluatorLane::DETERMINISTIC_WASI}), provider_secret_id: 'provider_secret_id_example'}) # RunJudgeEvalHttpRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -32,7 +32,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.evaluate_judge(tenant_id, project_id, run_judge_eval_http_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -48,7 +48,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.evaluate_judge_with_http_info(tenant_id, project_id, run_judge_eval_http_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -107,7 +107,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.list_judge_ledger(tenant_id, project_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -123,7 +123,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.list_judge_ledger_with_http_info(tenant_id, project_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -156,4 +156,3 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
-

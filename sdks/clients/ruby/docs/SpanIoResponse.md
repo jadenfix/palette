@@ -23,4 +23,3 @@ instance = BeaterClient::SpanIoResponse.new(
   trace_id: null
 )
 ```
-

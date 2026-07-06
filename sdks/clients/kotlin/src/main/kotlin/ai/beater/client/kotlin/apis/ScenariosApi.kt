@@ -51,11 +51,11 @@ class ScenariosApi(basePath: kotlin.String = defaultBasePath, client: Call.Facto
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createScenarioRequest 
+     * @param createScenarioRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -88,11 +88,11 @@ class ScenariosApi(basePath: kotlin.String = defaultBasePath, client: Call.Facto
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createScenarioRequest 
+     * @param createScenarioRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -116,7 +116,7 @@ class ScenariosApi(basePath: kotlin.String = defaultBasePath, client: Call.Facto
      *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createScenarioRequest 
+     * @param createScenarioRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -145,8 +145,8 @@ class ScenariosApi(basePath: kotlin.String = defaultBasePath, client: Call.Facto
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param scenarioId scenario_id
@@ -182,8 +182,8 @@ class ScenariosApi(basePath: kotlin.String = defaultBasePath, client: Call.Facto
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param scenarioId scenario_id
@@ -238,8 +238,8 @@ class ScenariosApi(basePath: kotlin.String = defaultBasePath, client: Call.Facto
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param limit  (optional)
@@ -276,8 +276,8 @@ class ScenariosApi(basePath: kotlin.String = defaultBasePath, client: Call.Facto
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param limit  (optional)
@@ -342,11 +342,11 @@ class ScenariosApi(basePath: kotlin.String = defaultBasePath, client: Call.Facto
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param mineScenariosRequest 
+     * @param mineScenariosRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -379,11 +379,11 @@ class ScenariosApi(basePath: kotlin.String = defaultBasePath, client: Call.Facto
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param mineScenariosRequest 
+     * @param mineScenariosRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -407,7 +407,7 @@ class ScenariosApi(basePath: kotlin.String = defaultBasePath, client: Call.Facto
      *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param mineScenariosRequest 
+     * @param mineScenariosRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)

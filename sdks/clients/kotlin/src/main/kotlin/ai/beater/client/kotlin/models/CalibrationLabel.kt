@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: pass,fail
  */
@@ -60,4 +60,3 @@ enum class CalibrationLabel(val value: kotlin.String) {
         }
     }
 }
-

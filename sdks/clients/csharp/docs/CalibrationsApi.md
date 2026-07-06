@@ -37,11 +37,11 @@ namespace Example
             var projectId = "projectId_example";  // string | project_id
             var datasetId = "datasetId_example";  // string | dataset_id
             var versionId = "versionId_example";  // string | version_id
-            var runCalibrationHttpRequest = new RunCalibrationHttpRequest(); // RunCalibrationHttpRequest | 
-            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional) 
-            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional) 
-            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional) 
-            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional) 
+            var runCalibrationHttpRequest = new RunCalibrationHttpRequest(); // RunCalibrationHttpRequest |
+            var authorization = "authorization_example";  // string? | Bearer API token for strict auth (optional)
+            var xBeaterApiKey = "xBeaterApiKey_example";  // string? | API key alternative for strict auth (optional)
+            var xBeaterProjectId = "xBeaterProjectId_example";  // string? | Strict-auth project scope (optional)
+            var xBeaterEnvironmentId = "xBeaterEnvironmentId_example";  // string? | Strict-auth environment scope (optional)
 
             try
             {
@@ -116,4 +116,3 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -23,4 +23,3 @@ instance = BeaterClient::ScenarioCluster.new(
   size: null
 )
 ```
-

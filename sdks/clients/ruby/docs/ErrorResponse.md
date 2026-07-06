@@ -17,4 +17,3 @@ instance = BeaterClient::ErrorResponse.new(
   status: null
 )
 ```
-

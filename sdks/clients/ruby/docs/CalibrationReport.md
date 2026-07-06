@@ -57,4 +57,3 @@ instance = BeaterClient::CalibrationReport.new(
   tenant_id: null
 )
 ```
-

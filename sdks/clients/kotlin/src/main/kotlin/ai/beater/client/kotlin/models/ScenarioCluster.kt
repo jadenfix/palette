@@ -25,7 +25,7 @@ import com.squareup.moshi.JsonClass
  * A cluster of failing traces that share a similar failure signature.
  *
  * @param dominantFailureMode The most common failure mode across members.
- * @param exemplarTraceId 
+ * @param exemplarTraceId
  * @param memberTraceIds All member trace ids, sorted ascending.
  * @param signature The signature of the cluster's exemplar.
  * @param propertySize Number of member traces.
@@ -57,4 +57,3 @@ data class ScenarioCluster (
 
 
 }
-

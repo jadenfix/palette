@@ -27,4 +27,3 @@ instance = BeaterClient::RunJudgeDatasetEvalRequest.new(
   provider_secret_id: null
 )
 ```
-

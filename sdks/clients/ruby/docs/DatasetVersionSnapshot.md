@@ -27,4 +27,3 @@ instance = BeaterClient::DatasetVersionSnapshot.new(
   version_id: null
 )
 ```
-

@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param traceId 
- * @param reference 
- * @param spanId 
+ *
+ * @param traceId
+ * @param reference
+ * @param spanId
  */
 
 
@@ -43,4 +43,3 @@ data class PromoteTraceCaseRequest (
 
 
 }
-

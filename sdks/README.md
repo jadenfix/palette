@@ -138,7 +138,7 @@ secrets:
 | ruby | RubyGems | `RUBYGEMS_API_KEY` |
 | csharp | NuGet | `NUGET_API_KEY` |
 | go | pkg.go.dev | none (module proxy serves the git tag) |
-| php | Packagist | none required (serves the git tag); optional `PACKAGIST_USERNAME` + `PACKAGIST_API_TOKEN` to force reindex |
+| php | Packagist | planned; requires a split/package repository with `sdks/clients/php` at the repository root |
 | c, cpp | — | no central registry; shipped as source + release tarballs |
 
 > **Maven Central note.** The `java`/`kotlin` arms upload signed artifacts to your

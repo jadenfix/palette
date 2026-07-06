@@ -19,4 +19,3 @@ instance = BeaterClient::AddPromptVersionRequest.new(
   template: null
 )
 ```
-

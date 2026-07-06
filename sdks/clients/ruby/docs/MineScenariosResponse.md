@@ -15,4 +15,3 @@ instance = BeaterClient::MineScenariosResponse.new(
   clusters: null
 )
 ```
-

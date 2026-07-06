@@ -50,11 +50,11 @@ class GatesApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createGateRequest 
+     * @param createGateRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -87,11 +87,11 @@ class GatesApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createGateRequest 
+     * @param createGateRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -115,7 +115,7 @@ class GatesApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
      *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createGateRequest 
+     * @param createGateRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -144,12 +144,12 @@ class GatesApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param gateId gate_id
-     * @param runGateRequest 
+     * @param runGateRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -182,12 +182,12 @@ class GatesApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param gateId gate_id
-     * @param runGateRequest 
+     * @param runGateRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -212,7 +212,7 @@ class GatesApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory =
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param gateId gate_id
-     * @param runGateRequest 
+     * @param runGateRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)

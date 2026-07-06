@@ -12,6 +12,3 @@
 | Name | Value |
 | ---- | ----- |
 | kind | missing |
-
-
-

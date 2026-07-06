@@ -19,4 +19,3 @@ instance = BeaterClient::CaseOutputOverrideRequest.new(
   trace: null
 )
 ```
-

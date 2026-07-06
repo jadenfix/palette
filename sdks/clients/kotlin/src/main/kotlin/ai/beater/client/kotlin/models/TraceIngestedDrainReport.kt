@@ -21,15 +21,15 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param completed 
- * @param consumed 
- * @param deadLettered 
- * @param failedWork 
- * @param invalidMessages 
- * @param retried 
- * @param traceRefs 
+ *
+ * @param completed
+ * @param consumed
+ * @param deadLettered
+ * @param failedWork
+ * @param invalidMessages
+ * @param retried
+ * @param traceRefs
  */
 
 
@@ -60,4 +60,3 @@ data class TraceIngestedDrainReport (
 
 
 }
-

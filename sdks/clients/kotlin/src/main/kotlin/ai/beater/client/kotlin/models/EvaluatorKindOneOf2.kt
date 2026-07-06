@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param abs 
- * @param rel 
- * @param type 
+ *
+ * @param abs
+ * @param rel
+ * @param type
  */
 
 
@@ -42,7 +42,7 @@ data class EvaluatorKindOneOf2 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: numeric_tolerance
      */
@@ -52,4 +52,3 @@ data class EvaluatorKindOneOf2 (
     }
 
 }
-

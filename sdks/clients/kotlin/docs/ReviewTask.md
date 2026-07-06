@@ -16,6 +16,3 @@
 | **datasetCaseId** | **kotlin.String** |  |  [optional] |
 | **datasetId** | **kotlin.String** |  |  [optional] |
 | **spanId** | **kotlin.String** |  |  [optional] |
-
-
-

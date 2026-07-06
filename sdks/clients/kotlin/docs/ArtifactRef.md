@@ -10,6 +10,3 @@
 | **sha256** | **kotlin.String** |  |  |
 | **sizeBytes** | **kotlin.Long** |  |  |
 | **uri** | **kotlin.String** |  |  |
-
-
-

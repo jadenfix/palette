@@ -72,4 +72,3 @@ enum class StatisticalTest(val value: kotlin.String) {
         }
     }
 }
-

@@ -29,4 +29,3 @@ instance = BeaterClient::GateDefinition.new(
   tenant_id: null
 )
 ```
-

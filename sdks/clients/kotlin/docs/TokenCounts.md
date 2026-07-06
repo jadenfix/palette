@@ -8,6 +8,3 @@
 | **input** | **kotlin.Long** |  |  |
 | **output** | **kotlin.Long** |  |  |
 | **reasoning** | **kotlin.Long** |  |  |
-
-
-

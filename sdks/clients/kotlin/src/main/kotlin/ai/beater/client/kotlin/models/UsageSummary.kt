@@ -21,11 +21,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param projectId 
- * @param tenantId 
- * @param totals 
+ *
+ * @param projectId
+ * @param tenantId
+ * @param totals
  */
 
 
@@ -44,4 +44,3 @@ data class UsageSummary (
 
 
 }
-

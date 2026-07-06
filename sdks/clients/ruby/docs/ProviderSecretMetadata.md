@@ -29,4 +29,3 @@ instance = BeaterClient::ProviderSecretMetadata.new(
   tenant_id: null
 )
 ```
-

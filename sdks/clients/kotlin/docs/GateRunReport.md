@@ -24,6 +24,3 @@
 | **tenantId** | **kotlin.String** |  |  |
 | **gateDatasetId** | **kotlin.String** |  |  [optional] |
 | **gateEvaluatorVersionId** | **kotlin.String** |  |  [optional] |
-
-
-

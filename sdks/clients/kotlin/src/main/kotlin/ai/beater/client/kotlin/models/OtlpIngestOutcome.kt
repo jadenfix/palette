@@ -20,13 +20,13 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param acceptedRaw 
- * @param acceptedSpans 
- * @param downstreamQueued 
- * @param duplicateRaw 
- * @param duplicateSpans 
+ *
+ * @param acceptedRaw
+ * @param acceptedSpans
+ * @param downstreamQueued
+ * @param duplicateRaw
+ * @param duplicateSpans
  */
 
 
@@ -51,4 +51,3 @@ data class OtlpIngestOutcome (
 
 
 }
-

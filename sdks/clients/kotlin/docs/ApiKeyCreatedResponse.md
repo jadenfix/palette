@@ -12,6 +12,3 @@
 | **scopes** | [**kotlin.collections.Set&lt;ApiScope&gt;**](ApiScope.md) |  |  |
 | **secret** | **kotlin.String** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
-
-
-

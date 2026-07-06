@@ -24,29 +24,29 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param brierScore 
- * @param calibrationReportId 
- * @param cohenKappa 
- * @param confusion 
- * @param createdAt 
- * @param datasetId 
- * @param datasetVersionId 
- * @param evalReportId 
- * @param evaluatorVersionId 
- * @param expectedAgreement 
- * @param expectedCalibrationError 
- * @param items 
- * @param observedAgreement 
- * @param policy 
- * @param projectId 
- * @param reliabilityBins 
- * @param sampleCount 
- * @param tenantId 
- * @param cohenKappaCiHigh 
+ *
+ * @param brierScore
+ * @param calibrationReportId
+ * @param cohenKappa
+ * @param confusion
+ * @param createdAt
+ * @param datasetId
+ * @param datasetVersionId
+ * @param evalReportId
+ * @param evaluatorVersionId
+ * @param expectedAgreement
+ * @param expectedCalibrationError
+ * @param items
+ * @param observedAgreement
+ * @param policy
+ * @param projectId
+ * @param reliabilityBins
+ * @param sampleCount
+ * @param tenantId
+ * @param cohenKappaCiHigh
  * @param cohenKappaCiLow Percentile-bootstrap 95% confidence interval for `cohen_kappa` (multinomial resampling of the confusion table, deterministic seed). Kappa over small calibration samples is high-variance; a bare point estimate invites over-reading. Absent on pre-uncertainty reports.
- * @param observedAgreementCiHigh 
+ * @param observedAgreementCiHigh
  * @param observedAgreementCiLow Wilson 95% confidence interval for `observed_agreement` — the honest width of an agreement estimate over a (typically small) human-labelled sample. Absent on reports persisted before uncertainty was reported.
  */
 
@@ -125,4 +125,3 @@ data class CalibrationReport (
 
 
 }
-

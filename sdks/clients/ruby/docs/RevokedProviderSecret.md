@@ -19,4 +19,3 @@ instance = BeaterClient::RevokedProviderSecret.new(
   rotated_at: null
 )
 ```
-

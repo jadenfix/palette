@@ -7,6 +7,3 @@
 | **reason** | [**SamplingReason**](SamplingReason.md) |  |  |
 | **selected** | **kotlin.Boolean** |  |  |
 | **stableScorePerMille** | **kotlin.Int** |  |  |
-
-
-

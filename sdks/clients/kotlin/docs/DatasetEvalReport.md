@@ -14,6 +14,3 @@
 | **resultCount** | **kotlin.Int** |  |  |
 | **results** | [**kotlin.collections.List&lt;EvalResult&gt;**](EvalResult.md) |  |  |
 | **tenantId** | **kotlin.String** |  |  |
-
-
-

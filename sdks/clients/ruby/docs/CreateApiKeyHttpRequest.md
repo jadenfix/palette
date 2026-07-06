@@ -15,4 +15,3 @@ instance = BeaterClient::CreateApiKeyHttpRequest.new(
   scopes: null
 )
 ```
-

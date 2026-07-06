@@ -48,12 +48,12 @@ class OnlineApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param traceId trace_id
-     * @param onlineSamplingPolicy 
+     * @param onlineSamplingPolicy
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -86,12 +86,12 @@ class OnlineApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param traceId trace_id
-     * @param onlineSamplingPolicy 
+     * @param onlineSamplingPolicy
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -116,7 +116,7 @@ class OnlineApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param traceId trace_id
-     * @param onlineSamplingPolicy 
+     * @param onlineSamplingPolicy
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)

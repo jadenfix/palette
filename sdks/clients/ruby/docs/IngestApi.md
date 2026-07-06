@@ -30,7 +30,7 @@ api_instance = BeaterClient::IngestApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 opts = {
-  limit: 56, # Integer | 
+  limit: 56, # Integer |
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
   x_beater_project_id: 'x_beater_project_id_example', # String | Strict-auth project scope
@@ -38,7 +38,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.drain_trace_ingested(tenant_id, project_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -54,7 +54,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.drain_trace_ingested_with_http_info(tenant_id, project_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -106,7 +106,7 @@ api_instance = BeaterClient::IngestApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 opts = {
-  limit: 56, # Integer | 
+  limit: 56, # Integer |
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
   x_beater_project_id: 'x_beater_project_id_example', # String | Strict-auth project scope
@@ -114,7 +114,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.drain_trace_writes(tenant_id, project_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -130,7 +130,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.drain_trace_writes_with_http_info(tenant_id, project_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -189,7 +189,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.get_ingest_queue_status(tenant_id, project_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -205,7 +205,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.get_ingest_queue_status_with_http_info(tenant_id, project_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -256,15 +256,15 @@ api_instance = BeaterClient::IngestApi.new
 tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 environment_id = 'environment_id_example' # String | environment_id
-import_source_http_request = BeaterClient::ImportSourceHttpRequest.new({source: 'source_example'}) # ImportSourceHttpRequest | 
+import_source_http_request = BeaterClient::ImportSourceHttpRequest.new({source: 'source_example'}) # ImportSourceHttpRequest |
 opts = {
-  durability: 'durability_example', # String | 
+  durability: 'durability_example', # String |
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example' # String | API key alternative for strict auth
 }
 
 begin
-  
+
   result = api_instance.import_source(tenant_id, project_id, environment_id, import_source_http_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -280,7 +280,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.import_source_with_http_info(tenant_id, project_id, environment_id, import_source_http_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -329,9 +329,9 @@ require 'time'
 require 'beater_client'
 
 api_instance = BeaterClient::IngestApi.new
-native_ingest_request = BeaterClient::NativeIngestRequest.new({attributes: { key: 3.56}, kind: 'kind_example', name: 'name_example', redaction_class: BeaterClient::RedactionClass::PUBLIC, scope: BeaterClient::TenantScope.new({environment_id: 'environment_id_example', project_id: 'project_id_example', tenant_id: 'tenant_id_example'}), seq: 3.56, span_id: 'span_id_example', status: BeaterClient::SpanStatus::OK, trace_id: 'trace_id_example'}) # NativeIngestRequest | 
+native_ingest_request = BeaterClient::NativeIngestRequest.new({attributes: { key: 3.56}, kind: 'kind_example', name: 'name_example', redaction_class: BeaterClient::RedactionClass::PUBLIC, scope: BeaterClient::TenantScope.new({environment_id: 'environment_id_example', project_id: 'project_id_example', tenant_id: 'tenant_id_example'}), seq: 3.56, span_id: 'span_id_example', status: BeaterClient::SpanStatus::OK, trace_id: 'trace_id_example'}) # NativeIngestRequest |
 opts = {
-  durability: 'durability_example', # String | 
+  durability: 'durability_example', # String |
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
   x_beater_project_id: 'x_beater_project_id_example', # String | Strict-auth project scope
@@ -339,7 +339,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.ingest_native(native_ingest_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -355,7 +355,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.ingest_native_with_http_info(native_ingest_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -407,7 +407,7 @@ tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 environment_id = 'environment_id_example' # String | environment_id
 opts = {
-  durability: 'durability_example', # String | 
+  durability: 'durability_example', # String |
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
   x_beater_project_id: 'x_beater_project_id_example', # String | Strict-auth project scope
@@ -415,7 +415,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.ingest_otlp(tenant_id, project_id, environment_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -431,7 +431,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.ingest_otlp_with_http_info(tenant_id, project_id, environment_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -492,7 +492,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.reconcile_trace(tenant_id, project_id, trace_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -508,7 +508,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.reconcile_trace_with_http_info(tenant_id, project_id, trace_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -561,7 +561,7 @@ tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 message_id = 'message_id_example' # String | message_id
 opts = {
-  reset_attempts: true, # Boolean | 
+  reset_attempts: true, # Boolean |
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
   x_beater_project_id: 'x_beater_project_id_example', # String | Strict-auth project scope
@@ -569,7 +569,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.replay_dead_letter(tenant_id, project_id, message_id, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -585,7 +585,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.replay_dead_letter_with_http_info(tenant_id, project_id, message_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -620,4 +620,3 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
-

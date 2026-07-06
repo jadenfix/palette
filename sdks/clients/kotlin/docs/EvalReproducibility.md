@@ -20,6 +20,3 @@
 | **promptVersionId** | **kotlin.String** |  |  [optional] |
 | **wasiAbiVersion** | **kotlin.String** |  |  [optional] |
 | **wasmHash** | **kotlin.String** |  |  [optional] |
-
-
-

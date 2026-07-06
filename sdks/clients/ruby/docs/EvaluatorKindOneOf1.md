@@ -17,4 +17,3 @@ instance = BeaterClient::EvaluatorKindOneOf1.new(
   type: null
 )
 ```
-

@@ -20,9 +20,9 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param kind 
+ *
+ * @param kind
  */
 
 
@@ -34,7 +34,7 @@ data class SpanIoValueOneOf3 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: missing
      */
@@ -44,4 +44,3 @@ data class SpanIoValueOneOf3 (
     }
 
 }
-

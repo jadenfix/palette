@@ -64,4 +64,3 @@ BeaterClient::EvaluatorKind.build(data_that_doesnt_match)
 - `EvaluatorKindOneOf8`
 - `EvaluatorKindOneOf9`
 - `nil` (if no type matches)
-

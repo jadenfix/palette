@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param maxMs 
- * @param type 
+ *
+ * @param maxMs
+ * @param type
  */
 
 
@@ -38,7 +38,7 @@ data class EvaluatorKindOneOf5 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: latency_budget_ms
      */
@@ -48,4 +48,3 @@ data class EvaluatorKindOneOf5 (
     }
 
 }
-

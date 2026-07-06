@@ -21,4 +21,3 @@ instance = BeaterClient::RunJudgeEvalHttpRequest.new(
   provider_secret_id: null
 )
 ```
-

@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: pass,fail_regression,inconclusive
  */
@@ -63,4 +63,3 @@ enum class GateDecision(val value: kotlin.String) {
         }
     }
 }
-

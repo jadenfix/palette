@@ -21,4 +21,3 @@ instance = BeaterClient::SubmitReviewAnnotationHttpRequest.new(
   verdict: null
 )
 ```
-

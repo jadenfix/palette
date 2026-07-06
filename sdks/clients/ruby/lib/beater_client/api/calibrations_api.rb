@@ -23,7 +23,7 @@ module BeaterClient
     # @param project_id [String] project_id
     # @param dataset_id [String] dataset_id
     # @param version_id [String] version_id
-    # @param run_calibration_http_request [RunCalibrationHttpRequest] 
+    # @param run_calibration_http_request [RunCalibrationHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -39,7 +39,7 @@ module BeaterClient
     # @param project_id [String] project_id
     # @param dataset_id [String] dataset_id
     # @param version_id [String] version_id
-    # @param run_calibration_http_request [RunCalibrationHttpRequest] 
+    # @param run_calibration_http_request [RunCalibrationHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth

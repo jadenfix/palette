@@ -23,4 +23,3 @@ instance = BeaterClient::ArchiveManifest.new(
   tenant_id: null
 )
 ```
-

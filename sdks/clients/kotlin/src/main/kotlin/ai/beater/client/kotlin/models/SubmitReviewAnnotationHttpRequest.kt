@@ -21,12 +21,12 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param payload 
- * @param reviewerId 
- * @param verdict 
- * @param annotationId 
+ *
+ * @param payload
+ * @param reviewerId
+ * @param verdict
+ * @param annotationId
  */
 
 
@@ -48,4 +48,3 @@ data class SubmitReviewAnnotationHttpRequest (
 
 
 }
-

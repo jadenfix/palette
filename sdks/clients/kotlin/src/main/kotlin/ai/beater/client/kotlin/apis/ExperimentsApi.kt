@@ -49,13 +49,13 @@ class ExperimentsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fac
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param datasetId dataset_id
      * @param versionId version_id
-     * @param runExperimentRequest 
+     * @param runExperimentRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -88,13 +88,13 @@ class ExperimentsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fac
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param datasetId dataset_id
      * @param versionId version_id
-     * @param runExperimentRequest 
+     * @param runExperimentRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -120,7 +120,7 @@ class ExperimentsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fac
      * @param projectId project_id
      * @param datasetId dataset_id
      * @param versionId version_id
-     * @param runExperimentRequest 
+     * @param runExperimentRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -149,13 +149,13 @@ class ExperimentsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fac
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param datasetId dataset_id
      * @param versionId version_id
-     * @param runJudgeExperimentRequest 
+     * @param runJudgeExperimentRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -188,13 +188,13 @@ class ExperimentsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fac
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param datasetId dataset_id
      * @param versionId version_id
-     * @param runJudgeExperimentRequest 
+     * @param runJudgeExperimentRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -220,7 +220,7 @@ class ExperimentsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fac
      * @param projectId project_id
      * @param datasetId dataset_id
      * @param versionId version_id
-     * @param runJudgeExperimentRequest 
+     * @param runJudgeExperimentRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)

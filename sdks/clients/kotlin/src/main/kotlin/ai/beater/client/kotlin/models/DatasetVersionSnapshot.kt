@@ -21,15 +21,15 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param cases 
+ *
+ * @param cases
  * @param corpusRoot A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string.
- * @param createdAt 
- * @param datasetId 
- * @param projectId 
- * @param tenantId 
- * @param versionId 
+ * @param createdAt
+ * @param datasetId
+ * @param projectId
+ * @param tenantId
+ * @param versionId
  */
 
 
@@ -61,4 +61,3 @@ data class DatasetVersionSnapshot (
 
 
 }
-

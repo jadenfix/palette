@@ -21,4 +21,3 @@ instance = BeaterClient::TokenCounts.new(
   reasoning: null
 )
 ```
-

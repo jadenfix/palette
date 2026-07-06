@@ -21,9 +21,9 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param rows 
+ *
+ * @param rows
  */
 
 
@@ -36,4 +36,3 @@ data class ArchiveQueryResponse (
 
 
 }
-

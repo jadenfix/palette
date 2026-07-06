@@ -20,23 +20,23 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param caseId 
- * @param createdAt 
- * @param datasetId 
- * @param input 
- * @param inputArtifactHashes 
- * @param normalizerVersion 
- * @param output 
- * @param projectId 
- * @param sourceEnvironmentId 
- * @param sourceSpanId 
- * @param sourceTraceId 
- * @param tenantId 
- * @param trace 
- * @param traceSchemaVersion 
- * @param reference 
+ *
+ * @param caseId
+ * @param createdAt
+ * @param datasetId
+ * @param input
+ * @param inputArtifactHashes
+ * @param normalizerVersion
+ * @param output
+ * @param projectId
+ * @param sourceEnvironmentId
+ * @param sourceSpanId
+ * @param sourceTraceId
+ * @param tenantId
+ * @param trace
+ * @param traceSchemaVersion
+ * @param reference
  */
 
 
@@ -91,4 +91,3 @@ data class DatasetCase (
 
 
 }
-

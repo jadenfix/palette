@@ -10,6 +10,3 @@
 | **projectId** | **kotlin.String** |  |  |
 | **queueId** | **kotlin.String** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
-
-
-

@@ -1512,7 +1512,7 @@ class ScenariosApi
         if ($limit !== null && $limit < 0) {
             throw new \InvalidArgumentException('invalid value for "$limit" when calling ScenariosApi.listScenarios, must be bigger than or equal to 0.');
         }
-        
+
 
 
 

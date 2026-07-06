@@ -20,10 +20,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param datasetId 
- * @param reference 
+ *
+ * @param datasetId
+ * @param reference
  */
 
 
@@ -39,4 +39,3 @@ data class PromoteReviewAnnotationHttpRequest (
 
 
 }
-

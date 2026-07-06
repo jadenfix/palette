@@ -15,4 +15,3 @@ instance = BeaterClient::ArchiveQueryResponse.new(
   rows: null
 )
 ```
-

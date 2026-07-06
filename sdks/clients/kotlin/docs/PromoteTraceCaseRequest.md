@@ -7,6 +7,3 @@
 | **traceId** | **kotlin.String** |  |  |
 | **reference** | [**kotlin.Any**](.md) |  |  [optional] |
 | **spanId** | **kotlin.String** |  |  [optional] |
-
-
-

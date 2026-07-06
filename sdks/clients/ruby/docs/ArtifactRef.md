@@ -25,4 +25,3 @@ instance = BeaterClient::ArtifactRef.new(
   uri: null
 )
 ```
-

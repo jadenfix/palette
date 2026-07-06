@@ -17,4 +17,3 @@ instance = BeaterClient::ListScenariosResponse.new(
   scenarios: null
 )
 ```
-

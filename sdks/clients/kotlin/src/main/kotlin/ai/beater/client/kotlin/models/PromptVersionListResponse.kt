@@ -21,9 +21,9 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param versions 
+ *
+ * @param versions
  */
 
 
@@ -36,4 +36,3 @@ data class PromptVersionListResponse (
 
 
 }
-

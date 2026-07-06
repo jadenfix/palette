@@ -31,4 +31,3 @@ instance = BeaterClient::ReviewAnnotation.new(
   verdict: null
 )
 ```
-

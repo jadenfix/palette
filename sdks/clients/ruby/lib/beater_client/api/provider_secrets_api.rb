@@ -21,7 +21,7 @@ module BeaterClient
     end
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param create_provider_secret_http_request [CreateProviderSecretHttpRequest] 
+    # @param create_provider_secret_http_request [CreateProviderSecretHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -35,7 +35,7 @@ module BeaterClient
 
     # @param tenant_id [String] tenant_id
     # @param project_id [String] project_id
-    # @param create_provider_secret_http_request [CreateProviderSecretHttpRequest] 
+    # @param create_provider_secret_http_request [CreateProviderSecretHttpRequest]
     # @param [Hash] opts the optional parameters
     # @option opts [String] :authorization Bearer API token for strict auth
     # @option opts [String] :x_beater_api_key API key alternative for strict auth

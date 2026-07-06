@@ -36,7 +36,7 @@ class EvalsApiTest : ShouldSpec() {
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
             //val datasetId : kotlin.String = datasetId_example // kotlin.String | dataset_id
             //val versionId : kotlin.String = versionId_example // kotlin.String | version_id
-            //val runDeterministicEvalRequest : RunDeterministicEvalRequest =  // RunDeterministicEvalRequest | 
+            //val runDeterministicEvalRequest : RunDeterministicEvalRequest =  // RunDeterministicEvalRequest |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -52,7 +52,7 @@ class EvalsApiTest : ShouldSpec() {
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
             //val datasetId : kotlin.String = datasetId_example // kotlin.String | dataset_id
             //val versionId : kotlin.String = versionId_example // kotlin.String | version_id
-            //val runJudgeDatasetEvalRequest : RunJudgeDatasetEvalRequest =  // RunJudgeDatasetEvalRequest | 
+            //val runJudgeDatasetEvalRequest : RunJudgeDatasetEvalRequest =  // RunJudgeDatasetEvalRequest |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope

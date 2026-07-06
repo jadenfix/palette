@@ -20,16 +20,16 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param active 
- * @param createdAt 
- * @param displayName 
- * @param projectId 
- * @param provider 
- * @param providerSecretId 
- * @param tenantId 
- * @param rotatedAt 
+ *
+ * @param active
+ * @param createdAt
+ * @param displayName
+ * @param projectId
+ * @param provider
+ * @param providerSecretId
+ * @param tenantId
+ * @param rotatedAt
  */
 
 
@@ -63,4 +63,3 @@ data class ProviderSecretMetadata (
 
 
 }
-

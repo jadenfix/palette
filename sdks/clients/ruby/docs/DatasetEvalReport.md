@@ -33,4 +33,3 @@ instance = BeaterClient::DatasetEvalReport.new(
   tenant_id: null
 )
 ```
-

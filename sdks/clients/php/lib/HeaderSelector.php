@@ -105,7 +105,7 @@ class HeaderSelector
     {
         return preg_match('~^application/(json|[\w!#$&.+-^_]+\+json)\s*(;|$)~', $searchString) === 1;
     }
-    
+
     /**
     * Select all items from a list containing a JSON mime type
     *

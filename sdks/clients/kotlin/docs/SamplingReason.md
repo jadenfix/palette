@@ -13,6 +13,3 @@
     * `routine_sampled` (value: `"routine_sampled"`)
 
     * `routine_dropped` (value: `"routine_dropped"`)
-
-
-

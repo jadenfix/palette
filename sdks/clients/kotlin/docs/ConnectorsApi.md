@@ -27,7 +27,7 @@ All URIs are relative to *http://localhost*
 val apiInstance = ConnectorsApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
 val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-val connectConnectorRequest : ConnectConnectorRequest =  // ConnectConnectorRequest | 
+val connectConnectorRequest : ConnectConnectorRequest =  // ConnectConnectorRequest |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -195,7 +195,7 @@ No authorization required
 val apiInstance = ConnectorsApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
 val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-val invokeConnectorRequest : InvokeConnectorRequest =  // InvokeConnectorRequest | 
+val invokeConnectorRequest : InvokeConnectorRequest =  // InvokeConnectorRequest |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -349,4 +349,3 @@ No authorization required
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
-

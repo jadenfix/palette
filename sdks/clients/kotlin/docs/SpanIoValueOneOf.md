@@ -13,6 +13,3 @@
 | Name | Value |
 | ---- | ----- |
 | kind | inline |
-
-
-

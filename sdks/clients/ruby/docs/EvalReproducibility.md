@@ -45,4 +45,3 @@ instance = BeaterClient::EvalReproducibility.new(
   wasm_hash: null
 )
 ```
-

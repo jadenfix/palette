@@ -49,12 +49,12 @@ class ApiKeysApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId environment_id
-     * @param createApiKeyHttpRequest 
+     * @param createApiKeyHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -87,12 +87,12 @@ class ApiKeysApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId environment_id
-     * @param createApiKeyHttpRequest 
+     * @param createApiKeyHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -117,7 +117,7 @@ class ApiKeysApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId environment_id
-     * @param createApiKeyHttpRequest 
+     * @param createApiKeyHttpRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -146,8 +146,8 @@ class ApiKeysApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId environment_id
@@ -184,8 +184,8 @@ class ApiKeysApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param environmentId environment_id

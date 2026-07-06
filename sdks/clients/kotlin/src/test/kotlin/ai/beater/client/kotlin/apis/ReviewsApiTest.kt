@@ -40,7 +40,7 @@ class ReviewsApiTest : ShouldSpec() {
             // uncomment below to test createReviewQueue
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-            //val createReviewQueueHttpRequest : CreateReviewQueueHttpRequest =  // CreateReviewQueueHttpRequest | 
+            //val createReviewQueueHttpRequest : CreateReviewQueueHttpRequest =  // CreateReviewQueueHttpRequest |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -55,7 +55,7 @@ class ReviewsApiTest : ShouldSpec() {
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
             //val queueId : kotlin.String = queueId_example // kotlin.String | queue_id
-            //val enqueueReviewTaskFromTraceHttpRequest : EnqueueReviewTaskFromTraceHttpRequest =  // EnqueueReviewTaskFromTraceHttpRequest | 
+            //val enqueueReviewTaskFromTraceHttpRequest : EnqueueReviewTaskFromTraceHttpRequest =  // EnqueueReviewTaskFromTraceHttpRequest |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -70,7 +70,7 @@ class ReviewsApiTest : ShouldSpec() {
             //val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
             //val queueId : kotlin.String = queueId_example // kotlin.String | queue_id
-            //val state : ReviewTaskState =  // ReviewTaskState | 
+            //val state : ReviewTaskState =  // ReviewTaskState |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -87,7 +87,7 @@ class ReviewsApiTest : ShouldSpec() {
             //val queueId : kotlin.String = queueId_example // kotlin.String | queue_id
             //val taskId : kotlin.String = taskId_example // kotlin.String | task_id
             //val annotationId : kotlin.String = annotationId_example // kotlin.String | annotation_id
-            //val promoteReviewAnnotationHttpRequest : PromoteReviewAnnotationHttpRequest =  // PromoteReviewAnnotationHttpRequest | 
+            //val promoteReviewAnnotationHttpRequest : PromoteReviewAnnotationHttpRequest =  // PromoteReviewAnnotationHttpRequest |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -103,7 +103,7 @@ class ReviewsApiTest : ShouldSpec() {
             //val projectId : kotlin.String = projectId_example // kotlin.String | project_id
             //val queueId : kotlin.String = queueId_example // kotlin.String | queue_id
             //val taskId : kotlin.String = taskId_example // kotlin.String | task_id
-            //val submitReviewAnnotationHttpRequest : SubmitReviewAnnotationHttpRequest =  // SubmitReviewAnnotationHttpRequest | 
+            //val submitReviewAnnotationHttpRequest : SubmitReviewAnnotationHttpRequest =  // SubmitReviewAnnotationHttpRequest |
             //val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
             //val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
             //val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope

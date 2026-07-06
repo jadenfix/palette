@@ -25,4 +25,3 @@ instance = BeaterClient::ReviewQueue.new(
   tenant_id: null
 )
 ```
-

@@ -24,21 +24,21 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param baselineReleaseId 
- * @param candidateReleaseId 
- * @param caseScores 
- * @param comparison 
- * @param createdAt 
- * @param datasetId 
- * @param datasetVersionId 
- * @param decision 
- * @param evaluatorVersionId 
- * @param experimentRunId 
- * @param projectId 
- * @param tenantId 
- * @param gatePolicy 
+ *
+ * @param baselineReleaseId
+ * @param candidateReleaseId
+ * @param caseScores
+ * @param comparison
+ * @param createdAt
+ * @param datasetId
+ * @param datasetVersionId
+ * @param decision
+ * @param evaluatorVersionId
+ * @param experimentRunId
+ * @param projectId
+ * @param tenantId
+ * @param gatePolicy
  */
 
 
@@ -87,4 +87,3 @@ data class ExperimentRunReport (
 
 
 }
-

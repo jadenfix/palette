@@ -21,14 +21,14 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param deadLetters 
- * @param projectId 
- * @param tenantId 
- * @param totalDepth 
- * @param traceIngestedDepth 
- * @param traceWriteDepth 
+ *
+ * @param deadLetters
+ * @param projectId
+ * @param tenantId
+ * @param totalDepth
+ * @param traceIngestedDepth
+ * @param traceWriteDepth
  */
 
 
@@ -56,4 +56,3 @@ data class IngestQueueStatus (
 
 
 }
-

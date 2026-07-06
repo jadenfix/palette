@@ -37,4 +37,3 @@ instance = BeaterClient::AuditEvent.new(
   tenant_id: null
 )
 ```
-

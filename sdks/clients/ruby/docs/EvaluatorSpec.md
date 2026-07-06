@@ -19,4 +19,3 @@ instance = BeaterClient::EvaluatorSpec.new(
   lane: null
 )
 ```
-

@@ -13,6 +13,3 @@
 | **payload** | **kotlin.collections.List&lt;kotlin.Int&gt;** |  |  |
 | **projectId** | **kotlin.String** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
-
-
-

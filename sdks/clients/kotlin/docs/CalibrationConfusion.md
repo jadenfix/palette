@@ -8,6 +8,3 @@
 | **humanFailJudgePass** | **kotlin.Int** |  |  |
 | **humanPassJudgeFail** | **kotlin.Int** |  |  |
 | **humanPassJudgePass** | **kotlin.Int** |  |  |
-
-
-

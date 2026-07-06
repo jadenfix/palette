@@ -17,4 +17,3 @@ instance = BeaterClient::ModelRef.new(
   provider: null
 )
 ```
-

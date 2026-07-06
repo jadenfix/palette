@@ -9,6 +9,3 @@
 | **memberTraceIds** | **kotlin.collections.List&lt;kotlin.String&gt;** | All member trace ids, sorted ascending. |  |
 | **signature** | [**Signature**](Signature.md) | The signature of the cluster&#39;s exemplar. |  |
 | **propertySize** | **kotlin.Int** | Number of member traces. |  |
-
-
-

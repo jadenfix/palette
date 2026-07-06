@@ -21,4 +21,3 @@ instance = BeaterClient::AlertLinks.new(
   trace_url: null
 )
 ```
-

@@ -25,4 +25,3 @@ instance = BeaterClient::PerturbationKnobs.new(
   tool_schema_mismatch: null
 )
 ```
-

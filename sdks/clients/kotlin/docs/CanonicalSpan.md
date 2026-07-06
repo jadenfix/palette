@@ -26,6 +26,3 @@
 | **outputRef** | [**ArtifactRef**](ArtifactRef.md) |  |  [optional] |
 | **parentSpanId** | **kotlin.String** |  |  [optional] |
 | **tokens** | [**TokenCounts**](TokenCounts.md) |  |  [optional] |
-
-
-

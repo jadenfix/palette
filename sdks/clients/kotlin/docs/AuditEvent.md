@@ -16,6 +16,3 @@
 | **actorApiKeyId** | **kotlin.String** |  |  [optional] |
 | **environmentId** | **kotlin.String** |  |  [optional] |
 | **reason** | **kotlin.String** |  |  [optional] |
-
-
-

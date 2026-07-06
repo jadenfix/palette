@@ -23,7 +23,7 @@ import com.squareup.moshi.JsonClass
  * Request body for the unified import endpoint. The `source` field selects a registered [`beater_ingest::SourceImporter`] (e.g. `temporal_history`, `native`); `payload` is that source's document (Temporal `History` JSON, a native span list, …). Everything flows through the same downstream ingest pipeline as OTLP — there are no source-specific routes.
  *
  * @param source Registered importer key, e.g. `temporal_history` or `native`.
- * @param payload 
+ * @param payload
  */
 
 
@@ -40,4 +40,3 @@ data class ImportSourceHttpRequest (
 
 
 }
-

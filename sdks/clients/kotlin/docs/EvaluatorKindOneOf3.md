@@ -12,6 +12,3 @@
 | Name | Value |
 | ---- | ----- |
 | type | json_object |
-
-
-

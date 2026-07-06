@@ -9,6 +9,3 @@
 | **createdBy** | **kotlin.String** |  |  [optional] |
 | **description** | **kotlin.String** |  |  [optional] |
 | **message** | **kotlin.String** |  |  [optional] |
-
-
-

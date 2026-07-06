@@ -15,4 +15,3 @@ instance = BeaterClient::CalibrationPolicy.new(
   pass_threshold: null
 )
 ```
-

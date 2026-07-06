@@ -15,6 +15,3 @@
     * `clustered_paired_t` (value: `"clustered_paired_t"`)
 
     * `sequential_e_value` (value: `"sequential_e_value"`)
-
-
-

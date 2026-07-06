@@ -8,6 +8,3 @@
 | **clusterUrl** | **kotlin.String** |  |  [optional] |
 | **datasetUrl** | **kotlin.String** |  |  [optional] |
 | **gateUrl** | **kotlin.String** |  |  [optional] |
-
-
-

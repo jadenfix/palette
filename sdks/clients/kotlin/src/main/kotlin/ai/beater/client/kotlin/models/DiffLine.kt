@@ -21,12 +21,12 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param kind 
- * @param text 
- * @param newLine 
- * @param oldLine 
+ *
+ * @param kind
+ * @param text
+ * @param newLine
+ * @param oldLine
  */
 
 
@@ -48,4 +48,3 @@ data class DiffLine (
 
 
 }
-

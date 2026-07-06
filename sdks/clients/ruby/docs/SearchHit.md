@@ -35,4 +35,3 @@ instance = BeaterClient::SearchHit.new(
   trace_id: null
 )
 ```
-

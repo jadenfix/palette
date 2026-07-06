@@ -21,4 +21,3 @@ instance = BeaterClient::ConnectionStatus.new(
   toolkit: null
 )
 ```
-

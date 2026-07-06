@@ -54,11 +54,11 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param connectConnectorRequest 
+     * @param connectConnectorRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -91,11 +91,11 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param connectConnectorRequest 
+     * @param connectConnectorRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -119,7 +119,7 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
      *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param connectConnectorRequest 
+     * @param connectConnectorRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -148,8 +148,8 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param toolkit Toolkit slug to scope the request to.
@@ -185,8 +185,8 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param toolkit Toolkit slug to scope the request to.
@@ -244,8 +244,8 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param toolkit Toolkit slug to scope the request to.
@@ -281,8 +281,8 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param toolkit Toolkit slug to scope the request to.
@@ -340,11 +340,11 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param invokeConnectorRequest 
+     * @param invokeConnectorRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -377,11 +377,11 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param invokeConnectorRequest 
+     * @param invokeConnectorRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -405,7 +405,7 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
      *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param invokeConnectorRequest 
+     * @param invokeConnectorRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -434,8 +434,8 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param toolkit Toolkit slug to list tools for.
@@ -472,8 +472,8 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param toolkit Toolkit slug to list tools for.
@@ -536,8 +536,8 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param limit Maximum number of apps to return (page size). (optional)
@@ -573,8 +573,8 @@ class ConnectorsApi(basePath: kotlin.String = defaultBasePath, client: Call.Fact
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param limit Maximum number of apps to return (page size). (optional)

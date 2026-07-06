@@ -19,4 +19,3 @@ instance = BeaterClient::EvaluatorKindOneOf7.new(
   url_contains: null
 )
 ```
-

@@ -9,6 +9,3 @@
 | **exemplarTraceId** | **kotlin.String** |  |  [optional] |
 | **expectedOutcome** | **kotlin.String** |  |  [optional] |
 | **failureMode** | [**FailureMode**](FailureMode.md) |  |  [optional] |
-
-
-

@@ -22,8 +22,8 @@ import com.squareup.moshi.JsonClass
 /**
  * Browser grounding: fraction of element-targeted steps that resolved to their intended element; score is the ratio, passes at `min_ratio`.
  *
- * @param minRatio 
- * @param type 
+ * @param minRatio
+ * @param type
  */
 
 
@@ -38,7 +38,7 @@ data class EvaluatorKindOneOf9 (
 ) {
 
     /**
-     * 
+     *
      *
      * Values: browser_grounding
      */
@@ -48,4 +48,3 @@ data class EvaluatorKindOneOf9 (
     }
 
 }
-

@@ -21,13 +21,13 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param sourceTraceIds 
- * @param title 
- * @param exemplarTraceId 
- * @param expectedOutcome 
- * @param failureMode 
+ *
+ * @param sourceTraceIds
+ * @param title
+ * @param exemplarTraceId
+ * @param expectedOutcome
+ * @param failureMode
  */
 
 
@@ -52,4 +52,3 @@ data class CreateScenarioRequest (
 
 
 }
-

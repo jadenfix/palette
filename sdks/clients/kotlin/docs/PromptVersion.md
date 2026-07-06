@@ -11,6 +11,3 @@
 | **tenantId** | **kotlin.String** |  |  |
 | **versionId** | **kotlin.String** |  |  |
 | **versionNumber** | **kotlin.Int** |  |  |
-
-
-

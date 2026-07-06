@@ -54,12 +54,12 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param promptId prompt_id
-     * @param addPromptVersionRequest 
+     * @param addPromptVersionRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -92,12 +92,12 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param promptId prompt_id
-     * @param addPromptVersionRequest 
+     * @param addPromptVersionRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -122,7 +122,7 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param promptId prompt_id
-     * @param addPromptVersionRequest 
+     * @param addPromptVersionRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -151,11 +151,11 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createPromptRequest 
+     * @param createPromptRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -188,11 +188,11 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createPromptRequest 
+     * @param createPromptRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -216,7 +216,7 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
      *
      * @param tenantId tenant_id
      * @param projectId project_id
-     * @param createPromptRequest 
+     * @param createPromptRequest
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -245,13 +245,13 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param promptId prompt_id
-     * @param from 
-     * @param to 
+     * @param from
+     * @param to
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -284,13 +284,13 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param promptId prompt_id
-     * @param from 
-     * @param to 
+     * @param from
+     * @param to
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -315,8 +315,8 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param promptId prompt_id
-     * @param from 
-     * @param to 
+     * @param from
+     * @param to
      * @param authorization Bearer API token for strict auth (optional)
      * @param xBeaterApiKey API key alternative for strict auth (optional)
      * @param xBeaterProjectId Strict-auth project scope (optional)
@@ -348,8 +348,8 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param promptId prompt_id
@@ -385,8 +385,8 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param promptId prompt_id
@@ -441,8 +441,8 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param promptId prompt_id
@@ -478,8 +478,8 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param promptId prompt_id
@@ -534,8 +534,8 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param authorization Bearer API token for strict auth (optional)
@@ -570,8 +570,8 @@ class PromptsApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId project_id
      * @param authorization Bearer API token for strict auth (optional)

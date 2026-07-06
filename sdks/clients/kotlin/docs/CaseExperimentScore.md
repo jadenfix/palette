@@ -21,6 +21,3 @@
 | **candidateJudgeCallId** | **kotlin.String** |  |  [optional] |
 | **candidateTrace** | [**kotlin.Any**](.md) |  |  [optional] |
 | **reference** | [**kotlin.Any**](.md) |  |  [optional] |
-
-
-

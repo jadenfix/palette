@@ -15,4 +15,3 @@ instance = BeaterClient::ConnectConnectorRequest.new(
   toolkit: null
 )
 ```
-

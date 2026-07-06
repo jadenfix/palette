@@ -27,4 +27,3 @@ instance = BeaterClient::ConnectorTool.new(
   toolkit: null
 )
 ```
-

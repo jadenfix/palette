@@ -9,6 +9,3 @@
 | **projectId** | **kotlin.String** |  |  |
 | **spanCount** | **kotlin.Int** |  |  |
 | **tenantId** | **kotlin.String** |  |  |
-
-
-

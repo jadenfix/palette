@@ -17,4 +17,3 @@ instance = BeaterClient::PromoteReviewAnnotationHttpRequest.new(
   reference: null
 )
 ```
-

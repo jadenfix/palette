@@ -20,19 +20,19 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param environmentId 
- * @param kind 
- * @param model 
- * @param name 
- * @param projectId 
- * @param score 
- * @param spanId 
- * @param status 
- * @param tenantId 
- * @param tool 
- * @param traceId 
+ *
+ * @param environmentId
+ * @param kind
+ * @param model
+ * @param name
+ * @param projectId
+ * @param score
+ * @param spanId
+ * @param status
+ * @param tenantId
+ * @param tool
+ * @param traceId
  */
 
 
@@ -75,4 +75,3 @@ data class SearchHit (
 
 
 }
-

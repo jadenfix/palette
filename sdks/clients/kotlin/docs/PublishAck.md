@@ -6,6 +6,3 @@
 | ------------ | ------------- | ------------- | ------------- |
 | **accepted** | **kotlin.Boolean** |  |  |
 | **duplicate** | **kotlin.Boolean** |  |  |
-
-
-

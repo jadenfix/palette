@@ -13,6 +13,3 @@
 | Name | Value |
 | ---- | ----- |
 | type | regex_match |
-
-
-

@@ -36,7 +36,7 @@ describe 'IngestApi' do
   # @param tenant_id tenant_id
   # @param project_id project_id
   # @param [Hash] opts the optional parameters
-  # @option opts [Integer] :limit 
+  # @option opts [Integer] :limit
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -52,7 +52,7 @@ describe 'IngestApi' do
   # @param tenant_id tenant_id
   # @param project_id project_id
   # @param [Hash] opts the optional parameters
-  # @option opts [Integer] :limit 
+  # @option opts [Integer] :limit
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -83,9 +83,9 @@ describe 'IngestApi' do
   # @param tenant_id tenant_id
   # @param project_id project_id
   # @param environment_id environment_id
-  # @param import_source_http_request 
+  # @param import_source_http_request
   # @param [Hash] opts the optional parameters
-  # @option opts [String] :durability 
+  # @option opts [String] :durability
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @return [IngestOutcome]
@@ -96,9 +96,9 @@ describe 'IngestApi' do
   end
 
   # unit tests for ingest_native
-  # @param native_ingest_request 
+  # @param native_ingest_request
   # @param [Hash] opts the optional parameters
-  # @option opts [String] :durability 
+  # @option opts [String] :durability
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -115,7 +115,7 @@ describe 'IngestApi' do
   # @param project_id project_id
   # @param environment_id environment_id
   # @param [Hash] opts the optional parameters
-  # @option opts [String] :durability 
+  # @option opts [String] :durability
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -148,7 +148,7 @@ describe 'IngestApi' do
   # @param project_id project_id
   # @param message_id message_id
   # @param [Hash] opts the optional parameters
-  # @option opts [Boolean] :reset_attempts 
+  # @option opts [Boolean] :reset_attempts
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope

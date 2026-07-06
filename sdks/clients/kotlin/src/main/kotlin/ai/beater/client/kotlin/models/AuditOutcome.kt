@@ -20,7 +20,7 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
+ *
  *
  * Values: allowed,denied
  */
@@ -60,4 +60,3 @@ enum class AuditOutcome(val value: kotlin.String) {
         }
     }
 }
-

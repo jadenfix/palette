@@ -19,4 +19,3 @@ instance = BeaterClient::CreateReviewQueueHttpRequest.new(
   queue_id: null
 )
 ```
-

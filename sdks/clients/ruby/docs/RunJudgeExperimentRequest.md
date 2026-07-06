@@ -31,4 +31,3 @@ instance = BeaterClient::RunJudgeExperimentRequest.new(
   provider_secret_id: null
 )
 ```
-

@@ -27,4 +27,3 @@ instance = BeaterClient::Prompt.new(
   updated_at: null
 )
 ```
-

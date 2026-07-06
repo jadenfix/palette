@@ -23,7 +23,7 @@ All URIs are relative to *http://localhost*
 val apiInstance = JudgeApi()
 val tenantId : kotlin.String = tenantId_example // kotlin.String | tenant_id
 val projectId : kotlin.String = projectId_example // kotlin.String | project_id
-val runJudgeEvalHttpRequest : RunJudgeEvalHttpRequest =  // RunJudgeEvalHttpRequest | 
+val runJudgeEvalHttpRequest : RunJudgeEvalHttpRequest =  // RunJudgeEvalHttpRequest |
 val authorization : kotlin.String = authorization_example // kotlin.String | Bearer API token for strict auth
 val xBeaterApiKey : kotlin.String = xBeaterApiKey_example // kotlin.String | API key alternative for strict auth
 val xBeaterProjectId : kotlin.String = xBeaterProjectId_example // kotlin.String | Strict-auth project scope
@@ -117,4 +117,3 @@ No authorization required
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
-

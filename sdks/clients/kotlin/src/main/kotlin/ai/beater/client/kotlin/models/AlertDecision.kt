@@ -21,11 +21,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param emitted 
- * @param delivery 
- * @param suppressedReason 
+ *
+ * @param emitted
+ * @param delivery
+ * @param suppressedReason
  */
 
 
@@ -44,4 +44,3 @@ data class AlertDecision (
 
 
 }
-

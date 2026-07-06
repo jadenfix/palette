@@ -19,4 +19,3 @@ instance = BeaterClient::UsageSummary.new(
   totals: null
 )
 ```
-

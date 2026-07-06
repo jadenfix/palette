@@ -24,7 +24,7 @@ tenant_id = 'tenant_id_example' # String | tenant_id
 project_id = 'project_id_example' # String | project_id
 dataset_id = 'dataset_id_example' # String | dataset_id
 version_id = 'version_id_example' # String | version_id
-run_calibration_http_request = BeaterClient::RunCalibrationHttpRequest.new # RunCalibrationHttpRequest | 
+run_calibration_http_request = BeaterClient::RunCalibrationHttpRequest.new # RunCalibrationHttpRequest |
 opts = {
   authorization: 'authorization_example', # String | Bearer API token for strict auth
   x_beater_api_key: 'x_beater_api_key_example', # String | API key alternative for strict auth
@@ -33,7 +33,7 @@ opts = {
 }
 
 begin
-  
+
   result = api_instance.run_calibration(tenant_id, project_id, dataset_id, version_id, run_calibration_http_request, opts)
   p result
 rescue BeaterClient::ApiError => e
@@ -49,7 +49,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.run_calibration_with_http_info(tenant_id, project_id, dataset_id, version_id, run_calibration_http_request, opts)
   p status_code # => 2xx
   p headers # => { ... }
@@ -85,4 +85,3 @@ No authorization required
 
 - **Content-Type**: application/json
 - **Accept**: application/json
-

@@ -6,6 +6,3 @@
 | ------------ | ------------- | ------------- | ------------- |
 | **endsAt** | [**java.time.OffsetDateTime**](java.time.OffsetDateTime.md) |  |  |
 | **startsAt** | [**java.time.OffsetDateTime**](java.time.OffsetDateTime.md) |  |  |
-
-
-

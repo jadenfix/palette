@@ -22,10 +22,10 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param prompt 
- * @param version 
+ *
+ * @param prompt
+ * @param version
  */
 
 
@@ -41,4 +41,3 @@ data class CreatedPrompt (
 
 
 }
-

@@ -20,9 +20,9 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param passThreshold 
+ *
+ * @param passThreshold
  */
 
 
@@ -35,4 +35,3 @@ data class CalibrationPolicy (
 
 
 }
-

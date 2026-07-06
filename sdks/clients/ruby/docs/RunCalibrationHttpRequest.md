@@ -19,4 +19,3 @@ instance = BeaterClient::RunCalibrationHttpRequest.new(
   pass_threshold: null
 )
 ```
-

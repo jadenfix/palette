@@ -19,4 +19,3 @@ instance = BeaterClient::ScoreResult.new(
   score: null
 )
 ```
-

@@ -15,6 +15,3 @@
 | Name | Value |
 | ---- | ----- |
 | kind | missing |
-
-
-

@@ -22,7 +22,7 @@ require 'beater_client'
 api_instance = BeaterClient::HealthApi.new
 
 begin
-  
+
   result = api_instance.health
   p result
 rescue BeaterClient::ApiError => e
@@ -38,7 +38,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  
+
   data, status_code, headers = api_instance.health_with_http_info
   p status_code # => 2xx
   p headers # => { ... }
@@ -64,4 +64,3 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
-

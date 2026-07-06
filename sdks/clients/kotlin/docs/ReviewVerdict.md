@@ -11,6 +11,3 @@
     * `needs_fix` (value: `"needs_fix"`)
 
     * `unsure` (value: `"unsure"`)
-
-
-

@@ -35,7 +35,7 @@ describe 'ScenariosApi' do
   # unit tests for create_scenario
   # @param tenant_id tenant_id
   # @param project_id project_id
-  # @param create_scenario_request 
+  # @param create_scenario_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
@@ -68,8 +68,8 @@ describe 'ScenariosApi' do
   # @param tenant_id tenant_id
   # @param project_id project_id
   # @param [Hash] opts the optional parameters
-  # @option opts [Integer] :limit 
-  # @option opts [String] :cursor 
+  # @option opts [Integer] :limit
+  # @option opts [String] :cursor
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth
   # @option opts [String] :x_beater_project_id Strict-auth project scope
@@ -84,7 +84,7 @@ describe 'ScenariosApi' do
   # unit tests for mine_scenarios
   # @param tenant_id tenant_id
   # @param project_id project_id
-  # @param mine_scenarios_request 
+  # @param mine_scenarios_request
   # @param [Hash] opts the optional parameters
   # @option opts [String] :authorization Bearer API token for strict auth
   # @option opts [String] :x_beater_api_key API key alternative for strict auth

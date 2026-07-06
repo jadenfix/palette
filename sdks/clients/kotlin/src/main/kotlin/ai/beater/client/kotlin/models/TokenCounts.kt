@@ -20,12 +20,12 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param cacheRead 
- * @param input 
- * @param output 
- * @param reasoning 
+ *
+ * @param cacheRead
+ * @param input
+ * @param output
+ * @param reasoning
  */
 
 
@@ -47,4 +47,3 @@ data class TokenCounts (
 
 
 }
-

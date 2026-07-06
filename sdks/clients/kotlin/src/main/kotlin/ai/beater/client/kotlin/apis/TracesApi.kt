@@ -48,8 +48,8 @@ class TracesApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param traceId trace_id
      * @param unmask  (optional)
@@ -86,8 +86,8 @@ class TracesApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param traceId trace_id
      * @param unmask  (optional)
@@ -152,8 +152,8 @@ class TracesApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId  (optional)
      * @param environmentId  (optional)
@@ -202,8 +202,8 @@ class TracesApi(basePath: kotlin.String = defaultBasePath, client: Call.Factory 
     }
 
     /**
-     * 
-     * 
+     *
+     *
      * @param tenantId tenant_id
      * @param projectId  (optional)
      * @param environmentId  (optional)

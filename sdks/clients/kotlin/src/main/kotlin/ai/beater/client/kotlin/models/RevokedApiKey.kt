@@ -20,11 +20,11 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
- * 
  *
- * @param active 
- * @param apiKeyId 
- * @param rotatedAt 
+ *
+ * @param active
+ * @param apiKeyId
+ * @param rotatedAt
  */
 
 
@@ -43,4 +43,3 @@ data class RevokedApiKey (
 
 
 }
-
