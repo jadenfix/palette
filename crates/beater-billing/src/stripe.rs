@@ -236,6 +236,7 @@ impl<C: Clock> StripeSync<C> {
         };
 
         // Lifecycle transitions, where the event type implies one.
+        let mut append_adjustment = true;
         match event.event_type.as_str() {
             "customer.subscription.deleted" => {
                 self.store
@@ -255,19 +256,29 @@ impl<C: Clock> StripeSync<C> {
             "invoice.payment_succeeded" => {
                 if let Some(period_key) = &object.period_key {
                     // Best-effort: only transition an invoice we actually have.
-                    if self.store.get_invoice(&org_id, period_key).await?.is_some() {
-                        self.store
-                            .set_invoice_status(&org_id, period_key, InvoiceStatus::Paid)
-                            .await?;
+                    if let Some(invoice) = self.store.get_invoice(&org_id, period_key).await? {
+                        if matches!(invoice.status, InvoiceStatus::Paid | InvoiceStatus::Void) {
+                            append_adjustment = false;
+                        } else {
+                            self.store
+                                .set_invoice_status(&org_id, period_key, InvoiceStatus::Paid)
+                                .await?;
+                        }
                     }
                 }
             }
             _ => {}
         }
 
+        if !append_adjustment {
+            return Ok(());
+        }
+
         // Always record an append-only adjustment capturing the synced event, so
         // the local ledger reflects exactly the events Stripe applied. Exactly
-        // one is written per event id thanks to the dedup guard above.
+        // one is written per event id thanks to the dedup guard above. A payment
+        // event for an invoice already settled locally is still recorded/applied
+        // for Stripe ordering, but does not append a second money movement.
         let amount = Money::usd_micros(object.amount_micros.unwrap_or(0));
         let kind = match event.event_type.as_str() {
             "invoice.payment_succeeded" => AdjustmentKind::Charge,
@@ -383,6 +394,49 @@ mod tests {
             adjustments.len(),
             1,
             "exactly one adjustment despite re-delivery"
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn paid_invoice_payment_event_does_not_append_second_payment_adjustment(
+    ) -> anyhow::Result<()> {
+        let store = Arc::new(SqliteBillingStore::in_memory()?);
+        let org = OrganizationId::new("org-1").map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        store
+            .insert_invoice_if_absent(crate::Invoice {
+                org_id: org.clone(),
+                period_key: "2026-06".to_string(),
+                line_items: vec![crate::InvoiceLineItem {
+                    meter: None,
+                    description: "base".to_string(),
+                    quantity: 0,
+                    included: 0,
+                    overage_quantity: 0,
+                    unit_rate: Money::usd_micros(5_000),
+                    amount: Money::usd_micros(5_000),
+                }],
+                total: Money::usd_micros(5_000),
+                status: InvoiceStatus::Paid,
+                idempotency_key: crate::Invoice::idempotency_key_for(&org, "2026-06"),
+                created_at: fixed_now(),
+            })
+            .await?;
+
+        let sync = sync(store.clone())?;
+        let body = event_json("evt_paid_again", 1000, "invoice.payment_succeeded", "org-1");
+        let header = signed_header(&body)?;
+        assert_eq!(
+            sync.apply_event(&body, &header).await?,
+            EventApplication::Applied
+        );
+        assert!(
+            store.list_adjustments(&org).await?.is_empty(),
+            "already-paid invoice must not get a second payment adjustment"
+        );
+        assert_eq!(
+            sync.apply_event(&body, &header).await?,
+            EventApplication::Duplicate
         );
         Ok(())
     }

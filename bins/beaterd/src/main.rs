@@ -127,6 +127,13 @@ struct Args {
         default_value = "whsec_local_dev"
     )]
     stripe_webhook_secret: String,
+    /// Aether settlement verifier signing secret (HMAC). The
+    /// `/v1/billing/invoices/{org_id}/{period_key}/settlements/aether` route
+    /// accepts only receipts signed with this secret. If unset, that route is
+    /// registered but returns 501 rather than trusting self-asserted receipts.
+    #[cfg(feature = "billing")]
+    #[arg(long, env = "BEATER_AETHER_SETTLEMENT_SECRET")]
+    aether_settlement_secret: Option<String>,
     #[arg(
         long,
         env = "BEATER_TRACE_WRITE_DRAIN_INTERVAL_MS",
@@ -487,6 +494,9 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(feature = "billing")]
     {
         state = state.with_billing(billing, args.stripe_webhook_secret.clone().into_bytes());
+        if let Some(secret) = &args.aether_settlement_secret {
+            state = state.with_aether_settlement_secret(secret.clone().into_bytes());
+        }
     }
     // Composio-backed connectors are opt-in: only when `COMPOSIO_API_KEY` is set
     // does the `/v1/connectors` surface come online. Unset → the endpoints report

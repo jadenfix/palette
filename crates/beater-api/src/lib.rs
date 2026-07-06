@@ -143,6 +143,10 @@ pub struct ApiState {
     /// route to verify inbound deliveries.
     #[cfg(feature = "billing")]
     stripe_webhook_secret: Option<Vec<u8>>,
+    /// Aether verifier signing secret (HMAC). Required for the Aether
+    /// settlement route so org admins cannot self-assert payment receipts.
+    #[cfg(feature = "billing")]
+    aether_settlement_secret: Option<Vec<u8>>,
     audit: Option<Arc<dyn AuditStore>>,
     /// Composio-backed third-party tool provider. When set, the `/v1/connectors`
     /// endpoints broker managed-OAuth connections and tool execution; when unset
@@ -189,6 +193,8 @@ impl ApiState {
             billing: None,
             #[cfg(feature = "billing")]
             stripe_webhook_secret: None,
+            #[cfg(feature = "billing")]
+            aether_settlement_secret: None,
             audit: None,
             connectors: None,
             prompts: None,
@@ -319,13 +325,14 @@ impl ApiState {
         self
     }
 
-    /// Wire the billing store and the Stripe webhook signing secret. Enables the
-    /// `/v1/plans`, `/v1/subscriptions`, `/v1/billing/invoices` and
-    /// `/v1/billing/webhooks/stripe` routes.
+    /// Wire the billing store and Stripe webhook signing secret. Enables the
+    /// `/v1/plans`, `/v1/subscriptions`, `/v1/billing/invoices`, Aether
+    /// settlement, and `/v1/billing/webhooks/stripe` routes. Aether settlement
+    /// application additionally requires [`Self::with_aether_settlement_secret`].
     ///
     /// Billing is a hosted concern and is gated behind the non-default `billing`
     /// cargo feature so the open-source build neither compiles billing code nor
-    /// advertises Stripe endpoints in the OSS API contract.
+    /// advertises hosted billing endpoints in the OSS API contract.
     #[cfg(feature = "billing")]
     pub fn with_billing(
         mut self,
@@ -334,6 +341,18 @@ impl ApiState {
     ) -> Self {
         self.billing = Some(billing);
         self.stripe_webhook_secret = Some(stripe_webhook_secret.into());
+        self
+    }
+
+    /// Configure the Aether verifier/indexer HMAC secret. The settlement route
+    /// accepts only receipts signed with this secret, so org admin credentials
+    /// alone cannot self-assert payments.
+    #[cfg(feature = "billing")]
+    pub fn with_aether_settlement_secret(
+        mut self,
+        aether_settlement_secret: impl Into<Vec<u8>>,
+    ) -> Self {
+        self.aether_settlement_secret = Some(aether_settlement_secret.into());
         self
     }
 
@@ -1820,6 +1839,7 @@ async fn get_invoice_route(
         ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
         ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
         ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+        ("x-beater-aether-signature" = String, Header, description = "HMAC signature from the configured Aether verifier over the exact JSON body"),
     ),
     request_body = AetherSettlementReceipt,
     responses(
@@ -1835,11 +1855,14 @@ async fn apply_aether_settlement_route(
     State(state): State<ApiState>,
     headers: HeaderMap,
     Path((org_id, period_key)): Path<(String, String)>,
-    Json(receipt): Json<AetherSettlementReceipt>,
+    body: Bytes,
 ) -> Result<Json<AetherSettlementAck>, ApiError> {
     let billing = billing_service(&state)?;
     let org_id = OrganizationId::new(org_id)?;
     authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
+    verify_aether_settlement_signature(&state, &headers, &body)?;
+    let receipt: AetherSettlementReceipt =
+        serde_json::from_slice(&body).map_err(|err| ApiError::bad_request(err.to_string()))?;
     if receipt.org_id != org_id {
         return Err(ApiError::bad_request(format!(
             "receipt org_id {} does not match path org_id {}",
@@ -4373,6 +4396,34 @@ fn stripe_sync(state: &ApiState) -> Result<StripeSync, ApiError> {
     Ok(StripeSync::new(billing, secret))
 }
 
+#[cfg(feature = "billing")]
+fn verify_aether_settlement_signature(
+    state: &ApiState,
+    headers: &HeaderMap,
+    body: &[u8],
+) -> Result<(), ApiError> {
+    let secret = state.aether_settlement_secret.as_ref().ok_or_else(|| {
+        ApiError::not_implemented("aether settlement verifier secret is not configured".to_string())
+    })?;
+    let signature = headers
+        .get("x-beater-aether-signature")
+        .ok_or_else(|| {
+            ApiError::bad_request("missing x-beater-aether-signature header".to_string())
+        })?
+        .to_str()
+        .map_err(|_| {
+            ApiError::bad_request("invalid x-beater-aether-signature header".to_string())
+        })?;
+    beater_security::verify_webhook(
+        secret,
+        body,
+        signature,
+        Utc::now(),
+        chrono::Duration::seconds(beater_billing::stripe::DEFAULT_WEBHOOK_TOLERANCE_SECONDS),
+    )
+    .map_err(auth_failure)
+}
+
 fn audit_store(state: &ApiState) -> Result<Arc<dyn AuditStore>, ApiError> {
     require(&state.audit, "audit store")
 }
@@ -5809,6 +5860,149 @@ mod tests {
         assert!(trace_params
             .iter()
             .any(|param| param["name"] == json!("min_cost_micros")));
+    }
+
+    #[cfg(feature = "billing")]
+    #[tokio::test]
+    async fn aether_settlement_route_requires_verifier_signature() {
+        use beater_billing::store::{BillingStore, SqliteBillingStore};
+        use beater_billing::AetherSettlementReceipt;
+        use beater_core::{Money, OrganizationId};
+        use beater_usage::{SqliteUsageLedger, UsageLedgerStore};
+
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+        let billing: Arc<dyn BillingStore> =
+            Arc::new(SqliteBillingStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let usage: Arc<dyn UsageLedgerStore> =
+            Arc::new(SqliteUsageLedger::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let app = router(
+            ApiState::new(ingest, traces)
+                .with_usage(usage)
+                .with_billing(billing, b"whsec_test".to_vec())
+                .with_aether_settlement_secret(b"aether_settlement_secret".to_vec()),
+        );
+
+        let receipt = AetherSettlementReceipt {
+            settlement_id: "set_route".to_string(),
+            payment_hash: "0x0831ce74c89358835be790d4a7794a2bb30cd7e5968bafb5cc99423ea5f25783"
+                .to_string(),
+            network: "base-mainnet".to_string(),
+            chain_id: 8453,
+            asset: "USDC".to_string(),
+            amount_minor_units: "10000".to_string(),
+            asset_decimals: 6,
+            settled_value: Money::usd_micros(10_000),
+            invoice_idempotency_key: "inv_org-e2e_2026-06".to_string(),
+            period_key: "2026-06".to_string(),
+            org_id: OrganizationId::new("org-e2e").unwrap_or_else(|err| panic!("{err}")),
+            verifier: "aether-indexer:v1".to_string(),
+            settled_at: Utc::now(),
+        };
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/billing/invoices/org-e2e/2026-06/settlements/aether")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::to_vec(&receipt).unwrap_or_else(|err| panic!("{err}")),
+                    ))
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let error: serde_json::Value =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert!(error["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("missing x-beater-aether-signature"));
+    }
+
+    #[cfg(feature = "billing")]
+    #[tokio::test]
+    async fn aether_settlement_route_rejects_signed_receipt_path_org_mismatch() {
+        use beater_billing::store::{BillingStore, SqliteBillingStore};
+        use beater_billing::AetherSettlementReceipt;
+        use beater_core::{Money, OrganizationId};
+        use beater_security::sign_webhook;
+        use beater_usage::{SqliteUsageLedger, UsageLedgerStore};
+
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
+        let billing: Arc<dyn BillingStore> =
+            Arc::new(SqliteBillingStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let usage: Arc<dyn UsageLedgerStore> =
+            Arc::new(SqliteUsageLedger::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let aether_secret = b"aether_settlement_secret";
+        let app = router(
+            ApiState::new(ingest, traces)
+                .with_usage(usage)
+                .with_billing(billing, b"whsec_test".to_vec())
+                .with_aether_settlement_secret(aether_secret.to_vec()),
+        );
+
+        let receipt = AetherSettlementReceipt {
+            settlement_id: "set_route".to_string(),
+            payment_hash: "0x0831ce74c89358835be790d4a7794a2bb30cd7e5968bafb5cc99423ea5f25783"
+                .to_string(),
+            network: "base-mainnet".to_string(),
+            chain_id: 8453,
+            asset: "USDC".to_string(),
+            amount_minor_units: "10000".to_string(),
+            asset_decimals: 6,
+            settled_value: Money::usd_micros(10_000),
+            invoice_idempotency_key: "inv_other-org_2026-06".to_string(),
+            period_key: "2026-06".to_string(),
+            org_id: OrganizationId::new("other-org").unwrap_or_else(|err| panic!("{err}")),
+            verifier: "aether-indexer:v1".to_string(),
+            settled_at: Utc::now(),
+        };
+        let body = serde_json::to_vec(&receipt).unwrap_or_else(|err| panic!("{err}"));
+        let signature = sign_webhook(aether_secret, &body, Utc::now())
+            .unwrap_or_else(|err| panic!("{err}"))
+            .header_value();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/billing/invoices/org-e2e/2026-06/settlements/aether")
+                    .header("content-type", "application/json")
+                    .header("x-beater-aether-signature", signature)
+                    .body(Body::from(body))
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let error: serde_json::Value =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert!(error["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("does not match path org_id"));
     }
 
     #[tokio::test]
