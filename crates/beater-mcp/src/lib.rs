@@ -48,6 +48,10 @@ const PROTOCOL_VERSION: &str = "2025-06-18";
 /// [`PROTOCOL_VERSION`] — standard MCP version negotiation.
 const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26", "2024-11-05"];
 
+/// Server-wide guidance returned from `initialize`. Codex and other MCP clients
+/// can use this before choosing tools, so keep the opening self-contained.
+const SERVER_INSTRUCTIONS: &str = "Beater MCP exposes the Beater /v1 API as tools for agent trace, dataset, review, eval, and admin workflows. Start with the help tool when unsure. Use the narrowest OAuth scopes possible: mcp:invoke plus trace:read for inspection, dataset:write for dataset/review writes, eval:run for eval execution, and admin only for administrative actions. OAuth tokens are bound to tenant/project/environment; do not invent ids.";
+
 /// Maximum response body size we will buffer from a dispatched handler.
 const MAX_BODY_BYTES: usize = 32 * 1024 * 1024;
 
@@ -721,6 +725,22 @@ fn capabilities() -> Value {
     json!({ "tools": { "listChanged": false } })
 }
 
+fn initialize_result(params: &Value) -> Value {
+    // Negotiate: echo the client's requested version when we support it,
+    // otherwise advertise our latest.
+    let version = params
+        .get("protocolVersion")
+        .and_then(Value::as_str)
+        .filter(|v| SUPPORTED_PROTOCOL_VERSIONS.contains(v))
+        .unwrap_or(PROTOCOL_VERSION);
+    json!({
+        "protocolVersion": version,
+        "serverInfo": server_info(),
+        "capabilities": capabilities(),
+        "instructions": SERVER_INSTRUCTIONS,
+    })
+}
+
 /// `POST /mcp` — the JSON-RPC 2.0 entry point.
 async fn handle_mcp(State(state): State<ApiState>, headers: HeaderMap, body: Body) -> Response {
     let bytes = match to_bytes(body, MAX_BODY_BYTES).await {
@@ -737,6 +757,14 @@ async fn handle_mcp(State(state): State<ApiState>, headers: HeaderMap, body: Bod
         Ok(v) => v,
         Err(_) => return json_response(rpc_error(Value::Null, PARSE_ERROR, "invalid JSON")),
     };
+
+    if state.oauth_metadata_url().is_some() && !has_presented_credentials(&headers) {
+        return oauth_unauthorized_response(
+            &state,
+            StatusCode::UNAUTHORIZED,
+            "Authenticate before connecting to Beater MCP.".to_string(),
+        );
+    }
 
     // Note: JSON-RPC batching is not used by current MCP clients; handle a
     // single request object.
@@ -783,20 +811,7 @@ async fn dispatch_rpc(
     let params = request.get("params").cloned().unwrap_or(Value::Null);
 
     let result = match method {
-        "initialize" => {
-            // Negotiate: echo the client's requested version when we support it,
-            // otherwise advertise our latest.
-            let version = params
-                .get("protocolVersion")
-                .and_then(Value::as_str)
-                .filter(|v| SUPPORTED_PROTOCOL_VERSIONS.contains(v))
-                .unwrap_or(PROTOCOL_VERSION);
-            Ok(json!({
-                "protocolVersion": version,
-                "serverInfo": server_info(),
-                "capabilities": capabilities(),
-            }))
-        }
+        "initialize" => Ok(initialize_result(&params)),
         "notifications/initialized" | "initialized" => {
             // Lifecycle notification: acknowledge, no result.
             return Ok(if is_notification {
@@ -1224,6 +1239,32 @@ mod tests {
             "tools() must return the same cached slice"
         );
         assert_eq!(first.len(), second.len());
+    }
+
+    #[test]
+    fn initialize_result_advertises_client_safe_instructions() {
+        let result = initialize_result(&json!({ "protocolVersion": "2025-03-26" }));
+        assert_eq!(result["protocolVersion"], "2025-03-26");
+        assert_eq!(result["serverInfo"]["name"], "beater-mcp");
+        assert!(result["capabilities"]["tools"].is_object());
+
+        let instructions = result["instructions"].as_str().unwrap();
+        assert!(
+            instructions.len() <= 512,
+            "first guidance block should stay compact for clients that truncate"
+        );
+        for expected in [
+            "help tool",
+            "narrowest OAuth scopes",
+            "mcp:invoke",
+            "trace:read",
+            "tenant/project/environment",
+        ] {
+            assert!(
+                instructions.contains(expected),
+                "instructions should mention {expected}"
+            );
+        }
     }
 
     /// `resolves_to_object` resolves inline types and one level of `$ref`, and is

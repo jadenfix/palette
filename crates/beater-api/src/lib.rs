@@ -5074,12 +5074,12 @@ async fn authorize_oauth(
             "access token is not scoped to this tenant/project/environment".to_string(),
         ));
     }
-    let is_admin = claims.scope.contains(ApiScope::Admin.as_str());
-    if !is_admin && !claims.scope.contains("mcp:invoke") {
+    if !claims.scope.contains("mcp:invoke") {
         return Err(ApiError::forbidden(
             "access token is missing scope mcp:invoke".to_string(),
         ));
     }
+    let is_admin = claims.scope.contains(ApiScope::Admin.as_str());
     let has_scope = claims.scope.contains(required_scope.as_str()) || is_admin;
     if !has_scope {
         return Err(ApiError::forbidden(format!(
@@ -5847,6 +5847,59 @@ mod tests {
             .is_err(),
             "OAuth tokens must carry mcp:invoke before operation scopes matter"
         );
+
+        let admin_without_mcp = store
+            .issue_token_pair(
+                OAuthClientId::new("client").unwrap_or_else(|err| panic!("{err}")),
+                UserId::new("user").unwrap_or_else(|err| panic!("{err}")),
+                BTreeSet::from(["admin".to_string()]),
+                resource.to_string(),
+                TenantScope::new(tenant.clone(), project.clone(), environment.clone()),
+                TokenFamilyId::new("fam-admin-no-mcp").unwrap_or_else(|err| panic!("{err}")),
+                true,
+                now,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
+        assert!(
+            authorize_oauth(
+                &store,
+                &admin_without_mcp.access_token,
+                Some(resource),
+                &tenant,
+                &project,
+                &environment,
+                ApiScope::TraceWrite,
+            )
+            .await
+            .is_err(),
+            "admin still must carry mcp:invoke to use MCP-issued OAuth tokens"
+        );
+
+        let admin_with_mcp = store
+            .issue_token_pair(
+                OAuthClientId::new("client").unwrap_or_else(|err| panic!("{err}")),
+                UserId::new("user").unwrap_or_else(|err| panic!("{err}")),
+                BTreeSet::from(["admin".to_string(), "mcp:invoke".to_string()]),
+                resource.to_string(),
+                TenantScope::new(tenant.clone(), project.clone(), environment.clone()),
+                TokenFamilyId::new("fam-admin-mcp").unwrap_or_else(|err| panic!("{err}")),
+                true,
+                now,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
+        authorize_oauth(
+            &store,
+            &admin_with_mcp.access_token,
+            Some(resource),
+            &tenant,
+            &project,
+            &environment,
+            ApiScope::TraceWrite,
+        )
+        .await
+        .unwrap_or_else(|err| panic!("admin+mcp should satisfy operation scope: {err:?}"));
 
         // Wrong tenant -> forbidden (token is bound to its tenant scope).
         let other = TenantId::new("evil").unwrap_or_else(|err| panic!("{err}"));

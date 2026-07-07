@@ -636,6 +636,48 @@ async fn oauth_mcp_auth_failure_returns_discovery_challenge() {
 }
 
 #[tokio::test]
+async fn oauth_mcp_initialize_without_credentials_returns_discovery_challenge() {
+    let (state, _tempdir) = build_state();
+    let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
+    let oauth = Arc::new(unwrap(SqliteOAuthStore::in_memory()));
+    let state = state.require_auth(api_keys).with_oauth(
+        oauth,
+        Some("https://app.example.test/.well-known/oauth-protected-resource".to_string()),
+        "https://app.example.test".to_string(),
+    );
+    let app = beater_mcp::router(state);
+
+    let (status, headers, body) = mcp_call_with_headers_and_response_headers(
+        &app,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "protocolVersion": "2025-06-18" }
+        }),
+        &[],
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let challenge = headers
+        .get(http::header::WWW_AUTHENTICATE)
+        .and_then(|value| value.to_str().ok())
+        .expect("WWW-Authenticate challenge");
+    assert!(
+        challenge.contains(
+            r#"resource_metadata="https://app.example.test/.well-known/oauth-protected-resource""#
+        ),
+        "got {challenge}"
+    );
+    assert_eq!(body["error"], "unauthorized");
+    assert_eq!(
+        body["_meta"]["mcp/www_authenticate"][0], challenge,
+        "initial POST should give clients the same OAuth discovery metadata as tool calls"
+    );
+}
+
+#[tokio::test]
 async fn get_mcp_with_oauth_returns_discovery_challenge() {
     let (state, _tempdir) = build_state();
     let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
