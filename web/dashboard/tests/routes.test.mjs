@@ -35,6 +35,11 @@ const EXPECTED_ROUTES = [
   { route: "/", file: "page.tsx", note: "Traces — §25.4 [built]" },
   { route: "/login", file: "login/page.tsx", note: "Login — §25.4 [built]" },
   {
+    route: "/connect",
+    file: "connect/page.tsx",
+    note: "Coding-agent connect screen — §25.4 [built]",
+  },
+  {
     route: "/settings/api-keys",
     file: "settings/api-keys/page.tsx",
     note: "API key management — §25.4 [partial, built]",
@@ -121,11 +126,6 @@ const PENDING_ROUTES = [
     route: "/evolution",
     file: "evolution/page.tsx",
     note: "Beatboxing RSI — §25.4 [planned; depends on §21 RSI]",
-  },
-  {
-    route: "/connect",
-    file: "connect/page.tsx",
-    note: "Coding-agent connect screen — §25.4 [partial; OAuth server built, connect screen planned]",
   },
 ];
 

@@ -1220,6 +1220,216 @@ func (a *IngestAPIService) IngestOtlpExecute(r ApiIngestOtlpRequest) (*OtlpInges
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
+type ApiIngestOtlpJsonCollectorRequest struct {
+	ctx context.Context
+	ApiService *IngestAPIService
+	durability *string
+	authorization *string
+	xBeaterApiKey *string
+	xBeaterTenantId *string
+	xBeaterProjectId *string
+	xBeaterEnvironmentId *string
+}
+
+func (r ApiIngestOtlpJsonCollectorRequest) Durability(durability string) ApiIngestOtlpJsonCollectorRequest {
+	r.durability = &durability
+	return r
+}
+
+// Bearer API token for strict auth
+func (r ApiIngestOtlpJsonCollectorRequest) Authorization(authorization string) ApiIngestOtlpJsonCollectorRequest {
+	r.authorization = &authorization
+	return r
+}
+
+// API key alternative for strict auth
+func (r ApiIngestOtlpJsonCollectorRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestOtlpJsonCollectorRequest {
+	r.xBeaterApiKey = &xBeaterApiKey
+	return r
+}
+
+// Tenant scope override for collector-style OTLP JSON
+func (r ApiIngestOtlpJsonCollectorRequest) XBeaterTenantId(xBeaterTenantId string) ApiIngestOtlpJsonCollectorRequest {
+	r.xBeaterTenantId = &xBeaterTenantId
+	return r
+}
+
+// Project scope override for collector-style OTLP JSON
+func (r ApiIngestOtlpJsonCollectorRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestOtlpJsonCollectorRequest {
+	r.xBeaterProjectId = &xBeaterProjectId
+	return r
+}
+
+// Environment scope override for collector-style OTLP JSON
+func (r ApiIngestOtlpJsonCollectorRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestOtlpJsonCollectorRequest {
+	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
+	return r
+}
+
+func (r ApiIngestOtlpJsonCollectorRequest) Execute() (*OtlpIngestOutcome, *http.Response, error) {
+	return r.ApiService.IngestOtlpJsonCollectorExecute(r)
+}
+
+/*
+IngestOtlpJsonCollector Method for IngestOtlpJsonCollector
+
+ @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+ @return ApiIngestOtlpJsonCollectorRequest
+*/
+func (a *IngestAPIService) IngestOtlpJsonCollector(ctx context.Context) ApiIngestOtlpJsonCollectorRequest {
+	return ApiIngestOtlpJsonCollectorRequest{
+		ApiService: a,
+		ctx: ctx,
+	}
+}
+
+// Execute executes the request
+//  @return OtlpIngestOutcome
+func (a *IngestAPIService) IngestOtlpJsonCollectorExecute(r ApiIngestOtlpJsonCollectorRequest) (*OtlpIngestOutcome, *http.Response, error) {
+	var (
+		localVarHTTPMethod   = http.MethodPost
+		localVarPostBody     interface{}
+		formFiles            []formFile
+		localVarReturnValue  *OtlpIngestOutcome
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestOtlpJsonCollector")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/v1/traces"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	if r.durability != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "durability", r.durability, "form", "")
+	}
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	if r.authorization != nil {
+		parameterAddToHeaderOrQuery(localVarHeaderParams, "authorization", r.authorization, "simple", "")
+	}
+	if r.xBeaterApiKey != nil {
+		parameterAddToHeaderOrQuery(localVarHeaderParams, "x-beater-api-key", r.xBeaterApiKey, "simple", "")
+	}
+	if r.xBeaterTenantId != nil {
+		parameterAddToHeaderOrQuery(localVarHeaderParams, "x-beater-tenant-id", r.xBeaterTenantId, "simple", "")
+	}
+	if r.xBeaterProjectId != nil {
+		parameterAddToHeaderOrQuery(localVarHeaderParams, "x-beater-project-id", r.xBeaterProjectId, "simple", "")
+	}
+	if r.xBeaterEnvironmentId != nil {
+		parameterAddToHeaderOrQuery(localVarHeaderParams, "x-beater-environment-id", r.xBeaterEnvironmentId, "simple", "")
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		if localVarHTTPResponse.StatusCode == 400 {
+			var v ErrorResponse
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 401 {
+			var v ErrorResponse
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 403 {
+			var v ErrorResponse
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 413 {
+			var v ErrorResponse
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 429 {
+			var v ErrorResponse
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
 type ApiReconcileTraceRequest struct {
 	ctx context.Context
 	ApiService *IngestAPIService

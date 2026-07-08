@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 use std::time::SystemTime;
 
 mod merkle;
-pub use merkle::{corpus_root, CorpusRoot, MerkleError, MerkleLeaf};
+pub use merkle::{CorpusRoot, MerkleError, MerkleLeaf, corpus_root};
 
 pub type Timestamp = DateTime<Utc>;
 
@@ -405,8 +405,7 @@ mod tests {
         assert_eq!(left.try_sub(&right), Ok(Money::usd_micros(60)));
         assert_eq!(right.try_add(&left), Ok(Money::usd_micros(140)));
         assert_eq!(
-            serde_json::to_value(Money::usd_micros(1)).unwrap_or_else(|err| panic!("{err}"))
-                ["currency"],
+            serde_json::to_value(Money::usd_micros(1)).unwrap_or_else(|err| panic!("{err}"))["currency"],
             "USD"
         );
     }

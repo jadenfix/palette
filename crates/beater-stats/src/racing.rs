@@ -15,7 +15,7 @@
 //! distribution-free it needs no normality assumption — appropriate for the
 //! bounded, skewed per-case scores an eval gate sees.
 
-use crate::{mean, StatsError};
+use crate::{StatsError, mean};
 
 /// Per-arm confidence summary from a [`hoeffding_race`].
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -47,7 +47,7 @@
 //!   **`inconclusive`, never `pass`** (§10.3 #1/#6, §1 #9). The gate calls this
 //!   before it is allowed to emit `pass`.
 
-use beater_core::{sha256_json_hash, JsonHashError, Sha256Hash};
+use beater_core::{JsonHashError, Sha256Hash, sha256_json_hash};
 use serde::{Deserialize, Serialize};
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -500,10 +500,10 @@ impl EvalDesign {
                 power: self.power_target,
             });
         }
-        if let Some(mde) = self.mde {
-            if !(mde.is_finite() && mde > 0.0) {
-                return Err(DesignError::NonPositiveMde { mde });
-            }
+        if let Some(mde) = self.mde
+            && !(mde.is_finite() && mde > 0.0)
+        {
+            return Err(DesignError::NonPositiveMde { mde });
         }
         // Estimand effect scales must be finite and non-negative.
         match self.estimand {
@@ -569,15 +569,15 @@ impl EvalDesign {
     ///   read.
     pub fn permit_pass(&self) -> Result<(), DesignRefusal> {
         // Online streams must use anytime-valid inference (§10.3 #6).
-        if self.monitoring == Monitoring::Online {
-            if let StoppingRule::FixedHorizon { .. } = self.stopping_rule {
-                return Err(DesignRefusal::FixedHorizonOnPeekedStream);
-            }
+        if self.monitoring == Monitoring::Online
+            && let StoppingRule::FixedHorizon { .. } = self.stopping_rule
+        {
+            return Err(DesignRefusal::FixedHorizonOnPeekedStream);
         }
-        if let StoppingRule::FixedHorizon { planned_n } = self.stopping_rule {
-            if planned_n == 0 {
-                return Err(DesignRefusal::ZeroPlannedHorizon);
-            }
+        if let StoppingRule::FixedHorizon { planned_n } = self.stopping_rule
+            && planned_n == 0
+        {
+            return Err(DesignRefusal::ZeroPlannedHorizon);
         }
         // Non-independent observations need a cluster key (§10.3 #1).
         if self.unit_of_analysis.requires_cluster() && self.cluster_key.is_none() {
@@ -1028,8 +1028,10 @@ mod tests {
         let (resolved, warnings) = design.resolve();
         // We do NOT flip weighting silently — we surface the bias.
         assert_eq!(resolved.weighting, WeightingPolicy::Unweighted);
-        assert!(warnings
-            .iter()
-            .any(|w| matches!(w, DesignWarning::BiasedAggregate { .. })));
+        assert!(
+            warnings
+                .iter()
+                .any(|w| matches!(w, DesignWarning::BiasedAggregate { .. }))
+        );
     }
 }

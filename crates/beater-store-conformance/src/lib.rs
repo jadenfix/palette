@@ -4,8 +4,8 @@ use beater_core::{
 };
 use beater_schema::{
     AgentSpanKind, ArtifactRef, AuthContext, CanonicalSpan, CanonicalTraceBatch, ModelRef,
-    RawEnvelope, RedactionClass, RunFilter, SourceDialect, SpanFilter, SpanStatus,
-    RAW_SCHEMA_VERSION,
+    RAW_SCHEMA_VERSION, RawEnvelope, RedactionClass, RunFilter, SourceDialect, SpanFilter,
+    SpanStatus,
 };
 use beater_store::{
     MetadataStore, OrganizationMetadata, ProjectMetadata, QuotaLimiter, QuotaReservationRequest,
@@ -178,14 +178,18 @@ where
         .await
         .unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(same_trace_runs.items.len(), 2);
-    assert!(same_trace_runs
-        .items
-        .iter()
-        .any(|run| run.project_id.as_str() == project.as_str() && run.span_count == 2));
-    assert!(same_trace_runs
-        .items
-        .iter()
-        .any(|run| run.project_id.as_str() == other_project.as_str() && run.span_count == 1));
+    assert!(
+        same_trace_runs
+            .items
+            .iter()
+            .any(|run| run.project_id.as_str() == project.as_str() && run.span_count == 2)
+    );
+    assert!(
+        same_trace_runs
+            .items
+            .iter()
+            .any(|run| run.project_id.as_str() == other_project.as_str() && run.span_count == 1)
+    );
 
     let project_runs = store
         .query_runs(
@@ -244,10 +248,12 @@ where
         .await
         .unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(scoped_spans.items.len(), 2);
-    assert!(scoped_spans
-        .items
-        .iter()
-        .all(|span| span.project_id.as_str() == project.as_str()));
+    assert!(
+        scoped_spans
+            .items
+            .iter()
+            .all(|span| span.project_id.as_str() == project.as_str())
+    );
 
     let scoped_project = store
         .get_project_trace(tenant.clone(), project, trace.clone())
@@ -259,10 +265,12 @@ where
         .unwrap_or_else(|err| panic!("{err}"));
 
     assert_eq!(scoped_project.spans.len(), 2);
-    assert!(scoped_project
-        .spans
-        .iter()
-        .all(|span| span.project_id.as_str() == "project"));
+    assert!(
+        scoped_project
+            .spans
+            .iter()
+            .all(|span| span.project_id.as_str() == "project")
+    );
     assert_eq!(scoped_other_project.spans.len(), 1);
     assert_eq!(
         scoped_other_project.spans[0].span_id.as_str(),
@@ -362,11 +370,15 @@ where
     assert_eq!(second_span_page.items.len(), 1);
     assert_eq!(span_ids(&second_span_page.items), vec!["pagination-span-1"]);
     assert_eq!(second_span_page.next_cursor, None);
-    assert!(first_span_page
-        .items
-        .iter()
-        .chain(second_span_page.items.iter())
-        .all(|span| span.tenant_id == pagination_tenant && span.project_id == pagination_project));
+    assert!(
+        first_span_page
+            .items
+            .iter()
+            .chain(second_span_page.items.iter())
+            .all(
+                |span| span.tenant_id == pagination_tenant && span.project_id == pagination_project
+            )
+    );
 
     let zero_limit_span_page = store
         .query_spans(
@@ -443,10 +455,12 @@ where
         vec!["pagination-trace-2", "pagination-trace-1"]
     );
     assert_eq!(second_run_page.next_cursor, None);
-    assert!(second_run_page
-        .items
-        .iter()
-        .all(|run| run.tenant_id == pagination_tenant && run.project_id == pagination_project));
+    assert!(
+        second_run_page
+            .items
+            .iter()
+            .all(|run| run.tenant_id == pagination_tenant && run.project_id == pagination_project)
+    );
 
     // Run roll-up over a multi-span trace carrying cost, model, release, status,
     // and end-time variety. This exercises the full `RunSummary` aggregate — the

@@ -18,14 +18,14 @@ use std::fs;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{
-    sha256_json_hash, JsonHashError, ProjectId, TenantId, TenantScope, Timestamp, TraceId,
+    JsonHashError, ProjectId, TenantId, TenantScope, Timestamp, TraceId, sha256_json_hash,
 };
 use beater_schema::{AgentSpanKind, CanonicalSpan, RedactionClass, SpanStatus};
 use beater_store::{IntoStoreResult, StoreResult};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
 /// Errors that can occur while mining scenarios.

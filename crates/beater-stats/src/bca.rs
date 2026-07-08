@@ -9,8 +9,8 @@
 //! (the jackknife skewness of the statistic), restoring ~nominal coverage.
 
 use crate::numerics::normal_quantile;
-use crate::resampling::{percentile_endpoints, Bootstrap};
-use crate::{mean, normal_cdf, resample_mean, BootstrapInterval, ConfidenceInterval, StatsError};
+use crate::resampling::{Bootstrap, percentile_endpoints};
+use crate::{BootstrapInterval, ConfidenceInterval, StatsError, mean, normal_cdf, resample_mean};
 
 /// Outcome of a paired bootstrap test over per-pair differences.
 #[derive(Debug, Clone, Copy, PartialEq)]

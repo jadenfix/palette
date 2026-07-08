@@ -14,9 +14,9 @@
 use beater_store_conformance::assert_trace_store_conformance;
 use beater_store_sql::PgTraceStore;
 use testcontainers::{
+    GenericImage, ImageExt,
     core::{IntoContainerPort, WaitFor},
     runners::AsyncRunner,
-    GenericImage, ImageExt,
 };
 
 #[tokio::test]

@@ -1,7 +1,7 @@
 //! Exact McNemar test for a paired binary outcome.
 
-use crate::numerics::binomial_lower_tail_half;
 use crate::StatsError;
+use crate::numerics::binomial_lower_tail_half;
 
 /// Exact two-sided McNemar p-value for a paired binary outcome, where `b` and
 /// `c` are the two discordant-pair counts (e.g. 0→1 and 1→0). Under H0 the

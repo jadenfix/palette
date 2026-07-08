@@ -1,6 +1,6 @@
 pub mod rsi;
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{
     AgentReleaseId, DatasetCaseId, DatasetId, DatasetVersionId, EvaluatorVersionId,
@@ -8,9 +8,9 @@ use beater_core::{
 };
 use beater_datasets::DatasetVersionSnapshot;
 use beater_eval::{
-    compare_paired_scores_cuped, compare_paired_scores_with_design, conservative_gate_design,
-    evaluate_deterministic, EvaluationCase, EvaluatorSpec, ExperimentComparison, GateDecision,
-    GatePolicy, MultiplicityPolicy, ScoreResult, VarianceReduction,
+    EvaluationCase, EvaluatorSpec, ExperimentComparison, GateDecision, GatePolicy,
+    MultiplicityPolicy, ScoreResult, VarianceReduction, compare_paired_scores_cuped,
+    compare_paired_scores_with_design, conservative_gate_design, evaluate_deterministic,
 };
 use beater_judge::{
     GenerationRequest, JudgeBroker, JudgeBrokerOutcome, JudgeBrokerRequest, ProviderCredentials,
@@ -18,11 +18,11 @@ use beater_judge::{
 };
 use beater_schema::EvaluatorLane;
 use beater_stats::{
-    assess_generalization_gap, benjamini_hochberg, hoeffding_race, holm_bonferroni, GapAssessment,
+    GapAssessment, assess_generalization_gap, benjamini_hochberg, hoeffding_race, holm_bonferroni,
 };
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -1223,8 +1223,7 @@ const LLM_REWRITE_MODEL: &str = "gpt-4o-mini";
 /// The system prompt for the reflective rewrite generation call. It frames the
 /// model as a prompt engineer and constrains the output to the rewritten prompt
 /// only — this is a generation instruction, NOT a scoring/judge contract.
-const LLM_REWRITE_SYSTEM: &str =
-    "You are an expert prompt engineer. Given an optimization goal, a current system \
+const LLM_REWRITE_SYSTEM: &str = "You are an expert prompt engineer. Given an optimization goal, a current system \
      prompt, and observed failures, you produce an improved system prompt. Respond with \
      ONLY the improved system prompt text — no preamble, no commentary, no scores.";
 
@@ -2647,9 +2646,11 @@ mod tests {
         ];
         apply_family_multiplicity(&mut evals, MultiplicityPolicy::Holm, 0.05)
             .unwrap_or_else(|err| panic!("{err}"));
-        assert!(evals
-            .iter()
-            .all(|e| e.gate.decision == GateDecision::Pass && e.accepted));
+        assert!(
+            evals
+                .iter()
+                .all(|e| e.gate.decision == GateDecision::Pass && e.accepted)
+        );
     }
 
     /// The guard is a deliberate no-op for a single candidate (a family of one has
@@ -2667,9 +2668,10 @@ mod tests {
         let mut none = vec![passing_eval(0.04), passing_eval(0.04)];
         apply_family_multiplicity(&mut none, MultiplicityPolicy::None, 0.05)
             .unwrap_or_else(|err| panic!("{err}"));
-        assert!(none
-            .iter()
-            .all(|e| e.gate.decision == GateDecision::Pass && e.accepted));
+        assert!(
+            none.iter()
+                .all(|e| e.gate.decision == GateDecision::Pass && e.accepted)
+        );
     }
 
     /// The best-arm race withdraws acceptance from a candidate that a strictly

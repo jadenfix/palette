@@ -39,7 +39,7 @@
 //! planned minimum detectable effect — the same scale the likelihood-ratio-
 //! optimal fixed bet [`crate::recommended_lambda`] uses.
 
-use crate::{mean, ConfidenceInterval, StatsError};
+use crate::{ConfidenceInterval, StatsError, mean};
 
 /// Outcome of an anytime-valid mean estimate over a peeked stream.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -152,8 +152,8 @@ fn cs_radius(n: f64, sig2: f64, tau2: f64, alpha: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::numerics::normal_quantile;
     use crate::Xorshift64;
+    use crate::numerics::normal_quantile;
 
     #[test]
     fn validates_inputs() {

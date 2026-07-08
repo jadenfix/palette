@@ -1,14 +1,14 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{
     AnnotationId, DatasetCaseId, DatasetId, ProjectId, ReviewQueueId, ReviewTaskId, SpanId,
     TenantId, Timestamp, TraceId,
 };
-use beater_datasets::{promote_trace_span_to_case, DatasetCase};
+use beater_datasets::{DatasetCase, promote_trace_span_to_case};
 use beater_schema::TraceView;
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
@@ -740,8 +740,8 @@ mod tests {
     use super::*;
     use beater_core::{ArtifactId, EnvironmentId, Money, Sha256Hash, TokenCounts};
     use beater_schema::{
-        AgentSpanKind, ArtifactRef, CanonicalSpan, ModelRef, RedactionClass, SpanStatus,
-        CANONICAL_SCHEMA_VERSION,
+        AgentSpanKind, ArtifactRef, CANONICAL_SCHEMA_VERSION, CanonicalSpan, ModelRef,
+        RedactionClass, SpanStatus,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -1059,9 +1059,11 @@ mod tests {
             Err(error) => error,
         };
 
-        assert!(error
-            .to_string()
-            .contains("requires a non-null reference or expected value"));
+        assert!(
+            error
+                .to_string()
+                .contains("requires a non-null reference or expected value")
+        );
         Ok(())
     }
 

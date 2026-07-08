@@ -7,7 +7,7 @@ name = "beater-browser-use"
 version = "0.1.0"
 description = "Beater instrumentation for the browser-use agent framework — emits canonical browser.* spans over OTLP"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "Apache-2.0"
 authors = [{ name = "Beater" }]
 keywords = ["observability", "browser-use", "agents", "opentelemetry", "tracing", "browser"]

@@ -59,7 +59,7 @@
 //! discordant rate is known.
 
 use crate::numerics::normal_quantile;
-use crate::{normal_cdf, validate_alpha, StatsError};
+use crate::{StatsError, normal_cdf, validate_alpha};
 
 /// The conventional power target for sample planning (§10.3 #5). A gate that does
 /// not specify otherwise plans for an 80 % chance of detecting the effect.

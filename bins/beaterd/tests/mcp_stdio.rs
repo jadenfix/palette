@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn run_beaterd_mcp_stdio(request: Value) -> anyhow::Result<Value> {
     let tempdir = tempfile::tempdir()?;

@@ -89,6 +89,60 @@ function loadDashboardApiModule(context = {}) {
   });
 }
 
+function loadOAuthRoutingModule(context = {}) {
+  return loadTsModule("lib/oauth-routing.ts", { context: { URL, URLSearchParams, ...context } });
+}
+
+function loadOAuthProxyModule(context = {}) {
+  class MockNextResponse {
+    constructor(body = null, init = {}) {
+      this.body = body;
+      this.status = init.status ?? 200;
+      this.headers = new Headers();
+    }
+
+    static json(body, init = {}) {
+      const res = new MockNextResponse(JSON.stringify(body), init);
+      res.headers.set("content-type", "application/json");
+      return res;
+    }
+  }
+
+  return loadTsModule("lib/oauth-proxy.ts", {
+    context: { fetch, Headers, Response, URL, ...context },
+    requireMap: {
+      "next/server": { NextResponse: MockNextResponse },
+      "./api": { dashboardApiBaseUrl: () => "https://api.palette.dev" },
+      "./oauth-routing": () => loadOAuthRoutingModule(context)
+    }
+  });
+}
+
+function loadMcpProxyModule(context = {}) {
+  class MockNextResponse {
+    constructor(body = null, init = {}) {
+      this.body = body;
+      this.status = init.status ?? 200;
+      this.headers = new Headers();
+    }
+
+    static json(body, init = {}) {
+      const res = new MockNextResponse(JSON.stringify(body), init);
+      res.headers.set("content-type", "application/json");
+      return res;
+    }
+  }
+
+  return loadTsModule("lib/mcp-proxy.ts", {
+    context: { fetch, Headers, Response, URL, ...context },
+    requireMap: {
+      "next/server": { NextResponse: MockNextResponse },
+      "./api": { dashboardApiBaseUrl: () => "https://api.palette.dev" },
+      "./oauth-routing": () => loadOAuthRoutingModule(context)
+    }
+  });
+}
+
 function loadGate2ConfirmRouteModule(context = {}) {
   return loadTsModule("app/api/gate2/confirm/route.ts", {
     context: { process, Response, URL, ...context },
@@ -102,6 +156,247 @@ function loadGate2ConfirmRouteModule(context = {}) {
     }
   });
 }
+
+test("OAuth return_to resumes through dashboard-origin proxy", () => {
+  const { safeOAuthReturnPath } = loadOAuthRoutingModule();
+  assert.equal(
+    safeOAuthReturnPath(
+      "https://api.palette.dev/oauth/authorize?client_id=cursor&state=abc#frag",
+      "https://app.palette.dev",
+    ),
+    "/oauth/authorize?client_id=cursor&state=abc#frag",
+  );
+  assert.equal(
+    safeOAuthReturnPath("/connect", "https://app.palette.dev"),
+    "/connect",
+  );
+  assert.equal(
+    safeOAuthReturnPath("/settings/api-keys?created=1", "https://app.palette.dev"),
+    "/settings/api-keys?created=1",
+  );
+  assert.equal(
+    safeOAuthReturnPath("https://evil.example.com/dashboard?next=/oauth/authorize", "https://app.palette.dev"),
+    "/",
+  );
+  assert.equal(
+    safeOAuthReturnPath("//evil.example.com/connect", "https://app.palette.dev"),
+    "/",
+  );
+  assert.equal(
+    safeOAuthReturnPath("/search?return_to=/connect", "https://app.palette.dev"),
+    "/",
+  );
+});
+
+test("OAuth metadata is rewritten to hosted dashboard origin", () => {
+  const {
+    publicRequestOrigin,
+    rewriteHostedOAuthReferences,
+    rewriteOAuthMetadata,
+    rewriteResourceFormBody,
+    rewriteResourceSearch
+  } = loadOAuthRoutingModule();
+  assert.equal(
+    publicRequestOrigin({
+      url: "http://localhost:3101/.well-known/oauth-protected-resource",
+      headers: { get: (name) => ({ host: "127.0.0.1:3101" })[name.toLowerCase()] ?? null }
+    }),
+    "http://127.0.0.1:3101",
+  );
+  assert.equal(
+    publicRequestOrigin({
+      url: "http://internal:3000/.well-known/oauth-protected-resource",
+      headers: {
+        get: (name) =>
+          ({
+            "x-forwarded-host": "app.palette.dev",
+            "x-forwarded-proto": "https"
+          })[name.toLowerCase()] ?? null
+      }
+    }),
+    "https://app.palette.dev",
+  );
+  const authServer = JSON.parse(
+    rewriteOAuthMetadata(
+      JSON.stringify({
+        issuer: "https://api.palette.dev",
+        authorization_endpoint: "https://api.palette.dev/oauth/authorize",
+        token_endpoint: "https://api.palette.dev/oauth/token",
+        registration_endpoint: "https://api.palette.dev/oauth/register",
+        scopes_supported: ["mcp:invoke"],
+      }),
+      "https://app.palette.dev",
+      "authorization-server",
+    ),
+  );
+  assert.equal(authServer.issuer, "https://app.palette.dev");
+  assert.equal(authServer.authorization_endpoint, "https://app.palette.dev/oauth/authorize");
+  assert.equal(authServer.token_endpoint, "https://app.palette.dev/oauth/token");
+  assert.equal(authServer.registration_endpoint, "https://app.palette.dev/oauth/register");
+  assert.deepEqual(authServer.scopes_supported, ["mcp:invoke"]);
+
+  const resource = JSON.parse(
+    rewriteOAuthMetadata(
+      JSON.stringify({
+        resource: "https://api.palette.dev",
+        authorization_servers: ["https://api.palette.dev"],
+      }),
+      "https://app.palette.dev",
+      "protected-resource",
+    ),
+  );
+  assert.equal(resource.resource, "https://app.palette.dev");
+  assert.deepEqual(resource.authorization_servers, ["https://app.palette.dev"]);
+  assert.equal(rewriteOAuthMetadata("not-json", "https://app.palette.dev", "authorization-server"), "not-json");
+  assert.equal(
+    rewriteResourceSearch(
+      "?resource=https%3A%2F%2Fapp.palette.dev&state=abc",
+      "https://app.palette.dev",
+      "https://api.palette.dev"
+    ),
+    "?state=abc&resource=https%3A%2F%2Fapi.palette.dev",
+  );
+  assert.equal(
+    rewriteResourceFormBody(
+      "grant_type=refresh_token&resource=https%3A%2F%2Fapp.palette.dev",
+      "application/x-www-form-urlencoded",
+      "https://app.palette.dev",
+      "https://api.palette.dev"
+    ),
+    "grant_type=refresh_token&resource=https%3A%2F%2Fapi.palette.dev",
+  );
+  assert.equal(
+    rewriteHostedOAuthReferences(
+      "Bearer resource_metadata=\"https://api.palette.dev/.well-known/oauth-protected-resource\"",
+      "https://api.palette.dev",
+      "https://app.palette.dev"
+    ),
+    "Bearer resource_metadata=\"https://app.palette.dev/.well-known/oauth-protected-resource\"",
+  );
+});
+
+test("OAuth proxy forwards Authorization and preserves auth headers", async () => {
+  let captured = null;
+  const { proxyOAuth } = loadOAuthProxyModule({
+    fetch: async (url, init) => {
+      if (url === "https://api.palette.dev/.well-known/oauth-authorization-server") {
+        return new Response(JSON.stringify({ issuer: "https://api.palette.dev" }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        });
+      }
+      captured = { url, init };
+      return new Response(JSON.stringify({ access_token: "ok" }), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "www-authenticate": "Bearer resource_metadata=\"https://api.palette.dev/.well-known/oauth-protected-resource\"",
+          "cache-control": "no-store"
+        }
+      });
+    }
+  });
+  const req = {
+    url: "https://app.palette.dev/oauth/token?resource=https%3A%2F%2Fapp.palette.dev",
+    headers: {
+      get(name) {
+        return {
+          authorization: "Basic client-secret",
+          cookie: "beater_session=s",
+          "content-type": "application/x-www-form-urlencoded"
+        }[name.toLowerCase()] ?? null;
+      }
+    }
+  };
+
+  const res = await proxyOAuth(req, {
+    method: "POST",
+    backendPath: "/oauth/token",
+    body: "grant_type=authorization_code&resource=https%3A%2F%2Fapp.palette.dev"
+  });
+
+  assert.equal(
+    captured.url,
+    "https://api.palette.dev/oauth/token?resource=https%3A%2F%2Fapi.palette.dev",
+  );
+  assert.equal(captured.init.body, "grant_type=authorization_code&resource=https%3A%2F%2Fapi.palette.dev");
+  assert.equal(captured.init.headers.authorization, "Basic client-secret");
+  assert.equal(captured.init.headers.cookie, "beater_session=s");
+  assert.equal(captured.init.headers["content-type"], "application/x-www-form-urlencoded");
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("cache-control"), "no-store");
+  assert.match(res.headers.get("www-authenticate"), /resource_metadata/);
+});
+
+test("MCP proxy forwards auth and MCP headers while preserving challenges", async () => {
+  let captured = null;
+  const { proxyMcp } = loadMcpProxyModule({
+    fetch: async (url, init) => {
+      if (url === "https://api.palette.dev/.well-known/oauth-authorization-server") {
+        return new Response(JSON.stringify({ issuer: "https://api.palette.dev" }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        });
+      }
+      captured = { url, init };
+      return new Response(
+        JSON.stringify({
+          error: "unauthorized",
+          _meta: {
+            "mcp/www_authenticate": [
+              "Bearer resource_metadata=\"https://api.palette.dev/.well-known/oauth-protected-resource\""
+            ]
+          }
+        }),
+        {
+        status: 401,
+        headers: {
+          "content-type": "application/json",
+          "mcp-session-id": "session-1",
+          "www-authenticate":
+            "Bearer resource_metadata=\"https://api.palette.dev/.well-known/oauth-protected-resource\""
+        }
+        }
+      );
+    }
+  });
+  const req = {
+    url: "https://app.palette.dev/mcp?tenant=demo",
+    headers: {
+      get(name) {
+        return {
+          accept: "application/json, text/event-stream",
+          authorization: "Bearer bao_test",
+          "content-type": "application/json",
+          "last-event-id": "event-1",
+          "mcp-protocol-version": "2025-06-18",
+          "mcp-session-id": "session-0",
+          "x-beater-project-id": "proj"
+        }[name.toLowerCase()] ?? null;
+      }
+    },
+    text: async () => "{\"jsonrpc\":\"2.0\"}"
+  };
+
+  const res = await proxyMcp(req, "POST");
+
+  assert.equal(captured.url, "https://api.palette.dev/mcp?tenant=demo");
+  assert.equal(captured.init.method, "POST");
+  assert.equal(captured.init.body, "{\"jsonrpc\":\"2.0\"}");
+  assert.equal(captured.init.headers.authorization, "Bearer bao_test");
+  assert.equal(captured.init.headers["mcp-protocol-version"], "2025-06-18");
+  assert.equal(captured.init.headers["mcp-session-id"], "session-0");
+  assert.equal(captured.init.headers["last-event-id"], "event-1");
+  assert.equal(captured.init.headers["x-beater-project-id"], "proj");
+  assert.equal(res.status, 401);
+  assert.equal(res.headers.get("mcp-session-id"), "session-1");
+  assert.equal(
+    res.headers.get("www-authenticate"),
+    "Bearer resource_metadata=\"https://app.palette.dev/.well-known/oauth-protected-resource\""
+  );
+  assert.match(res.body, /https:\/\/app\.palette\.dev\/\.well-known\/oauth-protected-resource/);
+  assert.doesNotMatch(res.body, /https:\/\/api\.palette\.dev\/\.well-known\/oauth-protected-resource/);
+});
 
 function gate2ConfirmRequest({
   session = "0123456789abcdef0123456789abcdef",
@@ -926,6 +1221,60 @@ test("in-app docs runtime surfaces are generated from the openapi contract", () 
   assert.match(quickstartsPage, /tools\/list/);
   assert.match(quickstartsPage, /CLI/);
   assert.match(quickstartsPage, /Control-plane clients \(7 languages\)/);
+});
+
+test("connect page gives hosted MCP clients OAuth-first setup and scoped fallback", () => {
+  const page = readFileSync(join(root, "app/connect/page.tsx"), "utf8");
+  const client = readFileSync(join(root, "app/connect/ConnectClient.tsx"), "utf8");
+  const nav = readFileSync(join(root, "components/AppNav.tsx"), "utf8");
+
+  assert.match(page, /Connect MCP clients/);
+  assert.match(page, /Claude, Claude Code, Cursor, ChatGPT, Codex/);
+  assert.match(page, /OAuth-first login/);
+  assert.match(page, /getSession/);
+  assert.match(page, /AppNav/);
+
+  assert.match(client, /Remote MCP URL/);
+  assert.match(client, /\/mcp/);
+  assert.match(client, /oauth-protected-resource/);
+  assert.match(client, /oauth-authorization-server/);
+  assert.match(client, /Live OAuth check/);
+  assert.match(client, /Run check/);
+  assert.match(client, /fetchJsonObject\(protectedResourceUrl\)/);
+  assert.match(client, /fetchJsonObject\(authServerUrl\)/);
+  assert.match(client, /fetch\(mcpUrl/);
+  assert.match(client, /www-authenticate/);
+  assert.match(client, /resource_metadata/);
+  assert.match(client, /expectedResourceMetadataUrl/);
+  assert.match(client, /hostedEndpointOk\(auth\.data\?\.authorization_endpoint/);
+  assert.match(client, /hostedEndpointOk\(auth\.data\?\.token_endpoint/);
+  assert.match(client, /hostedEndpointOk\(auth\.data\?\.registration_endpoint/);
+  assert.match(client, /registration_endpoint/);
+  assert.match(client, /Claude \/ Claude Code/);
+  assert.match(client, /Cursor/);
+  assert.match(client, /ChatGPT/);
+  assert.match(client, /OpenAI API \/ Agents/);
+  assert.match(client, /server_url/);
+  assert.match(client, /require_approval/);
+  assert.match(client, /Codex compatibility depends on the surface/);
+  assert.match(client, /Delegated permissions/);
+  assert.match(client, /mcp:invoke/);
+  assert.match(client, /trace:read/);
+  assert.match(client, /dataset:write/);
+  assert.match(client, /eval:run/);
+  assert.match(client, /admin/);
+  assert.match(client, /API-key fallback/);
+  assert.match(client, /BEATER_API_KEY="bt_\.\.\."/);
+  assert.doesNotMatch(client, /BEATER_API_KEY="bao_\.\.\."/);
+  assert.match(client, /tools\/call/);
+  assert.match(client, /listTraces/);
+  assert.match(client, /x-beater-project-id/);
+  assert.match(client, /x-beater-environment-id/);
+  assert.match(client, /CopyField/);
+  assert.match(client, /CopyButton/);
+
+  assert.match(nav, /href: "\/connect"/);
+  assert.match(nav, /PlugZap/);
 });
 
 test("browser proof covers all canonical span kinds and can record a demo", () => {

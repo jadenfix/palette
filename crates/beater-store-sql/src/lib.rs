@@ -1,19 +1,19 @@
 use async_trait::async_trait;
 use beater_core::{
-    sha256_hex, Clock, EnvironmentId, IdempotencyKey, Money, OrganizationId, Page, PageRequest,
-    ProjectId, SystemClock, TenantId, Timestamp, TraceId,
+    Clock, EnvironmentId, IdempotencyKey, Money, OrganizationId, Page, PageRequest, ProjectId,
+    SystemClock, TenantId, Timestamp, TraceId, sha256_hex,
 };
 use beater_schema::{
-    span_summary, AgentSpanKind, CanonicalSpan, CanonicalTraceBatch, ModelRef, RawEnvelope,
-    RunFilter, RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck,
+    AgentSpanKind, CanonicalSpan, CanonicalTraceBatch, ModelRef, RawEnvelope, RunFilter,
+    RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck, span_summary,
 };
 use beater_store::{
-    finalize_run_aggregates, lock_poisoned, EnvironmentMetadata, MetadataStore,
-    OrganizationMetadata, ProjectMetadata, QuotaDecision, QuotaLimiter, QuotaReservationRequest,
-    RoleBinding, RunAggregateRow, StoreError, StoreResult, TraceStore,
+    EnvironmentMetadata, MetadataStore, OrganizationMetadata, ProjectMetadata, QuotaDecision,
+    QuotaLimiter, QuotaReservationRequest, RoleBinding, RunAggregateRow, StoreError, StoreResult,
+    TraceStore, finalize_run_aggregates, lock_poisoned,
 };
 use chrono::DateTime;
-use rusqlite::{params, Connection, OptionalExtension, TransactionBehavior};
+use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
@@ -23,12 +23,12 @@ use std::time::Duration as StdDuration;
 #[cfg(feature = "postgres")]
 mod postgres;
 #[cfg(feature = "postgres")]
-pub use postgres::{PgTraceStore, POSTGRES_TRACE_STORE_MIGRATION};
+pub use postgres::{POSTGRES_TRACE_STORE_MIGRATION, PgTraceStore};
 
 #[cfg(feature = "clickhouse")]
 mod clickhouse;
 #[cfg(feature = "clickhouse")]
-pub use clickhouse::{ClickHouseTraceStore, CLICKHOUSE_TRACE_STORE_MIGRATION};
+pub use clickhouse::{CLICKHOUSE_TRACE_STORE_MIGRATION, ClickHouseTraceStore};
 
 const LOCAL_BEATERD_SQLITE_0001: &str =
     include_str!("../../../migrations/sqlite/0001_local_beaterd.sql");
@@ -259,11 +259,11 @@ impl QuotaLimiter for SqliteQuotaLimiter {
         // same window) returns the originally recorded decision without advancing
         // the counter again. The counter read/write and this lookup share one
         // IMMEDIATE transaction, so the dedup is atomic with the reservation.
-        if let Some(key) = request.idempotency_key.as_deref() {
-            if let Some(decision) = replay_keyed_reservation(&tx, &request, key)? {
-                tx.commit().map_err(StoreError::backend)?;
-                return Ok(decision);
-            }
+        if let Some(key) = request.idempotency_key.as_deref()
+            && let Some(decision) = replay_keyed_reservation(&tx, &request, key)?
+        {
+            tx.commit().map_err(StoreError::backend)?;
+            return Ok(decision);
         }
 
         let current_used = tx
@@ -1751,9 +1751,11 @@ mod tests {
                 .count(),
             1
         );
-        assert!(decisions
-            .iter()
-            .any(|decision| !decision.accepted && decision.used == 1));
+        assert!(
+            decisions
+                .iter()
+                .any(|decision| !decision.accepted && decision.used == 1)
+        );
     }
 
     #[tokio::test]

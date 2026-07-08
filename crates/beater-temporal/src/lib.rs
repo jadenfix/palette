@@ -22,7 +22,7 @@ use beater_schema::{
     AgentSpanKind, AuthContext, CanonicalAttrs, RedactionClass, SourceDialect, SpanStatus,
 };
 use chrono::{DateTime, Utc};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::BTreeMap;
 
 /// Pinned Temporal history schema this normalizer targets. Stamped onto every
@@ -358,12 +358,12 @@ pub fn convert_history(_scope: &TenantScope, history: &Value) -> TemporalResult<
                 insert_builder(&mut spans, &mut order, eid, builder)?;
             }
             EventClass::WorkflowTerminal(status) => {
-                if let Some(rk) = root_key {
-                    if let Some(builder) = spans.get_mut(&rk) {
-                        builder.end_time = when;
-                        builder.status = status;
-                        builder.output = terminal_output(event);
-                    }
+                if let Some(rk) = root_key
+                    && let Some(builder) = spans.get_mut(&rk)
+                {
+                    builder.end_time = when;
+                    builder.status = status;
+                    builder.output = terminal_output(event);
                 }
             }
             EventClass::ActivityScheduled => {
@@ -393,10 +393,10 @@ pub fn convert_history(_scope: &TenantScope, history: &Value) -> TemporalResult<
             }
             EventClass::ActivityStarted => {
                 let attrs = attributes(event, "activityTaskStartedEventAttributes");
-                if let Some(builder) = ref_builder(&mut spans, attrs, "scheduledEventId") {
-                    if let Some(attempt) = attrs.get("attempt").and_then(as_u64) {
-                        builder.attr_num("temporal.attempt", attempt);
-                    }
+                if let Some(builder) = ref_builder(&mut spans, attrs, "scheduledEventId")
+                    && let Some(attempt) = attrs.get("attempt").and_then(as_u64)
+                {
+                    builder.attr_num("temporal.attempt", attempt);
                 }
             }
             EventClass::ActivityClosed(status) => {
@@ -429,14 +429,13 @@ pub fn convert_history(_scope: &TenantScope, history: &Value) -> TemporalResult<
             }
             EventClass::ChildStarted => {
                 let attrs = attributes(event, "childWorkflowExecutionStartedEventAttributes");
-                if let Some(builder) = ref_builder(&mut spans, attrs, "initiatedEventId") {
-                    if let Some(run_id) = attrs
+                if let Some(builder) = ref_builder(&mut spans, attrs, "initiatedEventId")
+                    && let Some(run_id) = attrs
                         .get("workflowExecution")
                         .and_then(|we| we.get("runId"))
                         .and_then(Value::as_str)
-                    {
-                        builder.attr_str("temporal.child.run_id", run_id);
-                    }
+                {
+                    builder.attr_str("temporal.child.run_id", run_id);
                 }
             }
             EventClass::ChildClosed(status) => {
@@ -516,19 +515,18 @@ pub fn convert_history(_scope: &TenantScope, history: &Value) -> TemporalResult<
     }
 
     // Record unmapped coverage on the root span so it is visible without re-parsing raw.
-    if !unmapped_types.is_empty() {
-        if let Some(rk) = root_key {
-            if let Some(builder) = spans.get_mut(&rk) {
-                builder.attr_num(
-                    "temporal.unmapped_event_count",
-                    stats.unmapped_events as u64,
-                );
-                builder.attributes.insert(
-                    "temporal.unmapped_event_types".to_string(),
-                    json!(unmapped_types),
-                );
-            }
-        }
+    if !unmapped_types.is_empty()
+        && let Some(rk) = root_key
+        && let Some(builder) = spans.get_mut(&rk)
+    {
+        builder.attr_num(
+            "temporal.unmapped_event_count",
+            stats.unmapped_events as u64,
+        );
+        builder.attributes.insert(
+            "temporal.unmapped_event_types".to_string(),
+            json!(unmapped_types),
+        );
     }
 
     let drafts: Vec<CanonicalSpanDraft> = order
@@ -708,10 +706,10 @@ fn attributes<'a>(event: &'a Value, expected_key: &str) -> &'a Value {
     if let Some(value) = event.get(expected_key) {
         return value;
     }
-    if let Some(snake_key) = snake_case_event_attributes_key(expected_key) {
-        if let Some(value) = event.get(&snake_key) {
-            return value;
-        }
+    if let Some(snake_key) = snake_case_event_attributes_key(expected_key)
+        && let Some(value) = event.get(&snake_key)
+    {
+        return value;
     }
     // Encoding-robust fallback: any `*EventAttributes` field on the event.
     if let Some(object) = event.as_object() {
@@ -1245,7 +1243,7 @@ mod tests {
         }
         let c = convert_ok(events);
         assert_eq!(c.drafts.len(), 11); // root + 10 activities
-                                        // seq strictly increasing in draft order (root first at seq 1).
+        // seq strictly increasing in draft order (root first at seq 1).
         let seqs: Vec<u64> = c.drafts.iter().map(|d| d.seq).collect();
         let mut sorted = seqs.clone();
         sorted.sort_unstable();

@@ -171,6 +171,8 @@ spec, so it updates too.
 
 - `cargo build --workspace` / `cargo test --workspace`
 - `cargo clippy --workspace --all-targets` (unwrap/expect are denied in non-test code)
+- Deep merge E2E across contract, MCP, CLI, SDKs, and compose/dashboard:
+  `scripts/e2e-merge-gate.sh`
 - Live SDK conformance (needs Docker + language toolchains):
   `scripts/e2e-clients-live.sh`
 - Verify that all scripts, examples, and doc paths referenced in the walkthrough

@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{ProjectId, SpanId, TenantId, TraceId};
 use beater_schema::{CanonicalSpan, RedactionClass};
@@ -10,10 +10,10 @@ use std::sync::{Arc, Mutex};
 use tantivy::collector::TopDocs;
 use tantivy::query::{AllQuery, BooleanQuery, EmptyQuery, Occur, Query, TermQuery};
 use tantivy::schema::{
-    Field, IndexRecordOption, Schema, TantivyDocument, Value, STORED, STRING, TEXT,
+    Field, IndexRecordOption, STORED, STRING, Schema, TEXT, TantivyDocument, Value,
 };
 use tantivy::tokenizer::TokenStream;
-use tantivy::{doc, Index, IndexWriter, Term};
+use tantivy::{Index, IndexWriter, Term, doc};
 
 #[async_trait]
 pub trait SearchIndex: Send + Sync {
@@ -657,7 +657,7 @@ mod tests {
     use beater_core::{EnvironmentId, ProjectId, TenantId};
     use beater_schema::CanonicalTraceBatch;
     use beater_schema::{
-        AgentSpanKind, ModelRef, RedactionClass, SpanStatus, CANONICAL_SCHEMA_VERSION,
+        AgentSpanKind, CANONICAL_SCHEMA_VERSION, ModelRef, RedactionClass, SpanStatus,
     };
     use beater_store_memory::InMemoryTraceStore;
     use chrono::Utc;

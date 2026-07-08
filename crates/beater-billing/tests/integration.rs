@@ -290,3 +290,148 @@ async fn e2e_subscribe_rollup_finalize_push_and_webhook_exactly_once() -> anyhow
     assert_eq!(paid.status, InvoiceStatus::Paid);
     Ok(())
 }
+
+#[tokio::test]
+async fn refund_usage_nets_down_billable_overage_without_negative_invoice_units()
+-> anyhow::Result<()> {
+    let store = Arc::new(SqliteBillingStore::in_memory()?);
+    let usage = Arc::new(SqliteUsageLedger::in_memory()?);
+    store.put_plan(plan("pro", 10_000, 1000, 2)?).await?;
+
+    let now = Utc::now();
+    let period = BillingPeriod::new(now - Duration::days(1), now + Duration::days(1))?;
+    store
+        .create_subscription(Subscription {
+            org_id: org()?,
+            plan_id: plan_id("pro")?,
+            status: SubscriptionStatus::Active,
+            period_start: period.start,
+            period_end: period.end,
+            version: 1,
+        })
+        .await?;
+
+    let tenant = TenantId::new("tenant-refund").map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    let project = ProjectId::new("project-refund").map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    let scope = BillingScope {
+        org_id: org()?,
+        tenant_id: tenant.clone(),
+        project_id: project.clone(),
+    };
+
+    usage
+        .record_usage(UsageRecordInsert {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            meter: UsageMeter::JudgeCostMicros,
+            quantity: 1500,
+            unit: "usd_micros".to_string(),
+            source_kind: UsageRecordSourceKind::Manual,
+            source_id: "original-judge-charge".to_string(),
+            attributes: serde_json::json!({}),
+        })
+        .await?;
+    usage
+        .record_usage(UsageRecordInsert {
+            tenant_id: tenant,
+            project_id: project,
+            meter: UsageMeter::JudgeCostMicros,
+            quantity: -600,
+            unit: "usd_micros".to_string(),
+            source_kind: UsageRecordSourceKind::Refund,
+            source_id: "refund-judge-charge".to_string(),
+            attributes: serde_json::json!({ "reason": "voided judge call" }),
+        })
+        .await?;
+
+    let billing = Billing::new(
+        store.clone() as Arc<dyn BillingStore>,
+        usage.clone() as Arc<dyn UsageLedgerStore>,
+    );
+    let invoice = billing.roll_up_period(&scope, &period).await?;
+    let judge_line = invoice
+        .line_items
+        .iter()
+        .find(|line| line.meter == Some(UsageMeter::JudgeCostMicros))
+        .ok_or_else(|| anyhow::anyhow!("missing judge overage line"))?;
+
+    assert_eq!(judge_line.quantity, 900);
+    assert_eq!(judge_line.overage_quantity, 0);
+    assert_eq!(judge_line.amount, Money::usd_micros(0));
+    assert_eq!(invoice.total, Money::usd_micros(10_000));
+    Ok(())
+}
+
+#[tokio::test]
+async fn over_refund_usage_clamps_meter_quantity_at_zero() -> anyhow::Result<()> {
+    let store = Arc::new(SqliteBillingStore::in_memory()?);
+    let usage = Arc::new(SqliteUsageLedger::in_memory()?);
+    store.put_plan(plan("pro", 10_000, 1000, 2)?).await?;
+
+    let now = Utc::now();
+    let period = BillingPeriod::new(now - Duration::days(1), now + Duration::days(1))?;
+    store
+        .create_subscription(Subscription {
+            org_id: org()?,
+            plan_id: plan_id("pro")?,
+            status: SubscriptionStatus::Active,
+            period_start: period.start,
+            period_end: period.end,
+            version: 1,
+        })
+        .await?;
+
+    let tenant = TenantId::new("tenant-over-refund").map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    let project =
+        ProjectId::new("project-over-refund").map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    usage
+        .record_usage(UsageRecordInsert {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            meter: UsageMeter::JudgeCostMicros,
+            quantity: 200,
+            unit: "usd_micros".to_string(),
+            source_kind: UsageRecordSourceKind::Manual,
+            source_id: "small-judge-charge".to_string(),
+            attributes: serde_json::json!({}),
+        })
+        .await?;
+    usage
+        .record_usage(UsageRecordInsert {
+            tenant_id: tenant.clone(),
+            project_id: project.clone(),
+            meter: UsageMeter::JudgeCostMicros,
+            quantity: -500,
+            unit: "usd_micros".to_string(),
+            source_kind: UsageRecordSourceKind::Refund,
+            source_id: "larger-refund".to_string(),
+            attributes: serde_json::json!({}),
+        })
+        .await?;
+
+    let billing = Billing::new(
+        store.clone() as Arc<dyn BillingStore>,
+        usage.clone() as Arc<dyn UsageLedgerStore>,
+    );
+    let invoice = billing
+        .roll_up_period(
+            &BillingScope {
+                org_id: org()?,
+                tenant_id: tenant,
+                project_id: project,
+            },
+            &period,
+        )
+        .await?;
+    let judge_line = invoice
+        .line_items
+        .iter()
+        .find(|line| line.meter == Some(UsageMeter::JudgeCostMicros))
+        .ok_or_else(|| anyhow::anyhow!("missing judge overage line"))?;
+
+    assert_eq!(judge_line.quantity, 0);
+    assert_eq!(judge_line.overage_quantity, 0);
+    assert_eq!(judge_line.amount, Money::usd_micros(0));
+    assert_eq!(invoice.total, Money::usd_micros(10_000));
+    Ok(())
+}

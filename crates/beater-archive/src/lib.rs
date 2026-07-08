@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use arrow_array::{
     Array, ArrayRef, LargeStringArray, RecordBatch, StringArray, StringViewArray, UInt64Array,
 };
@@ -7,7 +7,7 @@ use beater_core::{EnvironmentId, ProjectId, SpanId, TenantId, Timestamp, TraceId
 use beater_schema::{AgentSpanKind, CanonicalSpan, SpanStatus};
 use chrono::Utc;
 use datafusion::dataframe::DataFrame;
-use datafusion::prelude::{col, lit, ParquetReadOptions, SessionContext};
+use datafusion::prelude::{ParquetReadOptions, SessionContext, col, lit};
 use parquet::arrow::ArrowWriter;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -17,8 +17,8 @@ use uuid::Uuid;
 
 mod sweeper;
 pub use sweeper::{
-    CandidateSource, OrphanedArtifactSweeper, SliceCandidateSource, SweepCheckpoint, SweepConfig,
-    SweepMetrics, SweepOutcome, SweepReport, DEFAULT_SWEEP_BATCH_SIZE,
+    CandidateSource, DEFAULT_SWEEP_BATCH_SIZE, OrphanedArtifactSweeper, SliceCandidateSource,
+    SweepCheckpoint, SweepConfig, SweepMetrics, SweepOutcome, SweepReport,
 };
 
 const TABLE_NAME: &str = "spans";
@@ -121,10 +121,10 @@ impl ParquetTraceArchive {
         if query.tenant_id.as_str() != tenant_id.as_str() {
             return Err(anyhow!("archive query crosses tenant boundary"));
         }
-        if let Some(query_project) = &query.project_id {
-            if query_project.as_str() != project_id.as_str() {
-                return Err(anyhow!("archive query crosses project boundary"));
-            }
+        if let Some(query_project) = &query.project_id
+            && query_project.as_str() != project_id.as_str()
+        {
+            return Err(anyhow!("archive query crosses project boundary"));
         }
         query.project_id = Some(project_id.clone());
         let project_dir = self.project_dir(tenant_id, project_id);
@@ -695,8 +695,8 @@ mod tests {
         ArtifactId, EnvironmentId, IdempotencyKey, Money, Sha256Hash, TenantScope, TokenCounts,
     };
     use beater_schema::{
-        ArtifactRef, AuthContext, CanonicalTraceBatch, RawEnvelope, RedactionClass, SourceDialect,
-        CANONICAL_SCHEMA_VERSION, RAW_SCHEMA_VERSION,
+        ArtifactRef, AuthContext, CANONICAL_SCHEMA_VERSION, CanonicalTraceBatch,
+        RAW_SCHEMA_VERSION, RawEnvelope, RedactionClass, SourceDialect,
     };
     use beater_store::TraceStore;
     use beater_store_sql::SqliteTraceStore;
@@ -978,10 +978,12 @@ mod tests {
             archive_dir.display(),
             root.display()
         );
-        assert!(manifest
-            .path
-            .components()
-            .any(|component| { component.as_os_str() == std::ffi::OsStr::new("%2E%2E") }));
+        assert!(
+            manifest
+                .path
+                .components()
+                .any(|component| { component.as_os_str() == std::ffi::OsStr::new("%2E%2E") })
+        );
     }
 
     #[test]

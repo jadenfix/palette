@@ -60,11 +60,11 @@
 use beater_core::{Money, SpanId, TenantScope, Timestamp, TokenCounts, TraceId};
 use beater_ingest::{CanonicalSpanDraft, ImportError, RawTraceIngestRequest, SourceImporter};
 use beater_schema::{
-    conventions::attr, AgentSpanKind, AuthContext, CanonicalAttrs, ModelRef, RedactionClass,
-    SourceDialect, SpanStatus,
+    AgentSpanKind, AuthContext, CanonicalAttrs, ModelRef, RedactionClass, SourceDialect,
+    SpanStatus, conventions::attr,
 };
 use chrono::{DateTime, Utc};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Pinned Langfuse export schema this normalizer targets. Stamped onto every
 /// Langfuse-sourced span as its `normalizer_version`. Bump explicitly whenever
@@ -581,10 +581,10 @@ fn attr_num(attributes: &mut CanonicalAttrs, key: &str, value: i64) {
 }
 
 fn copy_str(attributes: &mut CanonicalAttrs, source: &Value, field: &str, key: &str) {
-    if let Some(value) = source.get(field).and_then(Value::as_str) {
-        if !value.is_empty() {
-            attr_str(attributes, key, value);
-        }
+    if let Some(value) = source.get(field).and_then(Value::as_str)
+        && !value.is_empty()
+    {
+        attr_str(attributes, key, value);
     }
 }
 
@@ -649,18 +649,21 @@ mod tests {
     #[test]
     fn maps_generation_to_llm_call_with_model_and_tokens() {
         let c = converted();
-        let gen = draft(&c, "lf-obs-obs-gen-1");
-        assert_eq!(gen.kind, AgentSpanKind::LlmCall);
-        let model = gen.model.as_ref().unwrap_or_else(|| panic!("model"));
+        let generation = draft(&c, "lf-obs-obs-gen-1");
+        assert_eq!(generation.kind, AgentSpanKind::LlmCall);
+        let model = generation.model.as_ref().unwrap_or_else(|| panic!("model"));
         assert_eq!(model.provider, "openai");
         assert_eq!(model.name, "gpt-4o");
-        let tokens = gen.tokens.as_ref().unwrap_or_else(|| panic!("tokens"));
+        let tokens = generation
+            .tokens
+            .as_ref()
+            .unwrap_or_else(|| panic!("tokens"));
         assert_eq!(tokens.input, 120);
         assert_eq!(tokens.output, 45);
-        let cost = gen.cost.as_ref().unwrap_or_else(|| panic!("cost"));
+        let cost = generation.cost.as_ref().unwrap_or_else(|| panic!("cost"));
         assert_eq!(cost.amount_micros, 2400); // 0.0024 USD
         assert_eq!(
-            gen.attributes.get("gen_ai.request.model"),
+            generation.attributes.get("gen_ai.request.model"),
             Some(&json!("gpt-4o"))
         );
     }
@@ -724,13 +727,13 @@ mod tests {
     #[test]
     fn timestamps_are_parsed() {
         let c = converted();
-        let gen = draft(&c, "lf-obs-obs-gen-1");
+        let generation = draft(&c, "lf-obs-obs-gen-1");
         assert_eq!(
-            gen.start_time.map(|t| t.to_rfc3339()),
+            generation.start_time.map(|t| t.to_rfc3339()),
             Some("2026-06-20T10:00:02+00:00".to_string())
         );
         assert_eq!(
-            gen.end_time.map(|t| t.to_rfc3339()),
+            generation.end_time.map(|t| t.to_rfc3339()),
             Some("2026-06-20T10:00:05+00:00".to_string())
         );
     }

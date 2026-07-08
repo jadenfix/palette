@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{
     JudgeCallId, Money, ProjectId, ProviderSecretId, Sha256Hash, TenantId, Timestamp,
@@ -11,7 +11,7 @@ use beater_secrets::ProviderSecretStore;
 use beater_store::{StoreError, StoreResult};
 use chrono::{DateTime, Utc};
 use reqwest::StatusCode as ReqwestStatusCode;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
 use std::fs;
@@ -315,12 +315,16 @@ pub enum JudgeBrokerError {
     RequiresLlmJudge(String),
     #[error("provider secret {0} was not found or is inactive")]
     ProviderSecretNotFound(ProviderSecretId),
-    #[error("judge budget exceeded: attempted {attempted_micros} micros, remaining {remaining_micros} micros")]
+    #[error(
+        "judge budget exceeded: attempted {attempted_micros} micros, remaining {remaining_micros} micros"
+    )]
     JudgeBudgetExceeded {
         attempted_micros: i64,
         remaining_micros: i64,
     },
-    #[error("judge provider exceeded preflight max cost: estimated {estimated_micros} micros, actual {actual_micros} micros")]
+    #[error(
+        "judge provider exceeded preflight max cost: estimated {estimated_micros} micros, actual {actual_micros} micros"
+    )]
     ProviderExceededPreflightCost {
         estimated_micros: i64,
         actual_micros: i64,
@@ -1483,9 +1487,9 @@ fn sql_decode_error(error: impl std::error::Error + Send + Sync + 'static) -> ru
 mod tests {
     use super::*;
     use axum::extract::State;
-    use axum::http::{header, HeaderMap, StatusCode};
+    use axum::http::{HeaderMap, StatusCode, header};
     use axum::response::{IntoResponse, Response};
-    use axum::{routing::post, Json, Router};
+    use axum::{Json, Router, routing::post};
     use beater_secrets::{PutProviderSecretRequest, SqliteProviderSecretStore};
     use std::sync::atomic::{AtomicUsize, Ordering};
     use tokio::net::TcpListener;
@@ -1823,9 +1827,11 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![target_first.judge_call_id, target_second.judge_call_id]
         );
-        assert!(records
-            .iter()
-            .all(|record| record.tenant_id == tenant_id && record.project_id == project_id));
+        assert!(
+            records
+                .iter()
+                .all(|record| record.tenant_id == tenant_id && record.project_id == project_id)
+        );
     }
 
     #[tokio::test]

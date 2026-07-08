@@ -136,8 +136,13 @@ export default function ApiKeyManager() {
     ? [
         `export BEATER_API_KEY="${created.secret}"`,
         `export BEATER_API_BASE_URL="http://127.0.0.1:8080"`,
+        `export BEATER_TENANT="your-tenant-id"`,
+        `export BEATER_PROJECT="${created.project_id}"`,
+        `export BEATER_ENVIRONMENT="${created.environment_id}"`,
         ``,
         `curl -H "x-beater-api-key: $BEATER_API_KEY" \\`,
+        `  -H "x-beater-project-id: $BEATER_PROJECT" \\`,
+        `  -H "x-beater-environment-id: $BEATER_ENVIRONMENT" \\`,
         `  "$BEATER_API_BASE_URL/v1/traces/$BEATER_TENANT"`,
       ].join("\n")
     : "";

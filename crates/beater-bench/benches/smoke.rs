@@ -7,8 +7,8 @@
 //! Replace or supplement this bench with real store-level measurements in a
 //! future `benches/store.rs` (§20.2 #0.3).
 
-use beater_bench::{span_fixtures, SpanFixtureConfig};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use beater_bench::{SpanFixtureConfig, span_fixtures};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 fn bench_span_fixture_builder(c: &mut Criterion) {
     let config = SpanFixtureConfig::new(1_000);

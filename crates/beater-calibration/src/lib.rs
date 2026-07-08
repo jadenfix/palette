@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{
     CalibrationReportId, DatasetCaseId, DatasetId, DatasetVersionId, EvaluatorVersionId, ProjectId,
@@ -8,7 +8,7 @@ use beater_datasets::{DatasetEvalReport, DatasetVersionSnapshot};
 use beater_schema::EvalResult;
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;

@@ -1,6 +1,6 @@
 use std::fs;
 use std::io::Write;
-use std::os::unix::fs::{symlink, PermissionsExt};
+use std::os::unix::fs::{PermissionsExt, symlink};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::OnceLock;
@@ -17,16 +17,11 @@ const MANUAL_CONFIRMATION_CODE: &str = "682ABA78";
 const MANUAL_CONFIRMATION_SALT: &str = "gate2-test-salt-123";
 const MANUAL_CONFIRMATION_SOURCE: &str = "browser-selected-llm-detail";
 const RECORDING_SHA: &str = "3dac802bc8f2db03406d0d76e4e1618ed5b516a2cf3d286589e1a588cf6e6534";
-const BEATER_IMAGE_DIGEST: &str =
-    "ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-const DASHBOARD_IMAGE_DIGEST: &str =
-    "ghcr.io/jadenfix/beater/dashboard@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-const DASHBOARD_E2E_IMAGE_DIGEST: &str =
-    "ghcr.io/jadenfix/beater/dashboard-e2e@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
-const OTEL_PYTHON_IMAGE_DIGEST: &str =
-    "ghcr.io/jadenfix/beater/otel-python@sha256:abababababababababababababababababababababababababababababababab";
-const LLM_OBSERVATION: &str =
-    "clicked llm.call and saw prompt, completion, model, token breakdown, cost, latency, and confirmation code";
+const BEATER_IMAGE_DIGEST: &str = "ghcr.io/jadenfix/beater/beaterd@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const DASHBOARD_IMAGE_DIGEST: &str = "ghcr.io/jadenfix/beater/dashboard@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+const DASHBOARD_E2E_IMAGE_DIGEST: &str = "ghcr.io/jadenfix/beater/dashboard-e2e@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+const OTEL_PYTHON_IMAGE_DIGEST: &str = "ghcr.io/jadenfix/beater/otel-python@sha256:abababababababababababababababababababababababababababababababab";
+const LLM_OBSERVATION: &str = "clicked llm.call and saw prompt, completion, model, token breakdown, cost, latency, and confirmation code";
 const WATERFALL_OBSERVATION: &str =
     "opened all-kind trace and saw run -> turn -> step -> tool -> MCP nesting";
 const OUTSIDE_RUN_ATTESTATION: &str = "I attest that I am not a Beater project maintainer, I received no step-by-step help beyond public repository instructions, I used a fresh clone, and I completed the Gate 2 flow unaided.";
@@ -209,8 +204,10 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(readme.contains(canonical_outside_command()));
     assert!(canonical_outside_command().contains("cd ./beater"));
     assert!(!canonical_outside_command().contains("cd beater"));
-    assert!(canonical_outside_command()
-        .contains("BEATER_GATE2_CLONE_STARTED_EPOCH=\"$t\" GIT_CONFIG_GLOBAL=/dev/null"));
+    assert!(
+        canonical_outside_command()
+            .contains("BEATER_GATE2_CLONE_STARTED_EPOCH=\"$t\" GIT_CONFIG_GLOBAL=/dev/null")
+    );
     assert!(!readme.contains("gate2-outside-local-preflight.sh | bash"));
     assert!(readme.contains("confirms the\nquickstart browser click unaided in 5"));
     assert!(readme.contains("`scripts/check-gate2-public-handoff.py` without `--full-run`"));
@@ -228,8 +225,10 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(readme.contains("Docker Compose v2, `curl`, `ffprobe`, local Docker daemon"));
     assert!(readme.contains("requires `python3` 3.9+ before the timed run"));
     assert!(readme.contains("alternate Compose file/profile/project settings"));
-    assert!(readme
-        .contains("Do not set `COMPOSE_FILE`, `COMPOSE_PROJECT_NAME`, or\n`COMPOSE_PROFILES`"));
+    assert!(
+        readme
+            .contains("Do not set `COMPOSE_FILE`, `COMPOSE_PROJECT_NAME`, or\n`COMPOSE_PROFILES`")
+    );
     assert!(!readme.contains("`python3` for post-run proof generation"));
     assert!(!readme.contains("`python3` is required afterward"));
     assert!(readme.contains("--llm-observation"));
@@ -243,7 +242,9 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(readme.contains("ready-to-edit command"));
     assert!(readme.contains("git add docs/demos/gate2-outside-person-proof.md"));
     assert!(readme.contains("run `cd ./beater`"));
-    assert!(readme.contains("cd ./beater\nscripts/generate-gate2-outside-proof.py --print-command"));
+    assert!(
+        readme.contains("cd ./beater\nscripts/generate-gate2-outside-proof.py --print-command")
+    );
     assert!(readme.contains("from the same `beater/` clone"));
     assert!(!readme.contains("cd ./beater\ngit add docs/demos/gate2-outside-person-proof.md"));
     assert!(readme.contains("git commit -m \"add gate2 outside proof\""));
@@ -268,8 +269,12 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     let proof_template = fs::read_to_string(root.join("docs/demos/gate2-outside-person-proof.md"))
         .unwrap_or_else(|err| panic!("read outside proof template: {err}"));
     assert!(proof_template.contains(canonical_outside_command()));
-    assert!(proof_template.contains("[gate2-outside-runner-card.md](gate2-outside-runner-card.md)"));
-    assert!(proof_template.contains("`scripts/check-gate2-public-handoff.py` without `--full-run`"));
+    assert!(
+        proof_template.contains("[gate2-outside-runner-card.md](gate2-outside-runner-card.md)")
+    );
+    assert!(
+        proof_template.contains("`scripts/check-gate2-public-handoff.py` without `--full-run`")
+    );
     assert!(proof_template.contains("Python 3.9 or newer is required"));
     assert!(proof_template.contains("before the stopwatch starts"));
     assert!(!proof_template.contains("gate2-outside-local-preflight.sh | bash"));
@@ -277,10 +282,15 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(proof_template.contains("Docker Compose v2, `curl`, `ffprobe`, local Docker daemon"));
     assert!(proof_template.contains("`ffprobe` playable-video metadata"));
     assert!(proof_template.contains("Compose file/profile/project\noverrides"));
-    assert!(proof_template
-        .contains("Do not set `COMPOSE_FILE`, `COMPOSE_PROJECT_NAME`,\nor `COMPOSE_PROFILES`"));
-    assert!(proof_template
-        .contains("`COMPOSE_FILE`, `COMPOSE_PROJECT_NAME`, and `COMPOSE_PROFILES` were not set"));
+    assert!(
+        proof_template
+            .contains("Do not set `COMPOSE_FILE`, `COMPOSE_PROJECT_NAME`,\nor `COMPOSE_PROFILES`")
+    );
+    assert!(
+        proof_template.contains(
+            "`COMPOSE_FILE`, `COMPOSE_PROJECT_NAME`, and `COMPOSE_PROFILES` were not set"
+        )
+    );
     assert!(proof_template.contains("uncommitted non-evidence worktree changes"));
     assert!(proof_template.contains("playable WebM"));
     assert!(!proof_template.contains("none / describe"));
@@ -298,8 +308,10 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(proof_template.contains("ready-to-edit command"));
     assert!(proof_template.contains("git add docs/demos/gate2-outside-person-proof.md"));
     assert!(proof_template.contains("Run `cd ./beater`"));
-    assert!(proof_template
-        .contains("cd ./beater\nscripts/generate-gate2-outside-proof.py --print-command"));
+    assert!(
+        proof_template
+            .contains("cd ./beater\nscripts/generate-gate2-outside-proof.py --print-command")
+    );
     assert!(proof_template.contains("stay in the `beater/`\nclone"));
     assert!(
         !proof_template.contains("cd ./beater\ngit add docs/demos/gate2-outside-person-proof.md")
@@ -322,8 +334,10 @@ fn gate2_outside_docs_use_fail_fast_clone_command() {
     assert!(
         proof_template.contains(r#"--relationship "external evaluator; no Beater project role""#)
     );
-    assert!(!proof_template
-        .contains(r#"--relationship "external evaluator; no Beater maintainer role""#));
+    assert!(
+        !proof_template
+            .contains(r#"--relationship "external evaluator; no Beater maintainer role""#)
+    );
     assert!(!proof_template.contains(r#"--runner-name "...""#));
     assert!(!proof_template.contains(r#"--relationship "...""#));
     assert!(!proof_template.contains(r#"--machine-os "...""#));
@@ -1706,8 +1720,10 @@ fn gate2_public_handoff_verifier_full_run_accepts_rewritten_canonical_fixture() 
     assert!(diagnostic_proof.contains("Status: diagnostic."));
     assert!(diagnostic_proof.contains("Public Handoff Diagnostic"));
     assert!(diagnostic_proof.contains("not outside-person evidence"));
-    assert!(diagnostic_proof
-        .contains("diagnostic used a browser click to read the manual confirmation code"));
+    assert!(
+        diagnostic_proof
+            .contains("diagnostic used a browser click to read the manual confirmation code")
+    );
     assert!(diagnostic_proof.contains(DIAGNOSTIC_ATTESTATION));
     assert!(diagnostic_proof.contains("token breakdown"));
     let docker_log = fs::read_to_string(&runtime.docker_log)
@@ -2340,7 +2356,9 @@ fn gate2_stopwatch_outside_next_steps_separate_dashboard_targets() {
     assert!(script.contains(
         "run_before_deadline \"five-line dashboard browser proof\" compose_run_e2e \"${quickstart_browser_proof_args[@]}\""
     ));
-    assert!(script.contains("Gate 2 recording proof requires ffprobe before the stopwatch starts."));
+    assert!(
+        script.contains("Gate 2 recording proof requires ffprobe before the stopwatch starts.")
+    );
     assert!(script.contains("If another app is listed below, stop that app before rerunning"));
     assert!(script.contains("do not set\n$env_name for outside-person evidence"));
     assert!(script.contains(
@@ -4546,8 +4564,7 @@ fn gate2_outside_validator_rejects_image_digest_mismatch() {
 #[test]
 fn gate2_outside_validator_rejects_registry_unbound_image_digest_at_closure() {
     let fixture = write_validator_closure_fixture_repo();
-    let wrong_digest =
-        "ghcr.io/jadenfix/beater/beaterd@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+    let wrong_digest = "ghcr.io/jadenfix/beater/beaterd@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
     replace(
         &fixture
             .path()

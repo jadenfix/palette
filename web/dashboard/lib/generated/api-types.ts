@@ -804,6 +804,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/traces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ingestOtlpJsonCollector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/traces/native": {
         parameters: {
             query?: never;
@@ -6038,6 +6054,84 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ingestOtlpJsonCollector: {
+        parameters: {
+            query?: {
+                durability?: string;
+            };
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Tenant scope override for collector-style OTLP JSON */
+                "x-beater-tenant-id"?: string | null;
+                /** @description Project scope override for collector-style OTLP JSON */
+                "x-beater-project-id"?: string | null;
+                /** @description Environment scope override for collector-style OTLP JSON */
+                "x-beater-environment-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ingest collector-style OTLP/HTTP JSON traces */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtlpIngestOutcome"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Payload or attribute cardinality too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Per-project quota exceeded or backpressure */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

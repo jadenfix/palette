@@ -18,7 +18,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use clap::{Parser, Subcommand};
 
 /// Canonical spec location, relative to the workspace root.
@@ -145,9 +145,9 @@ fn regen_dashboard_client(root: &Path) -> anyhow::Result<()> {
         ])
         .current_dir(&dashboard)
         .status()
-        .with_context(|| {
-            "run `npx openapi-typescript` in web/dashboard (is Node/npm installed?)"
-        })?;
+        .with_context(
+            || "run `npx openapi-typescript` in web/dashboard (is Node/npm installed?)",
+        )?;
     if !status.success() {
         bail!("dashboard api-types.ts generation failed (openapi-typescript@{version})");
     }

@@ -174,7 +174,7 @@ pub trait CandidateSource: Send {
     /// and otherwise the `next_cursor` from the previous page. The returned
     /// page's `next_cursor` is `None` when the source is exhausted.
     async fn fetch(&mut self, limit: u32, cursor: Option<String>)
-        -> StoreResult<Page<ArtifactRef>>;
+    -> StoreResult<Page<ArtifactRef>>;
 }
 
 /// A [`CandidateSource`] backed by an in-memory slice, using a numeric offset as
@@ -301,11 +301,11 @@ impl OrphanedArtifactSweeper {
         let mut batches_this_pass: u32 = 0;
 
         loop {
-            if let Some(max) = config.max_batches_per_pass {
-                if batches_this_pass >= max {
-                    state.metrics.duration += start.elapsed();
-                    return Ok(SweepOutcome::Suspended(state));
-                }
+            if let Some(max) = config.max_batches_per_pass
+                && batches_this_pass >= max
+            {
+                state.metrics.duration += start.elapsed();
+                return Ok(SweepOutcome::Suspended(state));
             }
 
             let page = candidates

@@ -11,8 +11,9 @@ use std::sync::Arc;
 use beater_archive::{OrphanedArtifactSweeper, SweepConfig};
 use beater_core::{EnvironmentId, IdempotencyKey, ProjectId, SpanId, TenantId, TraceId};
 use beater_schema::{
-    AgentSpanKind, ArtifactRef, AuthContext, CanonicalSpan, CanonicalTraceBatch, RawEnvelope,
-    RedactionClass, SourceDialect, SpanStatus, CANONICAL_SCHEMA_VERSION, RAW_SCHEMA_VERSION,
+    AgentSpanKind, ArtifactRef, AuthContext, CANONICAL_SCHEMA_VERSION, CanonicalSpan,
+    CanonicalTraceBatch, RAW_SCHEMA_VERSION, RawEnvelope, RedactionClass, SourceDialect,
+    SpanStatus,
 };
 use beater_store::{ArtifactStore, TraceStore};
 use beater_store_obj::FsArtifactStore;

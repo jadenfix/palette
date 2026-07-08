@@ -255,9 +255,10 @@ mod tests {
     fn root_is_lowercase_hex_sha256() {
         let r = root(&[("a", "1")]);
         assert_eq!(r.as_str().len(), 64);
-        assert!(r
-            .as_str()
-            .chars()
-            .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+        assert!(
+            r.as_str()
+                .chars()
+                .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase())
+        );
     }
 }

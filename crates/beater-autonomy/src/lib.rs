@@ -529,10 +529,11 @@ mod tests {
         let r = simulate_policy(&p, &[], true, false);
         assert_eq!(r.evidence_disclaimer, EVIDENCE_DISCLAIMER);
         assert!(r.evidence_disclaimer.contains("Historical-replay"));
-        assert!(r
-            .evidence_disclaimer
-            .to_lowercase()
-            .contains("sampling caveat"));
+        assert!(
+            r.evidence_disclaimer
+                .to_lowercase()
+                .contains("sampling caveat")
+        );
     }
 
     #[test]

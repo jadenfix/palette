@@ -1,16 +1,16 @@
-use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
-use beater_core::{lower_hex, ProjectId, TenantId, TraceId};
+use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
+use beater_core::{ProjectId, TenantId, TraceId, lower_hex};
 use beater_otlp::encode_export_trace_request;
 use beater_schema::{CanonicalTraceBatch, TraceView, WriteAck};
 use beater_store::{StoreError, TraceStore};
 use beater_store_sql::SqliteTraceStore;
 use opentelemetry_proto::tonic::collector::trace::v1::{
-    trace_service_client::TraceServiceClient, ExportTraceServiceRequest,
+    ExportTraceServiceRequest, trace_service_client::TraceServiceClient,
 };
-use opentelemetry_proto::tonic::common::v1::{any_value, AnyValue, InstrumentationScope, KeyValue};
+use opentelemetry_proto::tonic::common::v1::{AnyValue, InstrumentationScope, KeyValue, any_value};
 use opentelemetry_proto::tonic::resource::v1::Resource;
 use opentelemetry_proto::tonic::trace::v1::{
-    span, status, ResourceSpans, ScopeSpans, Span, Status,
+    ResourceSpans, ScopeSpans, Span, Status, span, status,
 };
 use serde::Deserialize;
 use std::net::{SocketAddr, TcpListener};
@@ -20,8 +20,8 @@ use std::sync::{Arc, OnceLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use tonic::metadata::MetadataValue;
 use tonic::Request as TonicRequest;
+use tonic::metadata::MetadataValue;
 
 static LIVE_SMOKE_LOCK: OnceLock<tokio::sync::Mutex<()>> = OnceLock::new();
 
@@ -212,10 +212,12 @@ async fn beaterd_quota_is_shared_across_two_replicas_and_resets_on_window() -> a
         .parse::<i64>()?;
     let error = second.json::<serde_json::Value>().await?;
     assert_eq!(error["status"], 429);
-    assert!(error["error"]
-        .as_str()
-        .unwrap_or_default()
-        .contains("quota exceeded"));
+    assert!(
+        error["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("quota exceeded")
+    );
 
     sleep_until_unix_second(reset_at + 1).await?;
     let third = post_otlp_http(&http_url_b, "quota replica b after reset").await?;
@@ -225,8 +227,8 @@ async fn beaterd_quota_is_shared_across_two_replicas_and_resets_on_window() -> a
 }
 
 #[tokio::test]
-async fn beaterd_consumer_kill_restart_dlq_replay_recovers_trace_ingested_work(
-) -> anyhow::Result<()> {
+async fn beaterd_consumer_kill_restart_dlq_replay_recovers_trace_ingested_work()
+-> anyhow::Result<()> {
     let _guard = live_smoke_guard().await;
     let tempdir = tempfile::tempdir()?;
     let data_dir = tempdir.path().join("beaterd");
@@ -456,10 +458,12 @@ async fn beaterd_storage_failure_accounts_every_event_without_silent_drop() -> a
     );
     let explicit_error = explicit_response.json::<serde_json::Value>().await?;
     assert_eq!(explicit_error["status"], 500);
-    assert!(explicit_error["error"]
-        .as_str()
-        .unwrap_or_default()
-        .contains("test trace store write failure"));
+    assert!(
+        explicit_error["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("test trace store write failure")
+    );
 
     let (dlq_trace_id, dlq_response) =
         post_otlp_http_with_durability(&http_url, "storage chaos dlq", Some("buffered")).await?;
@@ -752,10 +756,10 @@ async fn wait_for_health(http_url: &str) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     loop {
-        if let Ok(response) = client.get(format!("{http_url}/health")).send().await {
-            if response.status().is_success() {
-                return Ok(());
-            }
+        if let Ok(response) = client.get(format!("{http_url}/health")).send().await
+            && response.status().is_success()
+        {
+            return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
             anyhow::bail!("beaterd did not become healthy at {http_url}");

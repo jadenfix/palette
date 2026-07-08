@@ -2,17 +2,17 @@ use super::{
     IntoStoreResult, ProviderSecret, ProviderSecretMetadata, ProviderSecretStore,
     PutProviderSecretRequest, RevokedProviderSecret,
 };
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
-use base64::engine::general_purpose::STANDARD_NO_PAD;
 use base64::Engine;
+use base64::engine::general_purpose::STANDARD_NO_PAD;
 use beater_core::{ProjectId, ProviderSecretId, TenantId, Timestamp};
 use beater_store::{StoreError, StoreResult};
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use chrono::{DateTime, Utc};
 use rand_core::{OsRng, RngCore};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::fs;
@@ -982,13 +982,15 @@ mod tests {
                 .unwrap_or_else(|err| panic!("{err}"))
                 .to_base64()
         );
-        assert!(!format!("{first:?}").contains(
-            first
-                .active_key()
-                .unwrap_or_else(|err| panic!("{err}"))
-                .to_base64()
-                .as_str()
-        ));
+        assert!(
+            !format!("{first:?}").contains(
+                first
+                    .active_key()
+                    .unwrap_or_else(|err| panic!("{err}"))
+                    .to_base64()
+                    .as_str()
+            )
+        );
     }
 
     fn assert_debug_surface_omits(

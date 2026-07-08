@@ -14,9 +14,9 @@
 use beater_store_conformance::assert_trace_store_conformance;
 use beater_store_sql::ClickHouseTraceStore;
 use testcontainers::{
-    core::{wait::HttpWaitStrategy, IntoContainerPort, WaitFor},
-    runners::AsyncRunner,
     GenericImage,
+    core::{IntoContainerPort, WaitFor, wait::HttpWaitStrategy},
+    runners::AsyncRunner,
 };
 
 #[tokio::test]

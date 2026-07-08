@@ -579,22 +579,21 @@ fn attribute_recursive<'a>(
 
     // Follow the downstream trace this delegate produced, if any, and look for a
     // failing delegate one level down. The deepest failure wins.
-    if let Some(trace) = &result.downstream_trace_id {
-        if let Some(children) = tasks_by_parent_trace.get(trace.as_str()) {
-            for child in children {
-                if let Some(child_result) = result_by_task.get(child.task_id.as_str()) {
-                    if child_result.status.is_failure() {
-                        if let Some(deeper) = attribute_recursive(
-                            child,
-                            child_result,
-                            result_by_task,
-                            tasks_by_parent_trace,
-                            visited,
-                        ) {
-                            return Some(deeper);
-                        }
-                    }
-                }
+    if let Some(trace) = &result.downstream_trace_id
+        && let Some(children) = tasks_by_parent_trace.get(trace.as_str())
+    {
+        for child in children {
+            if let Some(child_result) = result_by_task.get(child.task_id.as_str())
+                && child_result.status.is_failure()
+                && let Some(deeper) = attribute_recursive(
+                    child,
+                    child_result,
+                    result_by_task,
+                    tasks_by_parent_trace,
+                    visited,
+                )
+            {
+                return Some(deeper);
             }
         }
     }
@@ -803,9 +802,10 @@ mod tests {
         assert!(flagged.contains("t-bad"));
         assert!(flagged.contains("t-unknown"));
         assert!(!flagged.contains("t-ok"));
-        assert!(v
-            .iter()
-            .all(|x| x.kind == TrustViolationKind::VendorNotAllowed));
+        assert!(
+            v.iter()
+                .all(|x| x.kind == TrustViolationKind::VendorNotAllowed)
+        );
     }
 
     #[test]

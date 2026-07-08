@@ -6,7 +6,7 @@
 //! postmortem evidence.
 
 use beater_core::{
-    sha256_hex, AgentId, SessionId, SpanId, TenantScope, Timestamp, TraceId, UserId,
+    AgentId, SessionId, SpanId, TenantScope, Timestamp, TraceId, UserId, sha256_hex,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -437,7 +437,7 @@ pub fn incident_timeline(incident: &AgentIncident) -> Vec<TimelineEntry> {
         });
     }
 
-    entries.sort_by(|a, b| a.at.cmp(&b.at));
+    entries.sort_by_key(|entry| entry.at);
     entries
 }
 

@@ -59,6 +59,9 @@ services:
     # The image default (auth-mode required, #127) refuses anonymous access.
     # This dev stack opts INTO the insecure local mode explicitly. We must
     # repeat the image CMD args because compose `command` overrides them.
+    # `--allow-insecure-non-loopback` is required: local mode disables API-key
+    # auth and beaterd otherwise refuses a non-loopback (0.0.0.0) bind; here the
+    # container is reachable only on the trusted compose network.
     command:
       [
         "--addr",
@@ -69,6 +72,7 @@ services:
         "/data",
         "--auth-mode",
         "local",
+        "--allow-insecure-non-loopback",
       ]
     environment:
       BEATER_TRACE_WRITE_DRAIN_INTERVAL_MS: "250"

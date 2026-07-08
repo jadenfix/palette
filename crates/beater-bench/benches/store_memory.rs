@@ -5,12 +5,12 @@
 //! compiles quickly in CI while proving the future p95/SLO harness has a real
 //! `TraceStore` target.
 
-use beater_bench::{canonical_trace_batch, SpanFixtureConfig};
+use beater_bench::{SpanFixtureConfig, canonical_trace_batch};
 use beater_core::PageRequest;
 use beater_schema::SpanFilter;
 use beater_store::TraceStore;
 use beater_store_memory::InMemoryTraceStore;
-use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion, Throughput};
+use criterion::{BatchSize, Criterion, Throughput, black_box, criterion_group, criterion_main};
 use tokio::runtime::Runtime;
 
 const SPAN_COUNT: usize = 1_000;

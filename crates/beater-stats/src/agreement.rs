@@ -7,7 +7,7 @@
 //! a point-estimate kappa over a small human-labelled sample is high-variance,
 //! and reporting it bare invites over-reading.
 
-use crate::{validate_alpha, ConfidenceInterval, StatsError, Xorshift64};
+use crate::{ConfidenceInterval, StatsError, Xorshift64, validate_alpha};
 
 /// A 2×2 agreement (confusion) table between two binary raters — for judge
 /// calibration, rater A is the human label and rater B the judge label.

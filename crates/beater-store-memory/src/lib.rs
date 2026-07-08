@@ -3,16 +3,16 @@ use beater_core::{
     IdempotencyKey, Page, PageRequest, ProjectId, SpanId, TenantId, Timestamp, TraceId,
 };
 use beater_schema::{
-    span_matches, span_summary, CanonicalSpan, CanonicalTraceBatch, RawEnvelope, RunFilter,
-    RunSummary, SpanFilter, SpanSummary, TraceView, WriteAck,
+    CanonicalSpan, CanonicalTraceBatch, RawEnvelope, RunFilter, RunSummary, SpanFilter,
+    SpanSummary, TraceView, WriteAck, span_matches, span_summary,
 };
 use beater_store::{
-    lock_poisoned, page_vec, query_runs_by_materializing_spans, EnvironmentMetadata, MetadataStore,
-    OrganizationMetadata, ProjectMetadata, QuotaDecision, QuotaLimiter, QuotaReservationRequest,
-    RoleBinding, StoreError, StoreResult, TraceStore,
+    EnvironmentMetadata, MetadataStore, OrganizationMetadata, ProjectMetadata, QuotaDecision,
+    QuotaLimiter, QuotaReservationRequest, RoleBinding, StoreError, StoreResult, TraceStore,
+    lock_poisoned, page_vec, query_runs_by_materializing_spans,
 };
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::{HashMap, hash_map::Entry},
     sync::{Arc, Mutex},
 };
 
@@ -422,20 +422,20 @@ impl QuotaLimiter for InMemoryQuotaLimiter {
         // same window) returns the recorded decision without advancing the
         // counter again. The whole method holds the state mutex, so the lookup
         // and the counter update are atomic.
-        if let Some(key) = request.idempotency_key.as_deref() {
-            if let Some(existing) = state.reservations.iter().find(|reservation| {
+        if let Some(key) = request.idempotency_key.as_deref()
+            && let Some(existing) = state.reservations.iter().find(|reservation| {
                 reservation.tenant_id == request.tenant_id
                     && reservation.project_id == request.project_id
                     && reservation.window_start == request.window_start
                     && reservation.idempotency_key == key
-            }) {
-                return Ok(QuotaDecision {
-                    accepted: existing.accepted,
-                    used: existing.used_after,
-                    limit: request.limit,
-                    reset_at: existing.reset_at,
-                });
-            }
+            })
+        {
+            return Ok(QuotaDecision {
+                accepted: existing.accepted,
+                used: existing.used_after,
+                limit: request.limit,
+                reset_at: existing.reset_at,
+            });
         }
 
         let counter = state.counters.iter().position(|counter| {

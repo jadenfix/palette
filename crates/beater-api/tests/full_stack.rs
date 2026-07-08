@@ -1,8 +1,8 @@
 use async_trait::async_trait;
-use axum::body::{to_bytes, Body};
 use axum::Router;
+use axum::body::{Body, to_bytes};
 use beater_alerts::{AlertDecision, SamplingDecision, SamplingReason};
-use beater_api::{router, ApiState};
+use beater_api::{ApiState, router};
 use beater_archive::{ArchiveManifest, ParquetTraceArchive};
 use beater_audit::SqliteAuditStore;
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, SqliteApiKeyStore};
@@ -16,8 +16,8 @@ use beater_datasets::{
     Dataset, DatasetCase, DatasetEvalReport, DatasetVersionSnapshot, SqliteDatasetStore,
 };
 use beater_eval::{
-    compare_paired_scores, evaluate_deterministic, EvaluationCase, EvaluatorKind, EvaluatorSpec,
-    GateDecision, GatePolicy,
+    EvaluationCase, EvaluatorKind, EvaluatorSpec, GateDecision, GatePolicy, compare_paired_scores,
+    evaluate_deterministic,
 };
 use beater_experiments::{ExperimentRunReport, SqliteExperimentStore};
 use beater_gates::{GateDefinition, GateRunReport, SqliteGateStore};
@@ -26,11 +26,11 @@ use beater_human::{
 };
 use beater_ingest::{
     DeadLetterReplayReport, IngestOutcome, IngestPolicy, IngestQueueStatus, IngestService,
-    NativeIngestRequest, TraceIngestedDrainReport, TraceIngestedReconcileReport,
-    TraceWriteDrainReport, TRACE_INGESTED_KIND,
+    NativeIngestRequest, TRACE_INGESTED_KIND, TraceIngestedDrainReport,
+    TraceIngestedReconcileReport, TraceWriteDrainReport,
 };
 use beater_judge::{JudgeBrokerService, KeywordJudgeProvider, SqliteJudgeLedger};
-use beater_replay::{plan_replay, ReplayMode};
+use beater_replay::{ReplayMode, plan_replay};
 use beater_sandbox::WasmEvaluatorRuntime;
 use beater_schema::{
     AgentSpanKind, AuthContext, CanonicalSpan, EvaluatorLane, ModelRef, RedactionClass,
@@ -38,7 +38,7 @@ use beater_schema::{
 };
 use beater_search::{SearchIndex, SearchRequest, SearchResponse, TantivySearchIndex};
 use beater_secrets::{EncryptedSqliteProviderSecretStore, SecretKeyring};
-use beater_security::{api_key_id_from_secret, verify_webhook, ApiScope};
+use beater_security::{ApiScope, api_key_id_from_secret, verify_webhook};
 use beater_store::{
     ArtifactStore, EnvironmentMetadata, MetadataStore, OrganizationMetadata, ProjectMetadata,
     StoreError, StoreResult, TraceStore,
@@ -1128,6 +1128,36 @@ async fn api_ingest_store_eval_gate_and_replay_are_integrated() {
     assert!(!deduped.emitted);
     assert_eq!(deduped.suppressed_reason.as_deref(), Some("dedupe_window"));
 
+    let mut blocked_alert_body = alert_body.clone();
+    blocked_alert_body["policy"]["endpoint_url"] =
+        json!("https://169.254.169.254/latest/meta-data/");
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/alerts/tenant/project/traces/trace/webhook")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::to_vec(&blocked_alert_body).unwrap_or_else(|err| panic!("{err}")),
+                ))
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let error_body: serde_json::Value =
+        serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+    assert!(
+        error_body["error"]
+            .as_str()
+            .is_some_and(|message| message.contains("webhook endpoint_url")),
+        "blocked endpoint error should identify endpoint_url: {error_body}"
+    );
+
     let score = evaluate_deterministic(
         &EvaluatorSpec {
             id: "exact".to_string(),
@@ -2088,9 +2118,11 @@ async fn malformed_trace_ingested_event_returns_error_and_lands_in_dlq() {
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(status.dead_letters.len(), 1);
     assert_eq!(status.dead_letters[0].message.kind, TRACE_INGESTED_KIND);
-    assert!(status.dead_letters[0]
-        .reason
-        .contains("invalid trace.ingested payload"));
+    assert!(
+        status.dead_letters[0]
+            .reason
+            .contains("invalid trace.ingested payload")
+    );
 }
 
 #[tokio::test]
@@ -2130,10 +2162,12 @@ async fn reconcile_trace_ingested_recovers_direct_write_after_publish_outage_thr
         .unwrap_or_else(|err| panic!("{err}"));
     let error: serde_json::Value =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
-    assert!(error["error"]
-        .as_str()
-        .unwrap_or_default()
-        .contains("capacity 0"));
+    assert!(
+        error["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("capacity 0")
+    );
 
     let stored_trace = traces
         .get_project_trace(
@@ -2330,10 +2364,12 @@ async fn buffered_ingest_backpressure_returns_429() {
     let error: serde_json::Value =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(error["status"], json!(429));
-    assert!(error["error"]
-        .as_str()
-        .unwrap_or_default()
-        .contains("capacity 0"));
+    assert!(
+        error["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("capacity 0")
+    );
 }
 
 #[tokio::test]
@@ -2391,11 +2427,13 @@ async fn api_quota_429_includes_reset_headers() {
 
     assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
     let headers = response.headers().clone();
-    assert!(headers
-        .get(RETRY_AFTER)
-        .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.parse::<i64>().ok())
-        .is_some_and(|seconds| seconds >= 0));
+    assert!(
+        headers
+            .get(RETRY_AFTER)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.parse::<i64>().ok())
+            .is_some_and(|seconds| seconds >= 0)
+    );
     assert_eq!(
         headers
             .get("x-ratelimit-limit")
@@ -2421,10 +2459,12 @@ async fn api_quota_429_includes_reset_headers() {
     let error: serde_json::Value =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(error["status"], json!(429));
-    assert!(error["error"]
-        .as_str()
-        .unwrap_or_default()
-        .contains("quota exceeded"));
+    assert!(
+        error["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("quota exceeded")
+    );
 }
 
 #[tokio::test]
@@ -2485,10 +2525,12 @@ async fn api_quota_is_shared_across_replicas_and_resets_on_window() {
         Some(reset_at_header.as_str())
     );
     assert_eq!(error["status"], json!(429));
-    assert!(error["error"]
-        .as_str()
-        .unwrap_or_default()
-        .contains("quota exceeded"));
+    assert!(
+        error["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("quota exceeded")
+    );
 
     clock.set(now + Duration::seconds(65));
     let (status, _, _) = post_native_span(&app_b, "quota-shared-span-3", 3).await;
@@ -2723,6 +2765,7 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
     let api_keys = Arc::new(SqliteApiKeyStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
     let metadata = seeded_metadata_store().await;
     let audit = Arc::new(SqliteAuditStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+    let usage = Arc::new(SqliteUsageLedger::in_memory().unwrap_or_else(|err| panic!("{err}")));
     let bus = Arc::new(InMemoryBus::new(16));
     let ingest = IngestService::new(
         artifacts.clone(),
@@ -2734,6 +2777,7 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
         ApiState::with_search_and_archive(ingest, traces.clone(), search, archive)
             .with_metadata(metadata)
             .with_audit(audit)
+            .with_usage(usage)
             .require_auth(api_keys.clone()),
     );
 
@@ -2795,6 +2839,112 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
         .unwrap_or_else(|| panic!("created key must include one-time secret"))
         .to_string();
     let trace_key_id = api_key_id_from_secret(&trace_secret).unwrap_or_else(|err| panic!("{err}"));
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/traces")
+                .header("authorization", format!("Bearer {trace_secret}"))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::to_vec(&collector_otlp_json_request())
+                        .unwrap_or_else(|err| panic!("{err}")),
+                ))
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/traces/tenant/0102030405060708090a0b0c0d0e0f10")
+                .header("authorization", format!("Bearer {trace_secret}"))
+                .header("x-beater-project-id", "project")
+                .header("x-beater-environment-id", "prod")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let mut write_only_scopes = BTreeSet::new();
+    write_only_scopes.insert(ApiScope::TraceWrite);
+    let write_only_key = api_keys
+        .create_key(CreateApiKeyRequest {
+            tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            environment_id: EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            scopes: write_only_scopes,
+        })
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let write_only_secret = write_only_key.secret;
+    let mut other_tenant_read_scopes = BTreeSet::new();
+    other_tenant_read_scopes.insert(ApiScope::TraceRead);
+    let other_tenant_read_key = api_keys
+        .create_key(CreateApiKeyRequest {
+            tenant_id: TenantId::new("other-tenant").unwrap_or_else(|err| panic!("{err}")),
+            project_id: ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            environment_id: EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+            scopes: other_tenant_read_scopes,
+        })
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    let other_tenant_read_secret = other_tenant_read_key.secret;
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/api-keys/tenant/project/prod")
+                .header("authorization", format!("Bearer {write_only_secret}"))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::to_vec(&create_key_body).unwrap_or_else(|err| panic!("{err}")),
+                ))
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/audit/tenant/project")
+                .header("authorization", format!("Bearer {write_only_secret}"))
+                .header("x-beater-environment-id", "prod")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/usage/tenant/project")
+                .header("authorization", format!("Bearer {write_only_secret}"))
+                .header("x-beater-environment-id", "prod")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
     let mut other_scopes = BTreeSet::new();
     other_scopes.insert(ApiScope::TraceWrite);
     let other_scope_key = api_keys
@@ -2832,6 +2982,25 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
         .unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(response.status(), StatusCode::OK);
 
+    let cross_tenant_read = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/v1/traces/tenant/trace")
+                .header(
+                    "authorization",
+                    format!("Bearer {other_tenant_read_secret}"),
+                )
+                .header("x-beater-project-id", "project")
+                .header("x-beater-environment-id", "prod")
+                .body(Body::empty())
+                .unwrap_or_else(|err| panic!("{err}")),
+        )
+        .await
+        .unwrap_or_else(|err| panic!("{err}"));
+    assert_eq!(cross_tenant_read.status(), StatusCode::FORBIDDEN);
+
     let missing_scope_headers = app
         .clone()
         .oneshot(
@@ -2864,8 +3033,12 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
         .unwrap_or_else(|err| panic!("{err}"));
     let runs: Page<RunSummary> =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
-    assert_eq!(runs.items.len(), 1);
-    assert_eq!(runs.items[0].trace_id, request.trace_id);
+    assert!(
+        runs.items
+            .iter()
+            .any(|run| run.trace_id == request.trace_id),
+        "authorized scoped trace listing must include the native ingested trace"
+    );
 
     let response = app
         .clone()
@@ -3406,4 +3579,51 @@ fn native_request() -> NativeIngestRequest {
         idempotency_key: None,
         auth_context: None,
     }
+}
+
+fn collector_otlp_json_request() -> serde_json::Value {
+    json!({
+        "resourceSpans": [{
+            "resource": {
+                "attributes": [
+                    {"key": "service.name", "value": {"stringValue": "beater.js"}},
+                    {"key": "beater.tenant_id", "value": {"stringValue": "tenant"}},
+                    {"key": "beater.project_id", "value": {"stringValue": "project"}},
+                    {"key": "deployment.environment.name", "value": {"stringValue": "prod"}}
+                ]
+            },
+            "scopeSpans": [{
+                "scope": {"name": "beater-agent", "version": "0.1.0"},
+                "spans": [{
+                    "traceId": "0102030405060708090a0b0c0d0e0f10",
+                    "spanId": "1112131415161718",
+                    "name": "beater.js agent run",
+                    "kind": "SPAN_KIND_INTERNAL",
+                    "startTimeUnixNano": "1704067200000000000",
+                    "endTimeUnixNano": "1704067201000000000",
+                    "attributes": [
+                        {"key": "beater.span.kind", "value": {"stringValue": "agent.run"}},
+                        {"key": "beater.run_id", "value": {"stringValue": "strict-auth-json"}}
+                    ],
+                    "events": [
+                        {
+                            "name": "beater.input",
+                            "timeUnixNano": "1704067200000000000",
+                            "attributes": [
+                                {"key": "beater.payload_json", "value": {"stringValue": "{\"prompt\":\"hello\"}"}}
+                            ]
+                        },
+                        {
+                            "name": "beater.output",
+                            "timeUnixNano": "1704067201000000000",
+                            "attributes": [
+                                {"key": "beater.payload_json", "value": {"stringValue": "{\"answer\":\"world\"}"}}
+                            ]
+                        }
+                    ],
+                    "status": {"code": "STATUS_CODE_OK"}
+                }]
+            }]
+        }]
+    })
 }

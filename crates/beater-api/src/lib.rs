@@ -4,13 +4,14 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use beater_alerts::{
-    decide_trace_sampling, AlertDecision, AlertEngine, AlertInput, AlertPolicy,
-    OnlineSamplingPolicy, SamplingDecision,
+    AlertDecision, AlertEngine, AlertInput, AlertPolicy, OnlineSamplingPolicy, SamplingDecision,
+    decide_trace_sampling, validate_webhook_endpoint_url,
 };
 use beater_archive::{ArchiveManifest, ArchiveQuery, ArchivedSpanRow, ParquetTraceArchive};
 use beater_audit::{
-    connector_tool_invoke_event, pii_unmask_event, AuditAction, AuditEvent, AuditEventInsert,
-    AuditOutcome, AuditStore, ConnectorToolInvokeAuditInput, PiiUnmaskAuditInput,
+    AuditAction, AuditEvent, AuditEventInsert, AuditOutcome, AuditStore,
+    ConnectorToolInvokeAuditInput, PiiUnmaskAuditInput, connector_tool_invoke_event,
+    pii_unmask_event,
 };
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, RevokedApiKey};
 #[cfg(feature = "billing")]
@@ -22,54 +23,57 @@ use beater_billing::{
     Billing, BillingError, Invoice, Plan, PlanChange, PlanId, Subscription, SubscriptionStatus,
 };
 use beater_calibration::{
-    calibrate_eval_report, CalibrationPolicy, CalibrationReport, CalibrationStore,
+    CalibrationPolicy, CalibrationReport, CalibrationStore, calibrate_eval_report,
 };
 use beater_composio::{
-    skill, ComposioClient, ComposioError, ConnectionLink, ConnectionStatus, ConnectorTool,
-    ConnectorToolPolicy, ConnectorToolPolicyDecision, ToolExecution, Toolkit,
+    ComposioClient, ComposioError, ConnectionLink, ConnectionStatus, ConnectorTool,
+    ConnectorToolPolicy, ConnectorToolPolicyDecision, ToolExecution, Toolkit, skill,
 };
 #[cfg(feature = "billing")]
 use beater_core::OrganizationId;
 use beater_core::{
-    sha256_json_hash, AgentReleaseId, AnnotationId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetId,
-    DatasetVersionId, EnvironmentId, EvaluatorVersionId, ExperimentRunId, GateId, Page,
-    PageRequest, ProjectId, PromptId, PromptVersionId, ProviderSecretId, ReviewQueueId,
-    ReviewTaskId, Sha256Hash, SpanId, TenantId, TenantScope, TraceId,
+    AgentReleaseId, AnnotationId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetId, DatasetVersionId,
+    EnvironmentId, EvaluatorVersionId, ExperimentRunId, GateId, Page, PageRequest, ProjectId,
+    PromptId, PromptVersionId, ProviderSecretId, ReviewQueueId, ReviewTaskId, Sha256Hash, SpanId,
+    TenantId, TenantScope, TraceId, sha256_json_hash,
 };
 use beater_datasets::{
-    evaluate_dataset_version, evaluate_dataset_version_with_judge, promote_trace_span_to_case,
     Dataset, DatasetEvalReport, DatasetEvalSpec, DatasetJudgeEvalSpec, DatasetStore,
-    DatasetVersionSnapshot,
+    DatasetVersionSnapshot, evaluate_dataset_version, evaluate_dataset_version_with_judge,
+    promote_trace_span_to_case,
 };
 use beater_eval::{EvaluationCase, EvaluatorKind, EvaluatorSpec};
 use beater_experiments::{
-    run_deterministic_experiment, run_judge_experiment, CaseOutputOverride, ExperimentRunReport,
-    ExperimentRunSpec, ExperimentStore, JudgeExperimentRunSpec,
+    CaseOutputOverride, ExperimentRunReport, ExperimentRunSpec, ExperimentStore,
+    JudgeExperimentRunSpec, run_deterministic_experiment, run_judge_experiment,
 };
-use beater_gates::{run_gate, GateDefinition, GateRunReport, GateStore, InconclusivePolicy};
+use beater_gates::{GateDefinition, GateRunReport, GateStore, InconclusivePolicy, run_gate};
 use beater_human::{
-    promote_review_annotation_to_dataset_case,
     CreateReviewQueueRequest as CreateReviewQueueStoreRequest, EnqueueReviewTaskRequest,
     HumanReviewStore, ReviewAnnotation, ReviewQueue, ReviewTask, ReviewTaskState, ReviewVerdict,
-    SubmitAnnotationRequest,
+    SubmitAnnotationRequest, promote_review_annotation_to_dataset_case,
 };
 use beater_ingest::{
-    anonymous_auth_context, DeadLetterReplayReport, IngestError, IngestOutcome, IngestQueueStatus,
-    IngestService, NativeIngestRequest, TraceIngestedDrainReport, TraceIngestedReconcileReport,
-    TraceWriteDrainReport,
+    DeadLetterReplayReport, IngestError, IngestOutcome, IngestQueueStatus, IngestService,
+    NativeIngestRequest, TraceIngestedDrainReport, TraceIngestedReconcileReport,
+    TraceWriteDrainReport, anonymous_auth_context,
 };
 use beater_judge::{
     JudgeBroker, JudgeBrokerError, JudgeBrokerOutcome, JudgeBrokerRequest, JudgeLedgerStore,
 };
 use beater_oauth::OAuthStore;
-use beater_otlp::{decode_export_trace_request, export_to_raw_trace_ingest_request};
+use beater_otlp::{
+    OtlpScopeHints, decode_export_trace_request, decode_export_trace_request_json,
+    export_scope_hints, export_to_raw_trace_ingest_request,
+    export_to_raw_trace_ingest_request_with_mime_type,
+};
 use beater_prompts::{
     AddPromptVersion, CreatePrompt, CreatedPrompt, Prompt, PromptRegistry, PromptRegistryError,
     PromptTemplate, PromptVersion, PromptVersionDiff,
 };
 use beater_scenarios::{
-    cluster_failures, FailureMode, PerturbationKnobs, Scenario, ScenarioCluster, ScenarioStore,
-    TraceSummary,
+    FailureMode, PerturbationKnobs, Scenario, ScenarioCluster, ScenarioStore, TraceSummary,
+    cluster_failures,
 };
 use beater_schema::{
     AgentSpanKind, ArtifactRef, AuthContext, CanonicalSpan, RedactionClass, RunFilter, RunSummary,
@@ -82,14 +86,13 @@ use beater_secrets::{
     ProviderSecretMetadata, ProviderSecretStore, PutProviderSecretRequest, RevokedProviderSecret,
 };
 use beater_security::{
-    api_key_id_from_secret, verify_api_key, ApiScope, CreatedApiKey, SecurityError,
+    ApiScope, CreatedApiKey, SecurityError, api_key_id_from_secret, verify_api_key,
 };
 use beater_store::{MetadataStore, StoreError, TraceStore};
 use beater_store_memory::InMemoryMetadataStore;
 use beater_usage::{
-    judge_usage_from_dataset_eval_report, judge_usage_from_experiment_report,
-    judge_usage_from_outcome, record_usage_batch, UsageLedgerStore, UsageRecordInsert,
-    UsageSummary,
+    UsageLedgerStore, UsageRecordInsert, UsageSummary, judge_usage_from_dataset_eval_report,
+    judge_usage_from_experiment_report, judge_usage_from_outcome, record_usage_batch,
 };
 use chrono::Utc;
 use http::header::{HeaderName, HeaderValue, RETRY_AFTER};
@@ -102,6 +105,7 @@ use utoipa::{IntoParams, ToSchema};
 pub mod openapi;
 
 const API_KEY_HEADER: &str = "x-beater-api-key";
+const TENANT_ID_HEADER: &str = "x-beater-tenant-id";
 const PROJECT_ID_HEADER: &str = "x-beater-project-id";
 const ENVIRONMENT_ID_HEADER: &str = "x-beater-environment-id";
 
@@ -156,6 +160,8 @@ pub struct ApiState {
     /// URL of the OAuth protected-resource metadata document, surfaced in the
     /// `WWW-Authenticate` challenge on 401 (RFC 9728 / MCP auth discovery).
     oauth_metadata_url: Option<String>,
+    /// OAuth resource indicator / intended audience for accepted access tokens.
+    oauth_resource: Option<String>,
 }
 
 impl ApiState {
@@ -193,15 +199,22 @@ impl ApiState {
             prompts: None,
             oauth: None,
             oauth_metadata_url: None,
+            oauth_resource: None,
         }
     }
 
     /// Wire an OAuth authorization-server store so `authorize()` accepts OAuth
     /// access tokens in addition to API keys. `metadata_url` is advertised in
     /// the `WWW-Authenticate` challenge on auth failures.
-    pub fn with_oauth(mut self, oauth: Arc<dyn OAuthStore>, metadata_url: Option<String>) -> Self {
+    pub fn with_oauth(
+        mut self,
+        oauth: Arc<dyn OAuthStore>,
+        metadata_url: Option<String>,
+        resource: String,
+    ) -> Self {
         self.oauth = Some(oauth);
         self.oauth_metadata_url = metadata_url;
+        self.oauth_resource = Some(resource);
         self
     }
 
@@ -209,6 +222,10 @@ impl ApiState {
     /// resource server's `WWW-Authenticate` discovery header).
     pub fn oauth_metadata_url(&self) -> Option<&str> {
         self.oauth_metadata_url.as_deref()
+    }
+
+    pub fn oauth_resource(&self) -> Option<&str> {
+        self.oauth_resource.as_deref()
     }
 
     pub fn with_search(
@@ -368,10 +385,10 @@ impl ApiState {
 ///
 /// Billing/Stripe routes are hosted-only and compiled in only under the
 /// `billing` feature, so the count is feature-aware: the open-source default
-/// build registers 57 `/v1` routes (41 base + 6 always-on `/v1/connectors`
+/// build registers 58 `/v1` routes (42 base + 6 always-on `/v1/connectors`
 /// routes + 6 `/v1/prompts` routes + 4 `/v1/scenarios` routes); the hosted
 /// `billing` build adds 8.
-pub const V1_ROUTE_COUNT: usize = if cfg!(feature = "billing") { 65 } else { 57 };
+pub const V1_ROUTE_COUNT: usize = if cfg!(feature = "billing") { 66 } else { 58 };
 
 /// See [`V1_ROUTE_COUNT`].
 pub fn v1_route_count() -> usize {
@@ -383,6 +400,7 @@ pub fn router(state: ApiState) -> Router {
         .route("/health", get(health))
         .route("/openapi.json", get(openapi_json))
         .route("/v1/traces/native", post(ingest_native))
+        .route("/v1/traces", post(ingest_otlp_json_collector))
         .route(
             "/v1/api-keys/:tenant_id/:project_id/:environment_id",
             post(create_api_key_route),
@@ -1660,6 +1678,17 @@ async fn create_subscription_route(
     let plan_id = PlanId::new(request.plan_id).map_err(ApiError::from)?;
     let period_start = parse_required_timestamp(&request.period_start, "period_start")?;
     let period_end = parse_required_timestamp(&request.period_end, "period_end")?;
+    if period_end <= period_start {
+        return Err(ApiError::bad_request(
+            "period_end must be after period_start".to_string(),
+        ));
+    }
+    if billing.get_plan(&plan_id).await?.is_none() {
+        return Err(ApiError::not_found(format!(
+            "plan {} not found",
+            plan_id.as_str()
+        )));
+    }
     let status = match request.status.as_deref() {
         None | Some("active") => SubscriptionStatus::Active,
         Some(other) => SubscriptionStatus::parse(other).ok_or_else(|| {
@@ -2123,6 +2152,68 @@ async fn ingest_otlp_http(
     let raw_request =
         export_to_raw_trace_ingest_request(scope.clone(), body.to_vec(), export, auth.context)
             .map_err(invalid_otlp_export)?;
+    let buffered = ingest_buffered(&params)?;
+    let outcome = if buffered {
+        state.ingest.buffer_raw_trace_batch(raw_request).await?
+    } else {
+        state.ingest.ingest_raw_trace_batch(raw_request).await?
+    };
+    Ok(Json(OtlpIngestOutcome {
+        accepted_raw: outcome.ack.accepted_raw,
+        accepted_spans: outcome.ack.accepted_spans,
+        duplicate_raw: outcome.ack.duplicate_raw,
+        duplicate_spans: outcome.ack.duplicate_spans,
+        downstream_queued: outcome.downstream_queued,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/traces",
+    tag = "ingest",
+    operation_id = "ingestOtlpJsonCollector",
+    params(
+        IngestDurabilityQuery,
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-tenant-id" = Option<String>, Header, description = "Tenant scope override for collector-style OTLP JSON"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Project scope override for collector-style OTLP JSON"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Environment scope override for collector-style OTLP JSON"),
+    ),
+    responses(
+        (status = 200, description = "Ingest collector-style OTLP/HTTP JSON traces", body = OtlpIngestOutcome),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+        (status = 413, description = "Payload or attribute cardinality too large", body = ErrorResponse),
+        (status = 429, description = "Per-project quota exceeded or backpressure", body = ErrorResponse),
+    )
+)]
+async fn ingest_otlp_json_collector(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Query(params): Query<IngestDurabilityQuery>,
+    body: Bytes,
+) -> Result<Json<OtlpIngestOutcome>, ApiError> {
+    let export = decode_export_trace_request_json(&body).map_err(invalid_otlp_export)?;
+    let scope = collector_otlp_scope(&headers, export_scope_hints(&export))?;
+    let auth = authorize(
+        &state,
+        &headers,
+        &scope.tenant_id,
+        &scope.project_id,
+        &scope.environment_id,
+        ApiScope::TraceWrite,
+    )
+    .await?;
+    let raw_request = export_to_raw_trace_ingest_request_with_mime_type(
+        scope.clone(),
+        body.to_vec(),
+        export,
+        auth.context,
+        "application/json",
+    )
+    .map_err(invalid_otlp_export)?;
     let buffered = ingest_buffered(&params)?;
     let outcome = if buffered {
         state.ingest.buffer_raw_trace_batch(raw_request).await?
@@ -3539,12 +3630,12 @@ async fn run_calibration_route(
         let report = datasets
             .get_eval_report(tenant_id.clone(), project_id.clone(), eval_report_id)
             .await?;
-        if let Some(evaluator_version_id) = &requested_evaluator {
-            if &report.evaluator_version_id != evaluator_version_id {
-                return Err(ApiError::bad_request(
-                    "eval_report_id does not match requested evaluator_version_id".to_string(),
-                ));
-            }
+        if let Some(evaluator_version_id) = &requested_evaluator
+            && &report.evaluator_version_id != evaluator_version_id
+        {
+            return Err(ApiError::bad_request(
+                "eval_report_id does not match requested evaluator_version_id".to_string(),
+            ));
         }
         report
     } else {
@@ -4227,6 +4318,8 @@ async fn evaluate_alert(
     if trace.spans.is_empty() {
         return Err(ApiError::not_found("trace not found for alert".to_string()));
     }
+    validate_webhook_endpoint_url(&request.policy.endpoint_url)
+        .map_err(|error| ApiError::bad_request(error.to_string()))?;
     let decision = state.alerts.evaluate(&request.policy, request.input)?;
     Ok(Json(decision))
 }
@@ -4720,7 +4813,14 @@ async fn authorize_project_route(
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
     }
-    let environment_id = environment_id_from_header(headers)?;
+    let token_scope = oauth_tenant_scope_from_headers(state, headers).await?;
+    let environment_id = match optional_environment_id_from_header(headers)? {
+        Some(environment_id) => environment_id,
+        None => match token_scope {
+            Some(scope) => scope.environment_id,
+            None => return Err(missing_strict_auth_header(ENVIRONMENT_ID_HEADER)),
+        },
+    };
     authorize(
         state,
         headers,
@@ -4741,8 +4841,21 @@ async fn authorize_tenant_route(
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
     }
-    let project_id = project_id_from_header(headers)?;
-    let environment_id = environment_id_from_header(headers)?;
+    let token_scope = oauth_tenant_scope_from_headers(state, headers).await?;
+    let project_id = match optional_project_id_from_header(headers)? {
+        Some(project_id) => project_id,
+        None => match token_scope.as_ref() {
+            Some(scope) => scope.project_id.clone(),
+            None => return Err(missing_strict_auth_header(PROJECT_ID_HEADER)),
+        },
+    };
+    let environment_id = match optional_environment_id_from_header(headers)? {
+        Some(environment_id) => environment_id,
+        None => match token_scope {
+            Some(scope) => scope.environment_id,
+            None => return Err(missing_strict_auth_header(ENVIRONMENT_ID_HEADER)),
+        },
+    };
     authorize(
         state,
         headers,
@@ -4782,12 +4895,37 @@ async fn authorize_query_scope(
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
     }
-    let project_id = project_id.ok_or_else(|| {
-        ApiError::bad_request("strict auth requires project_id query parameter".to_string())
-    })?;
-    let environment_id = environment_id.ok_or_else(|| {
-        ApiError::bad_request("strict auth requires environment_id query parameter".to_string())
-    })?;
+    let token_scope = oauth_tenant_scope_from_headers(state, headers).await?;
+    let token_project_id;
+    let project_id = match project_id {
+        Some(project_id) => project_id,
+        None => match token_scope.as_ref() {
+            Some(scope) => {
+                token_project_id = scope.project_id.clone();
+                &token_project_id
+            }
+            None => {
+                return Err(ApiError::bad_request(
+                    "strict auth requires project_id query parameter".to_string(),
+                ));
+            }
+        },
+    };
+    let token_environment_id;
+    let environment_id = match environment_id {
+        Some(environment_id) => environment_id,
+        None => match token_scope.as_ref() {
+            Some(scope) => {
+                token_environment_id = scope.environment_id.clone();
+                &token_environment_id
+            }
+            None => {
+                return Err(ApiError::bad_request(
+                    "strict auth requires environment_id query parameter".to_string(),
+                ));
+            }
+        },
+    };
     authorize(
         state,
         headers,
@@ -4797,6 +4935,49 @@ async fn authorize_query_scope(
         required_scope,
     )
     .await
+}
+
+async fn oauth_tenant_scope_from_headers(
+    state: &ApiState,
+    headers: &HeaderMap,
+) -> Result<Option<TenantScope>, ApiError> {
+    let Some(secret) = bearer_secret(headers)? else {
+        return Ok(None);
+    };
+    if !secret.starts_with("bao_") {
+        return Ok(None);
+    }
+    let Some(oauth) = state.oauth.as_ref() else {
+        return Ok(None);
+    };
+    let claims = oauth
+        .validate_access_token(secret, Utc::now())
+        .await
+        .map_err(|_| ApiError::unauthorized("invalid or expired access token".to_string()))?;
+    if state
+        .oauth_resource()
+        .is_none_or(|resource| claims.resource != resource)
+    {
+        return Err(ApiError::unauthorized(
+            "access token audience does not match this resource".to_string(),
+        ));
+    }
+    Ok(Some(claims.tenant_scope))
+}
+
+fn bearer_secret(headers: &HeaderMap) -> Result<Option<&str>, ApiError> {
+    let Some(value) = headers
+        .get(http::header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+    else {
+        return Ok(None);
+    };
+    let Some(secret) = value.strip_prefix("Bearer ") else {
+        return Err(ApiError::unauthorized(
+            "authorization header must use bearer scheme".to_string(),
+        ));
+    };
+    Ok(Some(secret))
 }
 
 async fn authorize(
@@ -4814,18 +4995,19 @@ async fn authorize(
     // OAuth access tokens (`bao_...`) are accepted when an OAuth store is wired.
     // This is the bridge that lets MCP/HTTP callers authenticate with an OAuth
     // token instead of a raw API key.
-    if secret.starts_with("bao_") {
-        if let Some(oauth) = state.oauth.as_ref() {
-            return authorize_oauth(
-                oauth.as_ref(),
-                secret,
-                tenant_id,
-                project_id,
-                environment_id,
-                required_scope,
-            )
-            .await;
-        }
+    if secret.starts_with("bao_")
+        && let Some(oauth) = state.oauth.as_ref()
+    {
+        return authorize_oauth(
+            oauth.as_ref(),
+            secret,
+            state.oauth_resource(),
+            tenant_id,
+            project_id,
+            environment_id,
+            required_scope,
+        )
+        .await;
     }
     let api_keys = state
         .api_keys
@@ -4869,6 +5051,7 @@ async fn authorize(
 async fn authorize_oauth(
     oauth: &dyn OAuthStore,
     secret: &str,
+    expected_resource: Option<&str>,
     tenant_id: &TenantId,
     project_id: &ProjectId,
     environment_id: &EnvironmentId,
@@ -4878,6 +5061,11 @@ async fn authorize_oauth(
         .validate_access_token(secret, Utc::now())
         .await
         .map_err(|_| ApiError::unauthorized("invalid or expired access token".to_string()))?;
+    if expected_resource.is_none_or(|resource| claims.resource != resource) {
+        return Err(ApiError::unauthorized(
+            "access token audience does not match this resource".to_string(),
+        ));
+    }
     if &claims.tenant_scope.tenant_id != tenant_id
         || &claims.tenant_scope.project_id != project_id
         || &claims.tenant_scope.environment_id != environment_id
@@ -4886,8 +5074,13 @@ async fn authorize_oauth(
             "access token is not scoped to this tenant/project/environment".to_string(),
         ));
     }
-    let has_scope = claims.scope.contains(required_scope.as_str())
-        || claims.scope.contains(ApiScope::Admin.as_str());
+    if !claims.scope.contains("mcp:invoke") {
+        return Err(ApiError::forbidden(
+            "access token is missing scope mcp:invoke".to_string(),
+        ));
+    }
+    let is_admin = claims.scope.contains(ApiScope::Admin.as_str());
+    let has_scope = claims.scope.contains(required_scope.as_str()) || is_admin;
     if !has_scope {
         return Err(ApiError::forbidden(format!(
             "access token is missing scope {}",
@@ -4922,26 +5115,26 @@ fn presented_api_key(headers: &HeaderMap) -> Result<&str, ApiError> {
         .ok_or_else(|| ApiError::unauthorized("missing api key".to_string()))
 }
 
-fn environment_id_from_header(headers: &HeaderMap) -> Result<EnvironmentId, ApiError> {
-    let value = headers
+fn optional_environment_id_from_header(
+    headers: &HeaderMap,
+) -> Result<Option<EnvironmentId>, ApiError> {
+    headers
         .get(ENVIRONMENT_ID_HEADER)
         .and_then(|value| value.to_str().ok())
-        .ok_or_else(|| {
-            ApiError::bad_request(format!(
-                "strict auth requires {ENVIRONMENT_ID_HEADER} header"
-            ))
-        })?;
-    Ok(EnvironmentId::new(value.to_string())?)
+        .map(|value| EnvironmentId::new(value.to_string()).map_err(ApiError::from))
+        .transpose()
 }
 
-fn project_id_from_header(headers: &HeaderMap) -> Result<ProjectId, ApiError> {
-    let value = headers
+fn optional_project_id_from_header(headers: &HeaderMap) -> Result<Option<ProjectId>, ApiError> {
+    headers
         .get(PROJECT_ID_HEADER)
         .and_then(|value| value.to_str().ok())
-        .ok_or_else(|| {
-            ApiError::bad_request(format!("strict auth requires {PROJECT_ID_HEADER} header"))
-        })?;
-    Ok(ProjectId::new(value.to_string())?)
+        .map(|value| ProjectId::new(value.to_string()).map_err(ApiError::from))
+        .transpose()
+}
+
+fn missing_strict_auth_header(header: &str) -> ApiError {
+    ApiError::bad_request(format!("strict auth requires {header} header"))
 }
 
 fn ensure_trace_project(trace: &TraceView, project_id: &ProjectId) -> Result<(), ApiError> {
@@ -5008,16 +5201,15 @@ fn ensure_trace_auth_scope(trace: &TraceView, auth: &AuthDecision) -> Result<(),
     if let Some(project_id) = &auth.project_id {
         ensure_trace_project(trace, project_id)?;
     }
-    if let Some(environment_id) = &auth.environment_id {
-        if trace
+    if let Some(environment_id) = &auth.environment_id
+        && trace
             .spans
             .iter()
             .any(|span| span.environment_id.as_str() != environment_id.as_str())
-        {
-            return Err(ApiError::forbidden(
-                "trace contains spans outside authenticated environment".to_string(),
-            ));
-        }
+    {
+        return Err(ApiError::forbidden(
+            "trace contains spans outside authenticated environment".to_string(),
+        ));
     }
     Ok(())
 }
@@ -5388,6 +5580,47 @@ fn ingest_buffered(params: &IngestDurabilityQuery) -> Result<bool, ApiError> {
     }
 }
 
+fn collector_otlp_scope(
+    headers: &HeaderMap,
+    hints: OtlpScopeHints,
+) -> Result<TenantScope, ApiError> {
+    let tenant_id = header_string(headers, TENANT_ID_HEADER)
+        .or(hints.tenant_id)
+        .ok_or_else(|| {
+            ApiError::bad_request(format!(
+                "collector OTLP JSON requires {TENANT_ID_HEADER} header or beater.tenant_id resource attribute"
+            ))
+        })?;
+    let project_id = header_string(headers, PROJECT_ID_HEADER)
+        .or(hints.project_id)
+        .ok_or_else(|| {
+            ApiError::bad_request(format!(
+                "collector OTLP JSON requires {PROJECT_ID_HEADER} header or beater.project_id resource attribute"
+            ))
+        })?;
+    let environment_id = header_string(headers, ENVIRONMENT_ID_HEADER)
+        .or(hints.environment_id)
+        .ok_or_else(|| {
+            ApiError::bad_request(format!(
+                "collector OTLP JSON requires {ENVIRONMENT_ID_HEADER} header, beater.environment_id resource attribute, or deployment.environment.name resource attribute"
+            ))
+        })?;
+
+    Ok(TenantScope::new(
+        TenantId::new(tenant_id)?,
+        ProjectId::new(project_id)?,
+        EnvironmentId::new(environment_id)?,
+    ))
+}
+
+fn header_string(headers: &HeaderMap, name: &str) -> Option<String> {
+    headers
+        .get(name)
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_string)
+        .filter(|value| !value.trim().is_empty())
+}
+
 fn invalid_otlp_export(error: impl std::fmt::Display) -> ApiError {
     ApiError::bad_request(format!("invalid OTLP trace export: {error}"))
 }
@@ -5521,7 +5754,7 @@ impl IntoResponse for ApiError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::body::{to_bytes, Body};
+    use axum::body::{Body, to_bytes};
     use beater_bus::InMemoryBus;
     use beater_core::sha256_hex;
     use beater_core::{EnvironmentId, IdempotencyKey, ProjectId, SpanId, TenantScope, TraceId};
@@ -5535,11 +5768,11 @@ mod tests {
     use http::{Request, StatusCode};
     use opentelemetry_proto::tonic::collector::trace::v1::ExportTraceServiceRequest;
     use opentelemetry_proto::tonic::common::v1::{
-        any_value, AnyValue, InstrumentationScope, KeyValue,
+        AnyValue, InstrumentationScope, KeyValue, any_value,
     };
     use opentelemetry_proto::tonic::resource::v1::Resource;
     use opentelemetry_proto::tonic::trace::v1::{
-        span, status, ResourceSpans, ScopeSpans, Span, Status,
+        ResourceSpans, ScopeSpans, Span, Status, span, status,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -5556,13 +5789,16 @@ mod tests {
         let tenant = TenantId::new("acme").unwrap_or_else(|err| panic!("{err}"));
         let project = ProjectId::new("proj").unwrap_or_else(|err| panic!("{err}"));
         let environment = EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}"));
+        let resource = "https://api.example.com";
         let issued = store
             .issue_token_pair(
                 OAuthClientId::new("client").unwrap_or_else(|err| panic!("{err}")),
                 UserId::new("user").unwrap_or_else(|err| panic!("{err}")),
-                BTreeSet::from(["trace:read".to_string()]),
+                BTreeSet::from(["mcp:invoke".to_string(), "trace:read".to_string()]),
+                resource.to_string(),
                 TenantScope::new(tenant.clone(), project.clone(), environment.clone()),
                 TokenFamilyId::new("fam").unwrap_or_else(|err| panic!("{err}")),
+                true,
                 now,
             )
             .await
@@ -5572,6 +5808,7 @@ mod tests {
         let decision = authorize_oauth(
             &store,
             &issued.access_token,
+            Some(resource),
             &tenant,
             &project,
             &environment,
@@ -5581,43 +5818,149 @@ mod tests {
         .unwrap_or_else(|err| panic!("expected authorized: {err:?}"));
         assert!(decision.context.api_key_id.is_none());
         assert!(decision.context.scopes.contains("trace:read"));
+        assert!(decision.context.scopes.contains("mcp:invoke"));
 
-        // Wrong tenant -> forbidden (token is bound to its tenant scope).
-        let other = TenantId::new("evil").unwrap_or_else(|err| panic!("{err}"));
-        assert!(authorize_oauth(
-            &store,
-            &issued.access_token,
-            &other,
-            &project,
-            &environment,
-            ApiScope::TraceRead,
-        )
-        .await
-        .is_err());
+        let no_mcp = store
+            .issue_token_pair(
+                OAuthClientId::new("client").unwrap_or_else(|err| panic!("{err}")),
+                UserId::new("user").unwrap_or_else(|err| panic!("{err}")),
+                BTreeSet::from(["trace:read".to_string()]),
+                resource.to_string(),
+                TenantScope::new(tenant.clone(), project.clone(), environment.clone()),
+                TokenFamilyId::new("fam-no-mcp").unwrap_or_else(|err| panic!("{err}")),
+                true,
+                now,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
+        assert!(
+            authorize_oauth(
+                &store,
+                &no_mcp.access_token,
+                Some(resource),
+                &tenant,
+                &project,
+                &environment,
+                ApiScope::TraceRead,
+            )
+            .await
+            .is_err(),
+            "OAuth tokens must carry mcp:invoke before operation scopes matter"
+        );
 
-        // Missing scope -> forbidden.
-        assert!(authorize_oauth(
+        let admin_without_mcp = store
+            .issue_token_pair(
+                OAuthClientId::new("client").unwrap_or_else(|err| panic!("{err}")),
+                UserId::new("user").unwrap_or_else(|err| panic!("{err}")),
+                BTreeSet::from(["admin".to_string()]),
+                resource.to_string(),
+                TenantScope::new(tenant.clone(), project.clone(), environment.clone()),
+                TokenFamilyId::new("fam-admin-no-mcp").unwrap_or_else(|err| panic!("{err}")),
+                true,
+                now,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
+        assert!(
+            authorize_oauth(
+                &store,
+                &admin_without_mcp.access_token,
+                Some(resource),
+                &tenant,
+                &project,
+                &environment,
+                ApiScope::TraceWrite,
+            )
+            .await
+            .is_err(),
+            "admin still must carry mcp:invoke to use MCP-issued OAuth tokens"
+        );
+
+        let admin_with_mcp = store
+            .issue_token_pair(
+                OAuthClientId::new("client").unwrap_or_else(|err| panic!("{err}")),
+                UserId::new("user").unwrap_or_else(|err| panic!("{err}")),
+                BTreeSet::from(["admin".to_string(), "mcp:invoke".to_string()]),
+                resource.to_string(),
+                TenantScope::new(tenant.clone(), project.clone(), environment.clone()),
+                TokenFamilyId::new("fam-admin-mcp").unwrap_or_else(|err| panic!("{err}")),
+                true,
+                now,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
+        authorize_oauth(
             &store,
-            &issued.access_token,
+            &admin_with_mcp.access_token,
+            Some(resource),
             &tenant,
             &project,
             &environment,
             ApiScope::TraceWrite,
         )
         .await
-        .is_err());
+        .unwrap_or_else(|err| panic!("admin+mcp should satisfy operation scope: {err:?}"));
+
+        // Wrong tenant -> forbidden (token is bound to its tenant scope).
+        let other = TenantId::new("evil").unwrap_or_else(|err| panic!("{err}"));
+        assert!(
+            authorize_oauth(
+                &store,
+                &issued.access_token,
+                Some(resource),
+                &other,
+                &project,
+                &environment,
+                ApiScope::TraceRead,
+            )
+            .await
+            .is_err()
+        );
+
+        // Missing scope -> forbidden.
+        assert!(
+            authorize_oauth(
+                &store,
+                &issued.access_token,
+                Some(resource),
+                &tenant,
+                &project,
+                &environment,
+                ApiScope::TraceWrite,
+            )
+            .await
+            .is_err()
+        );
+
+        // Wrong resource audience -> rejected.
+        assert!(
+            authorize_oauth(
+                &store,
+                &issued.access_token,
+                Some("https://other.example.com"),
+                &tenant,
+                &project,
+                &environment,
+                ApiScope::TraceRead,
+            )
+            .await
+            .is_err()
+        );
 
         // Garbage token -> rejected.
-        assert!(authorize_oauth(
-            &store,
-            "bao_nope_nope",
-            &tenant,
-            &project,
-            &environment,
-            ApiScope::TraceRead,
-        )
-        .await
-        .is_err());
+        assert!(
+            authorize_oauth(
+                &store,
+                "bao_nope_nope",
+                Some(resource),
+                &tenant,
+                &project,
+                &environment,
+                ApiScope::TraceRead,
+            )
+            .await
+            .is_err()
+        );
     }
 
     #[test]
@@ -5727,18 +6070,24 @@ mod tests {
         let spec: serde_json::Value =
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
         assert!(spec["paths"].get("/v1/traces/{tenant_id}").is_some());
-        assert!(spec["paths"]
-            .get("/v1/spans/{tenant_id}/{trace_id}/{span_id}/io")
-            .is_some());
+        assert!(
+            spec["paths"]
+                .get("/v1/spans/{tenant_id}/{trace_id}/{span_id}/io")
+                .is_some()
+        );
         let trace_params = spec["paths"]["/v1/traces/{tenant_id}"]["get"]["parameters"]
             .as_array()
             .unwrap_or_else(|| panic!("trace list params must be an array"));
-        assert!(trace_params
-            .iter()
-            .any(|param| param["name"] == json!("started_after")));
-        assert!(trace_params
-            .iter()
-            .any(|param| param["name"] == json!("min_cost_micros")));
+        assert!(
+            trace_params
+                .iter()
+                .any(|param| param["name"] == json!("started_after"))
+        );
+        assert!(
+            trace_params
+                .iter()
+                .any(|param| param["name"] == json!("min_cost_micros"))
+        );
     }
 
     #[tokio::test]
@@ -5948,6 +6297,124 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn api_accepts_collector_otlp_json_and_reads_canonical_trace() {
+        let tempdir = tempfile::tempdir().unwrap_or_else(|err| panic!("{err}"));
+        let artifacts = Arc::new(
+            FsArtifactStore::new(tempdir.path().join("artifacts"))
+                .unwrap_or_else(|err| panic!("{err}")),
+        );
+        let traces = Arc::new(SqliteTraceStore::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let bus = Arc::new(InMemoryBus::new(16));
+        let ingest = IngestService::new(
+            artifacts.clone(),
+            traces.clone(),
+            bus,
+            IngestPolicy::default(),
+        );
+        let app = router(ApiState::new(ingest, traces.clone()));
+        let body =
+            serde_json::to_vec(&fixture_otlp_json_export()).unwrap_or_else(|err| panic!("{err}"));
+
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/traces")
+                    .header("content-type", "application/json")
+                    .body(Body::from(body.clone()))
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/traces/tenant/0102030405060708090a0b0c0d0e0f10")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+        let response_body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let trace: TraceView =
+            serde_json::from_slice(&response_body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(trace.spans.len(), 1);
+        assert_eq!(trace.spans[0].kind, AgentSpanKind::AgentRun);
+        assert_eq!(trace.spans[0].raw_ref.uri, "artifact://redacted");
+        assert_eq!(
+            trace.spans[0].attributes.get("beateros.payment_mandate_id"),
+            Some(&json!("[redacted]"))
+        );
+        assert_eq!(
+            trace.spans[0].attributes.get("aether.payment_envelope_id"),
+            Some(&json!("[redacted]"))
+        );
+        assert_eq!(
+            trace.spans[0]
+                .attributes
+                .get("aether.agent_payment_authorization"),
+            Some(&json!("[redacted]"))
+        );
+
+        let stored_trace = traces
+            .get_trace(
+                TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                TraceId::new("0102030405060708090a0b0c0d0e0f10")
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            stored_trace.spans[0]
+                .attributes
+                .get("beateros.payment_mandate_id"),
+            Some(&json!("mandate-demo"))
+        );
+        assert_eq!(
+            stored_trace.spans[0]
+                .attributes
+                .get("aether.payment_envelope_id"),
+            Some(&json!("payment-envelope-demo"))
+        );
+        assert_eq!(
+            stored_trace.spans[0]
+                .attributes
+                .get("aether.agent_payment_authorization"),
+            Some(&json!("observed"))
+        );
+        assert_eq!(stored_trace.spans[0].raw_ref.mime_type, "application/json");
+        let raw_bytes = artifacts
+            .get_bytes(&stored_trace.spans[0].raw_ref)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(raw_bytes, body);
+
+        let raw_idempotency_key = IdempotencyKey::new(format!(
+            "raw:otlp:tenant:project:{}",
+            sha256_hex(&raw_bytes)
+        ))
+        .unwrap_or_else(|err| panic!("{err}"));
+        let raw = traces
+            .get_raw_envelope(
+                TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+                raw_idempotency_key,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"))
+            .unwrap_or_else(|| panic!("raw otlp json envelope should be stored"));
+        assert_eq!(raw.source, SourceDialect::Otlp);
+        assert_eq!(raw.body_ref.mime_type, "application/json");
+    }
+
+    #[tokio::test]
     async fn api_rejects_malformed_otlp_http_as_bad_request() {
         let (ingest, traces, _tempdir) = api_state_fixture();
         let app = router(ApiState::new(ingest, traces));
@@ -5971,10 +6438,12 @@ mod tests {
         let error: serde_json::Value =
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(error["status"], serde_json::json!(400));
-        assert!(error["error"]
-            .as_str()
-            .unwrap_or_default()
-            .contains("invalid OTLP trace export"));
+        assert!(
+            error["error"]
+                .as_str()
+                .unwrap_or_default()
+                .contains("invalid OTLP trace export")
+        );
     }
 
     #[tokio::test]
@@ -6006,10 +6475,12 @@ mod tests {
         let error: serde_json::Value =
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(error["status"], serde_json::json!(400));
-        assert!(error["error"]
-            .as_str()
-            .unwrap_or_default()
-            .contains("invalid OTLP trace export"));
+        assert!(
+            error["error"]
+                .as_str()
+                .unwrap_or_default()
+                .contains("invalid OTLP trace export")
+        );
     }
 
     fn api_state_fixture() -> (IngestService, Arc<dyn TraceStore>, tempfile::TempDir) {
@@ -6023,6 +6494,57 @@ mod tests {
         let bus = Arc::new(InMemoryBus::new(16));
         let ingest = IngestService::new(artifacts, traces.clone(), bus, IngestPolicy::default());
         (ingest, traces, tempdir)
+    }
+
+    fn fixture_otlp_json_export() -> serde_json::Value {
+        json!({
+            "resourceSpans": [{
+                "resource": {
+                    "attributes": [
+                        {"key": "service.name", "value": {"stringValue": "beater.js"}},
+                        {"key": "beater.tenant_id", "value": {"stringValue": "tenant"}},
+                        {"key": "beater.project_id", "value": {"stringValue": "project"}},
+                        {"key": "deployment.environment.name", "value": {"stringValue": "prod"}}
+                    ]
+                },
+                "scopeSpans": [{
+                    "scope": {"name": "beater-agent", "version": "0.1.0"},
+                    "spans": [{
+                        "traceId": "0102030405060708090a0b0c0d0e0f10",
+                        "spanId": "1112131415161718",
+                        "name": "beater.js agent run",
+                        "kind": "SPAN_KIND_INTERNAL",
+                        "startTimeUnixNano": "1704067200000000000",
+                        "endTimeUnixNano": "1704067201000000000",
+                        "attributes": [
+                            {"key": "beater.span.kind", "value": {"stringValue": "agent.run"}},
+                            {"key": "beater.run_id", "value": {"stringValue": "run-json"}},
+                            {"key": "beateros.payment_mandate_id", "value": {"stringValue": "mandate-demo"}},
+                            {"key": "beateros.receipt_requirement", "value": {"stringValue": "required"}},
+                            {"key": "aether.payment_envelope_id", "value": {"stringValue": "payment-envelope-demo"}},
+                            {"key": "aether.agent_payment_authorization", "value": {"stringValue": "observed"}}
+                        ],
+                        "events": [
+                            {
+                                "name": "beater.input",
+                                "timeUnixNano": "1704067200000000000",
+                                "attributes": [
+                                    {"key": "beater.payload_json", "value": {"stringValue": "{\"prompt\":\"hello\"}"}}
+                                ]
+                            },
+                            {
+                                "name": "beater.output",
+                                "timeUnixNano": "1704067201000000000",
+                                "attributes": [
+                                    {"key": "beater.payload_json", "value": {"stringValue": "{\"answer\":\"world\"}"}}
+                                ]
+                            }
+                        ],
+                        "status": {"code": "STATUS_CODE_OK"}
+                    }]
+                }]
+            }]
+        })
     }
 
     fn assert_api_state_optional_defaults(state: &ApiState) {

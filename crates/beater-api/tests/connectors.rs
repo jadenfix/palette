@@ -8,14 +8,14 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use async_trait::async_trait;
-use axum::body::{to_bytes, Body};
-use beater_api::{router, ApiState};
+use axum::body::{Body, to_bytes};
+use beater_api::{ApiState, router};
 use beater_audit::{AuditAction, AuditOutcome, AuditStore, SqliteAuditStore};
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, SqliteApiKeyStore};
 use beater_bus::InMemoryBus;
 use beater_composio::{
-    skill, ComposioClient, ComposioError, ConnectionLink, ConnectionStatus, ConnectorTool,
-    ConnectorToolPolicy, ToolExecution, Toolkit,
+    ComposioClient, ComposioError, ConnectionLink, ConnectionStatus, ConnectorTool,
+    ConnectorToolPolicy, ToolExecution, Toolkit, skill,
 };
 use beater_core::{EnvironmentId, ProjectId, TenantId};
 use beater_ingest::{IngestPolicy, IngestService};
@@ -23,7 +23,7 @@ use beater_security::ApiScope;
 use beater_store_obj::FsArtifactStore;
 use beater_store_sql::SqliteTraceStore;
 use http::{HeaderName, HeaderValue, Request, StatusCode};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
@@ -322,14 +322,16 @@ async fn connect_returns_login_link_with_project_entity() {
     .await;
     assert_eq!(status, StatusCode::OK);
     let link: ConnectionLink = serde_json::from_value(body).unwrap();
-    assert!(link
-        .redirect_url
-        .starts_with("https://connect.composio.dev/link/"));
+    assert!(
+        link.redirect_url
+            .starts_with("https://connect.composio.dev/link/")
+    );
     // The Composio entity must be the per-project id.
-    assert!(fake
-        .calls()
-        .iter()
-        .any(|c| c == "connect:github:beater:acme:proj"));
+    assert!(
+        fake.calls()
+            .iter()
+            .any(|c| c == "connect:github:beater:acme:proj")
+    );
 }
 
 #[tokio::test]
@@ -365,9 +367,10 @@ async fn invokes_tool_and_scopes_entity_per_project() {
     assert!(exec.successful);
     assert_eq!(exec.log_id.as_deref(), Some("log_test"));
     // Verify the handler forwarded tool, project-scoped entity, and arguments.
-    assert!(fake.calls().iter().any(|c| c
-        .starts_with("execute:GITHUB_CREATE_AN_ISSUE:beater:acme:proj:")
-        && c.contains("\"title\":\"bug\"")));
+    assert!(fake.calls().iter().any(|c| {
+        c.starts_with("execute:GITHUB_CREATE_AN_ISSUE:beater:acme:proj:")
+            && c.contains("\"title\":\"bug\"")
+    }));
 }
 
 #[tokio::test]
@@ -385,9 +388,11 @@ async fn invokes_read_only_tool_without_explicit_allow() {
     assert!(exec.successful);
     let calls = fake.calls();
     assert!(calls.iter().any(|c| c == "get_tool:GITHUB_GET_REPOSITORY"));
-    assert!(calls
-        .iter()
-        .any(|c| c.starts_with("execute:GITHUB_GET_REPOSITORY:beater:acme:proj:")));
+    assert!(
+        calls
+            .iter()
+            .any(|c| c.starts_with("execute:GITHUB_GET_REPOSITORY:beater:acme:proj:"))
+    );
 }
 
 #[tokio::test]
@@ -402,9 +407,11 @@ async fn rejects_provider_tool_metadata_slug_mismatch() {
     .await;
     assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
     let calls = fake.calls();
-    assert!(calls
-        .iter()
-        .any(|c| c == "get_tool:GITHUB_DELETE_REPOSITORY"));
+    assert!(
+        calls
+            .iter()
+            .any(|c| c == "get_tool:GITHUB_DELETE_REPOSITORY")
+    );
     assert!(!calls.iter().any(|c| c.starts_with("execute:")));
 }
 
@@ -529,10 +536,12 @@ async fn rsi_tool_add_then_execute_flow() {
         "invokeConnectorTool(GITHUB_CREATE_AN_ISSUE)"
     );
     assert!(entry["input_schema"]["properties"]["title"].is_object());
-    assert!(entry["skill_card"]
-        .as_str()
-        .unwrap()
-        .contains("When to use:"));
+    assert!(
+        entry["skill_card"]
+            .as_str()
+            .unwrap()
+            .contains("When to use:")
+    );
 
     // 3. The agent now executes the freshly-added tool via the same surface.
     let (status, body) = send(

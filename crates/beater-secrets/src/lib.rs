@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{ProjectId, ProviderSecretId, TenantId, Timestamp};
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::{DateTime, Utc};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
 use std::fs;

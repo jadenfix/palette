@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{
     AgentReleaseId, DatasetId, EvaluatorVersionId, ExperimentRunId, GateId, GateRunId, ProjectId,
@@ -8,7 +8,7 @@ use beater_eval::{ExperimentComparison, GateDecision, GatePolicy};
 use beater_experiments::{ExperimentRunReport, ExperimentStore};
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -333,27 +333,27 @@ pub fn evaluate_gate(
             experiment.experiment_run_id.as_str()
         ));
     }
-    if let Some(dataset_id) = &gate.dataset_id {
-        if dataset_id != &experiment.dataset_id {
-            return Err(anyhow!(
-                "gate {} expected dataset {}, experiment {} used {}",
-                gate.gate_id.as_str(),
-                dataset_id.as_str(),
-                experiment.experiment_run_id.as_str(),
-                experiment.dataset_id.as_str()
-            ));
-        }
+    if let Some(dataset_id) = &gate.dataset_id
+        && dataset_id != &experiment.dataset_id
+    {
+        return Err(anyhow!(
+            "gate {} expected dataset {}, experiment {} used {}",
+            gate.gate_id.as_str(),
+            dataset_id.as_str(),
+            experiment.experiment_run_id.as_str(),
+            experiment.dataset_id.as_str()
+        ));
     }
-    if let Some(evaluator_version_id) = &gate.evaluator_version_id {
-        if evaluator_version_id != &experiment.evaluator_version_id {
-            return Err(anyhow!(
-                "gate {} expected evaluator {}, experiment {} used {}",
-                gate.gate_id.as_str(),
-                evaluator_version_id.as_str(),
-                experiment.experiment_run_id.as_str(),
-                experiment.evaluator_version_id.as_str()
-            ));
-        }
+    if let Some(evaluator_version_id) = &gate.evaluator_version_id
+        && evaluator_version_id != &experiment.evaluator_version_id
+    {
+        return Err(anyhow!(
+            "gate {} expected evaluator {}, experiment {} used {}",
+            gate.gate_id.as_str(),
+            evaluator_version_id.as_str(),
+            experiment.experiment_run_id.as_str(),
+            experiment.evaluator_version_id.as_str()
+        ));
     }
 
     let (passed, reason) = gate_result(&experiment.decision, &gate.inconclusive_policy, experiment);
@@ -613,10 +613,12 @@ mod tests {
                 .map(|report| report.gate_run_id),
             Some(other_project_latest.gate_run_id)
         );
-        assert!(gates
-            .latest_run(other_tenant, other_project, gate_id)
-            .await?
-            .is_none());
+        assert!(
+            gates
+                .latest_run(other_tenant, other_project, gate_id)
+                .await?
+                .is_none()
+        );
         Ok(())
     }
 

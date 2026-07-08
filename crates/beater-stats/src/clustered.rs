@@ -9,7 +9,7 @@
 //! per-observation cluster labels.
 
 use crate::numerics::{students_t_quantile, students_t_two_sided_p};
-use crate::{mean, ConfidenceInterval, StatsError, TestKind, TestOutcome};
+use crate::{ConfidenceInterval, StatsError, TestKind, TestOutcome, mean};
 use std::collections::HashMap;
 use std::hash::Hash;
 

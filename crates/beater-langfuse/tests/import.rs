@@ -10,11 +10,11 @@ use beater_bus::{DurableBus, InMemoryBus};
 use beater_core::{EnvironmentId, PageRequest, ProjectId, TenantId, TenantScope};
 use beater_ingest::{IngestPolicy, IngestService};
 use beater_langfuse::LangfuseImporter;
-use beater_schema::{conventions::attr, AgentSpanKind, RunFilter};
+use beater_schema::{AgentSpanKind, RunFilter, conventions::attr};
 use beater_store::{ArtifactStore, TraceStore};
 use beater_store_memory::InMemoryTraceStore;
 use beater_store_obj::FsArtifactStore;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 const FIXTURE: &str = include_str!("fixtures/langfuse_trace_export.json");
 

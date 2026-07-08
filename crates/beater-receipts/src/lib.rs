@@ -13,7 +13,7 @@
 //! sensitive the underlying action is.
 
 use beater_core::{
-    sha256_json_hash, AgentId, Clock, Sha256Hash, SpanId, TenantScope, Timestamp, TraceId, UserId,
+    AgentId, Clock, Sha256Hash, SpanId, TenantScope, Timestamp, TraceId, UserId, sha256_json_hash,
 };
 use beater_schema::RedactionClass;
 use serde::{Deserialize, Serialize};
@@ -32,7 +32,9 @@ fn genesis_hash() -> Sha256Hash {
 pub enum ChainError {
     /// A record's stored `prev_hash` does not match the previous record's `hash`
     /// (or the genesis hash for the first record).
-    #[error("receipt {receipt_id} at seq {seq}: prev_hash mismatch (expected {expected}, found {found})")]
+    #[error(
+        "receipt {receipt_id} at seq {seq}: prev_hash mismatch (expected {expected}, found {found})"
+    )]
     PrevHashMismatch {
         receipt_id: String,
         seq: u64,
@@ -412,20 +414,20 @@ pub struct ReceiptFilter {
 
 impl ReceiptFilter {
     fn matches(&self, receipt: &AgentActionReceipt) -> bool {
-        if let Some(agent_id) = &self.agent_id {
-            if &receipt.agent_id != agent_id {
-                return false;
-            }
+        if let Some(agent_id) = &self.agent_id
+            && &receipt.agent_id != agent_id
+        {
+            return false;
         }
-        if let Some(outcome) = self.outcome {
-            if receipt.outcome != outcome {
-                return false;
-            }
+        if let Some(outcome) = self.outcome
+            && receipt.outcome != outcome
+        {
+            return false;
         }
-        if let Some(action_kind) = self.action_kind {
-            if receipt.action_kind != action_kind {
-                return false;
-            }
+        if let Some(action_kind) = self.action_kind
+            && receipt.action_kind != action_kind
+        {
+            return false;
         }
         true
     }

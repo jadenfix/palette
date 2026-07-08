@@ -143,7 +143,7 @@ pub trait Guardrail {
 
     /// Inspect `text` (with optional `ctx`) and return an outcome.
     fn check(&self, text: &str, ctx: &GuardrailContext)
-        -> Result<GuardrailOutcome, GuardrailError>;
+    -> Result<GuardrailOutcome, GuardrailError>;
 }
 
 /// Detects common PII (email, US phone, SSN, credit-card-ish numbers) and

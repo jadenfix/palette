@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{Money, ProjectId, TenantId, Timestamp, UsageRecordId};
 use beater_datasets::DatasetEvalReport;
@@ -6,9 +6,9 @@ use beater_experiments::{CaseExperimentScore, ExperimentRunReport};
 use beater_judge::JudgeBrokerOutcome;
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
-use rusqlite::{params, Connection, OptionalExtension, TransactionBehavior};
+use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;

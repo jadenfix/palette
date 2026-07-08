@@ -27,7 +27,7 @@
 //! covariate is the caller's responsibility.
 
 use crate::numerics::{students_t_quantile, students_t_two_sided_p};
-use crate::{mean, sample_variance, ConfidenceInterval, StatsError, TestKind, TestOutcome};
+use crate::{ConfidenceInterval, StatsError, TestKind, TestOutcome, mean, sample_variance};
 
 /// The result of a CUPED adjustment.
 #[derive(Debug, Clone, PartialEq)]
@@ -182,11 +182,11 @@ pub fn cuped_paired_t_test(
         mean(differences) - outcome.theta * (outcome.covariate_mean - population_covariate_mean);
 
     let df = n as f64 - 2.0; // one df for the mean, one for the estimated θ.
-                             // Residual mean square with the n−2 denominator (not the n−1 sample variance),
-                             // so the SE and the `df = n−2` t-quantile are consistent and the interval has
-                             // exact nominal coverage under normality (nominal α = actual α). SS_resid is
-                             // invariant to the centering constant, so the sample-centered `adjusted` series
-                             // carries it.
+    // Residual mean square with the n−2 denominator (not the n−1 sample variance),
+    // so the SE and the `df = n−2` t-quantile are consistent and the interval has
+    // exact nominal coverage under normality (nominal α = actual α). SS_resid is
+    // invariant to the centering constant, so the sample-centered `adjusted` series
+    // carries it.
     let residual_ss = sample_variance(&outcome.adjusted) * (n as f64 - 1.0);
     let residual_mean_square = residual_ss / df;
     // SE of the OLS mean-response evaluated at the KNOWN covariate value μ_x — NOT
@@ -250,8 +250,8 @@ pub fn cuped_paired_t_test(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::paired_t_test;
     use crate::Xorshift64;
+    use crate::paired_t_test;
 
     /// Standard normal via Box-Muller on a deterministic xorshift stream.
     fn gaussian(rng: &mut Xorshift64) -> f64 {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, KeyRound, Gauge, CreditCard, BookOpen } from "lucide-react";
+import { Activity, KeyRound, Gauge, CreditCard, BookOpen, PlugZap } from "lucide-react";
 
 import { BrandLockup } from "./BeaterMark";
 import { AccountMenu } from "./AccountMenu";
@@ -11,6 +11,12 @@ type Account = { email: string; tenant_id: string };
 
 const LINKS = [
   { href: "/", label: "Traces", icon: Activity, match: (p: string) => p === "/" },
+  {
+    href: "/connect",
+    label: "Connect",
+    icon: PlugZap,
+    match: (p: string) => p.startsWith("/connect"),
+  },
   {
     href: "/settings/api-keys",
     label: "API keys",

@@ -12,21 +12,24 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use axum::body::{to_bytes, Body};
 use axum::Router;
-use beater_api::{router, ApiState};
+use axum::body::{Body, to_bytes};
+use beater_api::{ApiState, router, v1_route_count};
 use beater_archive::ParquetTraceArchive;
 use beater_audit::SqliteAuditStore;
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, SqliteApiKeyStore};
 use beater_bus::InMemoryBus;
 use beater_calibration::SqliteCalibrationStore;
-use beater_core::{EnvironmentId, Money, ProjectId, TenantId};
+use beater_core::{
+    EnvironmentId, Money, OAuthClientId, ProjectId, TenantId, TenantScope, TokenFamilyId, UserId,
+};
 use beater_datasets::SqliteDatasetStore;
 use beater_experiments::SqliteExperimentStore;
 use beater_gates::SqliteGateStore;
 use beater_human::SqliteHumanReviewStore;
 use beater_ingest::{IngestPolicy, IngestService};
 use beater_judge::{JudgeBrokerService, KeywordJudgeProvider, SqliteJudgeLedger};
+use beater_oauth::{OAuthStore, SqliteOAuthStore};
 use beater_search::TantivySearchIndex;
 use beater_secrets::{EncryptedSqliteProviderSecretStore, SecretKeyring};
 use beater_security::ApiScope;
@@ -34,7 +37,7 @@ use beater_store_obj::FsArtifactStore;
 use beater_store_sql::SqliteTraceStore;
 use beater_usage::SqliteUsageLedger;
 use http::{Request, StatusCode};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tower::ServiceExt;
 
 fn unwrap<T, E: std::fmt::Display>(result: Result<T, E>) -> T {
@@ -186,6 +189,31 @@ async fn mcp_call_with_headers(
     (status, value)
 }
 
+async fn mcp_call_with_headers_and_response_headers(
+    app: &Router,
+    body: Value,
+    headers: &[(&str, &str)],
+) -> (StatusCode, http::HeaderMap, Value) {
+    let mut builder = Request::builder()
+        .method("POST")
+        .uri("/mcp")
+        .header("content-type", "application/json");
+    for (name, value) in headers {
+        builder = builder.header(*name, *value);
+    }
+    let request = unwrap(builder.body(Body::from(body.to_string())));
+    let response = unwrap(app.clone().oneshot(request).await);
+    let status = response.status();
+    let headers = response.headers().clone();
+    let bytes = unwrap(to_bytes(response.into_body(), 32 * 1024 * 1024).await);
+    let value: Value = if bytes.is_empty() {
+        Value::Null
+    } else {
+        unwrap(serde_json::from_slice(&bytes))
+    };
+    (status, headers, value)
+}
+
 #[test]
 fn tool_set_equals_spec_v1_operations() {
     let tools: BTreeSet<String> = beater_mcp::tool_names().into_iter().collect();
@@ -201,8 +229,14 @@ fn tool_set_equals_spec_v1_operations() {
         !tools.contains("help"),
         "the synthetic help tool must not appear in spec-coverage tool_names()"
     );
-    // Sanity: the spec covers 57 /v1 operations.
-    assert_eq!(tools.len(), 57, "expected 57 tools, got {}", tools.len());
+    // Sanity: the spec-derived tool count stays tied to the router contract.
+    assert_eq!(
+        tools.len(),
+        v1_route_count(),
+        "expected {} tools, got {}",
+        v1_route_count(),
+        tools.len()
+    );
 }
 
 #[tokio::test]
@@ -233,8 +267,14 @@ async fn initialize_and_tools_list_over_mcp_route() {
     .await;
     assert_eq!(status, StatusCode::OK);
     let tools = listed["result"]["tools"].as_array().expect("tools array");
-    // 57 spec-derived tools + the synthetic `help` meta tool.
-    assert_eq!(tools.len(), 58);
+    // Spec-derived tools + the synthetic `help` meta tool.
+    assert_eq!(tools.len(), v1_route_count() + 1);
+    let listed_bytes = serde_json::to_vec(&listed).expect("serialize tools/list response");
+    assert!(
+        listed_bytes.len() < 1_000_000,
+        "tools/list should stay small enough for MCP clients; got {} bytes",
+        listed_bytes.len()
+    );
     // Each tool has the required MCP shape.
     for tool in tools {
         assert!(tool["name"].is_string());
@@ -287,6 +327,44 @@ async fn initialize_and_tools_list_over_stdio_transport() {
         .as_array()
         .expect("tools/list result");
     assert_eq!(tools.len(), beater_mcp::tool_names().len() + 1);
+}
+
+#[tokio::test]
+async fn tools_call_over_stdio_transport() {
+    let (state, _tempdir) = build_state();
+    let input = [
+        json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {} }).to_string(),
+        json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "listTraces",
+                "arguments": {
+                    "tenant_id": "tenant-1",
+                    "project_id": "proj-1",
+                    "environment_id": "env-1"
+                }
+            }
+        })
+        .to_string(),
+    ]
+    .join("\n")
+        + "\n";
+    let mut output = Vec::new();
+
+    unwrap(beater_mcp::serve_stdio_streams(state, input.as_bytes(), &mut output).await);
+
+    let text = String::from_utf8(output).expect("stdio output is utf8");
+    let lines: Vec<Value> = text
+        .lines()
+        .map(|line| serde_json::from_str(line).expect("stdout line is JSON-RPC"))
+        .collect();
+    assert_eq!(lines.len(), 2);
+    assert_eq!(lines[1]["jsonrpc"], "2.0");
+    assert_eq!(lines[1]["id"], 2);
+    assert_eq!(lines[1]["result"]["isError"], false);
+    assert_eq!(lines[1]["result"]["_meta"]["httpStatus"], 200);
 }
 
 /// Parity: a `tools/call` returns the same JSON body as the equivalent direct
@@ -348,7 +426,7 @@ async fn tools_call_matches_direct_http_for_traces_list() {
 }
 
 #[tokio::test]
-async fn tools_call_forwards_strict_auth_scope_headers() {
+async fn tools_call_forwards_strict_auth_and_scope_headers() {
     let (state, _tempdir) = build_state();
     let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
     let created = unwrap(
@@ -377,11 +455,59 @@ async fn tools_call_forwards_strict_auth_scope_headers() {
     });
     let authorization = format!("Bearer {}", created.secret);
 
+    let scope_headers = [
+        ("x-beater-project-id", "proj-1"),
+        ("x-beater-environment-id", "env-1"),
+    ];
+
+    let (status, missing_credentials) =
+        mcp_call_with_headers(&app, call.clone(), &scope_headers).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(missing_credentials["error"], "unauthorized");
+
+    let (status, invalid_credentials) = mcp_call_with_headers(
+        &app,
+        call.clone(),
+        &[
+            ("authorization", "Bearer nope"),
+            ("x-beater-project-id", "proj-1"),
+            ("x-beater-environment-id", "env-1"),
+        ],
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(invalid_credentials["error"], "unauthorized");
+
     let (status, missing_scope) =
         mcp_call_with_headers(&app, call.clone(), &[("authorization", &authorization)]).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(missing_scope["result"]["isError"], true);
     assert_eq!(missing_scope["result"]["_meta"]["httpStatus"], 400);
+
+    let call_with_scope_args = json!({
+        "jsonrpc": "2.0",
+        "id": 8,
+        "method": "tools/call",
+        "params": {
+            "name": "getSpan",
+            "arguments": {
+                "tenant_id": "tenant-1",
+                "trace_id": "missing-trace",
+                "span_id": "missing-span",
+                "project_id": "proj-1",
+                "environment_id": "env-1"
+            }
+        }
+    });
+    let (status, authorized_from_args) = mcp_call_with_headers(
+        &app,
+        call_with_scope_args,
+        &[("authorization", &authorization)],
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(authorized_from_args["result"]["isError"], true);
+    assert_eq!(authorized_from_args["result"]["_meta"]["httpStatus"], 404);
 
     let (status, authorized) = mcp_call_with_headers(
         &app,
@@ -396,6 +522,189 @@ async fn tools_call_forwards_strict_auth_scope_headers() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(authorized["result"]["isError"], true);
     assert_eq!(authorized["result"]["_meta"]["httpStatus"], 404);
+}
+
+#[tokio::test]
+async fn oauth_tools_call_uses_token_scope_without_hidden_headers() {
+    let (state, _tempdir) = build_state();
+    let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
+    let oauth = Arc::new(unwrap(SqliteOAuthStore::in_memory()));
+    let issued = unwrap(
+        oauth
+            .issue_token_pair(
+                unwrap(OAuthClientId::new("client")),
+                unwrap(UserId::new("user")),
+                BTreeSet::from(["mcp:invoke".to_string(), "trace:read".to_string()]),
+                "https://app.example.test".to_string(),
+                TenantScope::new(
+                    unwrap(TenantId::new("tenant-1")),
+                    unwrap(ProjectId::new("proj-1")),
+                    unwrap(EnvironmentId::new("env-1")),
+                ),
+                unwrap(TokenFamilyId::new("family-1")),
+                true,
+                chrono::Utc::now(),
+            )
+            .await,
+    );
+    let state = state.require_auth(api_keys).with_oauth(
+        oauth,
+        Some("https://app.example.test/.well-known/oauth-protected-resource".to_string()),
+        "https://app.example.test".to_string(),
+    );
+    let app = beater_mcp::router(state);
+    let authorization = format!("Bearer {}", issued.access_token);
+
+    let (status, body) = mcp_call_with_headers(
+        &app,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 8,
+            "method": "tools/call",
+            "params": {
+                "name": "getSpan",
+                "arguments": {
+                    "tenant_id": "tenant-1",
+                    "trace_id": "missing-trace",
+                    "span_id": "missing-span"
+                }
+            }
+        }),
+        &[("authorization", &authorization)],
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body["result"]["_meta"]["httpStatus"], 404,
+        "OAuth token tenant scope should supply project/env context without hidden MCP headers"
+    );
+}
+
+#[tokio::test]
+async fn oauth_mcp_auth_failure_returns_discovery_challenge() {
+    let (state, _tempdir) = build_state();
+    let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
+    let oauth = Arc::new(unwrap(SqliteOAuthStore::in_memory()));
+    let state = state.require_auth(api_keys).with_oauth(
+        oauth,
+        Some("https://app.example.test/.well-known/oauth-protected-resource".to_string()),
+        "https://app.example.test".to_string(),
+    );
+    let app = beater_mcp::router(state);
+
+    let (status, headers, body) = mcp_call_with_headers_and_response_headers(
+        &app,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 8,
+            "method": "tools/call",
+            "params": {
+                "name": "getSpan",
+                "arguments": {
+                    "tenant_id": "tenant-1",
+                    "trace_id": "missing-trace",
+                    "span_id": "missing-span"
+                }
+            }
+        }),
+        &[
+            ("x-beater-project-id", "proj-1"),
+            ("x-beater-environment-id", "env-1"),
+        ],
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let challenge = headers
+        .get(http::header::WWW_AUTHENTICATE)
+        .and_then(|value| value.to_str().ok())
+        .expect("WWW-Authenticate challenge");
+    assert!(challenge.starts_with("Bearer "), "got {challenge}");
+    assert!(
+        challenge.contains(
+            r#"resource_metadata="https://app.example.test/.well-known/oauth-protected-resource""#
+        ),
+        "got {challenge}"
+    );
+    assert_eq!(body["error"], "unauthorized");
+    assert_eq!(
+        body["_meta"]["mcp/www_authenticate"][0], challenge,
+        "tool-result metadata should carry the same discovery challenge"
+    );
+    assert_eq!(body["isError"], true);
+}
+
+#[tokio::test]
+async fn oauth_mcp_initialize_without_credentials_returns_discovery_challenge() {
+    let (state, _tempdir) = build_state();
+    let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
+    let oauth = Arc::new(unwrap(SqliteOAuthStore::in_memory()));
+    let state = state.require_auth(api_keys).with_oauth(
+        oauth,
+        Some("https://app.example.test/.well-known/oauth-protected-resource".to_string()),
+        "https://app.example.test".to_string(),
+    );
+    let app = beater_mcp::router(state);
+
+    let (status, headers, body) = mcp_call_with_headers_and_response_headers(
+        &app,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "protocolVersion": "2025-06-18" }
+        }),
+        &[],
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let challenge = headers
+        .get(http::header::WWW_AUTHENTICATE)
+        .and_then(|value| value.to_str().ok())
+        .expect("WWW-Authenticate challenge");
+    assert!(
+        challenge.contains(
+            r#"resource_metadata="https://app.example.test/.well-known/oauth-protected-resource""#
+        ),
+        "got {challenge}"
+    );
+    assert_eq!(body["error"], "unauthorized");
+    assert_eq!(
+        body["_meta"]["mcp/www_authenticate"][0], challenge,
+        "initial POST should give clients the same OAuth discovery metadata as tool calls"
+    );
+}
+
+#[tokio::test]
+async fn get_mcp_with_oauth_returns_discovery_challenge() {
+    let (state, _tempdir) = build_state();
+    let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
+    let oauth = Arc::new(unwrap(SqliteOAuthStore::in_memory()));
+    let state = state.require_auth(api_keys).with_oauth(
+        oauth,
+        Some("https://app.example.test/.well-known/oauth-protected-resource".to_string()),
+        "https://app.example.test".to_string(),
+    );
+    let app = beater_mcp::router(state);
+    let response = unwrap(
+        app.oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/mcp")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await,
+    );
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    let challenge = response
+        .headers()
+        .get(http::header::WWW_AUTHENTICATE)
+        .and_then(|value| value.to_str().ok())
+        .expect("WWW-Authenticate challenge");
+    assert!(challenge.contains("resource_metadata="), "got {challenge}");
 }
 
 /// A 4xx from the underlying handler surfaces as `isError: true`.
@@ -495,8 +804,8 @@ async fn tools_list_exposes_output_schema_and_annotations() {
     let app = beater_mcp::router(state);
     let tools = list_tools(&app).await;
     let methods = spec_op_methods();
-    // 57 spec-derived tools + the synthetic `help` meta tool.
-    assert_eq!(tools.len(), 58);
+    // Spec-derived tools + the synthetic `help` meta tool.
+    assert_eq!(tools.len(), v1_route_count() + 1);
 
     // The six list endpoints return top-level JSON arrays, which MCP forbids as
     // structured output, so they advertise no outputSchema.
@@ -700,10 +1009,10 @@ async fn initialize_negotiates_protocol_version() {
     assert_eq!(bare["result"]["protocolVersion"], "2025-06-18");
 }
 
-/// `GET /mcp` is a static capability probe advertising the latest protocol
-/// version and server info.
+/// `GET /mcp` returns 405 because this server does not support server-initiated
+/// SSE streams on the Streamable HTTP endpoint.
 #[tokio::test]
-async fn get_mcp_probe_advertises_latest_version() {
+async fn get_mcp_without_sse_returns_method_not_allowed() {
     let (state, _tempdir) = build_state();
     let app = beater_mcp::router(state);
     let request = unwrap(
@@ -713,12 +1022,11 @@ async fn get_mcp_probe_advertises_latest_version() {
             .body(Body::empty()),
     );
     let response = unwrap(app.oneshot(request).await);
-    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+    assert_eq!(response.headers().get(http::header::ALLOW).unwrap(), "POST");
     let bytes = unwrap(to_bytes(response.into_body(), 1024 * 1024).await);
     let json: Value = unwrap(serde_json::from_slice(&bytes));
-    assert_eq!(json["protocolVersion"], "2025-06-18");
-    assert_eq!(json["serverInfo"]["name"], "beater-mcp");
-    assert!(json["capabilities"]["tools"].is_object());
+    assert_eq!(json["error"], "method_not_allowed");
 }
 
 /// A list endpoint that returns a top-level JSON array surfaces its body via the
@@ -816,11 +1124,13 @@ async fn help_overview_lists_every_spec_tool() {
     assert!(structured.is_object(), "structuredContent is an object");
     assert_eq!(structured["server"]["name"], "beater-mcp");
     assert_eq!(
-        structured["toolCount"], 57,
-        "overview covers all 57 spec tools"
+        structured["toolCount"],
+        json!(v1_route_count()),
+        "overview covers all {} spec tools",
+        v1_route_count()
     );
     let listed = structured["tools"].as_array().expect("tools array");
-    assert_eq!(listed.len(), 57);
+    assert_eq!(listed.len(), v1_route_count());
     // Each entry is a compact {name, method, description} summary.
     for entry in listed {
         assert!(entry["name"].is_string());

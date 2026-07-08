@@ -4,8 +4,8 @@ use beater_core::{
     Timestamp, TraceId,
 };
 use beater_schema::{
-    filter_run_summaries, roll_up_runs, AgentSpanKind, ArtifactRef, CanonicalTraceBatch, ModelRef,
-    RawEnvelope, RunFilter, RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck,
+    AgentSpanKind, ArtifactRef, CanonicalTraceBatch, ModelRef, RawEnvelope, RunFilter, RunSummary,
+    SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck, filter_run_summaries, roll_up_runs,
 };
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -239,7 +239,7 @@ pub fn finalize_run_aggregates(
     // `roll_up_runs` sorts most-recent-first by run start; backends return rows
     // pre-ordered by a first-appearance proxy so this stable sort reproduces the
     // reference tie-break for the common case of distinct run start times.
-    runs.sort_by(|left, right| right.started_at.cmp(&left.started_at));
+    runs.sort_by_key(|run| std::cmp::Reverse(run.started_at));
 
     // `filter.kind` is already applied above; clearing it lets the shared
     // run-level filter run with an empty span slice (it only consults spans for

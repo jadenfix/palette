@@ -54,6 +54,10 @@ case "$*" in
   "test -q -p beater-api --test openapi_coverage")
     exit "${BEATER_TEST_CARGO_TEST_RC:-0}"
     ;;
+  "run -q -p beater-api --example dump_openapi")
+    printf '{"openapi":"3.1.0"}\n'
+    exit "${BEATER_TEST_DUMP_OPENAPI_RC:-0}"
+    ;;
   "xtask regen-semconv")
     exit "${BEATER_TEST_REGEN_SEMCONV_RC:-0}"
     ;;
@@ -105,6 +109,13 @@ def run_contract_check(
         bin_dir = temp_dir / "bin"
         log = temp_dir / "calls.log"
         seed_fake_bin(bin_dir)
+        spec = temp_dir / "repo" / "sdks" / "openapi" / "beater-api.json"
+        dashboard = temp_dir / "repo" / "web" / "dashboard" / "openapi" / "beater-read-api.json"
+        spec.parent.mkdir(parents=True)
+        dashboard.parent.mkdir(parents=True)
+        snapshot = '{"openapi":"stale"}\n' if env and env.get("BEATER_TEST_STALE_OPENAPI_SNAPSHOT") else '{"openapi":"3.1.0"}\n'
+        spec.write_text(snapshot)
+        dashboard.write_text(snapshot)
 
         merged_env = os.environ.copy()
         merged_env.update(
@@ -133,11 +144,35 @@ def test_contract_check_warns_but_passes_when_local_docker_is_unavailable() -> N
 
     assert result.returncode == 0, result.stderr
     assert "WARN: docker unavailable -- skipping client regen check" in result.stderr
-    assert "No drift: API, 7 SDKs, MCP tools, docs, and conventions are all in sync." in result.stdout
+    assert (
+        "Partial local contract check passed: API, OpenAPI snapshots, MCP tools, docs, and conventions are in sync."
+        in result.stdout
+    )
+    assert (
+        "SDK client regeneration was not verified because Docker is unavailable; CI enforces it."
+        in result.stdout
+    )
+    assert "No drift: API, 7 SDKs" not in result.stdout
     assert "cargo:test -q -p beater-api --test openapi_coverage" in calls
+    assert "cargo:run -q -p beater-api --example dump_openapi" in calls
     assert "cargo:xtask regen-semconv" in calls
     assert "check-docs-walkthrough:--dry-run" in calls
     assert "regen-sdks:" not in calls
+
+
+def test_contract_check_fails_when_openapi_snapshot_is_stale() -> None:
+    result, calls = run_contract_check(
+        {
+            "BEATER_TEST_DOCKER_INFO_RC": "1",
+            "BEATER_TEST_STALE_OPENAPI_SNAPSHOT": "1",
+        }
+    )
+
+    assert result.returncode == 1
+    assert "sdks/openapi/beater-api.json is stale" in result.stderr
+    assert "web/dashboard/openapi/beater-read-api.json is stale" in result.stderr
+    assert "CONTRACT DRIFT DETECTED -- regenerate" in result.stderr
+    assert "cargo:run -q -p beater-api --example dump_openapi" in calls
 
 
 def test_contract_check_fails_when_sdk_regen_check_reports_drift() -> None:
@@ -150,7 +185,7 @@ def test_contract_check_fails_when_sdk_regen_check_reports_drift() -> None:
 
     assert result.returncode == 1
     assert "CONTRACT DRIFT DETECTED -- regenerate" in result.stderr
-    assert "==> 5/5 docs walkthrough references are current" in result.stdout
+    assert "==> 6/6 docs walkthrough references are current" in result.stdout
     assert "regen-sdks:--check" in calls
 
 
@@ -171,6 +206,7 @@ def test_contract_check_fails_when_semconv_snapshot_is_stale() -> None:
 def main() -> None:
     for test in (
         test_contract_check_warns_but_passes_when_local_docker_is_unavailable,
+        test_contract_check_fails_when_openapi_snapshot_is_stale,
         test_contract_check_fails_when_sdk_regen_check_reports_drift,
         test_contract_check_fails_when_semconv_snapshot_is_stale,
     ):

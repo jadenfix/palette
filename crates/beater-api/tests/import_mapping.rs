@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use axum::body::{to_bytes, Body};
-use beater_api::{router, ApiState};
+use axum::body::{Body, to_bytes};
+use beater_api::{ApiState, router};
 use beater_bus::InMemoryBus;
 use beater_core::{TenantId, TraceId};
 use beater_ingest::{IngestOutcome, IngestPolicy, IngestService};

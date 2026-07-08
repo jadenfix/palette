@@ -7,7 +7,7 @@
 //! `DeterministicWasi` evaluator lane relies on. The runtime additionally bounds
 //! execution with fuel and rejects components that try to import host functions.
 
-use beater_eval::{evaluate_deterministic, EvalError, EvaluationCase, EvaluatorSpec, ScoreResult};
+use beater_eval::{EvalError, EvaluationCase, EvaluatorSpec, ScoreResult, evaluate_deterministic};
 use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
 

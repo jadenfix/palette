@@ -10,7 +10,7 @@ use beater_judge::SqliteJudgeLedger;
 use beater_replay::SqliteReplayStore;
 use beater_secrets::{EncryptedSqliteProviderSecretStore, SecretKeyring};
 use beater_store_sql::{
-    migrate_local_beaterd_sqlite, SqliteMetadataStore, SqliteQuotaLimiter, SqliteTraceStore,
+    SqliteMetadataStore, SqliteQuotaLimiter, SqliteTraceStore, migrate_local_beaterd_sqlite,
 };
 use beater_usage::SqliteUsageLedger;
 

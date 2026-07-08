@@ -1,18 +1,18 @@
 use beater_bus::{BusError, BusMessage, DeadLetter, DurableBus, PublishAck};
 use beater_core::{
-    sha256_hex, Clock, EnvironmentId, IdempotencyKey, Money, ProjectId, Sha256Hash, SpanId,
-    SystemClock, TenantId, TenantScope, Timestamp, TokenCounts, TraceId,
+    Clock, EnvironmentId, IdempotencyKey, Money, ProjectId, Sha256Hash, SpanId, SystemClock,
+    TenantId, TenantScope, Timestamp, TokenCounts, TraceId, sha256_hex,
 };
 use beater_schema::{
-    make_idempotency_key, AgentSpanKind, ArtifactRef, AuthContext, CanonicalAttrs, CanonicalSpan,
-    CanonicalTraceBatch, ModelRef, RawEnvelope, RedactionClass, SourceDialect, SpanStatus,
-    TraceCompletionState, WriteAck, CANONICAL_SCHEMA_VERSION, RAW_SCHEMA_VERSION,
+    AgentSpanKind, ArtifactRef, AuthContext, CANONICAL_SCHEMA_VERSION, CanonicalAttrs,
+    CanonicalSpan, CanonicalTraceBatch, ModelRef, RAW_SCHEMA_VERSION, RawEnvelope, RedactionClass,
+    SourceDialect, SpanStatus, TraceCompletionState, WriteAck, make_idempotency_key,
 };
 use beater_store::{ArtifactStore, QuotaLimiter, QuotaReservationRequest, StoreError, TraceStore};
 use beater_store_memory::InMemoryQuotaLimiter;
 use chrono::{DateTime, Duration, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 use std::sync::Arc;
@@ -1134,15 +1134,15 @@ impl IngestService {
             .await?;
 
         let mut canonical_attrs = attributes;
-        if input_ref.is_none() {
-            if let Some(input) = request.input.clone() {
-                canonical_attrs.insert("input.value".to_string(), input);
-            }
+        if input_ref.is_none()
+            && let Some(input) = request.input.clone()
+        {
+            canonical_attrs.insert("input.value".to_string(), input);
         }
-        if output_ref.is_none() {
-            if let Some(output) = request.output.clone() {
-                canonical_attrs.insert("output.value".to_string(), output);
-            }
+        if output_ref.is_none()
+            && let Some(output) = request.output.clone()
+        {
+            canonical_attrs.insert("output.value".to_string(), output);
         }
 
         let span = CanonicalSpan {
@@ -1255,15 +1255,15 @@ impl IngestService {
                 )
                 .await?;
             let mut canonical_attrs = attributes;
-            if input_ref.is_none() {
-                if let Some(input) = draft.input.clone() {
-                    canonical_attrs.insert("input.value".to_string(), input);
-                }
+            if input_ref.is_none()
+                && let Some(input) = draft.input.clone()
+            {
+                canonical_attrs.insert("input.value".to_string(), input);
             }
-            if output_ref.is_none() {
-                if let Some(output) = draft.output.clone() {
-                    canonical_attrs.insert("output.value".to_string(), output);
-                }
+            if output_ref.is_none()
+                && let Some(output) = draft.output.clone()
+            {
+                canonical_attrs.insert("output.value".to_string(), output);
             }
 
             let span = CanonicalSpan {
@@ -1577,11 +1577,11 @@ impl IngestService {
                 dropped.insert(key, json!("[redacted]"));
                 continue;
             }
-            if let Some(allowed) = &self.policy.allowed_attributes {
-                if !allowed.contains(&key) {
-                    dropped.insert(key, json!("[redacted]"));
-                    continue;
-                }
+            if let Some(allowed) = &self.policy.allowed_attributes
+                && !allowed.contains(&key)
+            {
+                dropped.insert(key, json!("[redacted]"));
+                continue;
             }
             if !canonical_mapping::maps_to_canonical(&key) {
                 unmapped.insert(key.clone(), value.clone());
@@ -2771,9 +2771,11 @@ mod tests {
             .await
             .err()
             .unwrap_or_else(|| panic!("direct ingest should report missing downstream durability"));
-        assert!(error
-            .to_string()
-            .contains("simulated trace.write_batch publish outage"));
+        assert!(
+            error
+                .to_string()
+                .contains("simulated trace.write_batch publish outage")
+        );
         assert_eq!(bus.depth_for_kind(TRACE_WRITE_BATCH_KIND).await, Ok(0));
         assert_eq!(bus.depth_for_kind(TRACE_INGESTED_KIND).await, Ok(0));
         let trace = traces
@@ -3501,9 +3503,11 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(status.trace_ingested_depth, 0);
         assert_eq!(status.dead_letters.len(), 1);
-        assert!(status.dead_letters[0]
-            .reason
-            .contains("simulated downstream outage after consumer restart"));
+        assert!(
+            status.dead_letters[0]
+                .reason
+                .contains("simulated downstream outage after consumer restart")
+        );
         let message_id = status.dead_letters[0].message.message_id.clone();
 
         let replay = restarted

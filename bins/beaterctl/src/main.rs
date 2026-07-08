@@ -1,46 +1,46 @@
 use anyhow::Context;
 use beater_alerts::{
-    decide_trace_sampling, AlertEngine, AlertInput, AlertLinks, AlertPolicy, AlertSeverity,
-    OnlineSamplingPolicy,
+    AlertEngine, AlertInput, AlertLinks, AlertPolicy, AlertSeverity, OnlineSamplingPolicy,
+    decide_trace_sampling,
 };
 use beater_api::openapi::urlencode;
 use beater_audit::{
-    pii_unmask_event, AuditOutcome, AuditStore, PiiUnmaskAuditInput, SqliteAuditStore,
+    AuditOutcome, AuditStore, PiiUnmaskAuditInput, SqliteAuditStore, pii_unmask_event,
 };
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, SqliteApiKeyStore};
 use beater_bus::{BusMessage, DurableBus, SqliteDurableBus};
 use beater_calibration::{
-    calibrate_eval_report, CalibrationPolicy, CalibrationStore, SqliteCalibrationStore,
+    CalibrationPolicy, CalibrationStore, SqliteCalibrationStore, calibrate_eval_report,
 };
 use beater_core::{
-    lower_hex, AgentReleaseId, AnnotationId, ApiKeyId, DatasetId, DatasetVersionId, EnvironmentId,
+    AgentReleaseId, AnnotationId, ApiKeyId, DatasetId, DatasetVersionId, EnvironmentId,
     EvaluatorVersionId, ExperimentRunId, GateId, IdempotencyKey, Money, Page, PageRequest,
     ProjectId, ProviderSecretId, ReviewQueueId, ReviewTaskId, SpanId, TenantId, TenantScope,
-    TraceId,
+    TraceId, lower_hex,
 };
 use beater_datasets::{
-    evaluate_dataset_version, evaluate_dataset_version_with_judge, promote_trace_span_to_case,
     DatasetCase, DatasetEvalSpec, DatasetJudgeEvalSpec, DatasetStore, SqliteDatasetStore,
+    evaluate_dataset_version, evaluate_dataset_version_with_judge, promote_trace_span_to_case,
 };
 use beater_eval::{
-    compare_paired_scores, EvaluationCase, EvaluatorKind, EvaluatorSpec, ExperimentComparison,
-    GateDecision, GatePolicy, StatisticalTest,
+    EvaluationCase, EvaluatorKind, EvaluatorSpec, ExperimentComparison, GateDecision, GatePolicy,
+    StatisticalTest, compare_paired_scores,
 };
 use beater_experiments::{
-    run_agent_experiment, run_deterministic_experiment, run_judge_experiment,
-    run_optimization_round, AgentExperimentSpec, CandidateChange, CandidateEvaluator,
-    CaseOutputOverride, CaseScore, ExperimentRunReport, ExperimentRunSpec, ExperimentStore,
-    FailureExample, JudgeExperimentRunSpec, OptimizationRoundConfig, OptimizerStrategy,
-    ReferenceAgentAdapter, Split, SqliteExperimentStore, StaticAgentAdapter,
+    AgentExperimentSpec, CandidateChange, CandidateEvaluator, CaseOutputOverride, CaseScore,
+    ExperimentRunReport, ExperimentRunSpec, ExperimentStore, FailureExample,
+    JudgeExperimentRunSpec, OptimizationRoundConfig, OptimizerStrategy, ReferenceAgentAdapter,
+    Split, SqliteExperimentStore, StaticAgentAdapter, run_agent_experiment,
+    run_deterministic_experiment, run_judge_experiment, run_optimization_round,
 };
-use beater_gates::{run_gate, GateDefinition, GateStore, InconclusivePolicy, SqliteGateStore};
+use beater_gates::{GateDefinition, GateStore, InconclusivePolicy, SqliteGateStore, run_gate};
 use beater_human::{
-    promote_review_annotation_to_dataset_case, CreateReviewQueueRequest, EnqueueReviewTaskRequest,
-    HumanReviewStore, ReviewVerdict, SqliteHumanReviewStore, SubmitAnnotationRequest,
+    CreateReviewQueueRequest, EnqueueReviewTaskRequest, HumanReviewStore, ReviewVerdict,
+    SqliteHumanReviewStore, SubmitAnnotationRequest, promote_review_annotation_to_dataset_case,
 };
 use beater_ingest::{
-    anonymous_auth_context, smoke_trace, IngestPolicy, IngestService, NativeIngestRequest,
-    TRACE_WRITE_BATCH_KIND,
+    IngestPolicy, IngestService, NativeIngestRequest, TRACE_WRITE_BATCH_KIND,
+    anonymous_auth_context, smoke_trace,
 };
 use beater_judge::{
     AnthropicJudgeProvider, GenerationRequest, GenerationResponse, HttpJudgeProviderConfig,
@@ -49,7 +49,7 @@ use beater_judge::{
 };
 use beater_otlp::{encode_export_trace_request, export_to_raw_trace_ingest_request};
 use beater_replay::{
-    execute_replay, ReplayEvent, ReplayEventKind, ReplayScenario, ReplayStep, SqliteReplayStore,
+    ReplayEvent, ReplayEventKind, ReplayScenario, ReplayStep, SqliteReplayStore, execute_replay,
 };
 use beater_schema::{
     AgentSpanKind, CanonicalAttrs, CanonicalTraceBatch, EvaluatorLane, RawEnvelope, RedactionClass,
@@ -64,25 +64,25 @@ use beater_store::{StoreError, TraceStore};
 use beater_store_obj::FsArtifactStore;
 use beater_store_sql::SqliteTraceStore;
 use beater_usage::{
-    judge_usage_from_outcome, record_usage_batch, SqliteUsageLedger, UsageLedgerStore, UsageMeter,
+    SqliteUsageLedger, UsageLedgerStore, UsageMeter, judge_usage_from_outcome, record_usage_batch,
 };
 use chrono::Utc;
 use clap::{Parser, Subcommand, ValueEnum};
 use opentelemetry_proto::tonic::collector::trace::v1::{
-    trace_service_client::TraceServiceClient, ExportTraceServiceRequest,
+    ExportTraceServiceRequest, trace_service_client::TraceServiceClient,
 };
-use opentelemetry_proto::tonic::common::v1::{any_value, AnyValue, InstrumentationScope, KeyValue};
+use opentelemetry_proto::tonic::common::v1::{AnyValue, InstrumentationScope, KeyValue, any_value};
 use opentelemetry_proto::tonic::resource::v1::Resource;
 use opentelemetry_proto::tonic::trace::v1::{
-    span, status, ResourceSpans, ScopeSpans, Span, Status,
+    ResourceSpans, ScopeSpans, Span, Status, span, status,
 };
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
-use tonic::metadata::MetadataValue;
 use tonic::Request as TonicRequest;
+use tonic::metadata::MetadataValue;
 
 #[derive(Debug, Parser)]
 #[command(name = "beaterctl", about = "Beater local development and CI helper")]
@@ -2657,11 +2657,11 @@ fn fill_path_template(
     }
 
     // Any remaining `{...}` placeholder means a required path param was missing.
-    if let Some(start) = path.find('{') {
-        if let Some(end) = path[start..].find('}') {
-            let missing = &path[start + 1..start + end];
-            anyhow::bail!("missing --param `{missing}` for path parameter in `{path_template}`");
-        }
+    if let Some(start) = path.find('{')
+        && let Some(end) = path[start..].find('}')
+    {
+        let missing = &path[start + 1..start + end];
+        anyhow::bail!("missing --param `{missing}` for path parameter in `{path_template}`");
     }
 
     Ok((path, leftover))
@@ -3145,11 +3145,7 @@ fn token_match_score(answer: &str, expected: &str) -> f64 {
     let matched = answer_tokens
         .windows(expected_tokens.len())
         .any(|window| window == expected_tokens.as_slice());
-    if matched {
-        1.0
-    } else {
-        0.0
-    }
+    if matched { 1.0 } else { 0.0 }
 }
 
 /// A live [`CandidateEvaluator`] that closes the "synthetic scores" gap: for each

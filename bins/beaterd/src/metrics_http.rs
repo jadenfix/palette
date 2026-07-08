@@ -4,13 +4,13 @@
 //! This is a Prometheus exposition endpoint, NOT part of the typed `/v1` OpenAPI
 //! contract, so it is intentionally registered outside `beater_api::router`.
 
+use axum::Router;
 use axum::body::Body;
 use axum::extract::{MatchedPath, Request, State};
-use axum::http::{header, StatusCode};
+use axum::http::{StatusCode, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use axum::Router;
 
 use crate::metrics::{Metrics, Stopwatch};
 

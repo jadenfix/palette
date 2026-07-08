@@ -18,10 +18,10 @@
 //! - All token secrets are stored only as SHA-256 hashes and compared in
 //!   constant time; the plaintext is shown once at mint time.
 
-use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use beater_core::{
     AccessTokenId, AuthCodeId, OAuthClientId, RefreshTokenId, TenantScope, Timestamp,
     TokenFamilyId, UserId,
@@ -30,7 +30,7 @@ use beater_store::StoreError;
 use chrono::{DateTime, Duration, Utc};
 use http::Uri;
 use rand_core::{OsRng, RngCore};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
@@ -236,6 +236,8 @@ pub struct AuthorizationCode {
     pub user_id: UserId,
     pub redirect_uri: String,
     pub scope: BTreeSet<String>,
+    /// OAuth resource indicator / intended audience.
+    pub resource: String,
     /// Tenant/project/environment this authorization is bound to (chosen at
     /// `/authorize`). Tokens minted from this code inherit it.
     pub tenant_scope: TenantScope,
@@ -255,6 +257,8 @@ pub struct AuthorizationGrant {
     pub user_id: UserId,
     pub redirect_uri: String,
     pub scope: BTreeSet<String>,
+    /// OAuth resource indicator / intended audience.
+    pub resource: String,
     /// The tenant/project/environment the user selected at `/authorize`.
     pub tenant_scope: TenantScope,
     pub code_challenge: String,
@@ -267,6 +271,8 @@ pub struct AccessToken {
     pub client_id: OAuthClientId,
     pub user_id: UserId,
     pub scope: BTreeSet<String>,
+    /// OAuth resource indicator / intended audience.
+    pub resource: String,
     /// Tenant/project/environment the token is authorized for.
     pub tenant_scope: TenantScope,
     /// Lineage shared with the refresh token that minted it, so a detected
@@ -285,6 +291,8 @@ pub struct RefreshToken {
     pub client_id: OAuthClientId,
     pub user_id: UserId,
     pub scope: BTreeSet<String>,
+    /// OAuth resource indicator / intended audience.
+    pub resource: String,
     /// Tenant/project/environment the token is authorized for.
     pub tenant_scope: TenantScope,
     /// Rotation lineage. All tokens minted from the same original authorization
@@ -303,6 +311,8 @@ pub struct AccessTokenClaims {
     pub client_id: OAuthClientId,
     pub user_id: UserId,
     pub scope: BTreeSet<String>,
+    /// OAuth resource indicator / intended audience.
+    pub resource: String,
     /// Tenant/project/environment the token is authorized for — a resource
     /// server MUST check this against the resource it is protecting.
     pub tenant_scope: TenantScope,
@@ -313,10 +323,11 @@ pub struct AccessTokenClaims {
 #[derive(Clone)]
 pub struct IssuedTokens {
     pub access_token: String,
-    pub refresh_token: String,
+    pub refresh_token: Option<String>,
     pub token_type: &'static str,
     pub expires_in: i64,
     pub scope: BTreeSet<String>,
+    pub resource: String,
 }
 
 fn redacted_option(value: &Option<String>) -> Option<&'static str> {
@@ -526,6 +537,7 @@ where
 /// [`OAuthStore::validate_access_token`], [`OAuthStore::refresh`]) are default
 /// methods built on top of it.
 #[async_trait::async_trait]
+#[allow(clippy::too_many_arguments)]
 pub trait OAuthStore: Send + Sync {
     async fn put_client(&self, client: OAuthClient) -> Result<()>;
     async fn get_client(&self, client_id: &OAuthClientId) -> Result<Option<OAuthClient>>;
@@ -559,6 +571,12 @@ pub trait OAuthStore: Send + Sync {
         }
         for redirect_uri in &registration.redirect_uris {
             validate_redirect_uri(redirect_uri)?;
+        }
+        if !registration
+            .grant_types
+            .contains(&GrantType::AuthorizationCode)
+        {
+            return Err(OAuthError::UnauthorizedClient);
         }
         let client_id = new_uuid_id(OAuthClientId::new);
         let (client_secret, client_secret_hash) =
@@ -621,6 +639,9 @@ pub trait OAuthStore: Send + Sync {
                 "redirect_uri not registered for client".to_string(),
             ));
         }
+        if !client.grant_types.contains(&GrantType::AuthorizationCode) {
+            return Err(OAuthError::UnauthorizedClient);
+        }
         validate_redirect_uri(&grant.redirect_uri)?;
         if !is_valid_code_challenge(&grant.code_challenge) {
             return Err(OAuthError::InvalidRequest(
@@ -638,6 +659,7 @@ pub trait OAuthStore: Send + Sync {
             user_id: grant.user_id,
             redirect_uri: grant.redirect_uri,
             scope: grant.scope,
+            resource: grant.resource,
             tenant_scope: grant.tenant_scope,
             code_challenge: grant.code_challenge,
             secret_hash,
@@ -660,11 +682,16 @@ pub trait OAuthStore: Send + Sync {
         code: &str,
         redirect_uri: &str,
         code_verifier: &str,
+        resource: &str,
         now: Timestamp,
     ) -> Result<IssuedTokens> {
         // Confidential-client authentication at the token endpoint (RFC 6749
         // §4.1.3 / OAuth 2.1). Returns invalid_client on failure.
-        self.authenticate_client(client_id, client_secret).await?;
+        let client = self.authenticate_client(client_id, client_secret).await?;
+        if !client.grant_types.contains(&GrantType::AuthorizationCode) {
+            return Err(OAuthError::UnauthorizedClient);
+        }
+        let issue_refresh_token = client.grant_types.contains(&GrantType::RefreshToken);
 
         let (code_id_str, secret) =
             parse_token(AUTH_CODE_PREFIX, code).ok_or(OAuthError::InvalidGrant)?;
@@ -678,6 +705,7 @@ pub trait OAuthStore: Send + Sync {
         if !secret_matches(&record.secret_hash, secret)
             || record.client_id.as_str() != client_id.as_str()
             || record.redirect_uri != redirect_uri
+            || record.resource != resource
             || record.consumed
             || now >= record.expires_at
         {
@@ -696,8 +724,10 @@ pub trait OAuthStore: Send + Sync {
             record.client_id,
             record.user_id,
             record.scope,
+            record.resource,
             record.tenant_scope,
             family_id,
+            issue_refresh_token,
             now,
         )
         .await
@@ -727,6 +757,7 @@ pub trait OAuthStore: Send + Sync {
             client_id: record.client_id,
             user_id: record.user_id,
             scope: record.scope,
+            resource: record.resource,
             tenant_scope: record.tenant_scope,
             expires_at: record.expires_at,
         })
@@ -742,9 +773,13 @@ pub trait OAuthStore: Send + Sync {
         client_id: &OAuthClientId,
         client_secret: Option<&str>,
         refresh_token: &str,
+        resource: &str,
         now: Timestamp,
     ) -> Result<IssuedTokens> {
-        self.authenticate_client(client_id, client_secret).await?;
+        let client = self.authenticate_client(client_id, client_secret).await?;
+        if !client.grant_types.contains(&GrantType::RefreshToken) {
+            return Err(OAuthError::UnauthorizedClient);
+        }
 
         let (id_str, secret) =
             parse_token(REFRESH_TOKEN_PREFIX, refresh_token).ok_or(OAuthError::InvalidGrant)?;
@@ -756,6 +791,7 @@ pub trait OAuthStore: Send + Sync {
         // Wrong secret, wrong client, or expired: reject without a family signal.
         if !secret_matches(&record.secret_hash, secret)
             || record.client_id.as_str() != client_id.as_str()
+            || record.resource != resource
             || now >= record.expires_at
         {
             return Err(OAuthError::InvalidGrant);
@@ -773,8 +809,10 @@ pub trait OAuthStore: Send + Sync {
             record.client_id,
             record.user_id,
             record.scope,
+            record.resource,
             record.tenant_scope,
             record.family_id,
+            true,
             now,
         )
         .await
@@ -787,8 +825,10 @@ pub trait OAuthStore: Send + Sync {
         client_id: OAuthClientId,
         user_id: UserId,
         scope: BTreeSet<String>,
+        resource: String,
         tenant_scope: TenantScope,
         family_id: TokenFamilyId,
+        issue_refresh_token: bool,
         now: Timestamp,
     ) -> Result<IssuedTokens> {
         let access_id = new_uuid_id(AccessTokenId::new);
@@ -799,6 +839,7 @@ pub trait OAuthStore: Send + Sync {
             client_id: client_id.clone(),
             user_id: user_id.clone(),
             scope: scope.clone(),
+            resource: resource.clone(),
             tenant_scope: tenant_scope.clone(),
             family_id: family_id.clone(),
             secret_hash: access_hash,
@@ -807,20 +848,27 @@ pub trait OAuthStore: Send + Sync {
         })
         .await?;
 
-        let refresh_id = new_uuid_id(RefreshTokenId::new);
-        let (refresh_token, refresh_hash) = mint_token(REFRESH_TOKEN_PREFIX, refresh_id.as_str());
-        self.put_refresh_token(RefreshToken {
-            token_id: refresh_id,
-            client_id,
-            user_id,
-            scope: scope.clone(),
-            tenant_scope,
-            family_id,
-            secret_hash: refresh_hash,
-            expires_at: now + refresh_token_ttl(),
-            revoked: false,
-        })
-        .await?;
+        let refresh_token = if issue_refresh_token {
+            let refresh_id = new_uuid_id(RefreshTokenId::new);
+            let (refresh_token, refresh_hash) =
+                mint_token(REFRESH_TOKEN_PREFIX, refresh_id.as_str());
+            self.put_refresh_token(RefreshToken {
+                token_id: refresh_id,
+                client_id,
+                user_id,
+                scope: scope.clone(),
+                resource: resource.clone(),
+                tenant_scope,
+                family_id,
+                secret_hash: refresh_hash,
+                expires_at: now + refresh_token_ttl(),
+                revoked: false,
+            })
+            .await?;
+            Some(refresh_token)
+        } else {
+            None
+        };
 
         Ok(IssuedTokens {
             access_token,
@@ -828,6 +876,7 @@ pub trait OAuthStore: Send + Sync {
             token_type: "Bearer",
             expires_in: access_token_ttl().num_seconds(),
             scope,
+            resource,
         })
     }
 }
@@ -883,6 +932,7 @@ impl SqliteOAuthStore {
                 user_id TEXT NOT NULL,
                 redirect_uri TEXT NOT NULL,
                 scope TEXT NOT NULL,
+                resource TEXT NOT NULL DEFAULT '',
                 tenant_scope TEXT NOT NULL,
                 code_challenge TEXT NOT NULL,
                 secret_hash TEXT NOT NULL,
@@ -895,6 +945,7 @@ impl SqliteOAuthStore {
                 client_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
                 scope TEXT NOT NULL,
+                resource TEXT NOT NULL DEFAULT '',
                 tenant_scope TEXT NOT NULL,
                 family_id TEXT NOT NULL,
                 secret_hash TEXT NOT NULL,
@@ -908,6 +959,7 @@ impl SqliteOAuthStore {
                 client_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
                 scope TEXT NOT NULL,
+                resource TEXT NOT NULL DEFAULT '',
                 tenant_scope TEXT NOT NULL,
                 family_id TEXT NOT NULL,
                 secret_hash TEXT NOT NULL,
@@ -917,6 +969,18 @@ impl SqliteOAuthStore {
             CREATE INDEX IF NOT EXISTS idx_refresh_family ON oauth_refresh_tokens(family_id);
             "#,
         )?;
+        for statement in [
+            "ALTER TABLE oauth_codes ADD COLUMN resource TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE oauth_access_tokens ADD COLUMN resource TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE oauth_refresh_tokens ADD COLUMN resource TEXT NOT NULL DEFAULT ''",
+        ] {
+            if let Err(err) = connection.execute(statement, []) {
+                let already_exists = err.to_string().contains("duplicate column name");
+                if !already_exists {
+                    return Err(anyhow::anyhow!("{err}"));
+                }
+            }
+        }
         Ok(())
     }
 
@@ -991,9 +1055,9 @@ impl OAuthStore for SqliteOAuthStore {
             .execute(
                 r#"
                 INSERT INTO oauth_codes
-                  (code_id, client_id, user_id, redirect_uri, scope, tenant_scope, code_challenge,
-                   secret_hash, expires_at, consumed)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+                  (code_id, client_id, user_id, redirect_uri, scope, resource, tenant_scope,
+                   code_challenge, secret_hash, expires_at, consumed)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
                 "#,
                 params![
                     code.code_id.as_str(),
@@ -1001,6 +1065,7 @@ impl OAuthStore for SqliteOAuthStore {
                     code.user_id.as_str(),
                     code.redirect_uri,
                     encode_set(&code.scope)?,
+                    code.resource,
                     encode_set(&code.tenant_scope)?,
                     code.code_challenge,
                     code.secret_hash,
@@ -1017,7 +1082,7 @@ impl OAuthStore for SqliteOAuthStore {
         connection
             .query_row(
                 "SELECT code_id, client_id, user_id, redirect_uri, scope, tenant_scope, \
-                 code_challenge, secret_hash, expires_at, consumed FROM oauth_codes WHERE code_id = ?1",
+                 code_challenge, secret_hash, expires_at, consumed, resource FROM oauth_codes WHERE code_id = ?1",
                 params![code_id.as_str()],
                 decode_code,
             )
@@ -1043,15 +1108,16 @@ impl OAuthStore for SqliteOAuthStore {
             .execute(
                 r#"
                 INSERT INTO oauth_access_tokens
-                  (token_id, client_id, user_id, scope, tenant_scope, family_id, secret_hash,
-                   expires_at, revoked)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+                  (token_id, client_id, user_id, scope, resource, tenant_scope, family_id,
+                   secret_hash, expires_at, revoked)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
                 "#,
                 params![
                     token.token_id.as_str(),
                     token.client_id.as_str(),
                     token.user_id.as_str(),
                     encode_set(&token.scope)?,
+                    token.resource,
                     encode_set(&token.tenant_scope)?,
                     token.family_id.as_str(),
                     token.secret_hash,
@@ -1068,7 +1134,7 @@ impl OAuthStore for SqliteOAuthStore {
         connection
             .query_row(
                 "SELECT token_id, client_id, user_id, scope, tenant_scope, family_id, secret_hash, \
-                 expires_at, revoked FROM oauth_access_tokens WHERE token_id = ?1",
+                 expires_at, revoked, resource FROM oauth_access_tokens WHERE token_id = ?1",
                 params![token_id.as_str()],
                 decode_access_token,
             )
@@ -1094,15 +1160,16 @@ impl OAuthStore for SqliteOAuthStore {
             .execute(
                 r#"
                 INSERT INTO oauth_refresh_tokens
-                  (token_id, client_id, user_id, scope, tenant_scope, family_id, secret_hash,
-                   expires_at, revoked)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+                  (token_id, client_id, user_id, scope, resource, tenant_scope, family_id,
+                   secret_hash, expires_at, revoked)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
                 "#,
                 params![
                     token.token_id.as_str(),
                     token.client_id.as_str(),
                     token.user_id.as_str(),
                     encode_set(&token.scope)?,
+                    token.resource,
                     encode_set(&token.tenant_scope)?,
                     token.family_id.as_str(),
                     token.secret_hash,
@@ -1119,7 +1186,7 @@ impl OAuthStore for SqliteOAuthStore {
         connection
             .query_row(
                 "SELECT token_id, client_id, user_id, scope, tenant_scope, family_id, secret_hash, \
-                 expires_at, revoked FROM oauth_refresh_tokens WHERE token_id = ?1",
+                 expires_at, revoked, resource FROM oauth_refresh_tokens WHERE token_id = ?1",
                 params![token_id.as_str()],
                 decode_refresh_token,
             )
@@ -1192,6 +1259,7 @@ fn decode_code(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Authorization
     let secret_hash = row.get::<_, String>(7)?;
     let expires_at = row.get::<_, String>(8)?;
     let consumed = row.get::<_, i64>(9)? != 0;
+    let resource = row.get::<_, String>(10)?;
     Ok((|| {
         Ok(AuthorizationCode {
             code_id: AuthCodeId::new(code_id)
@@ -1202,6 +1270,7 @@ fn decode_code(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Authorization
                 .map_err(|err| backend(format!("decode code user id: {err}")))?,
             redirect_uri,
             scope: decode_set(&scope)?,
+            resource,
             tenant_scope: decode_set(&tenant_scope)?,
             code_challenge,
             secret_hash,
@@ -1221,6 +1290,7 @@ fn decode_access_token(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Acces
     let secret_hash = row.get::<_, String>(6)?;
     let expires_at = row.get::<_, String>(7)?;
     let revoked = row.get::<_, i64>(8)? != 0;
+    let resource = row.get::<_, String>(9)?;
     Ok((|| {
         Ok(AccessToken {
             token_id: AccessTokenId::new(token_id)
@@ -1230,6 +1300,7 @@ fn decode_access_token(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Acces
             user_id: UserId::new(user_id)
                 .map_err(|err| backend(format!("decode access user id: {err}")))?,
             scope: decode_set(&scope)?,
+            resource,
             tenant_scope: decode_set(&tenant_scope)?,
             family_id: TokenFamilyId::new(family_id)
                 .map_err(|err| backend(format!("decode access family id: {err}")))?,
@@ -1250,6 +1321,7 @@ fn decode_refresh_token(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Refr
     let secret_hash = row.get::<_, String>(6)?;
     let expires_at = row.get::<_, String>(7)?;
     let revoked = row.get::<_, i64>(8)? != 0;
+    let resource = row.get::<_, String>(9)?;
     Ok((|| {
         Ok(RefreshToken {
             token_id: RefreshTokenId::new(token_id)
@@ -1259,6 +1331,7 @@ fn decode_refresh_token(row: &rusqlite::Row<'_>) -> rusqlite::Result<Result<Refr
             user_id: UserId::new(user_id)
                 .map_err(|err| backend(format!("decode refresh user id: {err}")))?,
             scope: decode_set(&scope)?,
+            resource,
             tenant_scope: decode_set(&tenant_scope)?,
             family_id: TokenFamilyId::new(family_id)
                 .map_err(|err| backend(format!("decode refresh family id: {err}")))?,
@@ -1336,6 +1409,7 @@ mod tests {
                     user_id: ok(UserId::new("user-1")),
                     redirect_uri: "https://app.example.com/cb".to_string(),
                     scope: BTreeSet::from(["traces:read".to_string()]),
+                    resource: "https://api.example.com".to_string(),
                     tenant_scope: test_tenant_scope(),
                     code_challenge: challenge.to_string(),
                 },
@@ -1424,6 +1498,7 @@ mod tests {
                         user_id: ok(UserId::new("user-1")),
                         redirect_uri: "http://app.example.com/cb".to_string(),
                         scope: BTreeSet::from(["traces:read".to_string()]),
+                        resource: "https://api.example.com".to_string(),
                         tenant_scope: test_tenant_scope(),
                         code_challenge: challenge_for(VERIFIER),
                     },
@@ -1455,18 +1530,66 @@ mod tests {
                 &code,
                 "https://app.example.com/cb",
                 VERIFIER,
+                "https://api.example.com",
                 now,
             )
             .await);
         assert_eq!(tokens.token_type, "Bearer");
         assert!(tokens.access_token.starts_with("bao_"));
-        assert!(tokens.refresh_token.starts_with("bro_"));
+        assert!(
+            tokens
+                .refresh_token
+                .as_deref()
+                .is_some_and(|token| token.starts_with("bro_"))
+        );
 
         let claims = ok(store.validate_access_token(&tokens.access_token, now).await);
         assert_eq!(claims.user_id.as_str(), "user-1");
         assert!(claims.scope.contains("traces:read"));
         // The tenant scope chosen at authorize-time rides through to the token.
         assert_eq!(claims.tenant_scope, test_tenant_scope());
+    }
+
+    #[tokio::test]
+    async fn auth_code_only_client_receives_no_refresh_token() {
+        let store = store();
+        let now = Utc::now();
+        let mut registration = public_client_registration();
+        registration.grant_types = BTreeSet::from([GrantType::AuthorizationCode]);
+        let registered = ok(store.register_client(registration, now).await);
+        let client_id = registered.client.client_id.clone();
+        let code = issue_code(&store, &client_id, &challenge_for(VERIFIER), now).await;
+
+        let tokens = ok(store
+            .exchange_code(
+                &client_id,
+                None,
+                &code,
+                "https://app.example.com/cb",
+                VERIFIER,
+                "https://api.example.com",
+                now,
+            )
+            .await);
+
+        assert!(tokens.access_token.starts_with("bao_"));
+        assert!(
+            tokens.refresh_token.is_none(),
+            "clients that do not register refresh_token must not receive one"
+        );
+    }
+
+    #[tokio::test]
+    async fn register_client_rejects_refresh_only_grant() {
+        let store = store();
+        let now = Utc::now();
+        let mut registration = public_client_registration();
+        registration.grant_types = BTreeSet::from([GrantType::RefreshToken]);
+
+        assert!(matches!(
+            store.register_client(registration, now).await,
+            Err(OAuthError::UnauthorizedClient)
+        ));
     }
 
     #[tokio::test]
@@ -1486,6 +1609,7 @@ mod tests {
                 &code,
                 "https://app.example.com/cb",
                 VERIFIER,
+                "https://api.example.com",
                 now,
             )
             .await);
@@ -1498,6 +1622,7 @@ mod tests {
                     &code,
                     "https://app.example.com/cb",
                     VERIFIER,
+                    "https://api.example.com",
                     now
                 )
                 .await,
@@ -1523,6 +1648,7 @@ mod tests {
                     &code,
                     "https://app.example.com/cb",
                     "attacker",
+                    "https://api.example.com",
                     now
                 )
                 .await,
@@ -1548,6 +1674,7 @@ mod tests {
                     &code,
                     "https://evil.example.com/cb",
                     VERIFIER,
+                    "https://api.example.com",
                     now
                 )
                 .await,
@@ -1574,6 +1701,7 @@ mod tests {
                     &code,
                     "https://app.example.com/cb",
                     VERIFIER,
+                    "https://api.example.com",
                     later
                 )
                 .await,
@@ -1597,14 +1725,29 @@ mod tests {
                 &code,
                 "https://app.example.com/cb",
                 VERIFIER,
+                "https://api.example.com",
                 now,
             )
             .await);
+        let first_refresh = first
+            .refresh_token
+            .as_ref()
+            .unwrap_or_else(|| panic!("expected refresh token"));
 
         let rotated = ok(store
-            .refresh(&client_id, None, &first.refresh_token, now)
+            .refresh(
+                &client_id,
+                None,
+                first_refresh,
+                "https://api.example.com",
+                now,
+            )
             .await);
-        assert_ne!(rotated.refresh_token, first.refresh_token);
+        let rotated_refresh = rotated
+            .refresh_token
+            .as_ref()
+            .unwrap_or_else(|| panic!("expected rotated refresh token"));
+        assert_ne!(rotated_refresh, first_refresh);
         // The rotated access token validates (checked before any reuse, which
         // would trigger family revocation — see the dedicated reuse test).
         let claims = ok(store
@@ -1614,7 +1757,13 @@ mod tests {
         // The old refresh token is now revoked (rotation) — reuse is rejected.
         assert!(matches!(
             store
-                .refresh(&client_id, None, &first.refresh_token, now)
+                .refresh(
+                    &client_id,
+                    None,
+                    first_refresh,
+                    "https://api.example.com",
+                    now
+                )
                 .await,
             Err(OAuthError::InvalidGrant)
         ));
@@ -1636,14 +1785,29 @@ mod tests {
                 &code,
                 "https://app.example.com/cb",
                 VERIFIER,
+                "https://api.example.com",
                 now,
             )
             .await);
+        let first_refresh = first
+            .refresh_token
+            .as_ref()
+            .unwrap_or_else(|| panic!("expected refresh token"));
 
         // Legitimate rotation: RT1 -> RT2/AT2.
         let rotated = ok(store
-            .refresh(&client_id, None, &first.refresh_token, now)
+            .refresh(
+                &client_id,
+                None,
+                first_refresh,
+                "https://api.example.com",
+                now,
+            )
             .await);
+        let rotated_refresh = rotated
+            .refresh_token
+            .as_ref()
+            .unwrap_or_else(|| panic!("expected rotated refresh token"));
         // AT2 is valid right now.
         ok(store
             .validate_access_token(&rotated.access_token, now)
@@ -1653,7 +1817,13 @@ mod tests {
         // whole family is burned (RFC 9700 / OAuth 2.1 §4.13.2).
         assert!(matches!(
             store
-                .refresh(&client_id, None, &first.refresh_token, now)
+                .refresh(
+                    &client_id,
+                    None,
+                    first_refresh,
+                    "https://api.example.com",
+                    now
+                )
                 .await,
             Err(OAuthError::InvalidGrant)
         ));
@@ -1667,7 +1837,13 @@ mod tests {
         // And RT2 can no longer be used.
         assert!(matches!(
             store
-                .refresh(&client_id, None, &rotated.refresh_token, now)
+                .refresh(
+                    &client_id,
+                    None,
+                    rotated_refresh,
+                    "https://api.example.com",
+                    now
+                )
                 .await,
             Err(OAuthError::InvalidGrant)
         ));
@@ -1718,6 +1894,7 @@ mod tests {
                 &code,
                 "https://app.example.com/cb",
                 VERIFIER,
+                "https://api.example.com",
                 now,
             )
             .await);
@@ -1728,8 +1905,12 @@ mod tests {
                 .to_string(),
         )
         .unwrap_or_else(|err| panic!("{err}"));
+        let refresh_token = tokens
+            .refresh_token
+            .as_ref()
+            .unwrap_or_else(|| panic!("expected refresh token"));
         let refresh_id = RefreshTokenId::new(
-            parse_token(REFRESH_TOKEN_PREFIX, &tokens.refresh_token)
+            parse_token(REFRESH_TOKEN_PREFIX, refresh_token)
                 .unwrap_or_else(|| panic!("expected minted refresh token"))
                 .0
                 .to_string(),
@@ -1762,7 +1943,7 @@ mod tests {
 
         let refresh_json = ok(serde_json::to_string(&refresh));
         assert!(!refresh_json.contains("secret_hash"));
-        assert!(!refresh_json.contains(&tokens.refresh_token));
+        assert!(!refresh_json.contains(refresh_token));
         assert!(!refresh_json.contains(&refresh.secret_hash));
     }
 
@@ -1806,13 +1987,18 @@ mod tests {
                 &code,
                 "https://app.example.com/cb",
                 VERIFIER,
+                "https://api.example.com",
                 now,
             )
             .await);
+        let refresh_token = tokens
+            .refresh_token
+            .as_ref()
+            .unwrap_or_else(|| panic!("expected refresh token"));
         assert_debug_redacts(
             "issued token pair",
             &tokens,
-            &[&tokens.access_token, &tokens.refresh_token],
+            &[&tokens.access_token, refresh_token],
         );
 
         let (access_id_raw, access_secret) = parse_token(ACCESS_TOKEN_PREFIX, &tokens.access_token)
@@ -1827,9 +2013,8 @@ mod tests {
             &[access_secret, &access_secret_hash],
         );
 
-        let (refresh_id_raw, refresh_secret) =
-            parse_token(REFRESH_TOKEN_PREFIX, &tokens.refresh_token)
-                .unwrap_or_else(|| panic!("expected minted refresh token"));
+        let (refresh_id_raw, refresh_secret) = parse_token(REFRESH_TOKEN_PREFIX, refresh_token)
+            .unwrap_or_else(|| panic!("expected minted refresh token"));
         let refresh_id = ok(RefreshTokenId::new(refresh_id_raw));
         let refresh = ok(store.get_refresh_token(&refresh_id).await)
             .unwrap_or_else(|| panic!("expected refresh token"));
@@ -1857,6 +2042,7 @@ mod tests {
                 &code,
                 "https://app.example.com/cb",
                 VERIFIER,
+                "https://api.example.com",
                 now,
             )
             .await);
@@ -1885,6 +2071,7 @@ mod tests {
                         user_id: ok(UserId::new("user-1")),
                         redirect_uri: "https://app.example.com/cb".to_string(),
                         scope: BTreeSet::from(["admin:everything".to_string()]),
+                        resource: "https://api.example.com".to_string(),
                         tenant_scope: test_tenant_scope(),
                         code_challenge: challenge_for(VERIFIER),
                     },

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use beater_core::{IdempotencyKey, ProjectId, TenantId, Timestamp};
 use chrono::Utc;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::fs;
@@ -1231,11 +1231,12 @@ mod tests {
                 .await,
             Ok(PublishAck::accepted())
         );
-        assert!(bus
-            .dlq()
-            .await
-            .unwrap_or_else(|err| panic!("{err}"))
-            .is_empty());
+        assert!(
+            bus.dlq()
+                .await
+                .unwrap_or_else(|err| panic!("{err}"))
+                .is_empty()
+        );
         let replayed = bus
             .consume_batch(1)
             .await
@@ -1344,11 +1345,13 @@ mod tests {
 
         let reopened = SqliteDurableBus::open(&path, 8).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(reopened.depth().await, Ok(1));
-        assert!(reopened
-            .dlq()
-            .await
-            .unwrap_or_else(|err| panic!("{err}"))
-            .is_empty());
+        assert!(
+            reopened
+                .dlq()
+                .await
+                .unwrap_or_else(|err| panic!("{err}"))
+                .is_empty()
+        );
         let recovered = reopened
             .consume_batch(1)
             .await
@@ -1389,11 +1392,13 @@ mod tests {
 
         let reopened = SqliteDurableBus::open(&path, 8).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(reopened.depth().await, Ok(1));
-        assert!(reopened
-            .dlq()
-            .await
-            .unwrap_or_else(|err| panic!("{err}"))
-            .is_empty());
+        assert!(
+            reopened
+                .dlq()
+                .await
+                .unwrap_or_else(|err| panic!("{err}"))
+                .is_empty()
+        );
         let recovered = reopened
             .consume_batch(1)
             .await
@@ -1568,11 +1573,13 @@ mod tests {
             Ok(PublishAck::accepted())
         );
         assert_eq!(reopened.depth().await, Ok(1));
-        assert!(reopened
-            .dlq()
-            .await
-            .unwrap_or_else(|err| panic!("{err}"))
-            .is_empty());
+        assert!(
+            reopened
+                .dlq()
+                .await
+                .unwrap_or_else(|err| panic!("{err}"))
+                .is_empty()
+        );
         let replayed = reopened
             .consume_batch(1)
             .await
@@ -1842,11 +1849,12 @@ mod tests {
             .await
             .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(bus.depth().await, Ok(0));
-        assert!(bus
-            .dlq()
-            .await
-            .unwrap_or_else(|err| panic!("{err}"))
-            .is_empty());
+        assert!(
+            bus.dlq()
+                .await
+                .unwrap_or_else(|err| panic!("{err}"))
+                .is_empty()
+        );
     }
 
     /// Full `DurableBus` conformance suite — covers every guarantee documented in

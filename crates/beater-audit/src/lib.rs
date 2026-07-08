@@ -1,12 +1,12 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{
-    sha256_json_hash, ApiKeyId, AuditEventId, EnvironmentId, ProjectId, Sha256Hash, TenantId,
-    Timestamp, TraceId,
+    ApiKeyId, AuditEventId, EnvironmentId, ProjectId, Sha256Hash, TenantId, Timestamp, TraceId,
+    sha256_json_hash,
 };
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
@@ -716,8 +716,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn sqlite_audit_store_migrates_legacy_tables_before_hashing_new_events(
-    ) -> anyhow::Result<()> {
+    async fn sqlite_audit_store_migrates_legacy_tables_before_hashing_new_events()
+    -> anyhow::Result<()> {
         let dir = std::env::temp_dir().join(format!("beater-audit-{}", Uuid::new_v4()));
         fs::create_dir_all(&dir)?;
         let path = dir.join("audit.sqlite");

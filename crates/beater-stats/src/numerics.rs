@@ -117,11 +117,7 @@ pub fn erfc(x: f64) -> f64 {
         // Beyond the double-precision underflow horizon.
         0.0
     };
-    if x < 0.0 {
-        2.0 - result
-    } else {
-        result
-    }
+    if x < 0.0 { 2.0 - result } else { result }
 }
 
 /// `e^{−y²}` computed as `e^{−q²}·e^{−(y−q)(y+q)}` with `q = ⌊16y⌋/16`, Cody's

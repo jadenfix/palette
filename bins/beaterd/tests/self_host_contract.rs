@@ -82,7 +82,9 @@ fn self_host_files_define_gate_two_compose_surface() {
 
     let dashboard_dockerfile = read(root.join("web/dashboard/Dockerfile"));
     assert!(dashboard_dockerfile.contains("npm run build"));
-    assert!(dashboard_dockerfile.contains("FROM mcr.microsoft.com/playwright:v1.57.0-noble AS e2e"));
+    assert!(
+        dashboard_dockerfile.contains("FROM mcr.microsoft.com/playwright:v1.57.0-noble AS e2e")
+    );
     assert!(dashboard_dockerfile.contains("CMD [\"npx\", \"playwright\", \"test\"]"));
     assert!(dashboard_dockerfile.contains("server.js"));
     let dashboard_dockerignore = read(root.join("web/dashboard/.dockerignore"));
@@ -156,8 +158,10 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(
         image_workflow.contains("cache-to: type=gha,mode=max,scope=beaterd-${{ matrix.suffix }}")
     );
-    assert!(image_workflow
-        .contains("cache-to: type=gha,mode=max,scope=beaterctl-tools-${{ matrix.suffix }}"));
+    assert!(
+        image_workflow
+            .contains("cache-to: type=gha,mode=max,scope=beaterctl-tools-${{ matrix.suffix }}")
+    );
     assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/beaterd:main"));
     assert!(image_workflow.contains("ghcr.io/${{ github.repository }}/dashboard:main"));
     assert!(image_workflow.contains("Build and push dashboard e2e runner"));
@@ -172,8 +176,11 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(image_workflow.contains("sudo apt-get install -y --no-install-recommends ffmpeg"));
     assert!(image_workflow.contains("Checkout public handoff verifier"));
     assert!(image_workflow.contains("Verify Gate 2 public handoff readiness"));
-    assert!(image_workflow
-        .contains("scripts/check-gate2-public-handoff.py --expected-commit \"${{ github.sha }}\""));
+    assert!(
+        image_workflow.contains(
+            "scripts/check-gate2-public-handoff.py --expected-commit \"${{ github.sha }}\""
+        )
+    );
 
     let gate2_workflow = read(root.join(".github/workflows/gate2-proof-contract.yml"));
     assert!(gate2_workflow.contains("pull_request:"));
@@ -339,8 +346,10 @@ fn self_host_files_define_gate_two_compose_surface() {
     assert!(gate0_contract.contains("anyhow::Error"));
     assert!(gate0_contract.contains("Utc::now()"));
     assert!(gate0_contract.contains("SystemTime::now()"));
-    assert!(gate0_contract
-        .contains("cargo\", \"test\", \"-p\", \"beater-core\", \"-p\", \"beater-schema"));
+    assert!(
+        gate0_contract
+            .contains("cargo\", \"test\", \"-p\", \"beater-core\", \"-p\", \"beater-schema")
+    );
     assert!(gate0_contract.contains("pub trait Clock"));
     assert!(gate0_contract.contains("pub struct SystemClock"));
     assert!(gate0_contract.contains("pub struct FixedClock"));
@@ -522,8 +531,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("quickstart_list_url="));
     assert!(stopwatch_script.contains("kind=llm.call&model=gpt-quickstart&release=$gate2_run_id"));
     assert!(stopwatch_script.contains("Direct quickstart trace URL:"));
-    assert!(stopwatch_script
-        .contains("open $quickstart_list_url in a normal browser for the quickstart trace list"));
+    assert!(
+        stopwatch_script.contains(
+            "open $quickstart_list_url in a normal browser for the quickstart trace list"
+        )
+    );
     assert!(stopwatch_script.contains("Quickstart release ID"));
     assert!(stopwatch_script.contains("git rev-parse HEAD"));
     assert!(stopwatch_script.contains("git branch --show-current"));
@@ -537,13 +549,20 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(stopwatch_script.contains("proof-image beaterd"));
     assert!(stopwatch_script.contains("proof-image dashboard-e2e"));
     assert!(stopwatch_script.contains("startup_args=(up -d --build beaterd dashboard)"));
-    assert!(stopwatch_script
-        .contains("startup_args=(up -d --pull \"$prebuilt_pull_policy\" beaterd dashboard)"));
+    assert!(
+        stopwatch_script
+            .contains("startup_args=(up -d --pull \"$prebuilt_pull_policy\" beaterd dashboard)")
+    );
     assert!(!stopwatch_script.contains("startup_args=(up -d --build postgres nats minio"));
-    assert!(!stopwatch_script
-        .contains("startup_args=(up -d --pull \"$prebuilt_pull_policy\" postgres nats minio"));
-    assert!(stopwatch_script
-        .contains("run_before_deadline \"Gate 2 prerequisite preflight\" preflight_prerequisites"));
+    assert!(
+        !stopwatch_script
+            .contains("startup_args=(up -d --pull \"$prebuilt_pull_policy\" postgres nats minio")
+    );
+    assert!(
+        stopwatch_script.contains(
+            "run_before_deadline \"Gate 2 prerequisite preflight\" preflight_prerequisites"
+        )
+    );
     assert!(
         stopwatch_script.contains("run_before_deadline \"Gate 2 port preflight\" preflight_ports")
     );
@@ -717,10 +736,14 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_run.contains("require_unset COMPOSE_PROFILES"));
     assert!(outside_run.contains("default beater-stopwatch Compose project"));
     assert!(outside_run.contains("export KEEP_BEATER_COMPOSE=1"));
-    assert!(outside_run
-        .contains("export BEATER_GATE2_COMPOSE_LOGS=docs/demos/gate2-outside-compose.log"));
-    assert!(outside_run
-        .contains("export BEATER_GATE2_TERMINAL_LOG=docs/demos/gate2-outside-terminal.log"));
+    assert!(
+        outside_run
+            .contains("export BEATER_GATE2_COMPOSE_LOGS=docs/demos/gate2-outside-compose.log")
+    );
+    assert!(
+        outside_run
+            .contains("export BEATER_GATE2_TERMINAL_LOG=docs/demos/gate2-outside-terminal.log")
+    );
     assert!(outside_run.contains("tee \"$BEATER_GATE2_TERMINAL_LOG\""));
     assert!(outside_run.contains("scripts/gate2-compose-stopwatch.sh"));
     assert!(outside_run.contains("Gate 2 outside-run wrapper preflight passed"));
@@ -784,16 +807,20 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("\"Manual quickstart confirmation\""));
     assert!(outside_validator.contains("Manual quickstart confirmation must be yes"));
     assert!(outside_validator.contains("\"Manual confirmation source\""));
-    assert!(outside_validator
-        .contains("Manual confirmation source must be browser-selected-llm-detail"));
+    assert!(
+        outside_validator
+            .contains("Manual confirmation source must be browser-selected-llm-detail")
+    );
     assert!(outside_validator.contains("markdown_field_values"));
     let gate2_proof_contract = read(root.join("scripts/gate2_proof_contract.py"));
     assert!(gate2_proof_contract.contains(":[ \\t]*(.*)$"));
     assert!(gate2_proof_contract.contains("GATE2_IMAGES = ["));
     assert!(gate2_proof_contract.contains("Gate2Image("));
     assert!(gate2_proof_contract.contains("GATE2_IMAGE_NAMES"));
-    assert!(gate2_proof_contract
-        .contains("GATE2_EXPECTED_PLATFORMS = [\"linux/amd64\", \"linux/arm64\"]"));
+    assert!(
+        gate2_proof_contract
+            .contains("GATE2_EXPECTED_PLATFORMS = [\"linux/amd64\", \"linux/arm64\"]")
+    );
     assert!(gate2_proof_contract.contains("GATE2_FULL_RUN_PORTS"));
     assert!(gate2_proof_contract.contains("GATE2_CONFIRMATION_HASH_PREFIX = \"gate2\""));
     assert!(gate2_proof_contract.contains("GATE2_CONFIRMATION_TEST_VECTOR"));
@@ -826,10 +853,14 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("is_immutable_log_url"));
     assert!(outside_validator.contains("immutable GitHub Actions run/job URL"));
     assert!(outside_validator.contains("`docker compose` logs file does not exist"));
-    assert!(outside_validator
-        .contains("require_committed_clean_path(log_path, \"`docker compose` logs saved\")"));
-    assert!(outside_validator
-        .contains("read_validated_text(log_path, \"`docker compose` logs saved\")"));
+    assert!(
+        outside_validator
+            .contains("require_committed_clean_path(log_path, \"`docker compose` logs saved\")")
+    );
+    assert!(
+        outside_validator
+            .contains("read_validated_text(log_path, \"`docker compose` logs saved\")")
+    );
     assert!(outside_validator.contains("must be committed and clean before Gate 2 closure"));
     assert!(outside_validator.contains("must be tracked by git before Gate 2 closure"));
     assert!(outside_validator.contains("screen recording must start with a WebM/EBML header"));
@@ -856,8 +887,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("(\"Startup mode\", \"prebuilt-image\")"));
     assert!(outside_validator.contains("(\"Prebuilt pull policy\", \"always\")"));
     assert!(outside_validator.contains("(\"Compose project\", \"beater-stopwatch\")"));
-    assert!(outside_validator
-        .contains("Commit SHA must match current HEAD or be an evidence-only ancestor"));
+    assert!(
+        outside_validator
+            .contains("Commit SHA must match current HEAD or be an evidence-only ancestor")
+    );
     assert!(outside_validator.contains("docs/demos evidence changes"));
     assert!(outside_validator.contains("Branch must be main"));
     assert!(outside_validator.contains("Clone URL must be"));
@@ -900,8 +933,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_validator.contains("OUTSIDE_RUN_ATTESTATION"));
     assert!(outside_validator.contains("DIAGNOSTIC_ATTESTATION"));
     assert!(outside_validator.contains("\"Outside-run attestation\""));
-    assert!(outside_validator
-        .contains("Outside-run attestation must match the required unaided outside-run statement"));
+    assert!(
+        outside_validator.contains(
+            "Outside-run attestation must match the required unaided outside-run statement"
+        )
+    );
 
     let outside_generator = read(root.join("scripts/generate-gate2-outside-proof.py"));
     assert!(outside_generator.contains("OUTSIDE_RUNNER_COMMAND"));
@@ -925,8 +961,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_generator.contains("--attest-outside-run"));
     assert!(outside_generator.contains("--diagnostic-report"));
     assert!(outside_generator.contains("diagnostic."));
-    assert!(outside_generator
-        .contains("--attest-outside-run is required for completed Gate 2 proof generation"));
+    assert!(
+        outside_generator
+            .contains("--attest-outside-run is required for completed Gate 2 proof generation")
+    );
     assert!(outside_generator.contains("valid only when the named runner is outside"));
     assert!(outside_generator.contains("scripts/validate-gate2-outside-proof.sh"));
     assert!(outside_generator.contains("require_pending_or_force"));
@@ -1112,8 +1150,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
         public_handoff.contains("Entering the browser-read manual quickstart confirmation code")
     );
     assert!(public_handoff.contains("quickstart_confirmation_code_from_browser"));
-    assert!(public_handoff
-        .contains("diagnostic used a browser click to read the manual confirmation code"));
+    assert!(
+        public_handoff
+            .contains("diagnostic used a browser click to read the manual confirmation code")
+    );
     assert!(public_handoff.contains("def public_clone_env"));
     assert!(public_handoff.contains("def apply_public_git_env"));
     assert!(public_handoff.contains("apply_public_git_env(env)"));
@@ -1166,8 +1206,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(outside_proof.contains("scripts/check-gate2-public-handoff.py"));
     assert!(outside_proof.contains("uses one fresh clone from"));
     assert!(outside_proof.contains("uses a second fresh clone"));
-    assert!(outside_proof
-        .contains("executes the second clone's\n`scripts/gate2-outside-run.sh` wrapper"));
+    assert!(
+        outside_proof
+            .contains("executes the second clone's\n`scripts/gate2-outside-run.sh` wrapper")
+    );
     assert!(
         outside_proof.contains("waits until the wrapper prints the\nmanual quickstart checkpoint")
     );
@@ -1175,8 +1217,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
         "uses a browser click to read and enter the confirmation\ncode from the selected `llm.call` detail for diagnostic automation only"
     ));
     assert!(outside_proof.contains("preflights the local runtime"));
-    assert!(outside_proof
-        .contains("downloads the raw public preflight from the expected immutable commit"));
+    assert!(
+        outside_proof
+            .contains("downloads the raw public preflight from the expected immutable commit")
+    );
     assert!(!outside_proof.contains("gate2-outside-local-preflight.sh | bash"));
     assert!(outside_proof.contains("under `bash -o pipefail -lc` before any clone"));
     assert!(outside_proof.contains("local Docker daemon"));
@@ -1230,8 +1274,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(!outside_proof.contains("`python3` is required after the timed run"));
     assert!(outside_proof.contains("Time-to-first-trace was 300 seconds or less"));
     assert!(outside_proof.contains("Time-to-first-trace includes clone time"));
-    assert!(outside_proof
-        .contains("Manual quickstart click confirmation code was recorded before 300 seconds"));
+    assert!(
+        outside_proof
+            .contains("Manual quickstart click confirmation code was recorded before 300 seconds")
+    );
     assert!(outside_proof.contains("Quickstart click source"));
     assert!(outside_proof.contains("Manual quickstart confirmation"));
     assert!(outside_proof.contains("Manual confirmation source"));
@@ -1331,7 +1377,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("COMPOSE_PROFILES"));
     assert!(readme.contains("teardown"));
     assert!(readme.contains("scripts/generate-gate2-outside-proof.py"));
-    assert!(readme.contains("cd ./beater\nscripts/generate-gate2-outside-proof.py --print-command"));
+    assert!(
+        readme.contains("cd ./beater\nscripts/generate-gate2-outside-proof.py --print-command")
+    );
     assert!(readme.contains("--attest-outside-run"));
     assert!(readme.contains("proof writing"));
     assert!(readme.contains("browser proof"));
@@ -1345,7 +1393,9 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(readme.contains("is a maintainer diagnostic capture"));
     assert!(readme.contains("reviewable demo evidence"));
     assert!(readme.contains("does not close Gate 2"));
-    assert!(!readme.contains("has been removed\nfrom `docs/demos/gate2-compose-browser-demo.webm`"));
+    assert!(
+        !readme.contains("has been removed\nfrom `docs/demos/gate2-compose-browser-demo.webm`")
+    );
     assert!(!readme.contains("until it can be regenerated\nfrom a valid default-port run"));
     assert!(readme.contains("prebuilt `dashboard-e2e` Playwright browser proof"));
     assert!(readme.contains("prebuilt stock OpenTelemetry Python runner container"));
@@ -1405,8 +1455,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("scripts/check-gate2-public-handoff.py"));
     assert!(requirements.contains("scripts/check-gate2-outside-readiness.py"));
     assert!(requirements.contains("public-clone handoff verifier"));
-    assert!(requirements
-        .contains("download the canonical public preflight from the expected immutable commit"));
+    assert!(
+        requirements
+            .contains("download the canonical public preflight from the expected immutable commit")
+    );
     assert!(!requirements.contains("gate2-outside-local-preflight.sh | bash"));
     assert!(requirements.contains("requires the clone to match the current commit"));
     assert!(requirements.contains(
@@ -1417,8 +1469,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(requirements.contains("scripts/validate-gate2-outside-proof.sh"));
     assert!(requirements.contains("image-digest"));
     assert!(requirements.contains("quickstart release-ID"));
-    assert!(requirements
-        .contains("structured Beater image service rows plus `proof-image` digest rows"));
+    assert!(
+        requirements
+            .contains("structured Beater image service rows plus `proof-image` digest rows")
+    );
     assert!(requirements.contains("SHA-pinned prebuilt GHCR image references"));
     assert!(requirements.contains("dashboard-e2e"));
     assert!(requirements.contains("otel-python"));
@@ -1562,8 +1616,10 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
     assert!(quickstart_e2e.contains("hello from Beater"));
     assert!(quickstart_e2e.contains("data-icon"));
     assert!(quickstart_e2e.contains("selectedSpanId"));
-    assert!(quickstart_e2e
-        .contains("import { gate2ConfirmationCode } from \"../../lib/gate2-confirmation\""));
+    assert!(
+        quickstart_e2e
+            .contains("import { gate2ConfirmationCode } from \"../../lib/gate2-confirmation\"")
+    );
     assert!(quickstart_e2e.contains("gate2ConfirmationCode({"));
     assert!(quickstart_e2e.contains("12 total, 5 prompt, 7 completion"));
     assert!(quickstart_e2e.contains("Span metrics"));
@@ -1571,8 +1627,11 @@ fn clean_clone_smoke_uses_stock_otel_and_browser_visible_trace() {
 
     // `readme` is still the combined Gate 2 doc set bound above.
     assert!(readme.contains("docs/demos/gate2-outside-runner-card.md"));
-    assert!(readme
-        .contains("As soon as the first `Open this quickstart trace-list URL first:` URL appears"));
+    assert!(
+        readme.contains(
+            "As soon as the first `Open this quickstart trace-list URL first:` URL appears"
+        )
+    );
     assert!(readme.contains("cleanup hint printed by"));
     assert!(readme.contains("stop or move that app instead of setting alternate Beater ports"));
     assert_eq!(

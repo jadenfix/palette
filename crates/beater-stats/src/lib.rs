@@ -72,28 +72,28 @@ mod sequential;
 mod wilcoxon;
 
 pub use agreement::{
-    brier_score, cohen_kappa_binary, cohen_kappa_ci, expected_calibration_error, AgreementCounts,
+    AgreementCounts, brier_score, cohen_kappa_binary, cohen_kappa_ci, expected_calibration_error,
 };
-pub use bca::{bootstrap_bca_ci, paired_bootstrap_test, PairedBootstrapOutcome};
+pub use bca::{PairedBootstrapOutcome, bootstrap_bca_ci, paired_bootstrap_test};
 pub use clustered::{
-    clustered_bootstrap_ci, clustered_paired_t_test, clustered_standard_error, iid_standard_error,
-    ClusteredStandardError,
+    ClusteredStandardError, clustered_bootstrap_ci, clustered_paired_t_test,
+    clustered_standard_error, iid_standard_error,
 };
-pub use confseq::{confidence_sequence_mean, ConfidenceSequenceOutcome};
-pub use cuped::{cuped_adjust, cuped_paired_t_test, CupedOutcome};
+pub use confseq::{ConfidenceSequenceOutcome, confidence_sequence_mean};
+pub use cuped::{CupedOutcome, cuped_adjust, cuped_paired_t_test};
 pub use mcnemar::mcnemar_exact_p;
-pub use multiplicity::{benjamini_hochberg, holm_bonferroni, MultiplicityDecision};
+pub use multiplicity::{MultiplicityDecision, benjamini_hochberg, holm_bonferroni};
 pub use overfit::{
-    assess_generalization_gap, GapAssessment, Ladder, Thresholdout, ThresholdoutAnswer,
+    GapAssessment, Ladder, Thresholdout, ThresholdoutAnswer, assess_generalization_gap,
 };
 pub use paired::paired_t_test;
 pub use power::{
-    achieved_power, mcnemar_achieved_power, mcnemar_required_discordant, minimum_detectable_effect,
-    required_sample_size, DEFAULT_POWER,
+    DEFAULT_POWER, achieved_power, mcnemar_achieved_power, mcnemar_required_discordant,
+    minimum_detectable_effect, required_sample_size,
 };
-pub use racing::{hoeffding_race, ArmSummary, RaceOutcome};
-pub use sequential::{evalue_one_sided_mean, recommended_lambda, SequentialMeanTest};
-pub use wilcoxon::{wilcoxon_signed_rank, WilcoxonOutcome};
+pub use racing::{ArmSummary, RaceOutcome, hoeffding_race};
+pub use sequential::{SequentialMeanTest, evalue_one_sided_mean, recommended_lambda};
+pub use wilcoxon::{WilcoxonOutcome, wilcoxon_signed_rank};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error type

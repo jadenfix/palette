@@ -17,7 +17,7 @@
 //! Everything here is derived from Composio's own metadata (no invented facts),
 //! so it stays correct as Composio updates the catalog.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::ConnectorTool;
 

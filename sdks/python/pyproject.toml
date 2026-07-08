@@ -7,7 +7,7 @@ name = "beater-sdk"
 version = "0.1.0"
 description = "Ergonomic agent observability SDK for Beater (OpenTelemetry-native)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "Apache-2.0"
 authors = [{ name = "Beater" }]
 keywords = ["observability", "llm", "agents", "opentelemetry", "tracing"]

@@ -32,8 +32,8 @@ pub mod policy;
 pub mod skill;
 
 pub use policy::{
-    classify_connector_tool, ConnectorToolPolicy, ConnectorToolPolicyDecision,
-    ConnectorToolRiskClass,
+    ConnectorToolPolicy, ConnectorToolPolicyDecision, ConnectorToolRiskClass,
+    classify_connector_tool,
 };
 
 /// Default Composio v3 API base URL.
@@ -397,14 +397,14 @@ fn extract_error_message(body: &str) -> String {
     if trimmed.is_empty() {
         return "empty response body".to_string();
     }
-    if let Ok(v) = serde_json::from_str::<Value>(trimmed) {
-        if let Some(obj) = v.get("error") {
-            if let Some(msg) = obj.get("message").and_then(Value::as_str) {
-                return msg.to_string();
-            }
-            if let Some(msg) = obj.as_str() {
-                return msg.to_string();
-            }
+    if let Ok(v) = serde_json::from_str::<Value>(trimmed)
+        && let Some(obj) = v.get("error")
+    {
+        if let Some(msg) = obj.get("message").and_then(Value::as_str) {
+            return msg.to_string();
+        }
+        if let Some(msg) = obj.as_str() {
+            return msg.to_string();
         }
     }
     trimmed.chars().take(500).collect()
@@ -575,9 +575,10 @@ mod tests {
             "expires_at":"2026-06-28T01:01:50.471Z","connected_account_id":"ca_55T05PSMifi1"}"#;
         let link: ConnectionLink = serde_json::from_str(body).unwrap();
         assert_eq!(link.connected_account_id, "ca_55T05PSMifi1");
-        assert!(link
-            .redirect_url
-            .starts_with("https://connect.composio.dev/link/"));
+        assert!(
+            link.redirect_url
+                .starts_with("https://connect.composio.dev/link/")
+        );
         assert_eq!(link.expires_at.as_deref(), Some("2026-06-28T01:01:50.471Z"));
     }
 

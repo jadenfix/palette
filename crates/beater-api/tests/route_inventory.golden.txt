@@ -54,4 +54,5 @@ POST /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annot
 POST /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote
 POST /v1/scenarios/{tenant_id}/{project_id}
 POST /v1/scenarios/{tenant_id}/{project_id}/mine
+POST /v1/traces
 POST /v1/traces/native

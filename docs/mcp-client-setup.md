@@ -95,3 +95,22 @@ curl -fsS -X POST "https://<beater-api-host>/mcp" \
 
 Keep hosted runtime secrets in the deployed Beater environment. Do not put API
 keys, provider secrets, or OAuth client secrets into the MCP client config file.
+
+OAuth is the preferred hosted MCP login path. If a client only supports static
+headers, use a scoped API key and include the strict-auth project/environment
+headers with every request:
+
+```json
+{
+  "mcpServers": {
+    "beater": {
+      "url": "https://<beater-api-host>/mcp",
+      "headers": {
+        "x-beater-api-key": "${env:BEATER_API_KEY}",
+        "x-beater-project-id": "${env:BEATER_PROJECT}",
+        "x-beater-environment-id": "${env:BEATER_ENVIRONMENT}"
+      }
+    }
+  }
+}
+```

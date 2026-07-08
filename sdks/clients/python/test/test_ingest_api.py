@@ -62,6 +62,12 @@ class TestIngestApi(unittest.TestCase):
         """
         pass
 
+    def test_ingest_otlp_json_collector(self) -> None:
+        """Test case for ingest_otlp_json_collector
+
+        """
+        pass
+
     def test_reconcile_trace(self) -> None:
         """Test case for reconcile_trace
 

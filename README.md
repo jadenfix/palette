@@ -173,7 +173,9 @@ scripts/check-contract-sync.sh
 
 See [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIBUTING.md), and
 [CLAUDE.md](CLAUDE.md) for the full verification matrix and contract rules. The
-clean-clone → browser stopwatch proof lives in the
+standalone ecosystem boundary with Tempo, beater.js, and beaterOS is tracked in
+[`docs/ecosystem-integration-contract.md`](docs/ecosystem-integration-contract.md).
+The clean-clone → browser stopwatch proof lives in the
 [Gate 2 Outside Runner Card](docs/demos/gate2-outside-runner-card.md). Report
 vulnerabilities privately via [SECURITY.md](SECURITY.md).
 

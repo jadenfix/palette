@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEPLOY_WORKFLOW = ROOT / ".github/workflows/deploy-dashboard.yml"
+ROOT_VERCEL_CONFIG = ROOT / "vercel.json"
 VERCEL_CONFIG = ROOT / "web/dashboard/vercel.json"
 ALLOWED_PUSH_PATHS = {
     "web/dashboard/**",
@@ -91,6 +92,30 @@ def check_deploy_workflow(errors: list[str]) -> None:
 
 
 def check_vercel_config(errors: list[str]) -> None:
+    if not ROOT_VERCEL_CONFIG.exists():
+        errors.append(f"missing root Vercel config: {ROOT_VERCEL_CONFIG.relative_to(ROOT)}")
+        return
+    try:
+        root_config = json.loads(ROOT_VERCEL_CONFIG.read_text())
+    except json.JSONDecodeError as err:
+        errors.append(f"{ROOT_VERCEL_CONFIG.relative_to(ROOT)} is not valid JSON: {err}")
+        return
+
+    expected_root_config = {
+        "$schema": "https://openapi.vercel.sh/vercel.json",
+        "git": {"deploymentEnabled": {"codex/**": False}},
+    }
+    if root_config != expected_root_config:
+        errors.append(
+            "root vercel.json must only disable automatic Vercel deployments "
+            "for codex/** branches"
+        )
+
+    root_config_text = json.dumps(root_config, sort_keys=True)
+    for pattern, reason in FORBIDDEN_DEPLOY_PATTERNS:
+        if pattern.search(root_config_text):
+            errors.append(f"{ROOT_VERCEL_CONFIG.relative_to(ROOT)}: {reason}")
+
     if not VERCEL_CONFIG.exists():
         errors.append(f"missing Vercel config: {VERCEL_CONFIG.relative_to(ROOT)}")
         return

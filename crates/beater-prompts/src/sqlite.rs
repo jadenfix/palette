@@ -9,15 +9,15 @@ use std::fs;
 use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use beater_core::{Clock, ProjectId, PromptId, PromptVersionId, SystemClock, TenantId, Timestamp};
 use chrono::{DateTime, Utc};
-use rusqlite::{params, Connection, OptionalExtension, Row};
+use rusqlite::{Connection, OptionalExtension, Row, params};
 
 use crate::{
-    diff_lines, new_prompt_id, new_prompt_version_id, AddPromptVersion, CreatePrompt,
-    CreatedPrompt, Prompt, PromptRegistry, PromptRegistryError, PromptRegistryResult,
-    PromptTemplate, PromptVersion, PromptVersionDiff, PromptVersionMetadata,
+    AddPromptVersion, CreatePrompt, CreatedPrompt, Prompt, PromptRegistry, PromptRegistryError,
+    PromptRegistryResult, PromptTemplate, PromptVersion, PromptVersionDiff, PromptVersionMetadata,
+    diff_lines, new_prompt_id, new_prompt_version_id,
 };
 
 /// SQLite-backed prompt registry. Cloneable; clones share one connection.
@@ -576,10 +576,11 @@ mod tests {
             )
             .unwrap_or_else(|err| panic!("{err}"));
         assert!(diff.lines.iter().any(|line| line.text == "answer briefly"));
-        assert!(diff
-            .lines
-            .iter()
-            .any(|line| line.text == "answer with detail"));
+        assert!(
+            diff.lines
+                .iter()
+                .any(|line| line.text == "answer with detail")
+        );
     }
 
     #[test]

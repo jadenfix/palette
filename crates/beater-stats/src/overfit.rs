@@ -17,7 +17,7 @@
 //!    the holdout *significantly* disagrees, and only then spends budget to
 //!    return a noised holdout value.
 
-use crate::{bootstrap_diff_ci, mean, StatsError, Xorshift64};
+use crate::{StatsError, Xorshift64, bootstrap_diff_ci, mean};
 
 /// Outcome of a generalization-gap assessment.
 #[derive(Debug, Clone, PartialEq)]

@@ -39,16 +39,16 @@
 //!    post-bench assertion so CI fails on regression.
 
 use beater_core::{
-    sha256_hex, ArtifactId, EnvironmentId, IdempotencyKey, Money, ProjectId, Sha256Hash, SpanId,
-    TenantId, Timestamp, TokenCounts, TraceId,
+    ArtifactId, EnvironmentId, IdempotencyKey, Money, ProjectId, Sha256Hash, SpanId, TenantId,
+    Timestamp, TokenCounts, TraceId, sha256_hex,
 };
 use beater_schema::{
-    conventions, AgentSpanKind, ArtifactRef, AuthContext, CanonicalAttrs, CanonicalSpan,
-    CanonicalTraceBatch, ModelRef, RawEnvelope, RedactionClass, SourceDialect, SpanStatus,
-    CANONICAL_SCHEMA_VERSION, RAW_SCHEMA_VERSION,
+    AgentSpanKind, ArtifactRef, AuthContext, CANONICAL_SCHEMA_VERSION, CanonicalAttrs,
+    CanonicalSpan, CanonicalTraceBatch, ModelRef, RAW_SCHEMA_VERSION, RawEnvelope, RedactionClass,
+    SourceDialect, SpanStatus, conventions,
 };
 use chrono::{DateTime, Duration, Utc};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::SystemTime;
 
@@ -570,13 +570,17 @@ mod tests {
     fn fixtures_mix_queryable_fields() {
         let spans = span_fixtures(&SpanFixtureConfig::new(8).with_trace_group_size(4));
 
-        assert!(spans
-            .iter()
-            .any(|span| span.kind == AgentSpanKind::AgentRun));
+        assert!(
+            spans
+                .iter()
+                .any(|span| span.kind == AgentSpanKind::AgentRun)
+        );
         assert!(spans.iter().any(|span| span.kind == AgentSpanKind::LlmCall));
-        assert!(spans
-            .iter()
-            .any(|span| span.kind == AgentSpanKind::ToolCall));
+        assert!(
+            spans
+                .iter()
+                .any(|span| span.kind == AgentSpanKind::ToolCall)
+        );
         assert!(spans.iter().any(|span| span.status == SpanStatus::Ok));
         assert!(spans.iter().any(|span| span.status == SpanStatus::Error));
         assert!(spans.iter().any(|span| span.status == SpanStatus::Unset));
@@ -585,14 +589,19 @@ mod tests {
         assert!(spans.iter().any(|span| span.cost.is_none()));
         assert!(spans.iter().any(|span| span.input_ref.is_some()));
         assert!(spans.iter().any(|span| span.output_ref.is_some()));
-        assert!(spans
-            .iter()
-            .all(|span| span.raw_ref.uri.starts_with("artifact://bench-tenant/")));
-        assert!(spans
-            .iter()
-            .any(|span| span.attributes.contains_key("benchmark.bucket")));
-        assert!(spans.iter().any(|span| span
-            .attributes
-            .contains_key(conventions::attr::LLM_TOKEN_PROMPT)));
+        assert!(
+            spans
+                .iter()
+                .all(|span| span.raw_ref.uri.starts_with("artifact://bench-tenant/"))
+        );
+        assert!(
+            spans
+                .iter()
+                .any(|span| span.attributes.contains_key("benchmark.bucket"))
+        );
+        assert!(spans.iter().any(|span| {
+            span.attributes
+                .contains_key(conventions::attr::LLM_TOKEN_PROMPT)
+        }));
     }
 }

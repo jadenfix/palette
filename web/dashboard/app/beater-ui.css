@@ -452,6 +452,12 @@
   color: var(--green);
 }
 
+.tag-warn {
+  background: var(--warn-soft);
+  border-color: var(--warn-line);
+  color: #7a5310;
+}
+
 .tag-danger {
   background: var(--danger-soft);
   border-color: var(--danger-line);
@@ -883,6 +889,232 @@
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* ---- Hosted MCP connect -------------------------------------------------- */
+.connect-page {
+  max-width: 1120px;
+}
+
+.connect-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+}
+
+.connect-primary,
+.connect-readiness,
+.connect-checklist {
+  grid-column: 1 / -1;
+}
+
+.connect-endpoints {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.connect-endpoints div {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 11px 12px;
+}
+
+.connect-endpoints span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: var(--w-semi);
+}
+
+.connect-endpoints code {
+  color: var(--ink);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connect-clients {
+  gap: 12px;
+}
+
+.connect-client {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.connect-client-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+}
+
+.connect-client-icon {
+  align-items: center;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  color: var(--accent-ink);
+  display: inline-flex;
+  flex: 0 0 34px;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.connect-client-icon svg {
+  height: 17px;
+  width: 17px;
+}
+
+.connect-client h3,
+.permission-row h3 {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.connect-client p,
+.permission-row p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+.connect-client .btn {
+  justify-self: start;
+}
+
+.permission-list {
+  gap: 0;
+  padding-bottom: 0;
+  padding-top: 0;
+}
+
+.permission-row {
+  align-items: start;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 10px 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.7fr);
+  padding: 14px 0;
+}
+
+.permission-row:last-child {
+  border-bottom: 0;
+}
+
+.permission-scopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.permission-scopes code {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--accent-ink);
+  font-size: 11px;
+  padding: 4px 6px;
+}
+
+.readiness-list {
+  gap: 10px;
+}
+
+.readiness-row {
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 11px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 12px;
+}
+
+.readiness-row h3 {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.readiness-row p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+.readiness-icon {
+  align-items: center;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.readiness-icon svg {
+  height: 15px;
+  width: 15px;
+}
+
+.readiness-row[data-status="ok"] .readiness-icon {
+  background: var(--success-soft);
+  border-color: var(--success-line);
+  color: var(--green);
+}
+
+.readiness-row[data-status="warn"] .readiness-icon {
+  background: var(--warn-soft);
+  border-color: var(--warn-line);
+  color: #7a5310;
+}
+
+.readiness-row[data-status="error"] .readiness-icon {
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  color: var(--danger);
+}
+
+.connect-checklist {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.connect-checklist div {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--ink-soft);
+  display: flex;
+  font-size: 12px;
+  font-weight: var(--w-semi);
+  gap: 10px;
+  line-height: 1.4;
+  padding: 13px 14px;
+}
+
+.connect-checklist svg {
+  color: var(--accent);
+  flex: 0 0 auto;
+  height: 16px;
+  width: 16px;
 }
 
 /* ---- API key list --------------------------------------------------------- */
@@ -1443,6 +1675,16 @@
 
   .key-row {
     grid-template-columns: 1fr;
+  }
+
+  .connect-grid,
+  .connect-checklist,
+  .permission-row {
+    grid-template-columns: 1fr;
+  }
+
+  .permission-scopes {
+    justify-content: flex-start;
   }
 }
 

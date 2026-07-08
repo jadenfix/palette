@@ -10,8 +10,8 @@
 use beater_bus::{BusMessage, DurableBus, InMemoryBus};
 use beater_core::{IdempotencyKey, ProjectId, TenantId};
 use beater_otlp::propagation::{
-    spawn_with_context, Baggage, TraceContext, BAGGAGE_HEADER, TRACEPARENT_HEADER,
-    TRACESTATE_HEADER,
+    BAGGAGE_HEADER, Baggage, TRACEPARENT_HEADER, TRACESTATE_HEADER, TraceContext,
+    spawn_with_context,
 };
 use std::collections::BTreeMap;
 

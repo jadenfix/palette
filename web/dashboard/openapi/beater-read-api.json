@@ -7529,6 +7529,146 @@
         }
       }
     },
+    "/v1/traces": {
+      "post": {
+        "tags": [
+          "ingest"
+        ],
+        "operationId": "ingestOtlpJsonCollector",
+        "parameters": [
+          {
+            "name": "durability",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer API token for strict auth",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-api-key",
+            "in": "header",
+            "description": "API key alternative for strict auth",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-tenant-id",
+            "in": "header",
+            "description": "Tenant scope override for collector-style OTLP JSON",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-project-id",
+            "in": "header",
+            "description": "Project scope override for collector-style OTLP JSON",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-environment-id",
+            "in": "header",
+            "description": "Environment scope override for collector-style OTLP JSON",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ingest collector-style OTLP/HTTP JSON traces",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtlpIngestOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, scope, or filter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Credentials lack the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload or attribute cardinality too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-project quota exceeded or backpressure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/traces/native": {
       "post": {
         "tags": [

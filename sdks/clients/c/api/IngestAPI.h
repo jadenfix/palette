@@ -41,11 +41,13 @@ otlp_ingest_outcome_t*
 IngestAPI_ingestOtlp(apiClient_t *apiClient, char *tenant_id, char *project_id, char *environment_id, char *durability, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 
+otlp_ingest_outcome_t*
+IngestAPI_ingestOtlpJsonCollector(apiClient_t *apiClient, char *durability, char *authorization, char *x_beater_api_key, char *x_beater_tenant_id, char *x_beater_project_id, char *x_beater_environment_id);
+
+
 trace_ingested_reconcile_report_t*
 IngestAPI_reconcileTrace(apiClient_t *apiClient, char *tenant_id, char *project_id, char *trace_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 
 dead_letter_replay_report_t*
 IngestAPI_replayDeadLetter(apiClient_t *apiClient, char *tenant_id, char *project_id, char *message_id, int *reset_attempts, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
-
-

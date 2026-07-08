@@ -21,27 +21,29 @@
 //! invariant.
 
 use beater_core::{
-    lower_hex, Currency, EnvironmentId, IdempotencyKey, Money, ProjectId, SpanId, TenantId,
-    TenantScope, Timestamp, TokenCounts, TraceId,
+    Currency, EnvironmentId, IdempotencyKey, Money, ProjectId, SpanId, TenantId, TenantScope,
+    Timestamp, TokenCounts, TraceId, lower_hex,
 };
 use beater_ingest::{
-    anonymous_auth_context, CanonicalSpanDraft, IngestError, IngestService, NativeIngestRequest,
-    RawTraceIngestRequest,
+    CanonicalSpanDraft, IngestError, IngestService, NativeIngestRequest, RawTraceIngestRequest,
+    anonymous_auth_context,
 };
 use beater_schema::{
     AgentSpanKind, AuthContext, CanonicalAttrs, ModelRef, RedactionClass, SourceDialect, SpanStatus,
 };
 use chrono::{TimeZone, Utc};
 use opentelemetry_proto::tonic::collector::trace::v1::{
-    trace_service_server::TraceService, ExportTraceServiceRequest, ExportTraceServiceResponse,
+    ExportTraceServiceRequest, ExportTraceServiceResponse, trace_service_server::TraceService,
 };
 use opentelemetry_proto::tonic::common::v1::{
-    any_value, AnyValue, ArrayValue, InstrumentationScope,
+    AnyValue, ArrayValue, InstrumentationScope, KeyValue, KeyValueList, any_value,
 };
 use opentelemetry_proto::tonic::resource::v1::Resource;
-use opentelemetry_proto::tonic::trace::v1::{span, ResourceSpans, ScopeSpans, Span};
+use opentelemetry_proto::tonic::trace::v1::{
+    ResourceSpans, ScopeSpans, Span, Status as OtlpStatus, span,
+};
 use prost::Message;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 use std::collections::BTreeMap;
 use tonic::metadata::MetadataMap;
 use tonic::{Request, Response, Status};
@@ -50,8 +52,8 @@ pub use opentelemetry_proto::tonic::collector::trace::v1::trace_service_server::
 
 pub mod propagation;
 pub use propagation::{
-    carrier_from, spawn_with_context, Baggage, Carrier, CarrierMut, TraceContext, BAGGAGE_HEADER,
-    REDACTED_BAGGAGE_VALUE, TRACEPARENT_HEADER, TRACESTATE_HEADER,
+    BAGGAGE_HEADER, Baggage, Carrier, CarrierMut, REDACTED_BAGGAGE_VALUE, TRACEPARENT_HEADER,
+    TRACESTATE_HEADER, TraceContext, carrier_from, spawn_with_context,
 };
 
 const TENANT_METADATA_KEY: &str = "x-beater-tenant-id";
@@ -82,8 +84,50 @@ pub fn decode_export_trace_request(bytes: &[u8]) -> anyhow::Result<ExportTraceSe
     ExportTraceServiceRequest::decode(bytes).map_err(anyhow::Error::from)
 }
 
+pub fn decode_export_trace_request_json(bytes: &[u8]) -> anyhow::Result<ExportTraceServiceRequest> {
+    let value: Value = serde_json::from_slice(bytes)?;
+    json_export_trace_request(&value)
+}
+
 pub fn encode_export_trace_request(request: &ExportTraceServiceRequest) -> Vec<u8> {
     request.encode_to_vec()
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct OtlpScopeHints {
+    pub tenant_id: Option<String>,
+    pub project_id: Option<String>,
+    pub environment_id: Option<String>,
+}
+
+pub fn export_scope_hints(request: &ExportTraceServiceRequest) -> OtlpScopeHints {
+    let mut hints = OtlpScopeHints::default();
+    for resource_spans in &request.resource_spans {
+        let Some(resource) = &resource_spans.resource else {
+            continue;
+        };
+        for attr in &resource.attributes {
+            let value = any_value_to_json(attr.value.as_ref());
+            let Some(value) = value.as_str() else {
+                continue;
+            };
+            match attr.key.as_str() {
+                "beater.tenant_id" if hints.tenant_id.is_none() => {
+                    hints.tenant_id = Some(value.to_string());
+                }
+                "beater.project_id" if hints.project_id.is_none() => {
+                    hints.project_id = Some(value.to_string());
+                }
+                "beater.environment_id" | "deployment.environment.name"
+                    if hints.environment_id.is_none() =>
+                {
+                    hints.environment_id = Some(value.to_string());
+                }
+                _ => {}
+            }
+        }
+    }
+    hints
 }
 
 #[derive(Clone)]
@@ -155,6 +199,22 @@ pub fn export_to_raw_trace_ingest_request(
     request: ExportTraceServiceRequest,
     auth_context: AuthContext,
 ) -> anyhow::Result<RawTraceIngestRequest> {
+    export_to_raw_trace_ingest_request_with_mime_type(
+        scope,
+        raw_bytes,
+        request,
+        auth_context,
+        "application/x-protobuf",
+    )
+}
+
+pub fn export_to_raw_trace_ingest_request_with_mime_type(
+    scope: TenantScope,
+    raw_bytes: Vec<u8>,
+    request: ExportTraceServiceRequest,
+    auth_context: AuthContext,
+    mime_type: impl Into<String>,
+) -> anyhow::Result<RawTraceIngestRequest> {
     let source_schema_url = first_schema_url(&request);
     let source_schema_version = source_schema_url
         .as_deref()
@@ -170,13 +230,289 @@ pub fn export_to_raw_trace_ingest_request(
         source_schema_url,
         source_schema_version,
         normalizer_version: "beater-otlp-v1".to_string(),
-        mime_type: "application/x-protobuf".to_string(),
+        mime_type: mime_type.into(),
         redaction_class: RedactionClass::Sensitive,
         raw_bytes,
         raw_idempotency_key: None,
         auth_context: Some(auth_context),
         spans,
     })
+}
+
+fn json_export_trace_request(value: &Value) -> anyhow::Result<ExportTraceServiceRequest> {
+    let resource_spans = json_array(value, "resourceSpans")?
+        .iter()
+        .map(json_resource_spans)
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    Ok(ExportTraceServiceRequest { resource_spans })
+}
+
+fn json_resource_spans(value: &Value) -> anyhow::Result<ResourceSpans> {
+    Ok(ResourceSpans {
+        resource: value.get("resource").map(json_resource).transpose()?,
+        scope_spans: json_array(value, "scopeSpans")?
+            .iter()
+            .map(json_scope_spans)
+            .collect::<anyhow::Result<Vec<_>>>()?,
+        schema_url: json_string(value, "schemaUrl").unwrap_or_default(),
+    })
+}
+
+fn json_resource(value: &Value) -> anyhow::Result<Resource> {
+    Ok(Resource {
+        attributes: json_array(value, "attributes")?
+            .iter()
+            .map(json_key_value)
+            .collect::<anyhow::Result<Vec<_>>>()?,
+        dropped_attributes_count: json_u32(value, "droppedAttributesCount")?,
+        entity_refs: Vec::new(),
+    })
+}
+
+fn json_scope_spans(value: &Value) -> anyhow::Result<ScopeSpans> {
+    Ok(ScopeSpans {
+        scope: value.get("scope").map(json_scope).transpose()?,
+        spans: json_array(value, "spans")?
+            .iter()
+            .map(json_span)
+            .collect::<anyhow::Result<Vec<_>>>()?,
+        schema_url: json_string(value, "schemaUrl").unwrap_or_default(),
+    })
+}
+
+fn json_scope(value: &Value) -> anyhow::Result<InstrumentationScope> {
+    Ok(InstrumentationScope {
+        name: json_string(value, "name").unwrap_or_default(),
+        version: json_string(value, "version").unwrap_or_default(),
+        attributes: json_array(value, "attributes")?
+            .iter()
+            .map(json_key_value)
+            .collect::<anyhow::Result<Vec<_>>>()?,
+        dropped_attributes_count: json_u32(value, "droppedAttributesCount")?,
+    })
+}
+
+fn json_span(value: &Value) -> anyhow::Result<Span> {
+    Ok(Span {
+        trace_id: json_hex_bytes(value, "traceId")?,
+        span_id: json_hex_bytes(value, "spanId")?,
+        trace_state: json_string(value, "traceState").unwrap_or_default(),
+        parent_span_id: json_string(value, "parentSpanId")
+            .map(|hex| parse_hex_bytes(&hex, "parentSpanId"))
+            .transpose()?
+            .unwrap_or_default(),
+        flags: json_u32(value, "flags")?,
+        name: json_string(value, "name").unwrap_or_default(),
+        kind: json_span_kind(value.get("kind")),
+        start_time_unix_nano: json_u64(value, "startTimeUnixNano")?,
+        end_time_unix_nano: json_u64(value, "endTimeUnixNano")?,
+        attributes: json_array(value, "attributes")?
+            .iter()
+            .map(json_key_value)
+            .collect::<anyhow::Result<Vec<_>>>()?,
+        dropped_attributes_count: json_u32(value, "droppedAttributesCount")?,
+        events: json_array(value, "events")?
+            .iter()
+            .map(json_span_event)
+            .collect::<anyhow::Result<Vec<_>>>()?,
+        dropped_events_count: json_u32(value, "droppedEventsCount")?,
+        links: json_array(value, "links")?
+            .iter()
+            .map(json_span_link)
+            .collect::<anyhow::Result<Vec<_>>>()?,
+        dropped_links_count: json_u32(value, "droppedLinksCount")?,
+        status: value.get("status").map(json_status).transpose()?,
+    })
+}
+
+fn json_span_event(value: &Value) -> anyhow::Result<span::Event> {
+    Ok(span::Event {
+        time_unix_nano: json_u64(value, "timeUnixNano")?,
+        name: json_string(value, "name").unwrap_or_default(),
+        attributes: json_array(value, "attributes")?
+            .iter()
+            .map(json_key_value)
+            .collect::<anyhow::Result<Vec<_>>>()?,
+        dropped_attributes_count: json_u32(value, "droppedAttributesCount")?,
+    })
+}
+
+fn json_span_link(value: &Value) -> anyhow::Result<span::Link> {
+    Ok(span::Link {
+        trace_id: json_hex_bytes(value, "traceId")?,
+        span_id: json_hex_bytes(value, "spanId")?,
+        trace_state: json_string(value, "traceState").unwrap_or_default(),
+        attributes: json_array(value, "attributes")?
+            .iter()
+            .map(json_key_value)
+            .collect::<anyhow::Result<Vec<_>>>()?,
+        dropped_attributes_count: json_u32(value, "droppedAttributesCount")?,
+        flags: json_u32(value, "flags")?,
+    })
+}
+
+fn json_status(value: &Value) -> anyhow::Result<OtlpStatus> {
+    Ok(OtlpStatus {
+        message: json_string(value, "message").unwrap_or_default(),
+        code: json_status_code(value.get("code")),
+    })
+}
+
+fn json_key_value(value: &Value) -> anyhow::Result<KeyValue> {
+    let key = json_string(value, "key").ok_or_else(|| anyhow::anyhow!("OTLP key is missing"))?;
+    let value = value.get("value").map(json_any_value).transpose()?;
+    Ok(KeyValue {
+        key,
+        value,
+        key_strindex: 0,
+    })
+}
+
+fn json_any_value(value: &Value) -> anyhow::Result<AnyValue> {
+    let json_value = if let Some(value) = value.get("stringValue") {
+        any_value::Value::StringValue(json_scalar_to_string(value)?)
+    } else if let Some(value) = value.get("boolValue") {
+        any_value::Value::BoolValue(value.as_bool().unwrap_or(false))
+    } else if let Some(value) = value.get("intValue") {
+        any_value::Value::IntValue(json_i64_value(value)?)
+    } else if let Some(value) = value.get("doubleValue") {
+        any_value::Value::DoubleValue(value.as_f64().unwrap_or(0.0))
+    } else if let Some(value) = value.get("bytesValue") {
+        any_value::Value::BytesValue(parse_hex_bytes(
+            &json_scalar_to_string(value)?,
+            "bytesValue",
+        )?)
+    } else if let Some(value) = value.get("arrayValue") {
+        any_value::Value::ArrayValue(ArrayValue {
+            values: json_array(value, "values")?
+                .iter()
+                .map(json_any_value)
+                .collect::<anyhow::Result<Vec<_>>>()?,
+        })
+    } else if let Some(value) = value.get("kvlistValue") {
+        any_value::Value::KvlistValue(KeyValueList {
+            values: json_array(value, "values")?
+                .iter()
+                .map(json_key_value)
+                .collect::<anyhow::Result<Vec<_>>>()?,
+        })
+    } else {
+        any_value::Value::StringValue(value.to_string())
+    };
+    Ok(AnyValue {
+        value: Some(json_value),
+    })
+}
+
+fn json_array<'a>(value: &'a Value, key: &str) -> anyhow::Result<&'a Vec<Value>> {
+    match value.get(key) {
+        None => Ok(empty_json_array()),
+        Some(Value::Array(values)) => Ok(values),
+        Some(_) => Err(anyhow::anyhow!("OTLP {key} must be an array")),
+    }
+}
+
+fn empty_json_array() -> &'static Vec<Value> {
+    static EMPTY: std::sync::OnceLock<Vec<Value>> = std::sync::OnceLock::new();
+    EMPTY.get_or_init(Vec::new)
+}
+
+fn json_string(value: &Value, key: &str) -> Option<String> {
+    value
+        .get(key)
+        .and_then(|value| value.as_str().map(str::to_string))
+}
+
+fn json_hex_bytes(value: &Value, key: &str) -> anyhow::Result<Vec<u8>> {
+    let hex = json_string(value, key).ok_or_else(|| anyhow::anyhow!("OTLP {key} is missing"))?;
+    parse_hex_bytes(&hex, key)
+}
+
+fn parse_hex_bytes(hex: &str, field_name: &str) -> anyhow::Result<Vec<u8>> {
+    if !hex.len().is_multiple_of(2) {
+        return Err(anyhow::anyhow!("OTLP {field_name} must be even-length hex"));
+    }
+    let mut bytes = Vec::with_capacity(hex.len() / 2);
+    for pair in hex.as_bytes().chunks_exact(2) {
+        let pair = std::str::from_utf8(pair)?;
+        bytes.push(u8::from_str_radix(pair, 16)?);
+    }
+    Ok(bytes)
+}
+
+fn json_u64(value: &Value, key: &str) -> anyhow::Result<u64> {
+    match value.get(key) {
+        None => Ok(0),
+        Some(Value::Number(number)) => number
+            .as_u64()
+            .ok_or_else(|| anyhow::anyhow!("OTLP {key} must be an unsigned integer")),
+        Some(Value::String(value)) => value
+            .parse::<u64>()
+            .map_err(|err| anyhow::anyhow!("OTLP {key} must be an unsigned integer: {err}")),
+        Some(_) => Err(anyhow::anyhow!(
+            "OTLP {key} must be an unsigned integer or string"
+        )),
+    }
+}
+
+fn json_u32(value: &Value, key: &str) -> anyhow::Result<u32> {
+    let value = json_u64(value, key)?;
+    u32::try_from(value).map_err(|err| anyhow::anyhow!("OTLP {key} exceeds u32: {err}"))
+}
+
+fn json_i64_value(value: &Value) -> anyhow::Result<i64> {
+    match value {
+        Value::Number(number) => number
+            .as_i64()
+            .ok_or_else(|| anyhow::anyhow!("OTLP intValue must be a signed integer")),
+        Value::String(value) => value
+            .parse::<i64>()
+            .map_err(|err| anyhow::anyhow!("OTLP intValue must be a signed integer: {err}")),
+        _ => Err(anyhow::anyhow!(
+            "OTLP intValue must be an integer or string"
+        )),
+    }
+}
+
+fn json_scalar_to_string(value: &Value) -> anyhow::Result<String> {
+    match value {
+        Value::String(value) => Ok(value.clone()),
+        Value::Number(_) | Value::Bool(_) | Value::Null => Ok(value.to_string()),
+        Value::Array(_) | Value::Object(_) => {
+            Err(anyhow::anyhow!("OTLP scalar must not be nested"))
+        }
+    }
+}
+
+fn json_span_kind(value: Option<&Value>) -> i32 {
+    match value {
+        Some(Value::Number(value)) => value.as_i64().unwrap_or(0) as i32,
+        Some(Value::String(value)) => match value.as_str() {
+            "SPAN_KIND_INTERNAL" => span::SpanKind::Internal as i32,
+            "SPAN_KIND_SERVER" => span::SpanKind::Server as i32,
+            "SPAN_KIND_CLIENT" => span::SpanKind::Client as i32,
+            "SPAN_KIND_PRODUCER" => span::SpanKind::Producer as i32,
+            "SPAN_KIND_CONSUMER" => span::SpanKind::Consumer as i32,
+            _ => span::SpanKind::Unspecified as i32,
+        },
+        _ => span::SpanKind::Unspecified as i32,
+    }
+}
+
+fn json_status_code(value: Option<&Value>) -> i32 {
+    match value {
+        Some(Value::Number(value)) => value.as_i64().unwrap_or(0) as i32,
+        Some(Value::String(value)) => match value.as_str() {
+            "STATUS_CODE_OK" => {
+                opentelemetry_proto::tonic::trace::v1::status::StatusCode::Ok as i32
+            }
+            "STATUS_CODE_ERROR" => {
+                opentelemetry_proto::tonic::trace::v1::status::StatusCode::Error as i32
+            }
+            _ => opentelemetry_proto::tonic::trace::v1::status::StatusCode::Unset as i32,
+        },
+        _ => opentelemetry_proto::tonic::trace::v1::status::StatusCode::Unset as i32,
+    }
 }
 
 fn native_to_span_draft(request: NativeIngestRequest) -> CanonicalSpanDraft {
@@ -375,6 +711,12 @@ fn convert_span(
             Value::String(span.trace_state),
         );
     }
+    let input = attributes
+        .remove("input.value")
+        .or_else(|| span_event_payload(&span.events, "beater.input"));
+    let output = attributes
+        .remove("output.value")
+        .or_else(|| span_event_payload(&span.events, "beater.output"));
 
     let status = resolve_span_status(convert_status(span.status.as_ref()), &attributes);
     let kind = infer_agent_span_kind(&attributes, &span.name, span.kind);
@@ -407,8 +749,8 @@ fn convert_span(
         model,
         cost,
         tokens,
-        input: attributes.remove("input.value"),
-        output: attributes.remove("output.value"),
+        input,
+        output,
         attributes,
         redaction_class: RedactionClass::Sensitive,
         idempotency_key: Some(IdempotencyKey::new(format!(
@@ -420,6 +762,27 @@ fn convert_span(
         ))?),
         auth_context: None,
     })
+}
+
+fn span_event_payload(events: &[span::Event], name: &str) -> Option<Value> {
+    events
+        .iter()
+        .find(|event| event.name == name)
+        .and_then(|event| {
+            event.attributes.iter().find_map(|attr| {
+                if attr.key != "beater.payload_json" {
+                    return None;
+                }
+                Some(parse_json_payload(any_value_to_json(attr.value.as_ref())))
+            })
+        })
+}
+
+fn parse_json_payload(value: Value) -> Value {
+    match value {
+        Value::String(value) => serde_json::from_str(&value).unwrap_or(Value::String(value)),
+        other => other,
+    }
 }
 
 /// Build the `resource.<key>`-prefixed canonical attributes once per
@@ -893,14 +1256,14 @@ mod tests {
     use beater_ingest::{IngestPolicy, TRACE_WRITE_BATCH_KIND};
     use beater_store_obj::FsArtifactStore;
     use beater_store_sql::SqliteTraceStore;
-    use opentelemetry_proto::tonic::common::v1::{any_value, AnyValue, KeyValue};
+    use opentelemetry_proto::tonic::common::v1::{AnyValue, KeyValue, any_value};
     use opentelemetry_proto::tonic::resource::v1::Resource;
-    use opentelemetry_proto::tonic::trace::v1::{status, ResourceSpans, ScopeSpans, Span, Status};
+    use opentelemetry_proto::tonic::trace::v1::{ResourceSpans, ScopeSpans, Span, Status, status};
     use std::collections::{BTreeMap, BTreeSet};
     use std::sync::Arc;
 
     fn lossy_canonical_span() -> beater_schema::CanonicalSpan {
-        use beater_schema::{ArtifactRef, CanonicalSpan, CANONICAL_SCHEMA_VERSION};
+        use beater_schema::{ArtifactRef, CANONICAL_SCHEMA_VERSION, CanonicalSpan};
         CanonicalSpan {
             schema_version: CANONICAL_SCHEMA_VERSION,
             normalizer_version: "beater-otlp-v1".to_string(),
@@ -1311,6 +1674,85 @@ mod tests {
     }
 
     #[test]
+    fn decodes_collector_otlp_json_and_extracts_scope_hints() {
+        let payload = json!({
+            "resourceSpans": [{
+                "resource": {
+                    "attributes": [
+                        {"key": "service.name", "value": {"stringValue": "beater.js"}},
+                        {"key": "beater.tenant_id", "value": {"stringValue": "tenant"}},
+                        {"key": "beater.project_id", "value": {"stringValue": "project"}},
+                        {"key": "deployment.environment.name", "value": {"stringValue": "prod"}}
+                    ]
+                },
+                "scopeSpans": [{
+                    "scope": {"name": "beater-agent", "version": "0.1.0"},
+                    "spans": [{
+                        "traceId": "0102030405060708090a0b0c0d0e0f10",
+                        "spanId": "1112131415161718",
+                        "name": "beater.js agent run",
+                        "kind": "SPAN_KIND_INTERNAL",
+                        "startTimeUnixNano": "1704067200000000000",
+                        "endTimeUnixNano": "1704067201000000000",
+                        "attributes": [
+                            {"key": "beater.span.kind", "value": {"stringValue": "agent.run"}},
+                            {"key": "beater.step_seq", "value": {"intValue": "7"}}
+                        ],
+                        "events": [
+                            {
+                                "name": "beater.input",
+                                "timeUnixNano": "1704067200000000000",
+                                "attributes": [
+                                    {"key": "beater.payload_json", "value": {"stringValue": "{\"prompt\":\"hello\"}"}}
+                                ]
+                            },
+                            {
+                                "name": "beater.output",
+                                "timeUnixNano": "1704067201000000000",
+                                "attributes": [
+                                    {"key": "beater.payload_json", "value": {"stringValue": "{\"answer\":\"world\"}"}}
+                                ]
+                            }
+                        ],
+                        "status": {"code": "STATUS_CODE_OK"}
+                    }]
+                }]
+            }]
+        });
+        let bytes = serde_json::to_vec(&payload).unwrap_or_else(|err| panic!("{err}"));
+
+        let decoded =
+            decode_export_trace_request_json(&bytes).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(
+            export_scope_hints(&decoded),
+            OtlpScopeHints {
+                tenant_id: Some("tenant".to_string()),
+                project_id: Some("project".to_string()),
+                environment_id: Some("prod".to_string()),
+            }
+        );
+
+        let scope = TenantScope::new(
+            TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+            ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+            EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+        );
+        let converted =
+            export_to_native_requests(scope, decoded).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(converted.len(), 1);
+        assert_eq!(converted[0].kind, AgentSpanKind::AgentRun);
+        assert_eq!(converted[0].status, SpanStatus::Ok);
+        assert_eq!(converted[0].seq, 1);
+        assert_eq!(
+            converted[0].attributes["resource.service.name"],
+            json!("beater.js")
+        );
+        assert_eq!(converted[0].attributes["beater.step_seq"], json!(7));
+        assert_eq!(converted[0].input, Some(json!({"prompt": "hello"})));
+        assert_eq!(converted[0].output, Some(json!({"answer": "world"})));
+    }
+
+    #[test]
     fn maps_every_canonical_beater_span_kind_from_otlp_attrs() {
         let cases = [
             ("agent.run", AgentSpanKind::AgentRun),
@@ -1636,9 +2078,11 @@ mod tests {
                 json!(4)
             );
             // No un-prefixed leakage of the dropped-count key.
-            assert!(!span
-                .attributes
-                .contains_key("otel.dropped_resource_attributes_count"));
+            assert!(
+                !span
+                    .attributes
+                    .contains_key("otel.dropped_resource_attributes_count")
+            );
         }
     }
 

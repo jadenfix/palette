@@ -30,22 +30,22 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use axum::{
+    Router,
     extract::{Json, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::post,
-    Router,
 };
 use beater_eval::{GateDecision, GatePolicy, VarianceReduction};
 use beater_experiments::{
-    run_optimization_round, CandidateChange, CandidateEvaluator, CaseScore, FailureExample,
-    OptimizationRoundConfig, OptimizerError, OptimizerStrategy, Split,
+    CandidateChange, CandidateEvaluator, CaseScore, FailureExample, OptimizationRoundConfig,
+    OptimizerError, OptimizerStrategy, Split, run_optimization_round,
 };
 use beater_judge::{
     AnthropicJudgeProvider, GenerationRequest, GenerationResponse, HttpJudgeProviderConfig,
     JudgeProviderResult, OpenAiJudgeProvider, ProviderCredentials, RetryPolicy, TextGenerator,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tokio::net::TcpListener;
 
 /// A marker injected into the proposer's canned rewrite so the mock model can
@@ -1166,10 +1166,12 @@ async fn first_accepted_candidate_in_proposal_order_wins() {
         accepted.target
     );
     // The earlier temperature=0 points were evaluated but rejected (regression).
-    assert!(outcome.evaluated[0]
-        .candidate
-        .target
-        .contains("temperature=0,"));
+    assert!(
+        outcome.evaluated[0]
+            .candidate
+            .target
+            .contains("temperature=0,")
+    );
     assert!(!outcome.evaluated[0].accepted);
 }
 

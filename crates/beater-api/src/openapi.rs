@@ -5,7 +5,7 @@
 //! annotations placed on the real handler functions in `lib.rs`, and every schema
 //! is derived from the real request/response types (no hand-maintained mirrors).
 
-use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
+use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, utf8_percent_encode};
 use serde_json::{Map, Value};
 use utoipa::OpenApi;
 
@@ -19,6 +19,7 @@ use utoipa::OpenApi;
     paths(
         crate::health,
         crate::ingest_native,
+        crate::ingest_otlp_json_collector,
         crate::ingest_otlp_http,
         crate::import_source_route,
         crate::create_api_key_route,
@@ -229,9 +230,10 @@ mod tests {
         let ops = operations(&doc);
         // Every advertised operation has an id, a known method, and a path.
         assert!(!ops.is_empty());
-        assert!(ops
-            .iter()
-            .all(|op| !op.operation_id.is_empty() && op.path.starts_with('/')));
+        assert!(
+            ops.iter()
+                .all(|op| !op.operation_id.is_empty() && op.path.starts_with('/'))
+        );
         // operationIds are unique across the surface.
         let mut ids: Vec<&str> = ops.iter().map(|op| op.operation_id).collect();
         ids.sort_unstable();

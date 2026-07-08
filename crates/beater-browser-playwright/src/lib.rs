@@ -22,7 +22,7 @@ use beater_browser::{
     BrowserAction, BrowserDriver, BrowserEngine, BrowserError, Grounding, Observation, StepOutcome,
     StepStatus, UrlPolicy,
 };
-use protocol::{Command, CommandPayload, Response, ResponsePayload, PROTOCOL_VERSION};
+use protocol::{Command, CommandPayload, PROTOCOL_VERSION, Response, ResponsePayload};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -161,7 +161,7 @@ impl PlaywrightDriver {
             other => {
                 return Err(BrowserError::Backend(format!(
                     "expected ready banner, got {other:?}"
-                )))
+                )));
             }
         }
 
@@ -180,7 +180,7 @@ impl PlaywrightDriver {
             other => {
                 return Err(BrowserError::Backend(format!(
                     "expected launch ack, got {other:?}"
-                )))
+                )));
             }
         }
 

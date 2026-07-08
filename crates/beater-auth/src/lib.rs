@@ -1,10 +1,10 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{ApiKeyId, EnvironmentId, ProjectId, TenantId, Timestamp};
-use beater_security::{create_api_key, ApiKeyRecord, ApiScope, CreatedApiKey};
+use beater_security::{ApiKeyRecord, ApiScope, CreatedApiKey, create_api_key};
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::{DateTime, Utc};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::fs;
@@ -277,7 +277,7 @@ fn sql_decode_error(error: impl std::error::Error + Send + Sync + 'static) -> ru
 #[cfg(test)]
 mod tests {
     use super::*;
-    use beater_security::{verify_api_key, SecurityError};
+    use beater_security::{SecurityError, verify_api_key};
 
     #[tokio::test]
     async fn sqlite_store_creates_reads_and_revokes_keys() {

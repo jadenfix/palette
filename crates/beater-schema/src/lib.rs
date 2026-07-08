@@ -625,35 +625,35 @@ pub fn make_idempotency_key(
 }
 
 pub fn span_matches(span: &CanonicalSpan, filter: &SpanFilter) -> bool {
-    if let Some(project_id) = &filter.project_id {
-        if span.project_id != *project_id {
-            return false;
-        }
+    if let Some(project_id) = &filter.project_id
+        && span.project_id != *project_id
+    {
+        return false;
     }
-    if let Some(environment_id) = &filter.environment_id {
-        if span.environment_id != *environment_id {
-            return false;
-        }
+    if let Some(environment_id) = &filter.environment_id
+        && span.environment_id != *environment_id
+    {
+        return false;
     }
-    if let Some(trace_id) = &filter.trace_id {
-        if span.trace_id != *trace_id {
-            return false;
-        }
+    if let Some(trace_id) = &filter.trace_id
+        && span.trace_id != *trace_id
+    {
+        return false;
     }
-    if let Some(span_id) = &filter.span_id {
-        if span.span_id != *span_id {
-            return false;
-        }
+    if let Some(span_id) = &filter.span_id
+        && span.span_id != *span_id
+    {
+        return false;
     }
-    if let Some(kind) = &filter.kind {
-        if span.kind != *kind {
-            return false;
-        }
+    if let Some(kind) = &filter.kind
+        && span.kind != *kind
+    {
+        return false;
     }
-    if let Some(status) = &filter.status {
-        if span.status != *status {
-            return false;
-        }
+    if let Some(status) = &filter.status
+        && span.status != *status
+    {
+        return false;
     }
     true
 }
@@ -757,7 +757,7 @@ pub fn roll_up_runs(tenant: TenantId, spans: Vec<SpanSummary>) -> Vec<RunSummary
         }
     }
 
-    runs.sort_by(|left, right| right.started_at.cmp(&left.started_at));
+    runs.sort_by_key(|run| std::cmp::Reverse(run.started_at));
     runs
 }
 

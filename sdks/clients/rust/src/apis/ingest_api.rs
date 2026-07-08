@@ -119,6 +119,22 @@ pub struct IngestOtlpParams {
     pub x_beater_environment_id: Option<String>
 }
 
+/// struct for passing parameters to the method [`ingest_otlp_json_collector`]
+#[derive(Clone, Debug)]
+pub struct IngestOtlpJsonCollectorParams {
+    pub durability: Option<String>,
+    /// Bearer API token for strict auth
+    pub authorization: Option<String>,
+    /// API key alternative for strict auth
+    pub x_beater_api_key: Option<String>,
+    /// Tenant scope override for collector-style OTLP JSON
+    pub x_beater_tenant_id: Option<String>,
+    /// Project scope override for collector-style OTLP JSON
+    pub x_beater_project_id: Option<String>,
+    /// Environment scope override for collector-style OTLP JSON
+    pub x_beater_environment_id: Option<String>
+}
+
 /// struct for passing parameters to the method [`reconcile_trace`]
 #[derive(Clone, Debug)]
 pub struct ReconcileTraceParams {
@@ -219,6 +235,18 @@ pub enum IngestNativeError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum IngestOtlpError {
+    Status400(models::ErrorResponse),
+    Status401(models::ErrorResponse),
+    Status403(models::ErrorResponse),
+    Status413(models::ErrorResponse),
+    Status429(models::ErrorResponse),
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`ingest_otlp_json_collector`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum IngestOtlpJsonCollectorError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -473,6 +501,48 @@ pub async fn ingest_otlp(configuration: &configuration::Configuration, params: I
     } else {
         let content = resp.text().await?;
         let entity: Option<IngestOtlpError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn ingest_otlp_json_collector(configuration: &configuration::Configuration, params: IngestOtlpJsonCollectorParams) -> Result<models::OtlpIngestOutcome, Error<IngestOtlpJsonCollectorError>> {
+
+    let uri_str = format!("{}/v1/traces", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+
+    if let Some(ref param_value) = params.durability {
+        req_builder = req_builder.query(&[("durability", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(param_value) = params.authorization {
+        req_builder = req_builder.header("authorization", param_value.to_string());
+    }
+    if let Some(param_value) = params.x_beater_api_key {
+        req_builder = req_builder.header("x-beater-api-key", param_value.to_string());
+    }
+    if let Some(param_value) = params.x_beater_tenant_id {
+        req_builder = req_builder.header("x-beater-tenant-id", param_value.to_string());
+    }
+    if let Some(param_value) = params.x_beater_project_id {
+        req_builder = req_builder.header("x-beater-project-id", param_value.to_string());
+    }
+    if let Some(param_value) = params.x_beater_environment_id {
+        req_builder = req_builder.header("x-beater-environment-id", param_value.to_string());
+    }
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        serde_json::from_str(&content).map_err(Error::from)
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<IngestOtlpJsonCollectorError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

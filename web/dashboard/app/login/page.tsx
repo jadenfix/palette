@@ -1,7 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Plug,
   ListTree,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { BrandLockup, BrandVitals } from "../../components/BeaterMark";
+import { safeOAuthReturnPath } from "../../lib/oauth-routing";
 
 type Mode = "login" | "register";
 
@@ -34,9 +36,11 @@ function humanize(status: number, code: unknown): string {
   return "Couldn't sign you in. Try again in a moment.";
 }
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [mode, setMode] = useState<Mode>("login");
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const [mode, setMode] = useState<Mode>(() =>
+    searchParams.get("mode") === "register" ? "register" : "login",
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [reveal, setReveal] = useState(false);
@@ -60,8 +64,7 @@ export default function LoginPage() {
         setError(humanize(res.status, data.error));
         return;
       }
-      router.push("/");
-      router.refresh();
+      window.location.assign(safeOAuthReturnPath(searchParams.get("return_to"), window.location.origin));
     } catch {
       setError("Can't reach beaterd. Check it's running, then retry.");
     } finally {
@@ -114,8 +117,8 @@ export default function LoginPage() {
             <h1>{isRegister ? "Create your account" : "Welcome back"}</h1>
             <p className="auth-sub">
               {isRegister
-                ? "Create a tenant and your first API key."
-                : "Sign in to inspect traces, run evals, and manage keys."}
+                ? "Create your workspace and connect your tools."
+                : "Sign in to inspect traces, run evals, and manage access."}
             </p>
           </div>
 
@@ -203,5 +206,13 @@ export default function LoginPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<main className="auth" />}>
+      <LoginForm />
+    </Suspense>
   );
 }

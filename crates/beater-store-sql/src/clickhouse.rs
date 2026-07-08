@@ -25,11 +25,12 @@ use beater_core::{
     IdempotencyKey, Money, Page, PageRequest, ProjectId, TenantId, Timestamp, TraceId,
 };
 use beater_schema::{
-    span_release_id, span_summary, AgentSpanKind, CanonicalSpan, CanonicalTraceBatch, ModelRef,
-    RawEnvelope, RunFilter, RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck,
+    AgentSpanKind, CanonicalSpan, CanonicalTraceBatch, ModelRef, RawEnvelope, RunFilter,
+    RunSummary, SpanFilter, SpanStatus, SpanSummary, TraceView, WriteAck, span_release_id,
+    span_summary,
 };
 use beater_store::{
-    finalize_run_aggregates, page_vec, RunAggregateRow, StoreError, StoreResult, TraceStore,
+    RunAggregateRow, StoreError, StoreResult, TraceStore, finalize_run_aggregates, page_vec,
 };
 use std::collections::BTreeSet;
 use std::sync::Arc;

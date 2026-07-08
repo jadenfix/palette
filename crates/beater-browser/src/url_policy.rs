@@ -185,10 +185,10 @@ impl UrlPolicy {
             .parse::<IpAddr>()
             .ok()
             .or_else(|| parse_relaxed_ipv4(host).map(IpAddr::V4));
-        if let Some(ip) = ip {
-            if let Some(reason) = check_ip_blocked(&ip) {
-                return PolicyVerdict::Block(format!("rejected: {reason}: {url}"));
-            }
+        if let Some(ip) = ip
+            && let Some(reason) = check_ip_blocked(&ip)
+        {
+            return PolicyVerdict::Block(format!("rejected: {reason}: {url}"));
         }
 
         PolicyVerdict::Allow

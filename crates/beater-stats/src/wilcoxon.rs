@@ -10,7 +10,7 @@
 //! the paired-*t* path reports a mean difference with a Student-*t* interval.
 
 use crate::numerics::normal_quantile;
-use crate::{normal_cdf, validate_alpha, ConfidenceInterval, StatsError};
+use crate::{ConfidenceInterval, StatsError, normal_cdf, validate_alpha};
 
 /// Outcome of a Wilcoxon signed-rank test.
 ///
@@ -209,11 +209,7 @@ fn count_walsh_le(sorted_d: &[f64], t: f64) -> usize {
 /// trick): `a ≤ b  ⟺  key(a) ≤ key(b)` under `total_cmp` order.
 fn f64_key(x: f64) -> u64 {
     let b = x.to_bits();
-    if b >> 63 == 1 {
-        !b
-    } else {
-        b | (1 << 63)
-    }
+    if b >> 63 == 1 { !b } else { b | (1 << 63) }
 }
 
 fn f64_unkey(k: u64) -> f64 {

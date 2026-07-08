@@ -28,12 +28,14 @@ beater-gates = { path = "../beater-gates" }
 beater-human = { path = "../beater-human" }
 beater-ingest = { path = "../beater-ingest" }
 beater-judge = { path = "../beater-judge" }
+beater-oauth = { path = "../beater-oauth" }
 beater-search = { path = "../beater-search" }
 beater-secrets = { path = "../beater-secrets" }
 beater-security = { path = "../beater-security" }
 beater-store-obj = { path = "../beater-store-obj" }
 beater-store-sql = { path = "../beater-store-sql" }
 beater-usage = { path = "../beater-usage" }
+chrono.workspace = true
 tempfile.workspace = true
 tokio.workspace = true
 

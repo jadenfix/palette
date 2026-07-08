@@ -3,7 +3,7 @@ mod metrics_http;
 
 use anyhow::Context;
 use beater_accounts::SqliteAccountStore;
-use beater_api::{router, ApiState};
+use beater_api::{ApiState, router};
 use beater_archive::ParquetTraceArchive;
 use beater_audit::SqliteAuditStore;
 use beater_auth::SqliteApiKeyStore;
@@ -19,7 +19,7 @@ use beater_gates::SqliteGateStore;
 use beater_human::SqliteHumanReviewStore;
 use beater_ingest::{
     ImportError, IngestPolicy, IngestService, RawTraceIngestRequest, SourceImporter,
-    TraceCompletionConfig, TRACE_INGESTED_KIND, TRACE_WRITE_BATCH_KIND,
+    TRACE_INGESTED_KIND, TRACE_WRITE_BATCH_KIND, TraceCompletionConfig,
 };
 use beater_judge::{
     HttpRoutingJudgeProvider, JudgeBrokerService, JudgeProvider, KeywordJudgeProvider,
@@ -39,12 +39,12 @@ use beater_secrets::{EncryptedSqliteProviderSecretStore, SecretKeyring};
 use beater_store::{ArtifactStore, StoreError, StoreResult, TraceStore};
 use beater_store_obj::FsArtifactStore;
 use beater_store_sql::{
-    migrate_local_beaterd_sqlite, SqliteMetadataStore, SqliteQuotaLimiter, SqliteTraceStore,
+    SqliteMetadataStore, SqliteQuotaLimiter, SqliteTraceStore, migrate_local_beaterd_sqlite,
 };
 use beater_usage::SqliteUsageLedger;
 use clap::{Parser, Subcommand, ValueEnum};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json::json;
 use std::fs;
 use std::net::SocketAddr;
@@ -102,6 +102,17 @@ struct Args {
     quota_db_path: Option<PathBuf>,
     #[arg(long, value_enum, default_value_t = AuthModeArg::Required)]
     auth_mode: AuthModeArg,
+    /// Permit `--auth-mode local` to bind HTTP to a non-loopback address (e.g.
+    /// `0.0.0.0` inside a trusted container network). Off by default: local mode
+    /// disables API-key auth, so a public bind would expose an unauthenticated API.
+    /// Only set this when the bind is reachable solely from a trusted network — the
+    /// docker-compose dev stack does exactly this.
+    #[arg(
+        long,
+        env = "BEATER_ALLOW_INSECURE_LOCAL_BIND",
+        default_value_t = false
+    )]
+    allow_insecure_non_loopback: bool,
     #[arg(long, env = "BEATER_PROVIDER_SECRET_KEY")]
     provider_secret_key: Option<String>,
     /// Comma-separated connector tool slugs allowed to execute even when they
@@ -212,10 +223,15 @@ enum AuthModeArg {
 }
 
 fn validate_auth_mode_bind(args: &Args) -> anyhow::Result<()> {
-    if matches!(args.auth_mode, AuthModeArg::Local) && !args.addr.ip().is_loopback() {
+    if matches!(args.auth_mode, AuthModeArg::Local)
+        && !args.addr.ip().is_loopback()
+        && !args.allow_insecure_non_loopback
+    {
         anyhow::bail!(
             "--auth-mode local may only bind HTTP to loopback addresses; got --addr {}. \
-             Use --auth-mode required for non-loopback binds.",
+             Use --auth-mode required for non-loopback binds, or pass \
+             --allow-insecure-non-loopback (env BEATER_ALLOW_INSECURE_LOCAL_BIND) to opt \
+             into an insecure local bind on a trusted network.",
             args.addr
         );
     }
@@ -535,17 +551,28 @@ async fn main() -> anyhow::Result<()> {
     let oauth_metadata_url = format!("{issuer}/.well-known/oauth-protected-resource");
     // Let the HTTP API + MCP accept OAuth access tokens (not just API keys),
     // sharing the same OAuth store the authorization server writes to.
-    state = state.with_oauth(oauth_store.clone(), Some(oauth_metadata_url));
+    state = state.with_oauth(
+        oauth_store.clone(),
+        Some(oauth_metadata_url),
+        issuer.clone(),
+    );
     let oauth_state = OAuthServerState {
         oauth: oauth_store,
         accounts: account_store,
         issuer,
         login_url: args.login_url.clone(),
         scopes_supported: vec![
+            "mcp:invoke".to_string(),
             "trace:read".to_string(),
             "trace:write".to_string(),
-            "mcp:invoke".to_string(),
+            "dataset:write".to_string(),
+            "scenario:read".to_string(),
+            "scenario:write".to_string(),
+            "eval:run".to_string(),
+            "pii:unmask".to_string(),
+            "admin".to_string(),
         ],
+        consents: Default::default(),
         api_keys: api_key_store,
     };
 
@@ -865,13 +892,13 @@ async fn apply_trace_ingested_test_hooks(hooks: &TraceIngestedWorkerHooks) -> Re
             tokio::time::sleep(Duration::from_millis(25)).await;
         }
     }
-    if let Some(fail_while_path) = &hooks.fail_while_path {
-        if fail_while_path.exists() {
-            return Err(format!(
-                "test trace.ingested failure while {} exists",
-                fail_while_path.display()
-            ));
-        }
+    if let Some(fail_while_path) = &hooks.fail_while_path
+        && fail_while_path.exists()
+    {
+        return Err(format!(
+            "test trace.ingested failure while {} exists",
+            fail_while_path.display()
+        ));
     }
     Ok(())
 }
@@ -1369,22 +1396,44 @@ mod auth_default_tests {
     #[test]
     fn auth_mode_local_allows_loopback_http_bind() {
         let args = Args::parse_from(["beaterd", "--auth-mode", "local"]);
-        validate_auth_mode_bind(&args).expect("default loopback bind is allowed");
+        let result = validate_auth_mode_bind(&args);
+        assert!(
+            result.is_ok(),
+            "default loopback bind is allowed: {result:?}"
+        );
 
         let args = Args::parse_from(["beaterd", "--auth-mode", "local", "--addr", "[::1]:8080"]);
-        validate_auth_mode_bind(&args).expect("IPv6 loopback bind is allowed");
+        let result = validate_auth_mode_bind(&args);
+        assert!(result.is_ok(), "IPv6 loopback bind is allowed: {result:?}");
     }
 
     #[test]
     fn auth_mode_local_rejects_public_http_bind() {
         for addr in ["0.0.0.0:8080", "[::]:8080", "192.0.2.10:8080"] {
             let args = Args::parse_from(["beaterd", "--auth-mode", "local", "--addr", addr]);
-            let err = validate_auth_mode_bind(&args)
-                .expect_err("local auth must not bind HTTP publicly")
-                .to_string();
+            let err = match validate_auth_mode_bind(&args) {
+                Ok(()) => panic!("local auth must not bind HTTP publicly"),
+                Err(err) => err.to_string(),
+            };
             assert!(
                 err.contains("--auth-mode local may only bind HTTP to loopback addresses"),
                 "{err}"
+            );
+
+            // The explicit opt-in permits the same otherwise-rejected public bind
+            // (this is what the docker-compose dev stack relies on).
+            let opted_in = Args::parse_from([
+                "beaterd",
+                "--auth-mode",
+                "local",
+                "--addr",
+                addr,
+                "--allow-insecure-non-loopback",
+            ]);
+            let result = validate_auth_mode_bind(&opted_in);
+            assert!(
+                result.is_ok(),
+                "--allow-insecure-non-loopback opts into a public local bind: {result:?}"
             );
         }
     }
@@ -1398,6 +1447,10 @@ mod auth_default_tests {
             "--addr",
             "0.0.0.0:8080",
         ]);
-        validate_auth_mode_bind(&args).expect("required auth may bind publicly");
+        let result = validate_auth_mode_bind(&args);
+        assert!(
+            result.is_ok(),
+            "required auth may bind publicly: {result:?}"
+        );
     }
 }

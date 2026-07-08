@@ -1,11 +1,11 @@
 pub mod reproject;
 
-use anyhow::{anyhow, Context};
-use beater_core::{sha256_json_hash, ProjectId, Sha256Hash, SpanId, TenantId, Timestamp, TraceId};
+use anyhow::{Context, anyhow};
+use beater_core::{ProjectId, Sha256Hash, SpanId, TenantId, Timestamp, TraceId, sha256_json_hash};
 use beater_schema::{CanonicalSpan, ReplayCassette, SpanStatus};
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
@@ -1152,9 +1152,11 @@ mod tests {
         )
         .err()
         .unwrap_or_else(|| panic!("deterministic replay should reject request hash miss"));
-        assert!(error
-            .to_string()
-            .contains("deterministic replay missing event"));
+        assert!(
+            error
+                .to_string()
+                .contains("deterministic replay missing event")
+        );
     }
 
     #[test]

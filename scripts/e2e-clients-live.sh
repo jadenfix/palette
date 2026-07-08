@@ -57,11 +57,20 @@ cpprest_present() {
   ls /usr/lib/libcpprest.* /usr/local/lib/libcpprest.* /opt/homebrew/opt/cpprestsdk 2>/dev/null | grep -q . && return 0
   return 1
 }
+# The generated C client links libcurl, so a bare cmake is not enough: require the
+# curl development headers too, otherwise C "attempts and fails" instead of SKIP.
+c_present() {
+  command -v cmake >/dev/null 2>&1 || return 1
+  { command -v cc >/dev/null 2>&1 || command -v gcc >/dev/null 2>&1; } || return 1
+  pkg-config --exists libcurl 2>/dev/null && return 0
+  ls /usr/include/curl/curl.h /usr/local/include/curl/curl.h /opt/homebrew/include/curl/curl.h 2>/dev/null | grep -q . && return 0
+  return 1
+}
 run_lang python "python3 --version"
 run_lang typescript "node --version"
 run_lang rust "cargo --version"
 run_lang go "go version"
-run_lang c "cmake --version"
+run_lang c "c_present"
 run_lang java "command -v mvn"
 run_lang cpp "cpprest_present"
 
@@ -75,10 +84,16 @@ if [ ${#PASS[@]} -eq 0 ]; then
   echo "ERROR: no language conformance ran (all skipped) -- nothing was tested" >&2
   exit 1
 fi
-# Optionally require a specific set (comma-separated) to have PASSed.
+# When a required set is given, it is the contract: every listed language must
+# have PASSed (a required language that FAILed is not in PASS, so this catches
+# it). Optional languages whose full toolchain happened to be present but failed
+# are reported above but are best-effort, not gating -- this mirrors the SKIP
+# policy and is why BEATER_CONFORMANCE_REQUIRE exists as an allowlist.
 if [ -n "${BEATER_CONFORMANCE_REQUIRE:-}" ]; then
   for need in ${BEATER_CONFORMANCE_REQUIRE//,/ }; do
     printf '%s\n' "${PASS[@]}" | grep -qx "$need" || { echo "ERROR: required language '$need' did not PASS" >&2; exit 1; }
   done
+  exit 0
 fi
+# No explicit allowlist (ad-hoc local run): stay strict -- any failure gates.
 [ ${#FAIL[@]} -eq 0 ] || exit 1

@@ -16,12 +16,12 @@ use beater_browser::{BrowserAction, BrowserDriver, BrowserError, LlmDecision, St
 use beater_browser_capture::{browser_trace, browser_trace_from_spans};
 use beater_datasets::DatasetCase;
 use beater_eval::{
-    compare_paired_scores, evaluate_deterministic, EvalError, EvaluationCase, EvaluatorKind,
-    EvaluatorSpec, GateDecision, GatePolicy,
+    EvalError, EvaluationCase, EvaluatorKind, EvaluatorSpec, GateDecision, GatePolicy,
+    compare_paired_scores, evaluate_deterministic,
 };
 use beater_experiments::{AgentAdapter, AgentAdapterError, AgentRunOutput, HarnessContext};
 use beater_schema::{CanonicalSpan, EvaluatorLane};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::marker::PhantomData;
 
 /// Errors raised by the harness.
@@ -245,7 +245,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use beater_browser::{BrowserEngine, MockDriver, FIXTURE_KNOWN_SELECTOR};
+    use beater_browser::{BrowserEngine, FIXTURE_KNOWN_SELECTOR, MockDriver};
     use std::sync::{Arc, Mutex};
 
     /// A variant that clicks the correct (grounded) element for every task.
@@ -424,9 +424,11 @@ mod tests {
             .err()
             .unwrap_or_else(|| panic!("expected invalid task input error"));
 
-        assert!(error
-            .to_string()
-            .contains("invalid browser task input: expected a string goal"));
+        assert!(
+            error
+                .to_string()
+                .contains("invalid browser task input: expected a string goal")
+        );
         assert!(recorded_goals(&goals).is_empty());
     }
 
@@ -494,7 +496,7 @@ mod tests {
     /// for an ingested `browser-use`/Stagehand step (browser.* attributes).
     fn ingested_span(seq: u64, matched: bool) -> CanonicalSpan {
         use beater_browser::semconv;
-        use beater_schema::{ArtifactRef, RedactionClass, SpanStatus, CANONICAL_SCHEMA_VERSION};
+        use beater_schema::{ArtifactRef, CANONICAL_SCHEMA_VERSION, RedactionClass, SpanStatus};
         let mut attributes = std::collections::BTreeMap::new();
         attributes.insert(semconv::ACTION.to_string(), json!("click"));
         attributes.insert(semconv::SELECTOR.to_string(), json!("#pay"));

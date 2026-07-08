@@ -150,8 +150,7 @@ pub const EVALUATOR_CATALOG: &[EvaluatorCatalogEntry] = &[
         id: "numeric_tolerance",
         lane: EvaluatorLane::DeterministicWasi,
         display_name: "Numeric tolerance",
-        description:
-            "Scores numeric output against a numeric reference within absolute/relative tolerance.",
+        description: "Scores numeric output against a numeric reference within absolute/relative tolerance.",
         requires_reference: true,
         consumes_trace: false,
         wasm_safe: true,
@@ -911,9 +910,9 @@ pub use beater_design::VarianceReduction;
 /// refusing) design.
 pub fn conservative_gate_design(policy: &GatePolicy, sample_size: usize) -> EvalDesign {
     use beater_design::{
-        DatasetSplit, Estimand, MetricDirection, MetricSpec, MetricType, Monitoring,
-        MultiplicityPolicy, RepetitionPlan, SamplingDesign, StoppingRule, TestSelectionPolicy,
-        UnitOfAnalysis, WeightingPolicy, CURRENT_ANALYSIS_VERSION, DEFAULT_POWER,
+        CURRENT_ANALYSIS_VERSION, DEFAULT_POWER, DatasetSplit, Estimand, MetricDirection,
+        MetricSpec, MetricType, Monitoring, MultiplicityPolicy, RepetitionPlan, SamplingDesign,
+        StoppingRule, TestSelectionPolicy, UnitOfAnalysis, WeightingPolicy,
     };
     EvalDesign {
         name: "experiment-gate".to_string(),
@@ -1282,37 +1281,35 @@ fn offline_dispatch(
             if let VarianceReduction::Cuped {
                 population_mean, ..
             } = &design.variance_reduction
-            {
-                if let Some(covariate) = inputs
+                && let Some(covariate) = inputs
                     .covariate
                     .filter(|c| c.len() == baseline.len() && baseline.len() >= 3)
-                {
-                    let outcome = beater_stats::cuped_paired_t_test(
-                        differences,
-                        covariate,
-                        *population_mean,
-                        adjusted_alpha,
-                    )
-                    .map_err(|err| EvalError::Statistics(err.to_string()))?;
-                    let ci = outcome.ci.unwrap_or(beater_stats::ConfidenceInterval {
-                        low: outcome.estimate,
-                        high: outcome.estimate,
-                        confidence: 1.0 - adjusted_alpha,
-                    });
-                    return Ok(assemble_comparison(
-                        baseline,
-                        candidate,
-                        outcome.estimate,
-                        ci,
-                        outcome.p_value,
-                        // A paired t on CUPED-adjusted differences is still a
-                        // paired t; the CUPED provenance lives in the hashed
-                        // design commitment.
-                        StatisticalTest::PairedT,
-                        policy,
-                        adjusted_alpha,
-                    ));
-                }
+            {
+                let outcome = beater_stats::cuped_paired_t_test(
+                    differences,
+                    covariate,
+                    *population_mean,
+                    adjusted_alpha,
+                )
+                .map_err(|err| EvalError::Statistics(err.to_string()))?;
+                let ci = outcome.ci.unwrap_or(beater_stats::ConfidenceInterval {
+                    low: outcome.estimate,
+                    high: outcome.estimate,
+                    confidence: 1.0 - adjusted_alpha,
+                });
+                return Ok(assemble_comparison(
+                    baseline,
+                    candidate,
+                    outcome.estimate,
+                    ci,
+                    outcome.p_value,
+                    // A paired t on CUPED-adjusted differences is still a
+                    // paired t; the CUPED provenance lives in the hashed
+                    // design commitment.
+                    StatisticalTest::PairedT,
+                    policy,
+                    adjusted_alpha,
+                ));
             }
             let outcome = beater_stats::paired_t_test(differences, adjusted_alpha)
                 .map_err(|err| EvalError::Statistics(err.to_string()))?;
@@ -1558,27 +1555,25 @@ pub fn detect_non_reproducible_reason(
 ) -> Option<String> {
     let mut reasons = Vec::new();
 
-    if let Some(judge_model_id) = &manifest.judge_model_id {
-        if !environment
+    if let Some(judge_model_id) = &manifest.judge_model_id
+        && !environment
             .available_judge_model_ids
             .contains(judge_model_id)
-        {
-            reasons.push(format!(
-                "judge model '{judge_model_id}' is no longer available (deprecated or retired)"
-            ));
-        }
+    {
+        reasons.push(format!(
+            "judge model '{judge_model_id}' is no longer available (deprecated or retired)"
+        ));
     }
 
-    if let Some(wasm_hash) = &manifest.wasm_hash {
-        if !environment
+    if let Some(wasm_hash) = &manifest.wasm_hash
+        && !environment
             .available_wasm_hashes
             .contains(wasm_hash.as_str())
-        {
-            reasons.push(format!(
-                "evaluator wasm artifact '{}' is unavailable",
-                wasm_hash.as_str()
-            ));
-        }
+    {
+        reasons.push(format!(
+            "evaluator wasm artifact '{}' is unavailable",
+            wasm_hash.as_str()
+        ));
     }
 
     let missing_inputs: Vec<&str> = manifest
@@ -2246,7 +2241,7 @@ mod tests {
             normalizer_version: "beater-otlp-v1".to_string(),
             trace_schema_version: 1,
             input_artifact_hashes: vec![
-                Sha256Hash::new("input-hash-a").unwrap_or_else(|err| panic!("{err}"))
+                Sha256Hash::new("input-hash-a").unwrap_or_else(|err| panic!("{err}")),
             ],
         }
     }

@@ -34,6 +34,21 @@ cleanup() {
   fi
 }
 
+diagnose_failure() {
+  echo "Beater compose smoke failed; capturing compose status and logs before cleanup." >&2
+  compose ps >&2 || true
+  compose logs --no-color --timestamps >&2 || true
+}
+
+on_exit() {
+  local status=$?
+  if (( status != 0 )); then
+    diagnose_failure
+  fi
+  cleanup
+  exit "$status"
+}
+
 wait_url() {
   local url="$1"
   local label="$2"
@@ -78,7 +93,7 @@ first_trace_id() {
   python3 -c 'import json,sys; print(json.load(sys.stdin)["items"][0]["trace_id"])'
 }
 
-trap cleanup EXIT
+trap on_exit EXIT
 
 compose up -d --build beaterd dashboard
 wait_url "$api_url/health" "beaterd"

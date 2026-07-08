@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use beater_api::{router, v1_route_count, ApiState};
+use beater_api::{ApiState, router, v1_route_count};
 use beater_audit::SqliteAuditStore;
 use beater_auth::SqliteApiKeyStore;
 use beater_bus::InMemoryBus;
@@ -25,8 +25,8 @@ use beater_store_obj::FsArtifactStore;
 use beater_store_sql::SqliteTraceStore;
 use beater_usage::SqliteUsageLedger;
 
-use axum::body::{to_bytes, Body};
 use axum::Router;
+use axum::body::{Body, to_bytes};
 use beater_archive::ParquetTraceArchive;
 use http::{Request, StatusCode};
 use tower::ServiceExt;
@@ -186,4 +186,39 @@ fn health_is_documented() {
         spec.paths.paths.contains_key("/health"),
         "/health must be documented",
     );
+}
+
+#[cfg(not(feature = "billing"))]
+#[test]
+fn default_openapi_does_not_advertise_hosted_billing_paths() {
+    let spec = beater_api::openapi::openapi();
+    let billing_paths: Vec<_> = spec
+        .paths
+        .paths
+        .keys()
+        .filter(|path| path.starts_with("/v1/billing") || path.starts_with("/v1/plans"))
+        .collect();
+
+    assert!(
+        billing_paths.is_empty(),
+        "default OSS OpenAPI must not advertise hosted billing paths: {billing_paths:?}",
+    );
+}
+
+#[cfg(feature = "billing")]
+#[test]
+fn billing_feature_openapi_advertises_hosted_billing_paths() {
+    let spec = beater_api::openapi::openapi();
+
+    for path in [
+        "/v1/plans",
+        "/v1/subscriptions/{org_id}",
+        "/v1/billing/invoices/{org_id}",
+        "/v1/billing/webhooks/stripe",
+    ] {
+        assert!(
+            spec.paths.paths.contains_key(path),
+            "billing OpenAPI must advertise {path}",
+        );
+    }
 }

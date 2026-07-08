@@ -26,7 +26,7 @@
 //! reports exact duplicates as a data-quality signal in the meantime.
 
 use crate::DatasetCase;
-use beater_core::{sha256_json_hash, DatasetCaseId, JsonHashError, Sha256Hash};
+use beater_core::{DatasetCaseId, JsonHashError, Sha256Hash, sha256_json_hash};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -414,9 +414,11 @@ mod tests {
         let cfg = SplitConfig::standard(0);
         let p = partition(&[], &cfg).unwrap_or_else(|err| panic!("{err}"));
         assert!(p.is_empty());
-        assert!(duplicate_inputs(&[], &cfg)
-            .unwrap_or_else(|err| panic!("{err}"))
-            .is_empty());
+        assert!(
+            duplicate_inputs(&[], &cfg)
+                .unwrap_or_else(|err| panic!("{err}"))
+                .is_empty()
+        );
     }
 
     #[test]
@@ -445,8 +447,10 @@ mod tests {
             case_with("c1", json!({"a": 1})),
             case_with("c2", json!({"a": 2})),
         ];
-        assert!(duplicate_inputs(&cases, &cfg)
-            .unwrap_or_else(|err| panic!("{err}"))
-            .is_empty());
+        assert!(
+            duplicate_inputs(&cases, &cfg)
+                .unwrap_or_else(|err| panic!("{err}"))
+                .is_empty()
+        );
     }
 }

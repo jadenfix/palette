@@ -2,7 +2,7 @@
 
 use crate::numerics::{students_t_quantile, students_t_two_sided_p};
 use crate::{
-    mean, sample_variance, validate_alpha, ConfidenceInterval, StatsError, TestKind, TestOutcome,
+    ConfidenceInterval, StatsError, TestKind, TestOutcome, mean, sample_variance, validate_alpha,
 };
 
 /// Two-sided paired t-test over the per-pair `differences`.

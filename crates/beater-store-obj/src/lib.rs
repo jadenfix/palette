@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use beater_core::{sha256_hex, ArtifactId, ProjectId, Sha256Hash, TenantId};
+use beater_core::{ArtifactId, ProjectId, Sha256Hash, TenantId, sha256_hex};
 use beater_schema::{ArtifactRef, RedactionClass};
 use beater_store::{ArtifactStore, StoreError, StoreResult};
 use std::ffi::OsString;
@@ -45,13 +45,13 @@ impl FsArtifactStore {
         let size_bytes = u64::try_from(size_bytes).map_err(|_| {
             StoreError::LimitExceeded("artifact too large to represent as u64".to_string())
         })?;
-        if let Some(max_bytes) = self.max_bytes {
-            if size_bytes > max_bytes {
-                return Err(StoreError::LimitExceeded(format!(
-                    "artifact too large: {size_bytes} > {max_bytes} bytes \
-                     (redaction_class={redaction_class:?})"
-                )));
-            }
+        if let Some(max_bytes) = self.max_bytes
+            && size_bytes > max_bytes
+        {
+            return Err(StoreError::LimitExceeded(format!(
+                "artifact too large: {size_bytes} > {max_bytes} bytes \
+                 (redaction_class={redaction_class:?})"
+            )));
         }
         Ok(size_bytes)
     }
@@ -161,10 +161,10 @@ impl FsArtifactStore {
 fn sync_parent_dir_best_effort(path: &std::path::Path) {
     #[cfg(unix)]
     {
-        if let Some(parent) = path.parent() {
-            if let Ok(parent_dir) = fs::File::open(parent) {
-                let _ = parent_dir.sync_all();
-            }
+        if let Some(parent) = path.parent()
+            && let Ok(parent_dir) = fs::File::open(parent)
+        {
+            let _ = parent_dir.sync_all();
         }
     }
 
@@ -417,9 +417,11 @@ mod tests {
         assert!(store.path_for_uri("artifact:///etc/passwd").is_err());
         // Classic `..` traversal.
         assert!(store.path_for_uri("artifact://../../etc/passwd").is_err());
-        assert!(store
-            .path_for_uri("artifact://tenant/../../../etc/passwd")
-            .is_err());
+        assert!(
+            store
+                .path_for_uri("artifact://tenant/../../../etc/passwd")
+                .is_err()
+        );
         // `.` segments and empty paths.
         assert!(store.path_for_uri("artifact://./secret").is_err());
         assert!(store.path_for_uri("artifact://").is_err());

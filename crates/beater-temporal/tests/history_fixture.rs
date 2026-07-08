@@ -4,8 +4,8 @@
 
 use beater_core::{EnvironmentId, ProjectId, TenantId, TenantScope};
 use beater_schema::{AgentSpanKind, SpanStatus};
-use beater_temporal::{convert_history, temporal_history_to_raw_ingest, ConvertedHistory};
-use serde_json::{json, Value};
+use beater_temporal::{ConvertedHistory, convert_history, temporal_history_to_raw_ingest};
+use serde_json::{Value, json};
 
 const HISTORY: &str = include_str!("fixtures/order_workflow_history.json");
 

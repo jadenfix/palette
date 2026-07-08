@@ -119,10 +119,10 @@ impl CapabilityLease {
     /// Whether the lease is active at `now`: issued, not yet expired, and not
     /// revoked.
     pub fn is_active(&self, now: Timestamp) -> bool {
-        if let Some(revoked_at) = self.revoked_at {
-            if revoked_at <= now {
-                return false;
-            }
+        if let Some(revoked_at) = self.revoked_at
+            && revoked_at <= now
+        {
+            return false;
         }
         self.issued_at <= now && now < self.expires_at
     }
@@ -970,9 +970,11 @@ mod tests {
         let findings = registry.report_findings(ts(10_000), 3_600);
         // Unused (last seen at 0, now 10000, threshold 3600) and broad scope.
         assert!(findings.iter().any(|f| matches!(f, Finding::Unused { .. })));
-        assert!(findings
-            .iter()
-            .any(|f| matches!(f, Finding::BroadScope { scope, .. } if scope == "*")));
+        assert!(
+            findings
+                .iter()
+                .any(|f| matches!(f, Finding::BroadScope { scope, .. } if scope == "*"))
+        );
     }
 
     #[test]
@@ -993,9 +995,11 @@ mod tests {
             .register(identity)
             .unwrap_or_else(|e| panic!("{e}"));
         let findings = registry.report_findings(ts(10_000), 3_600);
-        assert!(findings
-            .iter()
-            .any(|f| matches!(f, Finding::NoOwner { .. })));
+        assert!(
+            findings
+                .iter()
+                .any(|f| matches!(f, Finding::NoOwner { .. }))
+        );
     }
 
     #[test]

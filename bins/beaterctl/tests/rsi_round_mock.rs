@@ -18,12 +18,12 @@
 use std::sync::Arc;
 
 use axum::{
+    Router,
     extract::{Json, State},
     response::{IntoResponse, Response},
     routing::post,
-    Router,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tokio::net::TcpListener;
 
 /// Marker the mock injects into the proposer's rewrite so evaluation calls that
@@ -173,10 +173,12 @@ async fn rsi_round_accepts_generalizing_candidate_against_mock() {
     );
     assert_eq!(accepted["proposed_by"], "llm_rewrite");
     assert_eq!(accepted["kind"], "system_prompt");
-    assert!(accepted["target"]
-        .as_str()
-        .unwrap_or_default()
-        .contains(CANDIDATE_MARKER));
+    assert!(
+        accepted["target"]
+            .as_str()
+            .unwrap_or_default()
+            .contains(CANDIDATE_MARKER)
+    );
 
     let evaluated = report["evaluated"].as_array().expect("evaluated array");
     assert_eq!(evaluated.len(), 1);

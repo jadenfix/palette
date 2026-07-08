@@ -26,14 +26,15 @@
 //! `authorize()` path runs unchanged. When the server is built with auth
 //! disabled, calls are anonymous, exactly as for direct HTTP.
 
-use axum::body::{to_bytes, Body};
+use axum::Router;
+use axum::body::{Body, to_bytes};
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
-use axum::Router;
-use beater_api::{openapi::urlencode, router as api_router, ApiState};
+use beater_api::{ApiState, openapi::urlencode, router as api_router};
 use http::{HeaderMap, Method, Request, StatusCode};
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
+use std::collections::{BTreeSet, VecDeque};
 use std::sync::OnceLock;
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
 use tower::ServiceExt;
@@ -46,6 +47,10 @@ const PROTOCOL_VERSION: &str = "2025-06-18";
 /// client's requested version when it is one of these, else falls back to
 /// [`PROTOCOL_VERSION`] — standard MCP version negotiation.
 const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26", "2024-11-05"];
+
+/// Server-wide guidance returned from `initialize`. Codex and other MCP clients
+/// can use this before choosing tools, so keep the opening self-contained.
+const SERVER_INSTRUCTIONS: &str = "Beater MCP exposes the Beater /v1 API as tools for agent trace, dataset, review, eval, and admin workflows. Start with the help tool when unsure. Use the narrowest OAuth scopes possible: mcp:invoke plus trace:read for inspection, dataset:write for dataset/review writes, eval:run for eval execution, and admin only for administrative actions. OAuth tokens are bound to tenant/project/environment; do not invent ids.";
 
 /// Maximum response body size we will buffer from a dispatched handler.
 const MAX_BODY_BYTES: usize = 32 * 1024 * 1024;
@@ -298,17 +303,70 @@ fn resolves_to_object(schema: &Value, component_schemas: Option<&Value>) -> bool
 /// (`#/components/schemas/...`), so that is the single location we expose;
 /// JSON Schema 2020-12 permits these sibling keywords alongside a root `$ref`.
 fn bundle_component_schemas(target: &mut Map<String, Value>, component_schemas: Option<&Value>) {
-    if let Some(schemas) = component_schemas {
-        target.insert(
-            "components".to_string(),
-            json!({ "schemas": schemas.clone() }),
-        );
+    let Some(Value::Object(schemas)) = component_schemas else {
+        return;
+    };
+
+    let mut needed = BTreeSet::new();
+    collect_component_refs(&Value::Object(target.clone()), &mut needed);
+    if needed.is_empty() {
+        return;
+    }
+
+    let mut queue: VecDeque<String> = needed.into_iter().collect();
+    let mut bundled = Map::new();
+    while let Some(name) = queue.pop_front() {
+        if bundled.contains_key(&name) {
+            continue;
+        }
+        let Some(schema) = schemas.get(&name) else {
+            continue;
+        };
+        collect_component_refs(schema, &mut queue);
+        bundled.insert(name, schema.clone());
+    }
+
+    if !bundled.is_empty() {
+        target.insert("components".to_string(), json!({ "schemas": bundled }));
+    }
+}
+
+fn collect_component_refs<T>(value: &Value, refs: &mut T)
+where
+    T: Extend<String>,
+{
+    let mut found = Vec::new();
+    collect_component_refs_inner(value, &mut found);
+    refs.extend(found);
+}
+
+fn collect_component_refs_inner(value: &Value, refs: &mut Vec<String>) {
+    match value {
+        Value::Object(obj) => {
+            if let Some(name) = obj
+                .get("$ref")
+                .and_then(Value::as_str)
+                .and_then(|s| s.strip_prefix("#/components/schemas/"))
+            {
+                refs.push(name.to_string());
+            }
+            for child in obj.values() {
+                collect_component_refs_inner(child, refs);
+            }
+        }
+        Value::Array(items) => {
+            for child in items {
+                collect_component_refs_inner(child, refs);
+            }
+        }
+        _ => {}
     }
 }
 
 /// Serialize a tool to its MCP `tools/list` JSON shape: name, description,
-/// input/output schemas, and method-derived behavioural annotations.
-fn tool_to_json(tool: &ToolSpec) -> Value {
+/// input/output schemas, method-derived behavioural annotations, and (for
+/// HTTP/OAuth transports) the scopes needed to invoke it.
+fn tool_to_json(tool: &ToolSpec, advertise_oauth: bool) -> Value {
     let mut obj = Map::new();
     obj.insert("name".to_string(), Value::String(tool.name.clone()));
     obj.insert(
@@ -323,6 +381,12 @@ fn tool_to_json(tool: &ToolSpec) -> Value {
         "annotations".to_string(),
         annotations_for(&tool.method, &tool.name, &tool.description),
     );
+    if advertise_oauth {
+        obj.insert(
+            "securitySchemes".to_string(),
+            json!([{ "type": "oauth2", "scopes": required_oauth_scopes(tool) }]),
+        );
+    }
     Value::Object(obj)
 }
 
@@ -365,6 +429,67 @@ fn annotations_for(method: &str, operation_id: &str, title: &str) -> Value {
     })
 }
 
+fn required_oauth_scopes(tool: &ToolSpec) -> Vec<&'static str> {
+    let api_scope = required_api_scope(&tool.name, &tool.method);
+    if api_scope == "mcp:invoke" {
+        vec!["mcp:invoke"]
+    } else {
+        vec!["mcp:invoke", api_scope]
+    }
+}
+
+fn required_api_scope(operation_id: &str, method: &str) -> &'static str {
+    match operation_id {
+        "createApiKey"
+        | "revokeApiKey"
+        | "connectConnector"
+        | "listProviderSecrets"
+        | "createProviderSecret"
+        | "revokeProviderSecret"
+        | "getUsageSummary"
+        | "getIngestQueueStatus"
+        | "listAuditEvents"
+        | "createPrompt"
+        | "addPromptVersion" => "admin",
+
+        "createReviewQueue"
+        | "enqueueReviewTaskFromTrace"
+        | "submitReviewAnnotation"
+        | "promoteReviewAnnotation" => "dataset:write",
+
+        "createDataset" | "createDatasetVersion" | "promoteDatasetCaseFromTrace" => "dataset:write",
+
+        "runCalibration" => "eval:run",
+
+        "createScenario" | "mineScenarios" => "scenario:write",
+        "listScenarios" | "getScenario" => "scenario:read",
+
+        "evaluateJudge"
+        | "runDeterministicEval"
+        | "runJudgeEval"
+        | "runDeterministicExperiment"
+        | "runJudgeExperiment"
+        | "createGate"
+        | "runGate"
+        | "invokeConnectorTool" => "eval:run",
+
+        "evaluateAlert" | "decideOnlineSampling" => "trace:read",
+
+        "ingestNative"
+        | "ingestOtlp"
+        | "ingestOtlpJsonCollector"
+        | "importSource"
+        | "replayDeadLetter"
+        | "drainTraceWrites"
+        | "drainTraceIngested"
+        | "reconcileTrace"
+        | "archiveTrace" => "trace:write",
+
+        _ if method == "GET" => "trace:read",
+        _ => "trace:write",
+    }
+}
+
 /// Name of the one synthetic, non-spec meta tool. Every other tool maps 1:1 to a
 /// `/v1` operation derived from the spec; `help` is the deliberate exception — a
 /// local discovery aid that never dispatches to the API. It is therefore added at
@@ -373,8 +498,13 @@ fn annotations_for(method: &str, operation_id: &str, title: &str) -> Value {
 const HELP_TOOL_NAME: &str = "help";
 
 /// The `tools/list` entry for the synthetic [`HELP_TOOL_NAME`] tool.
-fn help_tool_json() -> Value {
-    json!({
+fn help_tool_json(advertise_oauth: bool) -> Value {
+    let security_schemes = if advertise_oauth {
+        json!([{ "type": "noauth" }])
+    } else {
+        Value::Null
+    };
+    let mut tool = json!({
         "name": HELP_TOOL_NAME,
         "description": "Discover Beater MCP tools. Call with no arguments for an \
             overview of every tool, `query` to filter by keyword, or `tool` to get \
@@ -405,7 +535,11 @@ fn help_tool_json() -> Value {
         },
         // Pure read of static, in-process data: read-only and idempotent.
         "annotations": annotations_for("GET", "help", "Discover Beater MCP tools"),
-    })
+    });
+    if advertise_oauth && let Some(obj) = tool.as_object_mut() {
+        obj.insert("securitySchemes".to_string(), security_schemes);
+    }
+    tool
 }
 
 /// Compact one-line view of a tool for catalog/overview listings.
@@ -419,8 +553,8 @@ fn tool_summary(tool: &ToolSpec) -> Value {
 
 /// Full descriptor of one tool: its `tools/list` shape plus the underlying HTTP
 /// method and path template.
-fn describe_tool(tool: &ToolSpec) -> Value {
-    let mut value = tool_to_json(tool);
+fn describe_tool(tool: &ToolSpec, advertise_oauth: bool) -> Value {
+    let mut value = tool_to_json(tool, advertise_oauth);
     if let Some(obj) = value.as_object_mut() {
         obj.insert("method".to_string(), Value::String(tool.method.clone()));
         obj.insert(
@@ -435,13 +569,16 @@ fn describe_tool(tool: &ToolSpec) -> Value {
 /// never dispatches to the API. With `tool` it returns that operation's full
 /// descriptor; with `query` it returns matching tools; otherwise an overview of
 /// the whole catalog. The structured result is always a JSON object.
-fn handle_help(arguments: &Map<String, Value>) -> Result<Value, (i64, String)> {
+fn handle_help(
+    arguments: &Map<String, Value>,
+    advertise_oauth: bool,
+) -> Result<Value, (i64, String)> {
     let structured = if let Some(name) = arguments.get("tool").and_then(Value::as_str) {
         let tool = tools()
             .iter()
             .find(|t| t.name == name)
             .ok_or((INVALID_PARAMS, format!("unknown tool: {name}")))?;
-        json!({ "tool": describe_tool(tool) })
+        json!({ "tool": describe_tool(tool, advertise_oauth) })
     } else {
         let query = arguments
             .get("query")
@@ -516,7 +653,14 @@ where
             continue;
         }
         let response = match serde_json::from_str::<Value>(&line) {
-            Ok(request) => dispatch_rpc(&state, &headers, &request).await,
+            Ok(request) => match dispatch_rpc(&state, &headers, &request, false).await {
+                Ok(response) => response,
+                Err(_) => Some(rpc_error(
+                    request.get("id").cloned().unwrap_or(Value::Null),
+                    INTERNAL_ERROR,
+                    "transport-level HTTP response is not available over stdio",
+                )),
+            },
             Err(_) => Some(rpc_error(Value::Null, PARSE_ERROR, "invalid JSON")),
         };
         if let Some(response) = response {
@@ -552,14 +696,25 @@ fn rpc_result(id: Value, result: Value) -> Value {
     })
 }
 
-/// `GET /mcp` returns minimal server info for capability probing.
-async fn handle_mcp_get() -> Response {
-    axum::Json(json!({
-        "protocolVersion": PROTOCOL_VERSION,
-        "serverInfo": server_info(),
-        "capabilities": capabilities(),
-    }))
-    .into_response()
+/// `GET /mcp` gives remote clients an OAuth discovery challenge when auth is
+/// configured. The JSON-RPC streamable HTTP transport still uses `POST`.
+async fn handle_mcp_get(State(state): State<ApiState>) -> Response {
+    if state.oauth_metadata_url().is_some() {
+        return oauth_unauthorized_response(
+            &state,
+            StatusCode::UNAUTHORIZED,
+            "Authenticate before connecting to Beater MCP.".to_string(),
+        );
+    }
+    (
+        StatusCode::METHOD_NOT_ALLOWED,
+        [(http::header::ALLOW, "POST")],
+        axum::Json(json!({
+            "error": "method_not_allowed",
+            "message": "GET /mcp SSE streams are not supported; use POST for Streamable HTTP JSON-RPC"
+        })),
+    )
+        .into_response()
 }
 
 fn server_info() -> Value {
@@ -568,6 +723,22 @@ fn server_info() -> Value {
 
 fn capabilities() -> Value {
     json!({ "tools": { "listChanged": false } })
+}
+
+fn initialize_result(params: &Value) -> Value {
+    // Negotiate: echo the client's requested version when we support it,
+    // otherwise advertise our latest.
+    let version = params
+        .get("protocolVersion")
+        .and_then(Value::as_str)
+        .filter(|v| SUPPORTED_PROTOCOL_VERSIONS.contains(v))
+        .unwrap_or(PROTOCOL_VERSION);
+    json!({
+        "protocolVersion": version,
+        "serverInfo": server_info(),
+        "capabilities": capabilities(),
+        "instructions": SERVER_INSTRUCTIONS,
+    })
 }
 
 /// `POST /mcp` — the JSON-RPC 2.0 entry point.
@@ -579,7 +750,7 @@ async fn handle_mcp(State(state): State<ApiState>, headers: HeaderMap, body: Bod
                 Value::Null,
                 PARSE_ERROR,
                 "failed to read request body",
-            ))
+            ));
         }
     };
     let request: Value = match serde_json::from_slice(&bytes) {
@@ -587,28 +758,32 @@ async fn handle_mcp(State(state): State<ApiState>, headers: HeaderMap, body: Bod
         Err(_) => return json_response(rpc_error(Value::Null, PARSE_ERROR, "invalid JSON")),
     };
 
+    if state.oauth_metadata_url().is_some() && !has_presented_credentials(&headers) {
+        return oauth_unauthorized_response(
+            &state,
+            StatusCode::UNAUTHORIZED,
+            "Authenticate before connecting to Beater MCP.".to_string(),
+        );
+    }
+
     // Note: JSON-RPC batching is not used by current MCP clients; handle a
     // single request object.
-    let response = dispatch_rpc(&state, &headers, &request).await;
-    let mut resp = match response {
+    let response = match dispatch_rpc(
+        &state,
+        &headers,
+        &request,
+        state.oauth_metadata_url().is_some(),
+    )
+    .await
+    {
+        Ok(response) => response,
+        Err(response) => return response,
+    };
+    match response {
         Some(resp) => json_response(resp),
         // Notification (no id) — respond 202 with empty body.
         None => StatusCode::ACCEPTED.into_response(),
-    };
-    // MCP OAuth discovery (RFC 9728): when the caller presented no credentials
-    // and the server advertises OAuth, point it at the protected-resource
-    // metadata via a `WWW-Authenticate` challenge so it can start the flow.
-    if let Some(url) = state.oauth_metadata_url() {
-        let has_creds = headers.contains_key(http::header::AUTHORIZATION)
-            || headers.contains_key("x-beater-api-key");
-        if !has_creds {
-            if let Ok(value) = format!("Bearer resource_metadata=\"{url}\"").parse() {
-                resp.headers_mut()
-                    .insert(http::header::WWW_AUTHENTICATE, value);
-            }
-        }
     }
-    resp
 }
 
 fn json_response(value: Value) -> Response {
@@ -616,62 +791,61 @@ fn json_response(value: Value) -> Response {
 }
 
 /// Route a single JSON-RPC request. Returns `None` for notifications (no `id`).
-async fn dispatch_rpc(state: &ApiState, headers: &HeaderMap, request: &Value) -> Option<Value> {
+async fn dispatch_rpc(
+    state: &ApiState,
+    headers: &HeaderMap,
+    request: &Value,
+    advertise_oauth: bool,
+) -> Result<Option<Value>, Response> {
     let id = request.get("id").cloned();
     let is_notification = id.is_none();
     let id = id.unwrap_or(Value::Null);
 
     let Some(method) = request.get("method").and_then(Value::as_str) else {
         if is_notification {
-            return None;
+            return Ok(None);
         }
-        return Some(rpc_error(id, INVALID_REQUEST, "missing method"));
+        return Ok(Some(rpc_error(id, INVALID_REQUEST, "missing method")));
     };
 
     let params = request.get("params").cloned().unwrap_or(Value::Null);
 
     let result = match method {
-        "initialize" => {
-            // Negotiate: echo the client's requested version when we support it,
-            // otherwise advertise our latest.
-            let version = params
-                .get("protocolVersion")
-                .and_then(Value::as_str)
-                .filter(|v| SUPPORTED_PROTOCOL_VERSIONS.contains(v))
-                .unwrap_or(PROTOCOL_VERSION);
-            Ok(json!({
-                "protocolVersion": version,
-                "serverInfo": server_info(),
-                "capabilities": capabilities(),
-            }))
-        }
+        "initialize" => Ok(initialize_result(&params)),
         "notifications/initialized" | "initialized" => {
             // Lifecycle notification: acknowledge, no result.
-            return if is_notification {
+            return Ok(if is_notification {
                 None
             } else {
                 Some(rpc_result(id, json!({})))
-            };
+            });
         }
         "ping" => Ok(json!({})),
         "tools/list" => {
-            let mut list: Vec<Value> = tools().iter().map(tool_to_json).collect();
+            let mut list: Vec<Value> = tools()
+                .iter()
+                .map(|tool| tool_to_json(tool, advertise_oauth))
+                .collect();
             // Append the one synthetic meta tool after the spec-derived tools.
-            list.push(help_tool_json());
+            list.push(help_tool_json(advertise_oauth));
             Ok(json!({ "tools": list }))
         }
-        "tools/call" => call_tool(state, headers, &params).await,
+        "tools/call" => match call_tool(state, headers, &params, advertise_oauth).await {
+            Ok(value) => Ok(value),
+            Err(CallToolError::Rpc(code, message)) => Err((code, message)),
+            Err(CallToolError::Transport(response)) => return Err(response),
+        },
         other => Err((METHOD_NOT_FOUND, format!("unknown method: {other}"))),
     };
 
     if is_notification {
-        return None;
+        return Ok(None);
     }
 
-    Some(match result {
+    Ok(Some(match result {
         Ok(value) => rpc_result(id, value),
         Err((code, message)) => rpc_error(id, code, &message),
-    })
+    }))
 }
 
 /// Handle `tools/call`: resolve the operation, synthesize an HTTP request,
@@ -681,11 +855,12 @@ async fn call_tool(
     state: &ApiState,
     headers: &HeaderMap,
     params: &Value,
-) -> Result<Value, (i64, String)> {
+    advertise_oauth: bool,
+) -> Result<Value, CallToolError> {
     let name = params
         .get("name")
         .and_then(Value::as_str)
-        .ok_or((INVALID_PARAMS, "missing tool name".to_string()))?;
+        .ok_or_else(|| CallToolError::rpc(INVALID_PARAMS, "missing tool name"))?;
     let arguments = params
         .get("arguments")
         .cloned()
@@ -693,29 +868,40 @@ async fn call_tool(
     let arguments = arguments
         .as_object()
         .cloned()
-        .ok_or((INVALID_PARAMS, "arguments must be an object".to_string()))?;
+        .ok_or_else(|| CallToolError::rpc(INVALID_PARAMS, "arguments must be an object"))?;
 
     // The synthetic `help` tool is served locally and never hits the API.
     if name == HELP_TOOL_NAME {
-        return handle_help(&arguments);
+        return handle_help(&arguments, advertise_oauth).map_err(CallToolError::from);
     }
 
     let tool = tools()
         .iter()
         .find(|t| t.name == name)
-        .ok_or((INVALID_PARAMS, format!("unknown tool: {name}")))?;
+        .ok_or_else(|| CallToolError::rpc(INVALID_PARAMS, format!("unknown tool: {name}")))?;
+    if advertise_oauth && !has_presented_credentials(headers) {
+        return Err(CallToolError::Transport(oauth_unauthorized_response(
+            state,
+            StatusCode::UNAUTHORIZED,
+            "Authentication required.".to_string(),
+        )));
+    }
 
     // Substitute path params.
     let mut path = tool.path_template.clone();
     for param in &tool.path_params {
-        let value = arguments.get(param).ok_or((
-            INVALID_PARAMS,
-            format!("missing required path parameter: {param}"),
-        ))?;
-        let rendered = value_to_path_segment(value).ok_or((
-            INVALID_PARAMS,
-            format!("path parameter {param} must be a scalar"),
-        ))?;
+        let value = arguments.get(param).ok_or_else(|| {
+            CallToolError::rpc(
+                INVALID_PARAMS,
+                format!("missing required path parameter: {param}"),
+            )
+        })?;
+        let rendered = value_to_path_segment(value).ok_or_else(|| {
+            CallToolError::rpc(
+                INVALID_PARAMS,
+                format!("path parameter {param} must be a scalar"),
+            )
+        })?;
         path = path.replace(&format!("{{{param}}}"), &urlencode(&rendered));
     }
 
@@ -726,10 +912,12 @@ async fn call_tool(
             if value.is_null() {
                 continue;
             }
-            let rendered = value_to_path_segment(value).ok_or((
-                INVALID_PARAMS,
-                format!("query parameter {param} must be a scalar"),
-            ))?;
+            let rendered = value_to_path_segment(value).ok_or_else(|| {
+                CallToolError::rpc(
+                    INVALID_PARAMS,
+                    format!("query parameter {param} must be a scalar"),
+                )
+            })?;
             query_pairs.push(format!("{}={}", urlencode(param), urlencode(&rendered)));
         }
     }
@@ -750,39 +938,59 @@ async fn call_tool(
     };
 
     let method = Method::from_bytes(tool.method.as_bytes())
-        .map_err(|_| (INTERNAL_ERROR, "invalid method".to_string()))?;
+        .map_err(|_| CallToolError::rpc(INTERNAL_ERROR, "invalid method"))?;
 
     let mut builder = Request::builder().method(method).uri(&uri);
     if tool.has_body {
         builder = builder.header(http::header::CONTENT_TYPE, "application/json");
     }
     // Forward auth headers verbatim so the real authorize() path runs unchanged.
-    for header_name in [
-        http::header::AUTHORIZATION.as_str(),
-        "x-beater-api-key",
-        "x-beater-project-id",
-        "x-beater-environment-id",
+    for header_name in [http::header::AUTHORIZATION.as_str(), "x-beater-api-key"] {
+        if let Some(value) = headers.get(header_name) {
+            builder = builder.header(header_name, value);
+        }
+    }
+    // Most MCP clients cannot reasonably know Beater's auth-context headers.
+    // When the tool schema already carries project/environment arguments, use
+    // those as the scoped auth context unless explicit headers were supplied.
+    for (header_name, argument_name) in [
+        ("x-beater-project-id", "project_id"),
+        ("x-beater-environment-id", "environment_id"),
     ] {
         if let Some(value) = headers.get(header_name) {
+            builder = builder.header(header_name, value);
+        } else if let Some(value) = arguments
+            .get(argument_name)
+            .and_then(value_to_path_segment)
+            .and_then(|value| http::HeaderValue::from_str(&value).ok())
+        {
             builder = builder.header(header_name, value);
         }
     }
 
     let request = builder
         .body(body)
-        .map_err(|e| (INTERNAL_ERROR, format!("failed to build request: {e}")))?;
+        .map_err(|e| CallToolError::rpc(INTERNAL_ERROR, format!("failed to build request: {e}")))?;
 
     // Dispatch through the *real* router — same handlers, state, and auth.
     let response = api_router(state.clone())
         .oneshot(request)
         .await
-        .map_err(|e| (INTERNAL_ERROR, format!("dispatch failed: {e}")))?;
+        .map_err(|e| CallToolError::rpc(INTERNAL_ERROR, format!("dispatch failed: {e}")))?;
 
     let status = response.status();
     let resp_bytes = to_bytes(response.into_body(), MAX_BODY_BYTES)
         .await
-        .map_err(|e| (INTERNAL_ERROR, format!("failed to read response: {e}")))?;
+        .map_err(|e| CallToolError::rpc(INTERNAL_ERROR, format!("failed to read response: {e}")))?;
     let text = String::from_utf8_lossy(&resp_bytes).to_string();
+
+    if status == StatusCode::UNAUTHORIZED
+        || (status == StatusCode::FORBIDDEN && state.oauth_metadata_url().is_some())
+    {
+        return Err(CallToolError::Transport(oauth_unauthorized_response(
+            state, status, text,
+        )));
+    }
 
     // Parse JSON if possible so callers get structured content; else raw text.
     let structured: Value = serde_json::from_str(&text).unwrap_or(Value::Null);
@@ -807,6 +1015,69 @@ async fn call_tool(
     );
 
     Ok(Value::Object(result))
+}
+
+enum CallToolError {
+    Rpc(i64, String),
+    Transport(Response),
+}
+
+impl CallToolError {
+    fn rpc(code: i64, message: impl Into<String>) -> Self {
+        Self::Rpc(code, message.into())
+    }
+}
+
+impl From<(i64, String)> for CallToolError {
+    fn from((code, message): (i64, String)) -> Self {
+        Self::Rpc(code, message)
+    }
+}
+
+fn oauth_unauthorized_response(state: &ApiState, status: StatusCode, message: String) -> Response {
+    let challenge = state.oauth_metadata_url().map(oauth_challenge);
+    let mut response = (
+        status,
+        axum::Json({
+            let mut body = json!({
+            "error": "unauthorized",
+            "message": message,
+            });
+            if let Some(challenge) = &challenge
+                && let Some(obj) = body.as_object_mut()
+            {
+                obj.insert(
+                    "_meta".to_string(),
+                    json!({ "mcp/www_authenticate": [challenge] }),
+                );
+                obj.insert(
+                    "content".to_string(),
+                    json!([{ "type": "text", "text": "Authentication required." }]),
+                );
+                obj.insert("isError".to_string(), Value::Bool(true));
+            }
+            body
+        }),
+    )
+        .into_response();
+    if let Some(challenge) = challenge
+        && let Ok(value) = challenge.parse()
+    {
+        response
+            .headers_mut()
+            .insert(http::header::WWW_AUTHENTICATE, value);
+    }
+    response
+}
+
+fn oauth_challenge(resource_metadata_url: &str) -> String {
+    format!(
+        "Bearer resource_metadata=\"{resource_metadata_url}\", error=\"insufficient_scope\", error_description=\"Authorize Beater MCP access to continue\""
+    )
+}
+
+fn has_presented_credentials(headers: &HeaderMap) -> bool {
+    headers.contains_key(http::header::AUTHORIZATION) || headers.contains_key("x-beater-api-key")
 }
 
 /// Render a scalar JSON value as a path/query segment. Returns `None` for
@@ -931,15 +1202,25 @@ mod tests {
         }
     }
 
-    /// `bundle_component_schemas` exposes the resolved schemas under the OpenAPI
-    /// pointer space the spec's refs use, and nothing else. Without component
-    /// schemas it is a no-op.
+    /// `bundle_component_schemas` exposes only the resolved schemas reachable
+    /// from `$ref`s under the OpenAPI pointer space the spec uses. Without
+    /// component schemas it is a no-op.
     #[test]
     fn bundle_exposes_components_only() {
-        let schemas = json!({ "Foo": { "type": "object" } });
+        let schemas = json!({
+            "Foo": { "type": "object", "properties": { "bar": { "$ref": "#/components/schemas/Bar" } } },
+            "Bar": { "type": "object" },
+            "Unused": { "type": "object" }
+        });
         let mut target = Map::new();
+        target.insert("$ref".to_string(), json!("#/components/schemas/Foo"));
         bundle_component_schemas(&mut target, Some(&schemas));
         assert_eq!(target["components"]["schemas"]["Foo"]["type"], "object");
+        assert_eq!(target["components"]["schemas"]["Bar"]["type"], "object");
+        assert!(
+            target["components"]["schemas"]["Unused"].is_null(),
+            "unreferenced schemas are not bundled"
+        );
         // No dead `$defs` duplicate — the spec's refs never point there.
         assert!(target.get("$defs").is_none(), "no redundant $defs key");
 
@@ -958,6 +1239,32 @@ mod tests {
             "tools() must return the same cached slice"
         );
         assert_eq!(first.len(), second.len());
+    }
+
+    #[test]
+    fn initialize_result_advertises_client_safe_instructions() {
+        let result = initialize_result(&json!({ "protocolVersion": "2025-03-26" }));
+        assert_eq!(result["protocolVersion"], "2025-03-26");
+        assert_eq!(result["serverInfo"]["name"], "beater-mcp");
+        assert!(result["capabilities"]["tools"].is_object());
+
+        let instructions = result["instructions"].as_str().unwrap();
+        assert!(
+            instructions.len() <= 512,
+            "first guidance block should stay compact for clients that truncate"
+        );
+        for expected in [
+            "help tool",
+            "narrowest OAuth scopes",
+            "mcp:invoke",
+            "trace:read",
+            "tenant/project/environment",
+        ] {
+            assert!(
+                instructions.contains(expected),
+                "instructions should mention {expected}"
+            );
+        }
     }
 
     /// `resolves_to_object` resolves inline types and one level of `$ref`, and is
@@ -1036,7 +1343,7 @@ mod tests {
             query_params: vec![],
             has_body: false,
         };
-        let without = tool_to_json(&tool);
+        let without = tool_to_json(&tool, false);
         assert!(without.get("outputSchema").is_none(), "omitted when None");
         assert!(
             without["annotations"].is_object(),
@@ -1044,8 +1351,63 @@ mod tests {
         );
 
         tool.output_schema = Some(json!({ "type": "object" }));
-        let with = tool_to_json(&tool);
+        let with = tool_to_json(&tool, false);
         assert_eq!(with["outputSchema"]["type"], "object");
+    }
+
+    #[test]
+    fn tool_to_json_advertises_mcp_oauth_scopes_when_enabled() {
+        let tool = tools()
+            .iter()
+            .find(|tool| tool.name == "getSpan")
+            .expect("getSpan tool present");
+        let without = tool_to_json(tool, false);
+        assert!(
+            without.get("securitySchemes").is_none(),
+            "stdio/local descriptors should not advertise HTTP OAuth"
+        );
+
+        let with = tool_to_json(tool, true);
+        assert_eq!(with["securitySchemes"][0]["type"], "oauth2");
+        assert!(
+            with["securitySchemes"][0]["scopes"]
+                .as_array()
+                .expect("scope array")
+                .iter()
+                .any(|scope| scope == "mcp:invoke"),
+            "all HTTP MCP tools require mcp:invoke"
+        );
+        assert!(
+            with["securitySchemes"][0]["scopes"]
+                .as_array()
+                .expect("scope array")
+                .iter()
+                .any(|scope| scope == "trace:read"),
+            "read-only trace tools require trace:read"
+        );
+    }
+
+    #[test]
+    fn oauth_scope_map_matches_non_obvious_api_scopes() {
+        let cases = [
+            ("listProviderSecrets", "GET", "admin"),
+            ("getUsageSummary", "GET", "admin"),
+            ("getIngestQueueStatus", "GET", "admin"),
+            ("runCalibration", "POST", "eval:run"),
+            ("createReviewQueue", "POST", "dataset:write"),
+            ("enqueueReviewTaskFromTrace", "POST", "dataset:write"),
+            ("submitReviewAnnotation", "POST", "dataset:write"),
+            ("promoteReviewAnnotation", "POST", "dataset:write"),
+            ("decideOnlineSampling", "POST", "trace:read"),
+            ("evaluateAlert", "POST", "trace:read"),
+        ];
+        for (operation_id, method, expected_scope) in cases {
+            assert_eq!(
+                required_api_scope(operation_id, method),
+                expected_scope,
+                "{operation_id} should advertise the scope enforced by the API"
+            );
+        }
     }
 
     /// Every emitted output schema is object-rooted; the known array-returning
@@ -1092,7 +1454,7 @@ mod tests {
     /// the documented input/output schema shape.
     #[test]
     fn help_tool_json_is_well_formed() {
-        let help = help_tool_json();
+        let help = help_tool_json(false);
         assert_eq!(help["name"], HELP_TOOL_NAME);
         assert_eq!(help["inputSchema"]["type"], "object");
         assert!(help["inputSchema"]["properties"]["query"].is_object());
@@ -1101,6 +1463,9 @@ mod tests {
         assert_eq!(help["annotations"]["readOnlyHint"], true);
         assert_eq!(help["annotations"]["idempotentHint"], true);
         assert_eq!(help["annotations"]["destructiveHint"], false);
+
+        let hosted = help_tool_json(true);
+        assert_eq!(hosted["securitySchemes"][0]["type"], "noauth");
     }
 
     /// `handle_help` resolves locally to object structured content: overview,
@@ -1110,7 +1475,7 @@ mod tests {
         let total = tools().len();
 
         // Overview (no args).
-        let overview = handle_help(&Map::new()).unwrap();
+        let overview = handle_help(&Map::new(), false).unwrap();
         let s = &overview["structuredContent"];
         assert!(s.is_object());
         assert_eq!(overview["isError"], false);
@@ -1120,7 +1485,7 @@ mod tests {
         // Query filter narrows the set and matches name/description.
         let mut args = Map::new();
         args.insert("query".to_string(), json!("trace"));
-        let filtered = handle_help(&args).unwrap();
+        let filtered = handle_help(&args, false).unwrap();
         let matched = filtered["structuredContent"]["tools"].as_array().unwrap();
         assert!(!matched.is_empty() && matched.len() < total);
         for entry in matched {
@@ -1132,7 +1497,7 @@ mod tests {
         // Describe one tool.
         let mut one = Map::new();
         one.insert("tool".to_string(), json!("listTraces"));
-        let described = handle_help(&one).unwrap();
+        let described = handle_help(&one, false).unwrap();
         let t = &described["structuredContent"]["tool"];
         assert_eq!(t["name"], "listTraces");
         assert_eq!(t["method"], "GET");
@@ -1141,6 +1506,6 @@ mod tests {
         // Unknown op -> error.
         let mut bad = Map::new();
         bad.insert("tool".to_string(), json!("does-not-exist"));
-        assert!(handle_help(&bad).is_err());
+        assert!(handle_help(&bad, false).is_err());
     }
 }

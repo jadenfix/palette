@@ -14,8 +14,8 @@
 //! Playwright-backed driver.
 
 use beater_browser::{
-    assert_browser_driver_conformance, BrowserDriver, BrowserEngine, UrlPolicy,
-    CONFORMANCE_FIXTURE_HTML, FIXTURE_CONSOLE_MESSAGE,
+    BrowserDriver, BrowserEngine, CONFORMANCE_FIXTURE_HTML, FIXTURE_CONSOLE_MESSAGE, UrlPolicy,
+    assert_browser_driver_conformance,
 };
 use beater_browser_playwright::{PlaywrightConfig, PlaywrightDriver};
 use std::net::SocketAddr;

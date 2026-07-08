@@ -6,16 +6,16 @@
 
 use std::sync::Arc;
 
-use axum::body::{to_bytes, Body};
 use axum::Router;
-use beater_api::{router, ApiState};
+use axum::body::{Body, to_bytes};
+use beater_api::{ApiState, router};
 use beater_bus::InMemoryBus;
 use beater_ingest::{IngestPolicy, IngestService};
 use beater_prompts::InMemoryPromptRegistry;
 use beater_store_obj::FsArtifactStore;
 use beater_store_sql::SqliteTraceStore;
 use http::{Request, StatusCode};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tower::ServiceExt;
 
 fn build_app() -> (Router, tempfile::TempDir) {

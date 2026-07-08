@@ -195,8 +195,8 @@ mod tests {
         ArtifactId, EnvironmentId, IdempotencyKey, ProjectId, Sha256Hash, SpanId, TenantId,
     };
     use beater_schema::{
-        ArtifactRef, AuthContext, RedactionClass, SourceDialect, CANONICAL_SCHEMA_VERSION,
-        RAW_SCHEMA_VERSION,
+        ArtifactRef, AuthContext, CANONICAL_SCHEMA_VERSION, RAW_SCHEMA_VERSION, RedactionClass,
+        SourceDialect,
     };
     use chrono::Utc;
     use serde_json::json;
@@ -262,10 +262,12 @@ mod tests {
 
         // Canonical keys survive on `attributes`; non-canonical keys are gone.
         assert!(result.span.attributes.contains_key("llm.model_name"));
-        assert!(result
-            .span
-            .attributes
-            .contains_key("openinference.span.kind"));
+        assert!(
+            result
+                .span
+                .attributes
+                .contains_key("openinference.span.kind")
+        );
         assert!(!result.span.attributes.contains_key("vendor.custom_signal"));
         assert!(!result.span.attributes.contains_key("user.session"));
 
@@ -368,8 +370,10 @@ mod tests {
         let results = reproject_envelope(&raw, &[v1, second]).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(results.len(), 2);
         assert!(results.iter().all(|r| r.migrated));
-        assert!(results
-            .iter()
-            .all(|r| r.span.schema_version == CANONICAL_SCHEMA_VERSION_V2));
+        assert!(
+            results
+                .iter()
+                .all(|r| r.span.schema_version == CANONICAL_SCHEMA_VERSION_V2)
+        );
     }
 }

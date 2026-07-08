@@ -16,13 +16,13 @@
 //!   hash and compare in constant time. Argon2 would be wasteful per request for
 //!   a 256-bit random secret.
 
-use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
+use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use beater_core::{OrganizationId, SessionId, Timestamp, UserId};
 use beater_store::StoreError;
 use chrono::{DateTime, Duration, Utc};
 use rand_core::{OsRng, RngCore};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::Path;
@@ -878,10 +878,12 @@ mod tests {
 
         assert_eq!(session_id, minted.session.session_id);
         assert_eq!(secret.len(), 64);
-        assert!(secret
-            .as_bytes()
-            .iter()
-            .all(|byte| byte.is_ascii_hexdigit()));
+        assert!(
+            secret
+                .as_bytes()
+                .iter()
+                .all(|byte| byte.is_ascii_hexdigit())
+        );
         assert_eq!(minted.session.secret_hash, sha256_hex(secret.as_bytes()));
     }
 
@@ -998,9 +1000,11 @@ mod tests {
 
         let first_memberships = ok(store.list_memberships(&first_user.user_id).await);
         assert_eq!(first_memberships.len(), 2);
-        assert!(first_memberships
-            .iter()
-            .all(|membership| membership.user_id == first_user.user_id));
+        assert!(
+            first_memberships
+                .iter()
+                .all(|membership| membership.user_id == first_user.user_id)
+        );
         assert_eq!(first_memberships[0].organization_id, shared_org);
         assert_eq!(first_memberships[0].role, OrgRole::Owner);
         assert_eq!(first_memberships[1].organization_id, first_only_org);
@@ -1012,9 +1016,11 @@ mod tests {
         assert_eq!(second_memberships[0].organization_id, shared_org);
         assert_eq!(second_memberships[0].role, OrgRole::Member);
 
-        assert!(ok(store
-            .get_membership(&first_only_org, &second_user.user_id)
-            .await)
-        .is_none());
+        assert!(
+            ok(store
+                .get_membership(&first_only_org, &second_user.user_id)
+                .await)
+            .is_none()
+        );
     }
 }

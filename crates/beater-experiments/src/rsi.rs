@@ -16,13 +16,13 @@
 
 use beater_core::DatasetCaseId;
 use beater_datasets::{
-    split_for_input, DatasetCase, DatasetVersionSnapshot, SplitConfig, SplitLabel,
+    DatasetCase, DatasetVersionSnapshot, SplitConfig, SplitLabel, split_for_input,
 };
 use beater_eval::{
-    compare_paired_scores, evaluate_deterministic, EvaluationCase, EvaluatorSpec,
-    ExperimentComparison, GateDecision, GatePolicy,
+    EvaluationCase, EvaluatorSpec, ExperimentComparison, GateDecision, GatePolicy,
+    compare_paired_scores, evaluate_deterministic,
 };
-use beater_stats::{assess_generalization_gap, GapAssessment};
+use beater_stats::{GapAssessment, assess_generalization_gap};
 use serde_json::Value;
 use std::collections::BTreeMap;
 

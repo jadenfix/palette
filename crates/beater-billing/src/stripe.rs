@@ -8,9 +8,11 @@
 //!
 //! Exactly-once + ordering guarantees (see [`StripeSync::apply_event`]):
 //! 1. **Signature** — verified via `beater-security` (HMAC + replay window).
-//! 2. **Dedup** — the event id is inserted into a `UNIQUE` table; a repeat
-//!    delivery is acknowledged as [`EventApplication::Duplicate`] and not
-//!    re-applied.
+//! 2. **Dedup/retry** — the event id is inserted into a `UNIQUE` table; a
+//!    repeat delivery is acknowledged as [`EventApplication::Duplicate`] only
+//!    after the local effect was marked applied. If a prior attempt crashed
+//!    after recording but before the applied mark, a Stripe retry re-attempts
+//!    the idempotent effect.
 //! 3. **Ordering** — an event older-or-equal to the last applied event for the
 //!    same object is acknowledged as [`EventApplication::Stale`] and not
 //!    applied.
@@ -201,22 +203,24 @@ impl<C: Clock> StripeSync<C> {
             serde_json::from_slice(raw).map_err(|err| StripeError::Malformed(err.to_string()))?;
         let object_id = event.data.object.id.clone();
 
-        // 2. Dedup by event id (UNIQUE). A repeat delivery is acknowledged but
-        //    not re-applied.
+        // 2. Dedup by event id (UNIQUE). A repeat delivery is acknowledged only
+        //    after the local effect is marked applied. If the event was
+        //    recorded but not applied, this is a Stripe retry after a partial
+        //    local failure, so continue and re-attempt the idempotent effect.
         let newly_recorded = self
             .store
             .record_stripe_event(&event.id, &object_id, event.created)
             .await?;
-        if !newly_recorded {
+        if !newly_recorded && self.store.is_stripe_event_applied(&event.id).await? {
             return Ok(EventApplication::Duplicate);
         }
 
         // 3. Out-of-order guard: ignore events not newer than the last applied
         //    one for this object.
-        if let Some(last) = self.store.last_applied_stripe_created(&object_id).await? {
-            if event.created <= last {
-                return Ok(EventApplication::Stale);
-            }
+        if let Some(last) = self.store.last_applied_stripe_created(&object_id).await?
+            && event.created <= last
+        {
+            return Ok(EventApplication::Stale);
         }
 
         // 4. Apply the effect, then mark applied (drives future ordering).
@@ -236,6 +240,7 @@ impl<C: Clock> StripeSync<C> {
         };
 
         // Lifecycle transitions, where the event type implies one.
+        let mut invoice_payment_recorded = false;
         match event.event_type.as_str() {
             "customer.subscription.deleted" => {
                 self.store
@@ -254,11 +259,22 @@ impl<C: Clock> StripeSync<C> {
             }
             "invoice.payment_succeeded" => {
                 if let Some(period_key) = &object.period_key {
-                    // Best-effort: only transition an invoice we actually have.
-                    if self.store.get_invoice(&org_id, period_key).await?.is_some() {
-                        self.store
-                            .set_invoice_status(&org_id, period_key, InvoiceStatus::Paid)
-                            .await?;
+                    // Best-effort: only transition an invoice we actually have,
+                    // and only after hosted billing finalized it. A retry after
+                    // a partial prior application may already observe Paid.
+                    if let Some(invoice) = self.store.get_invoice(&org_id, period_key).await? {
+                        match invoice.status {
+                            InvoiceStatus::Finalized => {
+                                self.store
+                                    .set_invoice_status(&org_id, period_key, InvoiceStatus::Paid)
+                                    .await?;
+                                invoice_payment_recorded = true;
+                            }
+                            InvoiceStatus::Paid => {
+                                invoice_payment_recorded = true;
+                            }
+                            InvoiceStatus::Draft | InvoiceStatus::Void => {}
+                        }
                     }
                 }
             }
@@ -270,12 +286,16 @@ impl<C: Clock> StripeSync<C> {
         // one is written per event id thanks to the dedup guard above.
         let amount = Money::usd_micros(object.amount_micros.unwrap_or(0));
         let kind = match event.event_type.as_str() {
-            "invoice.payment_succeeded" => AdjustmentKind::Charge,
+            "invoice.payment_succeeded" if invoice_payment_recorded => AdjustmentKind::Charge,
             "charge.refunded" | "invoice.voided" => AdjustmentKind::Refund,
             _ => AdjustmentKind::StripeSync,
         };
+        let adjustment_id = format!("adj_stripe_{}", event.id);
+        if self.store.has_adjustment(&adjustment_id).await? {
+            return Ok(());
+        }
         let adjustment = BillingAdjustment {
-            adjustment_id: format!("adj_stripe_{}", event.id),
+            adjustment_id,
             org_id,
             kind,
             amount,
@@ -365,6 +385,54 @@ mod tests {
         Ok(sig.header_value())
     }
 
+    async fn insert_invoice(
+        store: &SqliteBillingStore,
+        org: &OrganizationId,
+        period_key: &str,
+    ) -> anyhow::Result<()> {
+        store
+            .insert_invoice_if_absent(crate::Invoice {
+                org_id: org.clone(),
+                period_key: period_key.to_string(),
+                line_items: vec![crate::InvoiceLineItem {
+                    meter: None,
+                    description: "Base".to_string(),
+                    quantity: 0,
+                    included: 0,
+                    overage_quantity: 0,
+                    unit_rate: Money::usd_micros(10_000),
+                    amount: Money::usd_micros(10_000),
+                }],
+                total: Money::usd_micros(10_000),
+                status: InvoiceStatus::Draft,
+                idempotency_key: crate::Invoice::idempotency_key_for(org, period_key),
+                created_at: fixed_now(),
+            })
+            .await?;
+        Ok(())
+    }
+
+    fn invoice_event_json(
+        id: &str,
+        object_id: &str,
+        created: i64,
+        org: &str,
+        period_key: &str,
+    ) -> Vec<u8> {
+        serde_json::to_vec(&serde_json::json!({
+            "id": id,
+            "created": created,
+            "type": "invoice.payment_succeeded",
+            "data": { "object": {
+                "id": object_id,
+                "org_id": org,
+                "amount_micros": 10_000,
+                "period_key": period_key
+            }}
+        }))
+        .unwrap_or_default()
+    }
+
     #[tokio::test]
     async fn double_delivery_applies_exactly_once() -> anyhow::Result<()> {
         let store = Arc::new(SqliteBillingStore::in_memory()?);
@@ -384,6 +452,33 @@ mod tests {
             1,
             "exactly one adjustment despite re-delivery"
         );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn recorded_but_unapplied_event_is_retried() -> anyhow::Result<()> {
+        let store = Arc::new(SqliteBillingStore::in_memory()?);
+        let sync = sync(store.clone())?;
+        let body = event_json("evt_retry", 1000, "customer.subscription.updated", "org-1");
+        let header = signed_header(&body)?;
+
+        assert!(
+            store
+                .record_stripe_event("evt_retry", "sub_a", 1000)
+                .await?
+        );
+        assert!(!store.is_stripe_event_applied("evt_retry").await?);
+
+        let first_retry = sync.apply_event(&body, &header).await?;
+        let second_retry = sync.apply_event(&body, &header).await?;
+        assert_eq!(first_retry, EventApplication::Applied);
+        assert_eq!(second_retry, EventApplication::Duplicate);
+        assert!(store.is_stripe_event_applied("evt_retry").await?);
+
+        let org = OrganizationId::new("org-1").map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        let adjustments = store.list_adjustments(&org).await?;
+        assert_eq!(adjustments.len(), 1);
+        assert_eq!(adjustments[0].adjustment_id, "adj_stripe_evt_retry");
         Ok(())
     }
 
@@ -474,6 +569,82 @@ mod tests {
             .await?
             .ok_or_else(|| anyhow::anyhow!("subscription missing"))?;
         assert_eq!(updated.status, SubscriptionStatus::Canceled);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn invoice_payment_succeeded_only_marks_finalized_invoices_paid() -> anyhow::Result<()> {
+        let store = Arc::new(SqliteBillingStore::in_memory()?);
+        let sync = sync(store.clone())?;
+        let org = OrganizationId::new("org-1").map_err(|e| anyhow::anyhow!(e.to_string()))?;
+
+        insert_invoice(&store, &org, "2026-06").await?;
+        let draft_event =
+            invoice_event_json("evt_draft_paid", "in_draft", 1000, "org-1", "2026-06");
+        let draft_header = signed_header(&draft_event)?;
+        assert_eq!(
+            sync.apply_event(&draft_event, &draft_header).await?,
+            EventApplication::Applied
+        );
+        assert_eq!(
+            store
+                .get_invoice(&org, "2026-06")
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("draft invoice missing"))?
+                .status,
+            InvoiceStatus::Draft
+        );
+
+        insert_invoice(&store, &org, "2026-07").await?;
+        store.finalize_invoice(&org, "2026-07").await?;
+        let finalized_event = invoice_event_json(
+            "evt_finalized_paid",
+            "in_finalized",
+            1000,
+            "org-1",
+            "2026-07",
+        );
+        let finalized_header = signed_header(&finalized_event)?;
+        assert_eq!(
+            sync.apply_event(&finalized_event, &finalized_header)
+                .await?,
+            EventApplication::Applied
+        );
+        assert_eq!(
+            store
+                .get_invoice(&org, "2026-07")
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("finalized invoice missing"))?
+                .status,
+            InvoiceStatus::Paid
+        );
+
+        insert_invoice(&store, &org, "2026-08").await?;
+        store
+            .set_invoice_status(&org, "2026-08", InvoiceStatus::Void)
+            .await?;
+        let void_event = invoice_event_json("evt_void_paid", "in_void", 1000, "org-1", "2026-08");
+        let void_header = signed_header(&void_event)?;
+        assert_eq!(
+            sync.apply_event(&void_event, &void_header).await?,
+            EventApplication::Applied
+        );
+        assert_eq!(
+            store
+                .get_invoice(&org, "2026-08")
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("void invoice missing"))?
+                .status,
+            InvoiceStatus::Void
+        );
+
+        let charge_adjustments = store
+            .list_adjustments(&org)
+            .await?
+            .into_iter()
+            .filter(|adjustment| adjustment.kind == AdjustmentKind::Charge)
+            .count();
+        assert_eq!(charge_adjustments, 1);
         Ok(())
     }
 

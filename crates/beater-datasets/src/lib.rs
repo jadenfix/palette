@@ -1,22 +1,22 @@
 pub mod split;
 pub use split::{
-    duplicate_inputs, fingerprint_input, partition, split_for_fingerprint, split_for_input,
-    DuplicateGroup, SplitConfig, SplitError, SplitLabel, SplitPartition,
+    DuplicateGroup, SplitConfig, SplitError, SplitLabel, SplitPartition, duplicate_inputs,
+    fingerprint_input, partition, split_for_fingerprint, split_for_input,
 };
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use beater_core::{
-    corpus_root, sha256_json_hash, AgentReleaseId, CorpusRoot, DatasetCaseId, DatasetId,
-    DatasetVersionId, EnvironmentId, EvalResultId, EvaluatorVersionId, MerkleLeaf, ProjectId,
-    PromptVersionId, ProviderSecretId, Sha256Hash, SpanId, TenantId, Timestamp, TraceId,
+    AgentReleaseId, CorpusRoot, DatasetCaseId, DatasetId, DatasetVersionId, EnvironmentId,
+    EvalResultId, EvaluatorVersionId, MerkleLeaf, ProjectId, PromptVersionId, ProviderSecretId,
+    Sha256Hash, SpanId, TenantId, Timestamp, TraceId, corpus_root, sha256_json_hash,
 };
-use beater_eval::{evaluate_deterministic, EvaluationCase, EvaluatorSpec, ScoreResult};
+use beater_eval::{EvaluationCase, EvaluatorSpec, ScoreResult, evaluate_deterministic};
 use beater_judge::{JudgeBroker, JudgeBrokerOutcome, JudgeBrokerRequest};
 use beater_schema::{CanonicalSpan, EvalReproducibility, EvalResult, TraceView};
 use beater_store::{IntoStoreResult, StoreError, StoreResult};
 use chrono::Utc;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
@@ -1081,7 +1081,7 @@ mod tests {
     use beater_eval::EvaluatorKind;
     use beater_judge::{JudgeAuditRecord, JudgeBrokerError};
     use beater_schema::{
-        AgentSpanKind, ArtifactRef, ModelRef, RedactionClass, SpanStatus, CANONICAL_SCHEMA_VERSION,
+        AgentSpanKind, ArtifactRef, CANONICAL_SCHEMA_VERSION, ModelRef, RedactionClass, SpanStatus,
     };
     use serde_json::json;
     use std::collections::BTreeMap;

@@ -731,8 +731,11 @@ mod tests {
         m.record_normalizer_failure("temporal", "v1.2");
         m.record_normalizer_failure("temporal", "v1.2");
         let out = m.render();
-        assert!(out
-            .contains("beater_normalizer_failures_total{dialect=\"temporal\",version=\"v1.2\"} 2"));
+        assert!(
+            out.contains(
+                "beater_normalizer_failures_total{dialect=\"temporal\",version=\"v1.2\"} 2"
+            )
+        );
     }
 
     #[test]
@@ -772,8 +775,9 @@ mod tests {
         let b = init_observability();
         // Both share the same global registry, so writes are visible across handles.
         a.record_write(OpResult::Success, 1);
-        assert!(b
-            .render()
-            .contains("beater_trace_writes_total{result=\"success\"}"));
+        assert!(
+            b.render()
+                .contains("beater_trace_writes_total{result=\"success\"}")
+        );
     }
 }

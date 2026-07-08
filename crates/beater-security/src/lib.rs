@@ -1,7 +1,7 @@
-use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
-use base64::engine::general_purpose::STANDARD_NO_PAD;
+use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use base64::Engine;
+use base64::engine::general_purpose::STANDARD_NO_PAD;
 use beater_core::{ApiKeyId, EnvironmentId, ProjectId, TenantId, Timestamp};
 use chrono::{Duration, Utc};
 use hmac::{Hmac, Mac};
