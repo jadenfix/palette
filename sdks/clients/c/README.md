@@ -72,6 +72,7 @@ Category | Method | HTTP request | Description
 *ArchiveAPI* | [**ArchiveAPI_archiveQueryArchiveSpans**](docs/ArchiveAPI.md#ArchiveAPI_archiveQueryArchiveSpans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans |
 *AuditAPI* | [**AuditAPI_auditListAuditEvents**](docs/AuditAPI.md#AuditAPI_auditListAuditEvents) | **GET** /v1/audit/{tenant_id}/{project_id} |
 *CalibrationsAPI* | [**CalibrationsAPI_calibrationsRunCalibration**](docs/CalibrationsAPI.md#CalibrationsAPI_calibrationsRunCalibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |
+*ConnectAPI* | [**ConnectAPI_connectGetPaletteConnectStatus**](docs/ConnectAPI.md#ConnectAPI_connectGetPaletteConnectStatus) | **GET** /v1/connect/status/{tenant_id}/{project_id} |
 *ConnectorsAPI* | [**ConnectorsAPI_connectorsConnectConnector**](docs/ConnectorsAPI.md#ConnectorsAPI_connectorsConnectConnector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |
 *ConnectorsAPI* | [**ConnectorsAPI_connectorsConnectorStatus**](docs/ConnectorsAPI.md#ConnectorsAPI_connectorsConnectorStatus) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |
 *ConnectorsAPI* | [**ConnectorsAPI_connectorsGetConnectorSkills**](docs/ConnectorsAPI.md#ConnectorsAPI_connectorsGetConnectorSkills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |
@@ -222,6 +223,8 @@ Category | Method | HTTP request | Description
  - [otlp_ingest_outcome_t](docs/otlp_ingest_outcome.md)
  - [page_run_summary_t](docs/page_run_summary.md)
  - [page_run_summary_items_inner_t](docs/page_run_summary_items_inner.md)
+ - [palette_connect_status_t](docs/palette_connect_status.md)
+ - [palette_connect_status_response_t](docs/palette_connect_status_response.md)
  - [perturbation_knobs_t](docs/perturbation_knobs.md)
  - [promote_review_annotation_http_request_t](docs/promote_review_annotation_http_request.md)
  - [promote_trace_case_request_t](docs/promote_trace_case_request.md)

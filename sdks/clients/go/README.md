@@ -85,6 +85,7 @@ Class | Method | HTTP request | Description
 *ArchiveAPI* | [**ArchiveQueryArchiveSpans**](docs/ArchiveAPI.md#archivequeryarchivespans) | **Get** /v1/archive/{tenant_id}/{project_id}/spans |
 *AuditAPI* | [**AuditListAuditEvents**](docs/AuditAPI.md#auditlistauditevents) | **Get** /v1/audit/{tenant_id}/{project_id} |
 *CalibrationsAPI* | [**CalibrationsRunCalibration**](docs/CalibrationsAPI.md#calibrationsruncalibration) | **Post** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |
+*ConnectAPI* | [**ConnectGetPaletteConnectStatus**](docs/ConnectAPI.md#connectgetpaletteconnectstatus) | **Get** /v1/connect/status/{tenant_id}/{project_id} |
 *ConnectorsAPI* | [**ConnectorsConnectConnector**](docs/ConnectorsAPI.md#connectorsconnectconnector) | **Post** /v1/connectors/{tenant_id}/{project_id}/connect |
 *ConnectorsAPI* | [**ConnectorsConnectorStatus**](docs/ConnectorsAPI.md#connectorsconnectorstatus) | **Get** /v1/connectors/{tenant_id}/{project_id}/status |
 *ConnectorsAPI* | [**ConnectorsGetConnectorSkills**](docs/ConnectorsAPI.md#connectorsgetconnectorskills) | **Get** /v1/connectors/{tenant_id}/{project_id}/skills |
@@ -235,6 +236,8 @@ Class | Method | HTTP request | Description
  - [OtlpIngestOutcome](docs/OtlpIngestOutcome.md)
  - [PageRunSummary](docs/PageRunSummary.md)
  - [PageRunSummaryItemsInner](docs/PageRunSummaryItemsInner.md)
+ - [PaletteConnectStatus](docs/PaletteConnectStatus.md)
+ - [PaletteConnectStatusResponse](docs/PaletteConnectStatusResponse.md)
  - [PerturbationKnobs](docs/PerturbationKnobs.md)
  - [PromoteReviewAnnotationHttpRequest](docs/PromoteReviewAnnotationHttpRequest.md)
  - [PromoteTraceCaseRequest](docs/PromoteTraceCaseRequest.md)

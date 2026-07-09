@@ -50,7 +50,7 @@ const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26", "2024
 
 /// Server-wide guidance returned from `initialize`. Codex and other MCP clients
 /// can use this before choosing tools, so keep the opening self-contained.
-const SERVER_INSTRUCTIONS: &str = "Beater MCP exposes the Beater /v1 API as tools for agent trace, dataset, review, eval, and admin workflows. Start with the help tool when unsure. Use the narrowest OAuth scopes possible: mcp:invoke plus trace:read for inspection, dataset:write for dataset/review writes, eval:run for eval execution, and admin only for administrative actions. OAuth tokens are bound to tenant/project/environment; do not invent ids.";
+const SERVER_INSTRUCTIONS: &str = "Beater MCP exposes the Beater /v1 API as tools for agent trace, dataset, review, eval, and admin workflows. Start with the help tool when unsure. Use the narrowest OAuth scopes possible: mcp:invoke plus trace:read for inspection, dataset:read for dataset inspection, dataset:write for dataset/review writes, eval:run for eval execution, and admin only for administrative actions. OAuth tokens are bound to tenant/project/environment; do not invent ids.";
 
 /// Maximum response body size we will buffer from a dispatched handler.
 const MAX_BODY_BYTES: usize = 32 * 1024 * 1024;

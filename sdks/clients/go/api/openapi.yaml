@@ -45,6 +45,8 @@ tags:
   name: alerts
 - description: Usage summaries
   name: usage
+- description: Hosted product setup and readiness
+  name: connect
 - description: Audit events
   name: audit
 - description: API key management
@@ -784,6 +786,89 @@ paths:
           description: Resource not found
       tags:
       - calibrations
+  /v1/connect/status/{tenant_id}/{project_id}:
+    get:
+      operationId: connect.get-palette-connect-status
+      parameters:
+      - description: tenant_id
+        explode: false
+        in: path
+        name: tenant_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: project_id
+        explode: false
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Bearer API token for strict auth
+        explode: false
+        in: header
+        name: authorization
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: API key alternative for strict auth
+        explode: false
+        in: header
+        name: x-beater-api-key
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth project scope
+        explode: false
+        in: header
+        name: x-beater-project-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      - description: Strict-auth environment scope
+        explode: false
+        in: header
+        name: x-beater-environment-id
+        required: false
+        schema:
+          nullable: true
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaletteConnectStatusResponse'
+          description: Palette product connection status for account-console setup
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: "Invalid request, scope, or filter"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Missing or invalid credentials
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Credentials lack the required scope
+      tags:
+      - connect
   /v1/connectors/{tenant_id}/{project_id}:
     get:
       operationId: connectors.list-connectors
@@ -8889,6 +8974,53 @@ components:
           type: string
       required:
       - items
+    PaletteConnectStatus:
+      enum:
+      - connected
+      - waiting_for_trace
+      - waiting_for_eval
+      - misconfigured
+      type: string
+    PaletteConnectStatusResponse:
+      example:
+        tenant_id: tenant_id
+        first_trace_received: true
+        usage_configured: true
+        project_id: project_id
+        totals:
+          key:
+            unit: unit
+            quantity: 0
+        first_eval_run: true
+        ok: true
+        status: connected
+      properties:
+        first_eval_run:
+          type: boolean
+        first_trace_received:
+          type: boolean
+        ok:
+          type: boolean
+        project_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/PaletteConnectStatus'
+        tenant_id:
+          type: string
+        totals:
+          additionalProperties:
+            $ref: '#/components/schemas/UsageTotal'
+        usage_configured:
+          type: boolean
+      required:
+      - first_eval_run
+      - first_trace_received
+      - ok
+      - project_id
+      - status
+      - tenant_id
+      - totals
+      - usage_configured
     PerturbationKnobs:
       description: Tunable knobs describing how a scenario may be perturbed during
         replay.

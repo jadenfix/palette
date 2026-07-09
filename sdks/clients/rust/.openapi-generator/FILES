@@ -33,6 +33,7 @@ docs/CalibrationsApi.md
 docs/CanonicalSpan.md
 docs/CaseExperimentScore.md
 docs/CaseOutputOverrideRequest.md
+docs/ConnectApi.md
 docs/ConnectConnectorRequest.md
 docs/ConnectionLink.md
 docs/ConnectionStatus.md
@@ -111,6 +112,8 @@ docs/OnlineSamplingPolicy.md
 docs/OtlpIngestOutcome.md
 docs/PageRunSummary.md
 docs/PageRunSummaryItemsInner.md
+docs/PaletteConnectStatus.md
+docs/PaletteConnectStatusResponse.md
 docs/PerturbationKnobs.md
 docs/PromoteReviewAnnotationHttpRequest.md
 docs/PromoteTraceCaseRequest.md
@@ -186,6 +189,7 @@ src/apis/archive_api.rs
 src/apis/audit_api.rs
 src/apis/calibrations_api.rs
 src/apis/configuration.rs
+src/apis/connect_api.rs
 src/apis/connectors_api.rs
 src/apis/datasets_api.rs
 src/apis/evals_api.rs
@@ -300,6 +304,8 @@ src/models/online_sampling_policy.rs
 src/models/otlp_ingest_outcome.rs
 src/models/page_run_summary.rs
 src/models/page_run_summary_items_inner.rs
+src/models/palette_connect_status.rs
+src/models/palette_connect_status_response.rs
 src/models/perturbation_knobs.rs
 src/models/promote_review_annotation_http_request.rs
 src/models/promote_trace_case_request.rs

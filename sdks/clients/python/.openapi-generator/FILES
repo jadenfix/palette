@@ -11,6 +11,7 @@ beater_client/api/api_keys_api.py
 beater_client/api/archive_api.py
 beater_client/api/audit_api.py
 beater_client/api/calibrations_api.py
+beater_client/api/connect_api.py
 beater_client/api/connectors_api.py
 beater_client/api/datasets_api.py
 beater_client/api/evals_api.py
@@ -127,6 +128,8 @@ beater_client/models/online_sampling_policy.py
 beater_client/models/otlp_ingest_outcome.py
 beater_client/models/page_run_summary.py
 beater_client/models/page_run_summary_items_inner.py
+beater_client/models/palette_connect_status.py
+beater_client/models/palette_connect_status_response.py
 beater_client/models/perturbation_knobs.py
 beater_client/models/promote_review_annotation_http_request.py
 beater_client/models/promote_trace_case_request.py
@@ -219,6 +222,7 @@ docs/CalibrationsApi.md
 docs/CanonicalSpan.md
 docs/CaseExperimentScore.md
 docs/CaseOutputOverrideRequest.md
+docs/ConnectApi.md
 docs/ConnectConnectorRequest.md
 docs/ConnectionLink.md
 docs/ConnectionStatus.md
@@ -297,6 +301,8 @@ docs/OnlineSamplingPolicy.md
 docs/OtlpIngestOutcome.md
 docs/PageRunSummary.md
 docs/PageRunSummaryItemsInner.md
+docs/PaletteConnectStatus.md
+docs/PaletteConnectStatusResponse.md
 docs/PerturbationKnobs.md
 docs/PromoteReviewAnnotationHttpRequest.md
 docs/PromoteTraceCaseRequest.md
@@ -402,6 +408,7 @@ test/test_calibrations_api.py
 test/test_canonical_span.py
 test/test_case_experiment_score.py
 test/test_case_output_override_request.py
+test/test_connect_api.py
 test/test_connect_connector_request.py
 test/test_connection_link.py
 test/test_connection_status.py
@@ -480,6 +487,8 @@ test/test_online_sampling_policy.py
 test/test_otlp_ingest_outcome.py
 test/test_page_run_summary.py
 test/test_page_run_summary_items_inner.py
+test/test_palette_connect_status.py
+test/test_palette_connect_status_response.py
 test/test_perturbation_knobs.py
 test/test_promote_review_annotation_http_request.py
 test/test_promote_trace_case_request.py

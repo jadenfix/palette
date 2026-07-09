@@ -1031,6 +1031,124 @@
         }
       }
     },
+    "/v1/connect/status/{tenant_id}/{project_id}": {
+      "get": {
+        "tags": [
+          "connect"
+        ],
+        "operationId": "connect.get-palette-connect-status",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "description": "tenant_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "description": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer API token for strict auth",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-api-key",
+            "in": "header",
+            "description": "API key alternative for strict auth",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-project-id",
+            "in": "header",
+            "description": "Strict-auth project scope",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-environment-id",
+            "in": "header",
+            "description": "Strict-auth environment scope",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Palette product connection status for account-console setup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaletteConnectStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, scope, or filter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Credentials lack the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/connectors/{tenant_id}/{project_id}": {
       "get": {
         "tags": [
@@ -11458,6 +11576,60 @@
           }
         }
       },
+      "PaletteConnectStatus": {
+        "type": "string",
+        "enum": [
+          "connected",
+          "waiting_for_trace",
+          "waiting_for_eval",
+          "misconfigured"
+        ]
+      },
+      "PaletteConnectStatusResponse": {
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "project_id",
+          "ok",
+          "status",
+          "usage_configured",
+          "first_trace_received",
+          "first_eval_run",
+          "totals"
+        ],
+        "properties": {
+          "first_eval_run": {
+            "type": "boolean"
+          },
+          "first_trace_received": {
+            "type": "boolean"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ProjectId"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaletteConnectStatus"
+          },
+          "tenant_id": {
+            "$ref": "#/components/schemas/TenantId"
+          },
+          "totals": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/UsageTotal"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "usage_configured": {
+            "type": "boolean"
+          }
+        }
+      },
       "PerturbationKnobs": {
         "type": "object",
         "description": "Tunable knobs describing how a scenario may be perturbed during replay.",
@@ -13275,6 +13447,10 @@
     {
       "name": "usage",
       "description": "Usage summaries"
+    },
+    {
+      "name": "connect",
+      "description": "Hosted product setup and readiness"
     },
     {
       "name": "audit",

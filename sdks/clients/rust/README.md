@@ -33,6 +33,7 @@ Class | Method | HTTP request | Description
 *ArchiveApi* | [**archive_period_query_archive_spans**](docs/ArchiveApi.md#archive_period_query_archive_spans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans |
 *AuditApi* | [**audit_period_list_audit_events**](docs/AuditApi.md#audit_period_list_audit_events) | **GET** /v1/audit/{tenant_id}/{project_id} |
 *CalibrationsApi* | [**calibrations_period_run_calibration**](docs/CalibrationsApi.md#calibrations_period_run_calibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |
+*ConnectApi* | [**connect_period_get_palette_connect_status**](docs/ConnectApi.md#connect_period_get_palette_connect_status) | **GET** /v1/connect/status/{tenant_id}/{project_id} |
 *ConnectorsApi* | [**connectors_period_connect_connector**](docs/ConnectorsApi.md#connectors_period_connect_connector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |
 *ConnectorsApi* | [**connectors_period_connector_status**](docs/ConnectorsApi.md#connectors_period_connector_status) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |
 *ConnectorsApi* | [**connectors_period_get_connector_skills**](docs/ConnectorsApi.md#connectors_period_get_connector_skills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |
@@ -183,6 +184,8 @@ Class | Method | HTTP request | Description
  - [OtlpIngestOutcome](docs/OtlpIngestOutcome.md)
  - [PageRunSummary](docs/PageRunSummary.md)
  - [PageRunSummaryItemsInner](docs/PageRunSummaryItemsInner.md)
+ - [PaletteConnectStatus](docs/PaletteConnectStatus.md)
+ - [PaletteConnectStatusResponse](docs/PaletteConnectStatusResponse.md)
  - [PerturbationKnobs](docs/PerturbationKnobs.md)
  - [PromoteReviewAnnotationHttpRequest](docs/PromoteReviewAnnotationHttpRequest.md)
  - [PromoteTraceCaseRequest](docs/PromoteTraceCaseRequest.md)

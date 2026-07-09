@@ -8,6 +8,7 @@ src/apis/ApiKeysApi.ts
 src/apis/ArchiveApi.ts
 src/apis/AuditApi.ts
 src/apis/CalibrationsApi.ts
+src/apis/ConnectApi.ts
 src/apis/ConnectorsApi.ts
 src/apis/DatasetsApi.ts
 src/apis/EvalsApi.ts
@@ -121,6 +122,8 @@ src/models/OnlineSamplingPolicy.ts
 src/models/OtlpIngestOutcome.ts
 src/models/PageRunSummary.ts
 src/models/PageRunSummaryItemsInner.ts
+src/models/PaletteConnectStatus.ts
+src/models/PaletteConnectStatusResponse.ts
 src/models/PerturbationKnobs.ts
 src/models/PromoteReviewAnnotationHttpRequest.ts
 src/models/PromoteTraceCaseRequest.ts

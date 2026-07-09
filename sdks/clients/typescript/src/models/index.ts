@@ -94,6 +94,8 @@ export * from './OnlineSamplingPolicy';
 export * from './OtlpIngestOutcome';
 export * from './PageRunSummary';
 export * from './PageRunSummaryItemsInner';
+export * from './PaletteConnectStatus';
+export * from './PaletteConnectStatusResponse';
 export * from './PerturbationKnobs';
 export * from './PromoteReviewAnnotationHttpRequest';
 export * from './PromoteTraceCaseRequest';

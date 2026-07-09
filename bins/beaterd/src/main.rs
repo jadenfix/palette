@@ -3,14 +3,19 @@ mod metrics_http;
 
 use anyhow::Context;
 use beater_accounts::SqliteAccountStore;
-use beater_api::{ApiState, router};
+use beater_api::{
+    ApiState, HttpCentralTokenIntrospector, HttpControlPlaneUsageReporter,
+    HttpJwksCentralTokenVerifier, router,
+};
 use beater_archive::ParquetTraceArchive;
 use beater_audit::SqliteAuditStore;
 use beater_auth::SqliteApiKeyStore;
 use beater_bus::{DeadLetter, DurableBus, InMemoryBus, SqliteDurableBus};
 use beater_calibration::SqliteCalibrationStore;
 use beater_composio::{ConnectorToolPolicy, HttpComposioClient};
-use beater_core::{IdempotencyKey, Money, Page, PageRequest, ProjectId, TenantId, TraceId};
+use beater_core::{
+    EnvironmentId, IdempotencyKey, Money, Page, PageRequest, ProjectId, TenantId, TraceId,
+};
 use beater_datasets::SqliteDatasetStore;
 use beater_experiments::SqliteExperimentStore;
 use beater_gates::SqliteGateStore;
@@ -79,6 +84,24 @@ struct Args {
     /// with ?return_to=<authorize-url>.
     #[arg(long, env = "BEATER_LOGIN_URL")]
     login_url: Option<String>,
+    /// Central control-plane OAuth introspection endpoint for hosted Palette.
+    #[arg(long, env = "TEMPERA_TOKEN_INTROSPECTION_URL")]
+    token_introspection_url: Option<String>,
+    /// Optional bearer secret for the central token introspection endpoint.
+    #[arg(long, env = "TEMPERA_TOKEN_INTROSPECTION_SECRET")]
+    token_introspection_secret: Option<String>,
+    /// Central control-plane JWKS URL for validating hosted RS256 access tokens.
+    #[arg(long, env = "TEMPERA_AUTH_JWKS_URL")]
+    auth_jwks_url: Option<String>,
+    /// Expected central control-plane issuer for hosted RS256 access tokens.
+    #[arg(long, env = "TEMPERA_AUTH_ISSUER_URL")]
+    auth_issuer_url: Option<String>,
+    /// Central control-plane usage-event endpoint for hosted billing meters.
+    #[arg(long, env = "TEMPERA_USAGE_EVENTS_URL")]
+    usage_events_url: Option<String>,
+    /// Bearer token used when reporting hosted billing usage events.
+    #[arg(long, env = "TEMPERA_USAGE_REPORT_TOKEN")]
+    usage_report_token: Option<String>,
     #[arg(long, default_value = ".beater")]
     data_dir: PathBuf,
     /// Maximum bytes accepted for one filesystem artifact write.
@@ -530,6 +553,30 @@ async fn main() -> anyhow::Result<()> {
         Some(oauth_metadata_url),
         issuer.clone(),
     );
+    if let Some(url) = args.token_introspection_url.clone() {
+        state = state.with_central_token_introspector(Arc::new(HttpCentralTokenIntrospector::new(
+            url,
+            args.token_introspection_secret.clone(),
+        )));
+    } else if let (Some(jwks_url), Some(auth_issuer)) =
+        (args.auth_jwks_url.clone(), args.auth_issuer_url.clone())
+    {
+        state = state.with_central_token_introspector(Arc::new(HttpJwksCentralTokenVerifier::new(
+            jwks_url,
+            auth_issuer,
+        )));
+    }
+    if let (Some(url), Some(token)) = (
+        args.usage_events_url.clone(),
+        args.usage_report_token.clone(),
+    ) {
+        state =
+            state.with_control_plane_usage_reporter(Arc::new(HttpControlPlaneUsageReporter::new(
+                url,
+                token,
+                EnvironmentId::new(args.default_environment_id.clone())?,
+            )));
+    }
     let oauth_state = OAuthServerState {
         oauth: oauth_store,
         accounts: account_store,

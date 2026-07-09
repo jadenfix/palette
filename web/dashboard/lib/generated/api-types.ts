@@ -132,6 +132,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connect/status/{tenant_id}/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["connect.get-palette-connect-status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connectors/{tenant_id}/{project_id}": {
         parameters: {
             query?: never;
@@ -1755,6 +1771,20 @@ export interface components {
             }[];
             next_cursor?: string | null;
         };
+        /** @enum {string} */
+        PaletteConnectStatus: "connected" | "waiting_for_trace" | "waiting_for_eval" | "misconfigured";
+        PaletteConnectStatusResponse: {
+            first_eval_run: boolean;
+            first_trace_received: boolean;
+            ok: boolean;
+            project_id: components["schemas"]["ProjectId"];
+            status: components["schemas"]["PaletteConnectStatus"];
+            tenant_id: components["schemas"]["TenantId"];
+            totals: {
+                [key: string]: components["schemas"]["UsageTotal"];
+            };
+            usage_configured: boolean;
+        };
         /** @description Tunable knobs describing how a scenario may be perturbed during replay. */
         PerturbationKnobs: {
             /** @description Force an auth failure on a dependency. */
@@ -2747,6 +2777,67 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "connect.get-palette-connect-status": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer API token for strict auth */
+                authorization?: string | null;
+                /** @description API key alternative for strict auth */
+                "x-beater-api-key"?: string | null;
+                /** @description Strict-auth project scope */
+                "x-beater-project-id"?: string | null;
+                /** @description Strict-auth environment scope */
+                "x-beater-environment-id"?: string | null;
+            };
+            path: {
+                /** @description tenant_id */
+                tenant_id: string;
+                /** @description project_id */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Palette product connection status for account-console setup */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaletteConnectStatusResponse"];
+                };
+            };
+            /** @description Invalid request, scope, or filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Credentials lack the required scope */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

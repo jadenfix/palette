@@ -128,6 +128,8 @@ Class | Method | HTTP request | Description
 *AuditApi* | [**auditListAuditEventsWithHttpInfo**](docs/AuditApi.md#auditListAuditEventsWithHttpInfo) | **GET** /v1/audit/{tenant_id}/{project_id} |
 *CalibrationsApi* | [**calibrationsRunCalibration**](docs/CalibrationsApi.md#calibrationsRunCalibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |
 *CalibrationsApi* | [**calibrationsRunCalibrationWithHttpInfo**](docs/CalibrationsApi.md#calibrationsRunCalibrationWithHttpInfo) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |
+*ConnectApi* | [**connectGetPaletteConnectStatus**](docs/ConnectApi.md#connectGetPaletteConnectStatus) | **GET** /v1/connect/status/{tenant_id}/{project_id} |
+*ConnectApi* | [**connectGetPaletteConnectStatusWithHttpInfo**](docs/ConnectApi.md#connectGetPaletteConnectStatusWithHttpInfo) | **GET** /v1/connect/status/{tenant_id}/{project_id} |
 *ConnectorsApi* | [**connectorsConnectConnector**](docs/ConnectorsApi.md#connectorsConnectConnector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |
 *ConnectorsApi* | [**connectorsConnectConnectorWithHttpInfo**](docs/ConnectorsApi.md#connectorsConnectConnectorWithHttpInfo) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |
 *ConnectorsApi* | [**connectorsConnectorStatus**](docs/ConnectorsApi.md#connectorsConnectorStatus) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |
@@ -330,6 +332,8 @@ Class | Method | HTTP request | Description
  - [OtlpIngestOutcome](docs/OtlpIngestOutcome.md)
  - [PageRunSummary](docs/PageRunSummary.md)
  - [PageRunSummaryItemsInner](docs/PageRunSummaryItemsInner.md)
+ - [PaletteConnectStatus](docs/PaletteConnectStatus.md)
+ - [PaletteConnectStatusResponse](docs/PaletteConnectStatusResponse.md)
  - [PerturbationKnobs](docs/PerturbationKnobs.md)
  - [PromoteReviewAnnotationHttpRequest](docs/PromoteReviewAnnotationHttpRequest.md)
  - [PromoteTraceCaseRequest](docs/PromoteTraceCaseRequest.md)

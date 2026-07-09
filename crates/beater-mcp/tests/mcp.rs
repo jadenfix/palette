@@ -14,7 +14,9 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::body::{Body, to_bytes};
-use beater_api::{ApiState, router, v1_route_count};
+use beater_api::{
+    ApiState, CentralTokenIntrospector, IntrospectedTokenClaims, router, v1_route_count,
+};
 use beater_archive::ParquetTraceArchive;
 use beater_audit::SqliteAuditStore;
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, SqliteApiKeyStore};
@@ -86,6 +88,60 @@ fn build_state() -> (ApiState, tempfile::TempDir) {
         .with_judge(provider_secrets, judge_broker, judge_ledger);
 
     (state, tempdir)
+}
+
+struct StaticCentralTokenIntrospector;
+
+#[async_trait::async_trait]
+impl CentralTokenIntrospector for StaticCentralTokenIntrospector {
+    async fn introspect(&self, token: &str) -> anyhow::Result<IntrospectedTokenClaims> {
+        let (tenant_id, project_id, environment_id, scopes, expires_at) = match token {
+            "central.trace.read.jwt" => (
+                "tenant-1",
+                "proj-1",
+                "env-1",
+                BTreeSet::from(["mcp:invoke".to_string(), "trace:read".to_string()]),
+                chrono::Utc::now() + chrono::Duration::minutes(10),
+            ),
+            "central.trace.write.jwt" => (
+                "tenant-1",
+                "proj-1",
+                "env-1",
+                BTreeSet::from(["mcp:invoke".to_string(), "trace:write".to_string()]),
+                chrono::Utc::now() + chrono::Duration::minutes(10),
+            ),
+            "central.other.tenant.jwt" => (
+                "tenant-2",
+                "proj-1",
+                "env-1",
+                BTreeSet::from(["mcp:invoke".to_string(), "trace:read".to_string()]),
+                chrono::Utc::now() + chrono::Duration::minutes(10),
+            ),
+            "central.expired.jwt" => (
+                "tenant-1",
+                "proj-1",
+                "env-1",
+                BTreeSet::from(["mcp:invoke".to_string(), "trace:read".to_string()]),
+                chrono::Utc::now() - chrono::Duration::minutes(10),
+            ),
+            other => anyhow::bail!("unknown central token {other}"),
+        };
+
+        Ok(IntrospectedTokenClaims {
+            issuer: "https://auth.example.test".to_string(),
+            audience: "palette".to_string(),
+            subject: "user-1".to_string(),
+            client_id: "claude".to_string(),
+            token_id: token.to_string(),
+            scope: scopes,
+            tenant_scope: TenantScope::new(
+                unwrap(TenantId::new(tenant_id)),
+                unwrap(ProjectId::new(project_id)),
+                unwrap(EnvironmentId::new(environment_id)),
+            ),
+            expires_at,
+        })
+    }
 }
 
 /// Set of `/v1` operationIds documented in the spec.
@@ -525,7 +581,7 @@ async fn tools_call_forwards_strict_auth_and_scope_headers() {
 }
 
 #[tokio::test]
-async fn oauth_tools_call_uses_token_scope_without_hidden_headers() {
+async fn tools_call_accepts_oauth_workspace_claims_without_strict_headers() {
     let (state, _tempdir) = build_state();
     let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
     let oauth = Arc::new(unwrap(SqliteOAuthStore::in_memory()));
@@ -675,6 +731,223 @@ async fn oauth_mcp_initialize_without_credentials_returns_discovery_challenge() 
         body["_meta"]["mcp/www_authenticate"][0], challenge,
         "initial POST should give clients the same OAuth discovery metadata as tool calls"
     );
+}
+
+#[tokio::test]
+async fn mcp_advertises_oauth_resource_metadata_when_unauthenticated() {
+    let (state, _tempdir) = build_state();
+    let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
+    let oauth = Arc::new(unwrap(SqliteOAuthStore::in_memory()));
+    let state = state.require_auth(api_keys).with_oauth(
+        oauth,
+        Some("https://app.example.test/.well-known/oauth-protected-resource".to_string()),
+        "https://app.example.test".to_string(),
+    );
+    let app = beater_mcp::router(state);
+
+    let (status, headers, body) = mcp_call_with_headers_and_response_headers(
+        &app,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "protocolVersion": "2025-06-18" }
+        }),
+        &[],
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let challenge = headers
+        .get(http::header::WWW_AUTHENTICATE)
+        .and_then(|value| value.to_str().ok())
+        .expect("WWW-Authenticate challenge");
+    assert!(
+        challenge.contains(
+            r#"resource_metadata="https://app.example.test/.well-known/oauth-protected-resource""#
+        ),
+        "got {challenge}"
+    );
+    assert_eq!(body["error"], "unauthorized");
+    assert_eq!(body["_meta"]["mcp/www_authenticate"][0], challenge);
+    assert_eq!(body["isError"], true);
+    assert_eq!(body["content"][0]["text"], "Authentication required.");
+}
+
+#[tokio::test]
+async fn tools_call_accepts_central_token_introspection_claims_without_strict_headers() {
+    let (state, _tempdir) = build_state();
+    let api_keys = Arc::new(unwrap(SqliteApiKeyStore::in_memory()));
+    let state = state
+        .require_auth(api_keys)
+        .with_central_token_introspector(Arc::new(StaticCentralTokenIntrospector));
+    let app = beater_mcp::router(state);
+
+    let call = json!({
+        "jsonrpc": "2.0",
+        "id": 8,
+        "method": "tools/call",
+        "params": {
+            "name": "spans.get-span",
+            "arguments": {
+                "tenant_id": "tenant-1",
+                "trace_id": "missing-trace",
+                "span_id": "missing-span"
+            }
+        }
+    });
+
+    let (status, authorized) = mcp_call_with_headers(
+        &app,
+        call.clone(),
+        &[("authorization", "Bearer central.trace.read.jwt")],
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(authorized["result"]["isError"], true);
+    assert_eq!(
+        authorized["result"]["_meta"]["httpStatus"], 404,
+        "central token claims should supply project/environment context"
+    );
+
+    let (status, missing_scope) = mcp_call_with_headers(
+        &app,
+        call.clone(),
+        &[("authorization", "Bearer central.trace.write.jwt")],
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(missing_scope["result"]["isError"], true);
+    assert_eq!(missing_scope["result"]["_meta"]["httpStatus"], 403);
+
+    let (status, wrong_tenant) = mcp_call_with_headers(
+        &app,
+        call.clone(),
+        &[("authorization", "Bearer central.other.tenant.jwt")],
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(wrong_tenant["result"]["isError"], true);
+    assert_eq!(wrong_tenant["result"]["_meta"]["httpStatus"], 403);
+
+    let (status, expired) = mcp_call_with_headers(
+        &app,
+        call,
+        &[("authorization", "Bearer central.expired.jwt")],
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(expired["error"], "unauthorized");
+}
+
+struct McpClientShape {
+    name: &'static str,
+    protocol_version: &'static str,
+    user_agent: &'static str,
+}
+
+const MCP_CLIENT_SHAPES: &[McpClientShape] = &[
+    McpClientShape {
+        name: "Claude",
+        protocol_version: "2025-06-18",
+        user_agent: "Claude-Desktop/1.0",
+    },
+    McpClientShape {
+        name: "Claude Code",
+        protocol_version: "2025-06-18",
+        user_agent: "Claude-Code/1.0",
+    },
+    McpClientShape {
+        name: "Cursor",
+        protocol_version: "2025-06-18",
+        user_agent: "Cursor/1.0",
+    },
+    McpClientShape {
+        name: "ChatGPT/OpenAI",
+        protocol_version: "2025-06-18",
+        user_agent: "ChatGPT-OpenAI-Agents/1.0",
+    },
+    McpClientShape {
+        name: "Codex",
+        protocol_version: "2025-06-18",
+        user_agent: "Codex-CLI/1.0",
+    },
+];
+
+#[tokio::test]
+async fn mcp_accepts_pinned_client_shapes_for_claude_cursor_openai_and_codex() {
+    let (state, _tempdir) = build_state();
+    let app = beater_mcp::router(state);
+
+    for shape in MCP_CLIENT_SHAPES {
+        let headers = [
+            ("mcp-protocol-version", shape.protocol_version),
+            ("user-agent", shape.user_agent),
+        ];
+        let (status, initialized) = mcp_call_with_headers(
+            &app,
+            json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": { "protocolVersion": shape.protocol_version }
+            }),
+            &headers,
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{} initialize", shape.name);
+        assert_eq!(
+            initialized["result"]["protocolVersion"], shape.protocol_version,
+            "{} protocol negotiation",
+            shape.name
+        );
+
+        let (status, listed) = mcp_call_with_headers(
+            &app,
+            json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {} }),
+            &headers,
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{} tools/list", shape.name);
+        let tools = listed["result"]["tools"].as_array().expect("tools array");
+        assert_eq!(
+            tools.len(),
+            v1_route_count() + 1,
+            "{} tool count",
+            shape.name
+        );
+        assert!(
+            tools.iter().any(|tool| tool["name"] == "spans.get-span"),
+            "{} has dotted operationId tools",
+            shape.name
+        );
+
+        let (status, help) = mcp_call_with_headers(
+            &app,
+            json!({
+                "jsonrpc": "2.0",
+                "id": 3,
+                "method": "tools/call",
+                "params": {
+                    "name": "help",
+                    "arguments": { "tool": "spans.get-span" }
+                }
+            }),
+            &headers,
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{} help", shape.name);
+        assert_eq!(
+            help["result"]["isError"], false,
+            "{} help succeeds",
+            shape.name
+        );
+        assert_eq!(
+            help["result"]["structuredContent"]["tool"]["name"], "spans.get-span",
+            "{} help descriptor",
+            shape.name
+        );
+    }
 }
 
 #[tokio::test]

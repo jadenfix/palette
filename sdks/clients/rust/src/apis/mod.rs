@@ -95,6 +95,7 @@ pub mod api_keys_api;
 pub mod archive_api;
 pub mod audit_api;
 pub mod calibrations_api;
+pub mod connect_api;
 pub mod connectors_api;
 pub mod datasets_api;
 pub mod evals_api;

@@ -25,7 +25,7 @@ use beater_core::{
     AgentReleaseId, AnnotationId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetId, DatasetVersionId,
     EnvironmentId, EvaluatorVersionId, ExperimentRunId, GateId, Page, PageRequest, ProjectId,
     PromptId, PromptVersionId, ProviderSecretId, ReviewQueueId, ReviewTaskId, Sha256Hash, SpanId,
-    TenantId, TenantScope, TraceId, sha256_json_hash,
+    TenantId, TenantScope, Timestamp, TraceId, sha256_json_hash,
 };
 use beater_datasets::{
     Dataset, DatasetEvalReport, DatasetEvalSpec, DatasetJudgeEvalSpec, DatasetStore,
@@ -51,7 +51,7 @@ use beater_ingest::{
 use beater_judge::{
     JudgeBroker, JudgeBrokerError, JudgeBrokerOutcome, JudgeBrokerRequest, JudgeLedgerStore,
 };
-use beater_oauth::OAuthStore;
+use beater_oauth::{AccessTokenClaims, OAuthStore};
 use beater_otlp::{
     OtlpScopeHints, decode_export_trace_request, decode_export_trace_request_json,
     export_scope_hints, export_to_raw_trace_ingest_request,
@@ -81,14 +81,17 @@ use beater_security::{
 use beater_store::{MetadataStore, StoreError, TraceStore};
 use beater_store_memory::InMemoryMetadataStore;
 use beater_usage::{
-    UsageLedgerStore, UsageRecordInsert, UsageSummary, judge_usage_from_dataset_eval_report,
-    judge_usage_from_experiment_report, judge_usage_from_outcome, record_usage_batch,
+    UsageLedgerStore, UsageMeter, UsageRecordInsert, UsageSummary, UsageTotal,
+    judge_usage_from_dataset_eval_report, judge_usage_from_experiment_report,
+    judge_usage_from_outcome, record_usage_batch,
 };
 use chrono::Utc;
 use http::header::{HeaderName, HeaderValue, RETRY_AFTER};
 use http::{HeaderMap, StatusCode};
+use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode, decode_header};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use utoipa::{IntoParams, ToSchema};
 
@@ -98,6 +101,350 @@ const API_KEY_HEADER: &str = "x-beater-api-key";
 const TENANT_ID_HEADER: &str = "x-beater-tenant-id";
 const PROJECT_ID_HEADER: &str = "x-beater-project-id";
 const ENVIRONMENT_ID_HEADER: &str = "x-beater-environment-id";
+const CENTRAL_TOKEN_AUDIENCE: &str = "palette";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IntrospectedTokenClaims {
+    pub issuer: String,
+    pub audience: String,
+    pub subject: String,
+    pub client_id: String,
+    pub token_id: String,
+    pub scope: BTreeSet<String>,
+    pub tenant_scope: TenantScope,
+    pub expires_at: Timestamp,
+}
+
+#[async_trait::async_trait]
+pub trait CentralTokenIntrospector: Send + Sync {
+    async fn introspect(&self, token: &str) -> anyhow::Result<IntrospectedTokenClaims>;
+}
+
+pub struct HttpCentralTokenIntrospector {
+    endpoint: String,
+    bearer_secret: Option<String>,
+    http: reqwest::Client,
+}
+
+impl HttpCentralTokenIntrospector {
+    pub fn new(endpoint: impl Into<String>, bearer_secret: Option<String>) -> Self {
+        Self {
+            endpoint: endpoint.into(),
+            bearer_secret,
+            http: reqwest::Client::new(),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct IntrospectionResponse {
+    active: bool,
+    iss: Option<String>,
+    aud: Option<String>,
+    sub: Option<String>,
+    client_id: Option<String>,
+    org_id: Option<String>,
+    project_id: Option<String>,
+    environment_id: Option<String>,
+    scope: Option<String>,
+    exp: Option<i64>,
+    jti: Option<String>,
+    token_type: Option<String>,
+    api_key_id: Option<String>,
+}
+
+#[async_trait::async_trait]
+impl CentralTokenIntrospector for HttpCentralTokenIntrospector {
+    async fn introspect(&self, token: &str) -> anyhow::Result<IntrospectedTokenClaims> {
+        let mut body = serde_json::json!({ "token": token });
+        if token.starts_with("tp_") {
+            body["token_type_hint"] = serde_json::json!("api_key");
+        }
+        let mut request = self.http.post(&self.endpoint).json(&body);
+        if let Some(secret) = &self.bearer_secret {
+            request = request.bearer_auth(secret);
+        }
+        let response = request.send().await?.error_for_status()?;
+        let body = response.json::<IntrospectionResponse>().await?;
+        if !body.active {
+            anyhow::bail!("inactive token");
+        }
+        let audience = required_introspection_field(body.aud, "aud")?;
+        if audience != CENTRAL_TOKEN_AUDIENCE {
+            anyhow::bail!("token audience {audience} is not {CENTRAL_TOKEN_AUDIENCE}");
+        }
+        let token_type = body
+            .token_type
+            .unwrap_or_else(|| "access_token".to_string());
+        Ok(IntrospectedTokenClaims {
+            issuer: required_introspection_field(body.iss, "iss")?,
+            audience: audience.clone(),
+            subject: required_introspection_field(body.sub, "sub")?,
+            client_id: body.client_id.unwrap_or(audience),
+            token_id: body
+                .jti
+                .or(body.api_key_id)
+                .ok_or_else(|| anyhow::anyhow!("introspection response missing jti/api_key_id"))?,
+            scope: body
+                .scope
+                .unwrap_or_default()
+                .split_whitespace()
+                .map(ToString::to_string)
+                .collect(),
+            tenant_scope: TenantScope::new(
+                TenantId::new(required_introspection_field(body.org_id, "org_id")?)?,
+                ProjectId::new(required_introspection_field(body.project_id, "project_id")?)?,
+                EnvironmentId::new(required_introspection_field(
+                    body.environment_id,
+                    "environment_id",
+                )?)?,
+            ),
+            expires_at: introspection_expires_at(body.exp, &token_type)?,
+        })
+    }
+}
+
+pub struct HttpJwksCentralTokenVerifier {
+    jwks_url: String,
+    issuer: String,
+    http: reqwest::Client,
+}
+
+impl HttpJwksCentralTokenVerifier {
+    pub fn new(jwks_url: impl Into<String>, issuer: impl Into<String>) -> Self {
+        Self {
+            jwks_url: jwks_url.into(),
+            issuer: issuer.into(),
+            http: reqwest::Client::new(),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct JwksDocument {
+    keys: Vec<JwkKey>,
+}
+
+#[derive(Deserialize)]
+struct JwkKey {
+    kid: Option<String>,
+    kty: String,
+    alg: Option<String>,
+    n: Option<String>,
+    e: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+struct JwtTokenClaims {
+    iss: String,
+    aud: String,
+    sub: String,
+    client_id: Option<String>,
+    org_id: String,
+    project_id: String,
+    environment_id: String,
+    scope: String,
+    exp: i64,
+    jti: String,
+}
+
+#[async_trait::async_trait]
+impl CentralTokenIntrospector for HttpJwksCentralTokenVerifier {
+    async fn introspect(&self, token: &str) -> anyhow::Result<IntrospectedTokenClaims> {
+        let header = decode_header(token)?;
+        if header.alg != Algorithm::RS256 {
+            anyhow::bail!("unsupported token algorithm {:?}", header.alg);
+        }
+        let kid = header
+            .kid
+            .ok_or_else(|| anyhow::anyhow!("token missing kid"))?;
+        let jwks = self
+            .http
+            .get(&self.jwks_url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<JwksDocument>()
+            .await?;
+        let key = jwks
+            .keys
+            .iter()
+            .find(|key| {
+                key.kid.as_deref() == Some(kid.as_str())
+                    && key.kty == "RSA"
+                    && key.alg.as_deref().unwrap_or("RS256") == "RS256"
+            })
+            .ok_or_else(|| anyhow::anyhow!("JWKS does not contain kid {kid}"))?;
+        let decoding_key = DecodingKey::from_rsa_components(
+            required_jwk_component(key.n.as_deref(), "n")?,
+            required_jwk_component(key.e.as_deref(), "e")?,
+        )?;
+        let mut validation = Validation::new(Algorithm::RS256);
+        validation.set_audience(&[CENTRAL_TOKEN_AUDIENCE]);
+        validation.set_issuer(&[self.issuer.as_str()]);
+        let claims = decode::<JwtTokenClaims>(token, &decoding_key, &validation)?.claims;
+        Ok(IntrospectedTokenClaims {
+            issuer: claims.iss,
+            audience: claims.aud.clone(),
+            subject: claims.sub,
+            client_id: claims.client_id.unwrap_or(claims.aud),
+            token_id: claims.jti,
+            scope: claims
+                .scope
+                .split_whitespace()
+                .map(ToString::to_string)
+                .collect(),
+            tenant_scope: TenantScope::new(
+                TenantId::new(claims.org_id)?,
+                ProjectId::new(claims.project_id)?,
+                EnvironmentId::new(claims.environment_id)?,
+            ),
+            expires_at: chrono::DateTime::from_timestamp(claims.exp, 0)
+                .ok_or_else(|| anyhow::anyhow!("invalid exp timestamp"))?,
+        })
+    }
+}
+
+fn introspection_expires_at(exp: Option<i64>, token_type: &str) -> anyhow::Result<Timestamp> {
+    match exp {
+        Some(exp) => chrono::DateTime::from_timestamp(exp, 0)
+            .ok_or_else(|| anyhow::anyhow!("invalid exp timestamp")),
+        None if token_type == "api_key" => Ok(Utc::now() + chrono::Duration::hours(1)),
+        None => Err(anyhow::anyhow!("introspection response missing exp")),
+    }
+}
+
+fn required_jwk_component<'a>(value: Option<&'a str>, name: &str) -> anyhow::Result<&'a str> {
+    value.ok_or_else(|| anyhow::anyhow!("JWKS key missing {name}"))
+}
+
+fn required_introspection_field<T>(value: Option<T>, name: &str) -> anyhow::Result<T> {
+    value.ok_or_else(|| anyhow::anyhow!("introspection response missing {name}"))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ControlPlaneUsageMetric {
+    TraceEvents,
+    EvalRuns,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct ControlPlaneUsageEvent {
+    #[serde(rename = "org_id")]
+    pub tenant_id: TenantId,
+    pub project_id: ProjectId,
+    pub environment_id: EnvironmentId,
+    pub metric: ControlPlaneUsageMetric,
+    pub quantity: i64,
+    pub source_kind: String,
+    pub source_id: String,
+}
+
+#[async_trait::async_trait]
+pub trait ControlPlaneUsageReporter: Send + Sync {
+    async fn report_usage(&self, inserts: &[UsageRecordInsert]) -> anyhow::Result<()>;
+}
+
+pub struct HttpControlPlaneUsageReporter {
+    endpoint: String,
+    bearer_token: String,
+    environment_id: EnvironmentId,
+    http: reqwest::Client,
+}
+
+impl HttpControlPlaneUsageReporter {
+    pub fn new(
+        endpoint: impl Into<String>,
+        bearer_token: impl Into<String>,
+        environment_id: EnvironmentId,
+    ) -> Self {
+        Self {
+            endpoint: endpoint.into(),
+            bearer_token: bearer_token.into(),
+            environment_id,
+            http: reqwest::Client::new(),
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl ControlPlaneUsageReporter for HttpControlPlaneUsageReporter {
+    async fn report_usage(&self, inserts: &[UsageRecordInsert]) -> anyhow::Result<()> {
+        for event in control_plane_usage_events(inserts, &self.environment_id) {
+            let response = self
+                .http
+                .post(&self.endpoint)
+                .bearer_auth(&self.bearer_token)
+                .json(&event)
+                .send()
+                .await?;
+            let status = response.status();
+            if !status.is_success() {
+                let body = response.text().await.unwrap_or_default();
+                return Err(ControlPlaneUsageRejected {
+                    status: StatusCode::from_u16(status.as_u16())
+                        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+                    message: if body.is_empty() {
+                        format!("control-plane usage event rejected with {status}")
+                    } else {
+                        format!("control-plane usage event rejected with {status}: {body}")
+                    },
+                }
+                .into());
+            }
+        }
+        Ok(())
+    }
+}
+
+fn control_plane_usage_events(
+    inserts: &[UsageRecordInsert],
+    environment_id: &EnvironmentId,
+) -> Vec<ControlPlaneUsageEvent> {
+    inserts
+        .iter()
+        .filter_map(|insert| control_plane_usage_event(insert, environment_id))
+        .collect()
+}
+
+fn control_plane_usage_event(
+    insert: &UsageRecordInsert,
+    environment_id: &EnvironmentId,
+) -> Option<ControlPlaneUsageEvent> {
+    if insert.quantity <= 0 {
+        return None;
+    }
+    let (metric, quantity) = match insert.meter {
+        UsageMeter::IngestSpans => (ControlPlaneUsageMetric::TraceEvents, insert.quantity),
+        UsageMeter::EvalCasesScored => (ControlPlaneUsageMetric::EvalRuns, insert.quantity),
+        UsageMeter::JudgeCostMicros => (ControlPlaneUsageMetric::EvalRuns, 1),
+        UsageMeter::IngestBytes | UsageMeter::StoredArtifactBytes => return None,
+    };
+    Some(ControlPlaneUsageEvent {
+        tenant_id: insert.tenant_id.clone(),
+        project_id: insert.project_id.clone(),
+        environment_id: environment_id.clone(),
+        metric,
+        quantity,
+        source_kind: insert.source_kind.as_str().to_string(),
+        source_id: insert.source_id.clone(),
+    })
+}
+
+#[derive(Debug)]
+struct ControlPlaneUsageRejected {
+    status: StatusCode,
+    message: String,
+}
+
+impl Display for ControlPlaneUsageRejected {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for ControlPlaneUsageRejected {}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AuthMode {
@@ -141,6 +488,13 @@ pub struct ApiState {
     /// accepts OAuth access tokens (`bao_...`) as bearer credentials, mapping
     /// the token's tenant scope + OAuth scopes onto the request.
     oauth: Option<Arc<dyn OAuthStore>>,
+    /// Central control-plane token introspector. Hosted Palette uses this to
+    /// validate RS256 JWTs or centrally issued API keys and map their workspace
+    /// claims onto product authorization.
+    central_token_introspector: Option<Arc<dyn CentralTokenIntrospector>>,
+    /// Optional hosted usage reporter. Local usage remains append-only; this
+    /// adapter forwards billable events to the central account control plane.
+    control_plane_usage_reporter: Option<Arc<dyn ControlPlaneUsageReporter>>,
     /// URL of the OAuth protected-resource metadata document, surfaced in the
     /// `WWW-Authenticate` challenge on 401 (RFC 9728 / MCP auth discovery).
     oauth_metadata_url: Option<String>,
@@ -178,6 +532,8 @@ impl ApiState {
             connectors: None,
             prompts: None,
             oauth: None,
+            central_token_introspector: None,
+            control_plane_usage_reporter: None,
             oauth_metadata_url: None,
             oauth_resource: None,
         }
@@ -195,6 +551,22 @@ impl ApiState {
         self.oauth = Some(oauth);
         self.oauth_metadata_url = metadata_url;
         self.oauth_resource = Some(resource);
+        self
+    }
+
+    pub fn with_central_token_introspector(
+        mut self,
+        introspector: Arc<dyn CentralTokenIntrospector>,
+    ) -> Self {
+        self.central_token_introspector = Some(introspector);
+        self
+    }
+
+    pub fn with_control_plane_usage_reporter(
+        mut self,
+        reporter: Arc<dyn ControlPlaneUsageReporter>,
+    ) -> Self {
+        self.control_plane_usage_reporter = Some(reporter);
         self
     }
 
@@ -347,7 +719,7 @@ impl ApiState {
 ///
 /// The product API deliberately excludes billing/checkout/subscription routes;
 /// those are owned by the central Tempera control plane.
-pub const V1_ROUTE_COUNT: usize = 58;
+pub const V1_ROUTE_COUNT: usize = 59;
 
 /// See [`V1_ROUTE_COUNT`].
 pub fn v1_route_count() -> usize {
@@ -409,6 +781,10 @@ pub fn router(state: ApiState) -> Router {
             get(list_judge_ledger_route),
         )
         .route("/v1/usage/:tenant_id/:project_id", get(get_usage_summary_route))
+        .route(
+            "/v1/connect/status/:tenant_id/:project_id",
+            get(get_palette_connect_status_route),
+        )
         .route("/v1/audit/:tenant_id/:project_id", get(list_audit_events_route))
         .route(
             "/v1/ingest/:tenant_id/:project_id/queue",
@@ -1461,6 +1837,109 @@ async fn get_usage_summary_route(
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let summary = usage.summarize_usage(tenant_id, project_id).await?;
     Ok(Json(summary))
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+enum PaletteConnectStatus {
+    Connected,
+    WaitingForTrace,
+    WaitingForEval,
+    Misconfigured,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+struct PaletteConnectStatusResponse {
+    tenant_id: TenantId,
+    project_id: ProjectId,
+    ok: bool,
+    status: PaletteConnectStatus,
+    usage_configured: bool,
+    first_trace_received: bool,
+    first_eval_run: bool,
+    totals: BTreeMap<String, UsageTotal>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/connect/status/{tenant_id}/{project_id}",
+    tag = "connect",
+    operation_id = "getPaletteConnectStatus",
+    params(
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
+        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
+        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
+        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
+        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
+    ),
+    responses(
+        (status = 200, description = "Palette product connection status for account-console setup", body = PaletteConnectStatusResponse),
+        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
+        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
+    )
+)]
+async fn get_palette_connect_status_route(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Path((tenant_id, project_id)): Path<(String, String)>,
+) -> Result<Json<PaletteConnectStatusResponse>, ApiError> {
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::TraceRead,
+    )
+    .await?;
+
+    let summary = if let Some(usage) = state.usage.clone() {
+        Some(
+            usage
+                .summarize_usage(tenant_id.clone(), project_id.clone())
+                .await?,
+        )
+    } else {
+        None
+    };
+    let totals = summary
+        .as_ref()
+        .map(|summary| summary.totals.clone())
+        .unwrap_or_default();
+    let first_trace_received = usage_total_positive(&totals, UsageMeter::IngestSpans);
+    let first_eval_run = usage_total_positive(&totals, UsageMeter::EvalCasesScored)
+        || usage_total_positive(&totals, UsageMeter::JudgeCostMicros);
+    let usage_configured = summary.is_some();
+    let status = if !usage_configured {
+        PaletteConnectStatus::Misconfigured
+    } else if !first_trace_received {
+        PaletteConnectStatus::WaitingForTrace
+    } else if !first_eval_run {
+        PaletteConnectStatus::WaitingForEval
+    } else {
+        PaletteConnectStatus::Connected
+    };
+
+    Ok(Json(PaletteConnectStatusResponse {
+        tenant_id,
+        project_id,
+        ok: usage_configured,
+        status,
+        usage_configured,
+        first_trace_received,
+        first_eval_run,
+        totals,
+    }))
+}
+
+fn usage_total_positive(totals: &BTreeMap<String, UsageTotal>, meter: UsageMeter) -> bool {
+    totals
+        .get(meter.as_str())
+        .map(|total| total.quantity > 0)
+        .unwrap_or(false)
 }
 
 #[utoipa::path(
@@ -3998,7 +4477,12 @@ async fn record_usage_if_configured(
     inserts: Vec<UsageRecordInsert>,
 ) -> Result<(), ApiError> {
     if let Some(usage) = state.usage.clone() {
-        record_usage_batch(usage.as_ref(), inserts).await?;
+        record_usage_batch(usage.as_ref(), inserts.clone()).await?;
+    }
+    if let Some(reporter) = state.control_plane_usage_reporter.clone()
+        && !inserts.is_empty()
+    {
+        reporter.report_usage(&inserts).await?;
     }
     Ok(())
 }
@@ -4397,7 +4881,7 @@ async fn authorize_project_route(
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
     }
-    let token_scope = oauth_tenant_scope_from_headers(state, headers).await?;
+    let token_scope = hosted_tenant_scope_from_headers(state, headers).await?;
     let environment_id = match optional_environment_id_from_header(headers)? {
         Some(environment_id) => environment_id,
         None => match token_scope {
@@ -4425,7 +4909,7 @@ async fn authorize_tenant_route(
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
     }
-    let token_scope = oauth_tenant_scope_from_headers(state, headers).await?;
+    let token_scope = hosted_tenant_scope_from_headers(state, headers).await?;
     let project_id = match optional_project_id_from_header(headers)? {
         Some(project_id) => project_id,
         None => match token_scope.as_ref() {
@@ -4462,7 +4946,7 @@ async fn authorize_query_scope(
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
     }
-    let token_scope = oauth_tenant_scope_from_headers(state, headers).await?;
+    let token_scope = hosted_tenant_scope_from_headers(state, headers).await?;
     let token_project_id;
     let project_id = match project_id {
         Some(project_id) => project_id,
@@ -4504,10 +4988,23 @@ async fn authorize_query_scope(
     .await
 }
 
-async fn oauth_tenant_scope_from_headers(
+async fn hosted_tenant_scope_from_headers(
     state: &ApiState,
     headers: &HeaderMap,
 ) -> Result<Option<TenantScope>, ApiError> {
+    if let Some(claims) = presented_oauth_claims(state, headers).await? {
+        return Ok(Some(claims.tenant_scope));
+    }
+    if let Some(claims) = presented_central_claims(state, headers).await? {
+        return Ok(Some(claims.tenant_scope));
+    }
+    Ok(None)
+}
+
+async fn presented_oauth_claims(
+    state: &ApiState,
+    headers: &HeaderMap,
+) -> Result<Option<AccessTokenClaims>, ApiError> {
     let Some(secret) = bearer_secret(headers)? else {
         return Ok(None);
     };
@@ -4529,7 +5026,44 @@ async fn oauth_tenant_scope_from_headers(
             "access token audience does not match this resource".to_string(),
         ));
     }
-    Ok(Some(claims.tenant_scope))
+    Ok(Some(claims))
+}
+
+async fn presented_central_claims(
+    state: &ApiState,
+    headers: &HeaderMap,
+) -> Result<Option<IntrospectedTokenClaims>, ApiError> {
+    let Some(secret) = central_token_candidate(headers)? else {
+        return Ok(None);
+    };
+    let Some(introspector) = state.central_token_introspector.as_ref() else {
+        return Ok(None);
+    };
+    let claims = introspector
+        .introspect(secret)
+        .await
+        .map_err(|_| ApiError::unauthorized("invalid or expired access token".to_string()))?;
+    Ok(Some(claims))
+}
+
+fn central_token_candidate(headers: &HeaderMap) -> Result<Option<&str>, ApiError> {
+    if let Some(secret) = bearer_secret(headers)?
+        && central_token_shape(secret)
+    {
+        return Ok(Some(secret));
+    }
+    if let Some(secret) = headers
+        .get(API_KEY_HEADER)
+        .and_then(|value| value.to_str().ok())
+        && central_token_shape(secret)
+    {
+        return Ok(Some(secret));
+    }
+    Ok(None)
+}
+
+fn central_token_shape(secret: &str) -> bool {
+    secret.contains('.') || secret.starts_with("tp_")
 }
 
 fn bearer_secret(headers: &HeaderMap) -> Result<Option<&str>, ApiError> {
@@ -4557,6 +5091,15 @@ async fn authorize(
 ) -> Result<AuthDecision, ApiError> {
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
+    }
+    if let Some(claims) = presented_central_claims(state, headers).await? {
+        return authorize_central_claims(
+            claims,
+            tenant_id,
+            project_id,
+            environment_id,
+            required_scope,
+        );
     }
     let secret = presented_api_key(headers)?;
     // OAuth access tokens (`bao_...`) are accepted when an OAuth store is wired.
@@ -4628,6 +5171,24 @@ async fn authorize_oauth(
         .validate_access_token(secret, Utc::now())
         .await
         .map_err(|_| ApiError::unauthorized("invalid or expired access token".to_string()))?;
+    authorize_oauth_claims(
+        claims,
+        expected_resource,
+        tenant_id,
+        project_id,
+        environment_id,
+        required_scope,
+    )
+}
+
+fn authorize_oauth_claims(
+    claims: AccessTokenClaims,
+    expected_resource: Option<&str>,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+    environment_id: &EnvironmentId,
+    required_scope: ApiScope,
+) -> Result<AuthDecision, ApiError> {
     if expected_resource.is_none_or(|resource| claims.resource != resource) {
         return Err(ApiError::unauthorized(
             "access token audience does not match this resource".to_string(),
@@ -4642,6 +5203,53 @@ async fn authorize_oauth(
         ));
     }
     if !claims.scope.contains("mcp:invoke") {
+        return Err(ApiError::forbidden(
+            "access token is missing scope mcp:invoke".to_string(),
+        ));
+    }
+    let has_scope = claims.scope.contains(required_scope.as_str());
+    if !has_scope {
+        return Err(ApiError::forbidden(format!(
+            "access token is missing scope {}",
+            required_scope.as_str()
+        )));
+    }
+    Ok(AuthDecision {
+        context: AuthContext {
+            api_key_id: None,
+            scopes: claims.scope,
+        },
+        project_id: Some(claims.tenant_scope.project_id),
+        environment_id: Some(claims.tenant_scope.environment_id),
+    })
+}
+
+fn authorize_central_claims(
+    claims: IntrospectedTokenClaims,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+    environment_id: &EnvironmentId,
+    required_scope: ApiScope,
+) -> Result<AuthDecision, ApiError> {
+    if claims.audience != CENTRAL_TOKEN_AUDIENCE {
+        return Err(ApiError::unauthorized(
+            "access token audience does not match this resource".to_string(),
+        ));
+    }
+    if claims.expires_at <= Utc::now() {
+        return Err(ApiError::unauthorized(
+            "invalid or expired access token".to_string(),
+        ));
+    }
+    if &claims.tenant_scope.tenant_id != tenant_id
+        || &claims.tenant_scope.project_id != project_id
+        || &claims.tenant_scope.environment_id != environment_id
+    {
+        return Err(ApiError::forbidden(
+            "access token is not scoped to this tenant/project/environment".to_string(),
+        ));
+    }
+    if claims.client_id != "raw-api" && !claims.scope.contains("mcp:invoke") {
         return Err(ApiError::forbidden(
             "access token is missing scope mcp:invoke".to_string(),
         ));
@@ -5183,6 +5791,9 @@ fn invalid_otlp_export(error: impl std::fmt::Display) -> ApiError {
 
 impl From<anyhow::Error> for ApiError {
     fn from(error: anyhow::Error) -> Self {
+        if let Some(rejected) = error.downcast_ref::<ControlPlaneUsageRejected>() {
+            return Self::with_status(rejected.status, rejected.message.clone());
+        }
         Self::internal(error.to_string())
     }
 }
@@ -5302,6 +5913,167 @@ mod tests {
     use serde_json::json;
     use std::collections::BTreeMap;
     use tower::ServiceExt;
+
+    #[test]
+    fn control_plane_usage_events_map_only_hosted_billable_meters() {
+        use beater_usage::UsageRecordSourceKind;
+
+        let tenant_id = TenantId::new("org_demo").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("proj_demo").unwrap_or_else(|err| panic!("{err}"));
+        let environment_id =
+            EnvironmentId::new("env_preview").unwrap_or_else(|err| panic!("{err}"));
+        let insert = |meter, quantity, source_id: &str| UsageRecordInsert {
+            tenant_id: tenant_id.clone(),
+            project_id: project_id.clone(),
+            meter,
+            quantity,
+            unit: "count".to_string(),
+            source_kind: UsageRecordSourceKind::TraceIngest,
+            source_id: source_id.to_string(),
+            attributes: json!({}),
+        };
+
+        let events = control_plane_usage_events(
+            &[
+                insert(UsageMeter::IngestSpans, 42, "trace-1"),
+                insert(UsageMeter::IngestBytes, 10_000, "trace-1"),
+                insert(UsageMeter::StoredArtifactBytes, 2048, "artifact-1"),
+                insert(UsageMeter::EvalCasesScored, 3, "eval-1"),
+                insert(UsageMeter::JudgeCostMicros, 1200, "judge-1"),
+                insert(UsageMeter::IngestSpans, -1, "refund-1"),
+            ],
+            &environment_id,
+        );
+
+        assert_eq!(events.len(), 3);
+        assert_eq!(events[0].metric, ControlPlaneUsageMetric::TraceEvents);
+        assert_eq!(events[0].quantity, 42);
+        assert_eq!(events[0].environment_id, environment_id);
+        assert_eq!(events[1].metric, ControlPlaneUsageMetric::EvalRuns);
+        assert_eq!(events[1].quantity, 3);
+        assert_eq!(events[2].metric, ControlPlaneUsageMetric::EvalRuns);
+        assert_eq!(events[2].quantity, 1);
+    }
+
+    struct RejectingControlPlaneUsageReporter;
+
+    #[async_trait::async_trait]
+    impl ControlPlaneUsageReporter for RejectingControlPlaneUsageReporter {
+        async fn report_usage(&self, _inserts: &[UsageRecordInsert]) -> anyhow::Result<()> {
+            Err(ControlPlaneUsageRejected {
+                status: StatusCode::PAYMENT_REQUIRED,
+                message: "plan limit exceeded".to_string(),
+            }
+            .into())
+        }
+    }
+
+    #[tokio::test]
+    async fn control_plane_usage_rejection_preserves_status() {
+        use beater_usage::UsageRecordSourceKind;
+
+        let (ingest, traces, _tempdir) = api_state_fixture();
+        let state = ApiState::new(ingest, traces)
+            .with_control_plane_usage_reporter(Arc::new(RejectingControlPlaneUsageReporter));
+        let error = match record_usage_if_configured(
+            &state,
+            vec![UsageRecordInsert {
+                tenant_id: TenantId::new("org_demo").unwrap_or_else(|err| panic!("{err}")),
+                project_id: ProjectId::new("proj_demo").unwrap_or_else(|err| panic!("{err}")),
+                meter: UsageMeter::EvalCasesScored,
+                quantity: 1,
+                unit: "case".to_string(),
+                source_kind: UsageRecordSourceKind::DatasetEvalReport,
+                source_id: "eval-1".to_string(),
+                attributes: json!({}),
+            }],
+        )
+        .await
+        {
+            Ok(()) => panic!("control-plane usage rejection should fail"),
+            Err(error) => error,
+        };
+
+        assert_eq!(error.status, StatusCode::PAYMENT_REQUIRED);
+        assert_eq!(error.message, "plan limit exceeded");
+    }
+
+    #[tokio::test]
+    async fn palette_connect_status_reports_first_trace_and_eval_readiness() {
+        use beater_usage::{SqliteUsageLedger, UsageRecordSourceKind};
+
+        let (ingest, traces, _tempdir) = api_state_fixture();
+        let usage = Arc::new(SqliteUsageLedger::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let tenant_id = TenantId::new("org_demo").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("proj_demo").unwrap_or_else(|err| panic!("{err}"));
+        usage
+            .record_usage(UsageRecordInsert {
+                tenant_id: tenant_id.clone(),
+                project_id: project_id.clone(),
+                meter: UsageMeter::IngestSpans,
+                quantity: 1,
+                unit: "span".to_string(),
+                source_kind: UsageRecordSourceKind::TraceIngest,
+                source_id: "trace-1".to_string(),
+                attributes: json!({}),
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
+        let app = router(ApiState::new(ingest, traces).with_usage(usage.clone()));
+
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/connect/status/org_demo/proj_demo")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let body: serde_json::Value =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(body["status"], serde_json::json!("waiting_for_eval"));
+        assert_eq!(body["first_trace_received"], serde_json::json!(true));
+        assert_eq!(body["first_eval_run"], serde_json::json!(false));
+
+        usage
+            .record_usage(UsageRecordInsert {
+                tenant_id,
+                project_id,
+                meter: UsageMeter::JudgeCostMicros,
+                quantity: 250,
+                unit: "usd_micros".to_string(),
+                source_kind: UsageRecordSourceKind::JudgeCall,
+                source_id: "judge-1".to_string(),
+                attributes: json!({}),
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/connect/status/org_demo/proj_demo")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let body: serde_json::Value =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(body["status"], serde_json::json!("connected"));
+        assert_eq!(body["first_eval_run"], serde_json::json!(true));
+    }
 
     #[tokio::test]
     async fn oauth_access_token_authorizes_only_for_its_tenant_and_scope() {
@@ -6122,6 +6894,8 @@ mod tests {
         assert!(state.judge_ledger.is_none());
         assert!(state.usage.is_none());
         assert!(state.audit.is_none());
+        assert!(state.central_token_introspector.is_none());
+        assert!(state.control_plane_usage_reporter.is_none());
         assert!(!state.auth_required());
         assert!(state.api_keys.is_none());
     }
