@@ -139,21 +139,33 @@ Ordered by leverage. Each keeps Palette standalone (no data-engine dependency).
 
 1. **Add `GET` read routes for the dataset/eval/experiment/gate family.** This is
    the single highest-leverage change — it lets data-engine collect over the
-   contract instead of native-coupling to store crates. Proposed (all
-   tenant/project-scoped, cursor-paginated, drift-gated like every existing read):
-   - `GET /v1/datasets/{t}/{p}` — list datasets
-   - `GET /v1/datasets/{t}/{p}/{dataset_id}` — dataset + latest version ref
-   - `GET /v1/datasets/{t}/{p}/{dataset_id}/versions` — version history
-   - `GET /v1/datasets/{t}/{p}/{dataset_id}/versions/{version_id}` — full
+   contract instead of native-coupling to store crates. Proposed routes follow
+   the ecosystem API style from data-engine `API_STYLE.md`: project-parent
+   scoped, cursor-paginated, drift-gated, and named with dotted `projects.*`
+   operationIds. Tenant/org scope remains enforced by auth and Palette's store
+   isolation; it should not be a separate leading URL dialect.
+   - `GET /v1/{parent=projects/*}/datasets` — list datasets
+     (`projects.datasets.list`)
+   - `GET /v1/{name=projects/*/datasets/*}` — dataset + latest version ref
+     (`projects.datasets.get`)
+   - `GET /v1/{parent=projects/*/datasets/*}/versions` — version history
+     (`projects.datasetVersions.list`)
+   - `GET /v1/{name=projects/*/datasets/*/versions/*}` — full
      `DatasetVersionSnapshot` incl. `corpus_root` and cases
-   - `GET /v1/datasets/{t}/{p}/{dataset_id}/cases` — cases (paginated)
-   - `GET /v1/datasets/{t}/{p}/{dataset_id}/evals` — eval reports
-   - `GET /v1/experiments/{t}/{p}/runs` and `GET /v1/gates/{t}/{p}/runs` —
-     outcomes (these are the **delayed-truth** labels for data-engine's gap loop)
+     (`projects.datasetVersions.get`)
+   - `GET /v1/{parent=projects/*/datasets/*}/cases` — cases (paginated)
+     (`projects.datasetCases.list`)
+   - `GET /v1/{parent=projects/*/datasets/*}/evals` — eval reports
+     (`projects.datasetEvals.list`)
+   - `GET /v1/{parent=projects/*/experiments/*}/runs` and
+     `GET /v1/{parent=projects/*/gates/*}/runs` — outcomes, the
+     **delayed-truth** labels for data-engine's gap loop
+     (`projects.experimentRuns.list`, `projects.gateRuns.list`)
 
    Mechanically: add the handlers in `crates/beater-api/src/lib.rs`, regenerate
    via `cargo xtask regen-spec && scripts/regen-sdks.sh && scripts/check-contract-sync.sh`
-   in the same PR. MCP tools auto-derive. **No behavior change; pure additive read surface.**
+   in the same PR. MCP tools auto-derive from the operationIds. **No behavior
+   change; pure additive read surface.**
 
 2. **Reserve a `data_engine` source dialect + importer seat.** Add
    `SourceDialect::DataEngineImport` (`crates/beater-schema/src/lib.rs`, next to
