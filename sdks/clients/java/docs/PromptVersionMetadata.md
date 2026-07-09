@@ -10,6 +10,3 @@
 |**createdAt** | **OffsetDateTime** |  |  |
 |**createdBy** | **String** |  |  [optional] |
 |**message** | **String** |  |  [optional] |
-
-
-

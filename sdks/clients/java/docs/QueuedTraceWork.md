@@ -10,6 +10,3 @@
 |**projectId** | **String** |  |  |
 |**tenantId** | **String** |  |  |
 |**traceId** | **String** |  |  |
-
-
-

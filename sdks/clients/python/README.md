@@ -77,11 +77,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.evaluate_alert(tenant_id, project_id, trace_id, evaluate_alert_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of AlertsApi->evaluate_alert:\n")
+        api_response = api_instance.alerts_evaluate_alert(tenant_id, project_id, trace_id, evaluate_alert_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of AlertsApi->alerts_evaluate_alert:\n")
         pprint(api_response)
     except ApiException as e:
-        print("Exception when calling AlertsApi->evaluate_alert: %s\n" % e)
+        print("Exception when calling AlertsApi->alerts_evaluate_alert: %s\n" % e)
 
 ```
 
@@ -91,65 +91,65 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*AlertsApi* | [**evaluate_alert**](docs/AlertsApi.md#evaluate_alert) | **POST** /v1/alerts/{tenant_id}/{project_id}/traces/{trace_id}/webhook |
-*ApiKeysApi* | [**create_api_key**](docs/ApiKeysApi.md#create_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} |
-*ApiKeysApi* | [**revoke_api_key**](docs/ApiKeysApi.md#revoke_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke |
-*ArchiveApi* | [**archive_trace**](docs/ArchiveApi.md#archive_trace) | **POST** /v1/archive/{tenant_id}/{project_id}/{trace_id} |
-*ArchiveApi* | [**query_archive_spans**](docs/ArchiveApi.md#query_archive_spans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans |
-*AuditApi* | [**list_audit_events**](docs/AuditApi.md#list_audit_events) | **GET** /v1/audit/{tenant_id}/{project_id} |
-*CalibrationsApi* | [**run_calibration**](docs/CalibrationsApi.md#run_calibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |
-*ConnectorsApi* | [**connect_connector**](docs/ConnectorsApi.md#connect_connector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |
-*ConnectorsApi* | [**connector_status**](docs/ConnectorsApi.md#connector_status) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |
-*ConnectorsApi* | [**get_connector_skills**](docs/ConnectorsApi.md#get_connector_skills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |
-*ConnectorsApi* | [**invoke_connector_tool**](docs/ConnectorsApi.md#invoke_connector_tool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke |
-*ConnectorsApi* | [**list_connector_tools**](docs/ConnectorsApi.md#list_connector_tools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools |
-*ConnectorsApi* | [**list_connectors**](docs/ConnectorsApi.md#list_connectors) | **GET** /v1/connectors/{tenant_id}/{project_id} |
-*DatasetsApi* | [**create_dataset**](docs/DatasetsApi.md#create_dataset) | **POST** /v1/datasets/{tenant_id}/{project_id} |
-*DatasetsApi* | [**create_dataset_version**](docs/DatasetsApi.md#create_dataset_version) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions |
-*DatasetsApi* | [**promote_dataset_case_from_trace**](docs/DatasetsApi.md#promote_dataset_case_from_trace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace |
-*EvalsApi* | [**run_deterministic_eval**](docs/EvalsApi.md#run_deterministic_eval) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/deterministic |
-*EvalsApi* | [**run_judge_eval**](docs/EvalsApi.md#run_judge_eval) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/judge |
-*ExperimentsApi* | [**run_deterministic_experiment**](docs/ExperimentsApi.md#run_deterministic_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic |
-*ExperimentsApi* | [**run_judge_experiment**](docs/ExperimentsApi.md#run_judge_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge |
-*GatesApi* | [**create_gate**](docs/GatesApi.md#create_gate) | **POST** /v1/gates/{tenant_id}/{project_id} |
-*GatesApi* | [**run_gate**](docs/GatesApi.md#run_gate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run |
-*HealthApi* | [**health**](docs/HealthApi.md#health) | **GET** /health |
-*IngestApi* | [**drain_trace_ingested**](docs/IngestApi.md#drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
-*IngestApi* | [**drain_trace_writes**](docs/IngestApi.md#drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
-*IngestApi* | [**get_ingest_queue_status**](docs/IngestApi.md#get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |
-*IngestApi* | [**import_source**](docs/IngestApi.md#import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |
-*IngestApi* | [**ingest_native**](docs/IngestApi.md#ingest_native) | **POST** /v1/traces/native |
-*IngestApi* | [**ingest_otlp**](docs/IngestApi.md#ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
-*IngestApi* | [**ingest_otlp_json_collector**](docs/IngestApi.md#ingest_otlp_json_collector) | **POST** /v1/traces |
-*IngestApi* | [**reconcile_trace**](docs/IngestApi.md#reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
-*IngestApi* | [**replay_dead_letter**](docs/IngestApi.md#replay_dead_letter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
-*JudgeApi* | [**evaluate_judge**](docs/JudgeApi.md#evaluate_judge) | **POST** /v1/judge/{tenant_id}/{project_id}/evaluate |
-*JudgeApi* | [**list_judge_ledger**](docs/JudgeApi.md#list_judge_ledger) | **GET** /v1/judge/{tenant_id}/{project_id}/ledger |
-*OnlineApi* | [**decide_online_sampling**](docs/OnlineApi.md#decide_online_sampling) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling |
-*PromptsApi* | [**add_prompt_version**](docs/PromptsApi.md#add_prompt_version) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |
-*PromptsApi* | [**create_prompt**](docs/PromptsApi.md#create_prompt) | **POST** /v1/prompts/{tenant_id}/{project_id} |
-*PromptsApi* | [**diff_prompt_versions**](docs/PromptsApi.md#diff_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff |
-*PromptsApi* | [**get_prompt**](docs/PromptsApi.md#get_prompt) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} |
-*PromptsApi* | [**list_prompt_versions**](docs/PromptsApi.md#list_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |
-*PromptsApi* | [**list_prompts**](docs/PromptsApi.md#list_prompts) | **GET** /v1/prompts/{tenant_id}/{project_id} |
-*ProviderSecretsApi* | [**create_provider_secret**](docs/ProviderSecretsApi.md#create_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} |
-*ProviderSecretsApi* | [**list_provider_secrets**](docs/ProviderSecretsApi.md#list_provider_secrets) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} |
-*ProviderSecretsApi* | [**revoke_provider_secret**](docs/ProviderSecretsApi.md#revoke_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke |
-*ReviewsApi* | [**create_review_queue**](docs/ReviewsApi.md#create_review_queue) | **POST** /v1/review-queues/{tenant_id}/{project_id} |
-*ReviewsApi* | [**enqueue_review_task_from_trace**](docs/ReviewsApi.md#enqueue_review_task_from_trace) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace |
-*ReviewsApi* | [**list_review_tasks**](docs/ReviewsApi.md#list_review_tasks) | **GET** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks |
-*ReviewsApi* | [**promote_review_annotation**](docs/ReviewsApi.md#promote_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote |
-*ReviewsApi* | [**submit_review_annotation**](docs/ReviewsApi.md#submit_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations |
-*ScenariosApi* | [**create_scenario**](docs/ScenariosApi.md#create_scenario) | **POST** /v1/scenarios/{tenant_id}/{project_id} |
-*ScenariosApi* | [**get_scenario**](docs/ScenariosApi.md#get_scenario) | **GET** /v1/scenarios/{tenant_id}/{project_id}/{scenario_id} |
-*ScenariosApi* | [**list_scenarios**](docs/ScenariosApi.md#list_scenarios) | **GET** /v1/scenarios/{tenant_id}/{project_id} |
-*ScenariosApi* | [**mine_scenarios**](docs/ScenariosApi.md#mine_scenarios) | **POST** /v1/scenarios/{tenant_id}/{project_id}/mine |
-*SearchApi* | [**search_spans**](docs/SearchApi.md#search_spans) | **GET** /v1/search/{tenant_id}/spans |
-*SpansApi* | [**get_span**](docs/SpansApi.md#get_span) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} |
-*SpansApi* | [**get_span_io**](docs/SpansApi.md#get_span_io) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io |
-*TracesApi* | [**get_trace**](docs/TracesApi.md#get_trace) | **GET** /v1/traces/{tenant_id}/{trace_id} |
-*TracesApi* | [**list_traces**](docs/TracesApi.md#list_traces) | **GET** /v1/traces/{tenant_id} |
-*UsageApi* | [**get_usage_summary**](docs/UsageApi.md#get_usage_summary) | **GET** /v1/usage/{tenant_id}/{project_id} |
+*AlertsApi* | [**alerts_evaluate_alert**](docs/AlertsApi.md#alerts_evaluate_alert) | **POST** /v1/alerts/{tenant_id}/{project_id}/traces/{trace_id}/webhook |
+*ApiKeysApi* | [**api_keys_create_api_key**](docs/ApiKeysApi.md#api_keys_create_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} |
+*ApiKeysApi* | [**api_keys_revoke_api_key**](docs/ApiKeysApi.md#api_keys_revoke_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke |
+*ArchiveApi* | [**archive_archive_trace**](docs/ArchiveApi.md#archive_archive_trace) | **POST** /v1/archive/{tenant_id}/{project_id}/{trace_id} |
+*ArchiveApi* | [**archive_query_archive_spans**](docs/ArchiveApi.md#archive_query_archive_spans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans |
+*AuditApi* | [**audit_list_audit_events**](docs/AuditApi.md#audit_list_audit_events) | **GET** /v1/audit/{tenant_id}/{project_id} |
+*CalibrationsApi* | [**calibrations_run_calibration**](docs/CalibrationsApi.md#calibrations_run_calibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |
+*ConnectorsApi* | [**connectors_connect_connector**](docs/ConnectorsApi.md#connectors_connect_connector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |
+*ConnectorsApi* | [**connectors_connector_status**](docs/ConnectorsApi.md#connectors_connector_status) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |
+*ConnectorsApi* | [**connectors_get_connector_skills**](docs/ConnectorsApi.md#connectors_get_connector_skills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |
+*ConnectorsApi* | [**connectors_invoke_connector_tool**](docs/ConnectorsApi.md#connectors_invoke_connector_tool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke |
+*ConnectorsApi* | [**connectors_list_connector_tools**](docs/ConnectorsApi.md#connectors_list_connector_tools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools |
+*ConnectorsApi* | [**connectors_list_connectors**](docs/ConnectorsApi.md#connectors_list_connectors) | **GET** /v1/connectors/{tenant_id}/{project_id} |
+*DatasetsApi* | [**datasets_create_dataset**](docs/DatasetsApi.md#datasets_create_dataset) | **POST** /v1/datasets/{tenant_id}/{project_id} |
+*DatasetsApi* | [**datasets_create_dataset_version**](docs/DatasetsApi.md#datasets_create_dataset_version) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions |
+*DatasetsApi* | [**datasets_promote_dataset_case_from_trace**](docs/DatasetsApi.md#datasets_promote_dataset_case_from_trace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace |
+*EvalsApi* | [**evals_run_deterministic_eval**](docs/EvalsApi.md#evals_run_deterministic_eval) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/deterministic |
+*EvalsApi* | [**evals_run_judge_eval**](docs/EvalsApi.md#evals_run_judge_eval) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/judge |
+*ExperimentsApi* | [**experiments_run_deterministic_experiment**](docs/ExperimentsApi.md#experiments_run_deterministic_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic |
+*ExperimentsApi* | [**experiments_run_judge_experiment**](docs/ExperimentsApi.md#experiments_run_judge_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge |
+*GatesApi* | [**gates_create_gate**](docs/GatesApi.md#gates_create_gate) | **POST** /v1/gates/{tenant_id}/{project_id} |
+*GatesApi* | [**gates_run_gate**](docs/GatesApi.md#gates_run_gate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run |
+*HealthApi* | [**health_health**](docs/HealthApi.md#health_health) | **GET** /health |
+*IngestApi* | [**ingest_drain_trace_ingested**](docs/IngestApi.md#ingest_drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
+*IngestApi* | [**ingest_drain_trace_writes**](docs/IngestApi.md#ingest_drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
+*IngestApi* | [**ingest_get_ingest_queue_status**](docs/IngestApi.md#ingest_get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |
+*IngestApi* | [**ingest_import_source**](docs/IngestApi.md#ingest_import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |
+*IngestApi* | [**ingest_ingest_native**](docs/IngestApi.md#ingest_ingest_native) | **POST** /v1/traces/native |
+*IngestApi* | [**ingest_ingest_otlp**](docs/IngestApi.md#ingest_ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
+*IngestApi* | [**ingest_ingest_otlp_json_collector**](docs/IngestApi.md#ingest_ingest_otlp_json_collector) | **POST** /v1/traces |
+*IngestApi* | [**ingest_reconcile_trace**](docs/IngestApi.md#ingest_reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
+*IngestApi* | [**ingest_replay_dead_letter**](docs/IngestApi.md#ingest_replay_dead_letter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
+*JudgeApi* | [**judge_evaluate_judge**](docs/JudgeApi.md#judge_evaluate_judge) | **POST** /v1/judge/{tenant_id}/{project_id}/evaluate |
+*JudgeApi* | [**judge_list_judge_ledger**](docs/JudgeApi.md#judge_list_judge_ledger) | **GET** /v1/judge/{tenant_id}/{project_id}/ledger |
+*OnlineApi* | [**online_decide_online_sampling**](docs/OnlineApi.md#online_decide_online_sampling) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling |
+*PromptsApi* | [**prompts_add_prompt_version**](docs/PromptsApi.md#prompts_add_prompt_version) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |
+*PromptsApi* | [**prompts_create_prompt**](docs/PromptsApi.md#prompts_create_prompt) | **POST** /v1/prompts/{tenant_id}/{project_id} |
+*PromptsApi* | [**prompts_diff_prompt_versions**](docs/PromptsApi.md#prompts_diff_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff |
+*PromptsApi* | [**prompts_get_prompt**](docs/PromptsApi.md#prompts_get_prompt) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} |
+*PromptsApi* | [**prompts_list_prompt_versions**](docs/PromptsApi.md#prompts_list_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |
+*PromptsApi* | [**prompts_list_prompts**](docs/PromptsApi.md#prompts_list_prompts) | **GET** /v1/prompts/{tenant_id}/{project_id} |
+*ProviderSecretsApi* | [**provider_secrets_create_provider_secret**](docs/ProviderSecretsApi.md#provider_secrets_create_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} |
+*ProviderSecretsApi* | [**provider_secrets_list_provider_secrets**](docs/ProviderSecretsApi.md#provider_secrets_list_provider_secrets) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} |
+*ProviderSecretsApi* | [**provider_secrets_revoke_provider_secret**](docs/ProviderSecretsApi.md#provider_secrets_revoke_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke |
+*ReviewsApi* | [**reviews_create_review_queue**](docs/ReviewsApi.md#reviews_create_review_queue) | **POST** /v1/review-queues/{tenant_id}/{project_id} |
+*ReviewsApi* | [**reviews_enqueue_review_task_from_trace**](docs/ReviewsApi.md#reviews_enqueue_review_task_from_trace) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace |
+*ReviewsApi* | [**reviews_list_review_tasks**](docs/ReviewsApi.md#reviews_list_review_tasks) | **GET** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks |
+*ReviewsApi* | [**reviews_promote_review_annotation**](docs/ReviewsApi.md#reviews_promote_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote |
+*ReviewsApi* | [**reviews_submit_review_annotation**](docs/ReviewsApi.md#reviews_submit_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations |
+*ScenariosApi* | [**scenarios_create_scenario**](docs/ScenariosApi.md#scenarios_create_scenario) | **POST** /v1/scenarios/{tenant_id}/{project_id} |
+*ScenariosApi* | [**scenarios_get_scenario**](docs/ScenariosApi.md#scenarios_get_scenario) | **GET** /v1/scenarios/{tenant_id}/{project_id}/{scenario_id} |
+*ScenariosApi* | [**scenarios_list_scenarios**](docs/ScenariosApi.md#scenarios_list_scenarios) | **GET** /v1/scenarios/{tenant_id}/{project_id} |
+*ScenariosApi* | [**scenarios_mine_scenarios**](docs/ScenariosApi.md#scenarios_mine_scenarios) | **POST** /v1/scenarios/{tenant_id}/{project_id}/mine |
+*SearchApi* | [**search_search_spans**](docs/SearchApi.md#search_search_spans) | **GET** /v1/search/{tenant_id}/spans |
+*SpansApi* | [**spans_get_span**](docs/SpansApi.md#spans_get_span) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} |
+*SpansApi* | [**spans_get_span_io**](docs/SpansApi.md#spans_get_span_io) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io |
+*TracesApi* | [**traces_get_trace**](docs/TracesApi.md#traces_get_trace) | **GET** /v1/traces/{tenant_id}/{trace_id} |
+*TracesApi* | [**traces_list_traces**](docs/TracesApi.md#traces_list_traces) | **GET** /v1/traces/{tenant_id} |
+*UsageApi* | [**usage_get_usage_summary**](docs/UsageApi.md#usage_get_usage_summary) | **GET** /v1/usage/{tenant_id}/{project_id} |
 
 
 ## Documentation For Models

@@ -41,7 +41,7 @@ class OnlineApi:
 
 
     @validate_call
-    def decide_online_sampling(
+    def online_decide_online_sampling(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -64,7 +64,7 @@ class OnlineApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> SamplingDecision:
-        """decide_online_sampling
+        """online_decide_online_sampling
 
 
         :param tenant_id: tenant_id (required)
@@ -105,7 +105,7 @@ class OnlineApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._decide_online_sampling_serialize(
+        _param = self._online_decide_online_sampling_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -138,7 +138,7 @@ class OnlineApi:
 
 
     @validate_call
-    def decide_online_sampling_with_http_info(
+    def online_decide_online_sampling_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -161,7 +161,7 @@ class OnlineApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[SamplingDecision]:
-        """decide_online_sampling
+        """online_decide_online_sampling
 
 
         :param tenant_id: tenant_id (required)
@@ -202,7 +202,7 @@ class OnlineApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._decide_online_sampling_serialize(
+        _param = self._online_decide_online_sampling_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -235,7 +235,7 @@ class OnlineApi:
 
 
     @validate_call
-    def decide_online_sampling_without_preload_content(
+    def online_decide_online_sampling_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -258,7 +258,7 @@ class OnlineApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """decide_online_sampling
+        """online_decide_online_sampling
 
 
         :param tenant_id: tenant_id (required)
@@ -299,7 +299,7 @@ class OnlineApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._decide_online_sampling_serialize(
+        _param = self._online_decide_online_sampling_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -327,7 +327,7 @@ class OnlineApi:
         return response_data.response
 
 
-    def _decide_online_sampling_serialize(
+    def _online_decide_online_sampling_serialize(
         self,
         tenant_id,
         project_id,

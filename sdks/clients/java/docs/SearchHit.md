@@ -18,6 +18,3 @@
 |**tenantId** | **String** |  |  |
 |**tool** | **String** |  |  |
 |**traceId** | **String** |  |  |
-
-
-

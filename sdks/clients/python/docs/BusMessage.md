@@ -5,15 +5,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**attempts** | **int** |  | 
-**enqueued_at** | **datetime** |  | 
-**idempotency_key** | **str** |  | 
-**kind** | **str** |  | 
-**max_attempts** | **int** |  | 
-**message_id** | **str** |  | 
-**payload** | **List[int]** |  | 
-**project_id** | **str** |  | 
-**tenant_id** | **str** |  | 
+**attempts** | **int** |  |
+**enqueued_at** | **datetime** |  |
+**idempotency_key** | **str** |  |
+**kind** | **str** |  |
+**max_attempts** | **int** |  |
+**message_id** | **str** |  |
+**payload** | **List[int]** |  |
+**project_id** | **str** |  |
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -33,5 +33,3 @@ bus_message_dict = bus_message_instance.to_dict()
 bus_message_from_dict = BusMessage.from_dict(bus_message_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

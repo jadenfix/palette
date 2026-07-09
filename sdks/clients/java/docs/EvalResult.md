@@ -20,6 +20,3 @@
 |**tenantId** | **String** |  |  |
 |**tokens** | [**TokenCounts**](TokenCounts.md) |  |  [optional] |
 |**traceId** | **String** |  |  |
-
-
-

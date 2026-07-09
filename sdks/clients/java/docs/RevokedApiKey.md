@@ -10,6 +10,3 @@
 |**active** | **Boolean** |  |  |
 |**apiKeyId** | **String** |  |  |
 |**rotatedAt** | **OffsetDateTime** |  |  |
-
-
-

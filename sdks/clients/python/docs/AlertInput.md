@@ -5,15 +5,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**baseline_score** | **float** |  | [optional] 
-**group_key** | **str** |  | 
-**links** | [**AlertLinks**](AlertLinks.md) |  | 
-**now** | **datetime** |  | 
-**project_id** | **str** |  | 
-**score** | **float** |  | 
-**tenant_id** | **str** |  | 
-**title** | **str** |  | 
-**trace_id** | **str** |  | 
+**baseline_score** | **float** |  | [optional]
+**group_key** | **str** |  |
+**links** | [**AlertLinks**](AlertLinks.md) |  |
+**now** | **datetime** |  |
+**project_id** | **str** |  |
+**score** | **float** |  |
+**tenant_id** | **str** |  |
+**title** | **str** |  |
+**trace_id** | **str** |  |
 
 ## Example
 
@@ -33,5 +33,3 @@ alert_input_dict = alert_input_instance.to_dict()
 alert_input_from_dict = AlertInput.from_dict(alert_input_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

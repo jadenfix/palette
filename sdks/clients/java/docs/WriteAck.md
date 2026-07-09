@@ -11,6 +11,3 @@
 |**acceptedSpans** | **Integer** |  |  |
 |**duplicateRaw** | **Integer** |  |  |
 |**duplicateSpans** | **Integer** |  |  |
-
-
-

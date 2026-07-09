@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**pattern** | **str** |  | 
-**type** | **str** |  | 
+**pattern** | **str** |  |
+**type** | **str** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ evaluator_kind_one_of1_dict = evaluator_kind_one_of1_instance.to_dict()
 evaluator_kind_one_of1_from_dict = EvaluatorKindOneOf1.from_dict(evaluator_kind_one_of1_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

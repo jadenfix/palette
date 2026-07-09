@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**artifact_ref** | [**ArtifactRef**](ArtifactRef.md) |  | 
-**kind** | **str** |  | 
+**artifact_ref** | [**ArtifactRef**](ArtifactRef.md) |  |
+**kind** | **str** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ span_io_value_one_of1_dict = span_io_value_one_of1_instance.to_dict()
 span_io_value_one_of1_from_dict = SpanIoValueOneOf1.from_dict(span_io_value_one_of1_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

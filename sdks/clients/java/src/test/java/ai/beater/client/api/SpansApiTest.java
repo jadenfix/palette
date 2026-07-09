@@ -45,7 +45,7 @@ public class SpansApiTest {
      *          if the Api call fails
      */
     @Test
-    public void getSpanTest() throws ApiException {
+    public void spansGetSpanTest() throws ApiException {
         String tenantId = null;
         String traceId = null;
         String spanId = null;
@@ -56,7 +56,7 @@ public class SpansApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         CanonicalSpan response = 
-        api.getSpan(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.spansGetSpan(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -70,7 +70,7 @@ public class SpansApiTest {
      *          if the Api call fails
      */
     @Test
-    public void getSpanIoTest() throws ApiException {
+    public void spansGetSpanIoTest() throws ApiException {
         String tenantId = null;
         String traceId = null;
         String spanId = null;
@@ -81,7 +81,7 @@ public class SpansApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         SpanIoResponse response = 
-        api.getSpanIo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.spansGetSpanIo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

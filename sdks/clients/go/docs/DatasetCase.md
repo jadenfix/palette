@@ -4,21 +4,21 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**CaseId** | **string** |  | 
-**CreatedAt** | **time.Time** |  | 
-**DatasetId** | **string** |  | 
-**Input** | **interface{}** |  | 
-**InputArtifactHashes** | **[]string** |  | 
-**NormalizerVersion** | **string** |  | 
-**Output** | **interface{}** |  | 
-**ProjectId** | **string** |  | 
-**Reference** | Pointer to **interface{}** |  | [optional] 
-**SourceEnvironmentId** | **string** |  | 
-**SourceSpanId** | **string** |  | 
-**SourceTraceId** | **string** |  | 
-**TenantId** | **string** |  | 
-**Trace** | **interface{}** |  | 
-**TraceSchemaVersion** | **int32** |  | 
+**CaseId** | **string** |  |
+**CreatedAt** | **time.Time** |  |
+**DatasetId** | **string** |  |
+**Input** | **interface{}** |  |
+**InputArtifactHashes** | **[]string** |  |
+**NormalizerVersion** | **string** |  |
+**Output** | **interface{}** |  |
+**ProjectId** | **string** |  |
+**Reference** | Pointer to **interface{}** |  | [optional]
+**SourceEnvironmentId** | **string** |  |
+**SourceSpanId** | **string** |  |
+**SourceTraceId** | **string** |  |
+**TenantId** | **string** |  |
+**Trace** | **interface{}** |  |
+**TraceSchemaVersion** | **int32** |  |
 
 ## Methods
 
@@ -386,5 +386,3 @@ SetTraceSchemaVersion sets TraceSchemaVersion field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

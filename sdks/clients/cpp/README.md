@@ -46,6 +46,3 @@ C++ tools for CMake' is selected in the 'Installation Details' section.
 Also be sure to review the CMakeLists.txt file. Edits are likely required.*
 
 ## Author
-
-
-

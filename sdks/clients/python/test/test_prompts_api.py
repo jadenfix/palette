@@ -26,38 +26,38 @@ class TestPromptsApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_add_prompt_version(self) -> None:
-        """Test case for add_prompt_version
+    def test_prompts_add_prompt_version(self) -> None:
+        """Test case for prompts_add_prompt_version
 
         """
         pass
 
-    def test_create_prompt(self) -> None:
-        """Test case for create_prompt
+    def test_prompts_create_prompt(self) -> None:
+        """Test case for prompts_create_prompt
 
         """
         pass
 
-    def test_diff_prompt_versions(self) -> None:
-        """Test case for diff_prompt_versions
+    def test_prompts_diff_prompt_versions(self) -> None:
+        """Test case for prompts_diff_prompt_versions
 
         """
         pass
 
-    def test_get_prompt(self) -> None:
-        """Test case for get_prompt
+    def test_prompts_get_prompt(self) -> None:
+        """Test case for prompts_get_prompt
 
         """
         pass
 
-    def test_list_prompt_versions(self) -> None:
-        """Test case for list_prompt_versions
+    def test_prompts_list_prompt_versions(self) -> None:
+        """Test case for prompts_list_prompt_versions
 
         """
         pass
 
-    def test_list_prompts(self) -> None:
-        """Test case for list_prompts
+    def test_prompts_list_prompts(self) -> None:
+        """Test case for prompts_list_prompts
 
         """
         pass

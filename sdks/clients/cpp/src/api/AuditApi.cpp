@@ -35,7 +35,7 @@ AuditApi::~AuditApi()
 {
 }
 
-pplx::task<std::vector<std::shared_ptr<AuditEvent>>> AuditApi::listAuditEvents(utility::string_t tenantId, utility::string_t projectId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::vector<std::shared_ptr<AuditEvent>>> AuditApi::audit_listAuditEvents(utility::string_t tenantId, utility::string_t projectId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -71,7 +71,7 @@ pplx::task<std::vector<std::shared_ptr<AuditEvent>>> AuditApi::listAuditEvents(u
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("AuditApi->listAuditEvents does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("AuditApi->audit_listAuditEvents does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -114,7 +114,7 @@ pplx::task<std::vector<std::shared_ptr<AuditEvent>>> AuditApi::listAuditEvents(u
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("AuditApi->listAuditEvents does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("AuditApi->audit_listAuditEvents does not consume any supported media type"));
     }
 
 
@@ -134,7 +134,7 @@ pplx::task<std::vector<std::shared_ptr<AuditEvent>>> AuditApi::listAuditEvents(u
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling listAuditEvents: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling audit_listAuditEvents: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -145,7 +145,7 @@ pplx::task<std::vector<std::shared_ptr<AuditEvent>>> AuditApi::listAuditEvents(u
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling listAuditEvents: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling audit_listAuditEvents: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -173,7 +173,7 @@ pplx::task<std::vector<std::shared_ptr<AuditEvent>>> AuditApi::listAuditEvents(u
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling listAuditEvents: unsupported response type"));
+                , utility::conversions::to_string_t("error calling audit_listAuditEvents: unsupported response type"));
         }
 
         return localVarResult;

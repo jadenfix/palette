@@ -4,14 +4,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Active** | **bool** |  | 
-**ApiKeyId** | **string** |  | 
-**CreatedAt** | **time.Time** |  | 
-**EnvironmentId** | **string** |  | 
-**ProjectId** | **string** |  | 
-**Scopes** | [**[]ApiScope**](ApiScope.md) |  | 
-**Secret** | **string** |  | 
-**TenantId** | **string** |  | 
+**Active** | **bool** |  |
+**ApiKeyId** | **string** |  |
+**CreatedAt** | **time.Time** |  |
+**EnvironmentId** | **string** |  |
+**ProjectId** | **string** |  |
+**Scopes** | [**[]ApiScope**](ApiScope.md) |  |
+**Secret** | **string** |  |
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -194,5 +194,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

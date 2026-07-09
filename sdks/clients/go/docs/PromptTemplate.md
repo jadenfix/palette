@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Body** | **string** |  | 
-**Tags** | **[]string** |  | 
-**Variables** | [**[]PromptVariable**](PromptVariable.md) |  | 
+**Body** | **string** |  |
+**Tags** | **[]string** |  |
+**Variables** | [**[]PromptVariable**](PromptVariable.md) |  |
 
 ## Methods
 
@@ -89,5 +89,3 @@ SetVariables sets Variables field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

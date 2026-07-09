@@ -26,14 +26,14 @@ class TestJudgeApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_evaluate_judge(self) -> None:
-        """Test case for evaluate_judge
+    def test_judge_evaluate_judge(self) -> None:
+        """Test case for judge_evaluate_judge
 
         """
         pass
 
-    def test_list_judge_ledger(self) -> None:
-        """Test case for list_judge_ledger
+    def test_judge_list_judge_ledger(self) -> None:
+        """Test case for judge_list_judge_ledger
 
         """
         pass

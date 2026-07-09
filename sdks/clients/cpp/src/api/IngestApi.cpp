@@ -35,7 +35,7 @@ IngestApi::~IngestApi()
 {
 }
 
-pplx::task<std::shared_ptr<TraceIngestedDrainReport>> IngestApi::drainTraceIngested(utility::string_t tenantId, utility::string_t projectId, boost::optional<int32_t> limit, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<TraceIngestedDrainReport>> IngestApi::ingest_drainTraceIngested(utility::string_t tenantId, utility::string_t projectId, boost::optional<int32_t> limit, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -71,7 +71,7 @@ pplx::task<std::shared_ptr<TraceIngestedDrainReport>> IngestApi::drainTraceInges
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("IngestApi->drainTraceIngested does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingest_drainTraceIngested does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -118,7 +118,7 @@ pplx::task<std::shared_ptr<TraceIngestedDrainReport>> IngestApi::drainTraceInges
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("IngestApi->drainTraceIngested does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingest_drainTraceIngested does not consume any supported media type"));
     }
 
 
@@ -138,7 +138,7 @@ pplx::task<std::shared_ptr<TraceIngestedDrainReport>> IngestApi::drainTraceInges
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling drainTraceIngested: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling ingest_drainTraceIngested: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -149,7 +149,7 @@ pplx::task<std::shared_ptr<TraceIngestedDrainReport>> IngestApi::drainTraceInges
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling drainTraceIngested: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling ingest_drainTraceIngested: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -173,13 +173,13 @@ pplx::task<std::shared_ptr<TraceIngestedDrainReport>> IngestApi::drainTraceInges
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling drainTraceIngested: unsupported response type"));
+                , utility::conversions::to_string_t("error calling ingest_drainTraceIngested: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<TraceWriteDrainReport>> IngestApi::drainTraceWrites(utility::string_t tenantId, utility::string_t projectId, boost::optional<int32_t> limit, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<TraceWriteDrainReport>> IngestApi::ingest_drainTraceWrites(utility::string_t tenantId, utility::string_t projectId, boost::optional<int32_t> limit, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -215,7 +215,7 @@ pplx::task<std::shared_ptr<TraceWriteDrainReport>> IngestApi::drainTraceWrites(u
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("IngestApi->drainTraceWrites does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingest_drainTraceWrites does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -262,7 +262,7 @@ pplx::task<std::shared_ptr<TraceWriteDrainReport>> IngestApi::drainTraceWrites(u
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("IngestApi->drainTraceWrites does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingest_drainTraceWrites does not consume any supported media type"));
     }
 
 
@@ -282,7 +282,7 @@ pplx::task<std::shared_ptr<TraceWriteDrainReport>> IngestApi::drainTraceWrites(u
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling drainTraceWrites: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling ingest_drainTraceWrites: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -293,7 +293,7 @@ pplx::task<std::shared_ptr<TraceWriteDrainReport>> IngestApi::drainTraceWrites(u
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling drainTraceWrites: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling ingest_drainTraceWrites: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -317,13 +317,13 @@ pplx::task<std::shared_ptr<TraceWriteDrainReport>> IngestApi::drainTraceWrites(u
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling drainTraceWrites: unsupported response type"));
+                , utility::conversions::to_string_t("error calling ingest_drainTraceWrites: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<IngestQueueStatus>> IngestApi::getIngestQueueStatus(utility::string_t tenantId, utility::string_t projectId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<IngestQueueStatus>> IngestApi::ingest_getIngestQueueStatus(utility::string_t tenantId, utility::string_t projectId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -359,7 +359,7 @@ pplx::task<std::shared_ptr<IngestQueueStatus>> IngestApi::getIngestQueueStatus(u
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("IngestApi->getIngestQueueStatus does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingest_getIngestQueueStatus does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -402,7 +402,7 @@ pplx::task<std::shared_ptr<IngestQueueStatus>> IngestApi::getIngestQueueStatus(u
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("IngestApi->getIngestQueueStatus does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingest_getIngestQueueStatus does not consume any supported media type"));
     }
 
 
@@ -422,7 +422,7 @@ pplx::task<std::shared_ptr<IngestQueueStatus>> IngestApi::getIngestQueueStatus(u
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling getIngestQueueStatus: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling ingest_getIngestQueueStatus: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -433,7 +433,7 @@ pplx::task<std::shared_ptr<IngestQueueStatus>> IngestApi::getIngestQueueStatus(u
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling getIngestQueueStatus: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling ingest_getIngestQueueStatus: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -457,19 +457,19 @@ pplx::task<std::shared_ptr<IngestQueueStatus>> IngestApi::getIngestQueueStatus(u
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling getIngestQueueStatus: unsupported response type"));
+                , utility::conversions::to_string_t("error calling ingest_getIngestQueueStatus: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::importSource(utility::string_t tenantId, utility::string_t projectId, utility::string_t environmentId, std::shared_ptr<ImportSourceHttpRequest> importSourceHttpRequest, boost::optional<utility::string_t> durability, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey) const
+pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::ingest_importSource(utility::string_t tenantId, utility::string_t projectId, utility::string_t environmentId, std::shared_ptr<ImportSourceHttpRequest> importSourceHttpRequest, boost::optional<utility::string_t> durability, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey) const
 {
 
     // verify the required parameter 'importSourceHttpRequest' is set
     if (importSourceHttpRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'importSourceHttpRequest' when calling IngestApi->importSource"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'importSourceHttpRequest' when calling IngestApi->ingest_importSource"));
     }
 
 
@@ -506,7 +506,7 @@ pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::importSource(utility::stri
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("IngestApi->importSource does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingest_importSource does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -562,7 +562,7 @@ pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::importSource(utility::stri
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("IngestApi->importSource does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingest_importSource does not consume any supported media type"));
     }
 
 
@@ -582,7 +582,7 @@ pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::importSource(utility::stri
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling importSource: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling ingest_importSource: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -593,7 +593,7 @@ pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::importSource(utility::stri
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling importSource: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling ingest_importSource: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -617,19 +617,19 @@ pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::importSource(utility::stri
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling importSource: unsupported response type"));
+                , utility::conversions::to_string_t("error calling ingest_importSource: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::ingestNative(std::shared_ptr<NativeIngestRequest> nativeIngestRequest, boost::optional<utility::string_t> durability, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::ingest_ingestNative(std::shared_ptr<NativeIngestRequest> nativeIngestRequest, boost::optional<utility::string_t> durability, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'nativeIngestRequest' is set
     if (nativeIngestRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'nativeIngestRequest' when calling IngestApi->ingestNative"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'nativeIngestRequest' when calling IngestApi->ingest_ingestNative"));
     }
 
 
@@ -663,7 +663,7 @@ pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::ingestNative(std::shared_p
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingestNative does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingest_ingestNative does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -727,7 +727,7 @@ pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::ingestNative(std::shared_p
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingestNative does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingest_ingestNative does not consume any supported media type"));
     }
 
 
@@ -747,7 +747,7 @@ pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::ingestNative(std::shared_p
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling ingestNative: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling ingest_ingestNative: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -758,7 +758,7 @@ pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::ingestNative(std::shared_p
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling ingestNative: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling ingest_ingestNative: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -782,13 +782,13 @@ pplx::task<std::shared_ptr<IngestOutcome>> IngestApi::ingestNative(std::shared_p
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling ingestNative: unsupported response type"));
+                , utility::conversions::to_string_t("error calling ingest_ingestNative: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlp(utility::string_t tenantId, utility::string_t projectId, utility::string_t environmentId, boost::optional<utility::string_t> durability, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingest_ingestOtlp(utility::string_t tenantId, utility::string_t projectId, utility::string_t environmentId, boost::optional<utility::string_t> durability, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -825,7 +825,7 @@ pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlp(utility::st
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingestOtlp does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingest_ingestOtlp does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -872,7 +872,7 @@ pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlp(utility::st
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingestOtlp does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingest_ingestOtlp does not consume any supported media type"));
     }
 
 
@@ -892,7 +892,7 @@ pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlp(utility::st
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling ingestOtlp: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling ingest_ingestOtlp: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -903,7 +903,7 @@ pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlp(utility::st
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling ingestOtlp: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling ingest_ingestOtlp: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -927,13 +927,13 @@ pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlp(utility::st
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling ingestOtlp: unsupported response type"));
+                , utility::conversions::to_string_t("error calling ingest_ingestOtlp: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlpJsonCollector(boost::optional<utility::string_t> durability, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterTenantId, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingest_ingestOtlpJsonCollector(boost::optional<utility::string_t> durability, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterTenantId, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -967,7 +967,7 @@ pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlpJsonCollecto
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingestOtlpJsonCollector does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingest_ingestOtlpJsonCollector does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -1018,7 +1018,7 @@ pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlpJsonCollecto
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingestOtlpJsonCollector does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingest_ingestOtlpJsonCollector does not consume any supported media type"));
     }
 
 
@@ -1038,7 +1038,7 @@ pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlpJsonCollecto
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling ingestOtlpJsonCollector: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling ingest_ingestOtlpJsonCollector: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -1049,7 +1049,7 @@ pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlpJsonCollecto
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling ingestOtlpJsonCollector: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling ingest_ingestOtlpJsonCollector: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -1073,13 +1073,13 @@ pplx::task<std::shared_ptr<OtlpIngestOutcome>> IngestApi::ingestOtlpJsonCollecto
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling ingestOtlpJsonCollector: unsupported response type"));
+                , utility::conversions::to_string_t("error calling ingest_ingestOtlpJsonCollector: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<TraceIngestedReconcileReport>> IngestApi::reconcileTrace(utility::string_t tenantId, utility::string_t projectId, utility::string_t traceId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<TraceIngestedReconcileReport>> IngestApi::ingest_reconcileTrace(utility::string_t tenantId, utility::string_t projectId, utility::string_t traceId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -1116,7 +1116,7 @@ pplx::task<std::shared_ptr<TraceIngestedReconcileReport>> IngestApi::reconcileTr
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("IngestApi->reconcileTrace does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingest_reconcileTrace does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -1159,7 +1159,7 @@ pplx::task<std::shared_ptr<TraceIngestedReconcileReport>> IngestApi::reconcileTr
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("IngestApi->reconcileTrace does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingest_reconcileTrace does not consume any supported media type"));
     }
 
 
@@ -1179,7 +1179,7 @@ pplx::task<std::shared_ptr<TraceIngestedReconcileReport>> IngestApi::reconcileTr
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling reconcileTrace: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling ingest_reconcileTrace: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -1190,7 +1190,7 @@ pplx::task<std::shared_ptr<TraceIngestedReconcileReport>> IngestApi::reconcileTr
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling reconcileTrace: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling ingest_reconcileTrace: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -1214,13 +1214,13 @@ pplx::task<std::shared_ptr<TraceIngestedReconcileReport>> IngestApi::reconcileTr
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling reconcileTrace: unsupported response type"));
+                , utility::conversions::to_string_t("error calling ingest_reconcileTrace: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<DeadLetterReplayReport>> IngestApi::replayDeadLetter(utility::string_t tenantId, utility::string_t projectId, utility::string_t messageId, boost::optional<bool> resetAttempts, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<DeadLetterReplayReport>> IngestApi::ingest_replayDeadLetter(utility::string_t tenantId, utility::string_t projectId, utility::string_t messageId, boost::optional<bool> resetAttempts, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -1257,7 +1257,7 @@ pplx::task<std::shared_ptr<DeadLetterReplayReport>> IngestApi::replayDeadLetter(
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("IngestApi->replayDeadLetter does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("IngestApi->ingest_replayDeadLetter does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -1304,7 +1304,7 @@ pplx::task<std::shared_ptr<DeadLetterReplayReport>> IngestApi::replayDeadLetter(
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("IngestApi->replayDeadLetter does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("IngestApi->ingest_replayDeadLetter does not consume any supported media type"));
     }
 
 
@@ -1324,7 +1324,7 @@ pplx::task<std::shared_ptr<DeadLetterReplayReport>> IngestApi::replayDeadLetter(
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling replayDeadLetter: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling ingest_replayDeadLetter: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -1335,7 +1335,7 @@ pplx::task<std::shared_ptr<DeadLetterReplayReport>> IngestApi::replayDeadLetter(
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling replayDeadLetter: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling ingest_replayDeadLetter: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -1359,7 +1359,7 @@ pplx::task<std::shared_ptr<DeadLetterReplayReport>> IngestApi::replayDeadLetter(
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling replayDeadLetter: unsupported response type"));
+                , utility::conversions::to_string_t("error calling ingest_replayDeadLetter: unsupported response type"));
         }
 
         return localVarResult;

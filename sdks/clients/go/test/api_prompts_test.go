@@ -22,7 +22,7 @@ func Test_beaterclient_PromptsAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test PromptsAPIService AddPromptVersion", func(t *testing.T) {
+	t.Run("Test PromptsAPIService PromptsAddPromptVersion", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -30,7 +30,7 @@ func Test_beaterclient_PromptsAPIService(t *testing.T) {
 		var projectId string
 		var promptId string
 
-		resp, httpRes, err := apiClient.PromptsAPI.AddPromptVersion(context.Background(), tenantId, projectId, promptId).Execute()
+		resp, httpRes, err := apiClient.PromptsAPI.PromptsAddPromptVersion(context.Background(), tenantId, projectId, promptId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -38,14 +38,14 @@ func Test_beaterclient_PromptsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test PromptsAPIService CreatePrompt", func(t *testing.T) {
+	t.Run("Test PromptsAPIService PromptsCreatePrompt", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.PromptsAPI.CreatePrompt(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.PromptsAPI.PromptsCreatePrompt(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -53,23 +53,7 @@ func Test_beaterclient_PromptsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test PromptsAPIService DiffPromptVersions", func(t *testing.T) {
-
-		t.Skip("skip test")  // remove to run test
-
-		var tenantId string
-		var projectId string
-		var promptId string
-
-		resp, httpRes, err := apiClient.PromptsAPI.DiffPromptVersions(context.Background(), tenantId, projectId, promptId).Execute()
-
-		require.Nil(t, err)
-		require.NotNil(t, resp)
-		assert.Equal(t, 200, httpRes.StatusCode)
-
-	})
-
-	t.Run("Test PromptsAPIService GetPrompt", func(t *testing.T) {
+	t.Run("Test PromptsAPIService PromptsDiffPromptVersions", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -77,7 +61,7 @@ func Test_beaterclient_PromptsAPIService(t *testing.T) {
 		var projectId string
 		var promptId string
 
-		resp, httpRes, err := apiClient.PromptsAPI.GetPrompt(context.Background(), tenantId, projectId, promptId).Execute()
+		resp, httpRes, err := apiClient.PromptsAPI.PromptsDiffPromptVersions(context.Background(), tenantId, projectId, promptId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -85,7 +69,7 @@ func Test_beaterclient_PromptsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test PromptsAPIService ListPromptVersions", func(t *testing.T) {
+	t.Run("Test PromptsAPIService PromptsGetPrompt", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -93,7 +77,7 @@ func Test_beaterclient_PromptsAPIService(t *testing.T) {
 		var projectId string
 		var promptId string
 
-		resp, httpRes, err := apiClient.PromptsAPI.ListPromptVersions(context.Background(), tenantId, projectId, promptId).Execute()
+		resp, httpRes, err := apiClient.PromptsAPI.PromptsGetPrompt(context.Background(), tenantId, projectId, promptId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -101,14 +85,30 @@ func Test_beaterclient_PromptsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test PromptsAPIService ListPrompts", func(t *testing.T) {
+	t.Run("Test PromptsAPIService PromptsListPromptVersions", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var tenantId string
+		var projectId string
+		var promptId string
+
+		resp, httpRes, err := apiClient.PromptsAPI.PromptsListPromptVersions(context.Background(), tenantId, projectId, promptId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test PromptsAPIService PromptsListPrompts", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.PromptsAPI.ListPrompts(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.PromptsAPI.PromptsListPrompts(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

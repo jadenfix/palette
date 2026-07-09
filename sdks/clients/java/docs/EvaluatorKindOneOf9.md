@@ -18,6 +18,3 @@ Browser grounding: fraction of element-targeted steps that resolved to their int
 | Name | Value |
 |---- | -----|
 | BROWSER_GROUNDING | &quot;browser_grounding&quot; |
-
-
-

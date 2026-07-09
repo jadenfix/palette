@@ -4,12 +4,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**AnnotationSchema** | **interface{}** |  | 
-**CreatedAt** | **time.Time** |  | 
-**Name** | **string** |  | 
-**ProjectId** | **string** |  | 
-**QueueId** | **string** |  | 
-**TenantId** | **string** |  | 
+**AnnotationSchema** | **interface{}** |  |
+**CreatedAt** | **time.Time** |  |
+**Name** | **string** |  |
+**ProjectId** | **string** |  |
+**QueueId** | **string** |  |
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -162,5 +162,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

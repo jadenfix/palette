@@ -15,15 +15,15 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
 
-/// struct for typed errors of method [`health`]
+/// struct for typed errors of method [`health_period_health`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum HealthError {
+pub enum HealthPeriodHealthError {
     UnknownValue(serde_json::Value),
 }
 
 
-pub async fn health(configuration: &configuration::Configuration) -> Result<models::HealthResponse, Error<HealthError>> {
+pub async fn health_period_health(configuration: &configuration::Configuration) -> Result<models::HealthResponse, Error<HealthPeriodHealthError>> {
 
     let uri_str = format!("{}/health", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -42,7 +42,7 @@ pub async fn health(configuration: &configuration::Configuration) -> Result<mode
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<HealthError> = serde_json::from_str(&content).ok();
+        let entity: Option<HealthPeriodHealthError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

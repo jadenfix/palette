@@ -8,8 +8,5 @@ Error envelope returned by every fallible endpoint.
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
-|**error** | **String** | Human-readable error message. |  |
-|**status** | **Integer** | HTTP status code, duplicated in the body for convenience. |  |
-
-
-
+|**error** | **String** | Stable machine-readable error code. |  |
+|**message** | **String** | Human-readable error message. |  |

@@ -16,6 +16,3 @@
 |**gatePolicy** | [**GatePolicy**](GatePolicy.md) |  |  [optional] |
 |**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |  |
 |**providerSecretId** | **String** |  |  |
-
-
-

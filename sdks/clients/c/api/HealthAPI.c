@@ -8,7 +8,7 @@
 
 
 health_response_t*
-HealthAPI_health(apiClient_t *apiClient)
+HealthAPI_healthHealth(apiClient_t *apiClient)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = NULL;

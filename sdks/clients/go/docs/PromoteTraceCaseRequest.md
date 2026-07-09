@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Reference** | Pointer to **interface{}** |  | [optional] 
-**SpanId** | Pointer to **NullableString** |  | [optional] 
-**TraceId** | **string** |  | 
+**Reference** | Pointer to **interface{}** |  | [optional]
+**SpanId** | Pointer to **NullableString** |  | [optional]
+**TraceId** | **string** |  |
 
 ## Methods
 
@@ -119,5 +119,3 @@ SetTraceId sets TraceId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

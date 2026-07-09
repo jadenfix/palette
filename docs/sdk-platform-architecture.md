@@ -23,7 +23,7 @@ and `oasdiff` blocks breaking changes. Drift is a merge-blocker, not a hope.
 
 - **Resource-tagged, action-named.** Every operation has a resource `tag`
   (`datasets`, `traces`, ...) and a globally-unique camelCase `operationId`
-  (`createDataset`, `listTraces`, `runJudgeEval`). Tags -> SDK API classes;
+  (`datasets.create-dataset`, `traces.list-traces`, `evals.run-judge-eval`). Tags -> SDK API classes;
   operationIds -> method names. Uniqueness avoids single-package collisions
   (Go/C/Java) so names are consistent across all 7 languages without per-language
   hacks.
@@ -45,7 +45,7 @@ and `oasdiff` blocks breaking changes. Drift is a merge-blocker, not a hope.
    OpenTelemetry (ingest is OTLP). One shared `semconv` module per language
    mirrors the server normalizer. This is the 5-line path most users want.
 2. **Control-plane (Layer 1, generated):** typed CRUD for datasets, experiments,
-   gates, evals, usage, audit, etc. -- `client.datasets.createDataset(...)`.
+   gates, evals, usage, audit, etc. -- `client.datasets.datasets.create-dataset(...)`.
 
 The **CLI** and **Rust SDK** consume the same generated Layer-1 client, and the
 **MCP** server dispatches tool calls through the same in-process router with the

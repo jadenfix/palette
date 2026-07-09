@@ -4,19 +4,19 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**drain_trace_ingested**](IngestApi.md#drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
-[**drain_trace_writes**](IngestApi.md#drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
-[**get_ingest_queue_status**](IngestApi.md#get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |
-[**import_source**](IngestApi.md#import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |
-[**ingest_native**](IngestApi.md#ingest_native) | **POST** /v1/traces/native |
-[**ingest_otlp**](IngestApi.md#ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
-[**ingest_otlp_json_collector**](IngestApi.md#ingest_otlp_json_collector) | **POST** /v1/traces |
-[**reconcile_trace**](IngestApi.md#reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
-[**replay_dead_letter**](IngestApi.md#replay_dead_letter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
+[**ingest_drain_trace_ingested**](IngestApi.md#ingest_drain_trace_ingested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
+[**ingest_drain_trace_writes**](IngestApi.md#ingest_drain_trace_writes) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
+[**ingest_get_ingest_queue_status**](IngestApi.md#ingest_get_ingest_queue_status) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |
+[**ingest_import_source**](IngestApi.md#ingest_import_source) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |
+[**ingest_ingest_native**](IngestApi.md#ingest_ingest_native) | **POST** /v1/traces/native |
+[**ingest_ingest_otlp**](IngestApi.md#ingest_ingest_otlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
+[**ingest_ingest_otlp_json_collector**](IngestApi.md#ingest_ingest_otlp_json_collector) | **POST** /v1/traces |
+[**ingest_reconcile_trace**](IngestApi.md#ingest_reconcile_trace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
+[**ingest_replay_dead_letter**](IngestApi.md#ingest_replay_dead_letter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
 
 
-# **drain_trace_ingested**
-> TraceIngestedDrainReport drain_trace_ingested(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **ingest_drain_trace_ingested**
+> TraceIngestedDrainReport ingest_drain_trace_ingested(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -49,11 +49,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.drain_trace_ingested(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of IngestApi->drain_trace_ingested:\n")
+        api_response = api_instance.ingest_drain_trace_ingested(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of IngestApi->ingest_drain_trace_ingested:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling IngestApi->drain_trace_ingested: %s\n" % e)
+        print("Exception when calling IngestApi->ingest_drain_trace_ingested: %s\n" % e)
 ```
 
 
@@ -96,8 +96,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **drain_trace_writes**
-> TraceWriteDrainReport drain_trace_writes(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **ingest_drain_trace_writes**
+> TraceWriteDrainReport ingest_drain_trace_writes(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -130,11 +130,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.drain_trace_writes(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of IngestApi->drain_trace_writes:\n")
+        api_response = api_instance.ingest_drain_trace_writes(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of IngestApi->ingest_drain_trace_writes:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling IngestApi->drain_trace_writes: %s\n" % e)
+        print("Exception when calling IngestApi->ingest_drain_trace_writes: %s\n" % e)
 ```
 
 
@@ -177,8 +177,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_ingest_queue_status**
-> IngestQueueStatus get_ingest_queue_status(tenant_id, project_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **ingest_get_ingest_queue_status**
+> IngestQueueStatus ingest_get_ingest_queue_status(tenant_id, project_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -210,11 +210,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.get_ingest_queue_status(tenant_id, project_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of IngestApi->get_ingest_queue_status:\n")
+        api_response = api_instance.ingest_get_ingest_queue_status(tenant_id, project_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of IngestApi->ingest_get_ingest_queue_status:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling IngestApi->get_ingest_queue_status: %s\n" % e)
+        print("Exception when calling IngestApi->ingest_get_ingest_queue_status: %s\n" % e)
 ```
 
 
@@ -255,8 +255,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **import_source**
-> IngestOutcome import_source(tenant_id, project_id, environment_id, import_source_http_request, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key)
+# **ingest_import_source**
+> IngestOutcome ingest_import_source(tenant_id, project_id, environment_id, import_source_http_request, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key)
 
 
 
@@ -290,11 +290,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
 
     try:
-        api_response = api_instance.import_source(tenant_id, project_id, environment_id, import_source_http_request, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key)
-        print("The response of IngestApi->import_source:\n")
+        api_response = api_instance.ingest_import_source(tenant_id, project_id, environment_id, import_source_http_request, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key)
+        print("The response of IngestApi->ingest_import_source:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling IngestApi->import_source: %s\n" % e)
+        print("Exception when calling IngestApi->ingest_import_source: %s\n" % e)
 ```
 
 
@@ -338,8 +338,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **ingest_native**
-> IngestOutcome ingest_native(native_ingest_request, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **ingest_ingest_native**
+> IngestOutcome ingest_ingest_native(native_ingest_request, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -372,11 +372,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.ingest_native(native_ingest_request, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of IngestApi->ingest_native:\n")
+        api_response = api_instance.ingest_ingest_native(native_ingest_request, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of IngestApi->ingest_ingest_native:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling IngestApi->ingest_native: %s\n" % e)
+        print("Exception when calling IngestApi->ingest_ingest_native: %s\n" % e)
 ```
 
 
@@ -419,8 +419,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **ingest_otlp**
-> OtlpIngestOutcome ingest_otlp(tenant_id, project_id, environment_id, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **ingest_ingest_otlp**
+> OtlpIngestOutcome ingest_ingest_otlp(tenant_id, project_id, environment_id, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -454,11 +454,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.ingest_otlp(tenant_id, project_id, environment_id, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of IngestApi->ingest_otlp:\n")
+        api_response = api_instance.ingest_ingest_otlp(tenant_id, project_id, environment_id, durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of IngestApi->ingest_ingest_otlp:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling IngestApi->ingest_otlp: %s\n" % e)
+        print("Exception when calling IngestApi->ingest_ingest_otlp: %s\n" % e)
 ```
 
 
@@ -503,8 +503,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **ingest_otlp_json_collector**
-> OtlpIngestOutcome ingest_otlp_json_collector(durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_tenant_id=x_beater_tenant_id, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **ingest_ingest_otlp_json_collector**
+> OtlpIngestOutcome ingest_ingest_otlp_json_collector(durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_tenant_id=x_beater_tenant_id, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -536,11 +536,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Environment scope override for collector-style OTLP JSON (optional)
 
     try:
-        api_response = api_instance.ingest_otlp_json_collector(durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_tenant_id=x_beater_tenant_id, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of IngestApi->ingest_otlp_json_collector:\n")
+        api_response = api_instance.ingest_ingest_otlp_json_collector(durability=durability, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_tenant_id=x_beater_tenant_id, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of IngestApi->ingest_ingest_otlp_json_collector:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling IngestApi->ingest_otlp_json_collector: %s\n" % e)
+        print("Exception when calling IngestApi->ingest_ingest_otlp_json_collector: %s\n" % e)
 ```
 
 
@@ -583,8 +583,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **reconcile_trace**
-> TraceIngestedReconcileReport reconcile_trace(tenant_id, project_id, trace_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **ingest_reconcile_trace**
+> TraceIngestedReconcileReport ingest_reconcile_trace(tenant_id, project_id, trace_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -617,11 +617,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.reconcile_trace(tenant_id, project_id, trace_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of IngestApi->reconcile_trace:\n")
+        api_response = api_instance.ingest_reconcile_trace(tenant_id, project_id, trace_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of IngestApi->ingest_reconcile_trace:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling IngestApi->reconcile_trace: %s\n" % e)
+        print("Exception when calling IngestApi->ingest_reconcile_trace: %s\n" % e)
 ```
 
 
@@ -664,8 +664,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **replay_dead_letter**
-> DeadLetterReplayReport replay_dead_letter(tenant_id, project_id, message_id, reset_attempts=reset_attempts, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **ingest_replay_dead_letter**
+> DeadLetterReplayReport ingest_replay_dead_letter(tenant_id, project_id, message_id, reset_attempts=reset_attempts, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -699,11 +699,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.replay_dead_letter(tenant_id, project_id, message_id, reset_attempts=reset_attempts, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of IngestApi->replay_dead_letter:\n")
+        api_response = api_instance.ingest_replay_dead_letter(tenant_id, project_id, message_id, reset_attempts=reset_attempts, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of IngestApi->ingest_replay_dead_letter:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling IngestApi->replay_dead_letter: %s\n" % e)
+        print("Exception when calling IngestApi->ingest_replay_dead_letter: %s\n" % e)
 ```
 
 

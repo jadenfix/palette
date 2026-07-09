@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**GetSpan**](SpansAPI.md#GetSpan) | **Get** /v1/spans/{tenant_id}/{trace_id}/{span_id} | 
-[**GetSpanIo**](SpansAPI.md#GetSpanIo) | **Get** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io | 
+[**SpansGetSpan**](SpansAPI.md#SpansGetSpan) | **Get** /v1/spans/{tenant_id}/{trace_id}/{span_id} |
+[**SpansGetSpanIo**](SpansAPI.md#SpansGetSpanIo) | **Get** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io |
 
 
 
-## GetSpan
+## SpansGetSpan
 
-> CanonicalSpan GetSpan(ctx, tenantId, traceId, spanId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> CanonicalSpan SpansGetSpan(ctx, tenantId, traceId, spanId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -40,13 +40,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SpansAPI.GetSpan(context.Background(), tenantId, traceId, spanId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.SpansAPI.SpansGetSpan(context.Background(), tenantId, traceId, spanId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SpansAPI.GetSpan``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `SpansAPI.SpansGetSpan``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `GetSpan`: CanonicalSpan
-	fmt.Fprintf(os.Stdout, "Response from `SpansAPI.GetSpan`: %v\n", resp)
+	// response from `SpansGetSpan`: CanonicalSpan
+	fmt.Fprintf(os.Stdout, "Response from `SpansAPI.SpansGetSpan`: %v\n", resp)
 }
 ```
 
@@ -56,13 +56,13 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**traceId** | **string** | trace_id | 
-**spanId** | **string** | span_id | 
+**tenantId** | **string** | tenant_id |
+**traceId** | **string** | trace_id |
+**spanId** | **string** | span_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiGetSpanRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiSpansGetSpanRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -70,12 +70,12 @@ Name | Type | Description  | Notes
 
 
 
- **unmask** | **bool** |  | 
- **reason** | **string** |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **unmask** | **bool** |  |
+ **reason** | **string** |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -95,9 +95,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## GetSpanIo
+## SpansGetSpanIo
 
-> SpanIoResponse GetSpanIo(ctx, tenantId, traceId, spanId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> SpanIoResponse SpansGetSpanIo(ctx, tenantId, traceId, spanId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -126,13 +126,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SpansAPI.GetSpanIo(context.Background(), tenantId, traceId, spanId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.SpansAPI.SpansGetSpanIo(context.Background(), tenantId, traceId, spanId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SpansAPI.GetSpanIo``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `SpansAPI.SpansGetSpanIo``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `GetSpanIo`: SpanIoResponse
-	fmt.Fprintf(os.Stdout, "Response from `SpansAPI.GetSpanIo`: %v\n", resp)
+	// response from `SpansGetSpanIo`: SpanIoResponse
+	fmt.Fprintf(os.Stdout, "Response from `SpansAPI.SpansGetSpanIo`: %v\n", resp)
 }
 ```
 
@@ -142,13 +142,13 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**traceId** | **string** | trace_id | 
-**spanId** | **string** | span_id | 
+**tenantId** | **string** | tenant_id |
+**traceId** | **string** | trace_id |
+**spanId** | **string** | span_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiGetSpanIoRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiSpansGetSpanIoRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -156,12 +156,12 @@ Name | Type | Description  | Notes
 
 
 
- **unmask** | **bool** |  | 
- **reason** | **string** |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **unmask** | **bool** |  |
+ **reason** | **string** |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -179,4 +179,3 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

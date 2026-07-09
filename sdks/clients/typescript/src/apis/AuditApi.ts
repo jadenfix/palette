@@ -25,7 +25,7 @@ import {
     ErrorResponseToJSON,
 } from '../models/index';
 
-export interface ListAuditEventsRequest {
+export interface AuditListAuditEventsRequest {
     tenantId: string;
     projectId: string;
     authorization?: string | null;
@@ -41,18 +41,18 @@ export class AuditApi extends runtime.BaseAPI {
 
     /**
      */
-    async listAuditEventsRaw(requestParameters: ListAuditEventsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<AuditEvent>>> {
+    async auditListAuditEventsRaw(requestParameters: AuditListAuditEventsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<AuditEvent>>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling listAuditEvents().'
+                'Required parameter "tenantId" was null or undefined when calling auditListAuditEvents().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling listAuditEvents().'
+                'Required parameter "projectId" was null or undefined when calling auditListAuditEvents().'
             );
         }
 
@@ -88,8 +88,8 @@ export class AuditApi extends runtime.BaseAPI {
 
     /**
      */
-    async listAuditEvents(requestParameters: ListAuditEventsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<AuditEvent>> {
-        const response = await this.listAuditEventsRaw(requestParameters, initOverrides);
+    async auditListAuditEvents(requestParameters: AuditListAuditEventsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<AuditEvent>> {
+        const response = await this.auditListAuditEventsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

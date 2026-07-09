@@ -34,7 +34,7 @@ fn api_get_operation_rejects_body_before_network() -> anyhow::Result<()> {
         .arg("--base-url")
         .arg("http://127.0.0.1:9")
         .arg("api")
-        .arg("listTraces")
+        .arg("traces.list-traces")
         .arg("--param")
         .arg("tenant_id=demo")
         .arg("--body")
@@ -49,7 +49,7 @@ fn api_get_operation_rejects_body_before_network() -> anyhow::Result<()> {
     );
     let stderr = String::from_utf8(output.stderr)?;
     assert!(
-        stderr.contains("operation `listTraces` is GET"),
+        stderr.contains("operation `traces.list-traces` is GET"),
         "stderr should name the GET operation: {stderr}"
     );
     assert!(

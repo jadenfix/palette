@@ -60,7 +60,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<CanonicalSpan>> getSpan(
+    pplx::task<std::shared_ptr<CanonicalSpan>> spans_getSpan(
         utility::string_t tenantId,
         utility::string_t traceId,
         utility::string_t spanId,
@@ -86,7 +86,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<SpanIoResponse>> getSpanIo(
+    pplx::task<std::shared_ptr<SpanIoResponse>> spans_getSpanIo(
         utility::string_t tenantId,
         utility::string_t traceId,
         utility::string_t spanId,

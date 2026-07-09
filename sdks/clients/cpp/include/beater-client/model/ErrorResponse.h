@@ -57,7 +57,7 @@ public:
 
 
     /// <summary>
-    /// Human-readable error message.
+    /// Stable machine-readable error code.
     /// </summary>
     utility::string_t getError() const;
     bool errorIsSet() const;
@@ -65,20 +65,20 @@ public:
     void setError(const utility::string_t& value);
 
     /// <summary>
-    /// HTTP status code, duplicated in the body for convenience.
+    /// Human-readable error message.
     /// </summary>
-    int32_t getStatus() const;
-    bool statusIsSet() const;
-    void unsetStatus();
-    void setStatus(int32_t value);
+    utility::string_t getMessage() const;
+    bool messageIsSet() const;
+    void unsetMessage();
+    void setMessage(const utility::string_t& value);
 
 
 protected:
     utility::string_t m_Error;
     bool m_ErrorIsSet;
 
-    int32_t m_Status;
-    bool m_StatusIsSet;
+    utility::string_t m_Message;
+    bool m_MessageIsSet;
 
 };
 

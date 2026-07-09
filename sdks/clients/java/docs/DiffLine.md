@@ -11,6 +11,3 @@
 |**newLine** | **Integer** |  |  [optional] |
 |**oldLine** | **Integer** |  |  [optional] |
 |**text** | **String** |  |  |
-
-
-

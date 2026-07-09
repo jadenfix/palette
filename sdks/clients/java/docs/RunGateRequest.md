@@ -8,6 +8,3 @@
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
 |**experimentRunId** | **String** |  |  [optional] |
-
-
-

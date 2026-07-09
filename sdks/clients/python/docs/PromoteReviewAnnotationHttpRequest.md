@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**dataset_id** | **str** |  | 
-**reference** | **object** |  | [optional] 
+**dataset_id** | **str** |  |
+**reference** | **object** |  | [optional]
 
 ## Example
 
@@ -26,5 +26,3 @@ promote_review_annotation_http_request_dict = promote_review_annotation_http_req
 promote_review_annotation_http_request_from_dict = PromoteReviewAnnotationHttpRequest.from_dict(promote_review_annotation_http_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

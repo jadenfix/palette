@@ -9,6 +9,3 @@
 |------------ | ------------- | ------------- | -------------|
 |**input** | [**AlertInput**](AlertInput.md) |  |  |
 |**policy** | [**AlertPolicy**](AlertPolicy.md) |  |  |
-
-
-

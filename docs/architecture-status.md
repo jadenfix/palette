@@ -155,7 +155,7 @@
 | Storage-layer tenant isolation (Postgres RLS) | §20.7 #5.4 | partial | **Partial** — app-layer enforcement exists | DB-level RLS is planned; cross-tenant isolation is currently app-enforced only |
 | Crypto-shred / GDPR deletion | §20.7 #5.5 | planned | **Planned** | Crypto primitives built; lifecycle planned |
 | `beater-usage` (usage ledger, billing meters) | §20.7, §21.7 | built (ledger) | **Built** — `crates/beater-usage/` in workspace | Usage ledger metering exists and is the source for billing rollups |
-| `beater-billing` (plans, subscriptions, invoices, Stripe metered sync) | §20.7 | partial | **Partial** — `crates/beater-billing/` in workspace; API routes are hosted-feature-gated | Service/store/Stripe primitives and hosted-only API routes exist; hosted worker orchestration, dashboard live billing data, and generated hosted contract publication remain planned |
+| `beater-billing` (plans, subscriptions, invoices, Stripe metered sync) | §20.7 | partial | **Partial** — `crates/beater-billing/` in workspace; public API routes removed in favor of central Tempera billing | Service/store/Stripe primitives remain internal; hosted worker orchestration, dashboard live billing data, and generated hosted contract publication remain planned in the control plane |
 
 ---
 

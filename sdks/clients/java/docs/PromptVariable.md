@@ -11,6 +11,3 @@
 |**description** | **String** |  |  [optional] |
 |**name** | **String** |  |  |
 |**required** | **Boolean** |  |  |
-
-
-

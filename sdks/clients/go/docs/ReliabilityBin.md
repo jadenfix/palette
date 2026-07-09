@@ -4,13 +4,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Accuracy** | Pointer to **NullableFloat64** |  | [optional] 
-**BinIndex** | **int32** |  | 
-**CalibrationGap** | Pointer to **NullableFloat64** |  | [optional] 
-**LowerBound** | **float64** |  | 
-**MeanConfidence** | Pointer to **NullableFloat64** |  | [optional] 
-**SampleCount** | **int32** |  | 
-**UpperBound** | **float64** |  | 
+**Accuracy** | Pointer to **NullableFloat64** |  | [optional]
+**BinIndex** | **int32** |  |
+**CalibrationGap** | Pointer to **NullableFloat64** |  | [optional]
+**LowerBound** | **float64** |  |
+**MeanConfidence** | Pointer to **NullableFloat64** |  | [optional]
+**SampleCount** | **int32** |  |
+**UpperBound** | **float64** |  |
 
 ## Methods
 
@@ -218,5 +218,3 @@ SetUpperBound sets UpperBound field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

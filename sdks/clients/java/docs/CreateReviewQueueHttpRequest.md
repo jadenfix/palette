@@ -10,6 +10,3 @@
 |**annotationSchema** | **Object** |  |  |
 |**name** | **String** |  |  |
 |**queueId** | **String** |  |  [optional] |
-
-
-

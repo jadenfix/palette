@@ -4,13 +4,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Description** | Pointer to **NullableString** | What the tool does. | [optional] 
-**InputSchema** | Pointer to **map[string]interface{}** | JSON Schema of the tool&#39;s &#x60;arguments&#x60;, verbatim from Composio. The agent loop uses this to construct valid calls; [&#x60;crate::skill&#x60;] renders it. | [optional] 
-**Name** | **string** | Human display name. | 
-**NoAuth** | Pointer to **bool** | &#x60;true&#x60; when the tool executes without a connected account. | [optional] 
-**Slug** | **string** | Tool slug passed to [&#x60;ComposioClient::execute&#x60;] (e.g. &#x60;GITHUB_CREATE_AN_ISSUE&#x60;). | 
-**Tags** | Pointer to **[]string** | Free-form tags Composio assigns (categories, importance, …). | [optional] 
-**Toolkit** | Pointer to **NullableString** | Owning toolkit slug (e.g. &#x60;github&#x60;), when known. | [optional] 
+**Description** | Pointer to **NullableString** | What the tool does. | [optional]
+**InputSchema** | Pointer to **map[string]interface{}** | JSON Schema of the tool&#39;s &#x60;arguments&#x60;, verbatim from Composio. The agent loop uses this to construct valid calls; [&#x60;crate::skill&#x60;] renders it. | [optional]
+**Name** | **string** | Human display name. |
+**NoAuth** | Pointer to **bool** | &#x60;true&#x60; when the tool executes without a connected account. | [optional]
+**Slug** | **string** | Tool slug passed to [&#x60;ComposioClient::execute&#x60;] (e.g. &#x60;GITHUB_CREATE_AN_ISSUE&#x60;). |
+**Tags** | Pointer to **[]string** | Free-form tags Composio assigns (categories, importance, …). | [optional]
+**Toolkit** | Pointer to **NullableString** | Owning toolkit slug (e.g. &#x60;github&#x60;), when known. | [optional]
 
 ## Methods
 
@@ -228,5 +228,3 @@ HasToolkit returns a boolean if a field has been set.
 UnsetToolkit ensures that no value is present for Toolkit, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**body** | **str** |  | 
-**tags** | **List[str]** |  | 
-**variables** | [**List[PromptVariable]**](PromptVariable.md) |  | 
+**body** | **str** |  |
+**tags** | **List[str]** |  |
+**variables** | [**List[PromptVariable]**](PromptVariable.md) |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ prompt_template_dict = prompt_template_instance.to_dict()
 prompt_template_from_dict = PromptTemplate.from_dict(prompt_template_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

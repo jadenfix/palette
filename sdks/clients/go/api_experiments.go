@@ -23,7 +23,7 @@ import (
 // ExperimentsAPIService ExperimentsAPI service
 type ExperimentsAPIService service
 
-type ApiRunDeterministicExperimentRequest struct {
+type ApiExperimentsRunDeterministicExperimentRequest struct {
 	ctx context.Context
 	ApiService *ExperimentsAPIService
 	tenantId string
@@ -37,51 +37,51 @@ type ApiRunDeterministicExperimentRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiRunDeterministicExperimentRequest) RunExperimentRequest(runExperimentRequest RunExperimentRequest) ApiRunDeterministicExperimentRequest {
+func (r ApiExperimentsRunDeterministicExperimentRequest) RunExperimentRequest(runExperimentRequest RunExperimentRequest) ApiExperimentsRunDeterministicExperimentRequest {
 	r.runExperimentRequest = &runExperimentRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiRunDeterministicExperimentRequest) Authorization(authorization string) ApiRunDeterministicExperimentRequest {
+func (r ApiExperimentsRunDeterministicExperimentRequest) Authorization(authorization string) ApiExperimentsRunDeterministicExperimentRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiRunDeterministicExperimentRequest) XBeaterApiKey(xBeaterApiKey string) ApiRunDeterministicExperimentRequest {
+func (r ApiExperimentsRunDeterministicExperimentRequest) XBeaterApiKey(xBeaterApiKey string) ApiExperimentsRunDeterministicExperimentRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiRunDeterministicExperimentRequest) XBeaterProjectId(xBeaterProjectId string) ApiRunDeterministicExperimentRequest {
+func (r ApiExperimentsRunDeterministicExperimentRequest) XBeaterProjectId(xBeaterProjectId string) ApiExperimentsRunDeterministicExperimentRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiRunDeterministicExperimentRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiRunDeterministicExperimentRequest {
+func (r ApiExperimentsRunDeterministicExperimentRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiExperimentsRunDeterministicExperimentRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiRunDeterministicExperimentRequest) Execute() (*ExperimentRunReport, *http.Response, error) {
-	return r.ApiService.RunDeterministicExperimentExecute(r)
+func (r ApiExperimentsRunDeterministicExperimentRequest) Execute() (*ExperimentRunReport, *http.Response, error) {
+	return r.ApiService.ExperimentsRunDeterministicExperimentExecute(r)
 }
 
 /*
-RunDeterministicExperiment Method for RunDeterministicExperiment
+ExperimentsRunDeterministicExperiment Method for ExperimentsRunDeterministicExperiment
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param datasetId dataset_id
  @param versionId version_id
- @return ApiRunDeterministicExperimentRequest
+ @return ApiExperimentsRunDeterministicExperimentRequest
 */
-func (a *ExperimentsAPIService) RunDeterministicExperiment(ctx context.Context, tenantId string, projectId string, datasetId string, versionId string) ApiRunDeterministicExperimentRequest {
-	return ApiRunDeterministicExperimentRequest{
+func (a *ExperimentsAPIService) ExperimentsRunDeterministicExperiment(ctx context.Context, tenantId string, projectId string, datasetId string, versionId string) ApiExperimentsRunDeterministicExperimentRequest {
+	return ApiExperimentsRunDeterministicExperimentRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -93,7 +93,7 @@ func (a *ExperimentsAPIService) RunDeterministicExperiment(ctx context.Context, 
 
 // Execute executes the request
 //  @return ExperimentRunReport
-func (a *ExperimentsAPIService) RunDeterministicExperimentExecute(r ApiRunDeterministicExperimentRequest) (*ExperimentRunReport, *http.Response, error) {
+func (a *ExperimentsAPIService) ExperimentsRunDeterministicExperimentExecute(r ApiExperimentsRunDeterministicExperimentRequest) (*ExperimentRunReport, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -101,7 +101,7 @@ func (a *ExperimentsAPIService) RunDeterministicExperimentExecute(r ApiRunDeterm
 		localVarReturnValue  *ExperimentRunReport
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ExperimentsAPIService.RunDeterministicExperiment")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ExperimentsAPIService.ExperimentsRunDeterministicExperiment")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -230,7 +230,7 @@ func (a *ExperimentsAPIService) RunDeterministicExperimentExecute(r ApiRunDeterm
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiRunJudgeExperimentRequest struct {
+type ApiExperimentsRunJudgeExperimentRequest struct {
 	ctx context.Context
 	ApiService *ExperimentsAPIService
 	tenantId string
@@ -244,51 +244,51 @@ type ApiRunJudgeExperimentRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiRunJudgeExperimentRequest) RunJudgeExperimentRequest(runJudgeExperimentRequest RunJudgeExperimentRequest) ApiRunJudgeExperimentRequest {
+func (r ApiExperimentsRunJudgeExperimentRequest) RunJudgeExperimentRequest(runJudgeExperimentRequest RunJudgeExperimentRequest) ApiExperimentsRunJudgeExperimentRequest {
 	r.runJudgeExperimentRequest = &runJudgeExperimentRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiRunJudgeExperimentRequest) Authorization(authorization string) ApiRunJudgeExperimentRequest {
+func (r ApiExperimentsRunJudgeExperimentRequest) Authorization(authorization string) ApiExperimentsRunJudgeExperimentRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiRunJudgeExperimentRequest) XBeaterApiKey(xBeaterApiKey string) ApiRunJudgeExperimentRequest {
+func (r ApiExperimentsRunJudgeExperimentRequest) XBeaterApiKey(xBeaterApiKey string) ApiExperimentsRunJudgeExperimentRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiRunJudgeExperimentRequest) XBeaterProjectId(xBeaterProjectId string) ApiRunJudgeExperimentRequest {
+func (r ApiExperimentsRunJudgeExperimentRequest) XBeaterProjectId(xBeaterProjectId string) ApiExperimentsRunJudgeExperimentRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiRunJudgeExperimentRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiRunJudgeExperimentRequest {
+func (r ApiExperimentsRunJudgeExperimentRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiExperimentsRunJudgeExperimentRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiRunJudgeExperimentRequest) Execute() (*ExperimentRunReport, *http.Response, error) {
-	return r.ApiService.RunJudgeExperimentExecute(r)
+func (r ApiExperimentsRunJudgeExperimentRequest) Execute() (*ExperimentRunReport, *http.Response, error) {
+	return r.ApiService.ExperimentsRunJudgeExperimentExecute(r)
 }
 
 /*
-RunJudgeExperiment Method for RunJudgeExperiment
+ExperimentsRunJudgeExperiment Method for ExperimentsRunJudgeExperiment
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param datasetId dataset_id
  @param versionId version_id
- @return ApiRunJudgeExperimentRequest
+ @return ApiExperimentsRunJudgeExperimentRequest
 */
-func (a *ExperimentsAPIService) RunJudgeExperiment(ctx context.Context, tenantId string, projectId string, datasetId string, versionId string) ApiRunJudgeExperimentRequest {
-	return ApiRunJudgeExperimentRequest{
+func (a *ExperimentsAPIService) ExperimentsRunJudgeExperiment(ctx context.Context, tenantId string, projectId string, datasetId string, versionId string) ApiExperimentsRunJudgeExperimentRequest {
+	return ApiExperimentsRunJudgeExperimentRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -300,7 +300,7 @@ func (a *ExperimentsAPIService) RunJudgeExperiment(ctx context.Context, tenantId
 
 // Execute executes the request
 //  @return ExperimentRunReport
-func (a *ExperimentsAPIService) RunJudgeExperimentExecute(r ApiRunJudgeExperimentRequest) (*ExperimentRunReport, *http.Response, error) {
+func (a *ExperimentsAPIService) ExperimentsRunJudgeExperimentExecute(r ApiExperimentsRunJudgeExperimentRequest) (*ExperimentRunReport, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -308,7 +308,7 @@ func (a *ExperimentsAPIService) RunJudgeExperimentExecute(r ApiRunJudgeExperimen
 		localVarReturnValue  *ExperimentRunReport
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ExperimentsAPIService.RunJudgeExperiment")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ExperimentsAPIService.ExperimentsRunJudgeExperiment")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

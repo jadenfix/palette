@@ -4,19 +4,19 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Cost** | Pointer to [**NullableMoney**](Money.md) |  | [optional] 
-**CreatedAt** | **time.Time** |  | 
-**EvalResultId** | **string** |  | 
-**Evidence** | **interface{}** |  | 
-**Label** | Pointer to **NullableString** |  | [optional] 
-**NonReproducibleReason** | Pointer to **NullableString** |  | [optional] 
-**ProjectId** | **string** |  | 
-**Reproducibility** | [**EvalReproducibility**](EvalReproducibility.md) |  | 
-**Score** | **float64** |  | 
-**SpanId** | Pointer to **string** |  | [optional] 
-**TenantId** | **string** |  | 
-**Tokens** | Pointer to [**NullableTokenCounts**](TokenCounts.md) |  | [optional] 
-**TraceId** | **string** |  | 
+**Cost** | Pointer to [**NullableMoney**](Money.md) |  | [optional]
+**CreatedAt** | **time.Time** |  |
+**EvalResultId** | **string** |  |
+**Evidence** | **interface{}** |  |
+**Label** | Pointer to **NullableString** |  | [optional]
+**NonReproducibleReason** | Pointer to **NullableString** |  | [optional]
+**ProjectId** | **string** |  |
+**Reproducibility** | [**EvalReproducibility**](EvalReproducibility.md) |  |
+**Score** | **float64** |  |
+**SpanId** | Pointer to **string** |  | [optional]
+**TenantId** | **string** |  |
+**Tokens** | Pointer to [**NullableTokenCounts**](TokenCounts.md) |  | [optional]
+**TraceId** | **string** |  |
 
 ## Methods
 
@@ -374,5 +374,3 @@ SetTraceId sets TraceId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

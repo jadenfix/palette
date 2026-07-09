@@ -285,8 +285,8 @@ async fn initialize_and_tools_list_over_mcp_route() {
     // A representative tool with path + query params is present and shaped right.
     let traces_list = tools
         .iter()
-        .find(|t| t["name"] == "listTraces")
-        .expect("listTraces tool present");
+        .find(|t| t["name"] == "traces.list-traces")
+        .expect("traces.list-traces tool present");
     let props = &traces_list["inputSchema"]["properties"];
     assert!(props["tenant_id"].is_object(), "path param exposed");
     assert!(props["project_id"].is_object(), "query param exposed");
@@ -339,7 +339,7 @@ async fn tools_call_over_stdio_transport() {
             "id": 2,
             "method": "tools/call",
             "params": {
-                "name": "listTraces",
+                "name": "traces.list-traces",
                 "arguments": {
                     "tenant_id": "tenant-1",
                     "project_id": "proj-1",
@@ -395,7 +395,7 @@ async fn tools_call_matches_direct_http_for_traces_list() {
             "id": 7,
             "method": "tools/call",
             "params": {
-                "name": "listTraces",
+                "name": "traces.list-traces",
                 "arguments": {
                     "tenant_id": "tenant-1",
                     "project_id": "proj-1",
@@ -445,7 +445,7 @@ async fn tools_call_forwards_strict_auth_and_scope_headers() {
         "id": 8,
         "method": "tools/call",
         "params": {
-            "name": "getSpan",
+            "name": "spans.get-span",
             "arguments": {
                 "tenant_id": "tenant-1",
                 "trace_id": "missing-trace",
@@ -489,7 +489,7 @@ async fn tools_call_forwards_strict_auth_and_scope_headers() {
         "id": 8,
         "method": "tools/call",
         "params": {
-            "name": "getSpan",
+            "name": "spans.get-span",
             "arguments": {
                 "tenant_id": "tenant-1",
                 "trace_id": "missing-trace",
@@ -562,7 +562,7 @@ async fn oauth_tools_call_uses_token_scope_without_hidden_headers() {
             "id": 8,
             "method": "tools/call",
             "params": {
-                "name": "getSpan",
+                "name": "spans.get-span",
                 "arguments": {
                     "tenant_id": "tenant-1",
                     "trace_id": "missing-trace",
@@ -600,7 +600,7 @@ async fn oauth_mcp_auth_failure_returns_discovery_challenge() {
             "id": 8,
             "method": "tools/call",
             "params": {
-                "name": "getSpan",
+                "name": "spans.get-span",
                 "arguments": {
                     "tenant_id": "tenant-1",
                     "trace_id": "missing-trace",
@@ -740,7 +740,7 @@ async fn tools_call_rejects_non_scalar_query_param() {
             "id": 10,
             "method": "tools/call",
             "params": {
-                "name": "listTraces",
+                "name": "traces.list-traces",
                 "arguments": {
                     "tenant_id": "tenant-1",
                     "limit": { "bad": true }
@@ -810,12 +810,12 @@ async fn tools_list_exposes_output_schema_and_annotations() {
     // The six list endpoints return top-level JSON arrays, which MCP forbids as
     // structured output, so they advertise no outputSchema.
     let array_ops = [
-        "listAuditEvents",
-        "listJudgeLedger",
-        "listProviderSecrets",
-        "listReviewTasks",
-        "listConnectors",
-        "listConnectorTools",
+        "audit.list-audit-events",
+        "judge.list-judge-ledger",
+        "providerSecrets.list-provider-secrets",
+        "reviews.list-review-tasks",
+        "connectors.list-connectors",
+        "connectors.list-connector-tools",
     ];
 
     for tool in &tools {
@@ -865,11 +865,18 @@ async fn tools_list_exposes_output_schema_and_annotations() {
         let expect_read_only = method == "GET";
         let expect_idempotent = matches!(method.as_str(), "GET" | "PUT" | "DELETE");
         let expect_destructive = matches!(method.as_str(), "PUT" | "DELETE")
-            || (method == "POST" && matches!(name, "revokeApiKey" | "revokeProviderSecret"));
+            || (method == "POST"
+                && matches!(
+                    name,
+                    "apiKeys.revoke-api-key" | "providerSecrets.revoke-provider-secret"
+                ));
         let expect_open_world = method == "POST"
             && matches!(
                 name,
-                "evaluateJudge" | "runJudgeEval" | "runJudgeExperiment" | "importSource"
+                "judge.evaluate-judge"
+                    | "evals.run-judge-eval"
+                    | "experiments.run-judge-experiment"
+                    | "ingest.import-source"
             );
         assert_eq!(
             ann["readOnlyHint"], expect_read_only,
@@ -906,27 +913,27 @@ async fn representative_tools_have_correct_safety_hints() {
     };
 
     // GET: read-only.
-    let listing = by_name("listTraces");
+    let listing = by_name("traces.list-traces");
     assert_eq!(listing["annotations"]["readOnlyHint"], true);
     assert_eq!(listing["annotations"]["destructiveHint"], false);
     assert_eq!(listing["annotations"]["idempotentHint"], true);
 
     // POST: a write, not read-only.
-    let create = by_name("createDataset");
+    let create = by_name("datasets.create-dataset");
     assert_eq!(create["annotations"]["readOnlyHint"], false);
     assert_eq!(create["annotations"]["destructiveHint"], false);
     assert_eq!(create["annotations"]["idempotentHint"], false);
     assert_eq!(create["annotations"]["openWorldHint"], false);
 
     // Destructive POST: revokes access, so clients should confirm it.
-    let revoke = by_name("revokeApiKey");
+    let revoke = by_name("apiKeys.revoke-api-key");
     assert_eq!(revoke["annotations"]["readOnlyHint"], false);
     assert_eq!(revoke["annotations"]["destructiveHint"], true);
     assert_eq!(revoke["annotations"]["idempotentHint"], false);
     assert_eq!(revoke["annotations"]["openWorldHint"], false);
 
     // Open-world POST: can invoke an external provider.
-    let judge = by_name("evaluateJudge");
+    let judge = by_name("judge.evaluate-judge");
     assert_eq!(judge["annotations"]["readOnlyHint"], false);
     assert_eq!(judge["annotations"]["destructiveHint"], false);
     assert_eq!(judge["annotations"]["idempotentHint"], false);
@@ -942,8 +949,8 @@ async fn output_schema_resolves_component_refs() {
     let tools = list_tools(&app).await;
     let create = tools
         .iter()
-        .find(|t| t["name"] == "createDataset")
-        .expect("createDataset present");
+        .find(|t| t["name"] == "datasets.create-dataset")
+        .expect("datasets.create-dataset present");
     let output = &create["outputSchema"];
 
     // The success body is `{ "$ref": "#/components/schemas/Dataset" }`; the ref
@@ -1043,7 +1050,7 @@ async fn array_result_omits_structured_content() {
             "id": 11,
             "method": "tools/call",
             "params": {
-                "name": "listProviderSecrets",
+                "name": "providerSecrets.list-provider-secrets",
                 "arguments": { "tenant_id": "tenant-1", "project_id": "proj-1" }
             }
         }),
@@ -1168,7 +1175,11 @@ async fn help_query_filters_catalog() {
         );
     }
     // A representative dataset op is present.
-    assert!(listed.iter().any(|t| t["name"] == "createDataset"));
+    assert!(
+        listed
+            .iter()
+            .any(|t| t["name"] == "datasets.create-dataset")
+    );
 }
 
 /// `help` with a `tool` returns that operation's full descriptor; an unknown
@@ -1181,18 +1192,18 @@ async fn help_describes_one_tool_and_rejects_unknown() {
     let (_status, rpc) = mcp_call(
         &app,
         json!({ "jsonrpc": "2.0", "id": 1, "method": "tools/call",
-                "params": { "name": "help", "arguments": { "tool": "listTraces" } } }),
+                "params": { "name": "help", "arguments": { "tool": "traces.list-traces" } } }),
         None,
     )
     .await;
     let tool = &rpc["result"]["structuredContent"]["tool"];
-    assert_eq!(tool["name"], "listTraces");
+    assert_eq!(tool["name"], "traces.list-traces");
     assert_eq!(tool["method"], "GET");
     assert_eq!(tool["path"], "/v1/traces/{tenant_id}");
     assert_eq!(tool["inputSchema"]["type"], "object");
     assert!(
         tool["outputSchema"].is_object(),
-        "listTraces has an output schema"
+        "traces.list-traces has an output schema"
     );
     assert_eq!(tool["annotations"]["readOnlyHint"], true);
 

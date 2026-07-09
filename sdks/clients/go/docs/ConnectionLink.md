@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ConnectedAccountId** | **string** | Composio connection id (&#x60;ca_…&#x60;) created for this handshake. | 
-**ExpiresAt** | Pointer to **NullableString** | When the link expires (RFC 3339), if provided. | [optional] 
-**RedirectUrl** | **string** | URL the end user opens once to authorize the app. | 
+**ConnectedAccountId** | **string** | Composio connection id (&#x60;ca_…&#x60;) created for this handshake. |
+**ExpiresAt** | Pointer to **NullableString** | When the link expires (RFC 3339), if provided. | [optional]
+**RedirectUrl** | **string** | URL the end user opens once to authorize the app. |
 
 ## Methods
 
@@ -104,5 +104,3 @@ SetRedirectUrl sets RedirectUrl field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

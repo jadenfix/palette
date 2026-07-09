@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
-/// struct for passing parameters to the method [`get_span`]
+/// struct for passing parameters to the method [`spans_period_get_span`]
 #[derive(Clone, Debug)]
-pub struct GetSpanParams {
+pub struct SpansPeriodGetSpanParams {
     /// tenant_id
     pub tenant_id: String,
     /// trace_id
@@ -35,9 +35,9 @@ pub struct GetSpanParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`get_span_io`]
+/// struct for passing parameters to the method [`spans_period_get_span_io`]
 #[derive(Clone, Debug)]
-pub struct GetSpanIoParams {
+pub struct SpansPeriodGetSpanIoParams {
     /// tenant_id
     pub tenant_id: String,
     /// trace_id
@@ -57,10 +57,10 @@ pub struct GetSpanIoParams {
 }
 
 
-/// struct for typed errors of method [`get_span`]
+/// struct for typed errors of method [`spans_period_get_span`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GetSpanError {
+pub enum SpansPeriodGetSpanError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -68,10 +68,10 @@ pub enum GetSpanError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`get_span_io`]
+/// struct for typed errors of method [`spans_period_get_span_io`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GetSpanIoError {
+pub enum SpansPeriodGetSpanIoError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -80,7 +80,7 @@ pub enum GetSpanIoError {
 }
 
 
-pub async fn get_span(configuration: &configuration::Configuration, params: GetSpanParams) -> Result<models::CanonicalSpan, Error<GetSpanError>> {
+pub async fn spans_period_get_span(configuration: &configuration::Configuration, params: SpansPeriodGetSpanParams) -> Result<models::CanonicalSpan, Error<SpansPeriodGetSpanError>> {
 
     let uri_str = format!("{}/v1/spans/{tenant_id}/{trace_id}/{span_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), trace_id=crate::apis::urlencode(params.trace_id), span_id=crate::apis::urlencode(params.span_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -117,12 +117,12 @@ pub async fn get_span(configuration: &configuration::Configuration, params: GetS
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<GetSpanError> = serde_json::from_str(&content).ok();
+        let entity: Option<SpansPeriodGetSpanError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn get_span_io(configuration: &configuration::Configuration, params: GetSpanIoParams) -> Result<models::SpanIoResponse, Error<GetSpanIoError>> {
+pub async fn spans_period_get_span_io(configuration: &configuration::Configuration, params: SpansPeriodGetSpanIoParams) -> Result<models::SpanIoResponse, Error<SpansPeriodGetSpanIoError>> {
 
     let uri_str = format!("{}/v1/spans/{tenant_id}/{trace_id}/{span_id}/io", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), trace_id=crate::apis::urlencode(params.trace_id), span_id=crate::apis::urlencode(params.span_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -159,7 +159,7 @@ pub async fn get_span_io(configuration: &configuration::Configuration, params: G
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<GetSpanIoError> = serde_json::from_str(&content).ok();
+        let entity: Option<SpansPeriodGetSpanIoError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

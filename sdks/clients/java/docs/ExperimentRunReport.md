@@ -20,6 +20,3 @@
 |**gatePolicy** | [**GatePolicy**](GatePolicy.md) |  |  [optional] |
 |**projectId** | **String** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

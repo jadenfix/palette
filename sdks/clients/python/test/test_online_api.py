@@ -26,8 +26,8 @@ class TestOnlineApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_decide_online_sampling(self) -> None:
-        """Test case for decide_online_sampling
+    def test_online_decide_online_sampling(self) -> None:
+        """Test case for online_decide_online_sampling
 
         """
         pass

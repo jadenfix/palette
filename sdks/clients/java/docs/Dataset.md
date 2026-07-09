@@ -12,6 +12,3 @@
 |**name** | **String** |  |  |
 |**projectId** | **String** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

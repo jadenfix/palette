@@ -2,7 +2,7 @@
 """Audit the OpenAPI spec for shape consistency across the API surface.
 
 Enforces the conventions that keep the API/MCP/CLI/SDKs nice and in-sync:
-  - every operation has a unique camelCase operationId
+  - every operation has a unique dotted resource.operation operationId
   - every operation has exactly one resource tag
   - every operation documents a uniform error body (ApiErrorBody) for failures
   - success responses reference a NAMED schema (no anonymous/inline objects)
@@ -20,14 +20,14 @@ from pathlib import Path
 from typing import Any, TextIO
 
 DEFAULT_SPEC = "sdks/openapi/beater-api.json"
-CAMEL = re.compile(r"^[a-z][a-zA-Z0-9]*$")
+OPERATION_ID = re.compile(r"^[A-Za-z][A-Za-z0-9]*\.[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 LIST_PAGINATION_EXEMPTIONS = {
-    "listAuditEvents",
-    "listJudgeLedger",
-    "listPromptVersions",
-    "listPrompts",
-    "listProviderSecrets",
-    "listReviewTasks",
+    "audit.list-audit-events",
+    "judge.list-judge-ledger",
+    "prompts.list-prompt-versions",
+    "prompts.list-prompts",
+    "providerSecrets.list-provider-secrets",
+    "reviews.list-review-tasks",
 }
 
 
@@ -67,8 +67,10 @@ def audit_spec(spec: dict[str, Any]) -> AuditResult:
         if not oid:
             violations.append(f"{where}: missing operationId")
         else:
-            if not CAMEL.match(oid):
-                violations.append(f"{where}: operationId '{oid}' is not camelCase")
+            if not OPERATION_ID.match(oid):
+                violations.append(
+                    f"{where}: operationId '{oid}' is not dotted resource.operation"
+                )
             op_ids.setdefault(oid, []).append(where)
 
         if len(tags) != 1:
@@ -78,7 +80,7 @@ def audit_spec(spec: dict[str, Any]) -> AuditResult:
         # Health is the only allowed exception to the error-body rule.
         # 422 is used for partial-success (drain-with-dead-letters) and carries a
         # domain payload, not the shared error body, so it's exempt from this rule.
-        if oid != "health":
+        if oid != "health.health":
             err_codes = [
                 c for c in responses if c.startswith(("4", "5")) and c != "422"
             ]
@@ -125,7 +127,8 @@ def audit_spec(spec: dict[str, Any]) -> AuditResult:
     # list operations should paginate
     for method, path, op in ops:
         oid = op.get("operationId", "")
-        if oid.startswith("list") and oid not in LIST_PAGINATION_EXEMPTIONS:
+        verb = oid.split(".", 1)[1] if "." in oid else oid
+        if verb.startswith("list-") and oid not in LIST_PAGINATION_EXEMPTIONS:
             params = {p.get("name") for p in op.get("parameters", [])}
             if "cursor" not in params and "limit" not in params:
                 violations.append(

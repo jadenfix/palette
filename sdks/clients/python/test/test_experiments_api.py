@@ -26,14 +26,14 @@ class TestExperimentsApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_run_deterministic_experiment(self) -> None:
-        """Test case for run_deterministic_experiment
+    def test_experiments_run_deterministic_experiment(self) -> None:
+        """Test case for experiments_run_deterministic_experiment
 
         """
         pass
 
-    def test_run_judge_experiment(self) -> None:
-        """Test case for run_judge_experiment
+    def test_experiments_run_judge_experiment(self) -> None:
+        """Test case for experiments_run_judge_experiment
 
         """
         pass

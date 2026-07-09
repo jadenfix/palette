@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Hits** | [**[]SearchHit**](SearchHit.md) |  | 
+**Hits** | [**[]SearchHit**](SearchHit.md) |  |
 
 ## Methods
 
@@ -47,5 +47,3 @@ SetHits sets Hits field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -22,7 +22,7 @@ func Test_beaterclient_ApiKeysAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test ApiKeysAPIService CreateApiKey", func(t *testing.T) {
+	t.Run("Test ApiKeysAPIService ApiKeysCreateApiKey", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -30,7 +30,7 @@ func Test_beaterclient_ApiKeysAPIService(t *testing.T) {
 		var projectId string
 		var environmentId string
 
-		resp, httpRes, err := apiClient.ApiKeysAPI.CreateApiKey(context.Background(), tenantId, projectId, environmentId).Execute()
+		resp, httpRes, err := apiClient.ApiKeysAPI.ApiKeysCreateApiKey(context.Background(), tenantId, projectId, environmentId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -38,7 +38,7 @@ func Test_beaterclient_ApiKeysAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ApiKeysAPIService RevokeApiKey", func(t *testing.T) {
+	t.Run("Test ApiKeysAPIService ApiKeysRevokeApiKey", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -47,7 +47,7 @@ func Test_beaterclient_ApiKeysAPIService(t *testing.T) {
 		var environmentId string
 		var apiKeyId string
 
-		resp, httpRes, err := apiClient.ApiKeysAPI.RevokeApiKey(context.Background(), tenantId, projectId, environmentId, apiKeyId).Execute()
+		resp, httpRes, err := apiClient.ApiKeysAPI.ApiKeysRevokeApiKey(context.Background(), tenantId, projectId, environmentId, apiKeyId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

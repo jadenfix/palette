@@ -14,14 +14,6 @@ use beater_audit::{
     pii_unmask_event,
 };
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, RevokedApiKey};
-#[cfg(feature = "billing")]
-use beater_billing::store::BillingStore;
-#[cfg(feature = "billing")]
-use beater_billing::stripe::{EventApplication, StripeError, StripeSync};
-#[cfg(feature = "billing")]
-use beater_billing::{
-    Billing, BillingError, Invoice, Plan, PlanChange, PlanId, Subscription, SubscriptionStatus,
-};
 use beater_calibration::{
     CalibrationPolicy, CalibrationReport, CalibrationStore, calibrate_eval_report,
 };
@@ -29,8 +21,6 @@ use beater_composio::{
     ComposioClient, ComposioError, ConnectionLink, ConnectionStatus, ConnectorTool,
     ConnectorToolPolicy, ConnectorToolPolicyDecision, ToolExecution, Toolkit, skill,
 };
-#[cfg(feature = "billing")]
-use beater_core::OrganizationId;
 use beater_core::{
     AgentReleaseId, AnnotationId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetId, DatasetVersionId,
     EnvironmentId, EvaluatorVersionId, ExperimentRunId, GateId, Page, PageRequest, ProjectId,
@@ -140,12 +130,6 @@ pub struct ApiState {
     judge_broker: Option<Arc<dyn JudgeBroker>>,
     judge_ledger: Option<Arc<dyn JudgeLedgerStore>>,
     usage: Option<Arc<dyn UsageLedgerStore>>,
-    #[cfg(feature = "billing")]
-    billing: Option<Arc<dyn BillingStore>>,
-    /// Stripe webhook signing secret (HMAC). Required for the Stripe webhook
-    /// route to verify inbound deliveries.
-    #[cfg(feature = "billing")]
-    stripe_webhook_secret: Option<Vec<u8>>,
     audit: Option<Arc<dyn AuditStore>>,
     /// Composio-backed third-party tool provider. When set, the `/v1/connectors`
     /// endpoints broker managed-OAuth connections and tool execution; when unset
@@ -190,10 +174,6 @@ impl ApiState {
             judge_broker: None,
             judge_ledger: None,
             usage: None,
-            #[cfg(feature = "billing")]
-            billing: None,
-            #[cfg(feature = "billing")]
-            stripe_webhook_secret: None,
             audit: None,
             connectors: None,
             prompts: None,
@@ -335,24 +315,6 @@ impl ApiState {
         self
     }
 
-    /// Wire the billing store and the Stripe webhook signing secret. Enables the
-    /// `/v1/plans`, `/v1/subscriptions`, `/v1/billing/invoices` and
-    /// `/v1/billing/webhooks/stripe` routes.
-    ///
-    /// Billing is a hosted concern and is gated behind the non-default `billing`
-    /// cargo feature so the open-source build neither compiles billing code nor
-    /// advertises Stripe endpoints in the OSS API contract.
-    #[cfg(feature = "billing")]
-    pub fn with_billing(
-        mut self,
-        billing: Arc<dyn BillingStore>,
-        stripe_webhook_secret: impl Into<Vec<u8>>,
-    ) -> Self {
-        self.billing = Some(billing);
-        self.stripe_webhook_secret = Some(stripe_webhook_secret.into());
-        self
-    }
-
     pub fn with_audit(mut self, audit: Arc<dyn AuditStore>) -> Self {
         self.audit = Some(audit);
         self
@@ -383,12 +345,9 @@ impl ApiState {
 ///
 /// Update this when adding or removing a `/v1` route in [`router`].
 ///
-/// Billing/Stripe routes are hosted-only and compiled in only under the
-/// `billing` feature, so the count is feature-aware: the open-source default
-/// build registers 58 `/v1` routes (42 base + 6 always-on `/v1/connectors`
-/// routes + 6 `/v1/prompts` routes + 4 `/v1/scenarios` routes); the hosted
-/// `billing` build adds 8.
-pub const V1_ROUTE_COUNT: usize = if cfg!(feature = "billing") { 66 } else { 58 };
+/// The product API deliberately excludes billing/checkout/subscription routes;
+/// those are owned by the central Tempera control plane.
+pub const V1_ROUTE_COUNT: usize = 58;
 
 /// See [`V1_ROUTE_COUNT`].
 pub fn v1_route_count() -> usize {
@@ -588,28 +547,6 @@ pub fn router(state: ApiState) -> Router {
             post(import_source_route),
         )
         .route("/v1/traces/:tenant_id/:trace_id", get(get_trace));
-
-    // Billing/Stripe is a hosted concern gated behind the non-default `billing`
-    // feature; the OSS build neither registers these routes nor advertises them
-    // in the API contract.
-    #[cfg(feature = "billing")]
-    let router = router
-        .route("/v1/plans", get(get_plans_route))
-        .route("/v1/plans/:plan_id", get(get_plan_route))
-        .route(
-            "/v1/subscriptions/:org_id",
-            get(get_subscription_route).post(create_subscription_route),
-        )
-        .route(
-            "/v1/subscriptions/:org_id/change-plan",
-            post(change_subscription_plan_route),
-        )
-        .route("/v1/billing/invoices/:org_id", get(get_org_invoices_route))
-        .route(
-            "/v1/billing/invoices/:org_id/:period_key",
-            get(get_invoice_route),
-        )
-        .route("/v1/billing/webhooks/stripe", post(stripe_webhook_route));
 
     router.with_state(state)
 }
@@ -1524,339 +1461,6 @@ async fn get_usage_summary_route(
     authorize_project_route(&state, &headers, &tenant_id, &project_id, ApiScope::Admin).await?;
     let summary = usage.summarize_usage(tenant_id, project_id).await?;
     Ok(Json(summary))
-}
-
-// ---------------------------------------------------------------------------
-// Billing (Bandwidth, §20.7 #5.8 / §21.7 / R15)
-// ---------------------------------------------------------------------------
-
-/// Request body for creating a subscription.
-#[cfg(feature = "billing")]
-#[derive(Clone, Debug, Deserialize, ToSchema)]
-struct CreateSubscriptionRequest {
-    /// Plan to subscribe the org to.
-    plan_id: String,
-    /// RFC3339 period start.
-    period_start: String,
-    /// RFC3339 period end.
-    period_end: String,
-    /// Optional initial status (`active` default).
-    status: Option<String>,
-}
-
-/// Request body for changing an org's plan with proration.
-#[cfg(feature = "billing")]
-#[derive(Clone, Debug, Deserialize, ToSchema)]
-struct ChangePlanRequest {
-    /// New plan id.
-    new_plan_id: String,
-    /// RFC3339 instant at which the change takes effect (defaults to now).
-    at: Option<String>,
-}
-
-/// Acknowledgement for an inbound Stripe webhook delivery.
-#[cfg(feature = "billing")]
-#[derive(Clone, Debug, Serialize, ToSchema)]
-struct StripeWebhookAck {
-    /// `applied`, `duplicate`, or `stale`.
-    outcome: String,
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    get,
-    path = "/v1/plans",
-    tag = "billing",
-    operation_id = "getPlans",
-    responses(
-        (status = 200, description = "List billing plans", body = Vec < Plan >),
-        (status = 400, description = "Invalid request", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-    )
-)]
-async fn get_plans_route(State(state): State<ApiState>) -> Result<Json<Vec<Plan>>, ApiError> {
-    let billing = billing_store(&state)?;
-    let plans = billing.list_plans().await?;
-    Ok(Json(plans))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    get,
-    path = "/v1/plans/{plan_id}",
-    tag = "billing",
-    operation_id = "getPlan",
-    params(("plan_id" = String, Path, description = "plan_id")),
-    responses(
-        (status = 200, description = "Get a billing plan", body = Plan),
-        (status = 400, description = "Invalid request", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-    )
-)]
-async fn get_plan_route(
-    State(state): State<ApiState>,
-    Path(plan_id): Path<String>,
-) -> Result<Json<Plan>, ApiError> {
-    let billing = billing_store(&state)?;
-    let plan_id = PlanId::new(plan_id).map_err(ApiError::from)?;
-    let plan = billing
-        .get_plan(&plan_id)
-        .await?
-        .ok_or_else(|| ApiError::not_found(format!("plan {} not found", plan_id.as_str())))?;
-    Ok(Json(plan))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    get,
-    path = "/v1/subscriptions/{org_id}",
-    tag = "billing",
-    operation_id = "getSubscription",
-    params(
-        ("org_id" = String, Path, description = "org_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    responses(
-        (status = 200, description = "Get an org subscription", body = Subscription),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-    )
-)]
-async fn get_subscription_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path(org_id): Path<String>,
-) -> Result<Json<Subscription>, ApiError> {
-    let billing = billing_store(&state)?;
-    let org_id = OrganizationId::new(org_id)?;
-    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
-    let subscription = billing.get_subscription(&org_id).await?.ok_or_else(|| {
-        ApiError::not_found(format!(
-            "subscription for org {} not found",
-            org_id.as_str()
-        ))
-    })?;
-    Ok(Json(subscription))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    post,
-    path = "/v1/subscriptions/{org_id}",
-    tag = "billing",
-    operation_id = "createSubscription",
-    params(
-        ("org_id" = String, Path, description = "org_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    request_body = CreateSubscriptionRequest,
-    responses(
-        (status = 200, description = "Create an org subscription", body = Subscription),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-        (status = 409, description = "Subscription already exists", body = ErrorResponse),
-    )
-)]
-async fn create_subscription_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path(org_id): Path<String>,
-    Json(request): Json<CreateSubscriptionRequest>,
-) -> Result<Json<Subscription>, ApiError> {
-    let billing = billing_store(&state)?;
-    let org_id = OrganizationId::new(org_id)?;
-    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
-    let plan_id = PlanId::new(request.plan_id).map_err(ApiError::from)?;
-    let period_start = parse_required_timestamp(&request.period_start, "period_start")?;
-    let period_end = parse_required_timestamp(&request.period_end, "period_end")?;
-    if period_end <= period_start {
-        return Err(ApiError::bad_request(
-            "period_end must be after period_start".to_string(),
-        ));
-    }
-    if billing.get_plan(&plan_id).await?.is_none() {
-        return Err(ApiError::not_found(format!(
-            "plan {} not found",
-            plan_id.as_str()
-        )));
-    }
-    let status = match request.status.as_deref() {
-        None | Some("active") => SubscriptionStatus::Active,
-        Some(other) => SubscriptionStatus::parse(other).ok_or_else(|| {
-            ApiError::bad_request(format!("unknown subscription status: {other}"))
-        })?,
-    };
-    let subscription = billing
-        .create_subscription(Subscription {
-            org_id,
-            plan_id,
-            status,
-            period_start,
-            period_end,
-            version: 1,
-        })
-        .await?;
-    Ok(Json(subscription))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    post,
-    path = "/v1/subscriptions/{org_id}/change-plan",
-    tag = "billing",
-    operation_id = "changeSubscriptionPlan",
-    params(
-        ("org_id" = String, Path, description = "org_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    request_body = ChangePlanRequest,
-    responses(
-        (status = 200, description = "Change an org plan with proration", body = PlanChange),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-        (status = 409, description = "Concurrent modification", body = ErrorResponse),
-    )
-)]
-async fn change_subscription_plan_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path(org_id): Path<String>,
-    Json(request): Json<ChangePlanRequest>,
-) -> Result<Json<PlanChange>, ApiError> {
-    let billing = billing_service(&state)?;
-    let org_id = OrganizationId::new(org_id)?;
-    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
-    let new_plan_id = PlanId::new(request.new_plan_id).map_err(ApiError::from)?;
-    let at = match request.at {
-        Some(value) => parse_required_timestamp(&value, "at")?,
-        None => Utc::now(),
-    };
-    let change = billing.change_plan(&org_id, &new_plan_id, at).await?;
-    Ok(Json(change))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    get,
-    path = "/v1/billing/invoices/{org_id}",
-    tag = "billing",
-    operation_id = "getOrgInvoices",
-    params(
-        ("org_id" = String, Path, description = "org_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    responses(
-        (status = 200, description = "List org invoices", body = Vec < Invoice >),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-    )
-)]
-async fn get_org_invoices_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path(org_id): Path<String>,
-) -> Result<Json<Vec<Invoice>>, ApiError> {
-    let billing = billing_store(&state)?;
-    let org_id = OrganizationId::new(org_id)?;
-    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
-    let invoices = billing.list_invoices(&org_id).await?;
-    Ok(Json(invoices))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    get,
-    path = "/v1/billing/invoices/{org_id}/{period_key}",
-    tag = "billing",
-    operation_id = "getInvoice",
-    params(
-        ("org_id" = String, Path, description = "org_id"),
-        ("period_key" = String, Path, description = "period_key (YYYY-MM)"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    responses(
-        (status = 200, description = "Get an org invoice for a period", body = Invoice),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-    )
-)]
-async fn get_invoice_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path((org_id, period_key)): Path<(String, String)>,
-) -> Result<Json<Invoice>, ApiError> {
-    let billing = billing_store(&state)?;
-    let org_id = OrganizationId::new(org_id)?;
-    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
-    let invoice = billing
-        .get_invoice(&org_id, &period_key)
-        .await?
-        .ok_or_else(|| {
-            ApiError::not_found(format!(
-                "invoice for org {} period {period_key} not found",
-                org_id.as_str()
-            ))
-        })?;
-    Ok(Json(invoice))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    post,
-    path = "/v1/billing/webhooks/stripe",
-    tag = "billing",
-    operation_id = "handleStripeWebhook",
-    params(
-        ("stripe-signature" = String, Header, description = "Stripe signed-webhook header (t=...,v1=...)"),
-    ),
-    request_body(content = String, description = "Raw Stripe event JSON (signature-verified)"),
-    responses(
-        (status = 200, description = "Webhook accepted (applied/duplicate/stale)", body = StripeWebhookAck),
-        (status = 400, description = "Invalid signature or malformed event", body = ErrorResponse),
-    )
-)]
-async fn stripe_webhook_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Json<StripeWebhookAck>, ApiError> {
-    let sync = stripe_sync(&state)?;
-    let signature = headers
-        .get("stripe-signature")
-        .and_then(|value| value.to_str().ok())
-        .ok_or_else(|| ApiError::bad_request("missing stripe-signature header".to_string()))?;
-    let outcome = sync.apply_event(&body, signature).await?;
-    let outcome = match outcome {
-        EventApplication::Applied => "applied",
-        EventApplication::Duplicate => "duplicate",
-        EventApplication::Stale => "stale",
-    };
-    Ok(Json(StripeWebhookAck {
-        outcome: outcome.to_string(),
-    }))
 }
 
 #[utoipa::path(
@@ -4375,28 +3979,6 @@ fn usage_ledger(state: &ApiState) -> Result<Arc<dyn UsageLedgerStore>, ApiError>
     require(&state.usage, "usage ledger")
 }
 
-#[cfg(feature = "billing")]
-fn billing_store(state: &ApiState) -> Result<Arc<dyn BillingStore>, ApiError> {
-    require(&state.billing, "billing store")
-}
-
-/// Build the [`Billing`] service from the wired billing + usage stores.
-#[cfg(feature = "billing")]
-fn billing_service(state: &ApiState) -> Result<Billing, ApiError> {
-    let billing = billing_store(state)?;
-    let usage = usage_ledger(state)?;
-    Ok(Billing::new(billing, usage))
-}
-
-#[cfg(feature = "billing")]
-fn stripe_sync(state: &ApiState) -> Result<StripeSync, ApiError> {
-    let billing = billing_store(state)?;
-    let secret = state.stripe_webhook_secret.clone().ok_or_else(|| {
-        ApiError::not_implemented("stripe webhook secret is not configured".to_string())
-    })?;
-    Ok(StripeSync::new(billing, secret))
-}
-
 fn audit_store(state: &ApiState) -> Result<Arc<dyn AuditStore>, ApiError> {
     require(&state.audit, "audit store")
 }
@@ -4444,10 +4026,10 @@ struct HealthResponse {
 /// Error envelope returned by every fallible endpoint.
 #[derive(Clone, Debug, Serialize, ToSchema)]
 struct ErrorResponse {
-    /// Human-readable error message.
+    /// Stable machine-readable error code.
     error: String,
-    /// HTTP status code, duplicated in the body for convenience.
-    status: u16,
+    /// Human-readable error message.
+    message: String,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -4867,23 +4449,6 @@ async fn authorize_tenant_route(
     .await
 }
 
-/// Authorize an org-scoped billing route. Billing is org-scoped; auth is
-/// project-scoped, so we map the organization id onto the tenant scope for the
-/// credential check. A no-op when auth is disabled.
-#[cfg(feature = "billing")]
-async fn authorize_org_route(
-    state: &ApiState,
-    headers: &HeaderMap,
-    org_id: &OrganizationId,
-    required_scope: ApiScope,
-) -> Result<AuthDecision, ApiError> {
-    if !state.auth_required() {
-        return Ok(AuthDecision::anonymous());
-    }
-    let tenant_id = TenantId::new(org_id.as_str())?;
-    authorize_tenant_route(state, headers, &tenant_id, required_scope).await
-}
-
 async fn authorize_query_scope(
     state: &ApiState,
     headers: &HeaderMap,
@@ -5047,7 +4612,7 @@ async fn authorize(
 /// Authorize via an OAuth 2.1 access token (`bao_...`). Validates the token,
 /// checks it is bound to the requested tenant/project/environment, and maps the
 /// OAuth scopes (which use the same names as [`ApiScope::as_str`]) onto the
-/// required scope. `admin` satisfies any scope.
+/// required scope.
 async fn authorize_oauth(
     oauth: &dyn OAuthStore,
     secret: &str,
@@ -5079,8 +4644,7 @@ async fn authorize_oauth(
             "access token is missing scope mcp:invoke".to_string(),
         ));
     }
-    let is_admin = claims.scope.contains(ApiScope::Admin.as_str());
-    let has_scope = claims.scope.contains(required_scope.as_str()) || is_admin;
+    let has_scope = claims.scope.contains(required_scope.as_str());
     if !has_scope {
         return Err(ApiError::forbidden(format!(
             "access token is missing scope {}",
@@ -5555,16 +5119,6 @@ fn parse_optional_timestamp(
         .transpose()
 }
 
-#[cfg(feature = "billing")]
-fn parse_required_timestamp(
-    value: &str,
-    field_name: &str,
-) -> Result<beater_core::Timestamp, ApiError> {
-    chrono::DateTime::parse_from_rfc3339(value)
-        .map(|timestamp| timestamp.with_timezone(&Utc))
-        .map_err(|err| ApiError::bad_request(format!("{field_name} must be RFC3339: {err}")))
-}
-
 fn parse_span_status(value: String) -> Result<SpanStatus, ApiError> {
     SpanStatus::parse(&value)
         .ok_or_else(|| ApiError::bad_request(format!("unsupported span status: {value}")))
@@ -5701,49 +5255,15 @@ impl From<StoreError> for ApiError {
     }
 }
 
-#[cfg(feature = "billing")]
-impl From<BillingError> for ApiError {
-    fn from(error: BillingError) -> Self {
-        match error {
-            BillingError::NotFound(_) => {
-                Self::with_status(StatusCode::NOT_FOUND, error.to_string())
-            }
-            BillingError::Conflict(_) | BillingError::ConcurrentModification(_) => {
-                Self::with_status(StatusCode::CONFLICT, error.to_string())
-            }
-            BillingError::InvalidPlan(_)
-            | BillingError::InvalidPeriod(_)
-            | BillingError::Money(_)
-            | BillingError::Overflow => Self::bad_request(error.to_string()),
-            BillingError::Store(store) => store.into(),
-            BillingError::Backend(_) => Self::internal(error.to_string()),
-        }
-    }
-}
-
-#[cfg(feature = "billing")]
-impl From<StripeError> for ApiError {
-    fn from(error: StripeError) -> Self {
-        match error {
-            StripeError::Signature(_) | StripeError::Malformed(_) => {
-                Self::bad_request(error.to_string())
-            }
-            StripeError::Store(store) => store.into(),
-            StripeError::Billing(message) => Self::bad_request(message),
-            StripeError::Transport(_) => {
-                Self::with_status(StatusCode::BAD_GATEWAY, error.to_string())
-            }
-        }
-    }
-}
-
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
+        let status = self.status;
+        let message = self.message;
         let body = Json(serde_json::json!({
-            "error": self.message,
-            "status": self.status.as_u16()
+            "error": status.canonical_reason().unwrap_or("error"),
+            "message": message
         }));
-        let mut response = (self.status, body).into_response();
+        let mut response = (status, body).into_response();
         for (name, value) in self.headers {
             response.headers_mut().insert(name, value);
         }
@@ -5889,9 +5409,37 @@ mod tests {
             )
             .await
             .unwrap_or_else(|err| panic!("{err:?}"));
+        assert!(
+            authorize_oauth(
+                &store,
+                &admin_with_mcp.access_token,
+                Some(resource),
+                &tenant,
+                &project,
+                &environment,
+                ApiScope::TraceWrite,
+            )
+            .await
+            .is_err(),
+            "admin+mcp must not satisfy product operation scopes without explicit permission"
+        );
+
+        let trace_write_with_mcp = store
+            .issue_token_pair(
+                OAuthClientId::new("client").unwrap_or_else(|err| panic!("{err}")),
+                UserId::new("user").unwrap_or_else(|err| panic!("{err}")),
+                BTreeSet::from(["mcp:invoke".to_string(), "trace:write".to_string()]),
+                resource.to_string(),
+                TenantScope::new(tenant.clone(), project.clone(), environment.clone()),
+                TokenFamilyId::new("fam-trace-write-mcp").unwrap_or_else(|err| panic!("{err}")),
+                true,
+                now,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
         authorize_oauth(
             &store,
-            &admin_with_mcp.access_token,
+            &trace_write_with_mcp.access_token,
             Some(resource),
             &tenant,
             &project,
@@ -5899,7 +5447,7 @@ mod tests {
             ApiScope::TraceWrite,
         )
         .await
-        .unwrap_or_else(|err| panic!("admin+mcp should satisfy operation scope: {err:?}"));
+        .unwrap_or_else(|err| panic!("mcp+trace:write should satisfy operation scope: {err:?}"));
 
         // Wrong tenant -> forbidden (token is bound to its tenant scope).
         let other = TenantId::new("evil").unwrap_or_else(|err| panic!("{err}"));
@@ -6437,9 +5985,9 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         let error: serde_json::Value =
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
-        assert_eq!(error["status"], serde_json::json!(400));
+        assert_eq!(error["error"], serde_json::json!("Bad Request"));
         assert!(
-            error["error"]
+            error["message"]
                 .as_str()
                 .unwrap_or_default()
                 .contains("invalid OTLP trace export")
@@ -6474,9 +6022,9 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         let error: serde_json::Value =
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
-        assert_eq!(error["status"], serde_json::json!(400));
+        assert_eq!(error["error"], serde_json::json!("Bad Request"));
         assert!(
-            error["error"]
+            error["message"]
                 .as_str()
                 .unwrap_or_default()
                 .contains("invalid OTLP trace export")

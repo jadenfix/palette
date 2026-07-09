@@ -5,10 +5,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**kind** | **str** |  | 
-**value** | **object** |  | 
-**artifact_ref** | [**ArtifactRef**](ArtifactRef.md) |  | 
-**reason** | **str** |  | 
+**kind** | **str** |  |
+**value** | **object** |  |
+**artifact_ref** | [**ArtifactRef**](ArtifactRef.md) |  |
+**reason** | **str** |  |
 
 ## Example
 
@@ -28,5 +28,3 @@ span_io_value_dict = span_io_value_instance.to_dict()
 span_io_value_from_dict = SpanIoValue.from_dict(span_io_value_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

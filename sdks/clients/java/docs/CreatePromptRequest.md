@@ -13,6 +13,3 @@ Request body for `createPrompt`: the new prompt's metadata plus its initial (ver
 |**message** | **String** |  |  [optional] |
 |**name** | **String** |  |  |
 |**template** | [**PromptTemplate**](PromptTemplate.md) |  |  |
-
-
-

@@ -11,6 +11,3 @@ Request body for `addPromptVersion`: a new immutable template revision.
 |**createdBy** | **String** |  |  [optional] |
 |**message** | **String** |  |  [optional] |
 |**template** | [**PromptTemplate**](PromptTemplate.md) |  |  |
-
-
-

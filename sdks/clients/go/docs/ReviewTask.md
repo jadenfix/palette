@@ -4,18 +4,18 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**CreatedAt** | **time.Time** |  | 
-**DatasetCaseId** | Pointer to **string** |  | [optional] 
-**DatasetId** | Pointer to **string** |  | [optional] 
-**Priority** | **int64** |  | 
-**ProjectId** | **string** |  | 
-**QueueId** | **string** |  | 
-**SpanId** | Pointer to **string** |  | [optional] 
-**State** | [**ReviewTaskState**](ReviewTaskState.md) |  | 
-**TaskId** | **string** |  | 
-**TenantId** | **string** |  | 
-**TraceId** | **string** |  | 
-**UpdatedAt** | **time.Time** |  | 
+**CreatedAt** | **time.Time** |  |
+**DatasetCaseId** | Pointer to **string** |  | [optional]
+**DatasetId** | Pointer to **string** |  | [optional]
+**Priority** | **int64** |  |
+**ProjectId** | **string** |  |
+**QueueId** | **string** |  |
+**SpanId** | Pointer to **string** |  | [optional]
+**State** | [**ReviewTaskState**](ReviewTaskState.md) |  |
+**TaskId** | **string** |  |
+**TenantId** | **string** |  |
+**TraceId** | **string** |  |
+**UpdatedAt** | **time.Time** |  |
 
 ## Methods
 
@@ -293,5 +293,3 @@ SetUpdatedAt sets UpdatedAt field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

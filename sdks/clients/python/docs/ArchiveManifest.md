@@ -5,11 +5,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**created_at** | **datetime** |  | 
-**path** | **str** |  | 
-**project_id** | **str** |  | 
-**span_count** | **int** |  | 
-**tenant_id** | **str** |  | 
+**created_at** | **datetime** |  |
+**path** | **str** |  |
+**project_id** | **str** |  |
+**span_count** | **int** |  |
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -29,5 +29,3 @@ archive_manifest_dict = archive_manifest_instance.to_dict()
 archive_manifest_from_dict = ArchiveManifest.from_dict(archive_manifest_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

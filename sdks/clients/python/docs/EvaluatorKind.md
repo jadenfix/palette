@@ -5,18 +5,18 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**pattern** | **str** |  | 
-**abs** | **float** |  | 
-**rel** | **float** |  | 
-**max_micros** | **int** |  | 
-**max_ms** | **int** |  | 
-**model** | **str** |  | 
-**rubric** | **str** |  | 
-**dom_contains** | **str** |  | [optional] 
-**url_contains** | **str** |  | [optional] 
-**max_steps** | **int** |  | 
-**min_ratio** | **float** |  | 
+**type** | **str** |  |
+**pattern** | **str** |  |
+**abs** | **float** |  |
+**rel** | **float** |  |
+**max_micros** | **int** |  |
+**max_ms** | **int** |  |
+**model** | **str** |  |
+**rubric** | **str** |  |
+**dom_contains** | **str** |  | [optional]
+**url_contains** | **str** |  | [optional]
+**max_steps** | **int** |  |
+**min_ratio** | **float** |  |
 
 ## Example
 
@@ -36,5 +36,3 @@ evaluator_kind_dict = evaluator_kind_instance.to_dict()
 evaluator_kind_from_dict = EvaluatorKind.from_dict(evaluator_kind_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

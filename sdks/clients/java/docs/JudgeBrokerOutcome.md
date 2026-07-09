@@ -10,6 +10,3 @@
 |**audit** | [**JudgeAuditRecord**](JudgeAuditRecord.md) |  |  |
 |**remainingBudget** | [**Money**](Money.md) |  |  |
 |**result** | [**ScoreResult**](ScoreResult.md) |  |  |
-
-
-

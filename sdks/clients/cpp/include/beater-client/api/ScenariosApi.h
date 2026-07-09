@@ -61,7 +61,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<Scenario>> createScenario(
+    pplx::task<std::shared_ptr<Scenario>> scenarios_createScenario(
         utility::string_t tenantId,
         utility::string_t projectId,
         std::shared_ptr<CreateScenarioRequest> createScenarioRequest,
@@ -83,7 +83,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<Scenario>> getScenario(
+    pplx::task<std::shared_ptr<Scenario>> scenarios_getScenario(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t scenarioId,
@@ -106,7 +106,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ListScenariosResponse>> listScenarios(
+    pplx::task<std::shared_ptr<ListScenariosResponse>> scenarios_listScenarios(
         utility::string_t tenantId,
         utility::string_t projectId,
         boost::optional<int32_t> limit,
@@ -129,7 +129,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<MineScenariosResponse>> mineScenarios(
+    pplx::task<std::shared_ptr<MineScenariosResponse>> scenarios_mineScenarios(
         utility::string_t tenantId,
         utility::string_t projectId,
         std::shared_ptr<MineScenariosRequest> mineScenariosRequest,

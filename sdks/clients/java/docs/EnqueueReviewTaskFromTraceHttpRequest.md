@@ -13,6 +13,3 @@
 |**spanId** | **String** |  |  [optional] |
 |**taskId** | **String** |  |  [optional] |
 |**traceId** | **String** |  |  |
-
-
-

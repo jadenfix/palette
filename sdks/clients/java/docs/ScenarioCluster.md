@@ -13,6 +13,3 @@ A cluster of failing traces that share a similar failure signature.
 |**memberTraceIds** | **List&lt;String&gt;** | All member trace ids, sorted ascending. |  |
 |**signature** | [**Signature**](Signature.md) | The signature of the cluster&#39;s exemplar. |  |
 |**size** | **Integer** | Number of member traces. |  |
-
-
-

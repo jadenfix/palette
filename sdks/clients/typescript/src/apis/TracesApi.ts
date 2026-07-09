@@ -28,7 +28,7 @@ import {
     TraceViewToJSON,
 } from '../models/index';
 
-export interface GetTraceRequest {
+export interface TracesGetTraceRequest {
     tenantId: string;
     traceId: string;
     unmask?: boolean;
@@ -39,7 +39,7 @@ export interface GetTraceRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface ListTracesRequest {
+export interface TracesListTracesRequest {
     tenantId: string;
     projectId?: string;
     environmentId?: string;
@@ -69,18 +69,18 @@ export class TracesApi extends runtime.BaseAPI {
 
     /**
      */
-    async getTraceRaw(requestParameters: GetTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TraceView>> {
+    async tracesGetTraceRaw(requestParameters: TracesGetTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TraceView>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling getTrace().'
+                'Required parameter "tenantId" was null or undefined when calling tracesGetTrace().'
             );
         }
 
         if (requestParameters['traceId'] == null) {
             throw new runtime.RequiredError(
                 'traceId',
-                'Required parameter "traceId" was null or undefined when calling getTrace().'
+                'Required parameter "traceId" was null or undefined when calling tracesGetTrace().'
             );
         }
 
@@ -124,18 +124,18 @@ export class TracesApi extends runtime.BaseAPI {
 
     /**
      */
-    async getTrace(requestParameters: GetTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TraceView> {
-        const response = await this.getTraceRaw(requestParameters, initOverrides);
+    async tracesGetTrace(requestParameters: TracesGetTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TraceView> {
+        const response = await this.tracesGetTraceRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async listTracesRaw(requestParameters: ListTracesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PageRunSummary>> {
+    async tracesListTracesRaw(requestParameters: TracesListTracesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PageRunSummary>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling listTraces().'
+                'Required parameter "tenantId" was null or undefined when calling tracesListTraces().'
             );
         }
 
@@ -231,8 +231,8 @@ export class TracesApi extends runtime.BaseAPI {
 
     /**
      */
-    async listTraces(requestParameters: ListTracesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PageRunSummary> {
-        const response = await this.listTracesRaw(requestParameters, initOverrides);
+    async tracesListTraces(requestParameters: TracesListTracesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PageRunSummary> {
+        const response = await this.tracesListTracesRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -22,23 +22,23 @@ import (
 // HealthAPIService HealthAPI service
 type HealthAPIService service
 
-type ApiHealthRequest struct {
+type ApiHealthHealthRequest struct {
 	ctx context.Context
 	ApiService *HealthAPIService
 }
 
-func (r ApiHealthRequest) Execute() (*HealthResponse, *http.Response, error) {
-	return r.ApiService.HealthExecute(r)
+func (r ApiHealthHealthRequest) Execute() (*HealthResponse, *http.Response, error) {
+	return r.ApiService.HealthHealthExecute(r)
 }
 
 /*
-Health Method for Health
+HealthHealth Method for HealthHealth
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiHealthRequest
+ @return ApiHealthHealthRequest
 */
-func (a *HealthAPIService) Health(ctx context.Context) ApiHealthRequest {
-	return ApiHealthRequest{
+func (a *HealthAPIService) HealthHealth(ctx context.Context) ApiHealthHealthRequest {
+	return ApiHealthHealthRequest{
 		ApiService: a,
 		ctx: ctx,
 	}
@@ -46,7 +46,7 @@ func (a *HealthAPIService) Health(ctx context.Context) ApiHealthRequest {
 
 // Execute executes the request
 //  @return HealthResponse
-func (a *HealthAPIService) HealthExecute(r ApiHealthRequest) (*HealthResponse, *http.Response, error) {
+func (a *HealthAPIService) HealthHealthExecute(r ApiHealthHealthRequest) (*HealthResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -54,7 +54,7 @@ func (a *HealthAPIService) HealthExecute(r ApiHealthRequest) (*HealthResponse, *
 		localVarReturnValue  *HealthResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "HealthAPIService.Health")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "HealthAPIService.HealthHealth")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ends_at** | **datetime** |  | 
-**starts_at** | **datetime** |  | 
+**ends_at** | **datetime** |  |
+**starts_at** | **datetime** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ maintenance_window_dict = maintenance_window_instance.to_dict()
 maintenance_window_from_dict = MaintenanceWindow.from_dict(maintenance_window_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

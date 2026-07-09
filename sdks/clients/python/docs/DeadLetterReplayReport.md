@@ -5,11 +5,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ack** | [**PublishAck**](PublishAck.md) |  | 
-**message_id** | **str** |  | 
-**project_id** | **str** |  | 
-**reset_attempts** | **bool** |  | 
-**tenant_id** | **str** |  | 
+**ack** | [**PublishAck**](PublishAck.md) |  |
+**message_id** | **str** |  |
+**project_id** | **str** |  |
+**reset_attempts** | **bool** |  |
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -29,5 +29,3 @@ dead_letter_replay_report_dict = dead_letter_replay_report_instance.to_dict()
 dead_letter_replay_report_from_dict = DeadLetterReplayReport.from_dict(dead_letter_replay_report_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

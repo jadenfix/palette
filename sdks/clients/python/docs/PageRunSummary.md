@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**items** | [**List[PageRunSummaryItemsInner]**](PageRunSummaryItemsInner.md) |  | 
-**next_cursor** | **str** |  | [optional] 
+**items** | [**List[PageRunSummaryItemsInner]**](PageRunSummaryItemsInner.md) |  |
+**next_cursor** | **str** |  | [optional]
 
 ## Example
 
@@ -26,5 +26,3 @@ page_run_summary_dict = page_run_summary_instance.to_dict()
 page_run_summary_from_dict = PageRunSummary.from_dict(page_run_summary_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

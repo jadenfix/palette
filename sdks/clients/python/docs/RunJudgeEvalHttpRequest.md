@@ -5,10 +5,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**cache_namespace** | **str** | Calibration-map / judge-instrument version folded into the judge cache key; bumping it on recalibration invalidates stale cached scores. | [optional] 
-**case** | [**EvaluationCase**](EvaluationCase.md) |  | 
-**evaluator** | [**EvaluatorSpec**](EvaluatorSpec.md) |  | 
-**provider_secret_id** | **str** |  | 
+**cache_namespace** | **str** | Calibration-map / judge-instrument version folded into the judge cache key; bumping it on recalibration invalidates stale cached scores. | [optional]
+**case** | [**EvaluationCase**](EvaluationCase.md) |  |
+**evaluator** | [**EvaluatorSpec**](EvaluatorSpec.md) |  |
+**provider_secret_id** | **str** |  |
 
 ## Example
 
@@ -28,5 +28,3 @@ run_judge_eval_http_request_dict = run_judge_eval_http_request_instance.to_dict(
 run_judge_eval_http_request_from_dict = RunJudgeEvalHttpRequest.from_dict(run_judge_eval_http_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

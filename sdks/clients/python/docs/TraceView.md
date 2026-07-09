@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**spans** | [**List[CanonicalSpan]**](CanonicalSpan.md) |  | 
-**tenant_id** | **str** |  | 
-**trace_id** | **str** |  | 
+**spans** | [**List[CanonicalSpan]**](CanonicalSpan.md) |  |
+**tenant_id** | **str** |  |
+**trace_id** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ trace_view_dict = trace_view_instance.to_dict()
 trace_view_from_dict = TraceView.from_dict(trace_view_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

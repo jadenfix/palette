@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**failed_at** | **datetime** |  | 
-**message** | [**BusMessage**](BusMessage.md) |  | 
-**reason** | **str** |  | 
+**failed_at** | **datetime** |  |
+**message** | [**BusMessage**](BusMessage.md) |  |
+**reason** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ dead_letter_dict = dead_letter_instance.to_dict()
 dead_letter_from_dict = DeadLetter.from_dict(dead_letter_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

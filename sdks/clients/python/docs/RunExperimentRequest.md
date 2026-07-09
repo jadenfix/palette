@@ -5,14 +5,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**baseline_outputs** | [**List[CaseOutputOverrideRequest]**](CaseOutputOverrideRequest.md) |  | 
-**baseline_release_id** | **str** |  | 
-**candidate_outputs** | [**List[CaseOutputOverrideRequest]**](CaseOutputOverrideRequest.md) |  | 
-**candidate_release_id** | **str** |  | 
-**evaluator_id** | **str** |  | 
-**evaluator_version_id** | **str** |  | 
-**gate_policy** | [**GatePolicy**](GatePolicy.md) |  | [optional] 
-**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  | 
+**baseline_outputs** | [**List[CaseOutputOverrideRequest]**](CaseOutputOverrideRequest.md) |  |
+**baseline_release_id** | **str** |  |
+**candidate_outputs** | [**List[CaseOutputOverrideRequest]**](CaseOutputOverrideRequest.md) |  |
+**candidate_release_id** | **str** |  |
+**evaluator_id** | **str** |  |
+**evaluator_version_id** | **str** |  |
+**gate_policy** | [**GatePolicy**](GatePolicy.md) |  | [optional]
+**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |
 
 ## Example
 
@@ -32,5 +32,3 @@ run_experiment_request_dict = run_experiment_request_instance.to_dict()
 run_experiment_request_from_dict = RunExperimentRequest.from_dict(run_experiment_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -12,6 +12,3 @@
 |**gateId** | **String** |  |  |
 |**inconclusivePolicy** | **InconclusivePolicy** |  |  [optional] |
 |**name** | **String** |  |  |
-
-
-

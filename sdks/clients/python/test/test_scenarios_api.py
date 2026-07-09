@@ -26,26 +26,26 @@ class TestScenariosApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_create_scenario(self) -> None:
-        """Test case for create_scenario
+    def test_scenarios_create_scenario(self) -> None:
+        """Test case for scenarios_create_scenario
 
         """
         pass
 
-    def test_get_scenario(self) -> None:
-        """Test case for get_scenario
+    def test_scenarios_get_scenario(self) -> None:
+        """Test case for scenarios_get_scenario
 
         """
         pass
 
-    def test_list_scenarios(self) -> None:
-        """Test case for list_scenarios
+    def test_scenarios_list_scenarios(self) -> None:
+        """Test case for scenarios_list_scenarios
 
         """
         pass
 
-    def test_mine_scenarios(self) -> None:
-        """Test case for mine_scenarios
+    def test_scenarios_mine_scenarios(self) -> None:
+        """Test case for scenarios_mine_scenarios
 
         """
         pass

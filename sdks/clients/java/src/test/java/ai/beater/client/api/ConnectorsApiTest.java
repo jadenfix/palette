@@ -51,7 +51,7 @@ public class ConnectorsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void connectConnectorTest() throws ApiException {
+    public void connectorsConnectConnectorTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         ConnectConnectorRequest connectConnectorRequest = null;
@@ -60,7 +60,7 @@ public class ConnectorsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ConnectionLink response = 
-        api.connectConnector(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.connectorsConnectConnector(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -74,7 +74,7 @@ public class ConnectorsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void connectorStatusTest() throws ApiException {
+    public void connectorsConnectorStatusTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String toolkit = null;
@@ -83,7 +83,7 @@ public class ConnectorsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ConnectionStatus response = 
-        api.connectorStatus(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.connectorsConnectorStatus(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -97,7 +97,7 @@ public class ConnectorsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void getConnectorSkillsTest() throws ApiException {
+    public void connectorsGetConnectorSkillsTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String toolkit = null;
@@ -106,7 +106,7 @@ public class ConnectorsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ConnectorSkillsResponse response = 
-        api.getConnectorSkills(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.connectorsGetConnectorSkills(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -120,7 +120,7 @@ public class ConnectorsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void invokeConnectorToolTest() throws ApiException {
+    public void connectorsInvokeConnectorToolTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         InvokeConnectorRequest invokeConnectorRequest = null;
@@ -129,7 +129,7 @@ public class ConnectorsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ToolExecution response = 
-        api.invokeConnectorTool(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.connectorsInvokeConnectorTool(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -143,7 +143,7 @@ public class ConnectorsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void listConnectorToolsTest() throws ApiException {
+    public void connectorsListConnectorToolsTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String toolkit = null;
@@ -153,7 +153,7 @@ public class ConnectorsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         List<ConnectorTool> response = 
-        api.listConnectorTools(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.connectorsListConnectorTools(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -167,7 +167,7 @@ public class ConnectorsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void listConnectorsTest() throws ApiException {
+    public void connectorsListConnectorsTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         Integer limit = null;
@@ -176,7 +176,7 @@ public class ConnectorsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         List<Toolkit> response = 
-        api.listConnectors(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.connectorsListConnectors(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

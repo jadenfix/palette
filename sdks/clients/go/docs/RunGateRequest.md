@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ExperimentRunId** | Pointer to **NullableString** |  | [optional] 
+**ExperimentRunId** | Pointer to **NullableString** |  | [optional]
 
 ## Methods
 
@@ -62,5 +62,3 @@ HasExperimentRunId returns a boolean if a field has been set.
 UnsetExperimentRunId ensures that no value is present for ExperimentRunId, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

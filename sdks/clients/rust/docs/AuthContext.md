@@ -5,8 +5,6 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **api_key_id** | Option<**String**> |  | [optional]
-**scopes** | **Vec<String>** |  | 
+**scopes** | **Vec<String>** |  |
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

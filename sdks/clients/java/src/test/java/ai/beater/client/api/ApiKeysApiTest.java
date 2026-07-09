@@ -46,7 +46,7 @@ public class ApiKeysApiTest {
      *          if the Api call fails
      */
     @Test
-    public void createApiKeyTest() throws ApiException {
+    public void apiKeysCreateApiKeyTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String environmentId = null;
@@ -56,7 +56,7 @@ public class ApiKeysApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ApiKeyCreatedResponse response = 
-        api.createApiKey(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.apiKeysCreateApiKey(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -70,7 +70,7 @@ public class ApiKeysApiTest {
      *          if the Api call fails
      */
     @Test
-    public void revokeApiKeyTest() throws ApiException {
+    public void apiKeysRevokeApiKeyTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String environmentId = null;
@@ -80,7 +80,7 @@ public class ApiKeysApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         RevokedApiKey response = 
-        api.revokeApiKey(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.apiKeysRevokeApiKey(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

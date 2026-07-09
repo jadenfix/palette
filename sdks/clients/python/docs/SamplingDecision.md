@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**reason** | [**SamplingReason**](SamplingReason.md) |  | 
-**selected** | **bool** |  | 
-**stable_score_per_mille** | **int** |  | 
+**reason** | [**SamplingReason**](SamplingReason.md) |  |
+**selected** | **bool** |  |
+**stable_score_per_mille** | **int** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ sampling_decision_dict = sampling_decision_instance.to_dict()
 sampling_decision_from_dict = SamplingDecision.from_dict(sampling_decision_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

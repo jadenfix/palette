@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_dataset**](DatasetsApi.md#create_dataset) | **POST** /v1/datasets/{tenant_id}/{project_id} | 
-[**create_dataset_version**](DatasetsApi.md#create_dataset_version) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions | 
-[**promote_dataset_case_from_trace**](DatasetsApi.md#promote_dataset_case_from_trace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace | 
+[**datasets_create_dataset**](DatasetsApi.md#datasets_create_dataset) | **POST** /v1/datasets/{tenant_id}/{project_id} |
+[**datasets_create_dataset_version**](DatasetsApi.md#datasets_create_dataset_version) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions |
+[**datasets_promote_dataset_case_from_trace**](DatasetsApi.md#datasets_promote_dataset_case_from_trace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace |
 
 
-# **create_dataset**
-> Dataset create_dataset(tenant_id, project_id, create_dataset_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **datasets_create_dataset**
+> Dataset datasets_create_dataset(tenant_id, project_id, create_dataset_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -37,18 +37,18 @@ with beater_client.ApiClient(configuration) as api_client:
     api_instance = beater_client.DatasetsApi(api_client)
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
-    create_dataset_request = beater_client.CreateDatasetRequest() # CreateDatasetRequest | 
+    create_dataset_request = beater_client.CreateDatasetRequest() # CreateDatasetRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.create_dataset(tenant_id, project_id, create_dataset_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of DatasetsApi->create_dataset:\n")
+        api_response = api_instance.datasets_create_dataset(tenant_id, project_id, create_dataset_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of DatasetsApi->datasets_create_dataset:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling DatasetsApi->create_dataset: %s\n" % e)
+        print("Exception when calling DatasetsApi->datasets_create_dataset: %s\n" % e)
 ```
 
 
@@ -58,13 +58,13 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **create_dataset_request** | [**CreateDatasetRequest**](CreateDatasetRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **create_dataset_request** | [**CreateDatasetRequest**](CreateDatasetRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -90,8 +90,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **create_dataset_version**
-> DatasetVersionSnapshot create_dataset_version(tenant_id, project_id, dataset_id, create_dataset_version_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **datasets_create_dataset_version**
+> DatasetVersionSnapshot datasets_create_dataset_version(tenant_id, project_id, dataset_id, create_dataset_version_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -119,18 +119,18 @@ with beater_client.ApiClient(configuration) as api_client:
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
     dataset_id = 'dataset_id_example' # str | dataset_id
-    create_dataset_version_request = beater_client.CreateDatasetVersionRequest() # CreateDatasetVersionRequest | 
+    create_dataset_version_request = beater_client.CreateDatasetVersionRequest() # CreateDatasetVersionRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.create_dataset_version(tenant_id, project_id, dataset_id, create_dataset_version_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of DatasetsApi->create_dataset_version:\n")
+        api_response = api_instance.datasets_create_dataset_version(tenant_id, project_id, dataset_id, create_dataset_version_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of DatasetsApi->datasets_create_dataset_version:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling DatasetsApi->create_dataset_version: %s\n" % e)
+        print("Exception when calling DatasetsApi->datasets_create_dataset_version: %s\n" % e)
 ```
 
 
@@ -140,14 +140,14 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **dataset_id** | **str**| dataset_id | 
- **create_dataset_version_request** | [**CreateDatasetVersionRequest**](CreateDatasetVersionRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **dataset_id** | **str**| dataset_id |
+ **create_dataset_version_request** | [**CreateDatasetVersionRequest**](CreateDatasetVersionRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -174,8 +174,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **promote_dataset_case_from_trace**
-> DatasetCase promote_dataset_case_from_trace(tenant_id, project_id, dataset_id, promote_trace_case_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **datasets_promote_dataset_case_from_trace**
+> DatasetCase datasets_promote_dataset_case_from_trace(tenant_id, project_id, dataset_id, promote_trace_case_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -203,18 +203,18 @@ with beater_client.ApiClient(configuration) as api_client:
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
     dataset_id = 'dataset_id_example' # str | dataset_id
-    promote_trace_case_request = beater_client.PromoteTraceCaseRequest() # PromoteTraceCaseRequest | 
+    promote_trace_case_request = beater_client.PromoteTraceCaseRequest() # PromoteTraceCaseRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.promote_dataset_case_from_trace(tenant_id, project_id, dataset_id, promote_trace_case_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of DatasetsApi->promote_dataset_case_from_trace:\n")
+        api_response = api_instance.datasets_promote_dataset_case_from_trace(tenant_id, project_id, dataset_id, promote_trace_case_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of DatasetsApi->datasets_promote_dataset_case_from_trace:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling DatasetsApi->promote_dataset_case_from_trace: %s\n" % e)
+        print("Exception when calling DatasetsApi->datasets_promote_dataset_case_from_trace: %s\n" % e)
 ```
 
 
@@ -224,14 +224,14 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **dataset_id** | **str**| dataset_id | 
- **promote_trace_case_request** | [**PromoteTraceCaseRequest**](PromoteTraceCaseRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **dataset_id** | **str**| dataset_id |
+ **promote_trace_case_request** | [**PromoteTraceCaseRequest**](PromoteTraceCaseRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -257,4 +257,3 @@ No authorization required
 **404** | Resource not found |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

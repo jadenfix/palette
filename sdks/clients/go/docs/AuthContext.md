@@ -4,8 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ApiKeyId** | Pointer to **string** |  | [optional] 
-**Scopes** | **[]string** |  | 
+**ApiKeyId** | Pointer to **string** |  | [optional]
+**Scopes** | **[]string** |  |
 
 ## Methods
 
@@ -73,5 +73,3 @@ SetScopes sets Scopes field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

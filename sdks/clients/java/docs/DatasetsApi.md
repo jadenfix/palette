@@ -4,18 +4,18 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**createDataset**](DatasetsApi.md#createDataset) | **POST** /v1/datasets/{tenant_id}/{project_id} |  |
-| [**createDatasetWithHttpInfo**](DatasetsApi.md#createDatasetWithHttpInfo) | **POST** /v1/datasets/{tenant_id}/{project_id} |  |
-| [**createDatasetVersion**](DatasetsApi.md#createDatasetVersion) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions |  |
-| [**createDatasetVersionWithHttpInfo**](DatasetsApi.md#createDatasetVersionWithHttpInfo) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions |  |
-| [**promoteDatasetCaseFromTrace**](DatasetsApi.md#promoteDatasetCaseFromTrace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace |  |
-| [**promoteDatasetCaseFromTraceWithHttpInfo**](DatasetsApi.md#promoteDatasetCaseFromTraceWithHttpInfo) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace |  |
+| [**datasetsCreateDataset**](DatasetsApi.md#datasetsCreateDataset) | **POST** /v1/datasets/{tenant_id}/{project_id} |  |
+| [**datasetsCreateDatasetWithHttpInfo**](DatasetsApi.md#datasetsCreateDatasetWithHttpInfo) | **POST** /v1/datasets/{tenant_id}/{project_id} |  |
+| [**datasetsCreateDatasetVersion**](DatasetsApi.md#datasetsCreateDatasetVersion) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions |  |
+| [**datasetsCreateDatasetVersionWithHttpInfo**](DatasetsApi.md#datasetsCreateDatasetVersionWithHttpInfo) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions |  |
+| [**datasetsPromoteDatasetCaseFromTrace**](DatasetsApi.md#datasetsPromoteDatasetCaseFromTrace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace |  |
+| [**datasetsPromoteDatasetCaseFromTraceWithHttpInfo**](DatasetsApi.md#datasetsPromoteDatasetCaseFromTraceWithHttpInfo) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace |  |
 
 
 
-## createDataset
+## datasetsCreateDataset
 
-> Dataset createDataset(tenantId, projectId, createDatasetRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> Dataset datasetsCreateDataset(tenantId, projectId, createDatasetRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -37,16 +37,16 @@ public class Example {
         DatasetsApi apiInstance = new DatasetsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        CreateDatasetRequest createDatasetRequest = new CreateDatasetRequest(); // CreateDatasetRequest | 
+        CreateDatasetRequest createDatasetRequest = new CreateDatasetRequest(); // CreateDatasetRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            Dataset result = apiInstance.createDataset(tenantId, projectId, createDatasetRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            Dataset result = apiInstance.datasetsCreateDataset(tenantId, projectId, createDatasetRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling DatasetsApi#createDataset");
+            System.err.println("Exception when calling DatasetsApi#datasetsCreateDataset");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -91,9 +91,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## createDatasetWithHttpInfo
+## datasetsCreateDatasetWithHttpInfo
 
-> ApiResponse<Dataset> createDataset createDatasetWithHttpInfo(tenantId, projectId, createDatasetRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<Dataset> datasetsCreateDataset datasetsCreateDatasetWithHttpInfo(tenantId, projectId, createDatasetRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -116,18 +116,18 @@ public class Example {
         DatasetsApi apiInstance = new DatasetsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        CreateDatasetRequest createDatasetRequest = new CreateDatasetRequest(); // CreateDatasetRequest | 
+        CreateDatasetRequest createDatasetRequest = new CreateDatasetRequest(); // CreateDatasetRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<Dataset> response = apiInstance.createDatasetWithHttpInfo(tenantId, projectId, createDatasetRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<Dataset> response = apiInstance.datasetsCreateDatasetWithHttpInfo(tenantId, projectId, createDatasetRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling DatasetsApi#createDataset");
+            System.err.println("Exception when calling DatasetsApi#datasetsCreateDataset");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -173,9 +173,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 
 
-## createDatasetVersion
+## datasetsCreateDatasetVersion
 
-> DatasetVersionSnapshot createDatasetVersion(tenantId, projectId, datasetId, createDatasetVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> DatasetVersionSnapshot datasetsCreateDatasetVersion(tenantId, projectId, datasetId, createDatasetVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -198,16 +198,16 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String datasetId = "datasetId_example"; // String | dataset_id
-        CreateDatasetVersionRequest createDatasetVersionRequest = new CreateDatasetVersionRequest(); // CreateDatasetVersionRequest | 
+        CreateDatasetVersionRequest createDatasetVersionRequest = new CreateDatasetVersionRequest(); // CreateDatasetVersionRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            DatasetVersionSnapshot result = apiInstance.createDatasetVersion(tenantId, projectId, datasetId, createDatasetVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            DatasetVersionSnapshot result = apiInstance.datasetsCreateDatasetVersion(tenantId, projectId, datasetId, createDatasetVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling DatasetsApi#createDatasetVersion");
+            System.err.println("Exception when calling DatasetsApi#datasetsCreateDatasetVersion");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -254,9 +254,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## createDatasetVersionWithHttpInfo
+## datasetsCreateDatasetVersionWithHttpInfo
 
-> ApiResponse<DatasetVersionSnapshot> createDatasetVersion createDatasetVersionWithHttpInfo(tenantId, projectId, datasetId, createDatasetVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<DatasetVersionSnapshot> datasetsCreateDatasetVersion datasetsCreateDatasetVersionWithHttpInfo(tenantId, projectId, datasetId, createDatasetVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -280,18 +280,18 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String datasetId = "datasetId_example"; // String | dataset_id
-        CreateDatasetVersionRequest createDatasetVersionRequest = new CreateDatasetVersionRequest(); // CreateDatasetVersionRequest | 
+        CreateDatasetVersionRequest createDatasetVersionRequest = new CreateDatasetVersionRequest(); // CreateDatasetVersionRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<DatasetVersionSnapshot> response = apiInstance.createDatasetVersionWithHttpInfo(tenantId, projectId, datasetId, createDatasetVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<DatasetVersionSnapshot> response = apiInstance.datasetsCreateDatasetVersionWithHttpInfo(tenantId, projectId, datasetId, createDatasetVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling DatasetsApi#createDatasetVersion");
+            System.err.println("Exception when calling DatasetsApi#datasetsCreateDatasetVersion");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -339,9 +339,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## promoteDatasetCaseFromTrace
+## datasetsPromoteDatasetCaseFromTrace
 
-> DatasetCase promoteDatasetCaseFromTrace(tenantId, projectId, datasetId, promoteTraceCaseRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> DatasetCase datasetsPromoteDatasetCaseFromTrace(tenantId, projectId, datasetId, promoteTraceCaseRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -364,16 +364,16 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String datasetId = "datasetId_example"; // String | dataset_id
-        PromoteTraceCaseRequest promoteTraceCaseRequest = new PromoteTraceCaseRequest(); // PromoteTraceCaseRequest | 
+        PromoteTraceCaseRequest promoteTraceCaseRequest = new PromoteTraceCaseRequest(); // PromoteTraceCaseRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            DatasetCase result = apiInstance.promoteDatasetCaseFromTrace(tenantId, projectId, datasetId, promoteTraceCaseRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            DatasetCase result = apiInstance.datasetsPromoteDatasetCaseFromTrace(tenantId, projectId, datasetId, promoteTraceCaseRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling DatasetsApi#promoteDatasetCaseFromTrace");
+            System.err.println("Exception when calling DatasetsApi#datasetsPromoteDatasetCaseFromTrace");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -420,9 +420,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## promoteDatasetCaseFromTraceWithHttpInfo
+## datasetsPromoteDatasetCaseFromTraceWithHttpInfo
 
-> ApiResponse<DatasetCase> promoteDatasetCaseFromTrace promoteDatasetCaseFromTraceWithHttpInfo(tenantId, projectId, datasetId, promoteTraceCaseRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<DatasetCase> datasetsPromoteDatasetCaseFromTrace datasetsPromoteDatasetCaseFromTraceWithHttpInfo(tenantId, projectId, datasetId, promoteTraceCaseRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -446,18 +446,18 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String datasetId = "datasetId_example"; // String | dataset_id
-        PromoteTraceCaseRequest promoteTraceCaseRequest = new PromoteTraceCaseRequest(); // PromoteTraceCaseRequest | 
+        PromoteTraceCaseRequest promoteTraceCaseRequest = new PromoteTraceCaseRequest(); // PromoteTraceCaseRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<DatasetCase> response = apiInstance.promoteDatasetCaseFromTraceWithHttpInfo(tenantId, projectId, datasetId, promoteTraceCaseRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<DatasetCase> response = apiInstance.datasetsPromoteDatasetCaseFromTraceWithHttpInfo(tenantId, projectId, datasetId, promoteTraceCaseRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling DatasetsApi#promoteDatasetCaseFromTrace");
+            System.err.println("Exception when calling DatasetsApi#datasetsPromoteDatasetCaseFromTrace");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -503,4 +503,3 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
-

@@ -4,8 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Kind** | **string** |  | 
-**Reason** | **string** |  | 
+**Kind** | **string** |  |
+**Reason** | **string** |  |
 
 ## Methods
 
@@ -68,5 +68,3 @@ SetReason sets Reason field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

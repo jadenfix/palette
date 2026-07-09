@@ -4,12 +4,12 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_api_key**](ApiKeysApi.md#create_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} | 
-[**revoke_api_key**](ApiKeysApi.md#revoke_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke | 
+[**api_keys_create_api_key**](ApiKeysApi.md#api_keys_create_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} |
+[**api_keys_revoke_api_key**](ApiKeysApi.md#api_keys_revoke_api_key) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke |
 
 
-# **create_api_key**
-> ApiKeyCreatedResponse create_api_key(tenant_id, project_id, environment_id, create_api_key_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **api_keys_create_api_key**
+> ApiKeyCreatedResponse api_keys_create_api_key(tenant_id, project_id, environment_id, create_api_key_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -37,18 +37,18 @@ with beater_client.ApiClient(configuration) as api_client:
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
     environment_id = 'environment_id_example' # str | environment_id
-    create_api_key_http_request = beater_client.CreateApiKeyHttpRequest() # CreateApiKeyHttpRequest | 
+    create_api_key_http_request = beater_client.CreateApiKeyHttpRequest() # CreateApiKeyHttpRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.create_api_key(tenant_id, project_id, environment_id, create_api_key_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ApiKeysApi->create_api_key:\n")
+        api_response = api_instance.api_keys_create_api_key(tenant_id, project_id, environment_id, create_api_key_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ApiKeysApi->api_keys_create_api_key:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ApiKeysApi->create_api_key: %s\n" % e)
+        print("Exception when calling ApiKeysApi->api_keys_create_api_key: %s\n" % e)
 ```
 
 
@@ -58,14 +58,14 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **environment_id** | **str**| environment_id | 
- **create_api_key_http_request** | [**CreateApiKeyHttpRequest**](CreateApiKeyHttpRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **environment_id** | **str**| environment_id |
+ **create_api_key_http_request** | [**CreateApiKeyHttpRequest**](CreateApiKeyHttpRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -91,8 +91,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **revoke_api_key**
-> RevokedApiKey revoke_api_key(tenant_id, project_id, environment_id, api_key_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **api_keys_revoke_api_key**
+> RevokedApiKey api_keys_revoke_api_key(tenant_id, project_id, environment_id, api_key_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -126,11 +126,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.revoke_api_key(tenant_id, project_id, environment_id, api_key_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ApiKeysApi->revoke_api_key:\n")
+        api_response = api_instance.api_keys_revoke_api_key(tenant_id, project_id, environment_id, api_key_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ApiKeysApi->api_keys_revoke_api_key:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ApiKeysApi->revoke_api_key: %s\n" % e)
+        print("Exception when calling ApiKeysApi->api_keys_revoke_api_key: %s\n" % e)
 ```
 
 
@@ -140,14 +140,14 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **environment_id** | **str**| environment_id | 
- **api_key_id** | **str**| api_key_id | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **environment_id** | **str**| environment_id |
+ **api_key_id** | **str**| api_key_id |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -173,4 +173,3 @@ No authorization required
 **404** | Resource not found |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

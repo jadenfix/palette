@@ -10,6 +10,3 @@
 |**caseId** | **String** |  |  |
 |**output** | **Object** |  |  |
 |**trace** | **Object** |  |  [optional] |
-
-
-

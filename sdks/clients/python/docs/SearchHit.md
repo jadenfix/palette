@@ -5,17 +5,17 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**environment_id** | **str** |  | 
-**kind** | **str** |  | 
-**model** | **str** |  | 
-**name** | **str** |  | 
-**project_id** | **str** |  | 
-**score** | **float** |  | 
-**span_id** | **str** |  | 
-**status** | **str** |  | 
-**tenant_id** | **str** |  | 
-**tool** | **str** |  | 
-**trace_id** | **str** |  | 
+**environment_id** | **str** |  |
+**kind** | **str** |  |
+**model** | **str** |  |
+**name** | **str** |  |
+**project_id** | **str** |  |
+**score** | **float** |  |
+**span_id** | **str** |  |
+**status** | **str** |  |
+**tenant_id** | **str** |  |
+**tool** | **str** |  |
+**trace_id** | **str** |  |
 
 ## Example
 
@@ -35,5 +35,3 @@ search_hit_dict = search_hit_instance.to_dict()
 search_hit_from_dict = SearchHit.from_dict(search_hit_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

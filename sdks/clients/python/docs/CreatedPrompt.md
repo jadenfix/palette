@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**prompt** | [**Prompt**](Prompt.md) |  | 
-**version** | [**PromptVersion**](PromptVersion.md) |  | 
+**prompt** | [**Prompt**](Prompt.md) |  |
+**version** | [**PromptVersion**](PromptVersion.md) |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ created_prompt_dict = created_prompt_instance.to_dict()
 created_prompt_from_dict = CreatedPrompt.from_dict(created_prompt_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

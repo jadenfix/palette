@@ -5,14 +5,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**active** | **bool** |  | 
-**api_key_id** | **str** |  | 
-**created_at** | **datetime** |  | 
-**environment_id** | **str** |  | 
-**project_id** | **str** |  | 
-**scopes** | [**List[ApiScope]**](ApiScope.md) |  | 
-**secret** | **str** |  | 
-**tenant_id** | **str** |  | 
+**active** | **bool** |  |
+**api_key_id** | **str** |  |
+**created_at** | **datetime** |  |
+**environment_id** | **str** |  |
+**project_id** | **str** |  |
+**scopes** | [**List[ApiScope]**](ApiScope.md) |  |
+**secret** | **str** |  |
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -32,5 +32,3 @@ api_key_created_response_dict = api_key_created_response_instance.to_dict()
 api_key_created_response_from_dict = ApiKeyCreatedResponse.from_dict(api_key_created_response_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

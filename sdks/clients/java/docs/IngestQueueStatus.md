@@ -13,6 +13,3 @@
 |**totalDepth** | **Integer** |  |  |
 |**traceIngestedDepth** | **Integer** |  |  |
 |**traceWriteDepth** | **Integer** |  |  |
-
-
-

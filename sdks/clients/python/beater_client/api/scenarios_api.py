@@ -44,7 +44,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def create_scenario(
+    def scenarios_create_scenario(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -66,7 +66,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> Scenario:
-        """create_scenario
+        """scenarios_create_scenario
 
 
         :param tenant_id: tenant_id (required)
@@ -105,7 +105,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_scenario_serialize(
+        _param = self._scenarios_create_scenario_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_scenario_request=create_scenario_request,
@@ -137,7 +137,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def create_scenario_with_http_info(
+    def scenarios_create_scenario_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -159,7 +159,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[Scenario]:
-        """create_scenario
+        """scenarios_create_scenario
 
 
         :param tenant_id: tenant_id (required)
@@ -198,7 +198,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_scenario_serialize(
+        _param = self._scenarios_create_scenario_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_scenario_request=create_scenario_request,
@@ -230,7 +230,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def create_scenario_without_preload_content(
+    def scenarios_create_scenario_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -252,7 +252,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """create_scenario
+        """scenarios_create_scenario
 
 
         :param tenant_id: tenant_id (required)
@@ -291,7 +291,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_scenario_serialize(
+        _param = self._scenarios_create_scenario_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_scenario_request=create_scenario_request,
@@ -318,7 +318,7 @@ class ScenariosApi:
         return response_data.response
 
 
-    def _create_scenario_serialize(
+    def _scenarios_create_scenario_serialize(
         self,
         tenant_id,
         project_id,
@@ -413,7 +413,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def get_scenario(
+    def scenarios_get_scenario(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -435,7 +435,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> Scenario:
-        """get_scenario
+        """scenarios_get_scenario
 
 
         :param tenant_id: tenant_id (required)
@@ -474,7 +474,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_scenario_serialize(
+        _param = self._scenarios_get_scenario_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             scenario_id=scenario_id,
@@ -507,7 +507,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def get_scenario_with_http_info(
+    def scenarios_get_scenario_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -529,7 +529,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[Scenario]:
-        """get_scenario
+        """scenarios_get_scenario
 
 
         :param tenant_id: tenant_id (required)
@@ -568,7 +568,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_scenario_serialize(
+        _param = self._scenarios_get_scenario_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             scenario_id=scenario_id,
@@ -601,7 +601,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def get_scenario_without_preload_content(
+    def scenarios_get_scenario_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -623,7 +623,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """get_scenario
+        """scenarios_get_scenario
 
 
         :param tenant_id: tenant_id (required)
@@ -662,7 +662,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_scenario_serialize(
+        _param = self._scenarios_get_scenario_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             scenario_id=scenario_id,
@@ -690,7 +690,7 @@ class ScenariosApi:
         return response_data.response
 
 
-    def _get_scenario_serialize(
+    def _scenarios_get_scenario_serialize(
         self,
         tenant_id,
         project_id,
@@ -772,7 +772,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def list_scenarios(
+    def scenarios_list_scenarios(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -795,7 +795,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ListScenariosResponse:
-        """list_scenarios
+        """scenarios_list_scenarios
 
 
         :param tenant_id: tenant_id (required)
@@ -836,7 +836,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_scenarios_serialize(
+        _param = self._scenarios_list_scenarios_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -869,7 +869,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def list_scenarios_with_http_info(
+    def scenarios_list_scenarios_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -892,7 +892,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ListScenariosResponse]:
-        """list_scenarios
+        """scenarios_list_scenarios
 
 
         :param tenant_id: tenant_id (required)
@@ -933,7 +933,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_scenarios_serialize(
+        _param = self._scenarios_list_scenarios_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -966,7 +966,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def list_scenarios_without_preload_content(
+    def scenarios_list_scenarios_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -989,7 +989,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """list_scenarios
+        """scenarios_list_scenarios
 
 
         :param tenant_id: tenant_id (required)
@@ -1030,7 +1030,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_scenarios_serialize(
+        _param = self._scenarios_list_scenarios_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -1058,7 +1058,7 @@ class ScenariosApi:
         return response_data.response
 
 
-    def _list_scenarios_serialize(
+    def _scenarios_list_scenarios_serialize(
         self,
         tenant_id,
         project_id,
@@ -1147,7 +1147,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def mine_scenarios(
+    def scenarios_mine_scenarios(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1169,7 +1169,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> MineScenariosResponse:
-        """mine_scenarios
+        """scenarios_mine_scenarios
 
 
         :param tenant_id: tenant_id (required)
@@ -1208,7 +1208,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._mine_scenarios_serialize(
+        _param = self._scenarios_mine_scenarios_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             mine_scenarios_request=mine_scenarios_request,
@@ -1241,7 +1241,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def mine_scenarios_with_http_info(
+    def scenarios_mine_scenarios_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1263,7 +1263,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[MineScenariosResponse]:
-        """mine_scenarios
+        """scenarios_mine_scenarios
 
 
         :param tenant_id: tenant_id (required)
@@ -1302,7 +1302,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._mine_scenarios_serialize(
+        _param = self._scenarios_mine_scenarios_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             mine_scenarios_request=mine_scenarios_request,
@@ -1335,7 +1335,7 @@ class ScenariosApi:
 
 
     @validate_call
-    def mine_scenarios_without_preload_content(
+    def scenarios_mine_scenarios_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1357,7 +1357,7 @@ class ScenariosApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """mine_scenarios
+        """scenarios_mine_scenarios
 
 
         :param tenant_id: tenant_id (required)
@@ -1396,7 +1396,7 @@ class ScenariosApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._mine_scenarios_serialize(
+        _param = self._scenarios_mine_scenarios_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             mine_scenarios_request=mine_scenarios_request,
@@ -1424,7 +1424,7 @@ class ScenariosApi:
         return response_data.response
 
 
-    def _mine_scenarios_serialize(
+    def _scenarios_mine_scenarios_serialize(
         self,
         tenant_id,
         project_id,

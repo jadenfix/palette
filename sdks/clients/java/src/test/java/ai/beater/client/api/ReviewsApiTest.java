@@ -52,7 +52,7 @@ public class ReviewsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void createReviewQueueTest() throws ApiException {
+    public void reviewsCreateReviewQueueTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         CreateReviewQueueHttpRequest createReviewQueueHttpRequest = null;
@@ -61,7 +61,7 @@ public class ReviewsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ReviewQueue response = 
-        api.createReviewQueue(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.reviewsCreateReviewQueue(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -75,7 +75,7 @@ public class ReviewsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void enqueueReviewTaskFromTraceTest() throws ApiException {
+    public void reviewsEnqueueReviewTaskFromTraceTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String queueId = null;
@@ -85,7 +85,7 @@ public class ReviewsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ReviewTask response = 
-        api.enqueueReviewTaskFromTrace(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.reviewsEnqueueReviewTaskFromTrace(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -99,7 +99,7 @@ public class ReviewsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void listReviewTasksTest() throws ApiException {
+    public void reviewsListReviewTasksTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String queueId = null;
@@ -109,7 +109,7 @@ public class ReviewsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         List<ReviewTask> response = 
-        api.listReviewTasks(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.reviewsListReviewTasks(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -123,7 +123,7 @@ public class ReviewsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void promoteReviewAnnotationTest() throws ApiException {
+    public void reviewsPromoteReviewAnnotationTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String queueId = null;
@@ -135,7 +135,7 @@ public class ReviewsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         DatasetCase response = 
-        api.promoteReviewAnnotation(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.reviewsPromoteReviewAnnotation(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -149,7 +149,7 @@ public class ReviewsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void submitReviewAnnotationTest() throws ApiException {
+    public void reviewsSubmitReviewAnnotationTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String queueId = null;
@@ -160,7 +160,7 @@ public class ReviewsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ReviewAnnotation response = 
-        api.submitReviewAnnotation(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.reviewsSubmitReviewAnnotation(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

@@ -4,18 +4,18 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**connect_connector**](ConnectorsApi.md#connect_connector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect | 
-[**connector_status**](ConnectorsApi.md#connector_status) | **GET** /v1/connectors/{tenant_id}/{project_id}/status | 
-[**get_connector_skills**](ConnectorsApi.md#get_connector_skills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills | 
-[**invoke_connector_tool**](ConnectorsApi.md#invoke_connector_tool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke | 
-[**list_connector_tools**](ConnectorsApi.md#list_connector_tools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools | 
-[**list_connectors**](ConnectorsApi.md#list_connectors) | **GET** /v1/connectors/{tenant_id}/{project_id} | 
+[**connectors_period_connect_connector**](ConnectorsApi.md#connectors_period_connect_connector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |
+[**connectors_period_connector_status**](ConnectorsApi.md#connectors_period_connector_status) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |
+[**connectors_period_get_connector_skills**](ConnectorsApi.md#connectors_period_get_connector_skills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |
+[**connectors_period_invoke_connector_tool**](ConnectorsApi.md#connectors_period_invoke_connector_tool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke |
+[**connectors_period_list_connector_tools**](ConnectorsApi.md#connectors_period_list_connector_tools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools |
+[**connectors_period_list_connectors**](ConnectorsApi.md#connectors_period_list_connectors) | **GET** /v1/connectors/{tenant_id}/{project_id} |
 
 
 
-## connect_connector
+## connectors_period_connect_connector
 
-> models::ConnectionLink connect_connector(tenant_id, project_id, connect_connector_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::ConnectionLink connectors_period_connect_connector(tenant_id, project_id, connect_connector_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -47,9 +47,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## connector_status
+## connectors_period_connector_status
 
-> models::ConnectionStatus connector_status(tenant_id, project_id, toolkit, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::ConnectionStatus connectors_period_connector_status(tenant_id, project_id, toolkit, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -81,9 +81,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## get_connector_skills
+## connectors_period_get_connector_skills
 
-> models::ConnectorSkillsResponse get_connector_skills(tenant_id, project_id, toolkit, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::ConnectorSkillsResponse connectors_period_get_connector_skills(tenant_id, project_id, toolkit, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -115,9 +115,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## invoke_connector_tool
+## connectors_period_invoke_connector_tool
 
-> models::ToolExecution invoke_connector_tool(tenant_id, project_id, invoke_connector_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::ToolExecution connectors_period_invoke_connector_tool(tenant_id, project_id, invoke_connector_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -149,9 +149,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## list_connector_tools
+## connectors_period_list_connector_tools
 
-> Vec<models::ConnectorTool> list_connector_tools(tenant_id, project_id, toolkit, limit, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> Vec<models::ConnectorTool> connectors_period_list_connector_tools(tenant_id, project_id, toolkit, limit, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -184,9 +184,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## list_connectors
+## connectors_period_list_connectors
 
-> Vec<models::Toolkit> list_connectors(tenant_id, project_id, limit, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> Vec<models::Toolkit> connectors_period_list_connectors(tenant_id, project_id, limit, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -216,4 +216,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

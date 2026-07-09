@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**audit** | [**JudgeAuditRecord**](JudgeAuditRecord.md) |  | 
-**remaining_budget** | [**Money**](Money.md) |  | 
-**result** | [**ScoreResult**](ScoreResult.md) |  | 
+**audit** | [**JudgeAuditRecord**](JudgeAuditRecord.md) |  |
+**remaining_budget** | [**Money**](Money.md) |  |
+**result** | [**ScoreResult**](ScoreResult.md) |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ judge_broker_outcome_dict = judge_broker_outcome_instance.to_dict()
 judge_broker_outcome_from_dict = JudgeBrokerOutcome.from_dict(judge_broker_outcome_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

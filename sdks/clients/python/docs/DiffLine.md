@@ -5,10 +5,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**kind** | [**DiffLineKind**](DiffLineKind.md) |  | 
-**new_line** | **int** |  | [optional] 
-**old_line** | **int** |  | [optional] 
-**text** | **str** |  | 
+**kind** | [**DiffLineKind**](DiffLineKind.md) |  |
+**new_line** | **int** |  | [optional]
+**old_line** | **int** |  | [optional]
+**text** | **str** |  |
 
 ## Example
 
@@ -28,5 +28,3 @@ diff_line_dict = diff_line_instance.to_dict()
 diff_line_from_dict = DiffLine.from_dict(diff_line_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

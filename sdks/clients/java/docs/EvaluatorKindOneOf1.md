@@ -17,6 +17,3 @@
 | Name | Value |
 |---- | -----|
 | REGEX_MATCH | &quot;regex_match&quot; |
-
-
-

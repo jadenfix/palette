@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**runCalibration**](CalibrationsApi.md#runCalibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |  |
-| [**runCalibrationWithHttpInfo**](CalibrationsApi.md#runCalibrationWithHttpInfo) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |  |
+| [**calibrationsRunCalibration**](CalibrationsApi.md#calibrationsRunCalibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |  |
+| [**calibrationsRunCalibrationWithHttpInfo**](CalibrationsApi.md#calibrationsRunCalibrationWithHttpInfo) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |  |
 
 
 
-## runCalibration
+## calibrationsRunCalibration
 
-> CalibrationReport runCalibration(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> CalibrationReport calibrationsRunCalibration(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -35,16 +35,16 @@ public class Example {
         String projectId = "projectId_example"; // String | project_id
         String datasetId = "datasetId_example"; // String | dataset_id
         String versionId = "versionId_example"; // String | version_id
-        RunCalibrationHttpRequest runCalibrationHttpRequest = new RunCalibrationHttpRequest(); // RunCalibrationHttpRequest | 
+        RunCalibrationHttpRequest runCalibrationHttpRequest = new RunCalibrationHttpRequest(); // RunCalibrationHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            CalibrationReport result = apiInstance.runCalibration(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            CalibrationReport result = apiInstance.calibrationsRunCalibration(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling CalibrationsApi#runCalibration");
+            System.err.println("Exception when calling CalibrationsApi#calibrationsRunCalibration");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -92,9 +92,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## runCalibrationWithHttpInfo
+## calibrationsRunCalibrationWithHttpInfo
 
-> ApiResponse<CalibrationReport> runCalibration runCalibrationWithHttpInfo(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<CalibrationReport> calibrationsRunCalibration calibrationsRunCalibrationWithHttpInfo(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -119,18 +119,18 @@ public class Example {
         String projectId = "projectId_example"; // String | project_id
         String datasetId = "datasetId_example"; // String | dataset_id
         String versionId = "versionId_example"; // String | version_id
-        RunCalibrationHttpRequest runCalibrationHttpRequest = new RunCalibrationHttpRequest(); // RunCalibrationHttpRequest | 
+        RunCalibrationHttpRequest runCalibrationHttpRequest = new RunCalibrationHttpRequest(); // RunCalibrationHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<CalibrationReport> response = apiInstance.runCalibrationWithHttpInfo(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<CalibrationReport> response = apiInstance.calibrationsRunCalibrationWithHttpInfo(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling CalibrationsApi#runCalibration");
+            System.err.println("Exception when calling CalibrationsApi#calibrationsRunCalibration");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -177,4 +177,3 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
-

@@ -23,7 +23,7 @@ import (
 // TracesAPIService TracesAPI service
 type TracesAPIService service
 
-type ApiGetTraceRequest struct {
+type ApiTracesGetTraceRequest struct {
 	ctx context.Context
 	ApiService *TracesAPIService
 	tenantId string
@@ -36,54 +36,54 @@ type ApiGetTraceRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiGetTraceRequest) Unmask(unmask bool) ApiGetTraceRequest {
+func (r ApiTracesGetTraceRequest) Unmask(unmask bool) ApiTracesGetTraceRequest {
 	r.unmask = &unmask
 	return r
 }
 
-func (r ApiGetTraceRequest) Reason(reason string) ApiGetTraceRequest {
+func (r ApiTracesGetTraceRequest) Reason(reason string) ApiTracesGetTraceRequest {
 	r.reason = &reason
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiGetTraceRequest) Authorization(authorization string) ApiGetTraceRequest {
+func (r ApiTracesGetTraceRequest) Authorization(authorization string) ApiTracesGetTraceRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiGetTraceRequest) XBeaterApiKey(xBeaterApiKey string) ApiGetTraceRequest {
+func (r ApiTracesGetTraceRequest) XBeaterApiKey(xBeaterApiKey string) ApiTracesGetTraceRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiGetTraceRequest) XBeaterProjectId(xBeaterProjectId string) ApiGetTraceRequest {
+func (r ApiTracesGetTraceRequest) XBeaterProjectId(xBeaterProjectId string) ApiTracesGetTraceRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiGetTraceRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiGetTraceRequest {
+func (r ApiTracesGetTraceRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiTracesGetTraceRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiGetTraceRequest) Execute() (*TraceView, *http.Response, error) {
-	return r.ApiService.GetTraceExecute(r)
+func (r ApiTracesGetTraceRequest) Execute() (*TraceView, *http.Response, error) {
+	return r.ApiService.TracesGetTraceExecute(r)
 }
 
 /*
-GetTrace Method for GetTrace
+TracesGetTrace Method for TracesGetTrace
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param traceId trace_id
- @return ApiGetTraceRequest
+ @return ApiTracesGetTraceRequest
 */
-func (a *TracesAPIService) GetTrace(ctx context.Context, tenantId string, traceId string) ApiGetTraceRequest {
-	return ApiGetTraceRequest{
+func (a *TracesAPIService) TracesGetTrace(ctx context.Context, tenantId string, traceId string) ApiTracesGetTraceRequest {
+	return ApiTracesGetTraceRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -93,7 +93,7 @@ func (a *TracesAPIService) GetTrace(ctx context.Context, tenantId string, traceI
 
 // Execute executes the request
 //  @return TraceView
-func (a *TracesAPIService) GetTraceExecute(r ApiGetTraceRequest) (*TraceView, *http.Response, error) {
+func (a *TracesAPIService) TracesGetTraceExecute(r ApiTracesGetTraceRequest) (*TraceView, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -101,7 +101,7 @@ func (a *TracesAPIService) GetTraceExecute(r ApiGetTraceRequest) (*TraceView, *h
 		localVarReturnValue  *TraceView
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "TracesAPIService.GetTrace")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "TracesAPIService.TracesGetTrace")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -229,7 +229,7 @@ func (a *TracesAPIService) GetTraceExecute(r ApiGetTraceRequest) (*TraceView, *h
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiListTracesRequest struct {
+type ApiTracesListTracesRequest struct {
 	ctx context.Context
 	ApiService *TracesAPIService
 	tenantId string
@@ -254,118 +254,118 @@ type ApiListTracesRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiListTracesRequest) ProjectId(projectId string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) ProjectId(projectId string) ApiTracesListTracesRequest {
 	r.projectId = &projectId
 	return r
 }
 
-func (r ApiListTracesRequest) EnvironmentId(environmentId string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) EnvironmentId(environmentId string) ApiTracesListTracesRequest {
 	r.environmentId = &environmentId
 	return r
 }
 
-func (r ApiListTracesRequest) TraceId(traceId string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) TraceId(traceId string) ApiTracesListTracesRequest {
 	r.traceId = &traceId
 	return r
 }
 
-func (r ApiListTracesRequest) Kind(kind string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) Kind(kind string) ApiTracesListTracesRequest {
 	r.kind = &kind
 	return r
 }
 
-func (r ApiListTracesRequest) Status(status string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) Status(status string) ApiTracesListTracesRequest {
 	r.status = &status
 	return r
 }
 
-func (r ApiListTracesRequest) StartedAfter(startedAfter string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) StartedAfter(startedAfter string) ApiTracesListTracesRequest {
 	r.startedAfter = &startedAfter
 	return r
 }
 
-func (r ApiListTracesRequest) StartedBefore(startedBefore string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) StartedBefore(startedBefore string) ApiTracesListTracesRequest {
 	r.startedBefore = &startedBefore
 	return r
 }
 
-func (r ApiListTracesRequest) Model(model string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) Model(model string) ApiTracesListTracesRequest {
 	r.model = &model
 	return r
 }
 
-func (r ApiListTracesRequest) Release(release string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) Release(release string) ApiTracesListTracesRequest {
 	r.release = &release
 	return r
 }
 
-func (r ApiListTracesRequest) MinCostMicros(minCostMicros int64) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) MinCostMicros(minCostMicros int64) ApiTracesListTracesRequest {
 	r.minCostMicros = &minCostMicros
 	return r
 }
 
-func (r ApiListTracesRequest) MaxCostMicros(maxCostMicros int64) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) MaxCostMicros(maxCostMicros int64) ApiTracesListTracesRequest {
 	r.maxCostMicros = &maxCostMicros
 	return r
 }
 
-func (r ApiListTracesRequest) MinLatencyMs(minLatencyMs int64) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) MinLatencyMs(minLatencyMs int64) ApiTracesListTracesRequest {
 	r.minLatencyMs = &minLatencyMs
 	return r
 }
 
-func (r ApiListTracesRequest) MaxLatencyMs(maxLatencyMs int64) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) MaxLatencyMs(maxLatencyMs int64) ApiTracesListTracesRequest {
 	r.maxLatencyMs = &maxLatencyMs
 	return r
 }
 
-func (r ApiListTracesRequest) Limit(limit int32) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) Limit(limit int32) ApiTracesListTracesRequest {
 	r.limit = &limit
 	return r
 }
 
-func (r ApiListTracesRequest) Cursor(cursor string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) Cursor(cursor string) ApiTracesListTracesRequest {
 	r.cursor = &cursor
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiListTracesRequest) Authorization(authorization string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) Authorization(authorization string) ApiTracesListTracesRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiListTracesRequest) XBeaterApiKey(xBeaterApiKey string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) XBeaterApiKey(xBeaterApiKey string) ApiTracesListTracesRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiListTracesRequest) XBeaterProjectId(xBeaterProjectId string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) XBeaterProjectId(xBeaterProjectId string) ApiTracesListTracesRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiListTracesRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiListTracesRequest {
+func (r ApiTracesListTracesRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiTracesListTracesRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiListTracesRequest) Execute() (*PageRunSummary, *http.Response, error) {
-	return r.ApiService.ListTracesExecute(r)
+func (r ApiTracesListTracesRequest) Execute() (*PageRunSummary, *http.Response, error) {
+	return r.ApiService.TracesListTracesExecute(r)
 }
 
 /*
-ListTraces Method for ListTraces
+TracesListTraces Method for TracesListTraces
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
- @return ApiListTracesRequest
+ @return ApiTracesListTracesRequest
 */
-func (a *TracesAPIService) ListTraces(ctx context.Context, tenantId string) ApiListTracesRequest {
-	return ApiListTracesRequest{
+func (a *TracesAPIService) TracesListTraces(ctx context.Context, tenantId string) ApiTracesListTracesRequest {
+	return ApiTracesListTracesRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -374,7 +374,7 @@ func (a *TracesAPIService) ListTraces(ctx context.Context, tenantId string) ApiL
 
 // Execute executes the request
 //  @return PageRunSummary
-func (a *TracesAPIService) ListTracesExecute(r ApiListTracesRequest) (*PageRunSummary, *http.Response, error) {
+func (a *TracesAPIService) TracesListTracesExecute(r ApiTracesListTracesRequest) (*PageRunSummary, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -382,7 +382,7 @@ func (a *TracesAPIService) ListTracesExecute(r ApiListTracesRequest) (*PageRunSu
 		localVarReturnValue  *PageRunSummary
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "TracesAPIService.ListTraces")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "TracesAPIService.TracesListTraces")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

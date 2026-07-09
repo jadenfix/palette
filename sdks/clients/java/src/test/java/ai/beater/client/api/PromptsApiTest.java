@@ -51,7 +51,7 @@ public class PromptsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void addPromptVersionTest() throws ApiException {
+    public void promptsAddPromptVersionTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String promptId = null;
@@ -61,7 +61,7 @@ public class PromptsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         PromptVersion response = 
-        api.addPromptVersion(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.promptsAddPromptVersion(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -75,7 +75,7 @@ public class PromptsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void createPromptTest() throws ApiException {
+    public void promptsCreatePromptTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         CreatePromptRequest createPromptRequest = null;
@@ -84,7 +84,7 @@ public class PromptsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         CreatedPrompt response = 
-        api.createPrompt(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.promptsCreatePrompt(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -98,7 +98,7 @@ public class PromptsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void diffPromptVersionsTest() throws ApiException {
+    public void promptsDiffPromptVersionsTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String promptId = null;
@@ -109,7 +109,7 @@ public class PromptsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         PromptVersionDiff response = 
-        api.diffPromptVersions(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.promptsDiffPromptVersions(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -123,7 +123,7 @@ public class PromptsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void getPromptTest() throws ApiException {
+    public void promptsGetPromptTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String promptId = null;
@@ -132,7 +132,7 @@ public class PromptsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         Prompt response = 
-        api.getPrompt(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.promptsGetPrompt(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -146,7 +146,7 @@ public class PromptsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void listPromptVersionsTest() throws ApiException {
+    public void promptsListPromptVersionsTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String promptId = null;
@@ -155,7 +155,7 @@ public class PromptsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         PromptVersionListResponse response = 
-        api.listPromptVersions(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.promptsListPromptVersions(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -169,7 +169,7 @@ public class PromptsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void listPromptsTest() throws ApiException {
+    public void promptsListPromptsTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String authorization = null;
@@ -177,7 +177,7 @@ public class PromptsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         PromptListResponse response = 
-        api.listPrompts(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.promptsListPrompts(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

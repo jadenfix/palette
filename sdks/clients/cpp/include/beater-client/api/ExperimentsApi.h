@@ -61,7 +61,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ExperimentRunReport>> runDeterministicExperiment(
+    pplx::task<std::shared_ptr<ExperimentRunReport>> experiments_runDeterministicExperiment(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t datasetId,
@@ -87,7 +87,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ExperimentRunReport>> runJudgeExperiment(
+    pplx::task<std::shared_ptr<ExperimentRunReport>> experiments_runJudgeExperiment(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t datasetId,

@@ -23,7 +23,7 @@ import (
 // EvalsAPIService EvalsAPI service
 type EvalsAPIService service
 
-type ApiRunDeterministicEvalRequest struct {
+type ApiEvalsRunDeterministicEvalRequest struct {
 	ctx context.Context
 	ApiService *EvalsAPIService
 	tenantId string
@@ -37,51 +37,51 @@ type ApiRunDeterministicEvalRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiRunDeterministicEvalRequest) RunDeterministicEvalRequest(runDeterministicEvalRequest RunDeterministicEvalRequest) ApiRunDeterministicEvalRequest {
+func (r ApiEvalsRunDeterministicEvalRequest) RunDeterministicEvalRequest(runDeterministicEvalRequest RunDeterministicEvalRequest) ApiEvalsRunDeterministicEvalRequest {
 	r.runDeterministicEvalRequest = &runDeterministicEvalRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiRunDeterministicEvalRequest) Authorization(authorization string) ApiRunDeterministicEvalRequest {
+func (r ApiEvalsRunDeterministicEvalRequest) Authorization(authorization string) ApiEvalsRunDeterministicEvalRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiRunDeterministicEvalRequest) XBeaterApiKey(xBeaterApiKey string) ApiRunDeterministicEvalRequest {
+func (r ApiEvalsRunDeterministicEvalRequest) XBeaterApiKey(xBeaterApiKey string) ApiEvalsRunDeterministicEvalRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiRunDeterministicEvalRequest) XBeaterProjectId(xBeaterProjectId string) ApiRunDeterministicEvalRequest {
+func (r ApiEvalsRunDeterministicEvalRequest) XBeaterProjectId(xBeaterProjectId string) ApiEvalsRunDeterministicEvalRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiRunDeterministicEvalRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiRunDeterministicEvalRequest {
+func (r ApiEvalsRunDeterministicEvalRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiEvalsRunDeterministicEvalRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiRunDeterministicEvalRequest) Execute() (*DatasetEvalReport, *http.Response, error) {
-	return r.ApiService.RunDeterministicEvalExecute(r)
+func (r ApiEvalsRunDeterministicEvalRequest) Execute() (*DatasetEvalReport, *http.Response, error) {
+	return r.ApiService.EvalsRunDeterministicEvalExecute(r)
 }
 
 /*
-RunDeterministicEval Method for RunDeterministicEval
+EvalsRunDeterministicEval Method for EvalsRunDeterministicEval
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param datasetId dataset_id
  @param versionId version_id
- @return ApiRunDeterministicEvalRequest
+ @return ApiEvalsRunDeterministicEvalRequest
 */
-func (a *EvalsAPIService) RunDeterministicEval(ctx context.Context, tenantId string, projectId string, datasetId string, versionId string) ApiRunDeterministicEvalRequest {
-	return ApiRunDeterministicEvalRequest{
+func (a *EvalsAPIService) EvalsRunDeterministicEval(ctx context.Context, tenantId string, projectId string, datasetId string, versionId string) ApiEvalsRunDeterministicEvalRequest {
+	return ApiEvalsRunDeterministicEvalRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -93,7 +93,7 @@ func (a *EvalsAPIService) RunDeterministicEval(ctx context.Context, tenantId str
 
 // Execute executes the request
 //  @return DatasetEvalReport
-func (a *EvalsAPIService) RunDeterministicEvalExecute(r ApiRunDeterministicEvalRequest) (*DatasetEvalReport, *http.Response, error) {
+func (a *EvalsAPIService) EvalsRunDeterministicEvalExecute(r ApiEvalsRunDeterministicEvalRequest) (*DatasetEvalReport, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -101,7 +101,7 @@ func (a *EvalsAPIService) RunDeterministicEvalExecute(r ApiRunDeterministicEvalR
 		localVarReturnValue  *DatasetEvalReport
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "EvalsAPIService.RunDeterministicEval")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "EvalsAPIService.EvalsRunDeterministicEval")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -230,7 +230,7 @@ func (a *EvalsAPIService) RunDeterministicEvalExecute(r ApiRunDeterministicEvalR
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiRunJudgeEvalRequest struct {
+type ApiEvalsRunJudgeEvalRequest struct {
 	ctx context.Context
 	ApiService *EvalsAPIService
 	tenantId string
@@ -244,51 +244,51 @@ type ApiRunJudgeEvalRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiRunJudgeEvalRequest) RunJudgeDatasetEvalRequest(runJudgeDatasetEvalRequest RunJudgeDatasetEvalRequest) ApiRunJudgeEvalRequest {
+func (r ApiEvalsRunJudgeEvalRequest) RunJudgeDatasetEvalRequest(runJudgeDatasetEvalRequest RunJudgeDatasetEvalRequest) ApiEvalsRunJudgeEvalRequest {
 	r.runJudgeDatasetEvalRequest = &runJudgeDatasetEvalRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiRunJudgeEvalRequest) Authorization(authorization string) ApiRunJudgeEvalRequest {
+func (r ApiEvalsRunJudgeEvalRequest) Authorization(authorization string) ApiEvalsRunJudgeEvalRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiRunJudgeEvalRequest) XBeaterApiKey(xBeaterApiKey string) ApiRunJudgeEvalRequest {
+func (r ApiEvalsRunJudgeEvalRequest) XBeaterApiKey(xBeaterApiKey string) ApiEvalsRunJudgeEvalRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiRunJudgeEvalRequest) XBeaterProjectId(xBeaterProjectId string) ApiRunJudgeEvalRequest {
+func (r ApiEvalsRunJudgeEvalRequest) XBeaterProjectId(xBeaterProjectId string) ApiEvalsRunJudgeEvalRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiRunJudgeEvalRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiRunJudgeEvalRequest {
+func (r ApiEvalsRunJudgeEvalRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiEvalsRunJudgeEvalRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiRunJudgeEvalRequest) Execute() (*DatasetEvalReport, *http.Response, error) {
-	return r.ApiService.RunJudgeEvalExecute(r)
+func (r ApiEvalsRunJudgeEvalRequest) Execute() (*DatasetEvalReport, *http.Response, error) {
+	return r.ApiService.EvalsRunJudgeEvalExecute(r)
 }
 
 /*
-RunJudgeEval Method for RunJudgeEval
+EvalsRunJudgeEval Method for EvalsRunJudgeEval
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param datasetId dataset_id
  @param versionId version_id
- @return ApiRunJudgeEvalRequest
+ @return ApiEvalsRunJudgeEvalRequest
 */
-func (a *EvalsAPIService) RunJudgeEval(ctx context.Context, tenantId string, projectId string, datasetId string, versionId string) ApiRunJudgeEvalRequest {
-	return ApiRunJudgeEvalRequest{
+func (a *EvalsAPIService) EvalsRunJudgeEval(ctx context.Context, tenantId string, projectId string, datasetId string, versionId string) ApiEvalsRunJudgeEvalRequest {
+	return ApiEvalsRunJudgeEvalRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -300,7 +300,7 @@ func (a *EvalsAPIService) RunJudgeEval(ctx context.Context, tenantId string, pro
 
 // Execute executes the request
 //  @return DatasetEvalReport
-func (a *EvalsAPIService) RunJudgeEvalExecute(r ApiRunJudgeEvalRequest) (*DatasetEvalReport, *http.Response, error) {
+func (a *EvalsAPIService) EvalsRunJudgeEvalExecute(r ApiEvalsRunJudgeEvalRequest) (*DatasetEvalReport, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -308,7 +308,7 @@ func (a *EvalsAPIService) RunJudgeEvalExecute(r ApiRunJudgeEvalRequest) (*Datase
 		localVarReturnValue  *DatasetEvalReport
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "EvalsAPIService.RunJudgeEval")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "EvalsAPIService.EvalsRunJudgeEval")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

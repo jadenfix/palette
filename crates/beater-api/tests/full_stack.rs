@@ -1152,7 +1152,7 @@ async fn api_ingest_store_eval_gate_and_replay_are_integrated() {
     let error_body: serde_json::Value =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
     assert!(
-        error_body["error"]
+        error_body["message"]
             .as_str()
             .is_some_and(|message| message.contains("webhook endpoint_url")),
         "blocked endpoint error should identify endpoint_url: {error_body}"
@@ -2163,7 +2163,7 @@ async fn reconcile_trace_ingested_recovers_direct_write_after_publish_outage_thr
     let error: serde_json::Value =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
     assert!(
-        error["error"]
+        error["message"]
             .as_str()
             .unwrap_or_default()
             .contains("capacity 0")
@@ -2363,9 +2363,9 @@ async fn buffered_ingest_backpressure_returns_429() {
         .unwrap_or_else(|err| panic!("{err}"));
     let error: serde_json::Value =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
-    assert_eq!(error["status"], json!(429));
+    assert_eq!(error["error"], json!("Too Many Requests"));
     assert!(
-        error["error"]
+        error["message"]
             .as_str()
             .unwrap_or_default()
             .contains("capacity 0")
@@ -2458,9 +2458,9 @@ async fn api_quota_429_includes_reset_headers() {
         .unwrap_or_else(|err| panic!("{err}"));
     let error: serde_json::Value =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
-    assert_eq!(error["status"], json!(429));
+    assert_eq!(error["error"], json!("Too Many Requests"));
     assert!(
-        error["error"]
+        error["message"]
             .as_str()
             .unwrap_or_default()
             .contains("quota exceeded")
@@ -2524,9 +2524,9 @@ async fn api_quota_is_shared_across_replicas_and_resets_on_window() {
             .and_then(|value| value.to_str().ok()),
         Some(reset_at_header.as_str())
     );
-    assert_eq!(error["status"], json!(429));
+    assert_eq!(error["error"], json!("Too Many Requests"));
     assert!(
-        error["error"]
+        error["message"]
             .as_str()
             .unwrap_or_default()
             .contains("quota exceeded")
@@ -2577,6 +2577,7 @@ async fn hosted_judge_api_uses_byok_refs_cache_and_never_returns_secret() {
 
     let mut admin_scopes = BTreeSet::new();
     admin_scopes.insert(ApiScope::Admin);
+    admin_scopes.insert(ApiScope::EvalRun);
     let admin_key = api_keys
         .create_key(CreateApiKeyRequest {
             tenant_id: TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
@@ -2810,7 +2811,7 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
     assert_eq!(unauthenticated.status(), StatusCode::UNAUTHORIZED);
 
     let create_key_body = json!({
-        "scopes": ["trace_write", "trace_read"]
+        "scopes": ["trace:write", "trace:read"]
     });
     let response = app
         .clone()
@@ -3147,7 +3148,7 @@ async fn strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context() {
     assert_eq!(denied_unmask.status(), StatusCode::FORBIDDEN);
 
     let create_unmask_key_body = json!({
-        "scopes": ["trace_read", "pii_unmask"]
+        "scopes": ["trace:read", "pii:unmask"]
     });
     let response = app
         .clone()

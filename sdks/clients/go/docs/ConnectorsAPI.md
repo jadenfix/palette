@@ -4,18 +4,18 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**ConnectConnector**](ConnectorsAPI.md#ConnectConnector) | **Post** /v1/connectors/{tenant_id}/{project_id}/connect | 
-[**ConnectorStatus**](ConnectorsAPI.md#ConnectorStatus) | **Get** /v1/connectors/{tenant_id}/{project_id}/status | 
-[**GetConnectorSkills**](ConnectorsAPI.md#GetConnectorSkills) | **Get** /v1/connectors/{tenant_id}/{project_id}/skills | 
-[**InvokeConnectorTool**](ConnectorsAPI.md#InvokeConnectorTool) | **Post** /v1/connectors/{tenant_id}/{project_id}/invoke | 
-[**ListConnectorTools**](ConnectorsAPI.md#ListConnectorTools) | **Get** /v1/connectors/{tenant_id}/{project_id}/tools | 
-[**ListConnectors**](ConnectorsAPI.md#ListConnectors) | **Get** /v1/connectors/{tenant_id}/{project_id} | 
+[**ConnectorsConnectConnector**](ConnectorsAPI.md#ConnectorsConnectConnector) | **Post** /v1/connectors/{tenant_id}/{project_id}/connect |
+[**ConnectorsConnectorStatus**](ConnectorsAPI.md#ConnectorsConnectorStatus) | **Get** /v1/connectors/{tenant_id}/{project_id}/status |
+[**ConnectorsGetConnectorSkills**](ConnectorsAPI.md#ConnectorsGetConnectorSkills) | **Get** /v1/connectors/{tenant_id}/{project_id}/skills |
+[**ConnectorsInvokeConnectorTool**](ConnectorsAPI.md#ConnectorsInvokeConnectorTool) | **Post** /v1/connectors/{tenant_id}/{project_id}/invoke |
+[**ConnectorsListConnectorTools**](ConnectorsAPI.md#ConnectorsListConnectorTools) | **Get** /v1/connectors/{tenant_id}/{project_id}/tools |
+[**ConnectorsListConnectors**](ConnectorsAPI.md#ConnectorsListConnectors) | **Get** /v1/connectors/{tenant_id}/{project_id} |
 
 
 
-## ConnectConnector
+## ConnectorsConnectConnector
 
-> ConnectionLink ConnectConnector(ctx, tenantId, projectId).ConnectConnectorRequest(connectConnectorRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> ConnectionLink ConnectorsConnectConnector(ctx, tenantId, projectId).ConnectConnectorRequest(connectConnectorRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -34,7 +34,7 @@ import (
 func main() {
 	tenantId := "tenantId_example" // string | tenant_id
 	projectId := "projectId_example" // string | project_id
-	connectConnectorRequest := *openapiclient.NewConnectConnectorRequest("Toolkit_example") // ConnectConnectorRequest | 
+	connectConnectorRequest := *openapiclient.NewConnectConnectorRequest("Toolkit_example") // ConnectConnectorRequest |
 	authorization := "authorization_example" // string | Bearer API token for strict auth (optional)
 	xBeaterApiKey := "xBeaterApiKey_example" // string | API key alternative for strict auth (optional)
 	xBeaterProjectId := "xBeaterProjectId_example" // string | Strict-auth project scope (optional)
@@ -42,13 +42,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ConnectorsAPI.ConnectConnector(context.Background(), tenantId, projectId).ConnectConnectorRequest(connectConnectorRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ConnectorsAPI.ConnectorsConnectConnector(context.Background(), tenantId, projectId).ConnectConnectorRequest(connectConnectorRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.ConnectConnector``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.ConnectorsConnectConnector``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ConnectConnector`: ConnectionLink
-	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.ConnectConnector`: %v\n", resp)
+	// response from `ConnectorsConnectConnector`: ConnectionLink
+	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.ConnectorsConnectConnector`: %v\n", resp)
 }
 ```
 
@@ -58,23 +58,23 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiConnectConnectorRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiConnectorsConnectConnectorRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **connectConnectorRequest** | [**ConnectConnectorRequest**](ConnectConnectorRequest.md) |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **connectConnectorRequest** | [**ConnectConnectorRequest**](ConnectConnectorRequest.md) |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -94,9 +94,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## ConnectorStatus
+## ConnectorsConnectorStatus
 
-> ConnectionStatus ConnectorStatus(ctx, tenantId, projectId).Toolkit(toolkit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> ConnectionStatus ConnectorsConnectorStatus(ctx, tenantId, projectId).Toolkit(toolkit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -123,13 +123,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ConnectorsAPI.ConnectorStatus(context.Background(), tenantId, projectId).Toolkit(toolkit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ConnectorsAPI.ConnectorsConnectorStatus(context.Background(), tenantId, projectId).Toolkit(toolkit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.ConnectorStatus``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.ConnectorsConnectorStatus``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ConnectorStatus`: ConnectionStatus
-	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.ConnectorStatus`: %v\n", resp)
+	// response from `ConnectorsConnectorStatus`: ConnectionStatus
+	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.ConnectorsConnectorStatus`: %v\n", resp)
 }
 ```
 
@@ -139,23 +139,23 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiConnectorStatusRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiConnectorsConnectorStatusRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **toolkit** | **string** | Toolkit slug to scope the request to. | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **toolkit** | **string** | Toolkit slug to scope the request to. |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -175,9 +175,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## GetConnectorSkills
+## ConnectorsGetConnectorSkills
 
-> ConnectorSkillsResponse GetConnectorSkills(ctx, tenantId, projectId).Toolkit(toolkit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> ConnectorSkillsResponse ConnectorsGetConnectorSkills(ctx, tenantId, projectId).Toolkit(toolkit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -204,13 +204,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ConnectorsAPI.GetConnectorSkills(context.Background(), tenantId, projectId).Toolkit(toolkit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ConnectorsAPI.ConnectorsGetConnectorSkills(context.Background(), tenantId, projectId).Toolkit(toolkit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.GetConnectorSkills``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.ConnectorsGetConnectorSkills``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `GetConnectorSkills`: ConnectorSkillsResponse
-	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.GetConnectorSkills`: %v\n", resp)
+	// response from `ConnectorsGetConnectorSkills`: ConnectorSkillsResponse
+	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.ConnectorsGetConnectorSkills`: %v\n", resp)
 }
 ```
 
@@ -220,23 +220,23 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiGetConnectorSkillsRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiConnectorsGetConnectorSkillsRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **toolkit** | **string** | Toolkit slug to scope the request to. | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **toolkit** | **string** | Toolkit slug to scope the request to. |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -256,9 +256,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## InvokeConnectorTool
+## ConnectorsInvokeConnectorTool
 
-> ToolExecution InvokeConnectorTool(ctx, tenantId, projectId).InvokeConnectorRequest(invokeConnectorRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> ToolExecution ConnectorsInvokeConnectorTool(ctx, tenantId, projectId).InvokeConnectorRequest(invokeConnectorRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -277,7 +277,7 @@ import (
 func main() {
 	tenantId := "tenantId_example" // string | tenant_id
 	projectId := "projectId_example" // string | project_id
-	invokeConnectorRequest := *openapiclient.NewInvokeConnectorRequest("Tool_example") // InvokeConnectorRequest | 
+	invokeConnectorRequest := *openapiclient.NewInvokeConnectorRequest("Tool_example") // InvokeConnectorRequest |
 	authorization := "authorization_example" // string | Bearer API token for strict auth (optional)
 	xBeaterApiKey := "xBeaterApiKey_example" // string | API key alternative for strict auth (optional)
 	xBeaterProjectId := "xBeaterProjectId_example" // string | Strict-auth project scope (optional)
@@ -285,13 +285,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ConnectorsAPI.InvokeConnectorTool(context.Background(), tenantId, projectId).InvokeConnectorRequest(invokeConnectorRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ConnectorsAPI.ConnectorsInvokeConnectorTool(context.Background(), tenantId, projectId).InvokeConnectorRequest(invokeConnectorRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.InvokeConnectorTool``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.ConnectorsInvokeConnectorTool``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `InvokeConnectorTool`: ToolExecution
-	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.InvokeConnectorTool`: %v\n", resp)
+	// response from `ConnectorsInvokeConnectorTool`: ToolExecution
+	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.ConnectorsInvokeConnectorTool`: %v\n", resp)
 }
 ```
 
@@ -301,23 +301,23 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiInvokeConnectorToolRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiConnectorsInvokeConnectorToolRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **invokeConnectorRequest** | [**InvokeConnectorRequest**](InvokeConnectorRequest.md) |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **invokeConnectorRequest** | [**InvokeConnectorRequest**](InvokeConnectorRequest.md) |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -337,9 +337,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## ListConnectorTools
+## ConnectorsListConnectorTools
 
-> []ConnectorTool ListConnectorTools(ctx, tenantId, projectId).Toolkit(toolkit).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> []ConnectorTool ConnectorsListConnectorTools(ctx, tenantId, projectId).Toolkit(toolkit).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -367,13 +367,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ConnectorsAPI.ListConnectorTools(context.Background(), tenantId, projectId).Toolkit(toolkit).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ConnectorsAPI.ConnectorsListConnectorTools(context.Background(), tenantId, projectId).Toolkit(toolkit).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.ListConnectorTools``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.ConnectorsListConnectorTools``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ListConnectorTools`: []ConnectorTool
-	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.ListConnectorTools`: %v\n", resp)
+	// response from `ConnectorsListConnectorTools`: []ConnectorTool
+	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.ConnectorsListConnectorTools`: %v\n", resp)
 }
 ```
 
@@ -383,24 +383,24 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiListConnectorToolsRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiConnectorsListConnectorToolsRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **toolkit** | **string** | Toolkit slug to list tools for. | 
- **limit** | **int32** | Maximum number of tools to return (page size). | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **toolkit** | **string** | Toolkit slug to list tools for. |
+ **limit** | **int32** | Maximum number of tools to return (page size). |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -420,9 +420,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## ListConnectors
+## ConnectorsListConnectors
 
-> []Toolkit ListConnectors(ctx, tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> []Toolkit ConnectorsListConnectors(ctx, tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -449,13 +449,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ConnectorsAPI.ListConnectors(context.Background(), tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ConnectorsAPI.ConnectorsListConnectors(context.Background(), tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.ListConnectors``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ConnectorsAPI.ConnectorsListConnectors``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ListConnectors`: []Toolkit
-	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.ListConnectors`: %v\n", resp)
+	// response from `ConnectorsListConnectors`: []Toolkit
+	fmt.Fprintf(os.Stdout, "Response from `ConnectorsAPI.ConnectorsListConnectors`: %v\n", resp)
 }
 ```
 
@@ -465,23 +465,23 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiListConnectorsRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiConnectorsListConnectorsRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **limit** | **int32** | Maximum number of apps to return (page size). | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **limit** | **int32** | Maximum number of apps to return (page size). |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -499,4 +499,3 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

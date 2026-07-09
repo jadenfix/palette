@@ -4,18 +4,18 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Action** | [**AuditAction**](AuditAction.md) |  | 
-**ActorApiKeyId** | Pointer to **string** |  | [optional] 
-**Attributes** | **interface{}** |  | 
-**AuditEventId** | **string** |  | 
-**CreatedAt** | **time.Time** |  | 
-**EnvironmentId** | Pointer to **string** |  | [optional] 
-**Outcome** | [**AuditOutcome**](AuditOutcome.md) |  | 
-**ProjectId** | **string** |  | 
-**Reason** | Pointer to **NullableString** |  | [optional] 
-**ResourceId** | **string** |  | 
-**ResourceType** | **string** |  | 
-**TenantId** | **string** |  | 
+**Action** | [**AuditAction**](AuditAction.md) |  |
+**ActorApiKeyId** | Pointer to **string** |  | [optional]
+**Attributes** | **interface{}** |  |
+**AuditEventId** | **string** |  |
+**CreatedAt** | **time.Time** |  |
+**EnvironmentId** | Pointer to **string** |  | [optional]
+**Outcome** | [**AuditOutcome**](AuditOutcome.md) |  |
+**ProjectId** | **string** |  |
+**Reason** | Pointer to **NullableString** |  | [optional]
+**ResourceId** | **string** |  |
+**ResourceType** | **string** |  |
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -313,5 +313,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

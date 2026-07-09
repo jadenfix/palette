@@ -4,28 +4,28 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**BrierScore** | **float64** |  | 
-**CalibrationReportId** | **string** |  | 
-**CohenKappa** | **float64** |  | 
-**CohenKappaCiHigh** | Pointer to **NullableFloat64** |  | [optional] 
-**CohenKappaCiLow** | Pointer to **NullableFloat64** | Percentile-bootstrap 95% confidence interval for &#x60;cohen_kappa&#x60; (multinomial resampling of the confusion table, deterministic seed). Kappa over small calibration samples is high-variance; a bare point estimate invites over-reading. Absent on pre-uncertainty reports. | [optional] 
-**Confusion** | [**CalibrationConfusion**](CalibrationConfusion.md) |  | 
-**CreatedAt** | **time.Time** |  | 
-**DatasetId** | **string** |  | 
-**DatasetVersionId** | **string** |  | 
-**EvalReportId** | **string** |  | 
-**EvaluatorVersionId** | **string** |  | 
-**ExpectedAgreement** | **float64** |  | 
-**ExpectedCalibrationError** | **float64** |  | 
-**Items** | [**[]CalibrationItem**](CalibrationItem.md) |  | 
-**ObservedAgreement** | **float64** |  | 
-**ObservedAgreementCiHigh** | Pointer to **NullableFloat64** |  | [optional] 
-**ObservedAgreementCiLow** | Pointer to **NullableFloat64** | Wilson 95% confidence interval for &#x60;observed_agreement&#x60; — the honest width of an agreement estimate over a (typically small) human-labelled sample. Absent on reports persisted before uncertainty was reported. | [optional] 
-**Policy** | [**CalibrationPolicy**](CalibrationPolicy.md) |  | 
-**ProjectId** | **string** |  | 
-**ReliabilityBins** | [**[]ReliabilityBin**](ReliabilityBin.md) |  | 
-**SampleCount** | **int32** |  | 
-**TenantId** | **string** |  | 
+**BrierScore** | **float64** |  |
+**CalibrationReportId** | **string** |  |
+**CohenKappa** | **float64** |  |
+**CohenKappaCiHigh** | Pointer to **NullableFloat64** |  | [optional]
+**CohenKappaCiLow** | Pointer to **NullableFloat64** | Percentile-bootstrap 95% confidence interval for &#x60;cohen_kappa&#x60; (multinomial resampling of the confusion table, deterministic seed). Kappa over small calibration samples is high-variance; a bare point estimate invites over-reading. Absent on pre-uncertainty reports. | [optional]
+**Confusion** | [**CalibrationConfusion**](CalibrationConfusion.md) |  |
+**CreatedAt** | **time.Time** |  |
+**DatasetId** | **string** |  |
+**DatasetVersionId** | **string** |  |
+**EvalReportId** | **string** |  |
+**EvaluatorVersionId** | **string** |  |
+**ExpectedAgreement** | **float64** |  |
+**ExpectedCalibrationError** | **float64** |  |
+**Items** | [**[]CalibrationItem**](CalibrationItem.md) |  |
+**ObservedAgreement** | **float64** |  |
+**ObservedAgreementCiHigh** | Pointer to **NullableFloat64** |  | [optional]
+**ObservedAgreementCiLow** | Pointer to **NullableFloat64** | Wilson 95% confidence interval for &#x60;observed_agreement&#x60; — the honest width of an agreement estimate over a (typically small) human-labelled sample. Absent on reports persisted before uncertainty was reported. | [optional]
+**Policy** | [**CalibrationPolicy**](CalibrationPolicy.md) |  |
+**ProjectId** | **string** |  |
+**ReliabilityBins** | [**[]ReliabilityBin**](ReliabilityBin.md) |  |
+**SampleCount** | **int32** |  |
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -548,5 +548,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -10,6 +10,3 @@
 |**fromVersionId** | **String** |  |  |
 |**lines** | [**List&lt;DiffLine&gt;**](DiffLine.md) |  |  |
 |**toVersionId** | **String** |  |  |
-
-
-

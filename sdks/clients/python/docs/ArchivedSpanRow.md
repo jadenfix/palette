@@ -5,30 +5,30 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**attributes_json** | **str** |  | 
-**cost_amount_micros** | **str** |  | [optional] 
-**cost_currency** | **str** |  | [optional] 
-**end_time** | **str** |  | [optional] 
-**environment_id** | **str** |  | 
-**input_tokens** | **str** |  | [optional] 
-**input_uri** | **str** |  | [optional] 
-**kind** | **str** |  | 
-**model_name** | **str** |  | [optional] 
-**model_provider** | **str** |  | [optional] 
-**name** | **str** |  | 
-**output_tokens** | **str** |  | [optional] 
-**output_uri** | **str** |  | [optional] 
-**parent_span_id** | **str** |  | [optional] 
-**project_id** | **str** |  | 
-**raw_uri** | **str** |  | 
-**reasoning_tokens** | **str** |  | [optional] 
-**seq** | **int** |  | 
-**span_id** | **str** |  | 
-**start_time** | **str** |  | 
-**status** | **str** |  | 
-**tenant_id** | **str** |  | 
-**trace_id** | **str** |  | 
-**unmapped_json** | **str** |  | 
+**attributes_json** | **str** |  |
+**cost_amount_micros** | **str** |  | [optional]
+**cost_currency** | **str** |  | [optional]
+**end_time** | **str** |  | [optional]
+**environment_id** | **str** |  |
+**input_tokens** | **str** |  | [optional]
+**input_uri** | **str** |  | [optional]
+**kind** | **str** |  |
+**model_name** | **str** |  | [optional]
+**model_provider** | **str** |  | [optional]
+**name** | **str** |  |
+**output_tokens** | **str** |  | [optional]
+**output_uri** | **str** |  | [optional]
+**parent_span_id** | **str** |  | [optional]
+**project_id** | **str** |  |
+**raw_uri** | **str** |  |
+**reasoning_tokens** | **str** |  | [optional]
+**seq** | **int** |  |
+**span_id** | **str** |  |
+**start_time** | **str** |  |
+**status** | **str** |  |
+**tenant_id** | **str** |  |
+**trace_id** | **str** |  |
+**unmapped_json** | **str** |  |
 
 ## Example
 
@@ -48,5 +48,3 @@ archived_span_row_dict = archived_span_row_instance.to_dict()
 archived_span_row_from_dict = ArchivedSpanRow.from_dict(archived_span_row_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

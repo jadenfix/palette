@@ -103,8 +103,8 @@ public class ReviewsApi {
    * @return ReviewQueue
    * @throws ApiException if fails to make API call
    */
-  public ReviewQueue createReviewQueue(String tenantId, String projectId, CreateReviewQueueHttpRequest createReviewQueueHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<ReviewQueue> localVarResponse = createReviewQueueWithHttpInfo(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ReviewQueue reviewsCreateReviewQueue(String tenantId, String projectId, CreateReviewQueueHttpRequest createReviewQueueHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<ReviewQueue> localVarResponse = reviewsCreateReviewQueueWithHttpInfo(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -121,8 +121,8 @@ public class ReviewsApi {
    * @return ApiResponse&lt;ReviewQueue&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ReviewQueue> createReviewQueueWithHttpInfo(String tenantId, String projectId, CreateReviewQueueHttpRequest createReviewQueueHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = createReviewQueueRequestBuilder(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<ReviewQueue> reviewsCreateReviewQueueWithHttpInfo(String tenantId, String projectId, CreateReviewQueueHttpRequest createReviewQueueHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = reviewsCreateReviewQueueRequestBuilder(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -132,7 +132,7 @@ public class ReviewsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("createReviewQueue", localVarResponse);
+          throw getApiException("reviewsCreateReviewQueue", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<ReviewQueue>(
@@ -161,18 +161,18 @@ public class ReviewsApi {
     }
   }
 
-  private HttpRequest.Builder createReviewQueueRequestBuilder(String tenantId, String projectId, CreateReviewQueueHttpRequest createReviewQueueHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder reviewsCreateReviewQueueRequestBuilder(String tenantId, String projectId, CreateReviewQueueHttpRequest createReviewQueueHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling createReviewQueue");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling reviewsCreateReviewQueue");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling createReviewQueue");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling reviewsCreateReviewQueue");
     }
     // verify the required parameter 'createReviewQueueHttpRequest' is set
     if (createReviewQueueHttpRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'createReviewQueueHttpRequest' when calling createReviewQueue");
+      throw new ApiException(400, "Missing the required parameter 'createReviewQueueHttpRequest' when calling reviewsCreateReviewQueue");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -227,8 +227,8 @@ public class ReviewsApi {
    * @return ReviewTask
    * @throws ApiException if fails to make API call
    */
-  public ReviewTask enqueueReviewTaskFromTrace(String tenantId, String projectId, String queueId, EnqueueReviewTaskFromTraceHttpRequest enqueueReviewTaskFromTraceHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<ReviewTask> localVarResponse = enqueueReviewTaskFromTraceWithHttpInfo(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ReviewTask reviewsEnqueueReviewTaskFromTrace(String tenantId, String projectId, String queueId, EnqueueReviewTaskFromTraceHttpRequest enqueueReviewTaskFromTraceHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<ReviewTask> localVarResponse = reviewsEnqueueReviewTaskFromTraceWithHttpInfo(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -246,8 +246,8 @@ public class ReviewsApi {
    * @return ApiResponse&lt;ReviewTask&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ReviewTask> enqueueReviewTaskFromTraceWithHttpInfo(String tenantId, String projectId, String queueId, EnqueueReviewTaskFromTraceHttpRequest enqueueReviewTaskFromTraceHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = enqueueReviewTaskFromTraceRequestBuilder(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<ReviewTask> reviewsEnqueueReviewTaskFromTraceWithHttpInfo(String tenantId, String projectId, String queueId, EnqueueReviewTaskFromTraceHttpRequest enqueueReviewTaskFromTraceHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = reviewsEnqueueReviewTaskFromTraceRequestBuilder(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -257,7 +257,7 @@ public class ReviewsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("enqueueReviewTaskFromTrace", localVarResponse);
+          throw getApiException("reviewsEnqueueReviewTaskFromTrace", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<ReviewTask>(
@@ -286,22 +286,22 @@ public class ReviewsApi {
     }
   }
 
-  private HttpRequest.Builder enqueueReviewTaskFromTraceRequestBuilder(String tenantId, String projectId, String queueId, EnqueueReviewTaskFromTraceHttpRequest enqueueReviewTaskFromTraceHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder reviewsEnqueueReviewTaskFromTraceRequestBuilder(String tenantId, String projectId, String queueId, EnqueueReviewTaskFromTraceHttpRequest enqueueReviewTaskFromTraceHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling enqueueReviewTaskFromTrace");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling reviewsEnqueueReviewTaskFromTrace");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling enqueueReviewTaskFromTrace");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling reviewsEnqueueReviewTaskFromTrace");
     }
     // verify the required parameter 'queueId' is set
     if (queueId == null) {
-      throw new ApiException(400, "Missing the required parameter 'queueId' when calling enqueueReviewTaskFromTrace");
+      throw new ApiException(400, "Missing the required parameter 'queueId' when calling reviewsEnqueueReviewTaskFromTrace");
     }
     // verify the required parameter 'enqueueReviewTaskFromTraceHttpRequest' is set
     if (enqueueReviewTaskFromTraceHttpRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'enqueueReviewTaskFromTraceHttpRequest' when calling enqueueReviewTaskFromTrace");
+      throw new ApiException(400, "Missing the required parameter 'enqueueReviewTaskFromTraceHttpRequest' when calling reviewsEnqueueReviewTaskFromTrace");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -357,8 +357,8 @@ public class ReviewsApi {
    * @return List&lt;ReviewTask&gt;
    * @throws ApiException if fails to make API call
    */
-  public List<ReviewTask> listReviewTasks(String tenantId, String projectId, String queueId, ReviewTaskState state, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<List<ReviewTask>> localVarResponse = listReviewTasksWithHttpInfo(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public List<ReviewTask> reviewsListReviewTasks(String tenantId, String projectId, String queueId, ReviewTaskState state, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<List<ReviewTask>> localVarResponse = reviewsListReviewTasksWithHttpInfo(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -376,8 +376,8 @@ public class ReviewsApi {
    * @return ApiResponse&lt;List&lt;ReviewTask&gt;&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<List<ReviewTask>> listReviewTasksWithHttpInfo(String tenantId, String projectId, String queueId, ReviewTaskState state, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = listReviewTasksRequestBuilder(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<List<ReviewTask>> reviewsListReviewTasksWithHttpInfo(String tenantId, String projectId, String queueId, ReviewTaskState state, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = reviewsListReviewTasksRequestBuilder(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -387,7 +387,7 @@ public class ReviewsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("listReviewTasks", localVarResponse);
+          throw getApiException("reviewsListReviewTasks", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<List<ReviewTask>>(
@@ -416,18 +416,18 @@ public class ReviewsApi {
     }
   }
 
-  private HttpRequest.Builder listReviewTasksRequestBuilder(String tenantId, String projectId, String queueId, ReviewTaskState state, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder reviewsListReviewTasksRequestBuilder(String tenantId, String projectId, String queueId, ReviewTaskState state, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling listReviewTasks");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling reviewsListReviewTasks");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling listReviewTasks");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling reviewsListReviewTasks");
     }
     // verify the required parameter 'queueId' is set
     if (queueId == null) {
-      throw new ApiException(400, "Missing the required parameter 'queueId' when calling listReviewTasks");
+      throw new ApiException(400, "Missing the required parameter 'queueId' when calling reviewsListReviewTasks");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -494,8 +494,8 @@ public class ReviewsApi {
    * @return DatasetCase
    * @throws ApiException if fails to make API call
    */
-  public DatasetCase promoteReviewAnnotation(String tenantId, String projectId, String queueId, String taskId, String annotationId, PromoteReviewAnnotationHttpRequest promoteReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<DatasetCase> localVarResponse = promoteReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public DatasetCase reviewsPromoteReviewAnnotation(String tenantId, String projectId, String queueId, String taskId, String annotationId, PromoteReviewAnnotationHttpRequest promoteReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<DatasetCase> localVarResponse = reviewsPromoteReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -515,8 +515,8 @@ public class ReviewsApi {
    * @return ApiResponse&lt;DatasetCase&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<DatasetCase> promoteReviewAnnotationWithHttpInfo(String tenantId, String projectId, String queueId, String taskId, String annotationId, PromoteReviewAnnotationHttpRequest promoteReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = promoteReviewAnnotationRequestBuilder(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<DatasetCase> reviewsPromoteReviewAnnotationWithHttpInfo(String tenantId, String projectId, String queueId, String taskId, String annotationId, PromoteReviewAnnotationHttpRequest promoteReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = reviewsPromoteReviewAnnotationRequestBuilder(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -526,7 +526,7 @@ public class ReviewsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("promoteReviewAnnotation", localVarResponse);
+          throw getApiException("reviewsPromoteReviewAnnotation", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<DatasetCase>(
@@ -555,30 +555,30 @@ public class ReviewsApi {
     }
   }
 
-  private HttpRequest.Builder promoteReviewAnnotationRequestBuilder(String tenantId, String projectId, String queueId, String taskId, String annotationId, PromoteReviewAnnotationHttpRequest promoteReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder reviewsPromoteReviewAnnotationRequestBuilder(String tenantId, String projectId, String queueId, String taskId, String annotationId, PromoteReviewAnnotationHttpRequest promoteReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling promoteReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling reviewsPromoteReviewAnnotation");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling promoteReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling reviewsPromoteReviewAnnotation");
     }
     // verify the required parameter 'queueId' is set
     if (queueId == null) {
-      throw new ApiException(400, "Missing the required parameter 'queueId' when calling promoteReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'queueId' when calling reviewsPromoteReviewAnnotation");
     }
     // verify the required parameter 'taskId' is set
     if (taskId == null) {
-      throw new ApiException(400, "Missing the required parameter 'taskId' when calling promoteReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'taskId' when calling reviewsPromoteReviewAnnotation");
     }
     // verify the required parameter 'annotationId' is set
     if (annotationId == null) {
-      throw new ApiException(400, "Missing the required parameter 'annotationId' when calling promoteReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'annotationId' when calling reviewsPromoteReviewAnnotation");
     }
     // verify the required parameter 'promoteReviewAnnotationHttpRequest' is set
     if (promoteReviewAnnotationHttpRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'promoteReviewAnnotationHttpRequest' when calling promoteReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'promoteReviewAnnotationHttpRequest' when calling reviewsPromoteReviewAnnotation");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -637,8 +637,8 @@ public class ReviewsApi {
    * @return ReviewAnnotation
    * @throws ApiException if fails to make API call
    */
-  public ReviewAnnotation submitReviewAnnotation(String tenantId, String projectId, String queueId, String taskId, SubmitReviewAnnotationHttpRequest submitReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<ReviewAnnotation> localVarResponse = submitReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ReviewAnnotation reviewsSubmitReviewAnnotation(String tenantId, String projectId, String queueId, String taskId, SubmitReviewAnnotationHttpRequest submitReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<ReviewAnnotation> localVarResponse = reviewsSubmitReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -657,8 +657,8 @@ public class ReviewsApi {
    * @return ApiResponse&lt;ReviewAnnotation&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ReviewAnnotation> submitReviewAnnotationWithHttpInfo(String tenantId, String projectId, String queueId, String taskId, SubmitReviewAnnotationHttpRequest submitReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = submitReviewAnnotationRequestBuilder(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<ReviewAnnotation> reviewsSubmitReviewAnnotationWithHttpInfo(String tenantId, String projectId, String queueId, String taskId, SubmitReviewAnnotationHttpRequest submitReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = reviewsSubmitReviewAnnotationRequestBuilder(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -668,7 +668,7 @@ public class ReviewsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("submitReviewAnnotation", localVarResponse);
+          throw getApiException("reviewsSubmitReviewAnnotation", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<ReviewAnnotation>(
@@ -697,26 +697,26 @@ public class ReviewsApi {
     }
   }
 
-  private HttpRequest.Builder submitReviewAnnotationRequestBuilder(String tenantId, String projectId, String queueId, String taskId, SubmitReviewAnnotationHttpRequest submitReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder reviewsSubmitReviewAnnotationRequestBuilder(String tenantId, String projectId, String queueId, String taskId, SubmitReviewAnnotationHttpRequest submitReviewAnnotationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling submitReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling reviewsSubmitReviewAnnotation");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling submitReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling reviewsSubmitReviewAnnotation");
     }
     // verify the required parameter 'queueId' is set
     if (queueId == null) {
-      throw new ApiException(400, "Missing the required parameter 'queueId' when calling submitReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'queueId' when calling reviewsSubmitReviewAnnotation");
     }
     // verify the required parameter 'taskId' is set
     if (taskId == null) {
-      throw new ApiException(400, "Missing the required parameter 'taskId' when calling submitReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'taskId' when calling reviewsSubmitReviewAnnotation");
     }
     // verify the required parameter 'submitReviewAnnotationHttpRequest' is set
     if (submitReviewAnnotationHttpRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'submitReviewAnnotationHttpRequest' when calling submitReviewAnnotation");
+      throw new ApiException(400, "Missing the required parameter 'submitReviewAnnotationHttpRequest' when calling reviewsSubmitReviewAnnotation");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

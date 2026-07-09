@@ -10,6 +10,3 @@
 |**active** | **Boolean** |  |  |
 |**providerSecretId** | **String** |  |  |
 |**rotatedAt** | **OffsetDateTime** |  |  |
-
-
-

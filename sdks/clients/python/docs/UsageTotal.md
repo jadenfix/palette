@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**quantity** | **int** |  | 
-**unit** | **str** |  | 
+**quantity** | **int** |  |
+**unit** | **str** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ usage_total_dict = usage_total_instance.to_dict()
 usage_total_from_dict = UsageTotal.from_dict(usage_total_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -4,14 +4,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Error** | **string** | Human-readable error message. | 
-**Status** | **int32** | HTTP status code, duplicated in the body for convenience. | 
+**Error** | **string** | Stable machine-readable error code. |
+**Message** | **string** | Human-readable error message. |
 
 ## Methods
 
 ### NewErrorResponse
 
-`func NewErrorResponse(error_ string, status int32, ) *ErrorResponse`
+`func NewErrorResponse(error_ string, message string, ) *ErrorResponse`
 
 NewErrorResponse instantiates a new ErrorResponse object
 This constructor will assign default values to properties that have it defined,
@@ -46,27 +46,25 @@ and a boolean to check if the value has been set.
 SetError sets Error field to given value.
 
 
-### GetStatus
+### GetMessage
 
-`func (o *ErrorResponse) GetStatus() int32`
+`func (o *ErrorResponse) GetMessage() string`
 
-GetStatus returns the Status field if non-nil, zero value otherwise.
+GetMessage returns the Message field if non-nil, zero value otherwise.
 
-### GetStatusOk
+### GetMessageOk
 
-`func (o *ErrorResponse) GetStatusOk() (*int32, bool)`
+`func (o *ErrorResponse) GetMessageOk() (*string, bool)`
 
-GetStatusOk returns a tuple with the Status field if it's non-nil, zero value otherwise
+GetMessageOk returns a tuple with the Message field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetStatus
+### SetMessage
 
-`func (o *ErrorResponse) SetStatus(v int32)`
+`func (o *ErrorResponse) SetMessage(v string)`
 
-SetStatus sets Status field to given value.
+SetMessage sets Message field to given value.
 
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

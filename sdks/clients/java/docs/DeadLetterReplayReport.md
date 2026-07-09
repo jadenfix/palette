@@ -12,6 +12,3 @@
 |**projectId** | **String** |  |  |
 |**resetAttempts** | **Boolean** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

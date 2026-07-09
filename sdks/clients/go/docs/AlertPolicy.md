@@ -4,13 +4,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**DedupeWindowSeconds** | **int64** |  | 
-**EndpointUrl** | **string** |  | 
-**FireWhenScoreAtOrBelow** | **float64** |  | 
-**MaintenanceWindows** | [**[]MaintenanceWindow**](MaintenanceWindow.md) |  | 
-**PolicyId** | **string** |  | 
-**Severity** | [**AlertSeverity**](AlertSeverity.md) |  | 
-**SigningSecret** | **string** |  | 
+**DedupeWindowSeconds** | **int64** |  |
+**EndpointUrl** | **string** |  |
+**FireWhenScoreAtOrBelow** | **float64** |  |
+**MaintenanceWindows** | [**[]MaintenanceWindow**](MaintenanceWindow.md) |  |
+**PolicyId** | **string** |  |
+**Severity** | [**AlertSeverity**](AlertSeverity.md) |  |
+**SigningSecret** | **string** |  |
 
 ## Methods
 
@@ -173,5 +173,3 @@ SetSigningSecret sets SigningSecret field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

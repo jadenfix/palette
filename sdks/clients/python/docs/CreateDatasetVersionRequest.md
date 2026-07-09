@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**case_ids** | **List[str]** |  | [optional] 
+**case_ids** | **List[str]** |  | [optional]
 
 ## Example
 
@@ -25,5 +25,3 @@ create_dataset_version_request_dict = create_dataset_version_request_instance.to
 create_dataset_version_request_from_dict = CreateDatasetVersionRequest.from_dict(create_dataset_version_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

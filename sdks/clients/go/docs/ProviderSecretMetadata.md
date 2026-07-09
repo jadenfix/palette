@@ -4,14 +4,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Active** | **bool** |  | 
-**CreatedAt** | **time.Time** |  | 
-**DisplayName** | **string** |  | 
-**ProjectId** | **string** |  | 
-**Provider** | **string** |  | 
-**ProviderSecretId** | **string** |  | 
-**RotatedAt** | Pointer to **NullableTime** |  | [optional] 
-**TenantId** | **string** |  | 
+**Active** | **bool** |  |
+**CreatedAt** | **time.Time** |  |
+**DisplayName** | **string** |  |
+**ProjectId** | **string** |  |
+**Provider** | **string** |  |
+**ProviderSecretId** | **string** |  |
+**RotatedAt** | Pointer to **NullableTime** |  | [optional]
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -209,5 +209,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

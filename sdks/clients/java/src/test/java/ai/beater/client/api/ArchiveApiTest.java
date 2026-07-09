@@ -45,7 +45,7 @@ public class ArchiveApiTest {
      *          if the Api call fails
      */
     @Test
-    public void archiveTraceTest() throws ApiException {
+    public void archiveArchiveTraceTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String traceId = null;
@@ -54,7 +54,7 @@ public class ArchiveApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ArchiveManifest response = 
-        api.archiveTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.archiveArchiveTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -68,7 +68,7 @@ public class ArchiveApiTest {
      *          if the Api call fails
      */
     @Test
-    public void queryArchiveSpansTest() throws ApiException {
+    public void archiveQueryArchiveSpansTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String environmentId = null;
@@ -82,7 +82,7 @@ public class ArchiveApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ArchiveQueryResponse response = 
-        api.queryArchiveSpans(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.archiveQueryArchiveSpans(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

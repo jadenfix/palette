@@ -65,7 +65,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<TraceIngestedDrainReport>> drainTraceIngested(
+    pplx::task<std::shared_ptr<TraceIngestedDrainReport>> ingest_drainTraceIngested(
         utility::string_t tenantId,
         utility::string_t projectId,
         boost::optional<int32_t> limit,
@@ -87,7 +87,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<TraceWriteDrainReport>> drainTraceWrites(
+    pplx::task<std::shared_ptr<TraceWriteDrainReport>> ingest_drainTraceWrites(
         utility::string_t tenantId,
         utility::string_t projectId,
         boost::optional<int32_t> limit,
@@ -108,7 +108,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<IngestQueueStatus>> getIngestQueueStatus(
+    pplx::task<std::shared_ptr<IngestQueueStatus>> ingest_getIngestQueueStatus(
         utility::string_t tenantId,
         utility::string_t projectId,
         boost::optional<utility::string_t> authorization,
@@ -129,7 +129,7 @@ public:
     /// <param name="durability"> (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="authorization">Bearer API token for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<IngestOutcome>> importSource(
+    pplx::task<std::shared_ptr<IngestOutcome>> ingest_importSource(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t environmentId,
@@ -150,7 +150,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<IngestOutcome>> ingestNative(
+    pplx::task<std::shared_ptr<IngestOutcome>> ingest_ingestNative(
         std::shared_ptr<NativeIngestRequest> nativeIngestRequest,
         boost::optional<utility::string_t> durability,
         boost::optional<utility::string_t> authorization,
@@ -172,7 +172,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<OtlpIngestOutcome>> ingestOtlp(
+    pplx::task<std::shared_ptr<OtlpIngestOutcome>> ingest_ingestOtlp(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t environmentId,
@@ -194,7 +194,7 @@ public:
     /// <param name="xBeaterTenantId">Tenant scope override for collector-style OTLP JSON (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Project scope override for collector-style OTLP JSON (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Environment scope override for collector-style OTLP JSON (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<OtlpIngestOutcome>> ingestOtlpJsonCollector(
+    pplx::task<std::shared_ptr<OtlpIngestOutcome>> ingest_ingestOtlpJsonCollector(
         boost::optional<utility::string_t> durability,
         boost::optional<utility::string_t> authorization,
         boost::optional<utility::string_t> xBeaterApiKey,
@@ -215,7 +215,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<TraceIngestedReconcileReport>> reconcileTrace(
+    pplx::task<std::shared_ptr<TraceIngestedReconcileReport>> ingest_reconcileTrace(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t traceId,
@@ -238,7 +238,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<DeadLetterReplayReport>> replayDeadLetter(
+    pplx::task<std::shared_ptr<DeadLetterReplayReport>> ingest_replayDeadLetter(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t messageId,

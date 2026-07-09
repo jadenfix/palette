@@ -5,12 +5,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**dataset_case_id** | **str** |  | [optional] 
-**dataset_id** | **str** |  | [optional] 
-**priority** | **int** |  | [optional] 
-**span_id** | **str** |  | [optional] 
-**task_id** | **str** |  | [optional] 
-**trace_id** | **str** |  | 
+**dataset_case_id** | **str** |  | [optional]
+**dataset_id** | **str** |  | [optional]
+**priority** | **int** |  | [optional]
+**span_id** | **str** |  | [optional]
+**task_id** | **str** |  | [optional]
+**trace_id** | **str** |  |
 
 ## Example
 
@@ -30,5 +30,3 @@ enqueue_review_task_from_trace_http_request_dict = enqueue_review_task_from_trac
 enqueue_review_task_from_trace_http_request_from_dict = EnqueueReviewTaskFromTraceHttpRequest.from_dict(enqueue_review_task_from_trace_http_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

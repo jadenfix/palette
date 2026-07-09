@@ -5,10 +5,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**cluster_url** | **str** |  | [optional] 
-**dataset_url** | **str** |  | [optional] 
-**gate_url** | **str** |  | [optional] 
-**trace_url** | **str** |  | 
+**cluster_url** | **str** |  | [optional]
+**dataset_url** | **str** |  | [optional]
+**gate_url** | **str** |  | [optional]
+**trace_url** | **str** |  |
 
 ## Example
 
@@ -28,5 +28,3 @@ alert_links_dict = alert_links_instance.to_dict()
 alert_links_from_dict = AlertLinks.from_dict(alert_links_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

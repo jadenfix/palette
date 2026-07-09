@@ -52,7 +52,7 @@ public class IngestApiTest {
      *          if the Api call fails
      */
     @Test
-    public void drainTraceIngestedTest() throws ApiException {
+    public void ingestDrainTraceIngestedTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         Integer limit = null;
@@ -61,7 +61,7 @@ public class IngestApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         TraceIngestedDrainReport response =
-        api.drainTraceIngested(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.ingestDrainTraceIngested(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
 
         // TODO: test validations
     }
@@ -75,7 +75,7 @@ public class IngestApiTest {
      *          if the Api call fails
      */
     @Test
-    public void drainTraceWritesTest() throws ApiException {
+    public void ingestDrainTraceWritesTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         Integer limit = null;
@@ -84,7 +84,7 @@ public class IngestApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         TraceWriteDrainReport response =
-        api.drainTraceWrites(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.ingestDrainTraceWrites(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
 
         // TODO: test validations
     }
@@ -98,7 +98,7 @@ public class IngestApiTest {
      *          if the Api call fails
      */
     @Test
-    public void getIngestQueueStatusTest() throws ApiException {
+    public void ingestGetIngestQueueStatusTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String authorization = null;
@@ -106,7 +106,7 @@ public class IngestApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         IngestQueueStatus response =
-        api.getIngestQueueStatus(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.ingestGetIngestQueueStatus(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
 
         // TODO: test validations
     }
@@ -120,7 +120,7 @@ public class IngestApiTest {
      *          if the Api call fails
      */
     @Test
-    public void importSourceTest() throws ApiException {
+    public void ingestImportSourceTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String environmentId = null;
@@ -129,7 +129,7 @@ public class IngestApiTest {
         String authorization = null;
         String xBeaterApiKey = null;
         IngestOutcome response =
-        api.importSource(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
+        api.ingestImportSource(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
 
         // TODO: test validations
     }
@@ -143,7 +143,7 @@ public class IngestApiTest {
      *          if the Api call fails
      */
     @Test
-    public void ingestNativeTest() throws ApiException {
+    public void ingestIngestNativeTest() throws ApiException {
         NativeIngestRequest nativeIngestRequest = null;
         String durability = null;
         String authorization = null;
@@ -151,7 +151,7 @@ public class IngestApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         IngestOutcome response =
-        api.ingestNative(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.ingestIngestNative(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
 
         // TODO: test validations
     }
@@ -165,7 +165,7 @@ public class IngestApiTest {
      *          if the Api call fails
      */
     @Test
-    public void ingestOtlpTest() throws ApiException {
+    public void ingestIngestOtlpTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String environmentId = null;
@@ -175,7 +175,7 @@ public class IngestApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         OtlpIngestOutcome response =
-        api.ingestOtlp(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.ingestIngestOtlp(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
 
         // TODO: test validations
     }
@@ -189,7 +189,7 @@ public class IngestApiTest {
      *          if the Api call fails
      */
     @Test
-    public void ingestOtlpJsonCollectorTest() throws ApiException {
+    public void ingestIngestOtlpJsonCollectorTest() throws ApiException {
         String durability = null;
         String authorization = null;
         String xBeaterApiKey = null;
@@ -197,7 +197,7 @@ public class IngestApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         OtlpIngestOutcome response =
-        api.ingestOtlpJsonCollector(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
+        api.ingestIngestOtlpJsonCollector(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
 
         // TODO: test validations
     }
@@ -211,7 +211,7 @@ public class IngestApiTest {
      *          if the Api call fails
      */
     @Test
-    public void reconcileTraceTest() throws ApiException {
+    public void ingestReconcileTraceTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String traceId = null;
@@ -220,7 +220,7 @@ public class IngestApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         TraceIngestedReconcileReport response =
-        api.reconcileTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.ingestReconcileTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
 
         // TODO: test validations
     }
@@ -234,7 +234,7 @@ public class IngestApiTest {
      *          if the Api call fails
      */
     @Test
-    public void replayDeadLetterTest() throws ApiException {
+    public void ingestReplayDeadLetterTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String messageId = null;
@@ -244,7 +244,7 @@ public class IngestApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         DeadLetterReplayReport response =
-        api.replayDeadLetter(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.ingestReplayDeadLetter(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
 
         // TODO: test validations
     }

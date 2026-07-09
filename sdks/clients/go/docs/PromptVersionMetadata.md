@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**CreatedAt** | **time.Time** |  | 
-**CreatedBy** | Pointer to **NullableString** |  | [optional] 
-**Message** | Pointer to **NullableString** |  | [optional] 
+**CreatedAt** | **time.Time** |  |
+**CreatedBy** | Pointer to **NullableString** |  | [optional]
+**Message** | Pointer to **NullableString** |  | [optional]
 
 ## Methods
 
@@ -119,5 +119,3 @@ HasMessage returns a boolean if a field has been set.
 UnsetMessage ensures that no value is present for Message, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

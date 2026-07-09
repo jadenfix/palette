@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**display_name** | **str** |  | 
-**provider** | **str** |  | 
-**secret_value** | **str** |  | 
+**display_name** | **str** |  |
+**provider** | **str** |  |
+**secret_value** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ create_provider_secret_http_request_dict = create_provider_secret_http_request_i
 create_provider_secret_http_request_from_dict = CreateProviderSecretHttpRequest.from_dict(create_provider_secret_http_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -42,7 +42,7 @@ class ApiKeysApi:
 
 
     @validate_call
-    def create_api_key(
+    def api_keys_create_api_key(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -65,7 +65,7 @@ class ApiKeysApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiKeyCreatedResponse:
-        """create_api_key
+        """api_keys_create_api_key
 
 
         :param tenant_id: tenant_id (required)
@@ -106,7 +106,7 @@ class ApiKeysApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_api_key_serialize(
+        _param = self._api_keys_create_api_key_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -139,7 +139,7 @@ class ApiKeysApi:
 
 
     @validate_call
-    def create_api_key_with_http_info(
+    def api_keys_create_api_key_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -162,7 +162,7 @@ class ApiKeysApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ApiKeyCreatedResponse]:
-        """create_api_key
+        """api_keys_create_api_key
 
 
         :param tenant_id: tenant_id (required)
@@ -203,7 +203,7 @@ class ApiKeysApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_api_key_serialize(
+        _param = self._api_keys_create_api_key_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -236,7 +236,7 @@ class ApiKeysApi:
 
 
     @validate_call
-    def create_api_key_without_preload_content(
+    def api_keys_create_api_key_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -259,7 +259,7 @@ class ApiKeysApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """create_api_key
+        """api_keys_create_api_key
 
 
         :param tenant_id: tenant_id (required)
@@ -300,7 +300,7 @@ class ApiKeysApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_api_key_serialize(
+        _param = self._api_keys_create_api_key_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -328,7 +328,7 @@ class ApiKeysApi:
         return response_data.response
 
 
-    def _create_api_key_serialize(
+    def _api_keys_create_api_key_serialize(
         self,
         tenant_id,
         project_id,
@@ -426,7 +426,7 @@ class ApiKeysApi:
 
 
     @validate_call
-    def revoke_api_key(
+    def api_keys_revoke_api_key(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -449,7 +449,7 @@ class ApiKeysApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RevokedApiKey:
-        """revoke_api_key
+        """api_keys_revoke_api_key
 
 
         :param tenant_id: tenant_id (required)
@@ -490,7 +490,7 @@ class ApiKeysApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._revoke_api_key_serialize(
+        _param = self._api_keys_revoke_api_key_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -524,7 +524,7 @@ class ApiKeysApi:
 
 
     @validate_call
-    def revoke_api_key_with_http_info(
+    def api_keys_revoke_api_key_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -547,7 +547,7 @@ class ApiKeysApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[RevokedApiKey]:
-        """revoke_api_key
+        """api_keys_revoke_api_key
 
 
         :param tenant_id: tenant_id (required)
@@ -588,7 +588,7 @@ class ApiKeysApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._revoke_api_key_serialize(
+        _param = self._api_keys_revoke_api_key_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -622,7 +622,7 @@ class ApiKeysApi:
 
 
     @validate_call
-    def revoke_api_key_without_preload_content(
+    def api_keys_revoke_api_key_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -645,7 +645,7 @@ class ApiKeysApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """revoke_api_key
+        """api_keys_revoke_api_key
 
 
         :param tenant_id: tenant_id (required)
@@ -686,7 +686,7 @@ class ApiKeysApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._revoke_api_key_serialize(
+        _param = self._api_keys_revoke_api_key_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -715,7 +715,7 @@ class ApiKeysApi:
         return response_data.response
 
 
-    def _revoke_api_key_serialize(
+    def _api_keys_revoke_api_key_serialize(
         self,
         tenant_id,
         project_id,

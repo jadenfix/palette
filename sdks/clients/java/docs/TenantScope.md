@@ -10,6 +10,3 @@
 |**environmentId** | **String** |  |  |
 |**projectId** | **String** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

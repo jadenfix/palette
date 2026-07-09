@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**next_cursor** | **str** |  | [optional] 
-**scenarios** | [**List[Scenario]**](Scenario.md) |  | 
+**next_cursor** | **str** |  | [optional]
+**scenarios** | [**List[Scenario]**](Scenario.md) |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ list_scenarios_response_dict = list_scenarios_response_instance.to_dict()
 list_scenarios_response_from_dict = ListScenariosResponse.from_dict(list_scenarios_response_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

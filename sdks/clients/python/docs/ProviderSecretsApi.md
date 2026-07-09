@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_provider_secret**](ProviderSecretsApi.md#create_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} | 
-[**list_provider_secrets**](ProviderSecretsApi.md#list_provider_secrets) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} | 
-[**revoke_provider_secret**](ProviderSecretsApi.md#revoke_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke | 
+[**provider_secrets_create_provider_secret**](ProviderSecretsApi.md#provider_secrets_create_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} |
+[**provider_secrets_list_provider_secrets**](ProviderSecretsApi.md#provider_secrets_list_provider_secrets) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} |
+[**provider_secrets_revoke_provider_secret**](ProviderSecretsApi.md#provider_secrets_revoke_provider_secret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke |
 
 
-# **create_provider_secret**
-> ProviderSecretMetadata create_provider_secret(tenant_id, project_id, create_provider_secret_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **provider_secrets_create_provider_secret**
+> ProviderSecretMetadata provider_secrets_create_provider_secret(tenant_id, project_id, create_provider_secret_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -37,18 +37,18 @@ with beater_client.ApiClient(configuration) as api_client:
     api_instance = beater_client.ProviderSecretsApi(api_client)
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
-    create_provider_secret_http_request = beater_client.CreateProviderSecretHttpRequest() # CreateProviderSecretHttpRequest | 
+    create_provider_secret_http_request = beater_client.CreateProviderSecretHttpRequest() # CreateProviderSecretHttpRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.create_provider_secret(tenant_id, project_id, create_provider_secret_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ProviderSecretsApi->create_provider_secret:\n")
+        api_response = api_instance.provider_secrets_create_provider_secret(tenant_id, project_id, create_provider_secret_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ProviderSecretsApi->provider_secrets_create_provider_secret:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ProviderSecretsApi->create_provider_secret: %s\n" % e)
+        print("Exception when calling ProviderSecretsApi->provider_secrets_create_provider_secret: %s\n" % e)
 ```
 
 
@@ -58,13 +58,13 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **create_provider_secret_http_request** | [**CreateProviderSecretHttpRequest**](CreateProviderSecretHttpRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **create_provider_secret_http_request** | [**CreateProviderSecretHttpRequest**](CreateProviderSecretHttpRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -90,8 +90,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_provider_secrets**
-> List[ProviderSecretMetadata] list_provider_secrets(tenant_id, project_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **provider_secrets_list_provider_secrets**
+> List[ProviderSecretMetadata] provider_secrets_list_provider_secrets(tenant_id, project_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -123,11 +123,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.list_provider_secrets(tenant_id, project_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ProviderSecretsApi->list_provider_secrets:\n")
+        api_response = api_instance.provider_secrets_list_provider_secrets(tenant_id, project_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ProviderSecretsApi->provider_secrets_list_provider_secrets:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ProviderSecretsApi->list_provider_secrets: %s\n" % e)
+        print("Exception when calling ProviderSecretsApi->provider_secrets_list_provider_secrets: %s\n" % e)
 ```
 
 
@@ -137,12 +137,12 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -168,8 +168,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **revoke_provider_secret**
-> RevokedProviderSecret revoke_provider_secret(tenant_id, project_id, provider_secret_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **provider_secrets_revoke_provider_secret**
+> RevokedProviderSecret provider_secrets_revoke_provider_secret(tenant_id, project_id, provider_secret_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -202,11 +202,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.revoke_provider_secret(tenant_id, project_id, provider_secret_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ProviderSecretsApi->revoke_provider_secret:\n")
+        api_response = api_instance.provider_secrets_revoke_provider_secret(tenant_id, project_id, provider_secret_id, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ProviderSecretsApi->provider_secrets_revoke_provider_secret:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ProviderSecretsApi->revoke_provider_secret: %s\n" % e)
+        print("Exception when calling ProviderSecretsApi->provider_secrets_revoke_provider_secret: %s\n" % e)
 ```
 
 
@@ -216,13 +216,13 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **provider_secret_id** | **str**| provider_secret_id | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **provider_secret_id** | **str**| provider_secret_id |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -248,4 +248,3 @@ No authorization required
 **404** | Resource not found |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

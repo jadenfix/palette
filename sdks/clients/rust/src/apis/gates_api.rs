@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
-/// struct for passing parameters to the method [`create_gate`]
+/// struct for passing parameters to the method [`gates_period_create_gate`]
 #[derive(Clone, Debug)]
-pub struct CreateGateParams {
+pub struct GatesPeriodCreateGateParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -32,9 +32,9 @@ pub struct CreateGateParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`run_gate`]
+/// struct for passing parameters to the method [`gates_period_run_gate`]
 #[derive(Clone, Debug)]
-pub struct RunGateParams {
+pub struct GatesPeriodRunGateParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -53,20 +53,20 @@ pub struct RunGateParams {
 }
 
 
-/// struct for typed errors of method [`create_gate`]
+/// struct for typed errors of method [`gates_period_create_gate`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum CreateGateError {
+pub enum GatesPeriodCreateGateError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`run_gate`]
+/// struct for typed errors of method [`gates_period_run_gate`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum RunGateError {
+pub enum GatesPeriodRunGateError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -75,7 +75,7 @@ pub enum RunGateError {
 }
 
 
-pub async fn create_gate(configuration: &configuration::Configuration, params: CreateGateParams) -> Result<models::GateDefinition, Error<CreateGateError>> {
+pub async fn gates_period_create_gate(configuration: &configuration::Configuration, params: GatesPeriodCreateGateParams) -> Result<models::GateDefinition, Error<GatesPeriodCreateGateError>> {
 
     let uri_str = format!("{}/v1/gates/{tenant_id}/{project_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -107,12 +107,12 @@ pub async fn create_gate(configuration: &configuration::Configuration, params: C
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<CreateGateError> = serde_json::from_str(&content).ok();
+        let entity: Option<GatesPeriodCreateGateError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn run_gate(configuration: &configuration::Configuration, params: RunGateParams) -> Result<models::GateRunReport, Error<RunGateError>> {
+pub async fn gates_period_run_gate(configuration: &configuration::Configuration, params: GatesPeriodRunGateParams) -> Result<models::GateRunReport, Error<GatesPeriodRunGateError>> {
 
     let uri_str = format!("{}/v1/gates/{tenant_id}/{project_id}/{gate_id}/run", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), gate_id=crate::apis::urlencode(params.gate_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -144,7 +144,7 @@ pub async fn run_gate(configuration: &configuration::Configuration, params: RunG
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<RunGateError> = serde_json::from_str(&content).ok();
+        let entity: Option<GatesPeriodRunGateError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

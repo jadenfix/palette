@@ -22,14 +22,14 @@ func Test_beaterclient_ScenariosAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test ScenariosAPIService CreateScenario", func(t *testing.T) {
+	t.Run("Test ScenariosAPIService ScenariosCreateScenario", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ScenariosAPI.CreateScenario(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ScenariosAPI.ScenariosCreateScenario(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -37,7 +37,7 @@ func Test_beaterclient_ScenariosAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ScenariosAPIService GetScenario", func(t *testing.T) {
+	t.Run("Test ScenariosAPIService ScenariosGetScenario", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -45,7 +45,7 @@ func Test_beaterclient_ScenariosAPIService(t *testing.T) {
 		var projectId string
 		var scenarioId string
 
-		resp, httpRes, err := apiClient.ScenariosAPI.GetScenario(context.Background(), tenantId, projectId, scenarioId).Execute()
+		resp, httpRes, err := apiClient.ScenariosAPI.ScenariosGetScenario(context.Background(), tenantId, projectId, scenarioId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -53,14 +53,14 @@ func Test_beaterclient_ScenariosAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ScenariosAPIService ListScenarios", func(t *testing.T) {
+	t.Run("Test ScenariosAPIService ScenariosListScenarios", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ScenariosAPI.ListScenarios(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ScenariosAPI.ScenariosListScenarios(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -68,14 +68,14 @@ func Test_beaterclient_ScenariosAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ScenariosAPIService MineScenarios", func(t *testing.T) {
+	t.Run("Test ScenariosAPIService ScenariosMineScenarios", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ScenariosAPI.MineScenarios(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ScenariosAPI.ScenariosMineScenarios(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

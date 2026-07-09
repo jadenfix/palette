@@ -17,6 +17,3 @@
 | Name | Value |
 |---- | -----|
 | REDACTED | &quot;redacted&quot; |
-
-
-

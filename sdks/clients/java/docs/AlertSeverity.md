@@ -10,6 +10,3 @@
 * `WARNING` (value: `"warning"`)
 
 * `CRITICAL` (value: `"critical"`)
-
-
-

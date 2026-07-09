@@ -10,6 +10,3 @@ A structural fingerprint of a trace's failure shape.  Two traces with the same o
 |------------ | ------------- | ------------- | -------------|
 |**hash** | **String** | Stable sha256 hash of the ordered shingles. |  |
 |**shingles** | **List&lt;String&gt;** | Ordered &#x60;(kind|status)&#x60; shingles of failing spans. |  |
-
-
-

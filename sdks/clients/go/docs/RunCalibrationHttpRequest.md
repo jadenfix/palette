@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**EvalReportId** | Pointer to **NullableString** |  | [optional] 
-**EvaluatorVersionId** | Pointer to **NullableString** |  | [optional] 
-**PassThreshold** | Pointer to **NullableFloat64** |  | [optional] 
+**EvalReportId** | Pointer to **NullableString** |  | [optional]
+**EvaluatorVersionId** | Pointer to **NullableString** |  | [optional]
+**PassThreshold** | Pointer to **NullableFloat64** |  | [optional]
 
 ## Methods
 
@@ -134,5 +134,3 @@ HasPassThreshold returns a boolean if a field has been set.
 UnsetPassThreshold ensures that no value is present for PassThreshold, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

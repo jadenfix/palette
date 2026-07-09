@@ -4,24 +4,24 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**connectConnector**](ConnectorsApi.md#connectConnector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |  |
-| [**connectConnectorWithHttpInfo**](ConnectorsApi.md#connectConnectorWithHttpInfo) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |  |
-| [**connectorStatus**](ConnectorsApi.md#connectorStatus) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |  |
-| [**connectorStatusWithHttpInfo**](ConnectorsApi.md#connectorStatusWithHttpInfo) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |  |
-| [**getConnectorSkills**](ConnectorsApi.md#getConnectorSkills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |  |
-| [**getConnectorSkillsWithHttpInfo**](ConnectorsApi.md#getConnectorSkillsWithHttpInfo) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |  |
-| [**invokeConnectorTool**](ConnectorsApi.md#invokeConnectorTool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke |  |
-| [**invokeConnectorToolWithHttpInfo**](ConnectorsApi.md#invokeConnectorToolWithHttpInfo) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke |  |
-| [**listConnectorTools**](ConnectorsApi.md#listConnectorTools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools |  |
-| [**listConnectorToolsWithHttpInfo**](ConnectorsApi.md#listConnectorToolsWithHttpInfo) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools |  |
-| [**listConnectors**](ConnectorsApi.md#listConnectors) | **GET** /v1/connectors/{tenant_id}/{project_id} |  |
-| [**listConnectorsWithHttpInfo**](ConnectorsApi.md#listConnectorsWithHttpInfo) | **GET** /v1/connectors/{tenant_id}/{project_id} |  |
+| [**connectorsConnectConnector**](ConnectorsApi.md#connectorsConnectConnector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |  |
+| [**connectorsConnectConnectorWithHttpInfo**](ConnectorsApi.md#connectorsConnectConnectorWithHttpInfo) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |  |
+| [**connectorsConnectorStatus**](ConnectorsApi.md#connectorsConnectorStatus) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |  |
+| [**connectorsConnectorStatusWithHttpInfo**](ConnectorsApi.md#connectorsConnectorStatusWithHttpInfo) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |  |
+| [**connectorsGetConnectorSkills**](ConnectorsApi.md#connectorsGetConnectorSkills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |  |
+| [**connectorsGetConnectorSkillsWithHttpInfo**](ConnectorsApi.md#connectorsGetConnectorSkillsWithHttpInfo) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |  |
+| [**connectorsInvokeConnectorTool**](ConnectorsApi.md#connectorsInvokeConnectorTool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke |  |
+| [**connectorsInvokeConnectorToolWithHttpInfo**](ConnectorsApi.md#connectorsInvokeConnectorToolWithHttpInfo) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke |  |
+| [**connectorsListConnectorTools**](ConnectorsApi.md#connectorsListConnectorTools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools |  |
+| [**connectorsListConnectorToolsWithHttpInfo**](ConnectorsApi.md#connectorsListConnectorToolsWithHttpInfo) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools |  |
+| [**connectorsListConnectors**](ConnectorsApi.md#connectorsListConnectors) | **GET** /v1/connectors/{tenant_id}/{project_id} |  |
+| [**connectorsListConnectorsWithHttpInfo**](ConnectorsApi.md#connectorsListConnectorsWithHttpInfo) | **GET** /v1/connectors/{tenant_id}/{project_id} |  |
 
 
 
-## connectConnector
+## connectorsConnectConnector
 
-> ConnectionLink connectConnector(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ConnectionLink connectorsConnectConnector(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -43,16 +43,16 @@ public class Example {
         ConnectorsApi apiInstance = new ConnectorsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        ConnectConnectorRequest connectConnectorRequest = new ConnectConnectorRequest(); // ConnectConnectorRequest | 
+        ConnectConnectorRequest connectConnectorRequest = new ConnectConnectorRequest(); // ConnectConnectorRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ConnectionLink result = apiInstance.connectConnector(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ConnectionLink result = apiInstance.connectorsConnectConnector(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#connectConnector");
+            System.err.println("Exception when calling ConnectorsApi#connectorsConnectConnector");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -98,9 +98,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **501** | Connector provider not configured |  -  |
 
-## connectConnectorWithHttpInfo
+## connectorsConnectConnectorWithHttpInfo
 
-> ApiResponse<ConnectionLink> connectConnector connectConnectorWithHttpInfo(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ConnectionLink> connectorsConnectConnector connectorsConnectConnectorWithHttpInfo(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -123,18 +123,18 @@ public class Example {
         ConnectorsApi apiInstance = new ConnectorsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        ConnectConnectorRequest connectConnectorRequest = new ConnectConnectorRequest(); // ConnectConnectorRequest | 
+        ConnectConnectorRequest connectConnectorRequest = new ConnectConnectorRequest(); // ConnectConnectorRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ConnectionLink> response = apiInstance.connectConnectorWithHttpInfo(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ConnectionLink> response = apiInstance.connectorsConnectConnectorWithHttpInfo(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#connectConnector");
+            System.err.println("Exception when calling ConnectorsApi#connectorsConnectConnector");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -181,9 +181,9 @@ No authorization required
 | **501** | Connector provider not configured |  -  |
 
 
-## connectorStatus
+## connectorsConnectorStatus
 
-> ConnectionStatus connectorStatus(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ConnectionStatus connectorsConnectorStatus(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -211,10 +211,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ConnectionStatus result = apiInstance.connectorStatus(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ConnectionStatus result = apiInstance.connectorsConnectorStatus(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#connectorStatus");
+            System.err.println("Exception when calling ConnectorsApi#connectorsConnectorStatus");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -260,9 +260,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **501** | Connector provider not configured |  -  |
 
-## connectorStatusWithHttpInfo
+## connectorsConnectorStatusWithHttpInfo
 
-> ApiResponse<ConnectionStatus> connectorStatus connectorStatusWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ConnectionStatus> connectorsConnectorStatus connectorsConnectorStatusWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -291,12 +291,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ConnectionStatus> response = apiInstance.connectorStatusWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ConnectionStatus> response = apiInstance.connectorsConnectorStatusWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#connectorStatus");
+            System.err.println("Exception when calling ConnectorsApi#connectorsConnectorStatus");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -343,9 +343,9 @@ No authorization required
 | **501** | Connector provider not configured |  -  |
 
 
-## getConnectorSkills
+## connectorsGetConnectorSkills
 
-> ConnectorSkillsResponse getConnectorSkills(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ConnectorSkillsResponse connectorsGetConnectorSkills(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -373,10 +373,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ConnectorSkillsResponse result = apiInstance.getConnectorSkills(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ConnectorSkillsResponse result = apiInstance.connectorsGetConnectorSkills(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#getConnectorSkills");
+            System.err.println("Exception when calling ConnectorsApi#connectorsGetConnectorSkills");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -422,9 +422,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **501** | Connector provider not configured |  -  |
 
-## getConnectorSkillsWithHttpInfo
+## connectorsGetConnectorSkillsWithHttpInfo
 
-> ApiResponse<ConnectorSkillsResponse> getConnectorSkills getConnectorSkillsWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ConnectorSkillsResponse> connectorsGetConnectorSkills connectorsGetConnectorSkillsWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -453,12 +453,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ConnectorSkillsResponse> response = apiInstance.getConnectorSkillsWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ConnectorSkillsResponse> response = apiInstance.connectorsGetConnectorSkillsWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#getConnectorSkills");
+            System.err.println("Exception when calling ConnectorsApi#connectorsGetConnectorSkills");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -505,9 +505,9 @@ No authorization required
 | **501** | Connector provider not configured |  -  |
 
 
-## invokeConnectorTool
+## connectorsInvokeConnectorTool
 
-> ToolExecution invokeConnectorTool(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ToolExecution connectorsInvokeConnectorTool(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -529,16 +529,16 @@ public class Example {
         ConnectorsApi apiInstance = new ConnectorsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        InvokeConnectorRequest invokeConnectorRequest = new InvokeConnectorRequest(); // InvokeConnectorRequest | 
+        InvokeConnectorRequest invokeConnectorRequest = new InvokeConnectorRequest(); // InvokeConnectorRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ToolExecution result = apiInstance.invokeConnectorTool(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ToolExecution result = apiInstance.connectorsInvokeConnectorTool(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#invokeConnectorTool");
+            System.err.println("Exception when calling ConnectorsApi#connectorsInvokeConnectorTool");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -584,9 +584,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **501** | Connector provider not configured |  -  |
 
-## invokeConnectorToolWithHttpInfo
+## connectorsInvokeConnectorToolWithHttpInfo
 
-> ApiResponse<ToolExecution> invokeConnectorTool invokeConnectorToolWithHttpInfo(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ToolExecution> connectorsInvokeConnectorTool connectorsInvokeConnectorToolWithHttpInfo(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -609,18 +609,18 @@ public class Example {
         ConnectorsApi apiInstance = new ConnectorsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        InvokeConnectorRequest invokeConnectorRequest = new InvokeConnectorRequest(); // InvokeConnectorRequest | 
+        InvokeConnectorRequest invokeConnectorRequest = new InvokeConnectorRequest(); // InvokeConnectorRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ToolExecution> response = apiInstance.invokeConnectorToolWithHttpInfo(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ToolExecution> response = apiInstance.connectorsInvokeConnectorToolWithHttpInfo(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#invokeConnectorTool");
+            System.err.println("Exception when calling ConnectorsApi#connectorsInvokeConnectorTool");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -667,9 +667,9 @@ No authorization required
 | **501** | Connector provider not configured |  -  |
 
 
-## listConnectorTools
+## connectorsListConnectorTools
 
-> List<ConnectorTool> listConnectorTools(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> List<ConnectorTool> connectorsListConnectorTools(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -698,10 +698,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            List<ConnectorTool> result = apiInstance.listConnectorTools(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            List<ConnectorTool> result = apiInstance.connectorsListConnectorTools(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#listConnectorTools");
+            System.err.println("Exception when calling ConnectorsApi#connectorsListConnectorTools");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -748,9 +748,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **501** | Connector provider not configured |  -  |
 
-## listConnectorToolsWithHttpInfo
+## connectorsListConnectorToolsWithHttpInfo
 
-> ApiResponse<List<ConnectorTool>> listConnectorTools listConnectorToolsWithHttpInfo(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<List<ConnectorTool>> connectorsListConnectorTools connectorsListConnectorToolsWithHttpInfo(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -780,12 +780,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<List<ConnectorTool>> response = apiInstance.listConnectorToolsWithHttpInfo(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<List<ConnectorTool>> response = apiInstance.connectorsListConnectorToolsWithHttpInfo(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#listConnectorTools");
+            System.err.println("Exception when calling ConnectorsApi#connectorsListConnectorTools");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -833,9 +833,9 @@ No authorization required
 | **501** | Connector provider not configured |  -  |
 
 
-## listConnectors
+## connectorsListConnectors
 
-> List<Toolkit> listConnectors(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> List<Toolkit> connectorsListConnectors(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -863,10 +863,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            List<Toolkit> result = apiInstance.listConnectors(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            List<Toolkit> result = apiInstance.connectorsListConnectors(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#listConnectors");
+            System.err.println("Exception when calling ConnectorsApi#connectorsListConnectors");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -912,9 +912,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **501** | Connector provider not configured |  -  |
 
-## listConnectorsWithHttpInfo
+## connectorsListConnectorsWithHttpInfo
 
-> ApiResponse<List<Toolkit>> listConnectors listConnectorsWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<List<Toolkit>> connectorsListConnectors connectorsListConnectorsWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -943,12 +943,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<List<Toolkit>> response = apiInstance.listConnectorsWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<List<Toolkit>> response = apiInstance.connectorsListConnectorsWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ConnectorsApi#listConnectors");
+            System.err.println("Exception when calling ConnectorsApi#connectorsListConnectors");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -993,4 +993,3 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 | **501** | Connector provider not configured |  -  |
-

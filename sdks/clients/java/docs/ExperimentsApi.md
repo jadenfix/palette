@@ -4,16 +4,16 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**runDeterministicExperiment**](ExperimentsApi.md#runDeterministicExperiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic |  |
-| [**runDeterministicExperimentWithHttpInfo**](ExperimentsApi.md#runDeterministicExperimentWithHttpInfo) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic |  |
-| [**runJudgeExperiment**](ExperimentsApi.md#runJudgeExperiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge |  |
-| [**runJudgeExperimentWithHttpInfo**](ExperimentsApi.md#runJudgeExperimentWithHttpInfo) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge |  |
+| [**experimentsRunDeterministicExperiment**](ExperimentsApi.md#experimentsRunDeterministicExperiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic |  |
+| [**experimentsRunDeterministicExperimentWithHttpInfo**](ExperimentsApi.md#experimentsRunDeterministicExperimentWithHttpInfo) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic |  |
+| [**experimentsRunJudgeExperiment**](ExperimentsApi.md#experimentsRunJudgeExperiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge |  |
+| [**experimentsRunJudgeExperimentWithHttpInfo**](ExperimentsApi.md#experimentsRunJudgeExperimentWithHttpInfo) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge |  |
 
 
 
-## runDeterministicExperiment
+## experimentsRunDeterministicExperiment
 
-> ExperimentRunReport runDeterministicExperiment(tenantId, projectId, datasetId, versionId, runExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ExperimentRunReport experimentsRunDeterministicExperiment(tenantId, projectId, datasetId, versionId, runExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -37,16 +37,16 @@ public class Example {
         String projectId = "projectId_example"; // String | project_id
         String datasetId = "datasetId_example"; // String | dataset_id
         String versionId = "versionId_example"; // String | version_id
-        RunExperimentRequest runExperimentRequest = new RunExperimentRequest(); // RunExperimentRequest | 
+        RunExperimentRequest runExperimentRequest = new RunExperimentRequest(); // RunExperimentRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ExperimentRunReport result = apiInstance.runDeterministicExperiment(tenantId, projectId, datasetId, versionId, runExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ExperimentRunReport result = apiInstance.experimentsRunDeterministicExperiment(tenantId, projectId, datasetId, versionId, runExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ExperimentsApi#runDeterministicExperiment");
+            System.err.println("Exception when calling ExperimentsApi#experimentsRunDeterministicExperiment");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -94,9 +94,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## runDeterministicExperimentWithHttpInfo
+## experimentsRunDeterministicExperimentWithHttpInfo
 
-> ApiResponse<ExperimentRunReport> runDeterministicExperiment runDeterministicExperimentWithHttpInfo(tenantId, projectId, datasetId, versionId, runExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ExperimentRunReport> experimentsRunDeterministicExperiment experimentsRunDeterministicExperimentWithHttpInfo(tenantId, projectId, datasetId, versionId, runExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -121,18 +121,18 @@ public class Example {
         String projectId = "projectId_example"; // String | project_id
         String datasetId = "datasetId_example"; // String | dataset_id
         String versionId = "versionId_example"; // String | version_id
-        RunExperimentRequest runExperimentRequest = new RunExperimentRequest(); // RunExperimentRequest | 
+        RunExperimentRequest runExperimentRequest = new RunExperimentRequest(); // RunExperimentRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ExperimentRunReport> response = apiInstance.runDeterministicExperimentWithHttpInfo(tenantId, projectId, datasetId, versionId, runExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ExperimentRunReport> response = apiInstance.experimentsRunDeterministicExperimentWithHttpInfo(tenantId, projectId, datasetId, versionId, runExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ExperimentsApi#runDeterministicExperiment");
+            System.err.println("Exception when calling ExperimentsApi#experimentsRunDeterministicExperiment");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -181,9 +181,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## runJudgeExperiment
+## experimentsRunJudgeExperiment
 
-> ExperimentRunReport runJudgeExperiment(tenantId, projectId, datasetId, versionId, runJudgeExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ExperimentRunReport experimentsRunJudgeExperiment(tenantId, projectId, datasetId, versionId, runJudgeExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -207,16 +207,16 @@ public class Example {
         String projectId = "projectId_example"; // String | project_id
         String datasetId = "datasetId_example"; // String | dataset_id
         String versionId = "versionId_example"; // String | version_id
-        RunJudgeExperimentRequest runJudgeExperimentRequest = new RunJudgeExperimentRequest(); // RunJudgeExperimentRequest | 
+        RunJudgeExperimentRequest runJudgeExperimentRequest = new RunJudgeExperimentRequest(); // RunJudgeExperimentRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ExperimentRunReport result = apiInstance.runJudgeExperiment(tenantId, projectId, datasetId, versionId, runJudgeExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ExperimentRunReport result = apiInstance.experimentsRunJudgeExperiment(tenantId, projectId, datasetId, versionId, runJudgeExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ExperimentsApi#runJudgeExperiment");
+            System.err.println("Exception when calling ExperimentsApi#experimentsRunJudgeExperiment");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -264,9 +264,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## runJudgeExperimentWithHttpInfo
+## experimentsRunJudgeExperimentWithHttpInfo
 
-> ApiResponse<ExperimentRunReport> runJudgeExperiment runJudgeExperimentWithHttpInfo(tenantId, projectId, datasetId, versionId, runJudgeExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ExperimentRunReport> experimentsRunJudgeExperiment experimentsRunJudgeExperimentWithHttpInfo(tenantId, projectId, datasetId, versionId, runJudgeExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -291,18 +291,18 @@ public class Example {
         String projectId = "projectId_example"; // String | project_id
         String datasetId = "datasetId_example"; // String | dataset_id
         String versionId = "versionId_example"; // String | version_id
-        RunJudgeExperimentRequest runJudgeExperimentRequest = new RunJudgeExperimentRequest(); // RunJudgeExperimentRequest | 
+        RunJudgeExperimentRequest runJudgeExperimentRequest = new RunJudgeExperimentRequest(); // RunJudgeExperimentRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ExperimentRunReport> response = apiInstance.runJudgeExperimentWithHttpInfo(tenantId, projectId, datasetId, versionId, runJudgeExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ExperimentRunReport> response = apiInstance.experimentsRunJudgeExperimentWithHttpInfo(tenantId, projectId, datasetId, versionId, runJudgeExperimentRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ExperimentsApi#runJudgeExperiment");
+            System.err.println("Exception when calling ExperimentsApi#experimentsRunJudgeExperiment");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -349,4 +349,3 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
-

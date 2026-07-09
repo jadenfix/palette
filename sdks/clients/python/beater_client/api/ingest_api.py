@@ -48,7 +48,7 @@ class IngestApi:
 
 
     @validate_call
-    def drain_trace_ingested(
+    def ingest_drain_trace_ingested(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -70,7 +70,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> TraceIngestedDrainReport:
-        """drain_trace_ingested
+        """ingest_drain_trace_ingested
 
 
         :param tenant_id: tenant_id (required)
@@ -109,7 +109,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._drain_trace_ingested_serialize(
+        _param = self._ingest_drain_trace_ingested_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -142,7 +142,7 @@ class IngestApi:
 
 
     @validate_call
-    def drain_trace_ingested_with_http_info(
+    def ingest_drain_trace_ingested_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -164,7 +164,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[TraceIngestedDrainReport]:
-        """drain_trace_ingested
+        """ingest_drain_trace_ingested
 
 
         :param tenant_id: tenant_id (required)
@@ -203,7 +203,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._drain_trace_ingested_serialize(
+        _param = self._ingest_drain_trace_ingested_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -236,7 +236,7 @@ class IngestApi:
 
 
     @validate_call
-    def drain_trace_ingested_without_preload_content(
+    def ingest_drain_trace_ingested_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -258,7 +258,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """drain_trace_ingested
+        """ingest_drain_trace_ingested
 
 
         :param tenant_id: tenant_id (required)
@@ -297,7 +297,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._drain_trace_ingested_serialize(
+        _param = self._ingest_drain_trace_ingested_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -325,7 +325,7 @@ class IngestApi:
         return response_data.response
 
 
-    def _drain_trace_ingested_serialize(
+    def _ingest_drain_trace_ingested_serialize(
         self,
         tenant_id,
         project_id,
@@ -409,7 +409,7 @@ class IngestApi:
 
 
     @validate_call
-    def drain_trace_writes(
+    def ingest_drain_trace_writes(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -431,7 +431,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> TraceWriteDrainReport:
-        """drain_trace_writes
+        """ingest_drain_trace_writes
 
 
         :param tenant_id: tenant_id (required)
@@ -470,7 +470,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._drain_trace_writes_serialize(
+        _param = self._ingest_drain_trace_writes_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -503,7 +503,7 @@ class IngestApi:
 
 
     @validate_call
-    def drain_trace_writes_with_http_info(
+    def ingest_drain_trace_writes_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -525,7 +525,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[TraceWriteDrainReport]:
-        """drain_trace_writes
+        """ingest_drain_trace_writes
 
 
         :param tenant_id: tenant_id (required)
@@ -564,7 +564,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._drain_trace_writes_serialize(
+        _param = self._ingest_drain_trace_writes_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -597,7 +597,7 @@ class IngestApi:
 
 
     @validate_call
-    def drain_trace_writes_without_preload_content(
+    def ingest_drain_trace_writes_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -619,7 +619,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """drain_trace_writes
+        """ingest_drain_trace_writes
 
 
         :param tenant_id: tenant_id (required)
@@ -658,7 +658,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._drain_trace_writes_serialize(
+        _param = self._ingest_drain_trace_writes_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -686,7 +686,7 @@ class IngestApi:
         return response_data.response
 
 
-    def _drain_trace_writes_serialize(
+    def _ingest_drain_trace_writes_serialize(
         self,
         tenant_id,
         project_id,
@@ -770,7 +770,7 @@ class IngestApi:
 
 
     @validate_call
-    def get_ingest_queue_status(
+    def ingest_get_ingest_queue_status(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -791,7 +791,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> IngestQueueStatus:
-        """get_ingest_queue_status
+        """ingest_get_ingest_queue_status
 
 
         :param tenant_id: tenant_id (required)
@@ -828,7 +828,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_ingest_queue_status_serialize(
+        _param = self._ingest_get_ingest_queue_status_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -859,7 +859,7 @@ class IngestApi:
 
 
     @validate_call
-    def get_ingest_queue_status_with_http_info(
+    def ingest_get_ingest_queue_status_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -880,7 +880,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[IngestQueueStatus]:
-        """get_ingest_queue_status
+        """ingest_get_ingest_queue_status
 
 
         :param tenant_id: tenant_id (required)
@@ -917,7 +917,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_ingest_queue_status_serialize(
+        _param = self._ingest_get_ingest_queue_status_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -948,7 +948,7 @@ class IngestApi:
 
 
     @validate_call
-    def get_ingest_queue_status_without_preload_content(
+    def ingest_get_ingest_queue_status_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -969,7 +969,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """get_ingest_queue_status
+        """ingest_get_ingest_queue_status
 
 
         :param tenant_id: tenant_id (required)
@@ -1006,7 +1006,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_ingest_queue_status_serialize(
+        _param = self._ingest_get_ingest_queue_status_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -1032,7 +1032,7 @@ class IngestApi:
         return response_data.response
 
 
-    def _get_ingest_queue_status_serialize(
+    def _ingest_get_ingest_queue_status_serialize(
         self,
         tenant_id,
         project_id,
@@ -1111,7 +1111,7 @@ class IngestApi:
 
 
     @validate_call
-    def import_source(
+    def ingest_import_source(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1133,7 +1133,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> IngestOutcome:
-        """import_source
+        """ingest_import_source
 
 
         :param tenant_id: tenant_id (required)
@@ -1172,7 +1172,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._import_source_serialize(
+        _param = self._ingest_import_source_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -1206,7 +1206,7 @@ class IngestApi:
 
 
     @validate_call
-    def import_source_with_http_info(
+    def ingest_import_source_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1228,7 +1228,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[IngestOutcome]:
-        """import_source
+        """ingest_import_source
 
 
         :param tenant_id: tenant_id (required)
@@ -1267,7 +1267,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._import_source_serialize(
+        _param = self._ingest_import_source_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -1301,7 +1301,7 @@ class IngestApi:
 
 
     @validate_call
-    def import_source_without_preload_content(
+    def ingest_import_source_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1323,7 +1323,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """import_source
+        """ingest_import_source
 
 
         :param tenant_id: tenant_id (required)
@@ -1362,7 +1362,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._import_source_serialize(
+        _param = self._ingest_import_source_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -1391,7 +1391,7 @@ class IngestApi:
         return response_data.response
 
 
-    def _import_source_serialize(
+    def _ingest_import_source_serialize(
         self,
         tenant_id,
         project_id,
@@ -1488,7 +1488,7 @@ class IngestApi:
 
 
     @validate_call
-    def ingest_native(
+    def ingest_ingest_native(
         self,
         native_ingest_request: NativeIngestRequest,
         durability: Optional[StrictStr] = None,
@@ -1509,7 +1509,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> IngestOutcome:
-        """ingest_native
+        """ingest_ingest_native
 
 
         :param native_ingest_request: (required)
@@ -1546,7 +1546,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._ingest_native_serialize(
+        _param = self._ingest_ingest_native_serialize(
             native_ingest_request=native_ingest_request,
             durability=durability,
             authorization=authorization,
@@ -1579,7 +1579,7 @@ class IngestApi:
 
 
     @validate_call
-    def ingest_native_with_http_info(
+    def ingest_ingest_native_with_http_info(
         self,
         native_ingest_request: NativeIngestRequest,
         durability: Optional[StrictStr] = None,
@@ -1600,7 +1600,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[IngestOutcome]:
-        """ingest_native
+        """ingest_ingest_native
 
 
         :param native_ingest_request: (required)
@@ -1637,7 +1637,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._ingest_native_serialize(
+        _param = self._ingest_ingest_native_serialize(
             native_ingest_request=native_ingest_request,
             durability=durability,
             authorization=authorization,
@@ -1670,7 +1670,7 @@ class IngestApi:
 
 
     @validate_call
-    def ingest_native_without_preload_content(
+    def ingest_ingest_native_without_preload_content(
         self,
         native_ingest_request: NativeIngestRequest,
         durability: Optional[StrictStr] = None,
@@ -1691,7 +1691,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """ingest_native
+        """ingest_ingest_native
 
 
         :param native_ingest_request: (required)
@@ -1728,7 +1728,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._ingest_native_serialize(
+        _param = self._ingest_ingest_native_serialize(
             native_ingest_request=native_ingest_request,
             durability=durability,
             authorization=authorization,
@@ -1756,7 +1756,7 @@ class IngestApi:
         return response_data.response
 
 
-    def _ingest_native_serialize(
+    def _ingest_ingest_native_serialize(
         self,
         native_ingest_request,
         durability,
@@ -1850,7 +1850,7 @@ class IngestApi:
 
 
     @validate_call
-    def ingest_otlp(
+    def ingest_ingest_otlp(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1873,7 +1873,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> OtlpIngestOutcome:
-        """ingest_otlp
+        """ingest_ingest_otlp
 
 
         :param tenant_id: tenant_id (required)
@@ -1914,7 +1914,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._ingest_otlp_serialize(
+        _param = self._ingest_ingest_otlp_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -1949,7 +1949,7 @@ class IngestApi:
 
 
     @validate_call
-    def ingest_otlp_with_http_info(
+    def ingest_ingest_otlp_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1972,7 +1972,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[OtlpIngestOutcome]:
-        """ingest_otlp
+        """ingest_ingest_otlp
 
 
         :param tenant_id: tenant_id (required)
@@ -2013,7 +2013,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._ingest_otlp_serialize(
+        _param = self._ingest_ingest_otlp_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -2048,7 +2048,7 @@ class IngestApi:
 
 
     @validate_call
-    def ingest_otlp_without_preload_content(
+    def ingest_ingest_otlp_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -2071,7 +2071,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """ingest_otlp
+        """ingest_ingest_otlp
 
 
         :param tenant_id: tenant_id (required)
@@ -2112,7 +2112,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._ingest_otlp_serialize(
+        _param = self._ingest_ingest_otlp_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -2142,7 +2142,7 @@ class IngestApi:
         return response_data.response
 
 
-    def _ingest_otlp_serialize(
+    def _ingest_ingest_otlp_serialize(
         self,
         tenant_id,
         project_id,
@@ -2229,7 +2229,7 @@ class IngestApi:
 
 
     @validate_call
-    def ingest_otlp_json_collector(
+    def ingest_ingest_otlp_json_collector(
         self,
         durability: Optional[StrictStr] = None,
         authorization: Annotated[Optional[StrictStr], Field(description="Bearer API token for strict auth")] = None,
@@ -2250,7 +2250,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> OtlpIngestOutcome:
-        """ingest_otlp_json_collector
+        """ingest_ingest_otlp_json_collector
 
 
         :param durability:
@@ -2287,7 +2287,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._ingest_otlp_json_collector_serialize(
+        _param = self._ingest_ingest_otlp_json_collector_serialize(
             durability=durability,
             authorization=authorization,
             x_beater_api_key=x_beater_api_key,
@@ -2320,7 +2320,7 @@ class IngestApi:
 
 
     @validate_call
-    def ingest_otlp_json_collector_with_http_info(
+    def ingest_ingest_otlp_json_collector_with_http_info(
         self,
         durability: Optional[StrictStr] = None,
         authorization: Annotated[Optional[StrictStr], Field(description="Bearer API token for strict auth")] = None,
@@ -2341,7 +2341,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[OtlpIngestOutcome]:
-        """ingest_otlp_json_collector
+        """ingest_ingest_otlp_json_collector
 
 
         :param durability:
@@ -2378,7 +2378,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._ingest_otlp_json_collector_serialize(
+        _param = self._ingest_ingest_otlp_json_collector_serialize(
             durability=durability,
             authorization=authorization,
             x_beater_api_key=x_beater_api_key,
@@ -2411,7 +2411,7 @@ class IngestApi:
 
 
     @validate_call
-    def ingest_otlp_json_collector_without_preload_content(
+    def ingest_ingest_otlp_json_collector_without_preload_content(
         self,
         durability: Optional[StrictStr] = None,
         authorization: Annotated[Optional[StrictStr], Field(description="Bearer API token for strict auth")] = None,
@@ -2432,7 +2432,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """ingest_otlp_json_collector
+        """ingest_ingest_otlp_json_collector
 
 
         :param durability:
@@ -2469,7 +2469,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._ingest_otlp_json_collector_serialize(
+        _param = self._ingest_ingest_otlp_json_collector_serialize(
             durability=durability,
             authorization=authorization,
             x_beater_api_key=x_beater_api_key,
@@ -2497,7 +2497,7 @@ class IngestApi:
         return response_data.response
 
 
-    def _ingest_otlp_json_collector_serialize(
+    def _ingest_ingest_otlp_json_collector_serialize(
         self,
         durability,
         authorization,
@@ -2578,7 +2578,7 @@ class IngestApi:
 
 
     @validate_call
-    def reconcile_trace(
+    def ingest_reconcile_trace(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -2600,7 +2600,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> TraceIngestedReconcileReport:
-        """reconcile_trace
+        """ingest_reconcile_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -2639,7 +2639,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._reconcile_trace_serialize(
+        _param = self._ingest_reconcile_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -2672,7 +2672,7 @@ class IngestApi:
 
 
     @validate_call
-    def reconcile_trace_with_http_info(
+    def ingest_reconcile_trace_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -2694,7 +2694,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[TraceIngestedReconcileReport]:
-        """reconcile_trace
+        """ingest_reconcile_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -2733,7 +2733,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._reconcile_trace_serialize(
+        _param = self._ingest_reconcile_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -2766,7 +2766,7 @@ class IngestApi:
 
 
     @validate_call
-    def reconcile_trace_without_preload_content(
+    def ingest_reconcile_trace_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -2788,7 +2788,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """reconcile_trace
+        """ingest_reconcile_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -2827,7 +2827,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._reconcile_trace_serialize(
+        _param = self._ingest_reconcile_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -2855,7 +2855,7 @@ class IngestApi:
         return response_data.response
 
 
-    def _reconcile_trace_serialize(
+    def _ingest_reconcile_trace_serialize(
         self,
         tenant_id,
         project_id,
@@ -2937,7 +2937,7 @@ class IngestApi:
 
 
     @validate_call
-    def replay_dead_letter(
+    def ingest_replay_dead_letter(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -2960,7 +2960,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> DeadLetterReplayReport:
-        """replay_dead_letter
+        """ingest_replay_dead_letter
 
 
         :param tenant_id: tenant_id (required)
@@ -3001,7 +3001,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._replay_dead_letter_serialize(
+        _param = self._ingest_replay_dead_letter_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             message_id=message_id,
@@ -3035,7 +3035,7 @@ class IngestApi:
 
 
     @validate_call
-    def replay_dead_letter_with_http_info(
+    def ingest_replay_dead_letter_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -3058,7 +3058,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[DeadLetterReplayReport]:
-        """replay_dead_letter
+        """ingest_replay_dead_letter
 
 
         :param tenant_id: tenant_id (required)
@@ -3099,7 +3099,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._replay_dead_letter_serialize(
+        _param = self._ingest_replay_dead_letter_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             message_id=message_id,
@@ -3133,7 +3133,7 @@ class IngestApi:
 
 
     @validate_call
-    def replay_dead_letter_without_preload_content(
+    def ingest_replay_dead_letter_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -3156,7 +3156,7 @@ class IngestApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """replay_dead_letter
+        """ingest_replay_dead_letter
 
 
         :param tenant_id: tenant_id (required)
@@ -3197,7 +3197,7 @@ class IngestApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._replay_dead_letter_serialize(
+        _param = self._ingest_replay_dead_letter_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             message_id=message_id,
@@ -3226,7 +3226,7 @@ class IngestApi:
         return response_data.response
 
 
-    def _replay_dead_letter_serialize(
+    def _ingest_replay_dead_letter_serialize(
         self,
         tenant_id,
         project_id,

@@ -18,13 +18,13 @@
  * @export
  */
 export const ApiScope = {
-    TraceWrite: 'trace_write',
-    TraceRead: 'trace_read',
-    DatasetWrite: 'dataset_write',
-    ScenarioWrite: 'scenario_write',
-    ScenarioRead: 'scenario_read',
-    EvalRun: 'eval_run',
-    PiiUnmask: 'pii_unmask',
+    TraceWrite: 'trace:write',
+    TraceRead: 'trace:read',
+    DatasetWrite: 'dataset:write',
+    ScenarioWrite: 'scenario:write',
+    ScenarioRead: 'scenario:read',
+    EvalRun: 'eval:run',
+    PiiUnmask: 'pii:unmask',
     Admin: 'admin'
 } as const;
 export type ApiScope = typeof ApiScope[keyof typeof ApiScope];

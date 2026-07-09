@@ -9,6 +9,3 @@
 |------------ | ------------- | ------------- | -------------|
 |**jaccardThreshold** | **Double** |  |  [optional] |
 |**traceIds** | **List&lt;String&gt;** |  |  |
-
-
-

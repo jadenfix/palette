@@ -43,7 +43,7 @@ class GatesApi:
 
 
     @validate_call
-    def create_gate(
+    def gates_create_gate(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -65,7 +65,7 @@ class GatesApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> GateDefinition:
-        """create_gate
+        """gates_create_gate
 
 
         :param tenant_id: tenant_id (required)
@@ -104,7 +104,7 @@ class GatesApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_gate_serialize(
+        _param = self._gates_create_gate_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_gate_request=create_gate_request,
@@ -136,7 +136,7 @@ class GatesApi:
 
 
     @validate_call
-    def create_gate_with_http_info(
+    def gates_create_gate_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -158,7 +158,7 @@ class GatesApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[GateDefinition]:
-        """create_gate
+        """gates_create_gate
 
 
         :param tenant_id: tenant_id (required)
@@ -197,7 +197,7 @@ class GatesApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_gate_serialize(
+        _param = self._gates_create_gate_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_gate_request=create_gate_request,
@@ -229,7 +229,7 @@ class GatesApi:
 
 
     @validate_call
-    def create_gate_without_preload_content(
+    def gates_create_gate_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -251,7 +251,7 @@ class GatesApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """create_gate
+        """gates_create_gate
 
 
         :param tenant_id: tenant_id (required)
@@ -290,7 +290,7 @@ class GatesApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_gate_serialize(
+        _param = self._gates_create_gate_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_gate_request=create_gate_request,
@@ -317,7 +317,7 @@ class GatesApi:
         return response_data.response
 
 
-    def _create_gate_serialize(
+    def _gates_create_gate_serialize(
         self,
         tenant_id,
         project_id,
@@ -412,7 +412,7 @@ class GatesApi:
 
 
     @validate_call
-    def run_gate(
+    def gates_run_gate(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -435,7 +435,7 @@ class GatesApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> GateRunReport:
-        """run_gate
+        """gates_run_gate
 
 
         :param tenant_id: tenant_id (required)
@@ -476,7 +476,7 @@ class GatesApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._run_gate_serialize(
+        _param = self._gates_run_gate_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             gate_id=gate_id,
@@ -510,7 +510,7 @@ class GatesApi:
 
 
     @validate_call
-    def run_gate_with_http_info(
+    def gates_run_gate_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -533,7 +533,7 @@ class GatesApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[GateRunReport]:
-        """run_gate
+        """gates_run_gate
 
 
         :param tenant_id: tenant_id (required)
@@ -574,7 +574,7 @@ class GatesApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._run_gate_serialize(
+        _param = self._gates_run_gate_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             gate_id=gate_id,
@@ -608,7 +608,7 @@ class GatesApi:
 
 
     @validate_call
-    def run_gate_without_preload_content(
+    def gates_run_gate_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -631,7 +631,7 @@ class GatesApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """run_gate
+        """gates_run_gate
 
 
         :param tenant_id: tenant_id (required)
@@ -672,7 +672,7 @@ class GatesApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._run_gate_serialize(
+        _param = self._gates_run_gate_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             gate_id=gate_id,
@@ -701,7 +701,7 @@ class GatesApi:
         return response_data.response
 
 
-    def _run_gate_serialize(
+    def _gates_run_gate_serialize(
         self,
         tenant_id,
         project_id,

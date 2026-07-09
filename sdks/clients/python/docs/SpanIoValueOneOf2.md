@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**kind** | **str** |  | 
-**reason** | **str** |  | 
+**kind** | **str** |  |
+**reason** | **str** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ span_io_value_one_of2_dict = span_io_value_one_of2_instance.to_dict()
 span_io_value_one_of2_from_dict = SpanIoValueOneOf2.from_dict(span_io_value_one_of2_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -40,7 +40,7 @@ class SearchApi:
 
 
     @validate_call
-    def search_spans(
+    def search_search_spans(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         q: Optional[StrictStr] = None,
@@ -70,7 +70,7 @@ class SearchApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> SearchResponse:
-        """search_spans
+        """search_search_spans
 
 
         :param tenant_id: tenant_id (required)
@@ -125,7 +125,7 @@ class SearchApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._search_spans_serialize(
+        _param = self._search_search_spans_serialize(
             tenant_id=tenant_id,
             q=q,
             project_id=project_id,
@@ -165,7 +165,7 @@ class SearchApi:
 
 
     @validate_call
-    def search_spans_with_http_info(
+    def search_search_spans_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         q: Optional[StrictStr] = None,
@@ -195,7 +195,7 @@ class SearchApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[SearchResponse]:
-        """search_spans
+        """search_search_spans
 
 
         :param tenant_id: tenant_id (required)
@@ -250,7 +250,7 @@ class SearchApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._search_spans_serialize(
+        _param = self._search_search_spans_serialize(
             tenant_id=tenant_id,
             q=q,
             project_id=project_id,
@@ -290,7 +290,7 @@ class SearchApi:
 
 
     @validate_call
-    def search_spans_without_preload_content(
+    def search_search_spans_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         q: Optional[StrictStr] = None,
@@ -320,7 +320,7 @@ class SearchApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """search_spans
+        """search_search_spans
 
 
         :param tenant_id: tenant_id (required)
@@ -375,7 +375,7 @@ class SearchApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._search_spans_serialize(
+        _param = self._search_search_spans_serialize(
             tenant_id=tenant_id,
             q=q,
             project_id=project_id,
@@ -410,7 +410,7 @@ class SearchApi:
         return response_data.response
 
 
-    def _search_spans_serialize(
+    def _search_search_spans_serialize(
         self,
         tenant_id,
         q,

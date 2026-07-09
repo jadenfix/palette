@@ -36,11 +36,11 @@ npm i @beater/client             # TypeScript
 const MCP = `# Every API operation is an MCP tool, served at /mcp on beaterd.
 # Point any MCP client at http://127.0.0.1:8080/mcp
 { "jsonrpc": "2.0", "id": 1, "method": "tools/list" }
-# -> one tool per operationId (createDataset, listTraces, runJudgeEval, ...)`;
+# -> one tool per operationId (datasets.create-dataset, traces.list-traces, judge.evaluate-judge, ...)`;
 
 const CLI = `# The CLI reaches any endpoint via the same contract:
-beater api listTraces --param tenant_id=acme --api-key bt_...
-beater api createDataset --param tenant_id=acme --param project_id=bot \\
+beater api traces.list-traces --param tenant_id=acme --api-key bt_...
+beater api datasets.create-dataset --param tenant_id=acme --param project_id=bot \\
   --body '{"name":"regressions"}'`;
 
 function Block({ title, code }: { title: string; code: string }) {

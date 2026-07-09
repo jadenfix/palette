@@ -60,7 +60,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ProviderSecretMetadata>> createProviderSecret(
+    pplx::task<std::shared_ptr<ProviderSecretMetadata>> providerSecrets_createProviderSecret(
         utility::string_t tenantId,
         utility::string_t projectId,
         std::shared_ptr<CreateProviderSecretHttpRequest> createProviderSecretHttpRequest,
@@ -81,7 +81,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::vector<std::shared_ptr<ProviderSecretMetadata>>> listProviderSecrets(
+    pplx::task<std::vector<std::shared_ptr<ProviderSecretMetadata>>> providerSecrets_listProviderSecrets(
         utility::string_t tenantId,
         utility::string_t projectId,
         boost::optional<utility::string_t> authorization,
@@ -102,7 +102,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<RevokedProviderSecret>> revokeProviderSecret(
+    pplx::task<std::shared_ptr<RevokedProviderSecret>> providerSecrets_revokeProviderSecret(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t providerSecretId,

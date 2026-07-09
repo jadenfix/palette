@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**toolkit** | **str** | Toolkit slug to connect (e.g. &#x60;github&#x60;, &#x60;gmail&#x60;, &#x60;slack&#x60;). | 
+**toolkit** | **str** | Toolkit slug to connect (e.g. &#x60;github&#x60;, &#x60;gmail&#x60;, &#x60;slack&#x60;). |
 
 ## Example
 
@@ -25,5 +25,3 @@ connect_connector_request_dict = connect_connector_request_instance.to_dict()
 connect_connector_request_from_dict = ConnectConnectorRequest.from_dict(connect_connector_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

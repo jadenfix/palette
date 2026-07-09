@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  | 
-**lane** | [**EvaluatorLane**](EvaluatorLane.md) |  | 
+**id** | **str** |  |
+**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |
+**lane** | [**EvaluatorLane**](EvaluatorLane.md) |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ evaluator_spec_dict = evaluator_spec_instance.to_dict()
 evaluator_spec_from_dict = EvaluatorSpec.from_dict(evaluator_spec_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**get_usage_summary**](UsageApi.md#get_usage_summary) | **GET** /v1/usage/{tenant_id}/{project_id} | 
+[**usage_period_get_usage_summary**](UsageApi.md#usage_period_get_usage_summary) | **GET** /v1/usage/{tenant_id}/{project_id} |
 
 
 
-## get_usage_summary
+## usage_period_get_usage_summary
 
-> models::UsageSummary get_usage_summary(tenant_id, project_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::UsageSummary usage_period_get_usage_summary(tenant_id, project_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -39,4 +39,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -5,10 +5,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**annotation_id** | **str** |  | [optional] 
-**payload** | **object** |  | 
-**reviewer_id** | **str** |  | 
-**verdict** | [**ReviewVerdict**](ReviewVerdict.md) |  | 
+**annotation_id** | **str** |  | [optional]
+**payload** | **object** |  |
+**reviewer_id** | **str** |  |
+**verdict** | [**ReviewVerdict**](ReviewVerdict.md) |  |
 
 ## Example
 
@@ -28,5 +28,3 @@ submit_review_annotation_http_request_dict = submit_review_annotation_http_reque
 submit_review_annotation_http_request_from_dict = SubmitReviewAnnotationHttpRequest.from_dict(submit_review_annotation_http_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

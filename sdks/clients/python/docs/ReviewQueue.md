@@ -5,12 +5,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**annotation_schema** | **object** |  | 
-**created_at** | **datetime** |  | 
-**name** | **str** |  | 
-**project_id** | **str** |  | 
-**queue_id** | **str** |  | 
-**tenant_id** | **str** |  | 
+**annotation_schema** | **object** |  |
+**created_at** | **datetime** |  |
+**name** | **str** |  |
+**project_id** | **str** |  |
+**queue_id** | **str** |  |
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -30,5 +30,3 @@ review_queue_dict = review_queue_instance.to_dict()
 review_queue_from_dict = ReviewQueue.from_dict(review_queue_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

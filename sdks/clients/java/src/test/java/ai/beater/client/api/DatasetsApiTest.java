@@ -49,7 +49,7 @@ public class DatasetsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void createDatasetTest() throws ApiException {
+    public void datasetsCreateDatasetTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         CreateDatasetRequest createDatasetRequest = null;
@@ -58,7 +58,7 @@ public class DatasetsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         Dataset response = 
-        api.createDataset(tenantId, projectId, createDatasetRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.datasetsCreateDataset(tenantId, projectId, createDatasetRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -72,7 +72,7 @@ public class DatasetsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void createDatasetVersionTest() throws ApiException {
+    public void datasetsCreateDatasetVersionTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String datasetId = null;
@@ -82,7 +82,7 @@ public class DatasetsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         DatasetVersionSnapshot response = 
-        api.createDatasetVersion(tenantId, projectId, datasetId, createDatasetVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.datasetsCreateDatasetVersion(tenantId, projectId, datasetId, createDatasetVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -96,7 +96,7 @@ public class DatasetsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void promoteDatasetCaseFromTraceTest() throws ApiException {
+    public void datasetsPromoteDatasetCaseFromTraceTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String datasetId = null;
@@ -106,7 +106,7 @@ public class DatasetsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         DatasetCase response = 
-        api.promoteDatasetCaseFromTrace(tenantId, projectId, datasetId, promoteTraceCaseRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.datasetsPromoteDatasetCaseFromTrace(tenantId, projectId, datasetId, promoteTraceCaseRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

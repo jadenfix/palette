@@ -18,6 +18,3 @@ Browser step efficiency: passes when the run used at most `max_steps` browser st
 | Name | Value |
 |---- | -----|
 | BROWSER_STEP_EFFICIENCY | &quot;browser_step_efficiency&quot; |
-
-
-

@@ -12,6 +12,3 @@
 * `HUMAN` (value: `"human"`)
 
 * `HYBRID` (value: `"hybrid"`)
-
-
-

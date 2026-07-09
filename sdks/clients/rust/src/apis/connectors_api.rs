@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
-/// struct for passing parameters to the method [`connect_connector`]
+/// struct for passing parameters to the method [`connectors_period_connect_connector`]
 #[derive(Clone, Debug)]
-pub struct ConnectConnectorParams {
+pub struct ConnectorsPeriodConnectConnectorParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -32,9 +32,9 @@ pub struct ConnectConnectorParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`connector_status`]
+/// struct for passing parameters to the method [`connectors_period_connector_status`]
 #[derive(Clone, Debug)]
-pub struct ConnectorStatusParams {
+pub struct ConnectorsPeriodConnectorStatusParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -51,9 +51,9 @@ pub struct ConnectorStatusParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`get_connector_skills`]
+/// struct for passing parameters to the method [`connectors_period_get_connector_skills`]
 #[derive(Clone, Debug)]
-pub struct GetConnectorSkillsParams {
+pub struct ConnectorsPeriodGetConnectorSkillsParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -70,9 +70,9 @@ pub struct GetConnectorSkillsParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`invoke_connector_tool`]
+/// struct for passing parameters to the method [`connectors_period_invoke_connector_tool`]
 #[derive(Clone, Debug)]
-pub struct InvokeConnectorToolParams {
+pub struct ConnectorsPeriodInvokeConnectorToolParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -88,9 +88,9 @@ pub struct InvokeConnectorToolParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`list_connector_tools`]
+/// struct for passing parameters to the method [`connectors_period_list_connector_tools`]
 #[derive(Clone, Debug)]
-pub struct ListConnectorToolsParams {
+pub struct ConnectorsPeriodListConnectorToolsParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -109,9 +109,9 @@ pub struct ListConnectorToolsParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`list_connectors`]
+/// struct for passing parameters to the method [`connectors_period_list_connectors`]
 #[derive(Clone, Debug)]
-pub struct ListConnectorsParams {
+pub struct ConnectorsPeriodListConnectorsParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -129,10 +129,10 @@ pub struct ListConnectorsParams {
 }
 
 
-/// struct for typed errors of method [`connect_connector`]
+/// struct for typed errors of method [`connectors_period_connect_connector`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum ConnectConnectorError {
+pub enum ConnectorsPeriodConnectConnectorError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -140,10 +140,10 @@ pub enum ConnectConnectorError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`connector_status`]
+/// struct for typed errors of method [`connectors_period_connector_status`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum ConnectorStatusError {
+pub enum ConnectorsPeriodConnectorStatusError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -151,10 +151,10 @@ pub enum ConnectorStatusError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`get_connector_skills`]
+/// struct for typed errors of method [`connectors_period_get_connector_skills`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GetConnectorSkillsError {
+pub enum ConnectorsPeriodGetConnectorSkillsError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -162,10 +162,10 @@ pub enum GetConnectorSkillsError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`invoke_connector_tool`]
+/// struct for typed errors of method [`connectors_period_invoke_connector_tool`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum InvokeConnectorToolError {
+pub enum ConnectorsPeriodInvokeConnectorToolError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -173,10 +173,10 @@ pub enum InvokeConnectorToolError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`list_connector_tools`]
+/// struct for typed errors of method [`connectors_period_list_connector_tools`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum ListConnectorToolsError {
+pub enum ConnectorsPeriodListConnectorToolsError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -184,10 +184,10 @@ pub enum ListConnectorToolsError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`list_connectors`]
+/// struct for typed errors of method [`connectors_period_list_connectors`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum ListConnectorsError {
+pub enum ConnectorsPeriodListConnectorsError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -196,7 +196,7 @@ pub enum ListConnectorsError {
 }
 
 
-pub async fn connect_connector(configuration: &configuration::Configuration, params: ConnectConnectorParams) -> Result<models::ConnectionLink, Error<ConnectConnectorError>> {
+pub async fn connectors_period_connect_connector(configuration: &configuration::Configuration, params: ConnectorsPeriodConnectConnectorParams) -> Result<models::ConnectionLink, Error<ConnectorsPeriodConnectConnectorError>> {
 
     let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/connect", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -228,12 +228,12 @@ pub async fn connect_connector(configuration: &configuration::Configuration, par
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<ConnectConnectorError> = serde_json::from_str(&content).ok();
+        let entity: Option<ConnectorsPeriodConnectConnectorError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn connector_status(configuration: &configuration::Configuration, params: ConnectorStatusParams) -> Result<models::ConnectionStatus, Error<ConnectorStatusError>> {
+pub async fn connectors_period_connector_status(configuration: &configuration::Configuration, params: ConnectorsPeriodConnectorStatusParams) -> Result<models::ConnectionStatus, Error<ConnectorsPeriodConnectorStatusError>> {
 
     let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/status", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -265,12 +265,12 @@ pub async fn connector_status(configuration: &configuration::Configuration, para
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<ConnectorStatusError> = serde_json::from_str(&content).ok();
+        let entity: Option<ConnectorsPeriodConnectorStatusError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn get_connector_skills(configuration: &configuration::Configuration, params: GetConnectorSkillsParams) -> Result<models::ConnectorSkillsResponse, Error<GetConnectorSkillsError>> {
+pub async fn connectors_period_get_connector_skills(configuration: &configuration::Configuration, params: ConnectorsPeriodGetConnectorSkillsParams) -> Result<models::ConnectorSkillsResponse, Error<ConnectorsPeriodGetConnectorSkillsError>> {
 
     let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/skills", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -302,12 +302,12 @@ pub async fn get_connector_skills(configuration: &configuration::Configuration, 
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<GetConnectorSkillsError> = serde_json::from_str(&content).ok();
+        let entity: Option<ConnectorsPeriodGetConnectorSkillsError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn invoke_connector_tool(configuration: &configuration::Configuration, params: InvokeConnectorToolParams) -> Result<models::ToolExecution, Error<InvokeConnectorToolError>> {
+pub async fn connectors_period_invoke_connector_tool(configuration: &configuration::Configuration, params: ConnectorsPeriodInvokeConnectorToolParams) -> Result<models::ToolExecution, Error<ConnectorsPeriodInvokeConnectorToolError>> {
 
     let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/invoke", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -339,12 +339,12 @@ pub async fn invoke_connector_tool(configuration: &configuration::Configuration,
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<InvokeConnectorToolError> = serde_json::from_str(&content).ok();
+        let entity: Option<ConnectorsPeriodInvokeConnectorToolError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn list_connector_tools(configuration: &configuration::Configuration, params: ListConnectorToolsParams) -> Result<Vec<models::ConnectorTool>, Error<ListConnectorToolsError>> {
+pub async fn connectors_period_list_connector_tools(configuration: &configuration::Configuration, params: ConnectorsPeriodListConnectorToolsParams) -> Result<Vec<models::ConnectorTool>, Error<ConnectorsPeriodListConnectorToolsError>> {
 
     let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}/tools", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -379,12 +379,12 @@ pub async fn list_connector_tools(configuration: &configuration::Configuration, 
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<ListConnectorToolsError> = serde_json::from_str(&content).ok();
+        let entity: Option<ConnectorsPeriodListConnectorToolsError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn list_connectors(configuration: &configuration::Configuration, params: ListConnectorsParams) -> Result<Vec<models::Toolkit>, Error<ListConnectorsError>> {
+pub async fn connectors_period_list_connectors(configuration: &configuration::Configuration, params: ConnectorsPeriodListConnectorsParams) -> Result<Vec<models::Toolkit>, Error<ConnectorsPeriodListConnectorsError>> {
 
     let uri_str = format!("{}/v1/connectors/{tenant_id}/{project_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -418,7 +418,7 @@ pub async fn list_connectors(configuration: &configuration::Configuration, param
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<ListConnectorsError> = serde_json::from_str(&content).ok();
+        let entity: Option<ConnectorsPeriodListConnectorsError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

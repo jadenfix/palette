@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
-/// struct for passing parameters to the method [`get_usage_summary`]
+/// struct for passing parameters to the method [`usage_period_get_usage_summary`]
 #[derive(Clone, Debug)]
-pub struct GetUsageSummaryParams {
+pub struct UsagePeriodGetUsageSummaryParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -32,10 +32,10 @@ pub struct GetUsageSummaryParams {
 }
 
 
-/// struct for typed errors of method [`get_usage_summary`]
+/// struct for typed errors of method [`usage_period_get_usage_summary`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GetUsageSummaryError {
+pub enum UsagePeriodGetUsageSummaryError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -43,7 +43,7 @@ pub enum GetUsageSummaryError {
 }
 
 
-pub async fn get_usage_summary(configuration: &configuration::Configuration, params: GetUsageSummaryParams) -> Result<models::UsageSummary, Error<GetUsageSummaryError>> {
+pub async fn usage_period_get_usage_summary(configuration: &configuration::Configuration, params: UsagePeriodGetUsageSummaryParams) -> Result<models::UsageSummary, Error<UsagePeriodGetUsageSummaryError>> {
 
     let uri_str = format!("{}/v1/usage/{tenant_id}/{project_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -74,7 +74,7 @@ pub async fn get_usage_summary(configuration: &configuration::Configuration, par
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<GetUsageSummaryError> = serde_json::from_str(&content).ok();
+        let entity: Option<UsagePeriodGetUsageSummaryError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

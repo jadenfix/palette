@@ -21,6 +21,3 @@
 |**responseHash** | **String** |  |  |
 |**score** | **Double** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

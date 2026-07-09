@@ -19,6 +19,3 @@ Browser world-state success: asserts the final step's observed page (url and/or 
 | Name | Value |
 |---- | -----|
 | BROWSER_TASK_SUCCESS | &quot;browser_task_success&quot; |
-
-
-

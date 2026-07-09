@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Input** | **interface{}** |  | 
-**Output** | **interface{}** |  | 
-**Reference** | Pointer to **interface{}** |  | [optional] 
-**Trace** | Pointer to **interface{}** |  | [optional] 
+**Input** | **interface{}** |  |
+**Output** | **interface{}** |  |
+**Reference** | Pointer to **interface{}** |  | [optional]
+**Trace** | Pointer to **interface{}** |  | [optional]
 
 ## Methods
 
@@ -160,5 +160,3 @@ HasTrace returns a boolean if a field has been set.
 UnsetTrace ensures that no value is present for Trace, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

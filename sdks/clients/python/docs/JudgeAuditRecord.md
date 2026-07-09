@@ -5,20 +5,20 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**cached** | **bool** |  | 
-**charged_cost** | [**Money**](Money.md) |  | 
-**created_at** | **datetime** |  | 
-**evaluator_id** | **str** |  | 
-**judge_call_id** | **str** |  | 
-**model** | **str** |  | 
-**project_id** | **str** |  | 
-**provider** | **str** |  | 
-**provider_cost** | [**Money**](Money.md) |  | 
-**provider_secret_id** | **str** |  | 
-**request_hash** | **str** |  | 
-**response_hash** | **str** |  | 
-**score** | **float** |  | 
-**tenant_id** | **str** |  | 
+**cached** | **bool** |  |
+**charged_cost** | [**Money**](Money.md) |  |
+**created_at** | **datetime** |  |
+**evaluator_id** | **str** |  |
+**judge_call_id** | **str** |  |
+**model** | **str** |  |
+**project_id** | **str** |  |
+**provider** | **str** |  |
+**provider_cost** | [**Money**](Money.md) |  |
+**provider_secret_id** | **str** |  |
+**request_hash** | **str** |  |
+**response_hash** | **str** |  |
+**score** | **float** |  |
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -38,5 +38,3 @@ judge_audit_record_dict = judge_audit_record_instance.to_dict()
 judge_audit_record_from_dict = JudgeAuditRecord.from_dict(judge_audit_record_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -87,8 +87,8 @@ public class HealthApi {
    * @return HealthResponse
    * @throws ApiException if fails to make API call
    */
-  public HealthResponse health() throws ApiException {
-    ApiResponse<HealthResponse> localVarResponse = healthWithHttpInfo();
+  public HealthResponse healthHealth() throws ApiException {
+    ApiResponse<HealthResponse> localVarResponse = healthHealthWithHttpInfo();
     return localVarResponse.getData();
   }
 
@@ -98,8 +98,8 @@ public class HealthApi {
    * @return ApiResponse&lt;HealthResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<HealthResponse> healthWithHttpInfo() throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = healthRequestBuilder();
+  public ApiResponse<HealthResponse> healthHealthWithHttpInfo() throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = healthHealthRequestBuilder();
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -109,7 +109,7 @@ public class HealthApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("health", localVarResponse);
+          throw getApiException("healthHealth", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<HealthResponse>(
@@ -138,7 +138,7 @@ public class HealthApi {
     }
   }
 
-  private HttpRequest.Builder healthRequestBuilder() throws ApiException {
+  private HttpRequest.Builder healthHealthRequestBuilder() throws ApiException {
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 

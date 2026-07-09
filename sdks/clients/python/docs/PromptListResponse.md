@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**prompts** | [**List[Prompt]**](Prompt.md) |  | 
+**prompts** | [**List[Prompt]**](Prompt.md) |  |
 
 ## Example
 
@@ -25,5 +25,3 @@ prompt_list_response_dict = prompt_list_response_instance.to_dict()
 prompt_list_response_from_dict = PromptListResponse.from_dict(prompt_list_response_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

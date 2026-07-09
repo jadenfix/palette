@@ -4,11 +4,11 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**search_spans**](SearchApi.md#search_spans) | **GET** /v1/search/{tenant_id}/spans | 
+[**search_search_spans**](SearchApi.md#search_search_spans) | **GET** /v1/search/{tenant_id}/spans |
 
 
-# **search_spans**
-> SearchResponse search_spans(tenant_id, q=q, project_id=project_id, environment_id=environment_id, trace_id=trace_id, span_id=span_id, kind=kind, status=status, model=model, tool=tool, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **search_search_spans**
+> SearchResponse search_search_spans(tenant_id, q=q, project_id=project_id, environment_id=environment_id, trace_id=trace_id, span_id=span_id, kind=kind, status=status, model=model, tool=tool, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -49,11 +49,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.search_spans(tenant_id, q=q, project_id=project_id, environment_id=environment_id, trace_id=trace_id, span_id=span_id, kind=kind, status=status, model=model, tool=tool, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of SearchApi->search_spans:\n")
+        api_response = api_instance.search_search_spans(tenant_id, q=q, project_id=project_id, environment_id=environment_id, trace_id=trace_id, span_id=span_id, kind=kind, status=status, model=model, tool=tool, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of SearchApi->search_search_spans:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling SearchApi->search_spans: %s\n" % e)
+        print("Exception when calling SearchApi->search_search_spans: %s\n" % e)
 ```
 
 
@@ -63,21 +63,21 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **q** | **str**|  | [optional] 
- **project_id** | **str**|  | [optional] 
- **environment_id** | **str**|  | [optional] 
- **trace_id** | **str**|  | [optional] 
- **span_id** | **str**|  | [optional] 
- **kind** | **str**|  | [optional] 
- **status** | **str**|  | [optional] 
- **model** | **str**|  | [optional] 
- **tool** | **str**|  | [optional] 
- **limit** | **int**|  | [optional] 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **q** | **str**|  | [optional]
+ **project_id** | **str**|  | [optional]
+ **environment_id** | **str**|  | [optional]
+ **trace_id** | **str**|  | [optional]
+ **span_id** | **str**|  | [optional]
+ **kind** | **str**|  | [optional]
+ **status** | **str**|  | [optional]
+ **model** | **str**|  | [optional]
+ **tool** | **str**|  | [optional]
+ **limit** | **int**|  | [optional]
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -102,4 +102,3 @@ No authorization required
 **403** | Credentials lack the required scope |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -10,6 +10,6 @@
 
 
 usage_summary_t*
-UsageAPI_getUsageSummary(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+UsageAPI_usageGetUsageSummary(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 

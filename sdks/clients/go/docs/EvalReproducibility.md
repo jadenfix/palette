@@ -4,22 +4,22 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**AgentReleaseId** | **string** |  | 
-**CodeHash** | Pointer to **string** |  | [optional] 
-**DatasetCaseId** | **string** |  | 
-**DatasetVersionId** | **string** |  | 
-**EvaluatorVersionId** | **string** |  | 
-**InputArtifactHashes** | **[]string** |  | 
-**JudgeModelId** | Pointer to **NullableString** |  | [optional] 
-**JudgeParameters** | **interface{}** |  | 
-**JudgeProvider** | Pointer to **NullableString** |  | [optional] 
-**JudgeRubricVersion** | Pointer to **NullableString** |  | [optional] 
-**JudgeSeed** | Pointer to **NullableInt64** |  | [optional] 
-**NormalizerVersion** | **string** |  | 
-**PromptVersionId** | Pointer to **string** |  | [optional] 
-**TraceSchemaVersion** | **int32** |  | 
-**WasiAbiVersion** | Pointer to **NullableString** |  | [optional] 
-**WasmHash** | Pointer to **string** |  | [optional] 
+**AgentReleaseId** | **string** |  |
+**CodeHash** | Pointer to **string** |  | [optional]
+**DatasetCaseId** | **string** |  |
+**DatasetVersionId** | **string** |  |
+**EvaluatorVersionId** | **string** |  |
+**InputArtifactHashes** | **[]string** |  |
+**JudgeModelId** | Pointer to **NullableString** |  | [optional]
+**JudgeParameters** | **interface{}** |  |
+**JudgeProvider** | Pointer to **NullableString** |  | [optional]
+**JudgeRubricVersion** | Pointer to **NullableString** |  | [optional]
+**JudgeSeed** | Pointer to **NullableInt64** |  | [optional]
+**NormalizerVersion** | **string** |  |
+**PromptVersionId** | Pointer to **string** |  | [optional]
+**TraceSchemaVersion** | **int32** |  |
+**WasiAbiVersion** | Pointer to **NullableString** |  | [optional]
+**WasmHash** | Pointer to **string** |  | [optional]
 
 ## Methods
 
@@ -462,5 +462,3 @@ HasWasmHash returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

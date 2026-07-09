@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Body** | **interface{}** |  | 
-**EndpointUrl** | **string** |  | 
-**Headers** | **map[string]string** |  | 
+**Body** | **interface{}** |  |
+**EndpointUrl** | **string** |  |
+**Headers** | **map[string]string** |  |
 
 ## Methods
 
@@ -99,5 +99,3 @@ SetHeaders sets Headers field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -23,7 +23,7 @@ import (
 // AuditAPIService AuditAPI service
 type AuditAPIService service
 
-type ApiListAuditEventsRequest struct {
+type ApiAuditListAuditEventsRequest struct {
 	ctx context.Context
 	ApiService *AuditAPIService
 	tenantId string
@@ -35,43 +35,43 @@ type ApiListAuditEventsRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiListAuditEventsRequest) Authorization(authorization string) ApiListAuditEventsRequest {
+func (r ApiAuditListAuditEventsRequest) Authorization(authorization string) ApiAuditListAuditEventsRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiListAuditEventsRequest) XBeaterApiKey(xBeaterApiKey string) ApiListAuditEventsRequest {
+func (r ApiAuditListAuditEventsRequest) XBeaterApiKey(xBeaterApiKey string) ApiAuditListAuditEventsRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiListAuditEventsRequest) XBeaterProjectId(xBeaterProjectId string) ApiListAuditEventsRequest {
+func (r ApiAuditListAuditEventsRequest) XBeaterProjectId(xBeaterProjectId string) ApiAuditListAuditEventsRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiListAuditEventsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiListAuditEventsRequest {
+func (r ApiAuditListAuditEventsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiAuditListAuditEventsRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiListAuditEventsRequest) Execute() ([]AuditEvent, *http.Response, error) {
-	return r.ApiService.ListAuditEventsExecute(r)
+func (r ApiAuditListAuditEventsRequest) Execute() ([]AuditEvent, *http.Response, error) {
+	return r.ApiService.AuditListAuditEventsExecute(r)
 }
 
 /*
-ListAuditEvents Method for ListAuditEvents
+AuditListAuditEvents Method for AuditListAuditEvents
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiListAuditEventsRequest
+ @return ApiAuditListAuditEventsRequest
 */
-func (a *AuditAPIService) ListAuditEvents(ctx context.Context, tenantId string, projectId string) ApiListAuditEventsRequest {
-	return ApiListAuditEventsRequest{
+func (a *AuditAPIService) AuditListAuditEvents(ctx context.Context, tenantId string, projectId string) ApiAuditListAuditEventsRequest {
+	return ApiAuditListAuditEventsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -81,7 +81,7 @@ func (a *AuditAPIService) ListAuditEvents(ctx context.Context, tenantId string, 
 
 // Execute executes the request
 //  @return []AuditEvent
-func (a *AuditAPIService) ListAuditEventsExecute(r ApiListAuditEventsRequest) ([]AuditEvent, *http.Response, error) {
+func (a *AuditAPIService) AuditListAuditEventsExecute(r ApiAuditListAuditEventsRequest) ([]AuditEvent, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -89,7 +89,7 @@ func (a *AuditAPIService) ListAuditEventsExecute(r ApiListAuditEventsRequest) ([
 		localVarReturnValue  []AuditEvent
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AuditAPIService.ListAuditEvents")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AuditAPIService.AuditListAuditEvents")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

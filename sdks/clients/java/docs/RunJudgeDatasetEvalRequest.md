@@ -14,6 +14,3 @@
 |**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |  |
 |**promptVersionId** | **String** |  |  [optional] |
 |**providerSecretId** | **String** |  |  |
-
-
-

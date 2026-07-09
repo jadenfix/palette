@@ -5,14 +5,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**created_at** | **datetime** |  | 
-**dataset_id** | **str** |  | [optional] 
-**evaluator_version_id** | **str** |  | [optional] 
-**gate_id** | **str** |  | 
-**inconclusive_policy** | [**InconclusivePolicy**](InconclusivePolicy.md) |  | [optional] 
-**name** | **str** |  | 
-**project_id** | **str** |  | 
-**tenant_id** | **str** |  | 
+**created_at** | **datetime** |  |
+**dataset_id** | **str** |  | [optional]
+**evaluator_version_id** | **str** |  | [optional]
+**gate_id** | **str** |  |
+**inconclusive_policy** | [**InconclusivePolicy**](InconclusivePolicy.md) |  | [optional]
+**name** | **str** |  |
+**project_id** | **str** |  |
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -32,5 +32,3 @@ gate_definition_dict = gate_definition_instance.to_dict()
 gate_definition_from_dict = GateDefinition.from_dict(gate_definition_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

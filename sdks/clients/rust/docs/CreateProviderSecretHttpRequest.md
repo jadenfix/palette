@@ -4,10 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**display_name** | **String** |  | 
-**provider** | **String** |  | 
-**secret_value** | **String** |  | 
+**display_name** | **String** |  |
+**provider** | **String** |  |
+**secret_value** | **String** |  |
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

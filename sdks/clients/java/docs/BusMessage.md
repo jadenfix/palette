@@ -16,6 +16,3 @@
 |**payload** | **List&lt;Integer&gt;** |  |  |
 |**projectId** | **String** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

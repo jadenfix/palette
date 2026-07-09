@@ -23,7 +23,7 @@ import (
 // SpansAPIService SpansAPI service
 type SpansAPIService service
 
-type ApiGetSpanRequest struct {
+type ApiSpansGetSpanRequest struct {
 	ctx context.Context
 	ApiService *SpansAPIService
 	tenantId string
@@ -37,55 +37,55 @@ type ApiGetSpanRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiGetSpanRequest) Unmask(unmask bool) ApiGetSpanRequest {
+func (r ApiSpansGetSpanRequest) Unmask(unmask bool) ApiSpansGetSpanRequest {
 	r.unmask = &unmask
 	return r
 }
 
-func (r ApiGetSpanRequest) Reason(reason string) ApiGetSpanRequest {
+func (r ApiSpansGetSpanRequest) Reason(reason string) ApiSpansGetSpanRequest {
 	r.reason = &reason
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiGetSpanRequest) Authorization(authorization string) ApiGetSpanRequest {
+func (r ApiSpansGetSpanRequest) Authorization(authorization string) ApiSpansGetSpanRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiGetSpanRequest) XBeaterApiKey(xBeaterApiKey string) ApiGetSpanRequest {
+func (r ApiSpansGetSpanRequest) XBeaterApiKey(xBeaterApiKey string) ApiSpansGetSpanRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiGetSpanRequest) XBeaterProjectId(xBeaterProjectId string) ApiGetSpanRequest {
+func (r ApiSpansGetSpanRequest) XBeaterProjectId(xBeaterProjectId string) ApiSpansGetSpanRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiGetSpanRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiGetSpanRequest {
+func (r ApiSpansGetSpanRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiSpansGetSpanRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiGetSpanRequest) Execute() (*CanonicalSpan, *http.Response, error) {
-	return r.ApiService.GetSpanExecute(r)
+func (r ApiSpansGetSpanRequest) Execute() (*CanonicalSpan, *http.Response, error) {
+	return r.ApiService.SpansGetSpanExecute(r)
 }
 
 /*
-GetSpan Method for GetSpan
+SpansGetSpan Method for SpansGetSpan
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param traceId trace_id
  @param spanId span_id
- @return ApiGetSpanRequest
+ @return ApiSpansGetSpanRequest
 */
-func (a *SpansAPIService) GetSpan(ctx context.Context, tenantId string, traceId string, spanId string) ApiGetSpanRequest {
-	return ApiGetSpanRequest{
+func (a *SpansAPIService) SpansGetSpan(ctx context.Context, tenantId string, traceId string, spanId string) ApiSpansGetSpanRequest {
+	return ApiSpansGetSpanRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -96,7 +96,7 @@ func (a *SpansAPIService) GetSpan(ctx context.Context, tenantId string, traceId 
 
 // Execute executes the request
 //  @return CanonicalSpan
-func (a *SpansAPIService) GetSpanExecute(r ApiGetSpanRequest) (*CanonicalSpan, *http.Response, error) {
+func (a *SpansAPIService) SpansGetSpanExecute(r ApiSpansGetSpanRequest) (*CanonicalSpan, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -104,7 +104,7 @@ func (a *SpansAPIService) GetSpanExecute(r ApiGetSpanRequest) (*CanonicalSpan, *
 		localVarReturnValue  *CanonicalSpan
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SpansAPIService.GetSpan")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SpansAPIService.SpansGetSpan")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -233,7 +233,7 @@ func (a *SpansAPIService) GetSpanExecute(r ApiGetSpanRequest) (*CanonicalSpan, *
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiGetSpanIoRequest struct {
+type ApiSpansGetSpanIoRequest struct {
 	ctx context.Context
 	ApiService *SpansAPIService
 	tenantId string
@@ -247,55 +247,55 @@ type ApiGetSpanIoRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiGetSpanIoRequest) Unmask(unmask bool) ApiGetSpanIoRequest {
+func (r ApiSpansGetSpanIoRequest) Unmask(unmask bool) ApiSpansGetSpanIoRequest {
 	r.unmask = &unmask
 	return r
 }
 
-func (r ApiGetSpanIoRequest) Reason(reason string) ApiGetSpanIoRequest {
+func (r ApiSpansGetSpanIoRequest) Reason(reason string) ApiSpansGetSpanIoRequest {
 	r.reason = &reason
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiGetSpanIoRequest) Authorization(authorization string) ApiGetSpanIoRequest {
+func (r ApiSpansGetSpanIoRequest) Authorization(authorization string) ApiSpansGetSpanIoRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiGetSpanIoRequest) XBeaterApiKey(xBeaterApiKey string) ApiGetSpanIoRequest {
+func (r ApiSpansGetSpanIoRequest) XBeaterApiKey(xBeaterApiKey string) ApiSpansGetSpanIoRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiGetSpanIoRequest) XBeaterProjectId(xBeaterProjectId string) ApiGetSpanIoRequest {
+func (r ApiSpansGetSpanIoRequest) XBeaterProjectId(xBeaterProjectId string) ApiSpansGetSpanIoRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiGetSpanIoRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiGetSpanIoRequest {
+func (r ApiSpansGetSpanIoRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiSpansGetSpanIoRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiGetSpanIoRequest) Execute() (*SpanIoResponse, *http.Response, error) {
-	return r.ApiService.GetSpanIoExecute(r)
+func (r ApiSpansGetSpanIoRequest) Execute() (*SpanIoResponse, *http.Response, error) {
+	return r.ApiService.SpansGetSpanIoExecute(r)
 }
 
 /*
-GetSpanIo Method for GetSpanIo
+SpansGetSpanIo Method for SpansGetSpanIo
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param traceId trace_id
  @param spanId span_id
- @return ApiGetSpanIoRequest
+ @return ApiSpansGetSpanIoRequest
 */
-func (a *SpansAPIService) GetSpanIo(ctx context.Context, tenantId string, traceId string, spanId string) ApiGetSpanIoRequest {
-	return ApiGetSpanIoRequest{
+func (a *SpansAPIService) SpansGetSpanIo(ctx context.Context, tenantId string, traceId string, spanId string) ApiSpansGetSpanIoRequest {
+	return ApiSpansGetSpanIoRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -306,7 +306,7 @@ func (a *SpansAPIService) GetSpanIo(ctx context.Context, tenantId string, traceI
 
 // Execute executes the request
 //  @return SpanIoResponse
-func (a *SpansAPIService) GetSpanIoExecute(r ApiGetSpanIoRequest) (*SpanIoResponse, *http.Response, error) {
+func (a *SpansAPIService) SpansGetSpanIoExecute(r ApiSpansGetSpanIoRequest) (*SpanIoResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -314,7 +314,7 @@ func (a *SpansAPIService) GetSpanIoExecute(r ApiGetSpanIoRequest) (*SpanIoRespon
 		localVarReturnValue  *SpanIoResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SpansAPIService.GetSpanIo")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "SpansAPIService.SpansGetSpanIo")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

@@ -4,18 +4,18 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Type** | **string** |  | 
-**Pattern** | **string** |  | 
-**Abs** | **float64** |  | 
-**Rel** | **float64** |  | 
-**MaxMicros** | **int64** |  | 
-**MaxMs** | **int64** |  | 
-**Model** | **string** |  | 
-**Rubric** | **string** |  | 
-**DomContains** | Pointer to **string** |  | [optional] 
-**UrlContains** | Pointer to **string** |  | [optional] 
-**MaxSteps** | **int64** |  | 
-**MinRatio** | **float64** |  | 
+**Type** | **string** |  |
+**Pattern** | **string** |  |
+**Abs** | **float64** |  |
+**Rel** | **float64** |  |
+**MaxMicros** | **int64** |  |
+**MaxMs** | **int64** |  |
+**Model** | **string** |  |
+**Rubric** | **string** |  |
+**DomContains** | Pointer to **string** |  | [optional]
+**UrlContains** | Pointer to **string** |  | [optional]
+**MaxSteps** | **int64** |  |
+**MinRatio** | **float64** |  |
 
 ## Methods
 
@@ -288,5 +288,3 @@ SetMinRatio sets MinRatio field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

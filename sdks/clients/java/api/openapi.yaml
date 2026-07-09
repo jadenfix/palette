@@ -56,7 +56,7 @@ tags:
 paths:
   /health:
     get:
-      operationId: health
+      operationId: health.health
       responses:
         "200":
           content:
@@ -70,7 +70,7 @@ paths:
       - application/json
   /v1/alerts/{tenant_id}/{project_id}/traces/{trace_id}/webhook:
     post:
-      operationId: evaluateAlert
+      operationId: alerts.evaluate-alert
       parameters:
       - description: tenant_id
         explode: false
@@ -170,7 +170,7 @@ paths:
       - application/json
   /v1/api-keys/{tenant_id}/{project_id}/{environment_id}:
     post:
-      operationId: createApiKey
+      operationId: apiKeys.create-api-key
       parameters:
       - description: tenant_id
         explode: false
@@ -270,7 +270,7 @@ paths:
       - application/json
   /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke:
     post:
-      operationId: revokeApiKey
+      operationId: apiKeys.revoke-api-key
       parameters:
       - description: tenant_id
         explode: false
@@ -377,7 +377,7 @@ paths:
       - application/json
   /v1/archive/{tenant_id}/{project_id}/spans:
     get:
-      operationId: queryArchiveSpans
+      operationId: archive.query-archive-spans
       parameters:
       - description: tenant_id
         explode: false
@@ -505,7 +505,7 @@ paths:
       - application/json
   /v1/archive/{tenant_id}/{project_id}/{trace_id}:
     post:
-      operationId: archiveTrace
+      operationId: archive.archive-trace
       parameters:
       - description: tenant_id
         explode: false
@@ -604,7 +604,7 @@ paths:
       - application/json
   /v1/audit/{tenant_id}/{project_id}:
     get:
-      operationId: listAuditEvents
+      operationId: audit.list-audit-events
       parameters:
       - description: tenant_id
         explode: false
@@ -691,7 +691,7 @@ paths:
       - application/json
   /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}:
     post:
-      operationId: runCalibration
+      operationId: calibrations.run-calibration
       parameters:
       - description: tenant_id
         explode: false
@@ -805,7 +805,7 @@ paths:
       - application/json
   /v1/connectors/{tenant_id}/{project_id}:
     get:
-      operationId: listConnectors
+      operationId: connectors.list-connectors
       parameters:
       - description: tenant_id
         explode: false
@@ -908,7 +908,7 @@ paths:
       - application/json
   /v1/connectors/{tenant_id}/{project_id}/connect:
     post:
-      operationId: connectConnector
+      operationId: connectors.connect-connector
       parameters:
       - description: tenant_id
         explode: false
@@ -1006,7 +1006,7 @@ paths:
       - application/json
   /v1/connectors/{tenant_id}/{project_id}/invoke:
     post:
-      operationId: invokeConnectorTool
+      operationId: connectors.invoke-connector-tool
       parameters:
       - description: tenant_id
         explode: false
@@ -1104,7 +1104,7 @@ paths:
       - application/json
   /v1/connectors/{tenant_id}/{project_id}/skills:
     get:
-      operationId: getConnectorSkills
+      operationId: connectors.get-connector-skills
       parameters:
       - description: tenant_id
         explode: false
@@ -1203,7 +1203,7 @@ paths:
       - application/json
   /v1/connectors/{tenant_id}/{project_id}/status:
     get:
-      operationId: connectorStatus
+      operationId: connectors.connector-status
       parameters:
       - description: tenant_id
         explode: false
@@ -1302,7 +1302,7 @@ paths:
       - application/json
   /v1/connectors/{tenant_id}/{project_id}/tools:
     get:
-      operationId: listConnectorTools
+      operationId: connectors.list-connector-tools
       parameters:
       - description: tenant_id
         explode: false
@@ -1413,7 +1413,7 @@ paths:
       - application/json
   /v1/datasets/{tenant_id}/{project_id}:
     post:
-      operationId: createDataset
+      operationId: datasets.create-dataset
       parameters:
       - description: tenant_id
         explode: false
@@ -1505,7 +1505,7 @@ paths:
       - application/json
   /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace:
     post:
-      operationId: promoteDatasetCaseFromTrace
+      operationId: datasets.promote-dataset-case-from-trace
       parameters:
       - description: tenant_id
         explode: false
@@ -1611,7 +1611,7 @@ paths:
       - application/json
   /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions:
     post:
-      operationId: createDatasetVersion
+      operationId: datasets.create-dataset-version
       parameters:
       - description: tenant_id
         explode: false
@@ -1717,7 +1717,7 @@ paths:
       - application/json
   /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/deterministic:
     post:
-      operationId: runDeterministicEval
+      operationId: evals.run-deterministic-eval
       parameters:
       - description: tenant_id
         explode: false
@@ -1831,7 +1831,7 @@ paths:
       - application/json
   /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/evals/judge:
     post:
-      operationId: runJudgeEval
+      operationId: evals.run-judge-eval
       parameters:
       - description: tenant_id
         explode: false
@@ -1945,7 +1945,7 @@ paths:
       - application/json
   /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic:
     post:
-      operationId: runDeterministicExperiment
+      operationId: experiments.run-deterministic-experiment
       parameters:
       - description: tenant_id
         explode: false
@@ -2059,7 +2059,7 @@ paths:
       - application/json
   /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge:
     post:
-      operationId: runJudgeExperiment
+      operationId: experiments.run-judge-experiment
       parameters:
       - description: tenant_id
         explode: false
@@ -2173,7 +2173,7 @@ paths:
       - application/json
   /v1/gates/{tenant_id}/{project_id}:
     post:
-      operationId: createGate
+      operationId: gates.create-gate
       parameters:
       - description: tenant_id
         explode: false
@@ -2265,7 +2265,7 @@ paths:
       - application/json
   /v1/gates/{tenant_id}/{project_id}/{gate_id}/run:
     post:
-      operationId: runGate
+      operationId: gates.run-gate
       parameters:
       - description: tenant_id
         explode: false
@@ -2371,7 +2371,7 @@ paths:
       - application/json
   /v1/import/{tenant_id}/{project_id}/{environment_id}:
     post:
-      operationId: importSource
+      operationId: ingest.import-source
       parameters:
       - description: tenant_id
         explode: false
@@ -2472,7 +2472,7 @@ paths:
       - application/json
   /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay:
     post:
-      operationId: replayDeadLetter
+      operationId: ingest.replay-dead-letter
       parameters:
       - description: tenant_id
         explode: false
@@ -2578,7 +2578,7 @@ paths:
       - application/json
   /v1/ingest/{tenant_id}/{project_id}/queue:
     get:
-      operationId: getIngestQueueStatus
+      operationId: ingest.get-ingest-queue-status
       parameters:
       - description: tenant_id
         explode: false
@@ -2663,7 +2663,7 @@ paths:
       - application/json
   /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain:
     post:
-      operationId: drainTraceIngested
+      operationId: ingest.drain-trace-ingested
       parameters:
       - description: tenant_id
         explode: false
@@ -2762,7 +2762,7 @@ paths:
       - application/json
   /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain:
     post:
-      operationId: drainTraceWrites
+      operationId: ingest.drain-trace-writes
       parameters:
       - description: tenant_id
         explode: false
@@ -2861,7 +2861,7 @@ paths:
       - application/json
   /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile:
     post:
-      operationId: reconcileTrace
+      operationId: ingest.reconcile-trace
       parameters:
       - description: tenant_id
         explode: false
@@ -2960,7 +2960,7 @@ paths:
       - application/json
   /v1/judge/{tenant_id}/{project_id}/evaluate:
     post:
-      operationId: evaluateJudge
+      operationId: judge.evaluate-judge
       parameters:
       - description: tenant_id
         explode: false
@@ -3052,7 +3052,7 @@ paths:
       - application/json
   /v1/judge/{tenant_id}/{project_id}/ledger:
     get:
-      operationId: listJudgeLedger
+      operationId: judge.list-judge-ledger
       parameters:
       - description: tenant_id
         explode: false
@@ -3139,7 +3139,7 @@ paths:
       - application/json
   /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling:
     post:
-      operationId: decideOnlineSampling
+      operationId: online.decide-online-sampling
       parameters:
       - description: tenant_id
         explode: false
@@ -3239,7 +3239,7 @@ paths:
       - application/json
   /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces:
     post:
-      operationId: ingestOtlp
+      operationId: ingest.ingest-otlp
       parameters:
       - description: tenant_id
         explode: false
@@ -3351,7 +3351,7 @@ paths:
       - application/json
   /v1/prompts/{tenant_id}/{project_id}:
     get:
-      operationId: listPrompts
+      operationId: prompts.list-prompts
       parameters:
       - description: tenant_id
         explode: false
@@ -3435,7 +3435,7 @@ paths:
       x-accepts:
       - application/json
     post:
-      operationId: createPrompt
+      operationId: prompts.create-prompt
       parameters:
       - description: tenant_id
         explode: false
@@ -3527,7 +3527,7 @@ paths:
       - application/json
   /v1/prompts/{tenant_id}/{project_id}/{prompt_id}:
     get:
-      operationId: getPrompt
+      operationId: prompts.get-prompt
       parameters:
       - description: tenant_id
         explode: false
@@ -3626,7 +3626,7 @@ paths:
       - application/json
   /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff:
     get:
-      operationId: diffPromptVersions
+      operationId: prompts.diff-prompt-versions
       parameters:
       - description: tenant_id
         explode: false
@@ -3739,7 +3739,7 @@ paths:
       - application/json
   /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions:
     get:
-      operationId: listPromptVersions
+      operationId: prompts.list-prompt-versions
       parameters:
       - description: tenant_id
         explode: false
@@ -3837,7 +3837,7 @@ paths:
       x-accepts:
       - application/json
     post:
-      operationId: addPromptVersion
+      operationId: prompts.add-prompt-version
       parameters:
       - description: tenant_id
         explode: false
@@ -3943,7 +3943,7 @@ paths:
       - application/json
   /v1/provider-secrets/{tenant_id}/{project_id}:
     get:
-      operationId: listProviderSecrets
+      operationId: providerSecrets.list-provider-secrets
       parameters:
       - description: tenant_id
         explode: false
@@ -4029,7 +4029,7 @@ paths:
       x-accepts:
       - application/json
     post:
-      operationId: createProviderSecret
+      operationId: providerSecrets.create-provider-secret
       parameters:
       - description: tenant_id
         explode: false
@@ -4121,7 +4121,7 @@ paths:
       - application/json
   /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke:
     post:
-      operationId: revokeProviderSecret
+      operationId: providerSecrets.revoke-provider-secret
       parameters:
       - description: tenant_id
         explode: false
@@ -4220,7 +4220,7 @@ paths:
       - application/json
   /v1/review-queues/{tenant_id}/{project_id}:
     post:
-      operationId: createReviewQueue
+      operationId: reviews.create-review-queue
       parameters:
       - description: tenant_id
         explode: false
@@ -4312,7 +4312,7 @@ paths:
       - application/json
   /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks:
     get:
-      operationId: listReviewTasks
+      operationId: reviews.list-review-tasks
       parameters:
       - description: tenant_id
         explode: false
@@ -4420,7 +4420,7 @@ paths:
       - application/json
   /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace:
     post:
-      operationId: enqueueReviewTaskFromTrace
+      operationId: reviews.enqueue-review-task-from-trace
       parameters:
       - description: tenant_id
         explode: false
@@ -4526,7 +4526,7 @@ paths:
       - application/json
   /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations:
     post:
-      operationId: submitReviewAnnotation
+      operationId: reviews.submit-review-annotation
       parameters:
       - description: tenant_id
         explode: false
@@ -4640,7 +4640,7 @@ paths:
       - application/json
   /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote:
     post:
-      operationId: promoteReviewAnnotation
+      operationId: reviews.promote-review-annotation
       parameters:
       - description: tenant_id
         explode: false
@@ -4762,7 +4762,7 @@ paths:
       - application/json
   /v1/scenarios/{tenant_id}/{project_id}:
     get:
-      operationId: listScenarios
+      operationId: scenarios.list-scenarios
       parameters:
       - description: tenant_id
         explode: false
@@ -4862,7 +4862,7 @@ paths:
       x-accepts:
       - application/json
     post:
-      operationId: createScenario
+      operationId: scenarios.create-scenario
       parameters:
       - description: tenant_id
         explode: false
@@ -4954,7 +4954,7 @@ paths:
       - application/json
   /v1/scenarios/{tenant_id}/{project_id}/mine:
     post:
-      operationId: mineScenarios
+      operationId: scenarios.mine-scenarios
       parameters:
       - description: tenant_id
         explode: false
@@ -5052,7 +5052,7 @@ paths:
       - application/json
   /v1/scenarios/{tenant_id}/{project_id}/{scenario_id}:
     get:
-      operationId: getScenario
+      operationId: scenarios.get-scenario
       parameters:
       - description: tenant_id
         explode: false
@@ -5151,7 +5151,7 @@ paths:
       - application/json
   /v1/search/{tenant_id}/spans:
     get:
-      operationId: searchSpans
+      operationId: search.search-spans
       parameters:
       - description: tenant_id
         explode: false
@@ -5300,7 +5300,7 @@ paths:
       - application/json
   /v1/spans/{tenant_id}/{trace_id}/{span_id}:
     get:
-      operationId: getSpan
+      operationId: spans.get-span
       parameters:
       - description: tenant_id
         explode: false
@@ -5413,7 +5413,7 @@ paths:
       - application/json
   /v1/spans/{tenant_id}/{trace_id}/{span_id}/io:
     get:
-      operationId: getSpanIo
+      operationId: spans.get-span-io
       parameters:
       - description: tenant_id
         explode: false
@@ -5526,7 +5526,7 @@ paths:
       - application/json
   /v1/traces:
     post:
-      operationId: ingestOtlpJsonCollector
+      operationId: ingest.ingest-otlp-json-collector
       parameters:
       - explode: true
         in: query
@@ -5623,7 +5623,7 @@ paths:
       - application/json
   /v1/traces/native:
     post:
-      operationId: ingestNative
+      operationId: ingest.ingest-native
       parameters:
       - explode: true
         in: query
@@ -5718,7 +5718,7 @@ paths:
       - application/json
   /v1/traces/{tenant_id}:
     get:
-      operationId: listTraces
+      operationId: traces.list-traces
       parameters:
       - description: tenant_id
         explode: false
@@ -5906,7 +5906,7 @@ paths:
       - application/json
   /v1/traces/{tenant_id}/{trace_id}:
     get:
-      operationId: getTrace
+      operationId: traces.get-trace
       parameters:
       - description: tenant_id
         explode: false
@@ -6011,7 +6011,7 @@ paths:
       - application/json
   /v1/usage/{tenant_id}/{project_id}:
     get:
-      operationId: getUsageSummary
+      operationId: usage.get-usage-summary
       parameters:
       - description: tenant_id
         explode: false
@@ -6274,8 +6274,8 @@ components:
         active: true
         created_at: 2000-01-23T04:56:07.000+00:00
         scopes:
-        - trace_write
-        - trace_write
+        - trace:write
+        - trace:write
         secret: secret
         api_key_id: api_key_id
       properties:
@@ -6312,13 +6312,13 @@ components:
       type: string
     ApiScope:
       enum:
-      - trace_write
-      - trace_read
-      - dataset_write
-      - scenario_write
-      - scenario_read
-      - eval_run
-      - pii_unmask
+      - trace:write
+      - trace:read
+      - dataset:write
+      - scenario:write
+      - scenario:read
+      - eval:run
+      - pii:unmask
       - admin
       type: string
     ArchiveManifest:
@@ -7220,8 +7220,8 @@ components:
     CreateApiKeyHttpRequest:
       example:
         scopes:
-        - trace_write
-        - trace_write
+        - trace:write
+        - trace:write
       properties:
         scopes:
           items:
@@ -7826,19 +7826,17 @@ components:
       description: Error envelope returned by every fallible endpoint.
       example:
         error: error
-        status: 0
+        message: message
       properties:
         error:
+          description: Stable machine-readable error code.
+          type: string
+        message:
           description: Human-readable error message.
           type: string
-        status:
-          description: "HTTP status code, duplicated in the body for convenience."
-          format: int32
-          minimum: 0
-          type: integer
       required:
       - error
-      - status
+      - message
     EvalReproducibility:
       example:
         evaluator_version_id: evaluator_version_id

@@ -65,7 +65,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<PromptVersion>> addPromptVersion(
+    pplx::task<std::shared_ptr<PromptVersion>> prompts_addPromptVersion(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t promptId,
@@ -88,7 +88,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<CreatedPrompt>> createPrompt(
+    pplx::task<std::shared_ptr<CreatedPrompt>> prompts_createPrompt(
         utility::string_t tenantId,
         utility::string_t projectId,
         std::shared_ptr<CreatePromptRequest> createPromptRequest,
@@ -112,7 +112,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<PromptVersionDiff>> diffPromptVersions(
+    pplx::task<std::shared_ptr<PromptVersionDiff>> prompts_diffPromptVersions(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t promptId,
@@ -136,7 +136,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<Prompt>> getPrompt(
+    pplx::task<std::shared_ptr<Prompt>> prompts_getPrompt(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t promptId,
@@ -158,7 +158,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<PromptVersionListResponse>> listPromptVersions(
+    pplx::task<std::shared_ptr<PromptVersionListResponse>> prompts_listPromptVersions(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t promptId,
@@ -179,7 +179,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<PromptListResponse>> listPrompts(
+    pplx::task<std::shared_ptr<PromptListResponse>> prompts_listPrompts(
         utility::string_t tenantId,
         utility::string_t projectId,
         boost::optional<utility::string_t> authorization,

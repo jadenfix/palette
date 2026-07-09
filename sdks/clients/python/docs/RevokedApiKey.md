@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**active** | **bool** |  | 
-**api_key_id** | **str** |  | 
-**rotated_at** | **datetime** |  | 
+**active** | **bool** |  |
+**api_key_id** | **str** |  |
+**rotated_at** | **datetime** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ revoked_api_key_dict = revoked_api_key_instance.to_dict()
 revoked_api_key_from_dict = RevokedApiKey.from_dict(revoked_api_key_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

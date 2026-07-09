@@ -22,6 +22,3 @@
 |**tenantId** | **String** |  |  |
 |**trace** | **Object** |  |  |
 |**traceSchemaVersion** | **Integer** |  |  |
-
-
-

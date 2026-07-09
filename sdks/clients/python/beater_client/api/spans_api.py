@@ -41,7 +41,7 @@ class SpansApi:
 
 
     @validate_call
-    def get_span(
+    def spans_get_span(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         trace_id: Annotated[StrictStr, Field(description="trace_id")],
@@ -65,7 +65,7 @@ class SpansApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> CanonicalSpan:
-        """get_span
+        """spans_get_span
 
 
         :param tenant_id: tenant_id (required)
@@ -108,7 +108,7 @@ class SpansApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_span_serialize(
+        _param = self._spans_get_span_serialize(
             tenant_id=tenant_id,
             trace_id=trace_id,
             span_id=span_id,
@@ -143,7 +143,7 @@ class SpansApi:
 
 
     @validate_call
-    def get_span_with_http_info(
+    def spans_get_span_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         trace_id: Annotated[StrictStr, Field(description="trace_id")],
@@ -167,7 +167,7 @@ class SpansApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[CanonicalSpan]:
-        """get_span
+        """spans_get_span
 
 
         :param tenant_id: tenant_id (required)
@@ -210,7 +210,7 @@ class SpansApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_span_serialize(
+        _param = self._spans_get_span_serialize(
             tenant_id=tenant_id,
             trace_id=trace_id,
             span_id=span_id,
@@ -245,7 +245,7 @@ class SpansApi:
 
 
     @validate_call
-    def get_span_without_preload_content(
+    def spans_get_span_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         trace_id: Annotated[StrictStr, Field(description="trace_id")],
@@ -269,7 +269,7 @@ class SpansApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """get_span
+        """spans_get_span
 
 
         :param tenant_id: tenant_id (required)
@@ -312,7 +312,7 @@ class SpansApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_span_serialize(
+        _param = self._spans_get_span_serialize(
             tenant_id=tenant_id,
             trace_id=trace_id,
             span_id=span_id,
@@ -342,7 +342,7 @@ class SpansApi:
         return response_data.response
 
 
-    def _get_span_serialize(
+    def _spans_get_span_serialize(
         self,
         tenant_id,
         trace_id,
@@ -434,7 +434,7 @@ class SpansApi:
 
 
     @validate_call
-    def get_span_io(
+    def spans_get_span_io(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         trace_id: Annotated[StrictStr, Field(description="trace_id")],
@@ -458,7 +458,7 @@ class SpansApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> SpanIoResponse:
-        """get_span_io
+        """spans_get_span_io
 
 
         :param tenant_id: tenant_id (required)
@@ -501,7 +501,7 @@ class SpansApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_span_io_serialize(
+        _param = self._spans_get_span_io_serialize(
             tenant_id=tenant_id,
             trace_id=trace_id,
             span_id=span_id,
@@ -536,7 +536,7 @@ class SpansApi:
 
 
     @validate_call
-    def get_span_io_with_http_info(
+    def spans_get_span_io_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         trace_id: Annotated[StrictStr, Field(description="trace_id")],
@@ -560,7 +560,7 @@ class SpansApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[SpanIoResponse]:
-        """get_span_io
+        """spans_get_span_io
 
 
         :param tenant_id: tenant_id (required)
@@ -603,7 +603,7 @@ class SpansApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_span_io_serialize(
+        _param = self._spans_get_span_io_serialize(
             tenant_id=tenant_id,
             trace_id=trace_id,
             span_id=span_id,
@@ -638,7 +638,7 @@ class SpansApi:
 
 
     @validate_call
-    def get_span_io_without_preload_content(
+    def spans_get_span_io_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         trace_id: Annotated[StrictStr, Field(description="trace_id")],
@@ -662,7 +662,7 @@ class SpansApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """get_span_io
+        """spans_get_span_io
 
 
         :param tenant_id: tenant_id (required)
@@ -705,7 +705,7 @@ class SpansApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_span_io_serialize(
+        _param = self._spans_get_span_io_serialize(
             tenant_id=tenant_id,
             trace_id=trace_id,
             span_id=span_id,
@@ -735,7 +735,7 @@ class SpansApi:
         return response_data.response
 
 
-    def _get_span_io_serialize(
+    def _spans_get_span_io_serialize(
         self,
         tenant_id,
         trace_id,

@@ -14,6 +14,3 @@
 |**meanConfidence** | **Double** |  |  [optional] |
 |**sampleCount** | **Integer** |  |  |
 |**upperBound** | **Double** |  |  |
-
-
-

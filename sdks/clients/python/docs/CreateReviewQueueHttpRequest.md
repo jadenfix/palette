@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**annotation_schema** | **object** |  | 
-**name** | **str** |  | 
-**queue_id** | **str** |  | [optional] 
+**annotation_schema** | **object** |  |
+**name** | **str** |  |
+**queue_id** | **str** |  | [optional]
 
 ## Example
 
@@ -27,5 +27,3 @@ create_review_queue_http_request_dict = create_review_queue_http_request_instanc
 create_review_queue_http_request_from_dict = CreateReviewQueueHttpRequest.from_dict(create_review_queue_http_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

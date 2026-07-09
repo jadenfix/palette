@@ -4,22 +4,22 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**createReviewQueue**](ReviewsApi.md#createReviewQueue) | **POST** /v1/review-queues/{tenant_id}/{project_id} |  |
-| [**createReviewQueueWithHttpInfo**](ReviewsApi.md#createReviewQueueWithHttpInfo) | **POST** /v1/review-queues/{tenant_id}/{project_id} |  |
-| [**enqueueReviewTaskFromTrace**](ReviewsApi.md#enqueueReviewTaskFromTrace) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace |  |
-| [**enqueueReviewTaskFromTraceWithHttpInfo**](ReviewsApi.md#enqueueReviewTaskFromTraceWithHttpInfo) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace |  |
-| [**listReviewTasks**](ReviewsApi.md#listReviewTasks) | **GET** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks |  |
-| [**listReviewTasksWithHttpInfo**](ReviewsApi.md#listReviewTasksWithHttpInfo) | **GET** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks |  |
-| [**promoteReviewAnnotation**](ReviewsApi.md#promoteReviewAnnotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote |  |
-| [**promoteReviewAnnotationWithHttpInfo**](ReviewsApi.md#promoteReviewAnnotationWithHttpInfo) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote |  |
-| [**submitReviewAnnotation**](ReviewsApi.md#submitReviewAnnotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations |  |
-| [**submitReviewAnnotationWithHttpInfo**](ReviewsApi.md#submitReviewAnnotationWithHttpInfo) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations |  |
+| [**reviewsCreateReviewQueue**](ReviewsApi.md#reviewsCreateReviewQueue) | **POST** /v1/review-queues/{tenant_id}/{project_id} |  |
+| [**reviewsCreateReviewQueueWithHttpInfo**](ReviewsApi.md#reviewsCreateReviewQueueWithHttpInfo) | **POST** /v1/review-queues/{tenant_id}/{project_id} |  |
+| [**reviewsEnqueueReviewTaskFromTrace**](ReviewsApi.md#reviewsEnqueueReviewTaskFromTrace) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace |  |
+| [**reviewsEnqueueReviewTaskFromTraceWithHttpInfo**](ReviewsApi.md#reviewsEnqueueReviewTaskFromTraceWithHttpInfo) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace |  |
+| [**reviewsListReviewTasks**](ReviewsApi.md#reviewsListReviewTasks) | **GET** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks |  |
+| [**reviewsListReviewTasksWithHttpInfo**](ReviewsApi.md#reviewsListReviewTasksWithHttpInfo) | **GET** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks |  |
+| [**reviewsPromoteReviewAnnotation**](ReviewsApi.md#reviewsPromoteReviewAnnotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote |  |
+| [**reviewsPromoteReviewAnnotationWithHttpInfo**](ReviewsApi.md#reviewsPromoteReviewAnnotationWithHttpInfo) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote |  |
+| [**reviewsSubmitReviewAnnotation**](ReviewsApi.md#reviewsSubmitReviewAnnotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations |  |
+| [**reviewsSubmitReviewAnnotationWithHttpInfo**](ReviewsApi.md#reviewsSubmitReviewAnnotationWithHttpInfo) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations |  |
 
 
 
-## createReviewQueue
+## reviewsCreateReviewQueue
 
-> ReviewQueue createReviewQueue(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ReviewQueue reviewsCreateReviewQueue(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -41,16 +41,16 @@ public class Example {
         ReviewsApi apiInstance = new ReviewsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        CreateReviewQueueHttpRequest createReviewQueueHttpRequest = new CreateReviewQueueHttpRequest(); // CreateReviewQueueHttpRequest | 
+        CreateReviewQueueHttpRequest createReviewQueueHttpRequest = new CreateReviewQueueHttpRequest(); // CreateReviewQueueHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ReviewQueue result = apiInstance.createReviewQueue(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ReviewQueue result = apiInstance.reviewsCreateReviewQueue(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ReviewsApi#createReviewQueue");
+            System.err.println("Exception when calling ReviewsApi#reviewsCreateReviewQueue");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -95,9 +95,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## createReviewQueueWithHttpInfo
+## reviewsCreateReviewQueueWithHttpInfo
 
-> ApiResponse<ReviewQueue> createReviewQueue createReviewQueueWithHttpInfo(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ReviewQueue> reviewsCreateReviewQueue reviewsCreateReviewQueueWithHttpInfo(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -120,18 +120,18 @@ public class Example {
         ReviewsApi apiInstance = new ReviewsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        CreateReviewQueueHttpRequest createReviewQueueHttpRequest = new CreateReviewQueueHttpRequest(); // CreateReviewQueueHttpRequest | 
+        CreateReviewQueueHttpRequest createReviewQueueHttpRequest = new CreateReviewQueueHttpRequest(); // CreateReviewQueueHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ReviewQueue> response = apiInstance.createReviewQueueWithHttpInfo(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ReviewQueue> response = apiInstance.reviewsCreateReviewQueueWithHttpInfo(tenantId, projectId, createReviewQueueHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ReviewsApi#createReviewQueue");
+            System.err.println("Exception when calling ReviewsApi#reviewsCreateReviewQueue");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -177,9 +177,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 
 
-## enqueueReviewTaskFromTrace
+## reviewsEnqueueReviewTaskFromTrace
 
-> ReviewTask enqueueReviewTaskFromTrace(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ReviewTask reviewsEnqueueReviewTaskFromTrace(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -202,16 +202,16 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String queueId = "queueId_example"; // String | queue_id
-        EnqueueReviewTaskFromTraceHttpRequest enqueueReviewTaskFromTraceHttpRequest = new EnqueueReviewTaskFromTraceHttpRequest(); // EnqueueReviewTaskFromTraceHttpRequest | 
+        EnqueueReviewTaskFromTraceHttpRequest enqueueReviewTaskFromTraceHttpRequest = new EnqueueReviewTaskFromTraceHttpRequest(); // EnqueueReviewTaskFromTraceHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ReviewTask result = apiInstance.enqueueReviewTaskFromTrace(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ReviewTask result = apiInstance.reviewsEnqueueReviewTaskFromTrace(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ReviewsApi#enqueueReviewTaskFromTrace");
+            System.err.println("Exception when calling ReviewsApi#reviewsEnqueueReviewTaskFromTrace");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -258,9 +258,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## enqueueReviewTaskFromTraceWithHttpInfo
+## reviewsEnqueueReviewTaskFromTraceWithHttpInfo
 
-> ApiResponse<ReviewTask> enqueueReviewTaskFromTrace enqueueReviewTaskFromTraceWithHttpInfo(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ReviewTask> reviewsEnqueueReviewTaskFromTrace reviewsEnqueueReviewTaskFromTraceWithHttpInfo(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -284,18 +284,18 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String queueId = "queueId_example"; // String | queue_id
-        EnqueueReviewTaskFromTraceHttpRequest enqueueReviewTaskFromTraceHttpRequest = new EnqueueReviewTaskFromTraceHttpRequest(); // EnqueueReviewTaskFromTraceHttpRequest | 
+        EnqueueReviewTaskFromTraceHttpRequest enqueueReviewTaskFromTraceHttpRequest = new EnqueueReviewTaskFromTraceHttpRequest(); // EnqueueReviewTaskFromTraceHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ReviewTask> response = apiInstance.enqueueReviewTaskFromTraceWithHttpInfo(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ReviewTask> response = apiInstance.reviewsEnqueueReviewTaskFromTraceWithHttpInfo(tenantId, projectId, queueId, enqueueReviewTaskFromTraceHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ReviewsApi#enqueueReviewTaskFromTrace");
+            System.err.println("Exception when calling ReviewsApi#reviewsEnqueueReviewTaskFromTrace");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -343,9 +343,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## listReviewTasks
+## reviewsListReviewTasks
 
-> List<ReviewTask> listReviewTasks(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> List<ReviewTask> reviewsListReviewTasks(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -368,16 +368,16 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String queueId = "queueId_example"; // String | queue_id
-        ReviewTaskState state = ReviewTaskState.fromValue("open"); // ReviewTaskState | 
+        ReviewTaskState state = ReviewTaskState.fromValue("open"); // ReviewTaskState |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            List<ReviewTask> result = apiInstance.listReviewTasks(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            List<ReviewTask> result = apiInstance.reviewsListReviewTasks(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ReviewsApi#listReviewTasks");
+            System.err.println("Exception when calling ReviewsApi#reviewsListReviewTasks");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -424,9 +424,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## listReviewTasksWithHttpInfo
+## reviewsListReviewTasksWithHttpInfo
 
-> ApiResponse<List<ReviewTask>> listReviewTasks listReviewTasksWithHttpInfo(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<List<ReviewTask>> reviewsListReviewTasks reviewsListReviewTasksWithHttpInfo(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -450,18 +450,18 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String queueId = "queueId_example"; // String | queue_id
-        ReviewTaskState state = ReviewTaskState.fromValue("open"); // ReviewTaskState | 
+        ReviewTaskState state = ReviewTaskState.fromValue("open"); // ReviewTaskState |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<List<ReviewTask>> response = apiInstance.listReviewTasksWithHttpInfo(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<List<ReviewTask>> response = apiInstance.reviewsListReviewTasksWithHttpInfo(tenantId, projectId, queueId, state, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ReviewsApi#listReviewTasks");
+            System.err.println("Exception when calling ReviewsApi#reviewsListReviewTasks");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -509,9 +509,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## promoteReviewAnnotation
+## reviewsPromoteReviewAnnotation
 
-> DatasetCase promoteReviewAnnotation(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> DatasetCase reviewsPromoteReviewAnnotation(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -536,16 +536,16 @@ public class Example {
         String queueId = "queueId_example"; // String | queue_id
         String taskId = "taskId_example"; // String | task_id
         String annotationId = "annotationId_example"; // String | annotation_id
-        PromoteReviewAnnotationHttpRequest promoteReviewAnnotationHttpRequest = new PromoteReviewAnnotationHttpRequest(); // PromoteReviewAnnotationHttpRequest | 
+        PromoteReviewAnnotationHttpRequest promoteReviewAnnotationHttpRequest = new PromoteReviewAnnotationHttpRequest(); // PromoteReviewAnnotationHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            DatasetCase result = apiInstance.promoteReviewAnnotation(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            DatasetCase result = apiInstance.reviewsPromoteReviewAnnotation(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ReviewsApi#promoteReviewAnnotation");
+            System.err.println("Exception when calling ReviewsApi#reviewsPromoteReviewAnnotation");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -594,9 +594,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## promoteReviewAnnotationWithHttpInfo
+## reviewsPromoteReviewAnnotationWithHttpInfo
 
-> ApiResponse<DatasetCase> promoteReviewAnnotation promoteReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<DatasetCase> reviewsPromoteReviewAnnotation reviewsPromoteReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -622,18 +622,18 @@ public class Example {
         String queueId = "queueId_example"; // String | queue_id
         String taskId = "taskId_example"; // String | task_id
         String annotationId = "annotationId_example"; // String | annotation_id
-        PromoteReviewAnnotationHttpRequest promoteReviewAnnotationHttpRequest = new PromoteReviewAnnotationHttpRequest(); // PromoteReviewAnnotationHttpRequest | 
+        PromoteReviewAnnotationHttpRequest promoteReviewAnnotationHttpRequest = new PromoteReviewAnnotationHttpRequest(); // PromoteReviewAnnotationHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<DatasetCase> response = apiInstance.promoteReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<DatasetCase> response = apiInstance.reviewsPromoteReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, annotationId, promoteReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ReviewsApi#promoteReviewAnnotation");
+            System.err.println("Exception when calling ReviewsApi#reviewsPromoteReviewAnnotation");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -683,9 +683,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## submitReviewAnnotation
+## reviewsSubmitReviewAnnotation
 
-> ReviewAnnotation submitReviewAnnotation(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ReviewAnnotation reviewsSubmitReviewAnnotation(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -709,16 +709,16 @@ public class Example {
         String projectId = "projectId_example"; // String | project_id
         String queueId = "queueId_example"; // String | queue_id
         String taskId = "taskId_example"; // String | task_id
-        SubmitReviewAnnotationHttpRequest submitReviewAnnotationHttpRequest = new SubmitReviewAnnotationHttpRequest(); // SubmitReviewAnnotationHttpRequest | 
+        SubmitReviewAnnotationHttpRequest submitReviewAnnotationHttpRequest = new SubmitReviewAnnotationHttpRequest(); // SubmitReviewAnnotationHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ReviewAnnotation result = apiInstance.submitReviewAnnotation(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ReviewAnnotation result = apiInstance.reviewsSubmitReviewAnnotation(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ReviewsApi#submitReviewAnnotation");
+            System.err.println("Exception when calling ReviewsApi#reviewsSubmitReviewAnnotation");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -766,9 +766,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## submitReviewAnnotationWithHttpInfo
+## reviewsSubmitReviewAnnotationWithHttpInfo
 
-> ApiResponse<ReviewAnnotation> submitReviewAnnotation submitReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ReviewAnnotation> reviewsSubmitReviewAnnotation reviewsSubmitReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -793,18 +793,18 @@ public class Example {
         String projectId = "projectId_example"; // String | project_id
         String queueId = "queueId_example"; // String | queue_id
         String taskId = "taskId_example"; // String | task_id
-        SubmitReviewAnnotationHttpRequest submitReviewAnnotationHttpRequest = new SubmitReviewAnnotationHttpRequest(); // SubmitReviewAnnotationHttpRequest | 
+        SubmitReviewAnnotationHttpRequest submitReviewAnnotationHttpRequest = new SubmitReviewAnnotationHttpRequest(); // SubmitReviewAnnotationHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ReviewAnnotation> response = apiInstance.submitReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ReviewAnnotation> response = apiInstance.reviewsSubmitReviewAnnotationWithHttpInfo(tenantId, projectId, queueId, taskId, submitReviewAnnotationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ReviewsApi#submitReviewAnnotation");
+            System.err.println("Exception when calling ReviewsApi#reviewsSubmitReviewAnnotation");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -851,4 +851,3 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
-

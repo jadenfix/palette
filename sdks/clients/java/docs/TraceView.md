@@ -10,6 +10,3 @@
 |**spans** | [**List&lt;CanonicalSpan&gt;**](CanonicalSpan.md) |  |  |
 |**tenantId** | **String** |  |  |
 |**traceId** | **String** |  |  |
-
-
-

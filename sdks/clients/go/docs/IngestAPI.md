@@ -4,21 +4,21 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**DrainTraceIngested**](IngestAPI.md#DrainTraceIngested) | **Post** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
-[**DrainTraceWrites**](IngestAPI.md#DrainTraceWrites) | **Post** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
-[**GetIngestQueueStatus**](IngestAPI.md#GetIngestQueueStatus) | **Get** /v1/ingest/{tenant_id}/{project_id}/queue |
-[**ImportSource**](IngestAPI.md#ImportSource) | **Post** /v1/import/{tenant_id}/{project_id}/{environment_id} |
-[**IngestNative**](IngestAPI.md#IngestNative) | **Post** /v1/traces/native |
-[**IngestOtlp**](IngestAPI.md#IngestOtlp) | **Post** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
-[**IngestOtlpJsonCollector**](IngestAPI.md#IngestOtlpJsonCollector) | **Post** /v1/traces |
-[**ReconcileTrace**](IngestAPI.md#ReconcileTrace) | **Post** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
-[**ReplayDeadLetter**](IngestAPI.md#ReplayDeadLetter) | **Post** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
+[**IngestDrainTraceIngested**](IngestAPI.md#IngestDrainTraceIngested) | **Post** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
+[**IngestDrainTraceWrites**](IngestAPI.md#IngestDrainTraceWrites) | **Post** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
+[**IngestGetIngestQueueStatus**](IngestAPI.md#IngestGetIngestQueueStatus) | **Get** /v1/ingest/{tenant_id}/{project_id}/queue |
+[**IngestImportSource**](IngestAPI.md#IngestImportSource) | **Post** /v1/import/{tenant_id}/{project_id}/{environment_id} |
+[**IngestIngestNative**](IngestAPI.md#IngestIngestNative) | **Post** /v1/traces/native |
+[**IngestIngestOtlp**](IngestAPI.md#IngestIngestOtlp) | **Post** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
+[**IngestIngestOtlpJsonCollector**](IngestAPI.md#IngestIngestOtlpJsonCollector) | **Post** /v1/traces |
+[**IngestReconcileTrace**](IngestAPI.md#IngestReconcileTrace) | **Post** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
+[**IngestReplayDeadLetter**](IngestAPI.md#IngestReplayDeadLetter) | **Post** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
 
 
 
-## DrainTraceIngested
+## IngestDrainTraceIngested
 
-> TraceIngestedDrainReport DrainTraceIngested(ctx, tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> TraceIngestedDrainReport IngestDrainTraceIngested(ctx, tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -45,13 +45,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.IngestAPI.DrainTraceIngested(context.Background(), tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.IngestAPI.IngestDrainTraceIngested(context.Background(), tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.DrainTraceIngested``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestDrainTraceIngested``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `DrainTraceIngested`: TraceIngestedDrainReport
-	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.DrainTraceIngested`: %v\n", resp)
+	// response from `IngestDrainTraceIngested`: TraceIngestedDrainReport
+	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestDrainTraceIngested`: %v\n", resp)
 }
 ```
 
@@ -66,7 +66,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiDrainTraceIngestedRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiIngestDrainTraceIngestedRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -97,9 +97,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## DrainTraceWrites
+## IngestDrainTraceWrites
 
-> TraceWriteDrainReport DrainTraceWrites(ctx, tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> TraceWriteDrainReport IngestDrainTraceWrites(ctx, tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -126,13 +126,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.IngestAPI.DrainTraceWrites(context.Background(), tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.IngestAPI.IngestDrainTraceWrites(context.Background(), tenantId, projectId).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.DrainTraceWrites``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestDrainTraceWrites``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `DrainTraceWrites`: TraceWriteDrainReport
-	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.DrainTraceWrites`: %v\n", resp)
+	// response from `IngestDrainTraceWrites`: TraceWriteDrainReport
+	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestDrainTraceWrites`: %v\n", resp)
 }
 ```
 
@@ -147,7 +147,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiDrainTraceWritesRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiIngestDrainTraceWritesRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -178,9 +178,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## GetIngestQueueStatus
+## IngestGetIngestQueueStatus
 
-> IngestQueueStatus GetIngestQueueStatus(ctx, tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> IngestQueueStatus IngestGetIngestQueueStatus(ctx, tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -206,13 +206,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.IngestAPI.GetIngestQueueStatus(context.Background(), tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.IngestAPI.IngestGetIngestQueueStatus(context.Background(), tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.GetIngestQueueStatus``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestGetIngestQueueStatus``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `GetIngestQueueStatus`: IngestQueueStatus
-	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.GetIngestQueueStatus`: %v\n", resp)
+	// response from `IngestGetIngestQueueStatus`: IngestQueueStatus
+	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestGetIngestQueueStatus`: %v\n", resp)
 }
 ```
 
@@ -227,7 +227,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiGetIngestQueueStatusRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiIngestGetIngestQueueStatusRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -257,9 +257,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## ImportSource
+## IngestImportSource
 
-> IngestOutcome ImportSource(ctx, tenantId, projectId, environmentId).ImportSourceHttpRequest(importSourceHttpRequest).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).Execute()
+> IngestOutcome IngestImportSource(ctx, tenantId, projectId, environmentId).ImportSourceHttpRequest(importSourceHttpRequest).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).Execute()
 
 
 
@@ -286,13 +286,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.IngestAPI.ImportSource(context.Background(), tenantId, projectId, environmentId).ImportSourceHttpRequest(importSourceHttpRequest).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).Execute()
+	resp, r, err := apiClient.IngestAPI.IngestImportSource(context.Background(), tenantId, projectId, environmentId).ImportSourceHttpRequest(importSourceHttpRequest).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.ImportSource``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestImportSource``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ImportSource`: IngestOutcome
-	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.ImportSource`: %v\n", resp)
+	// response from `IngestImportSource`: IngestOutcome
+	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestImportSource`: %v\n", resp)
 }
 ```
 
@@ -308,7 +308,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiImportSourceRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiIngestImportSourceRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -339,9 +339,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## IngestNative
+## IngestIngestNative
 
-> IngestOutcome IngestNative(ctx).NativeIngestRequest(nativeIngestRequest).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> IngestOutcome IngestIngestNative(ctx).NativeIngestRequest(nativeIngestRequest).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -367,13 +367,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.IngestAPI.IngestNative(context.Background()).NativeIngestRequest(nativeIngestRequest).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.IngestAPI.IngestIngestNative(context.Background()).NativeIngestRequest(nativeIngestRequest).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestNative``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestIngestNative``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `IngestNative`: IngestOutcome
-	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestNative`: %v\n", resp)
+	// response from `IngestIngestNative`: IngestOutcome
+	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestIngestNative`: %v\n", resp)
 }
 ```
 
@@ -383,7 +383,7 @@ func main() {
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiIngestNativeRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiIngestIngestNativeRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -413,9 +413,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## IngestOtlp
+## IngestIngestOtlp
 
-> OtlpIngestOutcome IngestOtlp(ctx, tenantId, projectId, environmentId).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> OtlpIngestOutcome IngestIngestOtlp(ctx, tenantId, projectId, environmentId).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -443,13 +443,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.IngestAPI.IngestOtlp(context.Background(), tenantId, projectId, environmentId).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.IngestAPI.IngestIngestOtlp(context.Background(), tenantId, projectId, environmentId).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestOtlp``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestIngestOtlp``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `IngestOtlp`: OtlpIngestOutcome
-	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestOtlp`: %v\n", resp)
+	// response from `IngestIngestOtlp`: OtlpIngestOutcome
+	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestIngestOtlp`: %v\n", resp)
 }
 ```
 
@@ -465,7 +465,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiIngestOtlpRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiIngestIngestOtlpRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -497,9 +497,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## IngestOtlpJsonCollector
+## IngestIngestOtlpJsonCollector
 
-> OtlpIngestOutcome IngestOtlpJsonCollector(ctx).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterTenantId(xBeaterTenantId).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> OtlpIngestOutcome IngestIngestOtlpJsonCollector(ctx).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterTenantId(xBeaterTenantId).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -525,13 +525,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.IngestAPI.IngestOtlpJsonCollector(context.Background()).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterTenantId(xBeaterTenantId).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.IngestAPI.IngestIngestOtlpJsonCollector(context.Background()).Durability(durability).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterTenantId(xBeaterTenantId).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestOtlpJsonCollector``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestIngestOtlpJsonCollector``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `IngestOtlpJsonCollector`: OtlpIngestOutcome
-	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestOtlpJsonCollector`: %v\n", resp)
+	// response from `IngestIngestOtlpJsonCollector`: OtlpIngestOutcome
+	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestIngestOtlpJsonCollector`: %v\n", resp)
 }
 ```
 
@@ -541,7 +541,7 @@ func main() {
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiIngestOtlpJsonCollectorRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiIngestIngestOtlpJsonCollectorRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -571,9 +571,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## ReconcileTrace
+## IngestReconcileTrace
 
-> TraceIngestedReconcileReport ReconcileTrace(ctx, tenantId, projectId, traceId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> TraceIngestedReconcileReport IngestReconcileTrace(ctx, tenantId, projectId, traceId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -600,13 +600,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.IngestAPI.ReconcileTrace(context.Background(), tenantId, projectId, traceId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.IngestAPI.IngestReconcileTrace(context.Background(), tenantId, projectId, traceId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.ReconcileTrace``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestReconcileTrace``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ReconcileTrace`: TraceIngestedReconcileReport
-	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.ReconcileTrace`: %v\n", resp)
+	// response from `IngestReconcileTrace`: TraceIngestedReconcileReport
+	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestReconcileTrace`: %v\n", resp)
 }
 ```
 
@@ -622,7 +622,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiReconcileTraceRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiIngestReconcileTraceRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -653,9 +653,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## ReplayDeadLetter
+## IngestReplayDeadLetter
 
-> DeadLetterReplayReport ReplayDeadLetter(ctx, tenantId, projectId, messageId).ResetAttempts(resetAttempts).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> DeadLetterReplayReport IngestReplayDeadLetter(ctx, tenantId, projectId, messageId).ResetAttempts(resetAttempts).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -683,13 +683,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.IngestAPI.ReplayDeadLetter(context.Background(), tenantId, projectId, messageId).ResetAttempts(resetAttempts).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.IngestAPI.IngestReplayDeadLetter(context.Background(), tenantId, projectId, messageId).ResetAttempts(resetAttempts).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.ReplayDeadLetter``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `IngestAPI.IngestReplayDeadLetter``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ReplayDeadLetter`: DeadLetterReplayReport
-	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.ReplayDeadLetter`: %v\n", resp)
+	// response from `IngestReplayDeadLetter`: DeadLetterReplayReport
+	fmt.Fprintf(os.Stdout, "Response from `IngestAPI.IngestReplayDeadLetter`: %v\n", resp)
 }
 ```
 
@@ -705,7 +705,7 @@ Name | Type | Description  | Notes
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiReplayDeadLetterRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiIngestReplayDeadLetterRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes

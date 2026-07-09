@@ -12,6 +12,3 @@
 |**downstreamQueued** | **Boolean** |  |  |
 |**duplicateRaw** | **Integer** |  |  |
 |**duplicateSpans** | **Integer** |  |  |
-
-
-

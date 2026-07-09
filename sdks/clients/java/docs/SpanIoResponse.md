@@ -12,6 +12,3 @@
 |**spanId** | **String** |  |  |
 |**tenantId** | **String** |  |  |
 |**traceId** | **String** |  |  |
-
-
-

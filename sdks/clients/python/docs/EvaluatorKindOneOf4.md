@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**max_micros** | **int** |  | 
-**type** | **str** |  | 
+**max_micros** | **int** |  |
+**type** | **str** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ evaluator_kind_one_of4_dict = evaluator_kind_one_of4_instance.to_dict()
 evaluator_kind_one_of4_from_dict = EvaluatorKindOneOf4.from_dict(evaluator_kind_one_of4_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

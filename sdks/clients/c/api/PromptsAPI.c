@@ -8,7 +8,7 @@
 
 
 prompt_version_t*
-PromptsAPI_addPromptVersion(apiClient_t *apiClient, char *tenant_id, char *project_id, char *prompt_id, add_prompt_version_request_t *add_prompt_version_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+PromptsAPI_promptsAddPromptVersion(apiClient_t *apiClient, char *tenant_id, char *project_id, char *prompt_id, add_prompt_version_request_t *add_prompt_version_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();
@@ -229,7 +229,7 @@ end:
 }
 
 created_prompt_t*
-PromptsAPI_createPrompt(apiClient_t *apiClient, char *tenant_id, char *project_id, create_prompt_request_t *create_prompt_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+PromptsAPI_promptsCreatePrompt(apiClient_t *apiClient, char *tenant_id, char *project_id, create_prompt_request_t *create_prompt_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();
@@ -433,7 +433,7 @@ end:
 }
 
 prompt_version_diff_t*
-PromptsAPI_diffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *project_id, char *prompt_id, char *from, char *to, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+PromptsAPI_promptsDiffPromptVersions(apiClient_t *apiClient, char *tenant_id, char *project_id, char *prompt_id, char *from, char *to, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = list_createList();
     list_t    *localVarHeaderParameters = list_createList();
@@ -686,7 +686,7 @@ end:
 }
 
 prompt_t*
-PromptsAPI_getPrompt(apiClient_t *apiClient, char *tenant_id, char *project_id, char *prompt_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+PromptsAPI_promptsGetPrompt(apiClient_t *apiClient, char *tenant_id, char *project_id, char *prompt_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();
@@ -891,7 +891,7 @@ end:
 }
 
 prompt_version_list_response_t*
-PromptsAPI_listPromptVersions(apiClient_t *apiClient, char *tenant_id, char *project_id, char *prompt_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+PromptsAPI_promptsListPromptVersions(apiClient_t *apiClient, char *tenant_id, char *project_id, char *prompt_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();
@@ -1096,7 +1096,7 @@ end:
 }
 
 prompt_list_response_t*
-PromptsAPI_listPrompts(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+PromptsAPI_promptsListPrompts(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();

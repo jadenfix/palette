@@ -13,6 +13,3 @@
 |**sha256** | **String** |  |  |
 |**sizeBytes** | **Long** |  |  |
 |**uri** | **String** |  |  |
-
-
-

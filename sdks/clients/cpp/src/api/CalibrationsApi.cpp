@@ -35,13 +35,13 @@ CalibrationsApi::~CalibrationsApi()
 {
 }
 
-pplx::task<std::shared_ptr<CalibrationReport>> CalibrationsApi::runCalibration(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, utility::string_t versionId, std::shared_ptr<RunCalibrationHttpRequest> runCalibrationHttpRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<CalibrationReport>> CalibrationsApi::calibrations_runCalibration(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, utility::string_t versionId, std::shared_ptr<RunCalibrationHttpRequest> runCalibrationHttpRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'runCalibrationHttpRequest' is set
     if (runCalibrationHttpRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runCalibrationHttpRequest' when calling CalibrationsApi->runCalibration"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runCalibrationHttpRequest' when calling CalibrationsApi->calibrations_runCalibration"));
     }
 
 
@@ -79,7 +79,7 @@ pplx::task<std::shared_ptr<CalibrationReport>> CalibrationsApi::runCalibration(u
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("CalibrationsApi->runCalibration does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("CalibrationsApi->calibrations_runCalibration does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -139,7 +139,7 @@ pplx::task<std::shared_ptr<CalibrationReport>> CalibrationsApi::runCalibration(u
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("CalibrationsApi->runCalibration does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("CalibrationsApi->calibrations_runCalibration does not consume any supported media type"));
     }
 
 
@@ -159,7 +159,7 @@ pplx::task<std::shared_ptr<CalibrationReport>> CalibrationsApi::runCalibration(u
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling runCalibration: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling calibrations_runCalibration: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -170,7 +170,7 @@ pplx::task<std::shared_ptr<CalibrationReport>> CalibrationsApi::runCalibration(u
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling runCalibration: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling calibrations_runCalibration: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -194,7 +194,7 @@ pplx::task<std::shared_ptr<CalibrationReport>> CalibrationsApi::runCalibration(u
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling runCalibration: unsupported response type"));
+                , utility::conversions::to_string_t("error calling calibrations_runCalibration: unsupported response type"));
         }
 
         return localVarResult;

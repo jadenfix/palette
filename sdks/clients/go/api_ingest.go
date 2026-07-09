@@ -23,7 +23,7 @@ import (
 // IngestAPIService IngestAPI service
 type IngestAPIService service
 
-type ApiDrainTraceIngestedRequest struct {
+type ApiIngestDrainTraceIngestedRequest struct {
 	ctx context.Context
 	ApiService *IngestAPIService
 	tenantId string
@@ -35,49 +35,49 @@ type ApiDrainTraceIngestedRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiDrainTraceIngestedRequest) Limit(limit int32) ApiDrainTraceIngestedRequest {
+func (r ApiIngestDrainTraceIngestedRequest) Limit(limit int32) ApiIngestDrainTraceIngestedRequest {
 	r.limit = &limit
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiDrainTraceIngestedRequest) Authorization(authorization string) ApiDrainTraceIngestedRequest {
+func (r ApiIngestDrainTraceIngestedRequest) Authorization(authorization string) ApiIngestDrainTraceIngestedRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiDrainTraceIngestedRequest) XBeaterApiKey(xBeaterApiKey string) ApiDrainTraceIngestedRequest {
+func (r ApiIngestDrainTraceIngestedRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestDrainTraceIngestedRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiDrainTraceIngestedRequest) XBeaterProjectId(xBeaterProjectId string) ApiDrainTraceIngestedRequest {
+func (r ApiIngestDrainTraceIngestedRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestDrainTraceIngestedRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiDrainTraceIngestedRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiDrainTraceIngestedRequest {
+func (r ApiIngestDrainTraceIngestedRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestDrainTraceIngestedRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiDrainTraceIngestedRequest) Execute() (*TraceIngestedDrainReport, *http.Response, error) {
-	return r.ApiService.DrainTraceIngestedExecute(r)
+func (r ApiIngestDrainTraceIngestedRequest) Execute() (*TraceIngestedDrainReport, *http.Response, error) {
+	return r.ApiService.IngestDrainTraceIngestedExecute(r)
 }
 
 /*
-DrainTraceIngested Method for DrainTraceIngested
+IngestDrainTraceIngested Method for IngestDrainTraceIngested
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiDrainTraceIngestedRequest
+ @return ApiIngestDrainTraceIngestedRequest
 */
-func (a *IngestAPIService) DrainTraceIngested(ctx context.Context, tenantId string, projectId string) ApiDrainTraceIngestedRequest {
-	return ApiDrainTraceIngestedRequest{
+func (a *IngestAPIService) IngestDrainTraceIngested(ctx context.Context, tenantId string, projectId string) ApiIngestDrainTraceIngestedRequest {
+	return ApiIngestDrainTraceIngestedRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -87,7 +87,7 @@ func (a *IngestAPIService) DrainTraceIngested(ctx context.Context, tenantId stri
 
 // Execute executes the request
 //  @return TraceIngestedDrainReport
-func (a *IngestAPIService) DrainTraceIngestedExecute(r ApiDrainTraceIngestedRequest) (*TraceIngestedDrainReport, *http.Response, error) {
+func (a *IngestAPIService) IngestDrainTraceIngestedExecute(r ApiIngestDrainTraceIngestedRequest) (*TraceIngestedDrainReport, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -95,7 +95,7 @@ func (a *IngestAPIService) DrainTraceIngestedExecute(r ApiDrainTraceIngestedRequ
 		localVarReturnValue  *TraceIngestedDrainReport
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.DrainTraceIngested")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestDrainTraceIngested")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -220,7 +220,7 @@ func (a *IngestAPIService) DrainTraceIngestedExecute(r ApiDrainTraceIngestedRequ
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiDrainTraceWritesRequest struct {
+type ApiIngestDrainTraceWritesRequest struct {
 	ctx context.Context
 	ApiService *IngestAPIService
 	tenantId string
@@ -232,49 +232,49 @@ type ApiDrainTraceWritesRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiDrainTraceWritesRequest) Limit(limit int32) ApiDrainTraceWritesRequest {
+func (r ApiIngestDrainTraceWritesRequest) Limit(limit int32) ApiIngestDrainTraceWritesRequest {
 	r.limit = &limit
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiDrainTraceWritesRequest) Authorization(authorization string) ApiDrainTraceWritesRequest {
+func (r ApiIngestDrainTraceWritesRequest) Authorization(authorization string) ApiIngestDrainTraceWritesRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiDrainTraceWritesRequest) XBeaterApiKey(xBeaterApiKey string) ApiDrainTraceWritesRequest {
+func (r ApiIngestDrainTraceWritesRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestDrainTraceWritesRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiDrainTraceWritesRequest) XBeaterProjectId(xBeaterProjectId string) ApiDrainTraceWritesRequest {
+func (r ApiIngestDrainTraceWritesRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestDrainTraceWritesRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiDrainTraceWritesRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiDrainTraceWritesRequest {
+func (r ApiIngestDrainTraceWritesRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestDrainTraceWritesRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiDrainTraceWritesRequest) Execute() (*TraceWriteDrainReport, *http.Response, error) {
-	return r.ApiService.DrainTraceWritesExecute(r)
+func (r ApiIngestDrainTraceWritesRequest) Execute() (*TraceWriteDrainReport, *http.Response, error) {
+	return r.ApiService.IngestDrainTraceWritesExecute(r)
 }
 
 /*
-DrainTraceWrites Method for DrainTraceWrites
+IngestDrainTraceWrites Method for IngestDrainTraceWrites
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiDrainTraceWritesRequest
+ @return ApiIngestDrainTraceWritesRequest
 */
-func (a *IngestAPIService) DrainTraceWrites(ctx context.Context, tenantId string, projectId string) ApiDrainTraceWritesRequest {
-	return ApiDrainTraceWritesRequest{
+func (a *IngestAPIService) IngestDrainTraceWrites(ctx context.Context, tenantId string, projectId string) ApiIngestDrainTraceWritesRequest {
+	return ApiIngestDrainTraceWritesRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -284,7 +284,7 @@ func (a *IngestAPIService) DrainTraceWrites(ctx context.Context, tenantId string
 
 // Execute executes the request
 //  @return TraceWriteDrainReport
-func (a *IngestAPIService) DrainTraceWritesExecute(r ApiDrainTraceWritesRequest) (*TraceWriteDrainReport, *http.Response, error) {
+func (a *IngestAPIService) IngestDrainTraceWritesExecute(r ApiIngestDrainTraceWritesRequest) (*TraceWriteDrainReport, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -292,7 +292,7 @@ func (a *IngestAPIService) DrainTraceWritesExecute(r ApiDrainTraceWritesRequest)
 		localVarReturnValue  *TraceWriteDrainReport
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.DrainTraceWrites")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestDrainTraceWrites")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -417,7 +417,7 @@ func (a *IngestAPIService) DrainTraceWritesExecute(r ApiDrainTraceWritesRequest)
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiGetIngestQueueStatusRequest struct {
+type ApiIngestGetIngestQueueStatusRequest struct {
 	ctx context.Context
 	ApiService *IngestAPIService
 	tenantId string
@@ -429,43 +429,43 @@ type ApiGetIngestQueueStatusRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiGetIngestQueueStatusRequest) Authorization(authorization string) ApiGetIngestQueueStatusRequest {
+func (r ApiIngestGetIngestQueueStatusRequest) Authorization(authorization string) ApiIngestGetIngestQueueStatusRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiGetIngestQueueStatusRequest) XBeaterApiKey(xBeaterApiKey string) ApiGetIngestQueueStatusRequest {
+func (r ApiIngestGetIngestQueueStatusRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestGetIngestQueueStatusRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiGetIngestQueueStatusRequest) XBeaterProjectId(xBeaterProjectId string) ApiGetIngestQueueStatusRequest {
+func (r ApiIngestGetIngestQueueStatusRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestGetIngestQueueStatusRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiGetIngestQueueStatusRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiGetIngestQueueStatusRequest {
+func (r ApiIngestGetIngestQueueStatusRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestGetIngestQueueStatusRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiGetIngestQueueStatusRequest) Execute() (*IngestQueueStatus, *http.Response, error) {
-	return r.ApiService.GetIngestQueueStatusExecute(r)
+func (r ApiIngestGetIngestQueueStatusRequest) Execute() (*IngestQueueStatus, *http.Response, error) {
+	return r.ApiService.IngestGetIngestQueueStatusExecute(r)
 }
 
 /*
-GetIngestQueueStatus Method for GetIngestQueueStatus
+IngestGetIngestQueueStatus Method for IngestGetIngestQueueStatus
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiGetIngestQueueStatusRequest
+ @return ApiIngestGetIngestQueueStatusRequest
 */
-func (a *IngestAPIService) GetIngestQueueStatus(ctx context.Context, tenantId string, projectId string) ApiGetIngestQueueStatusRequest {
-	return ApiGetIngestQueueStatusRequest{
+func (a *IngestAPIService) IngestGetIngestQueueStatus(ctx context.Context, tenantId string, projectId string) ApiIngestGetIngestQueueStatusRequest {
+	return ApiIngestGetIngestQueueStatusRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -475,7 +475,7 @@ func (a *IngestAPIService) GetIngestQueueStatus(ctx context.Context, tenantId st
 
 // Execute executes the request
 //  @return IngestQueueStatus
-func (a *IngestAPIService) GetIngestQueueStatusExecute(r ApiGetIngestQueueStatusRequest) (*IngestQueueStatus, *http.Response, error) {
+func (a *IngestAPIService) IngestGetIngestQueueStatusExecute(r ApiIngestGetIngestQueueStatusRequest) (*IngestQueueStatus, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -483,7 +483,7 @@ func (a *IngestAPIService) GetIngestQueueStatusExecute(r ApiGetIngestQueueStatus
 		localVarReturnValue  *IngestQueueStatus
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.GetIngestQueueStatus")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestGetIngestQueueStatus")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -594,7 +594,7 @@ func (a *IngestAPIService) GetIngestQueueStatusExecute(r ApiGetIngestQueueStatus
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiImportSourceRequest struct {
+type ApiIngestImportSourceRequest struct {
 	ctx context.Context
 	ApiService *IngestAPIService
 	tenantId string
@@ -606,43 +606,43 @@ type ApiImportSourceRequest struct {
 	xBeaterApiKey *string
 }
 
-func (r ApiImportSourceRequest) ImportSourceHttpRequest(importSourceHttpRequest ImportSourceHttpRequest) ApiImportSourceRequest {
+func (r ApiIngestImportSourceRequest) ImportSourceHttpRequest(importSourceHttpRequest ImportSourceHttpRequest) ApiIngestImportSourceRequest {
 	r.importSourceHttpRequest = &importSourceHttpRequest
 	return r
 }
 
-func (r ApiImportSourceRequest) Durability(durability string) ApiImportSourceRequest {
+func (r ApiIngestImportSourceRequest) Durability(durability string) ApiIngestImportSourceRequest {
 	r.durability = &durability
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiImportSourceRequest) Authorization(authorization string) ApiImportSourceRequest {
+func (r ApiIngestImportSourceRequest) Authorization(authorization string) ApiIngestImportSourceRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiImportSourceRequest) XBeaterApiKey(xBeaterApiKey string) ApiImportSourceRequest {
+func (r ApiIngestImportSourceRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestImportSourceRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
-func (r ApiImportSourceRequest) Execute() (*IngestOutcome, *http.Response, error) {
-	return r.ApiService.ImportSourceExecute(r)
+func (r ApiIngestImportSourceRequest) Execute() (*IngestOutcome, *http.Response, error) {
+	return r.ApiService.IngestImportSourceExecute(r)
 }
 
 /*
-ImportSource Method for ImportSource
+IngestImportSource Method for IngestImportSource
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param environmentId environment_id
- @return ApiImportSourceRequest
+ @return ApiIngestImportSourceRequest
 */
-func (a *IngestAPIService) ImportSource(ctx context.Context, tenantId string, projectId string, environmentId string) ApiImportSourceRequest {
-	return ApiImportSourceRequest{
+func (a *IngestAPIService) IngestImportSource(ctx context.Context, tenantId string, projectId string, environmentId string) ApiIngestImportSourceRequest {
+	return ApiIngestImportSourceRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -653,7 +653,7 @@ func (a *IngestAPIService) ImportSource(ctx context.Context, tenantId string, pr
 
 // Execute executes the request
 //  @return IngestOutcome
-func (a *IngestAPIService) ImportSourceExecute(r ApiImportSourceRequest) (*IngestOutcome, *http.Response, error) {
+func (a *IngestAPIService) IngestImportSourceExecute(r ApiIngestImportSourceRequest) (*IngestOutcome, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -661,7 +661,7 @@ func (a *IngestAPIService) ImportSourceExecute(r ApiImportSourceRequest) (*Inges
 		localVarReturnValue  *IngestOutcome
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.ImportSource")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestImportSource")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -797,7 +797,7 @@ func (a *IngestAPIService) ImportSourceExecute(r ApiImportSourceRequest) (*Inges
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiIngestNativeRequest struct {
+type ApiIngestIngestNativeRequest struct {
 	ctx context.Context
 	ApiService *IngestAPIService
 	nativeIngestRequest *NativeIngestRequest
@@ -808,52 +808,52 @@ type ApiIngestNativeRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiIngestNativeRequest) NativeIngestRequest(nativeIngestRequest NativeIngestRequest) ApiIngestNativeRequest {
+func (r ApiIngestIngestNativeRequest) NativeIngestRequest(nativeIngestRequest NativeIngestRequest) ApiIngestIngestNativeRequest {
 	r.nativeIngestRequest = &nativeIngestRequest
 	return r
 }
 
-func (r ApiIngestNativeRequest) Durability(durability string) ApiIngestNativeRequest {
+func (r ApiIngestIngestNativeRequest) Durability(durability string) ApiIngestIngestNativeRequest {
 	r.durability = &durability
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiIngestNativeRequest) Authorization(authorization string) ApiIngestNativeRequest {
+func (r ApiIngestIngestNativeRequest) Authorization(authorization string) ApiIngestIngestNativeRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiIngestNativeRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestNativeRequest {
+func (r ApiIngestIngestNativeRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestIngestNativeRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiIngestNativeRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestNativeRequest {
+func (r ApiIngestIngestNativeRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestIngestNativeRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiIngestNativeRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestNativeRequest {
+func (r ApiIngestIngestNativeRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestIngestNativeRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiIngestNativeRequest) Execute() (*IngestOutcome, *http.Response, error) {
-	return r.ApiService.IngestNativeExecute(r)
+func (r ApiIngestIngestNativeRequest) Execute() (*IngestOutcome, *http.Response, error) {
+	return r.ApiService.IngestIngestNativeExecute(r)
 }
 
 /*
-IngestNative Method for IngestNative
+IngestIngestNative Method for IngestIngestNative
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiIngestNativeRequest
+ @return ApiIngestIngestNativeRequest
 */
-func (a *IngestAPIService) IngestNative(ctx context.Context) ApiIngestNativeRequest {
-	return ApiIngestNativeRequest{
+func (a *IngestAPIService) IngestIngestNative(ctx context.Context) ApiIngestIngestNativeRequest {
+	return ApiIngestIngestNativeRequest{
 		ApiService: a,
 		ctx: ctx,
 	}
@@ -861,7 +861,7 @@ func (a *IngestAPIService) IngestNative(ctx context.Context) ApiIngestNativeRequ
 
 // Execute executes the request
 //  @return IngestOutcome
-func (a *IngestAPIService) IngestNativeExecute(r ApiIngestNativeRequest) (*IngestOutcome, *http.Response, error) {
+func (a *IngestAPIService) IngestIngestNativeExecute(r ApiIngestIngestNativeRequest) (*IngestOutcome, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -869,7 +869,7 @@ func (a *IngestAPIService) IngestNativeExecute(r ApiIngestNativeRequest) (*Inges
 		localVarReturnValue  *IngestOutcome
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestNative")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestIngestNative")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1008,7 +1008,7 @@ func (a *IngestAPIService) IngestNativeExecute(r ApiIngestNativeRequest) (*Inges
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiIngestOtlpRequest struct {
+type ApiIngestIngestOtlpRequest struct {
 	ctx context.Context
 	ApiService *IngestAPIService
 	tenantId string
@@ -1021,50 +1021,50 @@ type ApiIngestOtlpRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiIngestOtlpRequest) Durability(durability string) ApiIngestOtlpRequest {
+func (r ApiIngestIngestOtlpRequest) Durability(durability string) ApiIngestIngestOtlpRequest {
 	r.durability = &durability
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiIngestOtlpRequest) Authorization(authorization string) ApiIngestOtlpRequest {
+func (r ApiIngestIngestOtlpRequest) Authorization(authorization string) ApiIngestIngestOtlpRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiIngestOtlpRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestOtlpRequest {
+func (r ApiIngestIngestOtlpRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestIngestOtlpRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiIngestOtlpRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestOtlpRequest {
+func (r ApiIngestIngestOtlpRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestIngestOtlpRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiIngestOtlpRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestOtlpRequest {
+func (r ApiIngestIngestOtlpRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestIngestOtlpRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiIngestOtlpRequest) Execute() (*OtlpIngestOutcome, *http.Response, error) {
-	return r.ApiService.IngestOtlpExecute(r)
+func (r ApiIngestIngestOtlpRequest) Execute() (*OtlpIngestOutcome, *http.Response, error) {
+	return r.ApiService.IngestIngestOtlpExecute(r)
 }
 
 /*
-IngestOtlp Method for IngestOtlp
+IngestIngestOtlp Method for IngestIngestOtlp
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param environmentId environment_id
- @return ApiIngestOtlpRequest
+ @return ApiIngestIngestOtlpRequest
 */
-func (a *IngestAPIService) IngestOtlp(ctx context.Context, tenantId string, projectId string, environmentId string) ApiIngestOtlpRequest {
-	return ApiIngestOtlpRequest{
+func (a *IngestAPIService) IngestIngestOtlp(ctx context.Context, tenantId string, projectId string, environmentId string) ApiIngestIngestOtlpRequest {
+	return ApiIngestIngestOtlpRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -1075,7 +1075,7 @@ func (a *IngestAPIService) IngestOtlp(ctx context.Context, tenantId string, proj
 
 // Execute executes the request
 //  @return OtlpIngestOutcome
-func (a *IngestAPIService) IngestOtlpExecute(r ApiIngestOtlpRequest) (*OtlpIngestOutcome, *http.Response, error) {
+func (a *IngestAPIService) IngestIngestOtlpExecute(r ApiIngestIngestOtlpRequest) (*OtlpIngestOutcome, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -1083,7 +1083,7 @@ func (a *IngestAPIService) IngestOtlpExecute(r ApiIngestOtlpRequest) (*OtlpInges
 		localVarReturnValue  *OtlpIngestOutcome
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestOtlp")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestIngestOtlp")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1220,7 +1220,7 @@ func (a *IngestAPIService) IngestOtlpExecute(r ApiIngestOtlpRequest) (*OtlpInges
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiIngestOtlpJsonCollectorRequest struct {
+type ApiIngestIngestOtlpJsonCollectorRequest struct {
 	ctx context.Context
 	ApiService *IngestAPIService
 	durability *string
@@ -1231,53 +1231,53 @@ type ApiIngestOtlpJsonCollectorRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiIngestOtlpJsonCollectorRequest) Durability(durability string) ApiIngestOtlpJsonCollectorRequest {
+func (r ApiIngestIngestOtlpJsonCollectorRequest) Durability(durability string) ApiIngestIngestOtlpJsonCollectorRequest {
 	r.durability = &durability
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiIngestOtlpJsonCollectorRequest) Authorization(authorization string) ApiIngestOtlpJsonCollectorRequest {
+func (r ApiIngestIngestOtlpJsonCollectorRequest) Authorization(authorization string) ApiIngestIngestOtlpJsonCollectorRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiIngestOtlpJsonCollectorRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestOtlpJsonCollectorRequest {
+func (r ApiIngestIngestOtlpJsonCollectorRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestIngestOtlpJsonCollectorRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Tenant scope override for collector-style OTLP JSON
-func (r ApiIngestOtlpJsonCollectorRequest) XBeaterTenantId(xBeaterTenantId string) ApiIngestOtlpJsonCollectorRequest {
+func (r ApiIngestIngestOtlpJsonCollectorRequest) XBeaterTenantId(xBeaterTenantId string) ApiIngestIngestOtlpJsonCollectorRequest {
 	r.xBeaterTenantId = &xBeaterTenantId
 	return r
 }
 
 // Project scope override for collector-style OTLP JSON
-func (r ApiIngestOtlpJsonCollectorRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestOtlpJsonCollectorRequest {
+func (r ApiIngestIngestOtlpJsonCollectorRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestIngestOtlpJsonCollectorRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Environment scope override for collector-style OTLP JSON
-func (r ApiIngestOtlpJsonCollectorRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestOtlpJsonCollectorRequest {
+func (r ApiIngestIngestOtlpJsonCollectorRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestIngestOtlpJsonCollectorRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiIngestOtlpJsonCollectorRequest) Execute() (*OtlpIngestOutcome, *http.Response, error) {
-	return r.ApiService.IngestOtlpJsonCollectorExecute(r)
+func (r ApiIngestIngestOtlpJsonCollectorRequest) Execute() (*OtlpIngestOutcome, *http.Response, error) {
+	return r.ApiService.IngestIngestOtlpJsonCollectorExecute(r)
 }
 
 /*
-IngestOtlpJsonCollector Method for IngestOtlpJsonCollector
+IngestIngestOtlpJsonCollector Method for IngestIngestOtlpJsonCollector
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiIngestOtlpJsonCollectorRequest
+ @return ApiIngestIngestOtlpJsonCollectorRequest
 */
-func (a *IngestAPIService) IngestOtlpJsonCollector(ctx context.Context) ApiIngestOtlpJsonCollectorRequest {
-	return ApiIngestOtlpJsonCollectorRequest{
+func (a *IngestAPIService) IngestIngestOtlpJsonCollector(ctx context.Context) ApiIngestIngestOtlpJsonCollectorRequest {
+	return ApiIngestIngestOtlpJsonCollectorRequest{
 		ApiService: a,
 		ctx: ctx,
 	}
@@ -1285,7 +1285,7 @@ func (a *IngestAPIService) IngestOtlpJsonCollector(ctx context.Context) ApiInges
 
 // Execute executes the request
 //  @return OtlpIngestOutcome
-func (a *IngestAPIService) IngestOtlpJsonCollectorExecute(r ApiIngestOtlpJsonCollectorRequest) (*OtlpIngestOutcome, *http.Response, error) {
+func (a *IngestAPIService) IngestIngestOtlpJsonCollectorExecute(r ApiIngestIngestOtlpJsonCollectorRequest) (*OtlpIngestOutcome, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -1293,7 +1293,7 @@ func (a *IngestAPIService) IngestOtlpJsonCollectorExecute(r ApiIngestOtlpJsonCol
 		localVarReturnValue  *OtlpIngestOutcome
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestOtlpJsonCollector")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestIngestOtlpJsonCollector")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1430,7 +1430,7 @@ func (a *IngestAPIService) IngestOtlpJsonCollectorExecute(r ApiIngestOtlpJsonCol
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiReconcileTraceRequest struct {
+type ApiIngestReconcileTraceRequest struct {
 	ctx context.Context
 	ApiService *IngestAPIService
 	tenantId string
@@ -1443,44 +1443,44 @@ type ApiReconcileTraceRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiReconcileTraceRequest) Authorization(authorization string) ApiReconcileTraceRequest {
+func (r ApiIngestReconcileTraceRequest) Authorization(authorization string) ApiIngestReconcileTraceRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiReconcileTraceRequest) XBeaterApiKey(xBeaterApiKey string) ApiReconcileTraceRequest {
+func (r ApiIngestReconcileTraceRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestReconcileTraceRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiReconcileTraceRequest) XBeaterProjectId(xBeaterProjectId string) ApiReconcileTraceRequest {
+func (r ApiIngestReconcileTraceRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestReconcileTraceRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiReconcileTraceRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiReconcileTraceRequest {
+func (r ApiIngestReconcileTraceRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestReconcileTraceRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiReconcileTraceRequest) Execute() (*TraceIngestedReconcileReport, *http.Response, error) {
-	return r.ApiService.ReconcileTraceExecute(r)
+func (r ApiIngestReconcileTraceRequest) Execute() (*TraceIngestedReconcileReport, *http.Response, error) {
+	return r.ApiService.IngestReconcileTraceExecute(r)
 }
 
 /*
-ReconcileTrace Method for ReconcileTrace
+IngestReconcileTrace Method for IngestReconcileTrace
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param traceId trace_id
- @return ApiReconcileTraceRequest
+ @return ApiIngestReconcileTraceRequest
 */
-func (a *IngestAPIService) ReconcileTrace(ctx context.Context, tenantId string, projectId string, traceId string) ApiReconcileTraceRequest {
-	return ApiReconcileTraceRequest{
+func (a *IngestAPIService) IngestReconcileTrace(ctx context.Context, tenantId string, projectId string, traceId string) ApiIngestReconcileTraceRequest {
+	return ApiIngestReconcileTraceRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -1491,7 +1491,7 @@ func (a *IngestAPIService) ReconcileTrace(ctx context.Context, tenantId string, 
 
 // Execute executes the request
 //  @return TraceIngestedReconcileReport
-func (a *IngestAPIService) ReconcileTraceExecute(r ApiReconcileTraceRequest) (*TraceIngestedReconcileReport, *http.Response, error) {
+func (a *IngestAPIService) IngestReconcileTraceExecute(r ApiIngestReconcileTraceRequest) (*TraceIngestedReconcileReport, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -1499,7 +1499,7 @@ func (a *IngestAPIService) ReconcileTraceExecute(r ApiReconcileTraceRequest) (*T
 		localVarReturnValue  *TraceIngestedReconcileReport
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.ReconcileTrace")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestReconcileTrace")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1622,7 +1622,7 @@ func (a *IngestAPIService) ReconcileTraceExecute(r ApiReconcileTraceRequest) (*T
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiReplayDeadLetterRequest struct {
+type ApiIngestReplayDeadLetterRequest struct {
 	ctx context.Context
 	ApiService *IngestAPIService
 	tenantId string
@@ -1635,50 +1635,50 @@ type ApiReplayDeadLetterRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiReplayDeadLetterRequest) ResetAttempts(resetAttempts bool) ApiReplayDeadLetterRequest {
+func (r ApiIngestReplayDeadLetterRequest) ResetAttempts(resetAttempts bool) ApiIngestReplayDeadLetterRequest {
 	r.resetAttempts = &resetAttempts
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiReplayDeadLetterRequest) Authorization(authorization string) ApiReplayDeadLetterRequest {
+func (r ApiIngestReplayDeadLetterRequest) Authorization(authorization string) ApiIngestReplayDeadLetterRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiReplayDeadLetterRequest) XBeaterApiKey(xBeaterApiKey string) ApiReplayDeadLetterRequest {
+func (r ApiIngestReplayDeadLetterRequest) XBeaterApiKey(xBeaterApiKey string) ApiIngestReplayDeadLetterRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiReplayDeadLetterRequest) XBeaterProjectId(xBeaterProjectId string) ApiReplayDeadLetterRequest {
+func (r ApiIngestReplayDeadLetterRequest) XBeaterProjectId(xBeaterProjectId string) ApiIngestReplayDeadLetterRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiReplayDeadLetterRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiReplayDeadLetterRequest {
+func (r ApiIngestReplayDeadLetterRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiIngestReplayDeadLetterRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiReplayDeadLetterRequest) Execute() (*DeadLetterReplayReport, *http.Response, error) {
-	return r.ApiService.ReplayDeadLetterExecute(r)
+func (r ApiIngestReplayDeadLetterRequest) Execute() (*DeadLetterReplayReport, *http.Response, error) {
+	return r.ApiService.IngestReplayDeadLetterExecute(r)
 }
 
 /*
-ReplayDeadLetter Method for ReplayDeadLetter
+IngestReplayDeadLetter Method for IngestReplayDeadLetter
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param messageId message_id
- @return ApiReplayDeadLetterRequest
+ @return ApiIngestReplayDeadLetterRequest
 */
-func (a *IngestAPIService) ReplayDeadLetter(ctx context.Context, tenantId string, projectId string, messageId string) ApiReplayDeadLetterRequest {
-	return ApiReplayDeadLetterRequest{
+func (a *IngestAPIService) IngestReplayDeadLetter(ctx context.Context, tenantId string, projectId string, messageId string) ApiIngestReplayDeadLetterRequest {
+	return ApiIngestReplayDeadLetterRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -1689,7 +1689,7 @@ func (a *IngestAPIService) ReplayDeadLetter(ctx context.Context, tenantId string
 
 // Execute executes the request
 //  @return DeadLetterReplayReport
-func (a *IngestAPIService) ReplayDeadLetterExecute(r ApiReplayDeadLetterRequest) (*DeadLetterReplayReport, *http.Response, error) {
+func (a *IngestAPIService) IngestReplayDeadLetterExecute(r ApiIngestReplayDeadLetterRequest) (*DeadLetterReplayReport, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -1697,7 +1697,7 @@ func (a *IngestAPIService) ReplayDeadLetterExecute(r ApiReplayDeadLetterRequest)
 		localVarReturnValue  *DeadLetterReplayReport
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.ReplayDeadLetter")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "IngestAPIService.IngestReplayDeadLetter")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

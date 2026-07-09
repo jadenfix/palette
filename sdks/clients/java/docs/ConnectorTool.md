@@ -15,6 +15,3 @@ A single executable tool within a toolkit, carrying the metadata an agent needs 
 |**slug** | **String** | Tool slug passed to [&#x60;ComposioClient::execute&#x60;] (e.g. &#x60;GITHUB_CREATE_AN_ISSUE&#x60;). |  |
 |**tags** | **List&lt;String&gt;** | Free-form tags Composio assigns (categories, importance, …). |  [optional] |
 |**toolkit** | **String** | Owning toolkit slug (e.g. &#x60;github&#x60;), when known. |  [optional] |
-
-
-

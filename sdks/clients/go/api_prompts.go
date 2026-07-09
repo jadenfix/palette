@@ -23,7 +23,7 @@ import (
 // PromptsAPIService PromptsAPI service
 type PromptsAPIService service
 
-type ApiAddPromptVersionRequest struct {
+type ApiPromptsAddPromptVersionRequest struct {
 	ctx context.Context
 	ApiService *PromptsAPIService
 	tenantId string
@@ -36,50 +36,50 @@ type ApiAddPromptVersionRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiAddPromptVersionRequest) AddPromptVersionRequest(addPromptVersionRequest AddPromptVersionRequest) ApiAddPromptVersionRequest {
+func (r ApiPromptsAddPromptVersionRequest) AddPromptVersionRequest(addPromptVersionRequest AddPromptVersionRequest) ApiPromptsAddPromptVersionRequest {
 	r.addPromptVersionRequest = &addPromptVersionRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiAddPromptVersionRequest) Authorization(authorization string) ApiAddPromptVersionRequest {
+func (r ApiPromptsAddPromptVersionRequest) Authorization(authorization string) ApiPromptsAddPromptVersionRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiAddPromptVersionRequest) XBeaterApiKey(xBeaterApiKey string) ApiAddPromptVersionRequest {
+func (r ApiPromptsAddPromptVersionRequest) XBeaterApiKey(xBeaterApiKey string) ApiPromptsAddPromptVersionRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiAddPromptVersionRequest) XBeaterProjectId(xBeaterProjectId string) ApiAddPromptVersionRequest {
+func (r ApiPromptsAddPromptVersionRequest) XBeaterProjectId(xBeaterProjectId string) ApiPromptsAddPromptVersionRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiAddPromptVersionRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiAddPromptVersionRequest {
+func (r ApiPromptsAddPromptVersionRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiPromptsAddPromptVersionRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiAddPromptVersionRequest) Execute() (*PromptVersion, *http.Response, error) {
-	return r.ApiService.AddPromptVersionExecute(r)
+func (r ApiPromptsAddPromptVersionRequest) Execute() (*PromptVersion, *http.Response, error) {
+	return r.ApiService.PromptsAddPromptVersionExecute(r)
 }
 
 /*
-AddPromptVersion Method for AddPromptVersion
+PromptsAddPromptVersion Method for PromptsAddPromptVersion
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param promptId prompt_id
- @return ApiAddPromptVersionRequest
+ @return ApiPromptsAddPromptVersionRequest
 */
-func (a *PromptsAPIService) AddPromptVersion(ctx context.Context, tenantId string, projectId string, promptId string) ApiAddPromptVersionRequest {
-	return ApiAddPromptVersionRequest{
+func (a *PromptsAPIService) PromptsAddPromptVersion(ctx context.Context, tenantId string, projectId string, promptId string) ApiPromptsAddPromptVersionRequest {
+	return ApiPromptsAddPromptVersionRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -90,7 +90,7 @@ func (a *PromptsAPIService) AddPromptVersion(ctx context.Context, tenantId strin
 
 // Execute executes the request
 //  @return PromptVersion
-func (a *PromptsAPIService) AddPromptVersionExecute(r ApiAddPromptVersionRequest) (*PromptVersion, *http.Response, error) {
+func (a *PromptsAPIService) PromptsAddPromptVersionExecute(r ApiPromptsAddPromptVersionRequest) (*PromptVersion, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -98,7 +98,7 @@ func (a *PromptsAPIService) AddPromptVersionExecute(r ApiAddPromptVersionRequest
 		localVarReturnValue  *PromptVersion
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.AddPromptVersion")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.PromptsAddPromptVersion")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -226,7 +226,7 @@ func (a *PromptsAPIService) AddPromptVersionExecute(r ApiAddPromptVersionRequest
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiCreatePromptRequest struct {
+type ApiPromptsCreatePromptRequest struct {
 	ctx context.Context
 	ApiService *PromptsAPIService
 	tenantId string
@@ -238,49 +238,49 @@ type ApiCreatePromptRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiCreatePromptRequest) CreatePromptRequest(createPromptRequest CreatePromptRequest) ApiCreatePromptRequest {
+func (r ApiPromptsCreatePromptRequest) CreatePromptRequest(createPromptRequest CreatePromptRequest) ApiPromptsCreatePromptRequest {
 	r.createPromptRequest = &createPromptRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiCreatePromptRequest) Authorization(authorization string) ApiCreatePromptRequest {
+func (r ApiPromptsCreatePromptRequest) Authorization(authorization string) ApiPromptsCreatePromptRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiCreatePromptRequest) XBeaterApiKey(xBeaterApiKey string) ApiCreatePromptRequest {
+func (r ApiPromptsCreatePromptRequest) XBeaterApiKey(xBeaterApiKey string) ApiPromptsCreatePromptRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiCreatePromptRequest) XBeaterProjectId(xBeaterProjectId string) ApiCreatePromptRequest {
+func (r ApiPromptsCreatePromptRequest) XBeaterProjectId(xBeaterProjectId string) ApiPromptsCreatePromptRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiCreatePromptRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiCreatePromptRequest {
+func (r ApiPromptsCreatePromptRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiPromptsCreatePromptRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiCreatePromptRequest) Execute() (*CreatedPrompt, *http.Response, error) {
-	return r.ApiService.CreatePromptExecute(r)
+func (r ApiPromptsCreatePromptRequest) Execute() (*CreatedPrompt, *http.Response, error) {
+	return r.ApiService.PromptsCreatePromptExecute(r)
 }
 
 /*
-CreatePrompt Method for CreatePrompt
+PromptsCreatePrompt Method for PromptsCreatePrompt
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiCreatePromptRequest
+ @return ApiPromptsCreatePromptRequest
 */
-func (a *PromptsAPIService) CreatePrompt(ctx context.Context, tenantId string, projectId string) ApiCreatePromptRequest {
-	return ApiCreatePromptRequest{
+func (a *PromptsAPIService) PromptsCreatePrompt(ctx context.Context, tenantId string, projectId string) ApiPromptsCreatePromptRequest {
+	return ApiPromptsCreatePromptRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -290,7 +290,7 @@ func (a *PromptsAPIService) CreatePrompt(ctx context.Context, tenantId string, p
 
 // Execute executes the request
 //  @return CreatedPrompt
-func (a *PromptsAPIService) CreatePromptExecute(r ApiCreatePromptRequest) (*CreatedPrompt, *http.Response, error) {
+func (a *PromptsAPIService) PromptsCreatePromptExecute(r ApiPromptsCreatePromptRequest) (*CreatedPrompt, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -298,7 +298,7 @@ func (a *PromptsAPIService) CreatePromptExecute(r ApiCreatePromptRequest) (*Crea
 		localVarReturnValue  *CreatedPrompt
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.CreatePrompt")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.PromptsCreatePrompt")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -414,7 +414,7 @@ func (a *PromptsAPIService) CreatePromptExecute(r ApiCreatePromptRequest) (*Crea
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiDiffPromptVersionsRequest struct {
+type ApiPromptsDiffPromptVersionsRequest struct {
 	ctx context.Context
 	ApiService *PromptsAPIService
 	tenantId string
@@ -428,55 +428,55 @@ type ApiDiffPromptVersionsRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiDiffPromptVersionsRequest) From(from string) ApiDiffPromptVersionsRequest {
+func (r ApiPromptsDiffPromptVersionsRequest) From(from string) ApiPromptsDiffPromptVersionsRequest {
 	r.from = &from
 	return r
 }
 
-func (r ApiDiffPromptVersionsRequest) To(to string) ApiDiffPromptVersionsRequest {
+func (r ApiPromptsDiffPromptVersionsRequest) To(to string) ApiPromptsDiffPromptVersionsRequest {
 	r.to = &to
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiDiffPromptVersionsRequest) Authorization(authorization string) ApiDiffPromptVersionsRequest {
+func (r ApiPromptsDiffPromptVersionsRequest) Authorization(authorization string) ApiPromptsDiffPromptVersionsRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiDiffPromptVersionsRequest) XBeaterApiKey(xBeaterApiKey string) ApiDiffPromptVersionsRequest {
+func (r ApiPromptsDiffPromptVersionsRequest) XBeaterApiKey(xBeaterApiKey string) ApiPromptsDiffPromptVersionsRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiDiffPromptVersionsRequest) XBeaterProjectId(xBeaterProjectId string) ApiDiffPromptVersionsRequest {
+func (r ApiPromptsDiffPromptVersionsRequest) XBeaterProjectId(xBeaterProjectId string) ApiPromptsDiffPromptVersionsRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiDiffPromptVersionsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiDiffPromptVersionsRequest {
+func (r ApiPromptsDiffPromptVersionsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiPromptsDiffPromptVersionsRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiDiffPromptVersionsRequest) Execute() (*PromptVersionDiff, *http.Response, error) {
-	return r.ApiService.DiffPromptVersionsExecute(r)
+func (r ApiPromptsDiffPromptVersionsRequest) Execute() (*PromptVersionDiff, *http.Response, error) {
+	return r.ApiService.PromptsDiffPromptVersionsExecute(r)
 }
 
 /*
-DiffPromptVersions Method for DiffPromptVersions
+PromptsDiffPromptVersions Method for PromptsDiffPromptVersions
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param promptId prompt_id
- @return ApiDiffPromptVersionsRequest
+ @return ApiPromptsDiffPromptVersionsRequest
 */
-func (a *PromptsAPIService) DiffPromptVersions(ctx context.Context, tenantId string, projectId string, promptId string) ApiDiffPromptVersionsRequest {
-	return ApiDiffPromptVersionsRequest{
+func (a *PromptsAPIService) PromptsDiffPromptVersions(ctx context.Context, tenantId string, projectId string, promptId string) ApiPromptsDiffPromptVersionsRequest {
+	return ApiPromptsDiffPromptVersionsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -487,7 +487,7 @@ func (a *PromptsAPIService) DiffPromptVersions(ctx context.Context, tenantId str
 
 // Execute executes the request
 //  @return PromptVersionDiff
-func (a *PromptsAPIService) DiffPromptVersionsExecute(r ApiDiffPromptVersionsRequest) (*PromptVersionDiff, *http.Response, error) {
+func (a *PromptsAPIService) PromptsDiffPromptVersionsExecute(r ApiPromptsDiffPromptVersionsRequest) (*PromptVersionDiff, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -495,7 +495,7 @@ func (a *PromptsAPIService) DiffPromptVersionsExecute(r ApiDiffPromptVersionsReq
 		localVarReturnValue  *PromptVersionDiff
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.DiffPromptVersions")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.PromptsDiffPromptVersions")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -626,7 +626,7 @@ func (a *PromptsAPIService) DiffPromptVersionsExecute(r ApiDiffPromptVersionsReq
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiGetPromptRequest struct {
+type ApiPromptsGetPromptRequest struct {
 	ctx context.Context
 	ApiService *PromptsAPIService
 	tenantId string
@@ -639,44 +639,44 @@ type ApiGetPromptRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiGetPromptRequest) Authorization(authorization string) ApiGetPromptRequest {
+func (r ApiPromptsGetPromptRequest) Authorization(authorization string) ApiPromptsGetPromptRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiGetPromptRequest) XBeaterApiKey(xBeaterApiKey string) ApiGetPromptRequest {
+func (r ApiPromptsGetPromptRequest) XBeaterApiKey(xBeaterApiKey string) ApiPromptsGetPromptRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiGetPromptRequest) XBeaterProjectId(xBeaterProjectId string) ApiGetPromptRequest {
+func (r ApiPromptsGetPromptRequest) XBeaterProjectId(xBeaterProjectId string) ApiPromptsGetPromptRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiGetPromptRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiGetPromptRequest {
+func (r ApiPromptsGetPromptRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiPromptsGetPromptRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiGetPromptRequest) Execute() (*Prompt, *http.Response, error) {
-	return r.ApiService.GetPromptExecute(r)
+func (r ApiPromptsGetPromptRequest) Execute() (*Prompt, *http.Response, error) {
+	return r.ApiService.PromptsGetPromptExecute(r)
 }
 
 /*
-GetPrompt Method for GetPrompt
+PromptsGetPrompt Method for PromptsGetPrompt
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param promptId prompt_id
- @return ApiGetPromptRequest
+ @return ApiPromptsGetPromptRequest
 */
-func (a *PromptsAPIService) GetPrompt(ctx context.Context, tenantId string, projectId string, promptId string) ApiGetPromptRequest {
-	return ApiGetPromptRequest{
+func (a *PromptsAPIService) PromptsGetPrompt(ctx context.Context, tenantId string, projectId string, promptId string) ApiPromptsGetPromptRequest {
+	return ApiPromptsGetPromptRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -687,7 +687,7 @@ func (a *PromptsAPIService) GetPrompt(ctx context.Context, tenantId string, proj
 
 // Execute executes the request
 //  @return Prompt
-func (a *PromptsAPIService) GetPromptExecute(r ApiGetPromptRequest) (*Prompt, *http.Response, error) {
+func (a *PromptsAPIService) PromptsGetPromptExecute(r ApiPromptsGetPromptRequest) (*Prompt, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -695,7 +695,7 @@ func (a *PromptsAPIService) GetPromptExecute(r ApiGetPromptRequest) (*Prompt, *h
 		localVarReturnValue  *Prompt
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.GetPrompt")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.PromptsGetPrompt")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -818,7 +818,7 @@ func (a *PromptsAPIService) GetPromptExecute(r ApiGetPromptRequest) (*Prompt, *h
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiListPromptVersionsRequest struct {
+type ApiPromptsListPromptVersionsRequest struct {
 	ctx context.Context
 	ApiService *PromptsAPIService
 	tenantId string
@@ -831,44 +831,44 @@ type ApiListPromptVersionsRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiListPromptVersionsRequest) Authorization(authorization string) ApiListPromptVersionsRequest {
+func (r ApiPromptsListPromptVersionsRequest) Authorization(authorization string) ApiPromptsListPromptVersionsRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiListPromptVersionsRequest) XBeaterApiKey(xBeaterApiKey string) ApiListPromptVersionsRequest {
+func (r ApiPromptsListPromptVersionsRequest) XBeaterApiKey(xBeaterApiKey string) ApiPromptsListPromptVersionsRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiListPromptVersionsRequest) XBeaterProjectId(xBeaterProjectId string) ApiListPromptVersionsRequest {
+func (r ApiPromptsListPromptVersionsRequest) XBeaterProjectId(xBeaterProjectId string) ApiPromptsListPromptVersionsRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiListPromptVersionsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiListPromptVersionsRequest {
+func (r ApiPromptsListPromptVersionsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiPromptsListPromptVersionsRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiListPromptVersionsRequest) Execute() (*PromptVersionListResponse, *http.Response, error) {
-	return r.ApiService.ListPromptVersionsExecute(r)
+func (r ApiPromptsListPromptVersionsRequest) Execute() (*PromptVersionListResponse, *http.Response, error) {
+	return r.ApiService.PromptsListPromptVersionsExecute(r)
 }
 
 /*
-ListPromptVersions Method for ListPromptVersions
+PromptsListPromptVersions Method for PromptsListPromptVersions
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param promptId prompt_id
- @return ApiListPromptVersionsRequest
+ @return ApiPromptsListPromptVersionsRequest
 */
-func (a *PromptsAPIService) ListPromptVersions(ctx context.Context, tenantId string, projectId string, promptId string) ApiListPromptVersionsRequest {
-	return ApiListPromptVersionsRequest{
+func (a *PromptsAPIService) PromptsListPromptVersions(ctx context.Context, tenantId string, projectId string, promptId string) ApiPromptsListPromptVersionsRequest {
+	return ApiPromptsListPromptVersionsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -879,7 +879,7 @@ func (a *PromptsAPIService) ListPromptVersions(ctx context.Context, tenantId str
 
 // Execute executes the request
 //  @return PromptVersionListResponse
-func (a *PromptsAPIService) ListPromptVersionsExecute(r ApiListPromptVersionsRequest) (*PromptVersionListResponse, *http.Response, error) {
+func (a *PromptsAPIService) PromptsListPromptVersionsExecute(r ApiPromptsListPromptVersionsRequest) (*PromptVersionListResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -887,7 +887,7 @@ func (a *PromptsAPIService) ListPromptVersionsExecute(r ApiListPromptVersionsReq
 		localVarReturnValue  *PromptVersionListResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.ListPromptVersions")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.PromptsListPromptVersions")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1010,7 +1010,7 @@ func (a *PromptsAPIService) ListPromptVersionsExecute(r ApiListPromptVersionsReq
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiListPromptsRequest struct {
+type ApiPromptsListPromptsRequest struct {
 	ctx context.Context
 	ApiService *PromptsAPIService
 	tenantId string
@@ -1022,43 +1022,43 @@ type ApiListPromptsRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiListPromptsRequest) Authorization(authorization string) ApiListPromptsRequest {
+func (r ApiPromptsListPromptsRequest) Authorization(authorization string) ApiPromptsListPromptsRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiListPromptsRequest) XBeaterApiKey(xBeaterApiKey string) ApiListPromptsRequest {
+func (r ApiPromptsListPromptsRequest) XBeaterApiKey(xBeaterApiKey string) ApiPromptsListPromptsRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiListPromptsRequest) XBeaterProjectId(xBeaterProjectId string) ApiListPromptsRequest {
+func (r ApiPromptsListPromptsRequest) XBeaterProjectId(xBeaterProjectId string) ApiPromptsListPromptsRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiListPromptsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiListPromptsRequest {
+func (r ApiPromptsListPromptsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiPromptsListPromptsRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiListPromptsRequest) Execute() (*PromptListResponse, *http.Response, error) {
-	return r.ApiService.ListPromptsExecute(r)
+func (r ApiPromptsListPromptsRequest) Execute() (*PromptListResponse, *http.Response, error) {
+	return r.ApiService.PromptsListPromptsExecute(r)
 }
 
 /*
-ListPrompts Method for ListPrompts
+PromptsListPrompts Method for PromptsListPrompts
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiListPromptsRequest
+ @return ApiPromptsListPromptsRequest
 */
-func (a *PromptsAPIService) ListPrompts(ctx context.Context, tenantId string, projectId string) ApiListPromptsRequest {
-	return ApiListPromptsRequest{
+func (a *PromptsAPIService) PromptsListPrompts(ctx context.Context, tenantId string, projectId string) ApiPromptsListPromptsRequest {
+	return ApiPromptsListPromptsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -1068,7 +1068,7 @@ func (a *PromptsAPIService) ListPrompts(ctx context.Context, tenantId string, pr
 
 // Execute executes the request
 //  @return PromptListResponse
-func (a *PromptsAPIService) ListPromptsExecute(r ApiListPromptsRequest) (*PromptListResponse, *http.Response, error) {
+func (a *PromptsAPIService) PromptsListPromptsExecute(r ApiPromptsListPromptsRequest) (*PromptListResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -1076,7 +1076,7 @@ func (a *PromptsAPIService) ListPromptsExecute(r ApiListPromptsRequest) (*Prompt
 		localVarReturnValue  *PromptListResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.ListPrompts")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "PromptsAPIService.PromptsListPrompts")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

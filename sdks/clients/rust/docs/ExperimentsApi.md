@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**run_deterministic_experiment**](ExperimentsApi.md#run_deterministic_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic | 
-[**run_judge_experiment**](ExperimentsApi.md#run_judge_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge | 
+[**experiments_period_run_deterministic_experiment**](ExperimentsApi.md#experiments_period_run_deterministic_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/deterministic |
+[**experiments_period_run_judge_experiment**](ExperimentsApi.md#experiments_period_run_judge_experiment) | **POST** /v1/experiments/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id}/judge |
 
 
 
-## run_deterministic_experiment
+## experiments_period_run_deterministic_experiment
 
-> models::ExperimentRunReport run_deterministic_experiment(tenant_id, project_id, dataset_id, version_id, run_experiment_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::ExperimentRunReport experiments_period_run_deterministic_experiment(tenant_id, project_id, dataset_id, version_id, run_experiment_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -45,9 +45,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## run_judge_experiment
+## experiments_period_run_judge_experiment
 
-> models::ExperimentRunReport run_judge_experiment(tenant_id, project_id, dataset_id, version_id, run_judge_experiment_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::ExperimentRunReport experiments_period_run_judge_experiment(tenant_id, project_id, dataset_id, version_id, run_judge_experiment_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -79,4 +79,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

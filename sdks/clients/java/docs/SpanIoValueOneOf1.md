@@ -17,6 +17,3 @@
 | Name | Value |
 |---- | -----|
 | ARTIFACT | &quot;artifact&quot; |
-
-
-

@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**rows** | [**List[ArchivedSpanRow]**](ArchivedSpanRow.md) |  | 
+**rows** | [**List[ArchivedSpanRow]**](ArchivedSpanRow.md) |  |
 
 ## Example
 
@@ -25,5 +25,3 @@ archive_query_response_dict = archive_query_response_instance.to_dict()
 archive_query_response_from_dict = ArchiveQueryResponse.from_dict(archive_query_response_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

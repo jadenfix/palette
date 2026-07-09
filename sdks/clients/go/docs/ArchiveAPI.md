@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**ArchiveTrace**](ArchiveAPI.md#ArchiveTrace) | **Post** /v1/archive/{tenant_id}/{project_id}/{trace_id} | 
-[**QueryArchiveSpans**](ArchiveAPI.md#QueryArchiveSpans) | **Get** /v1/archive/{tenant_id}/{project_id}/spans | 
+[**ArchiveArchiveTrace**](ArchiveAPI.md#ArchiveArchiveTrace) | **Post** /v1/archive/{tenant_id}/{project_id}/{trace_id} |
+[**ArchiveQueryArchiveSpans**](ArchiveAPI.md#ArchiveQueryArchiveSpans) | **Get** /v1/archive/{tenant_id}/{project_id}/spans |
 
 
 
-## ArchiveTrace
+## ArchiveArchiveTrace
 
-> ArchiveManifest ArchiveTrace(ctx, tenantId, projectId, traceId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> ArchiveManifest ArchiveArchiveTrace(ctx, tenantId, projectId, traceId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -38,13 +38,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ArchiveAPI.ArchiveTrace(context.Background(), tenantId, projectId, traceId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ArchiveAPI.ArchiveArchiveTrace(context.Background(), tenantId, projectId, traceId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ArchiveAPI.ArchiveTrace``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ArchiveAPI.ArchiveArchiveTrace``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ArchiveTrace`: ArchiveManifest
-	fmt.Fprintf(os.Stdout, "Response from `ArchiveAPI.ArchiveTrace`: %v\n", resp)
+	// response from `ArchiveArchiveTrace`: ArchiveManifest
+	fmt.Fprintf(os.Stdout, "Response from `ArchiveAPI.ArchiveArchiveTrace`: %v\n", resp)
 }
 ```
 
@@ -54,13 +54,13 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
-**traceId** | **string** | trace_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
+**traceId** | **string** | trace_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiArchiveTraceRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiArchiveArchiveTraceRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -68,10 +68,10 @@ Name | Type | Description  | Notes
 
 
 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -91,9 +91,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## QueryArchiveSpans
+## ArchiveQueryArchiveSpans
 
-> ArchiveQueryResponse QueryArchiveSpans(ctx, tenantId, projectId).EnvironmentId(environmentId).TraceId(traceId).SpanId(spanId).Kind(kind).Status(status).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> ArchiveQueryResponse ArchiveQueryArchiveSpans(ctx, tenantId, projectId).EnvironmentId(environmentId).TraceId(traceId).SpanId(spanId).Kind(kind).Status(status).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -125,13 +125,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ArchiveAPI.QueryArchiveSpans(context.Background(), tenantId, projectId).EnvironmentId(environmentId).TraceId(traceId).SpanId(spanId).Kind(kind).Status(status).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ArchiveAPI.ArchiveQueryArchiveSpans(context.Background(), tenantId, projectId).EnvironmentId(environmentId).TraceId(traceId).SpanId(spanId).Kind(kind).Status(status).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ArchiveAPI.QueryArchiveSpans``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ArchiveAPI.ArchiveQueryArchiveSpans``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `QueryArchiveSpans`: ArchiveQueryResponse
-	fmt.Fprintf(os.Stdout, "Response from `ArchiveAPI.QueryArchiveSpans`: %v\n", resp)
+	// response from `ArchiveQueryArchiveSpans`: ArchiveQueryResponse
+	fmt.Fprintf(os.Stdout, "Response from `ArchiveAPI.ArchiveQueryArchiveSpans`: %v\n", resp)
 }
 ```
 
@@ -141,28 +141,28 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiQueryArchiveSpansRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiArchiveQueryArchiveSpansRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **environmentId** | **string** |  | 
- **traceId** | **string** |  | 
- **spanId** | **string** |  | 
- **kind** | **string** |  | 
- **status** | **string** |  | 
- **limit** | **int32** |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **environmentId** | **string** |  |
+ **traceId** | **string** |  |
+ **spanId** | **string** |  |
+ **kind** | **string** |  |
+ **status** | **string** |  |
+ **limit** | **int32** |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -180,4 +180,3 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

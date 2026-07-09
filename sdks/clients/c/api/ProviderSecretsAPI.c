@@ -8,7 +8,7 @@
 
 
 provider_secret_metadata_t*
-ProviderSecretsAPI_createProviderSecret(apiClient_t *apiClient, char *tenant_id, char *project_id, create_provider_secret_http_request_t *create_provider_secret_http_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+ProviderSecretsAPI_providerSecretsCreateProviderSecret(apiClient_t *apiClient, char *tenant_id, char *project_id, create_provider_secret_http_request_t *create_provider_secret_http_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();
@@ -212,7 +212,7 @@ end:
 }
 
 list_t*
-ProviderSecretsAPI_listProviderSecrets(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+ProviderSecretsAPI_providerSecretsListProviderSecrets(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();
@@ -410,7 +410,7 @@ end:
 }
 
 revoked_provider_secret_t*
-ProviderSecretsAPI_revokeProviderSecret(apiClient_t *apiClient, char *tenant_id, char *project_id, char *provider_secret_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+ProviderSecretsAPI_providerSecretsRevokeProviderSecret(apiClient_t *apiClient, char *tenant_id, char *project_id, char *provider_secret_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();

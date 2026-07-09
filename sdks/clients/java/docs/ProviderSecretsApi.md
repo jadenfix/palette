@@ -4,18 +4,18 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**createProviderSecret**](ProviderSecretsApi.md#createProviderSecret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} |  |
-| [**createProviderSecretWithHttpInfo**](ProviderSecretsApi.md#createProviderSecretWithHttpInfo) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} |  |
-| [**listProviderSecrets**](ProviderSecretsApi.md#listProviderSecrets) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} |  |
-| [**listProviderSecretsWithHttpInfo**](ProviderSecretsApi.md#listProviderSecretsWithHttpInfo) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} |  |
-| [**revokeProviderSecret**](ProviderSecretsApi.md#revokeProviderSecret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke |  |
-| [**revokeProviderSecretWithHttpInfo**](ProviderSecretsApi.md#revokeProviderSecretWithHttpInfo) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke |  |
+| [**providerSecretsCreateProviderSecret**](ProviderSecretsApi.md#providerSecretsCreateProviderSecret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} |  |
+| [**providerSecretsCreateProviderSecretWithHttpInfo**](ProviderSecretsApi.md#providerSecretsCreateProviderSecretWithHttpInfo) | **POST** /v1/provider-secrets/{tenant_id}/{project_id} |  |
+| [**providerSecretsListProviderSecrets**](ProviderSecretsApi.md#providerSecretsListProviderSecrets) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} |  |
+| [**providerSecretsListProviderSecretsWithHttpInfo**](ProviderSecretsApi.md#providerSecretsListProviderSecretsWithHttpInfo) | **GET** /v1/provider-secrets/{tenant_id}/{project_id} |  |
+| [**providerSecretsRevokeProviderSecret**](ProviderSecretsApi.md#providerSecretsRevokeProviderSecret) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke |  |
+| [**providerSecretsRevokeProviderSecretWithHttpInfo**](ProviderSecretsApi.md#providerSecretsRevokeProviderSecretWithHttpInfo) | **POST** /v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke |  |
 
 
 
-## createProviderSecret
+## providerSecretsCreateProviderSecret
 
-> ProviderSecretMetadata createProviderSecret(tenantId, projectId, createProviderSecretHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ProviderSecretMetadata providerSecretsCreateProviderSecret(tenantId, projectId, createProviderSecretHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -37,16 +37,16 @@ public class Example {
         ProviderSecretsApi apiInstance = new ProviderSecretsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        CreateProviderSecretHttpRequest createProviderSecretHttpRequest = new CreateProviderSecretHttpRequest(); // CreateProviderSecretHttpRequest | 
+        CreateProviderSecretHttpRequest createProviderSecretHttpRequest = new CreateProviderSecretHttpRequest(); // CreateProviderSecretHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ProviderSecretMetadata result = apiInstance.createProviderSecret(tenantId, projectId, createProviderSecretHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ProviderSecretMetadata result = apiInstance.providerSecretsCreateProviderSecret(tenantId, projectId, createProviderSecretHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ProviderSecretsApi#createProviderSecret");
+            System.err.println("Exception when calling ProviderSecretsApi#providerSecretsCreateProviderSecret");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -91,9 +91,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## createProviderSecretWithHttpInfo
+## providerSecretsCreateProviderSecretWithHttpInfo
 
-> ApiResponse<ProviderSecretMetadata> createProviderSecret createProviderSecretWithHttpInfo(tenantId, projectId, createProviderSecretHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ProviderSecretMetadata> providerSecretsCreateProviderSecret providerSecretsCreateProviderSecretWithHttpInfo(tenantId, projectId, createProviderSecretHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -116,18 +116,18 @@ public class Example {
         ProviderSecretsApi apiInstance = new ProviderSecretsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        CreateProviderSecretHttpRequest createProviderSecretHttpRequest = new CreateProviderSecretHttpRequest(); // CreateProviderSecretHttpRequest | 
+        CreateProviderSecretHttpRequest createProviderSecretHttpRequest = new CreateProviderSecretHttpRequest(); // CreateProviderSecretHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ProviderSecretMetadata> response = apiInstance.createProviderSecretWithHttpInfo(tenantId, projectId, createProviderSecretHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ProviderSecretMetadata> response = apiInstance.providerSecretsCreateProviderSecretWithHttpInfo(tenantId, projectId, createProviderSecretHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ProviderSecretsApi#createProviderSecret");
+            System.err.println("Exception when calling ProviderSecretsApi#providerSecretsCreateProviderSecret");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -173,9 +173,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 
 
-## listProviderSecrets
+## providerSecretsListProviderSecrets
 
-> List<ProviderSecretMetadata> listProviderSecrets(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> List<ProviderSecretMetadata> providerSecretsListProviderSecrets(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -202,10 +202,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            List<ProviderSecretMetadata> result = apiInstance.listProviderSecrets(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            List<ProviderSecretMetadata> result = apiInstance.providerSecretsListProviderSecrets(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ProviderSecretsApi#listProviderSecrets");
+            System.err.println("Exception when calling ProviderSecretsApi#providerSecretsListProviderSecrets");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -249,9 +249,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## listProviderSecretsWithHttpInfo
+## providerSecretsListProviderSecretsWithHttpInfo
 
-> ApiResponse<List<ProviderSecretMetadata>> listProviderSecrets listProviderSecretsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<List<ProviderSecretMetadata>> providerSecretsListProviderSecrets providerSecretsListProviderSecretsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -279,12 +279,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<List<ProviderSecretMetadata>> response = apiInstance.listProviderSecretsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<List<ProviderSecretMetadata>> response = apiInstance.providerSecretsListProviderSecretsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ProviderSecretsApi#listProviderSecrets");
+            System.err.println("Exception when calling ProviderSecretsApi#providerSecretsListProviderSecrets");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -329,9 +329,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 
 
-## revokeProviderSecret
+## providerSecretsRevokeProviderSecret
 
-> RevokedProviderSecret revokeProviderSecret(tenantId, projectId, providerSecretId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> RevokedProviderSecret providerSecretsRevokeProviderSecret(tenantId, projectId, providerSecretId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -359,10 +359,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            RevokedProviderSecret result = apiInstance.revokeProviderSecret(tenantId, projectId, providerSecretId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            RevokedProviderSecret result = apiInstance.providerSecretsRevokeProviderSecret(tenantId, projectId, providerSecretId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ProviderSecretsApi#revokeProviderSecret");
+            System.err.println("Exception when calling ProviderSecretsApi#providerSecretsRevokeProviderSecret");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -408,9 +408,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## revokeProviderSecretWithHttpInfo
+## providerSecretsRevokeProviderSecretWithHttpInfo
 
-> ApiResponse<RevokedProviderSecret> revokeProviderSecret revokeProviderSecretWithHttpInfo(tenantId, projectId, providerSecretId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<RevokedProviderSecret> providerSecretsRevokeProviderSecret providerSecretsRevokeProviderSecretWithHttpInfo(tenantId, projectId, providerSecretId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -439,12 +439,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<RevokedProviderSecret> response = apiInstance.revokeProviderSecretWithHttpInfo(tenantId, projectId, providerSecretId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<RevokedProviderSecret> response = apiInstance.providerSecretsRevokeProviderSecretWithHttpInfo(tenantId, projectId, providerSecretId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ProviderSecretsApi#revokeProviderSecret");
+            System.err.println("Exception when calling ProviderSecretsApi#providerSecretsRevokeProviderSecret");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -489,4 +489,3 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
-

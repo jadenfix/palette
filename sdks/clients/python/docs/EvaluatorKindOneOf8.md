@@ -6,8 +6,8 @@ Browser step efficiency: passes when the run used at most `max_steps` browser st
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**max_steps** | **int** |  | 
-**type** | **str** |  | 
+**max_steps** | **int** |  |
+**type** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ evaluator_kind_one_of8_dict = evaluator_kind_one_of8_instance.to_dict()
 evaluator_kind_one_of8_from_dict = EvaluatorKindOneOf8.from_dict(evaluator_kind_one_of8_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

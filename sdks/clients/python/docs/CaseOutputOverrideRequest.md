@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**case_id** | **str** |  | 
-**output** | **object** |  | 
-**trace** | **object** |  | [optional] 
+**case_id** | **str** |  |
+**output** | **object** |  |
+**trace** | **object** |  | [optional]
 
 ## Example
 
@@ -27,5 +27,3 @@ case_output_override_request_dict = case_output_override_request_instance.to_dic
 case_output_override_request_from_dict = CaseOutputOverrideRequest.from_dict(case_output_override_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -11,6 +11,3 @@
 |**output** | **Object** |  |  |
 |**reference** | **Object** |  |  [optional] |
 |**trace** | **Object** |  |  [optional] |
-
-
-

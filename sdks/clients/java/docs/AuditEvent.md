@@ -19,6 +19,3 @@
 |**resourceId** | **String** |  |  |
 |**resourceType** | **String** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

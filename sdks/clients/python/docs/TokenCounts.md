@@ -5,10 +5,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**cache_read** | **int** |  | 
-**input** | **int** |  | 
-**output** | **int** |  | 
-**reasoning** | **int** |  | 
+**cache_read** | **int** |  |
+**input** | **int** |  |
+**output** | **int** |  |
+**reasoning** | **int** |  |
 
 ## Example
 
@@ -28,5 +28,3 @@ token_counts_dict = token_counts_instance.to_dict()
 token_counts_from_dict = TokenCounts.from_dict(token_counts_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

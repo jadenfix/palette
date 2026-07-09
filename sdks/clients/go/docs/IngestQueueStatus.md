@@ -4,12 +4,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**DeadLetters** | [**[]DeadLetter**](DeadLetter.md) |  | 
-**ProjectId** | **string** |  | 
-**TenantId** | **string** |  | 
-**TotalDepth** | **int32** |  | 
-**TraceIngestedDepth** | **int32** |  | 
-**TraceWriteDepth** | **int32** |  | 
+**DeadLetters** | [**[]DeadLetter**](DeadLetter.md) |  |
+**ProjectId** | **string** |  |
+**TenantId** | **string** |  |
+**TotalDepth** | **int32** |  |
+**TraceIngestedDepth** | **int32** |  |
+**TraceWriteDepth** | **int32** |  |
 
 ## Methods
 
@@ -152,5 +152,3 @@ SetTraceWriteDepth sets TraceWriteDepth field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

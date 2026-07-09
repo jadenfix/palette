@@ -14,20 +14,20 @@ use serde::{Deserialize, Serialize};
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum ApiScope {
-    #[serde(rename = "trace_write")]
-    TraceWrite,
-    #[serde(rename = "trace_read")]
-    TraceRead,
-    #[serde(rename = "dataset_write")]
-    DatasetWrite,
-    #[serde(rename = "scenario_write")]
-    ScenarioWrite,
-    #[serde(rename = "scenario_read")]
-    ScenarioRead,
-    #[serde(rename = "eval_run")]
-    EvalRun,
-    #[serde(rename = "pii_unmask")]
-    PiiUnmask,
+    #[serde(rename = "trace:write")]
+    TraceColonWrite,
+    #[serde(rename = "trace:read")]
+    TraceColonRead,
+    #[serde(rename = "dataset:write")]
+    DatasetColonWrite,
+    #[serde(rename = "scenario:write")]
+    ScenarioColonWrite,
+    #[serde(rename = "scenario:read")]
+    ScenarioColonRead,
+    #[serde(rename = "eval:run")]
+    EvalColonRun,
+    #[serde(rename = "pii:unmask")]
+    PiiColonUnmask,
     #[serde(rename = "admin")]
     Admin,
 
@@ -36,13 +36,13 @@ pub enum ApiScope {
 impl std::fmt::Display for ApiScope {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::TraceWrite => write!(f, "trace_write"),
-            Self::TraceRead => write!(f, "trace_read"),
-            Self::DatasetWrite => write!(f, "dataset_write"),
-            Self::ScenarioWrite => write!(f, "scenario_write"),
-            Self::ScenarioRead => write!(f, "scenario_read"),
-            Self::EvalRun => write!(f, "eval_run"),
-            Self::PiiUnmask => write!(f, "pii_unmask"),
+            Self::TraceColonWrite => write!(f, "trace:write"),
+            Self::TraceColonRead => write!(f, "trace:read"),
+            Self::DatasetColonWrite => write!(f, "dataset:write"),
+            Self::ScenarioColonWrite => write!(f, "scenario:write"),
+            Self::ScenarioColonRead => write!(f, "scenario:read"),
+            Self::EvalColonRun => write!(f, "eval:run"),
+            Self::PiiColonUnmask => write!(f, "pii:unmask"),
             Self::Admin => write!(f, "admin"),
         }
     }
@@ -50,7 +50,7 @@ impl std::fmt::Display for ApiScope {
 
 impl Default for ApiScope {
     fn default() -> ApiScope {
-        Self::TraceWrite
+        Self::TraceColonWrite
     }
 }
 

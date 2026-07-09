@@ -22,14 +22,14 @@ func Test_beaterclient_ConnectorsAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test ConnectorsAPIService ConnectConnector", func(t *testing.T) {
+	t.Run("Test ConnectorsAPIService ConnectorsConnectConnector", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ConnectorsAPI.ConnectConnector(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ConnectorsAPI.ConnectorsConnectConnector(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -37,14 +37,14 @@ func Test_beaterclient_ConnectorsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ConnectorsAPIService ConnectorStatus", func(t *testing.T) {
+	t.Run("Test ConnectorsAPIService ConnectorsConnectorStatus", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ConnectorsAPI.ConnectorStatus(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ConnectorsAPI.ConnectorsConnectorStatus(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -52,14 +52,14 @@ func Test_beaterclient_ConnectorsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ConnectorsAPIService GetConnectorSkills", func(t *testing.T) {
+	t.Run("Test ConnectorsAPIService ConnectorsGetConnectorSkills", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ConnectorsAPI.GetConnectorSkills(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ConnectorsAPI.ConnectorsGetConnectorSkills(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -67,14 +67,14 @@ func Test_beaterclient_ConnectorsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ConnectorsAPIService InvokeConnectorTool", func(t *testing.T) {
+	t.Run("Test ConnectorsAPIService ConnectorsInvokeConnectorTool", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ConnectorsAPI.InvokeConnectorTool(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ConnectorsAPI.ConnectorsInvokeConnectorTool(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -82,14 +82,14 @@ func Test_beaterclient_ConnectorsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ConnectorsAPIService ListConnectorTools", func(t *testing.T) {
+	t.Run("Test ConnectorsAPIService ConnectorsListConnectorTools", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ConnectorsAPI.ListConnectorTools(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ConnectorsAPI.ConnectorsListConnectorTools(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -97,14 +97,14 @@ func Test_beaterclient_ConnectorsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ConnectorsAPIService ListConnectors", func(t *testing.T) {
+	t.Run("Test ConnectorsAPIService ConnectorsListConnectors", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ConnectorsAPI.ListConnectors(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ConnectorsAPI.ConnectorsListConnectors(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

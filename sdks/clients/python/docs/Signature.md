@@ -6,8 +6,8 @@ A structural fingerprint of a trace's failure shape.  Two traces with the same o
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**hash** | **str** | Stable sha256 hash of the ordered shingles. | 
-**shingles** | **List[str]** | Ordered &#x60;(kind|status)&#x60; shingles of failing spans. | 
+**hash** | **str** | Stable sha256 hash of the ordered shingles. |
+**shingles** | **List[str]** | Ordered &#x60;(kind|status)&#x60; shingles of failing spans. |
 
 ## Example
 
@@ -27,5 +27,3 @@ signature_dict = signature_instance.to_dict()
 signature_from_dict = Signature.from_dict(signature_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

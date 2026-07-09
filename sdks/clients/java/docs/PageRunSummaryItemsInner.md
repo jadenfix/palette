@@ -19,6 +19,3 @@
 |**tenantId** | **String** |  |  |
 |**totalCost** | [**Money**](Money.md) |  |  [optional] |
 |**traceId** | **String** |  |  |
-
-
-

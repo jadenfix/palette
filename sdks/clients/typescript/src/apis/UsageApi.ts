@@ -25,7 +25,7 @@ import {
     UsageSummaryToJSON,
 } from '../models/index';
 
-export interface GetUsageSummaryRequest {
+export interface UsageGetUsageSummaryRequest {
     tenantId: string;
     projectId: string;
     authorization?: string | null;
@@ -41,18 +41,18 @@ export class UsageApi extends runtime.BaseAPI {
 
     /**
      */
-    async getUsageSummaryRaw(requestParameters: GetUsageSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UsageSummary>> {
+    async usageGetUsageSummaryRaw(requestParameters: UsageGetUsageSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UsageSummary>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling getUsageSummary().'
+                'Required parameter "tenantId" was null or undefined when calling usageGetUsageSummary().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling getUsageSummary().'
+                'Required parameter "projectId" was null or undefined when calling usageGetUsageSummary().'
             );
         }
 
@@ -88,8 +88,8 @@ export class UsageApi extends runtime.BaseAPI {
 
     /**
      */
-    async getUsageSummary(requestParameters: GetUsageSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UsageSummary> {
-        const response = await this.getUsageSummaryRaw(requestParameters, initOverrides);
+    async usageGetUsageSummary(requestParameters: UsageGetUsageSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UsageSummary> {
+        const response = await this.usageGetUsageSummaryRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -22,7 +22,7 @@ func Test_beaterclient_EvalsAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test EvalsAPIService RunDeterministicEval", func(t *testing.T) {
+	t.Run("Test EvalsAPIService EvalsRunDeterministicEval", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -31,7 +31,7 @@ func Test_beaterclient_EvalsAPIService(t *testing.T) {
 		var datasetId string
 		var versionId string
 
-		resp, httpRes, err := apiClient.EvalsAPI.RunDeterministicEval(context.Background(), tenantId, projectId, datasetId, versionId).Execute()
+		resp, httpRes, err := apiClient.EvalsAPI.EvalsRunDeterministicEval(context.Background(), tenantId, projectId, datasetId, versionId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -39,7 +39,7 @@ func Test_beaterclient_EvalsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test EvalsAPIService RunJudgeEval", func(t *testing.T) {
+	t.Run("Test EvalsAPIService EvalsRunJudgeEval", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -48,7 +48,7 @@ func Test_beaterclient_EvalsAPIService(t *testing.T) {
 		var datasetId string
 		var versionId string
 
-		resp, httpRes, err := apiClient.EvalsAPI.RunJudgeEval(context.Background(), tenantId, projectId, datasetId, versionId).Execute()
+		resp, httpRes, err := apiClient.EvalsAPI.EvalsRunJudgeEval(context.Background(), tenantId, projectId, datasetId, versionId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

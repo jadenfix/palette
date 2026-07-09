@@ -60,7 +60,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ApiKeyCreatedResponse>> createApiKey(
+    pplx::task<std::shared_ptr<ApiKeyCreatedResponse>> apiKeys_createApiKey(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t environmentId,
@@ -84,7 +84,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<RevokedApiKey>> revokeApiKey(
+    pplx::task<std::shared_ptr<RevokedApiKey>> apiKeys_revokeApiKey(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t environmentId,

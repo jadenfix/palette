@@ -6,11 +6,11 @@ Request body for `createPrompt`: the new prompt's metadata plus its initial (ver
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**created_by** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**message** | **str** |  | [optional] 
-**name** | **str** |  | 
-**template** | [**PromptTemplate**](PromptTemplate.md) |  | 
+**created_by** | **str** |  | [optional]
+**description** | **str** |  | [optional]
+**message** | **str** |  | [optional]
+**name** | **str** |  |
+**template** | [**PromptTemplate**](PromptTemplate.md) |  |
 
 ## Example
 
@@ -30,5 +30,3 @@ create_prompt_request_dict = create_prompt_request_instance.to_dict()
 create_prompt_request_from_dict = CreatePromptRequest.from_dict(create_prompt_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

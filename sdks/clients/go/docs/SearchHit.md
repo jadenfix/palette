@@ -4,17 +4,17 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**EnvironmentId** | **string** |  | 
-**Kind** | **string** |  | 
-**Model** | **string** |  | 
-**Name** | **string** |  | 
-**ProjectId** | **string** |  | 
-**Score** | **float32** |  | 
-**SpanId** | **string** |  | 
-**Status** | **string** |  | 
-**TenantId** | **string** |  | 
-**Tool** | **string** |  | 
-**TraceId** | **string** |  | 
+**EnvironmentId** | **string** |  |
+**Kind** | **string** |  |
+**Model** | **string** |  |
+**Name** | **string** |  |
+**ProjectId** | **string** |  |
+**Score** | **float32** |  |
+**SpanId** | **string** |  |
+**Status** | **string** |  |
+**TenantId** | **string** |  |
+**Tool** | **string** |  |
+**TraceId** | **string** |  |
 
 ## Methods
 
@@ -257,5 +257,3 @@ SetTraceId sets TraceId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

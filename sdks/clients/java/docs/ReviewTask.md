@@ -19,6 +19,3 @@
 |**tenantId** | **String** |  |  |
 |**traceId** | **String** |  |  |
 |**updatedAt** | **OffsetDateTime** |  |  |
-
-
-

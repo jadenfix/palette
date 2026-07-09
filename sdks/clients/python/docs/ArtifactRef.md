@@ -5,12 +5,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**artifact_id** | **str** |  | 
-**mime_type** | **str** |  | 
-**redaction_class** | [**RedactionClass**](RedactionClass.md) |  | 
-**sha256** | **str** |  | 
-**size_bytes** | **int** |  | 
-**uri** | **str** |  | 
+**artifact_id** | **str** |  |
+**mime_type** | **str** |  |
+**redaction_class** | [**RedactionClass**](RedactionClass.md) |  |
+**sha256** | **str** |  |
+**size_bytes** | **int** |  |
+**uri** | **str** |  |
 
 ## Example
 
@@ -30,5 +30,3 @@ artifact_ref_dict = artifact_ref_instance.to_dict()
 artifact_ref_from_dict = ArtifactRef.from_dict(artifact_ref_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

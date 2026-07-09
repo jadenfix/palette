@@ -26,8 +26,8 @@ class TestAuditApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_list_audit_events(self) -> None:
-        """Test case for list_audit_events
+    def test_audit_list_audit_events(self) -> None:
+        """Test case for audit_list_audit_events
 
         """
         pass

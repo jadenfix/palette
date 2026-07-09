@@ -24,19 +24,19 @@ using EnumUnderlyingType = utility::string_t;
 
 ApiScope::eApiScope toEnum(const EnumUnderlyingType& val)
 {
-    if (val == utility::conversions::to_string_t(U("trace_write")))
+    if (val == utility::conversions::to_string_t(U("trace:write")))
         return ApiScope::eApiScope::ApiScope_TRACE_WRITE;
-    if (val == utility::conversions::to_string_t(U("trace_read")))
+    if (val == utility::conversions::to_string_t(U("trace:read")))
         return ApiScope::eApiScope::ApiScope_TRACE_READ;
-    if (val == utility::conversions::to_string_t(U("dataset_write")))
+    if (val == utility::conversions::to_string_t(U("dataset:write")))
         return ApiScope::eApiScope::ApiScope_DATASET_WRITE;
-    if (val == utility::conversions::to_string_t(U("scenario_write")))
+    if (val == utility::conversions::to_string_t(U("scenario:write")))
         return ApiScope::eApiScope::ApiScope_SCENARIO_WRITE;
-    if (val == utility::conversions::to_string_t(U("scenario_read")))
+    if (val == utility::conversions::to_string_t(U("scenario:read")))
         return ApiScope::eApiScope::ApiScope_SCENARIO_READ;
-    if (val == utility::conversions::to_string_t(U("eval_run")))
+    if (val == utility::conversions::to_string_t(U("eval:run")))
         return ApiScope::eApiScope::ApiScope_EVAL_RUN;
-    if (val == utility::conversions::to_string_t(U("pii_unmask")))
+    if (val == utility::conversions::to_string_t(U("pii:unmask")))
         return ApiScope::eApiScope::ApiScope_PII_UNMASK;
     if (val == utility::conversions::to_string_t(U("admin")))
         return ApiScope::eApiScope::ApiScope_ADMIN;
@@ -48,19 +48,19 @@ EnumUnderlyingType fromEnum(ApiScope::eApiScope e)
     switch (e)
     {
     case ApiScope::eApiScope::ApiScope_TRACE_WRITE:
-        return U("trace_write");
+        return U("trace:write");
     case ApiScope::eApiScope::ApiScope_TRACE_READ:
-        return U("trace_read");
+        return U("trace:read");
     case ApiScope::eApiScope::ApiScope_DATASET_WRITE:
-        return U("dataset_write");
+        return U("dataset:write");
     case ApiScope::eApiScope::ApiScope_SCENARIO_WRITE:
-        return U("scenario_write");
+        return U("scenario:write");
     case ApiScope::eApiScope::ApiScope_SCENARIO_READ:
-        return U("scenario_read");
+        return U("scenario:read");
     case ApiScope::eApiScope::ApiScope_EVAL_RUN:
-        return U("eval_run");
+        return U("eval:run");
     case ApiScope::eApiScope::ApiScope_PII_UNMASK:
-        return U("pii_unmask");
+        return U("pii:unmask");
     case ApiScope::eApiScope::ApiScope_ADMIN:
         return U("admin");
     default:

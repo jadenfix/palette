@@ -5,10 +5,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**high_cost_micros_threshold** | **int** |  | [optional] 
-**keep_errors** | **bool** |  | 
-**sample_rate_per_mille** | **int** |  | 
-**slow_ms_threshold** | **int** |  | [optional] 
+**high_cost_micros_threshold** | **int** |  | [optional]
+**keep_errors** | **bool** |  |
+**sample_rate_per_mille** | **int** |  |
+**slow_ms_threshold** | **int** |  | [optional]
 
 ## Example
 
@@ -28,5 +28,3 @@ online_sampling_policy_dict = online_sampling_policy_instance.to_dict()
 online_sampling_policy_from_dict = OnlineSamplingPolicy.from_dict(online_sampling_policy_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

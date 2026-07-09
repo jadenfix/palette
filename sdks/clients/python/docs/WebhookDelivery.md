@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**body** | **object** |  | 
-**endpoint_url** | **str** |  | 
-**headers** | **Dict[str, str]** |  | 
+**body** | **object** |  |
+**endpoint_url** | **str** |  |
+**headers** | **Dict[str, str]** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ webhook_delivery_dict = webhook_delivery_instance.to_dict()
 webhook_delivery_from_dict = WebhookDelivery.from_dict(webhook_delivery_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

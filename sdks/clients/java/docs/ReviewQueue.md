@@ -13,6 +13,3 @@
 |**projectId** | **String** |  |  |
 |**queueId** | **String** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

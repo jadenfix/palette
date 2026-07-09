@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**AnnotationSchema** | **interface{}** |  | 
-**Name** | **string** |  | 
-**QueueId** | Pointer to **NullableString** |  | [optional] 
+**AnnotationSchema** | **interface{}** |  |
+**Name** | **string** |  |
+**QueueId** | Pointer to **NullableString** |  | [optional]
 
 ## Methods
 
@@ -114,5 +114,3 @@ HasQueueId returns a boolean if a field has been set.
 UnsetQueueId ensures that no value is present for QueueId, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

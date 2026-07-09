@@ -5,10 +5,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**input** | **object** |  | 
-**output** | **object** |  | 
-**reference** | **object** |  | [optional] 
-**trace** | **object** |  | [optional] 
+**input** | **object** |  |
+**output** | **object** |  |
+**reference** | **object** |  | [optional]
+**trace** | **object** |  | [optional]
 
 ## Example
 
@@ -28,5 +28,3 @@ evaluation_case_dict = evaluation_case_instance.to_dict()
 evaluation_case_from_dict = EvaluationCase.from_dict(evaluation_case_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

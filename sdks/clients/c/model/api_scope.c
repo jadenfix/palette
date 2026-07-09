@@ -5,13 +5,13 @@
 
 
 char* api_scope_api_scope_ToString(beater_api_api_scope__e api_scope) {
-    char *api_scopeArray[] =  { "NULL", "trace_write", "trace_read", "dataset_write", "scenario_write", "scenario_read", "eval_run", "pii_unmask", "admin" };
+    char *api_scopeArray[] =  { "NULL", "trace:write", "trace:read", "dataset:write", "scenario:write", "scenario:read", "eval:run", "pii:unmask", "admin" };
     return api_scopeArray[api_scope];
 }
 
 beater_api_api_scope__e api_scope_api_scope_FromString(char* api_scope) {
     int stringToReturn = 0;
-    char *api_scopeArray[] =  { "NULL", "trace_write", "trace_read", "dataset_write", "scenario_write", "scenario_read", "eval_run", "pii_unmask", "admin" };
+    char *api_scopeArray[] =  { "NULL", "trace:write", "trace:read", "dataset:write", "scenario:write", "scenario:read", "eval:run", "pii:unmask", "admin" };
     size_t sizeofArray = sizeof(api_scopeArray) / sizeof(api_scopeArray[0]);
     while(stringToReturn < sizeofArray) {
         if(strcmp(api_scope, api_scopeArray[stringToReturn]) == 0) {

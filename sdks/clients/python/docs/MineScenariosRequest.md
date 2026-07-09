@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**jaccard_threshold** | **float** |  | [optional] 
-**trace_ids** | **List[str]** |  | 
+**jaccard_threshold** | **float** |  | [optional]
+**trace_ids** | **List[str]** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ mine_scenarios_request_dict = mine_scenarios_request_instance.to_dict()
 mine_scenarios_request_from_dict = MineScenariosRequest.from_dict(mine_scenarios_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

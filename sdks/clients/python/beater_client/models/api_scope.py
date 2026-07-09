@@ -26,13 +26,13 @@ class ApiScope(str, Enum):
     """
     allowed enum values
     """
-    TRACE_WRITE = 'trace_write'
-    TRACE_READ = 'trace_read'
-    DATASET_WRITE = 'dataset_write'
-    SCENARIO_WRITE = 'scenario_write'
-    SCENARIO_READ = 'scenario_read'
-    EVAL_RUN = 'eval_run'
-    PII_UNMASK = 'pii_unmask'
+    TRACE_COLON_WRITE = 'trace:write'
+    TRACE_COLON_READ = 'trace:read'
+    DATASET_COLON_WRITE = 'dataset:write'
+    SCENARIO_COLON_WRITE = 'scenario:write'
+    SCENARIO_COLON_READ = 'scenario:read'
+    EVAL_COLON_RUN = 'eval:run'
+    PII_COLON_UNMASK = 'pii:unmask'
     ADMIN = 'admin'
 
     @classmethod

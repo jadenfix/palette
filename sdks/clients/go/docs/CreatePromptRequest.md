@@ -4,11 +4,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**CreatedBy** | Pointer to **NullableString** |  | [optional] 
-**Description** | Pointer to **NullableString** |  | [optional] 
-**Message** | Pointer to **NullableString** |  | [optional] 
-**Name** | **string** |  | 
-**Template** | [**PromptTemplate**](PromptTemplate.md) |  | 
+**CreatedBy** | Pointer to **NullableString** |  | [optional]
+**Description** | Pointer to **NullableString** |  | [optional]
+**Message** | Pointer to **NullableString** |  | [optional]
+**Name** | **string** |  |
+**Template** | [**PromptTemplate**](PromptTemplate.md) |  |
 
 ## Methods
 
@@ -176,5 +176,3 @@ SetTemplate sets Template field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

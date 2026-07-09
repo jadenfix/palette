@@ -4,30 +4,30 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**drainTraceIngested**](IngestApi.md#drainTraceIngested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |  |
-| [**drainTraceIngestedWithHttpInfo**](IngestApi.md#drainTraceIngestedWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |  |
-| [**drainTraceWrites**](IngestApi.md#drainTraceWrites) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |  |
-| [**drainTraceWritesWithHttpInfo**](IngestApi.md#drainTraceWritesWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |  |
-| [**getIngestQueueStatus**](IngestApi.md#getIngestQueueStatus) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |  |
-| [**getIngestQueueStatusWithHttpInfo**](IngestApi.md#getIngestQueueStatusWithHttpInfo) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |  |
-| [**importSource**](IngestApi.md#importSource) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |  |
-| [**importSourceWithHttpInfo**](IngestApi.md#importSourceWithHttpInfo) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |  |
-| [**ingestNative**](IngestApi.md#ingestNative) | **POST** /v1/traces/native |  |
-| [**ingestNativeWithHttpInfo**](IngestApi.md#ingestNativeWithHttpInfo) | **POST** /v1/traces/native |  |
-| [**ingestOtlp**](IngestApi.md#ingestOtlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |  |
-| [**ingestOtlpWithHttpInfo**](IngestApi.md#ingestOtlpWithHttpInfo) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |  |
-| [**ingestOtlpJsonCollector**](IngestApi.md#ingestOtlpJsonCollector) | **POST** /v1/traces |  |
-| [**ingestOtlpJsonCollectorWithHttpInfo**](IngestApi.md#ingestOtlpJsonCollectorWithHttpInfo) | **POST** /v1/traces |  |
-| [**reconcileTrace**](IngestApi.md#reconcileTrace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |  |
-| [**reconcileTraceWithHttpInfo**](IngestApi.md#reconcileTraceWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |  |
-| [**replayDeadLetter**](IngestApi.md#replayDeadLetter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |  |
-| [**replayDeadLetterWithHttpInfo**](IngestApi.md#replayDeadLetterWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |  |
+| [**ingestDrainTraceIngested**](IngestApi.md#ingestDrainTraceIngested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |  |
+| [**ingestDrainTraceIngestedWithHttpInfo**](IngestApi.md#ingestDrainTraceIngestedWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |  |
+| [**ingestDrainTraceWrites**](IngestApi.md#ingestDrainTraceWrites) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |  |
+| [**ingestDrainTraceWritesWithHttpInfo**](IngestApi.md#ingestDrainTraceWritesWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |  |
+| [**ingestGetIngestQueueStatus**](IngestApi.md#ingestGetIngestQueueStatus) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |  |
+| [**ingestGetIngestQueueStatusWithHttpInfo**](IngestApi.md#ingestGetIngestQueueStatusWithHttpInfo) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |  |
+| [**ingestImportSource**](IngestApi.md#ingestImportSource) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |  |
+| [**ingestImportSourceWithHttpInfo**](IngestApi.md#ingestImportSourceWithHttpInfo) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |  |
+| [**ingestIngestNative**](IngestApi.md#ingestIngestNative) | **POST** /v1/traces/native |  |
+| [**ingestIngestNativeWithHttpInfo**](IngestApi.md#ingestIngestNativeWithHttpInfo) | **POST** /v1/traces/native |  |
+| [**ingestIngestOtlp**](IngestApi.md#ingestIngestOtlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |  |
+| [**ingestIngestOtlpWithHttpInfo**](IngestApi.md#ingestIngestOtlpWithHttpInfo) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |  |
+| [**ingestIngestOtlpJsonCollector**](IngestApi.md#ingestIngestOtlpJsonCollector) | **POST** /v1/traces |  |
+| [**ingestIngestOtlpJsonCollectorWithHttpInfo**](IngestApi.md#ingestIngestOtlpJsonCollectorWithHttpInfo) | **POST** /v1/traces |  |
+| [**ingestReconcileTrace**](IngestApi.md#ingestReconcileTrace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |  |
+| [**ingestReconcileTraceWithHttpInfo**](IngestApi.md#ingestReconcileTraceWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |  |
+| [**ingestReplayDeadLetter**](IngestApi.md#ingestReplayDeadLetter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |  |
+| [**ingestReplayDeadLetterWithHttpInfo**](IngestApi.md#ingestReplayDeadLetterWithHttpInfo) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |  |
 
 
 
-## drainTraceIngested
+## ingestDrainTraceIngested
 
-> TraceIngestedDrainReport drainTraceIngested(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> TraceIngestedDrainReport ingestDrainTraceIngested(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -55,10 +55,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            TraceIngestedDrainReport result = apiInstance.drainTraceIngested(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            TraceIngestedDrainReport result = apiInstance.ingestDrainTraceIngested(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#drainTraceIngested");
+            System.err.println("Exception when calling IngestApi#ingestDrainTraceIngested");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -104,9 +104,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **422** | Drained with dead-letters |  -  |
 
-## drainTraceIngestedWithHttpInfo
+## ingestDrainTraceIngestedWithHttpInfo
 
-> ApiResponse<TraceIngestedDrainReport> drainTraceIngested drainTraceIngestedWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<TraceIngestedDrainReport> ingestDrainTraceIngested ingestDrainTraceIngestedWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -135,12 +135,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<TraceIngestedDrainReport> response = apiInstance.drainTraceIngestedWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<TraceIngestedDrainReport> response = apiInstance.ingestDrainTraceIngestedWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#drainTraceIngested");
+            System.err.println("Exception when calling IngestApi#ingestDrainTraceIngested");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -187,9 +187,9 @@ No authorization required
 | **422** | Drained with dead-letters |  -  |
 
 
-## drainTraceWrites
+## ingestDrainTraceWrites
 
-> TraceWriteDrainReport drainTraceWrites(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> TraceWriteDrainReport ingestDrainTraceWrites(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -217,10 +217,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            TraceWriteDrainReport result = apiInstance.drainTraceWrites(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            TraceWriteDrainReport result = apiInstance.ingestDrainTraceWrites(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#drainTraceWrites");
+            System.err.println("Exception when calling IngestApi#ingestDrainTraceWrites");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -266,9 +266,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **422** | Drained with dead-letters |  -  |
 
-## drainTraceWritesWithHttpInfo
+## ingestDrainTraceWritesWithHttpInfo
 
-> ApiResponse<TraceWriteDrainReport> drainTraceWrites drainTraceWritesWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<TraceWriteDrainReport> ingestDrainTraceWrites ingestDrainTraceWritesWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -297,12 +297,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<TraceWriteDrainReport> response = apiInstance.drainTraceWritesWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<TraceWriteDrainReport> response = apiInstance.ingestDrainTraceWritesWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#drainTraceWrites");
+            System.err.println("Exception when calling IngestApi#ingestDrainTraceWrites");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -349,9 +349,9 @@ No authorization required
 | **422** | Drained with dead-letters |  -  |
 
 
-## getIngestQueueStatus
+## ingestGetIngestQueueStatus
 
-> IngestQueueStatus getIngestQueueStatus(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> IngestQueueStatus ingestGetIngestQueueStatus(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -378,10 +378,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            IngestQueueStatus result = apiInstance.getIngestQueueStatus(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            IngestQueueStatus result = apiInstance.ingestGetIngestQueueStatus(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#getIngestQueueStatus");
+            System.err.println("Exception when calling IngestApi#ingestGetIngestQueueStatus");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -425,9 +425,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## getIngestQueueStatusWithHttpInfo
+## ingestGetIngestQueueStatusWithHttpInfo
 
-> ApiResponse<IngestQueueStatus> getIngestQueueStatus getIngestQueueStatusWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<IngestQueueStatus> ingestGetIngestQueueStatus ingestGetIngestQueueStatusWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -455,12 +455,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<IngestQueueStatus> response = apiInstance.getIngestQueueStatusWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<IngestQueueStatus> response = apiInstance.ingestGetIngestQueueStatusWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#getIngestQueueStatus");
+            System.err.println("Exception when calling IngestApi#ingestGetIngestQueueStatus");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -505,9 +505,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 
 
-## importSource
+## ingestImportSource
 
-> IngestOutcome importSource(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey)
+> IngestOutcome ingestImportSource(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey)
 
 
 
@@ -535,10 +535,10 @@ public class Example {
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         try {
-            IngestOutcome result = apiInstance.importSource(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
+            IngestOutcome result = apiInstance.ingestImportSource(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#importSource");
+            System.err.println("Exception when calling IngestApi#ingestImportSource");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -585,9 +585,9 @@ No authorization required
 | **413** | Payload or attribute cardinality too large |  -  |
 | **429** | Per-project quota exceeded or backpressure |  -  |
 
-## importSourceWithHttpInfo
+## ingestImportSourceWithHttpInfo
 
-> ApiResponse<IngestOutcome> importSource importSourceWithHttpInfo(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey)
+> ApiResponse<IngestOutcome> ingestImportSource ingestImportSourceWithHttpInfo(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey)
 
 
 
@@ -616,12 +616,12 @@ public class Example {
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         try {
-            ApiResponse<IngestOutcome> response = apiInstance.importSourceWithHttpInfo(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
+            ApiResponse<IngestOutcome> response = apiInstance.ingestImportSourceWithHttpInfo(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#importSource");
+            System.err.println("Exception when calling IngestApi#ingestImportSource");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -669,9 +669,9 @@ No authorization required
 | **429** | Per-project quota exceeded or backpressure |  -  |
 
 
-## ingestNative
+## ingestIngestNative
 
-> IngestOutcome ingestNative(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> IngestOutcome ingestIngestNative(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -698,10 +698,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            IngestOutcome result = apiInstance.ingestNative(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            IngestOutcome result = apiInstance.ingestIngestNative(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#ingestNative");
+            System.err.println("Exception when calling IngestApi#ingestIngestNative");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -747,9 +747,9 @@ No authorization required
 | **413** | Payload or attribute cardinality too large |  -  |
 | **429** | Per-project quota exceeded or backpressure |  -  |
 
-## ingestNativeWithHttpInfo
+## ingestIngestNativeWithHttpInfo
 
-> ApiResponse<IngestOutcome> ingestNative ingestNativeWithHttpInfo(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<IngestOutcome> ingestIngestNative ingestIngestNativeWithHttpInfo(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -777,12 +777,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<IngestOutcome> response = apiInstance.ingestNativeWithHttpInfo(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<IngestOutcome> response = apiInstance.ingestIngestNativeWithHttpInfo(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#ingestNative");
+            System.err.println("Exception when calling IngestApi#ingestIngestNative");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -829,9 +829,9 @@ No authorization required
 | **429** | Per-project quota exceeded or backpressure |  -  |
 
 
-## ingestOtlp
+## ingestIngestOtlp
 
-> OtlpIngestOutcome ingestOtlp(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> OtlpIngestOutcome ingestIngestOtlp(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -860,10 +860,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            OtlpIngestOutcome result = apiInstance.ingestOtlp(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            OtlpIngestOutcome result = apiInstance.ingestIngestOtlp(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#ingestOtlp");
+            System.err.println("Exception when calling IngestApi#ingestIngestOtlp");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -911,9 +911,9 @@ No authorization required
 | **413** | Payload or attribute cardinality too large |  -  |
 | **429** | Per-project quota exceeded or backpressure |  -  |
 
-## ingestOtlpWithHttpInfo
+## ingestIngestOtlpWithHttpInfo
 
-> ApiResponse<OtlpIngestOutcome> ingestOtlp ingestOtlpWithHttpInfo(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<OtlpIngestOutcome> ingestIngestOtlp ingestIngestOtlpWithHttpInfo(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -943,12 +943,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<OtlpIngestOutcome> response = apiInstance.ingestOtlpWithHttpInfo(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<OtlpIngestOutcome> response = apiInstance.ingestIngestOtlpWithHttpInfo(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#ingestOtlp");
+            System.err.println("Exception when calling IngestApi#ingestIngestOtlp");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -997,9 +997,9 @@ No authorization required
 | **429** | Per-project quota exceeded or backpressure |  -  |
 
 
-## ingestOtlpJsonCollector
+## ingestIngestOtlpJsonCollector
 
-> OtlpIngestOutcome ingestOtlpJsonCollector(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId)
+> OtlpIngestOutcome ingestIngestOtlpJsonCollector(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -1026,10 +1026,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Project scope override for collector-style OTLP JSON
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Environment scope override for collector-style OTLP JSON
         try {
-            OtlpIngestOutcome result = apiInstance.ingestOtlpJsonCollector(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
+            OtlpIngestOutcome result = apiInstance.ingestIngestOtlpJsonCollector(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#ingestOtlpJsonCollector");
+            System.err.println("Exception when calling IngestApi#ingestIngestOtlpJsonCollector");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -1075,9 +1075,9 @@ No authorization required
 | **413** | Payload or attribute cardinality too large |  -  |
 | **429** | Per-project quota exceeded or backpressure |  -  |
 
-## ingestOtlpJsonCollectorWithHttpInfo
+## ingestIngestOtlpJsonCollectorWithHttpInfo
 
-> ApiResponse<OtlpIngestOutcome> ingestOtlpJsonCollector ingestOtlpJsonCollectorWithHttpInfo(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<OtlpIngestOutcome> ingestIngestOtlpJsonCollector ingestIngestOtlpJsonCollectorWithHttpInfo(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -1105,12 +1105,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Project scope override for collector-style OTLP JSON
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Environment scope override for collector-style OTLP JSON
         try {
-            ApiResponse<OtlpIngestOutcome> response = apiInstance.ingestOtlpJsonCollectorWithHttpInfo(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<OtlpIngestOutcome> response = apiInstance.ingestIngestOtlpJsonCollectorWithHttpInfo(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#ingestOtlpJsonCollector");
+            System.err.println("Exception when calling IngestApi#ingestIngestOtlpJsonCollector");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -1157,9 +1157,9 @@ No authorization required
 | **429** | Per-project quota exceeded or backpressure |  -  |
 
 
-## reconcileTrace
+## ingestReconcileTrace
 
-> TraceIngestedReconcileReport reconcileTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> TraceIngestedReconcileReport ingestReconcileTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -1187,10 +1187,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            TraceIngestedReconcileReport result = apiInstance.reconcileTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            TraceIngestedReconcileReport result = apiInstance.ingestReconcileTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#reconcileTrace");
+            System.err.println("Exception when calling IngestApi#ingestReconcileTrace");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -1236,9 +1236,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## reconcileTraceWithHttpInfo
+## ingestReconcileTraceWithHttpInfo
 
-> ApiResponse<TraceIngestedReconcileReport> reconcileTrace reconcileTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<TraceIngestedReconcileReport> ingestReconcileTrace ingestReconcileTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -1267,12 +1267,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<TraceIngestedReconcileReport> response = apiInstance.reconcileTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<TraceIngestedReconcileReport> response = apiInstance.ingestReconcileTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#reconcileTrace");
+            System.err.println("Exception when calling IngestApi#ingestReconcileTrace");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -1319,9 +1319,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## replayDeadLetter
+## ingestReplayDeadLetter
 
-> DeadLetterReplayReport replayDeadLetter(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> DeadLetterReplayReport ingestReplayDeadLetter(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -1350,10 +1350,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            DeadLetterReplayReport result = apiInstance.replayDeadLetter(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            DeadLetterReplayReport result = apiInstance.ingestReplayDeadLetter(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#replayDeadLetter");
+            System.err.println("Exception when calling IngestApi#ingestReplayDeadLetter");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -1400,9 +1400,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## replayDeadLetterWithHttpInfo
+## ingestReplayDeadLetterWithHttpInfo
 
-> ApiResponse<DeadLetterReplayReport> replayDeadLetter replayDeadLetterWithHttpInfo(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<DeadLetterReplayReport> ingestReplayDeadLetter ingestReplayDeadLetterWithHttpInfo(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -1432,12 +1432,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<DeadLetterReplayReport> response = apiInstance.replayDeadLetterWithHttpInfo(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<DeadLetterReplayReport> response = apiInstance.ingestReplayDeadLetterWithHttpInfo(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling IngestApi#replayDeadLetter");
+            System.err.println("Exception when calling IngestApi#ingestReplayDeadLetter");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());

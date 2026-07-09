@@ -4,26 +4,26 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**BaselineReleaseId** | **string** |  | 
-**CandidateReleaseId** | **string** |  | 
-**Comparison** | [**ExperimentComparison**](ExperimentComparison.md) |  | 
-**CreatedAt** | **time.Time** |  | 
-**DatasetId** | **string** |  | 
-**EvaluatorVersionId** | **string** |  | 
-**ExperimentCreatedAt** | **time.Time** |  | 
-**ExperimentDecision** | [**GateDecision**](GateDecision.md) |  | 
-**ExperimentGatePolicy** | [**GatePolicy**](GatePolicy.md) |  | 
-**ExperimentRunId** | **string** |  | 
-**GateDatasetId** | Pointer to **string** |  | [optional] 
-**GateEvaluatorVersionId** | Pointer to **string** |  | [optional] 
-**GateId** | **string** |  | 
-**GateName** | **string** |  | 
-**GateRunId** | **string** |  | 
-**InconclusivePolicy** | [**InconclusivePolicy**](InconclusivePolicy.md) |  | 
-**Passed** | **bool** |  | 
-**ProjectId** | **string** |  | 
-**Reason** | **string** |  | 
-**TenantId** | **string** |  | 
+**BaselineReleaseId** | **string** |  |
+**CandidateReleaseId** | **string** |  |
+**Comparison** | [**ExperimentComparison**](ExperimentComparison.md) |  |
+**CreatedAt** | **time.Time** |  |
+**DatasetId** | **string** |  |
+**EvaluatorVersionId** | **string** |  |
+**ExperimentCreatedAt** | **time.Time** |  |
+**ExperimentDecision** | [**GateDecision**](GateDecision.md) |  |
+**ExperimentGatePolicy** | [**GatePolicy**](GatePolicy.md) |  |
+**ExperimentRunId** | **string** |  |
+**GateDatasetId** | Pointer to **string** |  | [optional]
+**GateEvaluatorVersionId** | Pointer to **string** |  | [optional]
+**GateId** | **string** |  |
+**GateName** | **string** |  |
+**GateRunId** | **string** |  |
+**InconclusivePolicy** | [**InconclusivePolicy**](InconclusivePolicy.md) |  |
+**Passed** | **bool** |  |
+**ProjectId** | **string** |  |
+**Reason** | **string** |  |
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -456,5 +456,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

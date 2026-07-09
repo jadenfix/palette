@@ -8,6 +8,3 @@
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
 |**passThreshold** | **Double** |  |  |
-
-
-

@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Kind** | [**DiffLineKind**](DiffLineKind.md) |  | 
-**NewLine** | Pointer to **NullableInt32** |  | [optional] 
-**OldLine** | Pointer to **NullableInt32** |  | [optional] 
-**Text** | **string** |  | 
+**Kind** | [**DiffLineKind**](DiffLineKind.md) |  |
+**NewLine** | Pointer to **NullableInt32** |  | [optional]
+**OldLine** | Pointer to **NullableInt32** |  | [optional]
+**Text** | **string** |  |
 
 ## Methods
 
@@ -140,5 +140,3 @@ SetText sets Text field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

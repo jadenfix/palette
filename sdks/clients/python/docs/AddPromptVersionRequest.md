@@ -6,9 +6,9 @@ Request body for `addPromptVersion`: a new immutable template revision.
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**created_by** | **str** |  | [optional] 
-**message** | **str** |  | [optional] 
-**template** | [**PromptTemplate**](PromptTemplate.md) |  | 
+**created_by** | **str** |  | [optional]
+**message** | **str** |  | [optional]
+**template** | [**PromptTemplate**](PromptTemplate.md) |  |
 
 ## Example
 
@@ -28,5 +28,3 @@ add_prompt_version_request_dict = add_prompt_version_request_instance.to_dict()
 add_prompt_version_request_from_dict = AddPromptVersionRequest.from_dict(add_prompt_version_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

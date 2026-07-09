@@ -46,7 +46,7 @@ public class EvalsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void runDeterministicEvalTest() throws ApiException {
+    public void evalsRunDeterministicEvalTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String datasetId = null;
@@ -57,7 +57,7 @@ public class EvalsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         DatasetEvalReport response = 
-        api.runDeterministicEval(tenantId, projectId, datasetId, versionId, runDeterministicEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.evalsRunDeterministicEval(tenantId, projectId, datasetId, versionId, runDeterministicEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -71,7 +71,7 @@ public class EvalsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void runJudgeEvalTest() throws ApiException {
+    public void evalsRunJudgeEvalTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String datasetId = null;
@@ -82,7 +82,7 @@ public class EvalsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         DatasetEvalReport response = 
-        api.runJudgeEval(tenantId, projectId, datasetId, versionId, runJudgeDatasetEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.evalsRunJudgeEval(tenantId, projectId, datasetId, versionId, runJudgeDatasetEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

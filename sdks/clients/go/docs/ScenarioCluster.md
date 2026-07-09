@@ -4,11 +4,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**DominantFailureMode** | [**FailureMode**](FailureMode.md) | The most common failure mode across members. | 
-**ExemplarTraceId** | **string** |  | 
-**MemberTraceIds** | **[]string** | All member trace ids, sorted ascending. | 
-**Signature** | [**Signature**](Signature.md) | The signature of the cluster&#39;s exemplar. | 
-**Size** | **int32** | Number of member traces. | 
+**DominantFailureMode** | [**FailureMode**](FailureMode.md) | The most common failure mode across members. |
+**ExemplarTraceId** | **string** |  |
+**MemberTraceIds** | **[]string** | All member trace ids, sorted ascending. |
+**Signature** | [**Signature**](Signature.md) | The signature of the cluster&#39;s exemplar. |
+**Size** | **int32** | Number of member traces. |
 
 ## Methods
 
@@ -131,5 +131,3 @@ SetSize sets Size field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

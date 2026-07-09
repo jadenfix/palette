@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**name** | **str** |  | 
-**provider** | **str** |  | 
+**name** | **str** |  |
+**provider** | **str** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ model_ref_dict = model_ref_instance.to_dict()
 model_ref_from_dict = ModelRef.from_dict(model_ref_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

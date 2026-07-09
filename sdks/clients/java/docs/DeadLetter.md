@@ -10,6 +10,3 @@
 |**failedAt** | **OffsetDateTime** |  |  |
 |**message** | [**BusMessage**](BusMessage.md) |  |  |
 |**reason** | **String** |  |  |
-
-
-

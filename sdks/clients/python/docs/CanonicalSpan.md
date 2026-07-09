@@ -5,28 +5,28 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**attributes** | **Dict[str, object]** |  | 
-**cost** | [**Money**](Money.md) |  | [optional] 
-**end_time** | **datetime** |  | [optional] 
-**environment_id** | **str** |  | 
-**input_ref** | [**ArtifactRef**](ArtifactRef.md) |  | [optional] 
-**kind** | **str** | Canonical agent span kind such as agent.run or llm.call | 
-**model** | [**ModelRef**](ModelRef.md) |  | [optional] 
-**name** | **str** |  | 
-**normalizer_version** | **str** |  | 
-**output_ref** | [**ArtifactRef**](ArtifactRef.md) |  | [optional] 
-**parent_span_id** | **str** |  | [optional] 
-**project_id** | **str** |  | 
-**raw_ref** | [**ArtifactRef**](ArtifactRef.md) |  | 
-**schema_version** | **int** |  | 
-**seq** | **int** |  | 
-**span_id** | **str** |  | 
-**start_time** | **datetime** |  | 
-**status** | [**SpanStatus**](SpanStatus.md) |  | 
-**tenant_id** | **str** |  | 
-**tokens** | [**TokenCounts**](TokenCounts.md) |  | [optional] 
-**trace_id** | **str** |  | 
-**unmapped_attrs** | **object** |  | 
+**attributes** | **Dict[str, object]** |  |
+**cost** | [**Money**](Money.md) |  | [optional]
+**end_time** | **datetime** |  | [optional]
+**environment_id** | **str** |  |
+**input_ref** | [**ArtifactRef**](ArtifactRef.md) |  | [optional]
+**kind** | **str** | Canonical agent span kind such as agent.run or llm.call |
+**model** | [**ModelRef**](ModelRef.md) |  | [optional]
+**name** | **str** |  |
+**normalizer_version** | **str** |  |
+**output_ref** | [**ArtifactRef**](ArtifactRef.md) |  | [optional]
+**parent_span_id** | **str** |  | [optional]
+**project_id** | **str** |  |
+**raw_ref** | [**ArtifactRef**](ArtifactRef.md) |  |
+**schema_version** | **int** |  |
+**seq** | **int** |  |
+**span_id** | **str** |  |
+**start_time** | **datetime** |  |
+**status** | [**SpanStatus**](SpanStatus.md) |  |
+**tenant_id** | **str** |  |
+**tokens** | [**TokenCounts**](TokenCounts.md) |  | [optional]
+**trace_id** | **str** |  |
+**unmapped_attrs** | **object** |  |
 
 ## Example
 
@@ -46,5 +46,3 @@ canonical_span_dict = canonical_span_instance.to_dict()
 canonical_span_from_dict = CanonicalSpan.from_dict(canonical_span_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

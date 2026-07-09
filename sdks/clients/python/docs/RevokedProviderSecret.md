@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**active** | **bool** |  | 
-**provider_secret_id** | **str** |  | 
-**rotated_at** | **datetime** |  | 
+**active** | **bool** |  |
+**provider_secret_id** | **str** |  |
+**rotated_at** | **datetime** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ revoked_provider_secret_dict = revoked_provider_secret_instance.to_dict()
 revoked_provider_secret_from_dict = RevokedProviderSecret.from_dict(revoked_provider_secret_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

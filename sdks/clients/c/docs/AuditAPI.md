@@ -4,24 +4,24 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**AuditAPI_listAuditEvents**](AuditAPI.md#AuditAPI_listAuditEvents) | **GET** /v1/audit/{tenant_id}/{project_id} | 
+[**AuditAPI_auditListAuditEvents**](AuditAPI.md#AuditAPI_auditListAuditEvents) | **GET** /v1/audit/{tenant_id}/{project_id} |
 
 
-# **AuditAPI_listAuditEvents**
+# **AuditAPI_auditListAuditEvents**
 ```c
-list_t* AuditAPI_listAuditEvents(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+list_t* AuditAPI_auditListAuditEvents(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **apiClient** | **apiClient_t \*** | context containing the client configuration |
-**tenant_id** | **char \*** | tenant_id | 
-**project_id** | **char \*** | project_id | 
-**authorization** | **char \*** | Bearer API token for strict auth | [optional] 
-**x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional] 
-**x_beater_project_id** | **char \*** | Strict-auth project scope | [optional] 
-**x_beater_environment_id** | **char \*** | Strict-auth environment scope | [optional] 
+**tenant_id** | **char \*** | tenant_id |
+**project_id** | **char \*** | project_id |
+**authorization** | **char \*** | Bearer API token for strict auth | [optional]
+**x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional]
+**x_beater_project_id** | **char \*** | Strict-auth project scope | [optional]
+**x_beater_environment_id** | **char \*** | Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -38,4 +38,3 @@ No authorization required
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

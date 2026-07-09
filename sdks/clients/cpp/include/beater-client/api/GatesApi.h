@@ -60,7 +60,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<GateDefinition>> createGate(
+    pplx::task<std::shared_ptr<GateDefinition>> gates_createGate(
         utility::string_t tenantId,
         utility::string_t projectId,
         std::shared_ptr<CreateGateRequest> createGateRequest,
@@ -83,7 +83,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<GateRunReport>> runGate(
+    pplx::task<std::shared_ptr<GateRunReport>> gates_runGate(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t gateId,

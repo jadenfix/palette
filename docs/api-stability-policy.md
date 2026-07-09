@@ -22,6 +22,9 @@ before 1.0**. That caveat does not relax the contract discipline: every `/v1`
 handler change still regenerates the OpenAPI spec, generated SDK clients,
 semantic conventions, MCP/CLI/docs contract surfaces, and then runs
 `scripts/check-contract-sync.sh` plus the `sdk-contract` CI gate before merge.
+The only pre-1.0 breaking exceptions allowed in CI are explicit contract
+alignment breaks filtered by `scripts/filter-oasdiff-breaking.py`; unexpected
+`oasdiff` errors still fail the merge gate.
 
 ## Stability guarantee for `/v1`
 

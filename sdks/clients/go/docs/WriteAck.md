@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**AcceptedRaw** | **int32** |  | 
-**AcceptedSpans** | **int32** |  | 
-**DuplicateRaw** | **int32** |  | 
-**DuplicateSpans** | **int32** |  | 
+**AcceptedRaw** | **int32** |  |
+**AcceptedSpans** | **int32** |  |
+**DuplicateRaw** | **int32** |  |
+**DuplicateSpans** | **int32** |  |
 
 ## Methods
 
@@ -110,5 +110,3 @@ SetDuplicateSpans sets DuplicateSpans field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -4,11 +4,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**DatasetId** | Pointer to **NullableString** |  | [optional] 
-**EvaluatorVersionId** | Pointer to **NullableString** |  | [optional] 
-**GateId** | **string** |  | 
-**InconclusivePolicy** | Pointer to [**NullableInconclusivePolicy**](InconclusivePolicy.md) |  | [optional] 
-**Name** | **string** |  | 
+**DatasetId** | Pointer to **NullableString** |  | [optional]
+**EvaluatorVersionId** | Pointer to **NullableString** |  | [optional]
+**GateId** | **string** |  |
+**InconclusivePolicy** | Pointer to [**NullableInconclusivePolicy**](InconclusivePolicy.md) |  | [optional]
+**Name** | **string** |  |
 
 ## Methods
 
@@ -176,5 +176,3 @@ SetName sets Name field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

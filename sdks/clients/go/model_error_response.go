@@ -21,10 +21,10 @@ var _ MappedNullable = &ErrorResponse{}
 
 // ErrorResponse Error envelope returned by every fallible endpoint.
 type ErrorResponse struct {
-	// Human-readable error message.
+	// Stable machine-readable error code.
 	Error string `json:"error"`
-	// HTTP status code, duplicated in the body for convenience.
-	Status int32 `json:"status"`
+	// Human-readable error message.
+	Message string `json:"message"`
 }
 
 type _ErrorResponse ErrorResponse
@@ -33,10 +33,10 @@ type _ErrorResponse ErrorResponse
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewErrorResponse(error_ string, status int32) *ErrorResponse {
+func NewErrorResponse(error_ string, message string) *ErrorResponse {
 	this := ErrorResponse{}
 	this.Error = error_
-	this.Status = status
+	this.Message = message
 	return &this
 }
 
@@ -72,28 +72,28 @@ func (o *ErrorResponse) SetError(v string) {
 	o.Error = v
 }
 
-// GetStatus returns the Status field value
-func (o *ErrorResponse) GetStatus() int32 {
+// GetMessage returns the Message field value
+func (o *ErrorResponse) GetMessage() string {
 	if o == nil {
-		var ret int32
+		var ret string
 		return ret
 	}
 
-	return o.Status
+	return o.Message
 }
 
-// GetStatusOk returns a tuple with the Status field value
+// GetMessageOk returns a tuple with the Message field value
 // and a boolean to check if the value has been set.
-func (o *ErrorResponse) GetStatusOk() (*int32, bool) {
+func (o *ErrorResponse) GetMessageOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Status, true
+	return &o.Message, true
 }
 
-// SetStatus sets field value
-func (o *ErrorResponse) SetStatus(v int32) {
-	o.Status = v
+// SetMessage sets field value
+func (o *ErrorResponse) SetMessage(v string) {
+	o.Message = v
 }
 
 func (o ErrorResponse) MarshalJSON() ([]byte, error) {
@@ -107,7 +107,7 @@ func (o ErrorResponse) MarshalJSON() ([]byte, error) {
 func (o ErrorResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["error"] = o.Error
-	toSerialize["status"] = o.Status
+	toSerialize["message"] = o.Message
 	return toSerialize, nil
 }
 
@@ -117,7 +117,7 @@ func (o *ErrorResponse) UnmarshalJSON(data []byte) (err error) {
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"error",
-		"status",
+		"message",
 	}
 
 	allProperties := make(map[string]interface{})

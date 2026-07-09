@@ -8,6 +8,3 @@
 * `ALLOWED` (value: `"allowed"`)
 
 * `DENIED` (value: `"denied"`)
-
-
-

@@ -103,8 +103,8 @@ public class IngestApi {
    * @return TraceIngestedDrainReport
    * @throws ApiException if fails to make API call
    */
-  public TraceIngestedDrainReport drainTraceIngested(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<TraceIngestedDrainReport> localVarResponse = drainTraceIngestedWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public TraceIngestedDrainReport ingestDrainTraceIngested(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<TraceIngestedDrainReport> localVarResponse = ingestDrainTraceIngestedWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -121,8 +121,8 @@ public class IngestApi {
    * @return ApiResponse&lt;TraceIngestedDrainReport&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<TraceIngestedDrainReport> drainTraceIngestedWithHttpInfo(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = drainTraceIngestedRequestBuilder(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<TraceIngestedDrainReport> ingestDrainTraceIngestedWithHttpInfo(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ingestDrainTraceIngestedRequestBuilder(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -132,7 +132,7 @@ public class IngestApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("drainTraceIngested", localVarResponse);
+          throw getApiException("ingestDrainTraceIngested", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<TraceIngestedDrainReport>(
@@ -161,14 +161,14 @@ public class IngestApi {
     }
   }
 
-  private HttpRequest.Builder drainTraceIngestedRequestBuilder(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder ingestDrainTraceIngestedRequestBuilder(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling drainTraceIngested");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling ingestDrainTraceIngested");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling drainTraceIngested");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling ingestDrainTraceIngested");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -231,8 +231,8 @@ public class IngestApi {
    * @return TraceWriteDrainReport
    * @throws ApiException if fails to make API call
    */
-  public TraceWriteDrainReport drainTraceWrites(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<TraceWriteDrainReport> localVarResponse = drainTraceWritesWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public TraceWriteDrainReport ingestDrainTraceWrites(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<TraceWriteDrainReport> localVarResponse = ingestDrainTraceWritesWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -249,8 +249,8 @@ public class IngestApi {
    * @return ApiResponse&lt;TraceWriteDrainReport&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<TraceWriteDrainReport> drainTraceWritesWithHttpInfo(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = drainTraceWritesRequestBuilder(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<TraceWriteDrainReport> ingestDrainTraceWritesWithHttpInfo(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ingestDrainTraceWritesRequestBuilder(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -260,7 +260,7 @@ public class IngestApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("drainTraceWrites", localVarResponse);
+          throw getApiException("ingestDrainTraceWrites", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<TraceWriteDrainReport>(
@@ -289,14 +289,14 @@ public class IngestApi {
     }
   }
 
-  private HttpRequest.Builder drainTraceWritesRequestBuilder(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder ingestDrainTraceWritesRequestBuilder(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling drainTraceWrites");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling ingestDrainTraceWrites");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling drainTraceWrites");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling ingestDrainTraceWrites");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -358,8 +358,8 @@ public class IngestApi {
    * @return IngestQueueStatus
    * @throws ApiException if fails to make API call
    */
-  public IngestQueueStatus getIngestQueueStatus(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<IngestQueueStatus> localVarResponse = getIngestQueueStatusWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public IngestQueueStatus ingestGetIngestQueueStatus(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<IngestQueueStatus> localVarResponse = ingestGetIngestQueueStatusWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -375,8 +375,8 @@ public class IngestApi {
    * @return ApiResponse&lt;IngestQueueStatus&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<IngestQueueStatus> getIngestQueueStatusWithHttpInfo(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = getIngestQueueStatusRequestBuilder(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<IngestQueueStatus> ingestGetIngestQueueStatusWithHttpInfo(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ingestGetIngestQueueStatusRequestBuilder(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -386,7 +386,7 @@ public class IngestApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("getIngestQueueStatus", localVarResponse);
+          throw getApiException("ingestGetIngestQueueStatus", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<IngestQueueStatus>(
@@ -415,14 +415,14 @@ public class IngestApi {
     }
   }
 
-  private HttpRequest.Builder getIngestQueueStatusRequestBuilder(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder ingestGetIngestQueueStatusRequestBuilder(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling getIngestQueueStatus");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling ingestGetIngestQueueStatus");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling getIngestQueueStatus");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling ingestGetIngestQueueStatus");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -470,8 +470,8 @@ public class IngestApi {
    * @return IngestOutcome
    * @throws ApiException if fails to make API call
    */
-  public IngestOutcome importSource(String tenantId, String projectId, String environmentId, ImportSourceHttpRequest importSourceHttpRequest, String durability, String authorization, String xBeaterApiKey) throws ApiException {
-    ApiResponse<IngestOutcome> localVarResponse = importSourceWithHttpInfo(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
+  public IngestOutcome ingestImportSource(String tenantId, String projectId, String environmentId, ImportSourceHttpRequest importSourceHttpRequest, String durability, String authorization, String xBeaterApiKey) throws ApiException {
+    ApiResponse<IngestOutcome> localVarResponse = ingestImportSourceWithHttpInfo(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
     return localVarResponse.getData();
   }
 
@@ -488,8 +488,8 @@ public class IngestApi {
    * @return ApiResponse&lt;IngestOutcome&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<IngestOutcome> importSourceWithHttpInfo(String tenantId, String projectId, String environmentId, ImportSourceHttpRequest importSourceHttpRequest, String durability, String authorization, String xBeaterApiKey) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = importSourceRequestBuilder(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
+  public ApiResponse<IngestOutcome> ingestImportSourceWithHttpInfo(String tenantId, String projectId, String environmentId, ImportSourceHttpRequest importSourceHttpRequest, String durability, String authorization, String xBeaterApiKey) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ingestImportSourceRequestBuilder(tenantId, projectId, environmentId, importSourceHttpRequest, durability, authorization, xBeaterApiKey);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -499,7 +499,7 @@ public class IngestApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("importSource", localVarResponse);
+          throw getApiException("ingestImportSource", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<IngestOutcome>(
@@ -528,22 +528,22 @@ public class IngestApi {
     }
   }
 
-  private HttpRequest.Builder importSourceRequestBuilder(String tenantId, String projectId, String environmentId, ImportSourceHttpRequest importSourceHttpRequest, String durability, String authorization, String xBeaterApiKey) throws ApiException {
+  private HttpRequest.Builder ingestImportSourceRequestBuilder(String tenantId, String projectId, String environmentId, ImportSourceHttpRequest importSourceHttpRequest, String durability, String authorization, String xBeaterApiKey) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling importSource");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling ingestImportSource");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling importSource");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling ingestImportSource");
     }
     // verify the required parameter 'environmentId' is set
     if (environmentId == null) {
-      throw new ApiException(400, "Missing the required parameter 'environmentId' when calling importSource");
+      throw new ApiException(400, "Missing the required parameter 'environmentId' when calling ingestImportSource");
     }
     // verify the required parameter 'importSourceHttpRequest' is set
     if (importSourceHttpRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'importSourceHttpRequest' when calling importSource");
+      throw new ApiException(400, "Missing the required parameter 'importSourceHttpRequest' when calling ingestImportSource");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -606,8 +606,8 @@ public class IngestApi {
    * @return IngestOutcome
    * @throws ApiException if fails to make API call
    */
-  public IngestOutcome ingestNative(NativeIngestRequest nativeIngestRequest, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<IngestOutcome> localVarResponse = ingestNativeWithHttpInfo(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public IngestOutcome ingestIngestNative(NativeIngestRequest nativeIngestRequest, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<IngestOutcome> localVarResponse = ingestIngestNativeWithHttpInfo(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -623,8 +623,8 @@ public class IngestApi {
    * @return ApiResponse&lt;IngestOutcome&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<IngestOutcome> ingestNativeWithHttpInfo(NativeIngestRequest nativeIngestRequest, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = ingestNativeRequestBuilder(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<IngestOutcome> ingestIngestNativeWithHttpInfo(NativeIngestRequest nativeIngestRequest, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ingestIngestNativeRequestBuilder(nativeIngestRequest, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -634,7 +634,7 @@ public class IngestApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("ingestNative", localVarResponse);
+          throw getApiException("ingestIngestNative", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<IngestOutcome>(
@@ -663,10 +663,10 @@ public class IngestApi {
     }
   }
 
-  private HttpRequest.Builder ingestNativeRequestBuilder(NativeIngestRequest nativeIngestRequest, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder ingestIngestNativeRequestBuilder(NativeIngestRequest nativeIngestRequest, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'nativeIngestRequest' is set
     if (nativeIngestRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'nativeIngestRequest' when calling ingestNative");
+      throw new ApiException(400, "Missing the required parameter 'nativeIngestRequest' when calling ingestIngestNative");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -734,8 +734,8 @@ public class IngestApi {
    * @return OtlpIngestOutcome
    * @throws ApiException if fails to make API call
    */
-  public OtlpIngestOutcome ingestOtlp(String tenantId, String projectId, String environmentId, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<OtlpIngestOutcome> localVarResponse = ingestOtlpWithHttpInfo(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public OtlpIngestOutcome ingestIngestOtlp(String tenantId, String projectId, String environmentId, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<OtlpIngestOutcome> localVarResponse = ingestIngestOtlpWithHttpInfo(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -753,8 +753,8 @@ public class IngestApi {
    * @return ApiResponse&lt;OtlpIngestOutcome&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<OtlpIngestOutcome> ingestOtlpWithHttpInfo(String tenantId, String projectId, String environmentId, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = ingestOtlpRequestBuilder(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<OtlpIngestOutcome> ingestIngestOtlpWithHttpInfo(String tenantId, String projectId, String environmentId, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ingestIngestOtlpRequestBuilder(tenantId, projectId, environmentId, durability, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -764,7 +764,7 @@ public class IngestApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("ingestOtlp", localVarResponse);
+          throw getApiException("ingestIngestOtlp", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<OtlpIngestOutcome>(
@@ -793,18 +793,18 @@ public class IngestApi {
     }
   }
 
-  private HttpRequest.Builder ingestOtlpRequestBuilder(String tenantId, String projectId, String environmentId, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder ingestIngestOtlpRequestBuilder(String tenantId, String projectId, String environmentId, String durability, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling ingestOtlp");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling ingestIngestOtlp");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling ingestOtlp");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling ingestIngestOtlp");
     }
     // verify the required parameter 'environmentId' is set
     if (environmentId == null) {
-      throw new ApiException(400, "Missing the required parameter 'environmentId' when calling ingestOtlp");
+      throw new ApiException(400, "Missing the required parameter 'environmentId' when calling ingestIngestOtlp");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -867,8 +867,8 @@ public class IngestApi {
    * @return OtlpIngestOutcome
    * @throws ApiException if fails to make API call
    */
-  public OtlpIngestOutcome ingestOtlpJsonCollector(String durability, String authorization, String xBeaterApiKey, String xBeaterTenantId, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<OtlpIngestOutcome> localVarResponse = ingestOtlpJsonCollectorWithHttpInfo(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
+  public OtlpIngestOutcome ingestIngestOtlpJsonCollector(String durability, String authorization, String xBeaterApiKey, String xBeaterTenantId, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<OtlpIngestOutcome> localVarResponse = ingestIngestOtlpJsonCollectorWithHttpInfo(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -884,8 +884,8 @@ public class IngestApi {
    * @return ApiResponse&lt;OtlpIngestOutcome&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<OtlpIngestOutcome> ingestOtlpJsonCollectorWithHttpInfo(String durability, String authorization, String xBeaterApiKey, String xBeaterTenantId, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = ingestOtlpJsonCollectorRequestBuilder(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<OtlpIngestOutcome> ingestIngestOtlpJsonCollectorWithHttpInfo(String durability, String authorization, String xBeaterApiKey, String xBeaterTenantId, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ingestIngestOtlpJsonCollectorRequestBuilder(durability, authorization, xBeaterApiKey, xBeaterTenantId, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -895,7 +895,7 @@ public class IngestApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("ingestOtlpJsonCollector", localVarResponse);
+          throw getApiException("ingestIngestOtlpJsonCollector", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<OtlpIngestOutcome>(
@@ -924,7 +924,7 @@ public class IngestApi {
     }
   }
 
-  private HttpRequest.Builder ingestOtlpJsonCollectorRequestBuilder(String durability, String authorization, String xBeaterApiKey, String xBeaterTenantId, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder ingestIngestOtlpJsonCollectorRequestBuilder(String durability, String authorization, String xBeaterApiKey, String xBeaterTenantId, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
@@ -987,8 +987,8 @@ public class IngestApi {
    * @return TraceIngestedReconcileReport
    * @throws ApiException if fails to make API call
    */
-  public TraceIngestedReconcileReport reconcileTrace(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<TraceIngestedReconcileReport> localVarResponse = reconcileTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public TraceIngestedReconcileReport ingestReconcileTrace(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<TraceIngestedReconcileReport> localVarResponse = ingestReconcileTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -1005,8 +1005,8 @@ public class IngestApi {
    * @return ApiResponse&lt;TraceIngestedReconcileReport&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<TraceIngestedReconcileReport> reconcileTraceWithHttpInfo(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = reconcileTraceRequestBuilder(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<TraceIngestedReconcileReport> ingestReconcileTraceWithHttpInfo(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ingestReconcileTraceRequestBuilder(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -1016,7 +1016,7 @@ public class IngestApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("reconcileTrace", localVarResponse);
+          throw getApiException("ingestReconcileTrace", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<TraceIngestedReconcileReport>(
@@ -1045,18 +1045,18 @@ public class IngestApi {
     }
   }
 
-  private HttpRequest.Builder reconcileTraceRequestBuilder(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder ingestReconcileTraceRequestBuilder(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling reconcileTrace");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling ingestReconcileTrace");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling reconcileTrace");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling ingestReconcileTrace");
     }
     // verify the required parameter 'traceId' is set
     if (traceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'traceId' when calling reconcileTrace");
+      throw new ApiException(400, "Missing the required parameter 'traceId' when calling ingestReconcileTrace");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -1106,8 +1106,8 @@ public class IngestApi {
    * @return DeadLetterReplayReport
    * @throws ApiException if fails to make API call
    */
-  public DeadLetterReplayReport replayDeadLetter(String tenantId, String projectId, String messageId, Boolean resetAttempts, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<DeadLetterReplayReport> localVarResponse = replayDeadLetterWithHttpInfo(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public DeadLetterReplayReport ingestReplayDeadLetter(String tenantId, String projectId, String messageId, Boolean resetAttempts, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<DeadLetterReplayReport> localVarResponse = ingestReplayDeadLetterWithHttpInfo(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -1125,8 +1125,8 @@ public class IngestApi {
    * @return ApiResponse&lt;DeadLetterReplayReport&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<DeadLetterReplayReport> replayDeadLetterWithHttpInfo(String tenantId, String projectId, String messageId, Boolean resetAttempts, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = replayDeadLetterRequestBuilder(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<DeadLetterReplayReport> ingestReplayDeadLetterWithHttpInfo(String tenantId, String projectId, String messageId, Boolean resetAttempts, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ingestReplayDeadLetterRequestBuilder(tenantId, projectId, messageId, resetAttempts, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -1136,7 +1136,7 @@ public class IngestApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("replayDeadLetter", localVarResponse);
+          throw getApiException("ingestReplayDeadLetter", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<DeadLetterReplayReport>(
@@ -1165,18 +1165,18 @@ public class IngestApi {
     }
   }
 
-  private HttpRequest.Builder replayDeadLetterRequestBuilder(String tenantId, String projectId, String messageId, Boolean resetAttempts, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder ingestReplayDeadLetterRequestBuilder(String tenantId, String projectId, String messageId, Boolean resetAttempts, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling replayDeadLetter");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling ingestReplayDeadLetter");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling replayDeadLetter");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling ingestReplayDeadLetter");
     }
     // verify the required parameter 'messageId' is set
     if (messageId == null) {
-      throw new ApiException(400, "Missing the required parameter 'messageId' when calling replayDeadLetter");
+      throw new ApiException(400, "Missing the required parameter 'messageId' when calling ingestReplayDeadLetter");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**versions** | [**List[PromptVersion]**](PromptVersion.md) |  | 
+**versions** | [**List[PromptVersion]**](PromptVersion.md) |  |
 
 ## Example
 
@@ -25,5 +25,3 @@ prompt_version_list_response_dict = prompt_version_list_response_instance.to_dic
 prompt_version_list_response_from_dict = PromptVersionListResponse.from_dict(prompt_version_list_response_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

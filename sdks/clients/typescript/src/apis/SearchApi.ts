@@ -25,7 +25,7 @@ import {
     SearchResponseToJSON,
 } from '../models/index';
 
-export interface SearchSpansRequest {
+export interface SearchSearchSpansRequest {
     tenantId: string;
     q?: string;
     projectId?: string;
@@ -50,11 +50,11 @@ export class SearchApi extends runtime.BaseAPI {
 
     /**
      */
-    async searchSpansRaw(requestParameters: SearchSpansRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SearchResponse>> {
+    async searchSearchSpansRaw(requestParameters: SearchSearchSpansRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SearchResponse>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling searchSpans().'
+                'Required parameter "tenantId" was null or undefined when calling searchSearchSpans().'
             );
         }
 
@@ -130,8 +130,8 @@ export class SearchApi extends runtime.BaseAPI {
 
     /**
      */
-    async searchSpans(requestParameters: SearchSpansRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SearchResponse> {
-        const response = await this.searchSpansRaw(requestParameters, initOverrides);
+    async searchSearchSpans(requestParameters: SearchSearchSpansRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SearchResponse> {
+        const response = await this.searchSearchSpansRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

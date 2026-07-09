@@ -22,7 +22,7 @@ func Test_beaterclient_ExperimentsAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test ExperimentsAPIService RunDeterministicExperiment", func(t *testing.T) {
+	t.Run("Test ExperimentsAPIService ExperimentsRunDeterministicExperiment", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -31,7 +31,7 @@ func Test_beaterclient_ExperimentsAPIService(t *testing.T) {
 		var datasetId string
 		var versionId string
 
-		resp, httpRes, err := apiClient.ExperimentsAPI.RunDeterministicExperiment(context.Background(), tenantId, projectId, datasetId, versionId).Execute()
+		resp, httpRes, err := apiClient.ExperimentsAPI.ExperimentsRunDeterministicExperiment(context.Background(), tenantId, projectId, datasetId, versionId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -39,7 +39,7 @@ func Test_beaterclient_ExperimentsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ExperimentsAPIService RunJudgeExperiment", func(t *testing.T) {
+	t.Run("Test ExperimentsAPIService ExperimentsRunJudgeExperiment", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -48,7 +48,7 @@ func Test_beaterclient_ExperimentsAPIService(t *testing.T) {
 		var datasetId string
 		var versionId string
 
-		resp, httpRes, err := apiClient.ExperimentsAPI.RunJudgeExperiment(context.Background(), tenantId, projectId, datasetId, versionId).Execute()
+		resp, httpRes, err := apiClient.ExperimentsAPI.ExperimentsRunJudgeExperiment(context.Background(), tenantId, projectId, datasetId, versionId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

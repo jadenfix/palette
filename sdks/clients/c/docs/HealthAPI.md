@@ -4,12 +4,12 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**HealthAPI_health**](HealthAPI.md#HealthAPI_health) | **GET** /health | 
+[**HealthAPI_healthHealth**](HealthAPI.md#HealthAPI_healthHealth) | **GET** /health |
 
 
-# **HealthAPI_health**
+# **HealthAPI_healthHealth**
 ```c
-health_response_t* HealthAPI_health(apiClient_t *apiClient);
+health_response_t* HealthAPI_healthHealth(apiClient_t *apiClient);
 ```
 
 ### Parameters
@@ -32,4 +32,3 @@ No authorization required
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

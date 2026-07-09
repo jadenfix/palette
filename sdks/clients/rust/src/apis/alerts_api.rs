@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
-/// struct for passing parameters to the method [`evaluate_alert`]
+/// struct for passing parameters to the method [`alerts_period_evaluate_alert`]
 #[derive(Clone, Debug)]
-pub struct EvaluateAlertParams {
+pub struct AlertsPeriodEvaluateAlertParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -35,10 +35,10 @@ pub struct EvaluateAlertParams {
 }
 
 
-/// struct for typed errors of method [`evaluate_alert`]
+/// struct for typed errors of method [`alerts_period_evaluate_alert`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum EvaluateAlertError {
+pub enum AlertsPeriodEvaluateAlertError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -46,7 +46,7 @@ pub enum EvaluateAlertError {
 }
 
 
-pub async fn evaluate_alert(configuration: &configuration::Configuration, params: EvaluateAlertParams) -> Result<models::AlertDecision, Error<EvaluateAlertError>> {
+pub async fn alerts_period_evaluate_alert(configuration: &configuration::Configuration, params: AlertsPeriodEvaluateAlertParams) -> Result<models::AlertDecision, Error<AlertsPeriodEvaluateAlertError>> {
 
     let uri_str = format!("{}/v1/alerts/{tenant_id}/{project_id}/traces/{trace_id}/webhook", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), trace_id=crate::apis::urlencode(params.trace_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -78,7 +78,7 @@ pub async fn evaluate_alert(configuration: &configuration::Configuration, params
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<EvaluateAlertError> = serde_json::from_str(&content).ok();
+        let entity: Option<AlertsPeriodEvaluateAlertError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

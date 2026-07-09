@@ -4,18 +4,18 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**add_prompt_version**](PromptsApi.md#add_prompt_version) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions | 
-[**create_prompt**](PromptsApi.md#create_prompt) | **POST** /v1/prompts/{tenant_id}/{project_id} | 
-[**diff_prompt_versions**](PromptsApi.md#diff_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff | 
-[**get_prompt**](PromptsApi.md#get_prompt) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} | 
-[**list_prompt_versions**](PromptsApi.md#list_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions | 
-[**list_prompts**](PromptsApi.md#list_prompts) | **GET** /v1/prompts/{tenant_id}/{project_id} | 
+[**prompts_period_add_prompt_version**](PromptsApi.md#prompts_period_add_prompt_version) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |
+[**prompts_period_create_prompt**](PromptsApi.md#prompts_period_create_prompt) | **POST** /v1/prompts/{tenant_id}/{project_id} |
+[**prompts_period_diff_prompt_versions**](PromptsApi.md#prompts_period_diff_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff |
+[**prompts_period_get_prompt**](PromptsApi.md#prompts_period_get_prompt) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} |
+[**prompts_period_list_prompt_versions**](PromptsApi.md#prompts_period_list_prompt_versions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |
+[**prompts_period_list_prompts**](PromptsApi.md#prompts_period_list_prompts) | **GET** /v1/prompts/{tenant_id}/{project_id} |
 
 
 
-## add_prompt_version
+## prompts_period_add_prompt_version
 
-> models::PromptVersion add_prompt_version(tenant_id, project_id, prompt_id, add_prompt_version_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::PromptVersion prompts_period_add_prompt_version(tenant_id, project_id, prompt_id, add_prompt_version_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -48,9 +48,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## create_prompt
+## prompts_period_create_prompt
 
-> models::CreatedPrompt create_prompt(tenant_id, project_id, create_prompt_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::CreatedPrompt prompts_period_create_prompt(tenant_id, project_id, create_prompt_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -82,9 +82,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## diff_prompt_versions
+## prompts_period_diff_prompt_versions
 
-> models::PromptVersionDiff diff_prompt_versions(tenant_id, project_id, prompt_id, from, to, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::PromptVersionDiff prompts_period_diff_prompt_versions(tenant_id, project_id, prompt_id, from, to, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -118,9 +118,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## get_prompt
+## prompts_period_get_prompt
 
-> models::Prompt get_prompt(tenant_id, project_id, prompt_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::Prompt prompts_period_get_prompt(tenant_id, project_id, prompt_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -152,9 +152,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## list_prompt_versions
+## prompts_period_list_prompt_versions
 
-> models::PromptVersionListResponse list_prompt_versions(tenant_id, project_id, prompt_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::PromptVersionListResponse prompts_period_list_prompt_versions(tenant_id, project_id, prompt_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -186,9 +186,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## list_prompts
+## prompts_period_list_prompts
 
-> models::PromptListResponse list_prompts(tenant_id, project_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::PromptListResponse prompts_period_list_prompts(tenant_id, project_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -217,4 +217,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

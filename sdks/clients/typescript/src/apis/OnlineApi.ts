@@ -28,7 +28,7 @@ import {
     SamplingDecisionToJSON,
 } from '../models/index';
 
-export interface DecideOnlineSamplingRequest {
+export interface OnlineDecideOnlineSamplingRequest {
     tenantId: string;
     projectId: string;
     traceId: string;
@@ -46,32 +46,32 @@ export class OnlineApi extends runtime.BaseAPI {
 
     /**
      */
-    async decideOnlineSamplingRaw(requestParameters: DecideOnlineSamplingRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SamplingDecision>> {
+    async onlineDecideOnlineSamplingRaw(requestParameters: OnlineDecideOnlineSamplingRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SamplingDecision>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling decideOnlineSampling().'
+                'Required parameter "tenantId" was null or undefined when calling onlineDecideOnlineSampling().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling decideOnlineSampling().'
+                'Required parameter "projectId" was null or undefined when calling onlineDecideOnlineSampling().'
             );
         }
 
         if (requestParameters['traceId'] == null) {
             throw new runtime.RequiredError(
                 'traceId',
-                'Required parameter "traceId" was null or undefined when calling decideOnlineSampling().'
+                'Required parameter "traceId" was null or undefined when calling onlineDecideOnlineSampling().'
             );
         }
 
         if (requestParameters['onlineSamplingPolicy'] == null) {
             throw new runtime.RequiredError(
                 'onlineSamplingPolicy',
-                'Required parameter "onlineSamplingPolicy" was null or undefined when calling decideOnlineSampling().'
+                'Required parameter "onlineSamplingPolicy" was null or undefined when calling onlineDecideOnlineSampling().'
             );
         }
 
@@ -110,8 +110,8 @@ export class OnlineApi extends runtime.BaseAPI {
 
     /**
      */
-    async decideOnlineSampling(requestParameters: DecideOnlineSamplingRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SamplingDecision> {
-        const response = await this.decideOnlineSamplingRaw(requestParameters, initOverrides);
+    async onlineDecideOnlineSampling(requestParameters: OnlineDecideOnlineSamplingRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SamplingDecision> {
+        const response = await this.onlineDecideOnlineSamplingRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

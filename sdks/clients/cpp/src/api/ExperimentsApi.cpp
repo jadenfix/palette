@@ -35,13 +35,13 @@ ExperimentsApi::~ExperimentsApi()
 {
 }
 
-pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runDeterministicExperiment(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, utility::string_t versionId, std::shared_ptr<RunExperimentRequest> runExperimentRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::experiments_runDeterministicExperiment(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, utility::string_t versionId, std::shared_ptr<RunExperimentRequest> runExperimentRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'runExperimentRequest' is set
     if (runExperimentRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runExperimentRequest' when calling ExperimentsApi->runDeterministicExperiment"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runExperimentRequest' when calling ExperimentsApi->experiments_runDeterministicExperiment"));
     }
 
 
@@ -79,7 +79,7 @@ pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runDeterministi
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("ExperimentsApi->runDeterministicExperiment does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("ExperimentsApi->experiments_runDeterministicExperiment does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -139,7 +139,7 @@ pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runDeterministi
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("ExperimentsApi->runDeterministicExperiment does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("ExperimentsApi->experiments_runDeterministicExperiment does not consume any supported media type"));
     }
 
 
@@ -159,7 +159,7 @@ pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runDeterministi
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling runDeterministicExperiment: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling experiments_runDeterministicExperiment: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -170,7 +170,7 @@ pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runDeterministi
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling runDeterministicExperiment: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling experiments_runDeterministicExperiment: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -194,19 +194,19 @@ pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runDeterministi
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling runDeterministicExperiment: unsupported response type"));
+                , utility::conversions::to_string_t("error calling experiments_runDeterministicExperiment: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runJudgeExperiment(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, utility::string_t versionId, std::shared_ptr<RunJudgeExperimentRequest> runJudgeExperimentRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::experiments_runJudgeExperiment(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, utility::string_t versionId, std::shared_ptr<RunJudgeExperimentRequest> runJudgeExperimentRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'runJudgeExperimentRequest' is set
     if (runJudgeExperimentRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runJudgeExperimentRequest' when calling ExperimentsApi->runJudgeExperiment"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runJudgeExperimentRequest' when calling ExperimentsApi->experiments_runJudgeExperiment"));
     }
 
 
@@ -244,7 +244,7 @@ pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runJudgeExperim
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("ExperimentsApi->runJudgeExperiment does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("ExperimentsApi->experiments_runJudgeExperiment does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -304,7 +304,7 @@ pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runJudgeExperim
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("ExperimentsApi->runJudgeExperiment does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("ExperimentsApi->experiments_runJudgeExperiment does not consume any supported media type"));
     }
 
 
@@ -324,7 +324,7 @@ pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runJudgeExperim
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling runJudgeExperiment: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling experiments_runJudgeExperiment: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -335,7 +335,7 @@ pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runJudgeExperim
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling runJudgeExperiment: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling experiments_runJudgeExperiment: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -359,7 +359,7 @@ pplx::task<std::shared_ptr<ExperimentRunReport>> ExperimentsApi::runJudgeExperim
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling runJudgeExperiment: unsupported response type"));
+                , utility::conversions::to_string_t("error calling experiments_runJudgeExperiment: unsupported response type"));
         }
 
         return localVarResult;

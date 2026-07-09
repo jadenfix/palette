@@ -35,7 +35,7 @@ SearchApi::~SearchApi()
 {
 }
 
-pplx::task<std::shared_ptr<SearchResponse>> SearchApi::searchSpans(utility::string_t tenantId, boost::optional<utility::string_t> q, boost::optional<utility::string_t> projectId, boost::optional<utility::string_t> environmentId, boost::optional<utility::string_t> traceId, boost::optional<utility::string_t> spanId, boost::optional<utility::string_t> kind, boost::optional<utility::string_t> status, boost::optional<utility::string_t> model, boost::optional<utility::string_t> tool, boost::optional<int32_t> limit, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<SearchResponse>> SearchApi::search_searchSpans(utility::string_t tenantId, boost::optional<utility::string_t> q, boost::optional<utility::string_t> projectId, boost::optional<utility::string_t> environmentId, boost::optional<utility::string_t> traceId, boost::optional<utility::string_t> spanId, boost::optional<utility::string_t> kind, boost::optional<utility::string_t> status, boost::optional<utility::string_t> model, boost::optional<utility::string_t> tool, boost::optional<int32_t> limit, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -70,7 +70,7 @@ pplx::task<std::shared_ptr<SearchResponse>> SearchApi::searchSpans(utility::stri
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("SearchApi->searchSpans does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("SearchApi->search_searchSpans does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -153,7 +153,7 @@ pplx::task<std::shared_ptr<SearchResponse>> SearchApi::searchSpans(utility::stri
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("SearchApi->searchSpans does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("SearchApi->search_searchSpans does not consume any supported media type"));
     }
 
 
@@ -173,7 +173,7 @@ pplx::task<std::shared_ptr<SearchResponse>> SearchApi::searchSpans(utility::stri
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling searchSpans: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling search_searchSpans: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -184,7 +184,7 @@ pplx::task<std::shared_ptr<SearchResponse>> SearchApi::searchSpans(utility::stri
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling searchSpans: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling search_searchSpans: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -208,7 +208,7 @@ pplx::task<std::shared_ptr<SearchResponse>> SearchApi::searchSpans(utility::stri
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling searchSpans: unsupported response type"));
+                , utility::conversions::to_string_t("error calling search_searchSpans: unsupported response type"));
         }
 
         return localVarResult;

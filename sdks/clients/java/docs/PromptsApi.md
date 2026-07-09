@@ -4,24 +4,24 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**addPromptVersion**](PromptsApi.md#addPromptVersion) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |  |
-| [**addPromptVersionWithHttpInfo**](PromptsApi.md#addPromptVersionWithHttpInfo) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |  |
-| [**createPrompt**](PromptsApi.md#createPrompt) | **POST** /v1/prompts/{tenant_id}/{project_id} |  |
-| [**createPromptWithHttpInfo**](PromptsApi.md#createPromptWithHttpInfo) | **POST** /v1/prompts/{tenant_id}/{project_id} |  |
-| [**diffPromptVersions**](PromptsApi.md#diffPromptVersions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff |  |
-| [**diffPromptVersionsWithHttpInfo**](PromptsApi.md#diffPromptVersionsWithHttpInfo) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff |  |
-| [**getPrompt**](PromptsApi.md#getPrompt) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} |  |
-| [**getPromptWithHttpInfo**](PromptsApi.md#getPromptWithHttpInfo) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} |  |
-| [**listPromptVersions**](PromptsApi.md#listPromptVersions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |  |
-| [**listPromptVersionsWithHttpInfo**](PromptsApi.md#listPromptVersionsWithHttpInfo) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |  |
-| [**listPrompts**](PromptsApi.md#listPrompts) | **GET** /v1/prompts/{tenant_id}/{project_id} |  |
-| [**listPromptsWithHttpInfo**](PromptsApi.md#listPromptsWithHttpInfo) | **GET** /v1/prompts/{tenant_id}/{project_id} |  |
+| [**promptsAddPromptVersion**](PromptsApi.md#promptsAddPromptVersion) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |  |
+| [**promptsAddPromptVersionWithHttpInfo**](PromptsApi.md#promptsAddPromptVersionWithHttpInfo) | **POST** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |  |
+| [**promptsCreatePrompt**](PromptsApi.md#promptsCreatePrompt) | **POST** /v1/prompts/{tenant_id}/{project_id} |  |
+| [**promptsCreatePromptWithHttpInfo**](PromptsApi.md#promptsCreatePromptWithHttpInfo) | **POST** /v1/prompts/{tenant_id}/{project_id} |  |
+| [**promptsDiffPromptVersions**](PromptsApi.md#promptsDiffPromptVersions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff |  |
+| [**promptsDiffPromptVersionsWithHttpInfo**](PromptsApi.md#promptsDiffPromptVersionsWithHttpInfo) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/diff |  |
+| [**promptsGetPrompt**](PromptsApi.md#promptsGetPrompt) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} |  |
+| [**promptsGetPromptWithHttpInfo**](PromptsApi.md#promptsGetPromptWithHttpInfo) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id} |  |
+| [**promptsListPromptVersions**](PromptsApi.md#promptsListPromptVersions) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |  |
+| [**promptsListPromptVersionsWithHttpInfo**](PromptsApi.md#promptsListPromptVersionsWithHttpInfo) | **GET** /v1/prompts/{tenant_id}/{project_id}/{prompt_id}/versions |  |
+| [**promptsListPrompts**](PromptsApi.md#promptsListPrompts) | **GET** /v1/prompts/{tenant_id}/{project_id} |  |
+| [**promptsListPromptsWithHttpInfo**](PromptsApi.md#promptsListPromptsWithHttpInfo) | **GET** /v1/prompts/{tenant_id}/{project_id} |  |
 
 
 
-## addPromptVersion
+## promptsAddPromptVersion
 
-> PromptVersion addPromptVersion(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> PromptVersion promptsAddPromptVersion(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -44,16 +44,16 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String promptId = "promptId_example"; // String | prompt_id
-        AddPromptVersionRequest addPromptVersionRequest = new AddPromptVersionRequest(); // AddPromptVersionRequest | 
+        AddPromptVersionRequest addPromptVersionRequest = new AddPromptVersionRequest(); // AddPromptVersionRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            PromptVersion result = apiInstance.addPromptVersion(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            PromptVersion result = apiInstance.promptsAddPromptVersion(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#addPromptVersion");
+            System.err.println("Exception when calling PromptsApi#promptsAddPromptVersion");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -100,9 +100,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## addPromptVersionWithHttpInfo
+## promptsAddPromptVersionWithHttpInfo
 
-> ApiResponse<PromptVersion> addPromptVersion addPromptVersionWithHttpInfo(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<PromptVersion> promptsAddPromptVersion promptsAddPromptVersionWithHttpInfo(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -126,18 +126,18 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String promptId = "promptId_example"; // String | prompt_id
-        AddPromptVersionRequest addPromptVersionRequest = new AddPromptVersionRequest(); // AddPromptVersionRequest | 
+        AddPromptVersionRequest addPromptVersionRequest = new AddPromptVersionRequest(); // AddPromptVersionRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<PromptVersion> response = apiInstance.addPromptVersionWithHttpInfo(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<PromptVersion> response = apiInstance.promptsAddPromptVersionWithHttpInfo(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#addPromptVersion");
+            System.err.println("Exception when calling PromptsApi#promptsAddPromptVersion");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -185,9 +185,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## createPrompt
+## promptsCreatePrompt
 
-> CreatedPrompt createPrompt(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> CreatedPrompt promptsCreatePrompt(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -209,16 +209,16 @@ public class Example {
         PromptsApi apiInstance = new PromptsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        CreatePromptRequest createPromptRequest = new CreatePromptRequest(); // CreatePromptRequest | 
+        CreatePromptRequest createPromptRequest = new CreatePromptRequest(); // CreatePromptRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            CreatedPrompt result = apiInstance.createPrompt(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            CreatedPrompt result = apiInstance.promptsCreatePrompt(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#createPrompt");
+            System.err.println("Exception when calling PromptsApi#promptsCreatePrompt");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -263,9 +263,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## createPromptWithHttpInfo
+## promptsCreatePromptWithHttpInfo
 
-> ApiResponse<CreatedPrompt> createPrompt createPromptWithHttpInfo(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<CreatedPrompt> promptsCreatePrompt promptsCreatePromptWithHttpInfo(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -288,18 +288,18 @@ public class Example {
         PromptsApi apiInstance = new PromptsApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        CreatePromptRequest createPromptRequest = new CreatePromptRequest(); // CreatePromptRequest | 
+        CreatePromptRequest createPromptRequest = new CreatePromptRequest(); // CreatePromptRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<CreatedPrompt> response = apiInstance.createPromptWithHttpInfo(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<CreatedPrompt> response = apiInstance.promptsCreatePromptWithHttpInfo(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#createPrompt");
+            System.err.println("Exception when calling PromptsApi#promptsCreatePrompt");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -345,9 +345,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 
 
-## diffPromptVersions
+## promptsDiffPromptVersions
 
-> PromptVersionDiff diffPromptVersions(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> PromptVersionDiff promptsDiffPromptVersions(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -370,17 +370,17 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String promptId = "promptId_example"; // String | prompt_id
-        String from = "from_example"; // String | 
-        String to = "to_example"; // String | 
+        String from = "from_example"; // String |
+        String to = "to_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            PromptVersionDiff result = apiInstance.diffPromptVersions(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            PromptVersionDiff result = apiInstance.promptsDiffPromptVersions(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#diffPromptVersions");
+            System.err.println("Exception when calling PromptsApi#promptsDiffPromptVersions");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -428,9 +428,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## diffPromptVersionsWithHttpInfo
+## promptsDiffPromptVersionsWithHttpInfo
 
-> ApiResponse<PromptVersionDiff> diffPromptVersions diffPromptVersionsWithHttpInfo(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<PromptVersionDiff> promptsDiffPromptVersions promptsDiffPromptVersionsWithHttpInfo(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -454,19 +454,19 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String promptId = "promptId_example"; // String | prompt_id
-        String from = "from_example"; // String | 
-        String to = "to_example"; // String | 
+        String from = "from_example"; // String |
+        String to = "to_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<PromptVersionDiff> response = apiInstance.diffPromptVersionsWithHttpInfo(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<PromptVersionDiff> response = apiInstance.promptsDiffPromptVersionsWithHttpInfo(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#diffPromptVersions");
+            System.err.println("Exception when calling PromptsApi#promptsDiffPromptVersions");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -515,9 +515,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## getPrompt
+## promptsGetPrompt
 
-> Prompt getPrompt(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> Prompt promptsGetPrompt(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -545,10 +545,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            Prompt result = apiInstance.getPrompt(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            Prompt result = apiInstance.promptsGetPrompt(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#getPrompt");
+            System.err.println("Exception when calling PromptsApi#promptsGetPrompt");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -594,9 +594,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## getPromptWithHttpInfo
+## promptsGetPromptWithHttpInfo
 
-> ApiResponse<Prompt> getPrompt getPromptWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<Prompt> promptsGetPrompt promptsGetPromptWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -625,12 +625,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<Prompt> response = apiInstance.getPromptWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<Prompt> response = apiInstance.promptsGetPromptWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#getPrompt");
+            System.err.println("Exception when calling PromptsApi#promptsGetPrompt");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -677,9 +677,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## listPromptVersions
+## promptsListPromptVersions
 
-> PromptVersionListResponse listPromptVersions(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> PromptVersionListResponse promptsListPromptVersions(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -707,10 +707,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            PromptVersionListResponse result = apiInstance.listPromptVersions(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            PromptVersionListResponse result = apiInstance.promptsListPromptVersions(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#listPromptVersions");
+            System.err.println("Exception when calling PromptsApi#promptsListPromptVersions");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -756,9 +756,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## listPromptVersionsWithHttpInfo
+## promptsListPromptVersionsWithHttpInfo
 
-> ApiResponse<PromptVersionListResponse> listPromptVersions listPromptVersionsWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<PromptVersionListResponse> promptsListPromptVersions promptsListPromptVersionsWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -787,12 +787,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<PromptVersionListResponse> response = apiInstance.listPromptVersionsWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<PromptVersionListResponse> response = apiInstance.promptsListPromptVersionsWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#listPromptVersions");
+            System.err.println("Exception when calling PromptsApi#promptsListPromptVersions");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -839,9 +839,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## listPrompts
+## promptsListPrompts
 
-> PromptListResponse listPrompts(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> PromptListResponse promptsListPrompts(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -868,10 +868,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            PromptListResponse result = apiInstance.listPrompts(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            PromptListResponse result = apiInstance.promptsListPrompts(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#listPrompts");
+            System.err.println("Exception when calling PromptsApi#promptsListPrompts");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -915,9 +915,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## listPromptsWithHttpInfo
+## promptsListPromptsWithHttpInfo
 
-> ApiResponse<PromptListResponse> listPrompts listPromptsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<PromptListResponse> promptsListPrompts promptsListPromptsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -945,12 +945,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<PromptListResponse> response = apiInstance.listPromptsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<PromptListResponse> response = apiInstance.promptsListPromptsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling PromptsApi#listPrompts");
+            System.err.println("Exception when calling PromptsApi#promptsListPrompts");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -993,4 +993,3 @@ No authorization required
 | **400** | Invalid request, scope, or filter |  -  |
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
-

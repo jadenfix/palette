@@ -17,5 +17,3 @@ The statistical test that produced an [`ExperimentComparison`]. The gate records
 * `SEQUENTIAL_E_VALUE` (value: `'sequential_e_value'`)
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

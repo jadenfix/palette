@@ -19,6 +19,3 @@
 |**requiredN** | **Integer** | Number of paired observations that would be required to detect the *observed* effect at the gate&#39;s (adjusted) alpha and power 0.8 (§10.3 #5). Populated only when &#x60;decision&#x60; is &#x60;Inconclusive&#x60; and the observed effect is non-degenerate (non-zero delta over non-zero difference spread). &#x60;None&#x60; otherwise. This answers \&quot;how many more cases would have made this conclusive?\&quot;. |  [optional] |
 |**sampleSize** | **Integer** |  |  |
 |**test** | **StatisticalTest** |  |  |
-
-
-

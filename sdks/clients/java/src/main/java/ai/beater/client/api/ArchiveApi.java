@@ -96,8 +96,8 @@ public class ArchiveApi {
    * @return ArchiveManifest
    * @throws ApiException if fails to make API call
    */
-  public ArchiveManifest archiveTrace(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<ArchiveManifest> localVarResponse = archiveTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ArchiveManifest archiveArchiveTrace(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<ArchiveManifest> localVarResponse = archiveArchiveTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -114,8 +114,8 @@ public class ArchiveApi {
    * @return ApiResponse&lt;ArchiveManifest&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ArchiveManifest> archiveTraceWithHttpInfo(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = archiveTraceRequestBuilder(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<ArchiveManifest> archiveArchiveTraceWithHttpInfo(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = archiveArchiveTraceRequestBuilder(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -125,7 +125,7 @@ public class ArchiveApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("archiveTrace", localVarResponse);
+          throw getApiException("archiveArchiveTrace", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<ArchiveManifest>(
@@ -154,18 +154,18 @@ public class ArchiveApi {
     }
   }
 
-  private HttpRequest.Builder archiveTraceRequestBuilder(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder archiveArchiveTraceRequestBuilder(String tenantId, String projectId, String traceId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling archiveTrace");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling archiveArchiveTrace");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling archiveTrace");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling archiveArchiveTrace");
     }
     // verify the required parameter 'traceId' is set
     if (traceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'traceId' when calling archiveTrace");
+      throw new ApiException(400, "Missing the required parameter 'traceId' when calling archiveArchiveTrace");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -219,8 +219,8 @@ public class ArchiveApi {
    * @return ArchiveQueryResponse
    * @throws ApiException if fails to make API call
    */
-  public ArchiveQueryResponse queryArchiveSpans(String tenantId, String projectId, String environmentId, String traceId, String spanId, String kind, String status, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<ArchiveQueryResponse> localVarResponse = queryArchiveSpansWithHttpInfo(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ArchiveQueryResponse archiveQueryArchiveSpans(String tenantId, String projectId, String environmentId, String traceId, String spanId, String kind, String status, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<ArchiveQueryResponse> localVarResponse = archiveQueryArchiveSpansWithHttpInfo(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -242,8 +242,8 @@ public class ArchiveApi {
    * @return ApiResponse&lt;ArchiveQueryResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ArchiveQueryResponse> queryArchiveSpansWithHttpInfo(String tenantId, String projectId, String environmentId, String traceId, String spanId, String kind, String status, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = queryArchiveSpansRequestBuilder(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<ArchiveQueryResponse> archiveQueryArchiveSpansWithHttpInfo(String tenantId, String projectId, String environmentId, String traceId, String spanId, String kind, String status, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = archiveQueryArchiveSpansRequestBuilder(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -253,7 +253,7 @@ public class ArchiveApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("queryArchiveSpans", localVarResponse);
+          throw getApiException("archiveQueryArchiveSpans", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<ArchiveQueryResponse>(
@@ -282,14 +282,14 @@ public class ArchiveApi {
     }
   }
 
-  private HttpRequest.Builder queryArchiveSpansRequestBuilder(String tenantId, String projectId, String environmentId, String traceId, String spanId, String kind, String status, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder archiveQueryArchiveSpansRequestBuilder(String tenantId, String projectId, String environmentId, String traceId, String spanId, String kind, String status, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling queryArchiveSpans");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling archiveQueryArchiveSpans");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling queryArchiveSpans");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling archiveQueryArchiveSpans");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

@@ -17,6 +17,3 @@
 | Name | Value |
 |---- | -----|
 | LATENCY_BUDGET_MS | &quot;latency_budget_ms&quot; |
-
-
-

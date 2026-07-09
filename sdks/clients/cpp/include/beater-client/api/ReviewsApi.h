@@ -66,7 +66,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ReviewQueue>> createReviewQueue(
+    pplx::task<std::shared_ptr<ReviewQueue>> reviews_createReviewQueue(
         utility::string_t tenantId,
         utility::string_t projectId,
         std::shared_ptr<CreateReviewQueueHttpRequest> createReviewQueueHttpRequest,
@@ -89,7 +89,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ReviewTask>> enqueueReviewTaskFromTrace(
+    pplx::task<std::shared_ptr<ReviewTask>> reviews_enqueueReviewTaskFromTrace(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t queueId,
@@ -113,7 +113,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::vector<std::shared_ptr<ReviewTask>>> listReviewTasks(
+    pplx::task<std::vector<std::shared_ptr<ReviewTask>>> reviews_listReviewTasks(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t queueId,
@@ -139,7 +139,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<DatasetCase>> promoteReviewAnnotation(
+    pplx::task<std::shared_ptr<DatasetCase>> reviews_promoteReviewAnnotation(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t queueId,
@@ -166,7 +166,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ReviewAnnotation>> submitReviewAnnotation(
+    pplx::task<std::shared_ptr<ReviewAnnotation>> reviews_submitReviewAnnotation(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t queueId,

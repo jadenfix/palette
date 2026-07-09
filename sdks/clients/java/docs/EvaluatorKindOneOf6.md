@@ -18,6 +18,3 @@
 | Name | Value |
 |---- | -----|
 | LLM_JUDGE | &quot;llm_judge&quot; |
-
-
-

@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**created_at** | **datetime** |  | 
-**created_by** | **str** |  | [optional] 
-**message** | **str** |  | [optional] 
+**created_at** | **datetime** |  |
+**created_by** | **str** |  | [optional]
+**message** | **str** |  | [optional]
 
 ## Example
 
@@ -27,5 +27,3 @@ prompt_version_metadata_dict = prompt_version_metadata_instance.to_dict()
 prompt_version_metadata_from_dict = PromptVersionMetadata.from_dict(prompt_version_metadata_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

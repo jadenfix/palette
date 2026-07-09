@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Reason** | [**SamplingReason**](SamplingReason.md) |  | 
-**Selected** | **bool** |  | 
-**StableScorePerMille** | **int32** |  | 
+**Reason** | [**SamplingReason**](SamplingReason.md) |  |
+**Selected** | **bool** |  |
+**StableScorePerMille** | **int32** |  |
 
 ## Methods
 
@@ -89,5 +89,3 @@ SetStableScorePerMille sets StableScorePerMille field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

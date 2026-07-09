@@ -6,17 +6,17 @@ A reusable failure scenario mined from production traces.
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**created_at** | **datetime** | When the scenario was created. | 
-**exemplar_trace_id** | **str** |  | 
-**expected_outcome** | **str** | Expected outcome for replay assertions, if known. | [optional] 
-**failure_mode** | [**FailureMode**](FailureMode.md) | The dominant failure mode this scenario reproduces. | 
-**perturbation_knobs** | [**PerturbationKnobs**](PerturbationKnobs.md) | Suggested perturbation knobs for replay. | 
-**recurrence_count** | **int** | How many traces exhibited this scenario. | 
-**redaction_class** | [**RedactionClass**](RedactionClass.md) | Redaction classification of the scenario payload. | 
-**scenario_id** | **str** | Stable, deterministic identifier for the scenario. | 
-**scope** | [**TenantScope**](TenantScope.md) | Tenant/project/environment scope this scenario belongs to. | 
-**source_trace_ids** | **List[str]** | Trace ids the scenario was mined from, sorted ascending. | 
-**title** | **str** | Human-readable title. | 
+**created_at** | **datetime** | When the scenario was created. |
+**exemplar_trace_id** | **str** |  |
+**expected_outcome** | **str** | Expected outcome for replay assertions, if known. | [optional]
+**failure_mode** | [**FailureMode**](FailureMode.md) | The dominant failure mode this scenario reproduces. |
+**perturbation_knobs** | [**PerturbationKnobs**](PerturbationKnobs.md) | Suggested perturbation knobs for replay. |
+**recurrence_count** | **int** | How many traces exhibited this scenario. |
+**redaction_class** | [**RedactionClass**](RedactionClass.md) | Redaction classification of the scenario payload. |
+**scenario_id** | **str** | Stable, deterministic identifier for the scenario. |
+**scope** | [**TenantScope**](TenantScope.md) | Tenant/project/environment scope this scenario belongs to. |
+**source_trace_ids** | **List[str]** | Trace ids the scenario was mined from, sorted ascending. |
+**title** | **str** | Human-readable title. |
 
 ## Example
 
@@ -36,5 +36,3 @@ scenario_dict = scenario_instance.to_dict()
 scenario_from_dict = Scenario.from_dict(scenario_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

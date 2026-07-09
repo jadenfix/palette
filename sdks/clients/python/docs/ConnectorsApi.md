@@ -4,16 +4,16 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**connect_connector**](ConnectorsApi.md#connect_connector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect | 
-[**connector_status**](ConnectorsApi.md#connector_status) | **GET** /v1/connectors/{tenant_id}/{project_id}/status | 
-[**get_connector_skills**](ConnectorsApi.md#get_connector_skills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills | 
-[**invoke_connector_tool**](ConnectorsApi.md#invoke_connector_tool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke | 
-[**list_connector_tools**](ConnectorsApi.md#list_connector_tools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools | 
-[**list_connectors**](ConnectorsApi.md#list_connectors) | **GET** /v1/connectors/{tenant_id}/{project_id} | 
+[**connectors_connect_connector**](ConnectorsApi.md#connectors_connect_connector) | **POST** /v1/connectors/{tenant_id}/{project_id}/connect |
+[**connectors_connector_status**](ConnectorsApi.md#connectors_connector_status) | **GET** /v1/connectors/{tenant_id}/{project_id}/status |
+[**connectors_get_connector_skills**](ConnectorsApi.md#connectors_get_connector_skills) | **GET** /v1/connectors/{tenant_id}/{project_id}/skills |
+[**connectors_invoke_connector_tool**](ConnectorsApi.md#connectors_invoke_connector_tool) | **POST** /v1/connectors/{tenant_id}/{project_id}/invoke |
+[**connectors_list_connector_tools**](ConnectorsApi.md#connectors_list_connector_tools) | **GET** /v1/connectors/{tenant_id}/{project_id}/tools |
+[**connectors_list_connectors**](ConnectorsApi.md#connectors_list_connectors) | **GET** /v1/connectors/{tenant_id}/{project_id} |
 
 
-# **connect_connector**
-> ConnectionLink connect_connector(tenant_id, project_id, connect_connector_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **connectors_connect_connector**
+> ConnectionLink connectors_connect_connector(tenant_id, project_id, connect_connector_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -40,18 +40,18 @@ with beater_client.ApiClient(configuration) as api_client:
     api_instance = beater_client.ConnectorsApi(api_client)
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
-    connect_connector_request = beater_client.ConnectConnectorRequest() # ConnectConnectorRequest | 
+    connect_connector_request = beater_client.ConnectConnectorRequest() # ConnectConnectorRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.connect_connector(tenant_id, project_id, connect_connector_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ConnectorsApi->connect_connector:\n")
+        api_response = api_instance.connectors_connect_connector(tenant_id, project_id, connect_connector_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ConnectorsApi->connectors_connect_connector:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ConnectorsApi->connect_connector: %s\n" % e)
+        print("Exception when calling ConnectorsApi->connectors_connect_connector: %s\n" % e)
 ```
 
 
@@ -61,13 +61,13 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **connect_connector_request** | [**ConnectConnectorRequest**](ConnectConnectorRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **connect_connector_request** | [**ConnectConnectorRequest**](ConnectConnectorRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -94,8 +94,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **connector_status**
-> ConnectionStatus connector_status(tenant_id, project_id, toolkit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **connectors_connector_status**
+> ConnectionStatus connectors_connector_status(tenant_id, project_id, toolkit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -128,11 +128,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.connector_status(tenant_id, project_id, toolkit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ConnectorsApi->connector_status:\n")
+        api_response = api_instance.connectors_connector_status(tenant_id, project_id, toolkit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ConnectorsApi->connectors_connector_status:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ConnectorsApi->connector_status: %s\n" % e)
+        print("Exception when calling ConnectorsApi->connectors_connector_status: %s\n" % e)
 ```
 
 
@@ -142,13 +142,13 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **toolkit** | **str**| Toolkit slug to scope the request to. | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **toolkit** | **str**| Toolkit slug to scope the request to. |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -175,8 +175,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_connector_skills**
-> ConnectorSkillsResponse get_connector_skills(tenant_id, project_id, toolkit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **connectors_get_connector_skills**
+> ConnectorSkillsResponse connectors_get_connector_skills(tenant_id, project_id, toolkit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -209,11 +209,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.get_connector_skills(tenant_id, project_id, toolkit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ConnectorsApi->get_connector_skills:\n")
+        api_response = api_instance.connectors_get_connector_skills(tenant_id, project_id, toolkit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ConnectorsApi->connectors_get_connector_skills:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ConnectorsApi->get_connector_skills: %s\n" % e)
+        print("Exception when calling ConnectorsApi->connectors_get_connector_skills: %s\n" % e)
 ```
 
 
@@ -223,13 +223,13 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **toolkit** | **str**| Toolkit slug to scope the request to. | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **toolkit** | **str**| Toolkit slug to scope the request to. |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -256,8 +256,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **invoke_connector_tool**
-> ToolExecution invoke_connector_tool(tenant_id, project_id, invoke_connector_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **connectors_invoke_connector_tool**
+> ToolExecution connectors_invoke_connector_tool(tenant_id, project_id, invoke_connector_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -284,18 +284,18 @@ with beater_client.ApiClient(configuration) as api_client:
     api_instance = beater_client.ConnectorsApi(api_client)
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
-    invoke_connector_request = beater_client.InvokeConnectorRequest() # InvokeConnectorRequest | 
+    invoke_connector_request = beater_client.InvokeConnectorRequest() # InvokeConnectorRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.invoke_connector_tool(tenant_id, project_id, invoke_connector_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ConnectorsApi->invoke_connector_tool:\n")
+        api_response = api_instance.connectors_invoke_connector_tool(tenant_id, project_id, invoke_connector_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ConnectorsApi->connectors_invoke_connector_tool:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ConnectorsApi->invoke_connector_tool: %s\n" % e)
+        print("Exception when calling ConnectorsApi->connectors_invoke_connector_tool: %s\n" % e)
 ```
 
 
@@ -305,13 +305,13 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **invoke_connector_request** | [**InvokeConnectorRequest**](InvokeConnectorRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **invoke_connector_request** | [**InvokeConnectorRequest**](InvokeConnectorRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -338,8 +338,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_connector_tools**
-> List[ConnectorTool] list_connector_tools(tenant_id, project_id, toolkit, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **connectors_list_connector_tools**
+> List[ConnectorTool] connectors_list_connector_tools(tenant_id, project_id, toolkit, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -373,11 +373,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.list_connector_tools(tenant_id, project_id, toolkit, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ConnectorsApi->list_connector_tools:\n")
+        api_response = api_instance.connectors_list_connector_tools(tenant_id, project_id, toolkit, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ConnectorsApi->connectors_list_connector_tools:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ConnectorsApi->list_connector_tools: %s\n" % e)
+        print("Exception when calling ConnectorsApi->connectors_list_connector_tools: %s\n" % e)
 ```
 
 
@@ -387,14 +387,14 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **toolkit** | **str**| Toolkit slug to list tools for. | 
- **limit** | **int**| Maximum number of tools to return (page size). | [optional] 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **toolkit** | **str**| Toolkit slug to list tools for. |
+ **limit** | **int**| Maximum number of tools to return (page size). | [optional]
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -421,8 +421,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_connectors**
-> List[Toolkit] list_connectors(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **connectors_list_connectors**
+> List[Toolkit] connectors_list_connectors(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -455,11 +455,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.list_connectors(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ConnectorsApi->list_connectors:\n")
+        api_response = api_instance.connectors_list_connectors(tenant_id, project_id, limit=limit, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ConnectorsApi->connectors_list_connectors:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ConnectorsApi->list_connectors: %s\n" % e)
+        print("Exception when calling ConnectorsApi->connectors_list_connectors: %s\n" % e)
 ```
 
 
@@ -469,13 +469,13 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **limit** | **int**| Maximum number of apps to return (page size). | [optional] 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **limit** | **int**| Maximum number of apps to return (page size). | [optional]
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -501,4 +501,3 @@ No authorization required
 **501** | Connector provider not configured |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**abs** | **float** |  | 
-**rel** | **float** |  | 
-**type** | **str** |  | 
+**abs** | **float** |  |
+**rel** | **float** |  |
+**type** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ evaluator_kind_one_of2_dict = evaluator_kind_one_of2_instance.to_dict()
 evaluator_kind_one_of2_from_dict = EvaluatorKindOneOf2.from_dict(evaluator_kind_one_of2_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

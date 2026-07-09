@@ -3,10 +3,8 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**reason** | **sampling_reason_t \*** |  | 
-**selected** | **int** |  | 
-**stable_score_per_mille** | **int** |  | 
+**reason** | **sampling_reason_t \*** |  |
+**selected** | **int** |  |
+**stable_score_per_mille** | **int** |  |
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

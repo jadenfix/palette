@@ -4,16 +4,16 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**getTrace**](TracesApi.md#getTrace) | **GET** /v1/traces/{tenant_id}/{trace_id} |  |
-| [**getTraceWithHttpInfo**](TracesApi.md#getTraceWithHttpInfo) | **GET** /v1/traces/{tenant_id}/{trace_id} |  |
-| [**listTraces**](TracesApi.md#listTraces) | **GET** /v1/traces/{tenant_id} |  |
-| [**listTracesWithHttpInfo**](TracesApi.md#listTracesWithHttpInfo) | **GET** /v1/traces/{tenant_id} |  |
+| [**tracesGetTrace**](TracesApi.md#tracesGetTrace) | **GET** /v1/traces/{tenant_id}/{trace_id} |  |
+| [**tracesGetTraceWithHttpInfo**](TracesApi.md#tracesGetTraceWithHttpInfo) | **GET** /v1/traces/{tenant_id}/{trace_id} |  |
+| [**tracesListTraces**](TracesApi.md#tracesListTraces) | **GET** /v1/traces/{tenant_id} |  |
+| [**tracesListTracesWithHttpInfo**](TracesApi.md#tracesListTracesWithHttpInfo) | **GET** /v1/traces/{tenant_id} |  |
 
 
 
-## getTrace
+## tracesGetTrace
 
-> TraceView getTrace(tenantId, traceId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> TraceView tracesGetTrace(tenantId, traceId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -35,17 +35,17 @@ public class Example {
         TracesApi apiInstance = new TracesApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String traceId = "traceId_example"; // String | trace_id
-        Boolean unmask = true; // Boolean | 
-        String reason = "reason_example"; // String | 
+        Boolean unmask = true; // Boolean |
+        String reason = "reason_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            TraceView result = apiInstance.getTrace(tenantId, traceId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            TraceView result = apiInstance.tracesGetTrace(tenantId, traceId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling TracesApi#getTrace");
+            System.err.println("Exception when calling TracesApi#tracesGetTrace");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -92,9 +92,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## getTraceWithHttpInfo
+## tracesGetTraceWithHttpInfo
 
-> ApiResponse<TraceView> getTrace getTraceWithHttpInfo(tenantId, traceId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<TraceView> tracesGetTrace tracesGetTraceWithHttpInfo(tenantId, traceId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -117,19 +117,19 @@ public class Example {
         TracesApi apiInstance = new TracesApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String traceId = "traceId_example"; // String | trace_id
-        Boolean unmask = true; // Boolean | 
-        String reason = "reason_example"; // String | 
+        Boolean unmask = true; // Boolean |
+        String reason = "reason_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<TraceView> response = apiInstance.getTraceWithHttpInfo(tenantId, traceId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<TraceView> response = apiInstance.tracesGetTraceWithHttpInfo(tenantId, traceId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling TracesApi#getTrace");
+            System.err.println("Exception when calling TracesApi#tracesGetTrace");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -177,9 +177,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## listTraces
+## tracesListTraces
 
-> PageRunSummary listTraces(tenantId, projectId, environmentId, traceId, kind, status, startedAfter, startedBefore, model, release, minCostMicros, maxCostMicros, minLatencyMs, maxLatencyMs, limit, cursor, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> PageRunSummary tracesListTraces(tenantId, projectId, environmentId, traceId, kind, status, startedAfter, startedBefore, model, release, minCostMicros, maxCostMicros, minLatencyMs, maxLatencyMs, limit, cursor, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -200,30 +200,30 @@ public class Example {
 
         TracesApi apiInstance = new TracesApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
-        String projectId = "projectId_example"; // String | 
-        String environmentId = "environmentId_example"; // String | 
-        String traceId = "traceId_example"; // String | 
-        String kind = "kind_example"; // String | 
-        String status = "status_example"; // String | 
-        String startedAfter = "startedAfter_example"; // String | 
-        String startedBefore = "startedBefore_example"; // String | 
-        String model = "model_example"; // String | 
-        String release = "release_example"; // String | 
-        Long minCostMicros = 56L; // Long | 
-        Long maxCostMicros = 56L; // Long | 
-        Long minLatencyMs = 56L; // Long | 
-        Long maxLatencyMs = 56L; // Long | 
-        Integer limit = 56; // Integer | 
-        String cursor = "cursor_example"; // String | 
+        String projectId = "projectId_example"; // String |
+        String environmentId = "environmentId_example"; // String |
+        String traceId = "traceId_example"; // String |
+        String kind = "kind_example"; // String |
+        String status = "status_example"; // String |
+        String startedAfter = "startedAfter_example"; // String |
+        String startedBefore = "startedBefore_example"; // String |
+        String model = "model_example"; // String |
+        String release = "release_example"; // String |
+        Long minCostMicros = 56L; // Long |
+        Long maxCostMicros = 56L; // Long |
+        Long minLatencyMs = 56L; // Long |
+        Long maxLatencyMs = 56L; // Long |
+        Integer limit = 56; // Integer |
+        String cursor = "cursor_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            PageRunSummary result = apiInstance.listTraces(tenantId, projectId, environmentId, traceId, kind, status, startedAfter, startedBefore, model, release, minCostMicros, maxCostMicros, minLatencyMs, maxLatencyMs, limit, cursor, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            PageRunSummary result = apiInstance.tracesListTraces(tenantId, projectId, environmentId, traceId, kind, status, startedAfter, startedBefore, model, release, minCostMicros, maxCostMicros, minLatencyMs, maxLatencyMs, limit, cursor, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling TracesApi#listTraces");
+            System.err.println("Exception when calling TracesApi#tracesListTraces");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -281,9 +281,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## listTracesWithHttpInfo
+## tracesListTracesWithHttpInfo
 
-> ApiResponse<PageRunSummary> listTraces listTracesWithHttpInfo(tenantId, projectId, environmentId, traceId, kind, status, startedAfter, startedBefore, model, release, minCostMicros, maxCostMicros, minLatencyMs, maxLatencyMs, limit, cursor, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<PageRunSummary> tracesListTraces tracesListTracesWithHttpInfo(tenantId, projectId, environmentId, traceId, kind, status, startedAfter, startedBefore, model, release, minCostMicros, maxCostMicros, minLatencyMs, maxLatencyMs, limit, cursor, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -305,32 +305,32 @@ public class Example {
 
         TracesApi apiInstance = new TracesApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
-        String projectId = "projectId_example"; // String | 
-        String environmentId = "environmentId_example"; // String | 
-        String traceId = "traceId_example"; // String | 
-        String kind = "kind_example"; // String | 
-        String status = "status_example"; // String | 
-        String startedAfter = "startedAfter_example"; // String | 
-        String startedBefore = "startedBefore_example"; // String | 
-        String model = "model_example"; // String | 
-        String release = "release_example"; // String | 
-        Long minCostMicros = 56L; // Long | 
-        Long maxCostMicros = 56L; // Long | 
-        Long minLatencyMs = 56L; // Long | 
-        Long maxLatencyMs = 56L; // Long | 
-        Integer limit = 56; // Integer | 
-        String cursor = "cursor_example"; // String | 
+        String projectId = "projectId_example"; // String |
+        String environmentId = "environmentId_example"; // String |
+        String traceId = "traceId_example"; // String |
+        String kind = "kind_example"; // String |
+        String status = "status_example"; // String |
+        String startedAfter = "startedAfter_example"; // String |
+        String startedBefore = "startedBefore_example"; // String |
+        String model = "model_example"; // String |
+        String release = "release_example"; // String |
+        Long minCostMicros = 56L; // Long |
+        Long maxCostMicros = 56L; // Long |
+        Long minLatencyMs = 56L; // Long |
+        Long maxLatencyMs = 56L; // Long |
+        Integer limit = 56; // Integer |
+        String cursor = "cursor_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<PageRunSummary> response = apiInstance.listTracesWithHttpInfo(tenantId, projectId, environmentId, traceId, kind, status, startedAfter, startedBefore, model, release, minCostMicros, maxCostMicros, minLatencyMs, maxLatencyMs, limit, cursor, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<PageRunSummary> response = apiInstance.tracesListTracesWithHttpInfo(tenantId, projectId, environmentId, traceId, kind, status, startedAfter, startedBefore, model, release, minCostMicros, maxCostMicros, minLatencyMs, maxLatencyMs, limit, cursor, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling TracesApi#listTraces");
+            System.err.println("Exception when calling TracesApi#tracesListTraces");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -387,4 +387,3 @@ No authorization required
 | **400** | Invalid request, scope, or filter |  -  |
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
-

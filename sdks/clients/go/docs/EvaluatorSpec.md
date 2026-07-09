@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Id** | **string** |  | 
-**Kind** | [**EvaluatorKind**](EvaluatorKind.md) |  | 
-**Lane** | [**EvaluatorLane**](EvaluatorLane.md) |  | 
+**Id** | **string** |  |
+**Kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |
+**Lane** | [**EvaluatorLane**](EvaluatorLane.md) |  |
 
 ## Methods
 
@@ -89,5 +89,3 @@ SetLane sets Lane field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

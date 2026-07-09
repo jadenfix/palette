@@ -14,6 +14,3 @@
 |**tenantId** | **String** |  |  |
 |**versionId** | **String** |  |  |
 |**versionNumber** | **Integer** |  |  |
-
-
-

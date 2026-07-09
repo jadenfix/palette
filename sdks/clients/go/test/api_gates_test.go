@@ -22,14 +22,14 @@ func Test_beaterclient_GatesAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test GatesAPIService CreateGate", func(t *testing.T) {
+	t.Run("Test GatesAPIService GatesCreateGate", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.GatesAPI.CreateGate(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.GatesAPI.GatesCreateGate(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -37,7 +37,7 @@ func Test_beaterclient_GatesAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test GatesAPIService RunGate", func(t *testing.T) {
+	t.Run("Test GatesAPIService GatesRunGate", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -45,7 +45,7 @@ func Test_beaterclient_GatesAPIService(t *testing.T) {
 		var projectId string
 		var gateId string
 
-		resp, httpRes, err := apiClient.GatesAPI.RunGate(context.Background(), tenantId, projectId, gateId).Execute()
+		resp, httpRes, err := apiClient.GatesAPI.GatesRunGate(context.Background(), tenantId, projectId, gateId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

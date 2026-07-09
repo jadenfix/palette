@@ -6,8 +6,8 @@ Error envelope returned by every fallible endpoint.
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**error** | **str** | Human-readable error message. | 
-**status** | **int** | HTTP status code, duplicated in the body for convenience. | 
+**error** | **str** | Stable machine-readable error code. |
+**message** | **str** | Human-readable error message. |
 
 ## Example
 
@@ -27,5 +27,3 @@ error_response_dict = error_response_instance.to_dict()
 error_response_from_dict = ErrorResponse.from_dict(error_response_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

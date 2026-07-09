@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Data** | Pointer to **map[string]interface{}** | Tool output payload (shape is tool-specific). | [optional] 
-**Error** | Pointer to **NullableString** | Error message when &#x60;successful&#x60; is false. | [optional] 
-**LogId** | Pointer to **NullableString** | Composio execution log id, for tracing. | [optional] 
-**Successful** | **bool** | Whether the tool reported success. | 
+**Data** | Pointer to **map[string]interface{}** | Tool output payload (shape is tool-specific). | [optional]
+**Error** | Pointer to **NullableString** | Error message when &#x60;successful&#x60; is false. | [optional]
+**LogId** | Pointer to **NullableString** | Composio execution log id, for tracing. | [optional]
+**Successful** | **bool** | Whether the tool reported success. |
 
 ## Methods
 
@@ -145,5 +145,3 @@ SetSuccessful sets Successful field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
