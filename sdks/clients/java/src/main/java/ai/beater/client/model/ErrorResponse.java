@@ -49,7 +49,7 @@ public class ErrorResponse {
 
   public static final String JSON_PROPERTY_STATUS = "status";
   @javax.annotation.Nonnull
-  private String status;
+  private Integer status;
 
   public ErrorResponse() { 
   }
@@ -102,26 +102,27 @@ public class ErrorResponse {
   }
 
 
-  public ErrorResponse status(@javax.annotation.Nonnull String status) {
+  public ErrorResponse status(@javax.annotation.Nonnull Integer status) {
     this.status = status;
     return this;
   }
 
   /**
-   * Deprecated compatibility alias for older &#x60;/v1&#x60; clients.
+   * Deprecated compatibility HTTP status code for older &#x60;/v1&#x60; clients.
+   * minimum: 0
    * @return status
    */
   @javax.annotation.Nonnull
   @JsonProperty(JSON_PROPERTY_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public String getStatus() {
+  public Integer getStatus() {
     return status;
   }
 
 
   @JsonProperty(JSON_PROPERTY_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStatus(@javax.annotation.Nonnull String status) {
+  public void setStatus(@javax.annotation.Nonnull Integer status) {
     this.status = status;
   }
 

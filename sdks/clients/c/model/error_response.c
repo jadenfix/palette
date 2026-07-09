@@ -8,7 +8,7 @@
 static error_response_t *error_response_create_internal(
     char *error,
     char *message,
-    char *status
+    int status
     ) {
     error_response_t *error_response_local_var = malloc(sizeof(error_response_t));
     if (!error_response_local_var) {
@@ -25,7 +25,7 @@ static error_response_t *error_response_create_internal(
 __attribute__((deprecated)) error_response_t *error_response_create(
     char *error,
     char *message,
-    char *status
+    int status
     ) {
     return error_response_create_internal (
         error,
@@ -50,10 +50,6 @@ void error_response_free(error_response_t *error_response) {
     if (error_response->message) {
         free(error_response->message);
         error_response->message = NULL;
-    }
-    if (error_response->status) {
-        free(error_response->status);
-        error_response->status = NULL;
     }
     free(error_response);
 }
@@ -83,8 +79,8 @@ cJSON *error_response_convertToJSON(error_response_t *error_response) {
     if (!error_response->status) {
         goto fail;
     }
-    if(cJSON_AddStringToObject(item, "status", error_response->status) == NULL) {
-    goto fail; //String
+    if(cJSON_AddNumberToObject(item, "status", error_response->status) == NULL) {
+    goto fail; //Numeric
     }
 
     return item;
@@ -139,16 +135,16 @@ error_response_t *error_response_parseFromJSON(cJSON *error_responseJSON){
     }
 
 
-    if(!cJSON_IsString(status))
+    if(!cJSON_IsNumber(status))
     {
-    goto end; //String
+    goto end; //Numeric
     }
 
 
     error_response_local_var = error_response_create_internal (
         strdup(error->valuestring),
         strdup(message->valuestring),
-        strdup(status->valuestring)
+        status->valuedouble
         );
 
     return error_response_local_var;

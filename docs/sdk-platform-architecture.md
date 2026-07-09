@@ -30,7 +30,7 @@ and `oasdiff` blocks breaking changes. Drift is a merge-blocker, not a hope.
 - **Uniform error model.** Every non-2xx is one
   `ErrorResponse { error, message, status }` -> one typed error per SDK.
   `error` is the stable snake_case machine code; `status` is retained only as a
-  deprecated `/v1` compatibility reason phrase.
+  deprecated `/v1` compatibility HTTP status code.
 - **Typed everything.** No bare `object`/`any` responses; every response is a
   named schema. Discriminated unions use an internal `type` tag (e.g.
   `EvaluatorKind`) so they generate cleanly in strict languages.

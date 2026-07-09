@@ -4030,8 +4030,8 @@ struct ErrorResponse {
     error: String,
     /// Human-readable error message.
     message: String,
-    /// Deprecated compatibility alias for older `/v1` clients.
-    status: String,
+    /// Deprecated compatibility HTTP status code for older `/v1` clients.
+    status: u16,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -5266,7 +5266,7 @@ impl IntoResponse for ApiError {
         let body = Json(serde_json::json!({
             "error": error,
             "message": message,
-            "status": reason
+            "status": status.as_u16()
         }));
         let mut response = (status, body).into_response();
         for (name, value) in self.headers {
@@ -5991,7 +5991,7 @@ mod tests {
         let error: serde_json::Value =
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(error["error"], serde_json::json!("bad_request"));
-        assert_eq!(error["status"], serde_json::json!("Bad Request"));
+        assert_eq!(error["status"], serde_json::json!(400));
         assert!(
             error["message"]
                 .as_str()
@@ -6029,7 +6029,7 @@ mod tests {
         let error: serde_json::Value =
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
         assert_eq!(error["error"], serde_json::json!("bad_request"));
-        assert_eq!(error["status"], serde_json::json!("Bad Request"));
+        assert_eq!(error["status"], serde_json::json!(400));
         assert!(
             error["message"]
                 .as_str()

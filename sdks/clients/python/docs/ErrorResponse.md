@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **error** | **str** | Stable machine-readable error code. |
 **message** | **str** | Human-readable error message. |
-**status** | **str** | Deprecated compatibility alias for older &#x60;/v1&#x60; clients. |
+**status** | **int** | Deprecated compatibility HTTP status code for older &#x60;/v1&#x60; clients. |
 
 ## Example
 

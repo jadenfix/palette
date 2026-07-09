@@ -32,11 +32,11 @@ export interface ErrorResponse {
      */
     message: string;
     /**
-     * Deprecated compatibility alias for older `/v1` clients.
-     * @type {string}
+     * Deprecated compatibility HTTP status code for older `/v1` clients.
+     * @type {number}
      * @memberof ErrorResponse
      */
-    status: string;
+    status: number;
 }
 
 /**

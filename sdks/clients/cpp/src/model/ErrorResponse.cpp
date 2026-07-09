@@ -24,7 +24,7 @@ ErrorResponse::ErrorResponse()
     m_ErrorIsSet = false;
     m_Message = utility::conversions::to_string_t("");
     m_MessageIsSet = false;
-    m_Status = utility::conversions::to_string_t("");
+    m_Status = 0;
     m_StatusIsSet = false;
 }
 
@@ -89,7 +89,7 @@ bool ErrorResponse::fromJson(const web::json::value& val)
         const web::json::value& fieldValue = val.at(utility::conversions::to_string_t(U("status")));
         if(!fieldValue.is_null())
         {
-            utility::string_t refVal_setStatus;
+            int32_t refVal_setStatus;
             ok &= ModelBase::fromJson(fieldValue, refVal_setStatus);
             setStatus(refVal_setStatus);
 
@@ -142,7 +142,7 @@ bool ErrorResponse::fromMultiPart(std::shared_ptr<MultipartFormData> multipart, 
     }
     if(multipart->hasContent(utility::conversions::to_string_t(U("status"))))
     {
-        utility::string_t refVal_setStatus;
+        int32_t refVal_setStatus;
         ok &= ModelBase::fromHttpContent(multipart->getContent(utility::conversions::to_string_t(U("status"))), refVal_setStatus );
         setStatus(refVal_setStatus);
     }
@@ -192,13 +192,12 @@ void ErrorResponse::unsetMessage()
 {
     m_MessageIsSet = false;
 }
-utility::string_t ErrorResponse::getStatus() const
+int32_t ErrorResponse::getStatus() const
 {
     return m_Status;
 }
 
-
-void ErrorResponse::setStatus(const utility::string_t& value)
+void ErrorResponse::setStatus(int32_t value)
 {
     m_Status = value;
     m_StatusIsSet = true;

@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,7 +29,7 @@ class ErrorResponse(BaseModel):
     """ # noqa: E501
     error: StrictStr = Field(description="Stable machine-readable error code.")
     message: StrictStr = Field(description="Human-readable error message.")
-    status: StrictStr = Field(description="Deprecated compatibility alias for older `/v1` clients.")
+    status: Annotated[int, Field(strict=True, ge=0)] = Field(description="Deprecated compatibility HTTP status code for older `/v1` clients.")
     __properties: ClassVar[List[str]] = ["error", "message", "status"]
 
     model_config = ConfigDict(

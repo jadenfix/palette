@@ -7827,7 +7827,7 @@ components:
       example:
         error: error
         message: message
-        status: status
+        status: 0
       properties:
         error:
           description: Stable machine-readable error code.
@@ -7836,8 +7836,10 @@ components:
           description: Human-readable error message.
           type: string
         status:
-          description: Deprecated compatibility alias for older `/v1` clients.
-          type: string
+          description: Deprecated compatibility HTTP status code for older `/v1` clients.
+          format: int32
+          minimum: 0
+          type: integer
       required:
       - error
       - message

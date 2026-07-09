@@ -2364,7 +2364,7 @@ async fn buffered_ingest_backpressure_returns_429() {
     let error: serde_json::Value =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(error["error"], json!("too_many_requests"));
-    assert_eq!(error["status"], json!("Too Many Requests"));
+    assert_eq!(error["status"], json!(429));
     assert!(
         error["message"]
             .as_str()
@@ -2460,7 +2460,7 @@ async fn api_quota_429_includes_reset_headers() {
     let error: serde_json::Value =
         serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
     assert_eq!(error["error"], json!("too_many_requests"));
-    assert_eq!(error["status"], json!("Too Many Requests"));
+    assert_eq!(error["status"], json!(429));
     assert!(
         error["message"]
             .as_str()
@@ -2527,7 +2527,7 @@ async fn api_quota_is_shared_across_replicas_and_resets_on_window() {
         Some(reset_at_header.as_str())
     );
     assert_eq!(error["error"], json!("too_many_requests"));
-    assert_eq!(error["status"], json!("Too Many Requests"));
+    assert_eq!(error["status"], json!(429));
     assert!(
         error["message"]
             .as_str()

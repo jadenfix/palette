@@ -10070,8 +10070,10 @@
             "description": "Human-readable error message."
           },
           "status": {
-            "type": "string",
-            "description": "Deprecated compatibility alias for older `/v1` clients."
+            "type": "integer",
+            "format": "int32",
+            "description": "Deprecated compatibility HTTP status code for older `/v1` clients.",
+            "minimum": 0
           }
         }
       },

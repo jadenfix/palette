@@ -25,8 +25,8 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 	// Human-readable error message.
 	Message string `json:"message"`
-	// Deprecated compatibility alias for older `/v1` clients.
-	Status string `json:"status"`
+	// Deprecated compatibility HTTP status code for older `/v1` clients.
+	Status int32 `json:"status"`
 }
 
 type _ErrorResponse ErrorResponse
@@ -35,7 +35,7 @@ type _ErrorResponse ErrorResponse
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewErrorResponse(error_ string, message string, status string) *ErrorResponse {
+func NewErrorResponse(error_ string, message string, status int32) *ErrorResponse {
 	this := ErrorResponse{}
 	this.Error = error_
 	this.Message = message
@@ -100,9 +100,9 @@ func (o *ErrorResponse) SetMessage(v string) {
 }
 
 // GetStatus returns the Status field value
-func (o *ErrorResponse) GetStatus() string {
+func (o *ErrorResponse) GetStatus() int32 {
 	if o == nil {
-		var ret string
+		var ret int32
 		return ret
 	}
 
@@ -111,7 +111,7 @@ func (o *ErrorResponse) GetStatus() string {
 
 // GetStatusOk returns a tuple with the Status field value
 // and a boolean to check if the value has been set.
-func (o *ErrorResponse) GetStatusOk() (*string, bool) {
+func (o *ErrorResponse) GetStatusOk() (*int32, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -119,7 +119,7 @@ func (o *ErrorResponse) GetStatusOk() (*string, bool) {
 }
 
 // SetStatus sets field value
-func (o *ErrorResponse) SetStatus(v string) {
+func (o *ErrorResponse) SetStatus(v int32) {
 	o.Status = v
 }
 

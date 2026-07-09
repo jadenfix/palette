@@ -759,7 +759,7 @@ test("dashboard API errors stay concise and user-facing", () => {
     formatApiError(
       404,
       "Not Found",
-      '{"error":"not_found","message":"trace abc not found","status":"Not Found"}'
+      '{"error":"not_found","message":"trace abc not found","status":404}'
     ),
     "API 404 Not Found: trace abc not found"
   );
