@@ -4,8 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Prompt** | [**Prompt**](Prompt.md) |  | 
-**Version** | [**PromptVersion**](PromptVersion.md) |  | 
+**Prompt** | [**Prompt**](Prompt.md) |  |
+**Version** | [**PromptVersion**](PromptVersion.md) |  |
 
 ## Methods
 
@@ -68,5 +68,3 @@ SetVersion sets Version field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

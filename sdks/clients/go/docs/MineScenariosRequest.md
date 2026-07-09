@@ -4,8 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**JaccardThreshold** | Pointer to **NullableFloat64** |  | [optional] 
-**TraceIds** | **[]string** |  | 
+**JaccardThreshold** | Pointer to **NullableFloat64** |  | [optional]
+**TraceIds** | **[]string** |  |
 
 ## Methods
 
@@ -83,5 +83,3 @@ SetTraceIds sets TraceIds field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

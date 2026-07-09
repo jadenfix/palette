@@ -14,6 +14,3 @@
 |**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |  |
 |**promptVersionId** | **String** |  |  [optional] |
 |**wasmHash** | **String** |  |  [optional] |
-
-
-

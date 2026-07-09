@@ -21,13 +21,14 @@ Current neighbor context checked on 2026-07-06:
 Beater stays standalone:
 
 - The default OSS build and Docker path do not require Beater Cloud.
-- Billing and Stripe stay behind the non-default Cargo `billing` feature.
+- Billing and Stripe stay out of the Beater product API; the central Tempera
+  control plane owns checkout, plans, subscriptions, invoices, and webhooks.
 - No local runtime may require a license key, mandatory phone-home, or mandatory
   hosted account to ingest, inspect, replay, evaluate, or gate traces.
 
-Hosted Beater may add plans, subscriptions, invoices, and Stripe sync, but that
-surface is an overlay on top of the usage ledger. It does not become the source
-of authority for local agent execution.
+Hosted Tempera may bill Beater usage through the central control plane, but that
+surface is outside Beater's product API. It does not become the source of
+authority for local agent execution.
 
 ## Inbound Trace Surfaces
 
@@ -52,14 +53,14 @@ optional and map back to canonical spans.
 
 | Repo | Current Beater-side contract | Must not require |
 | --- | --- | --- |
-| Tempo | Send browser/session spans through collector-style OTLP/JSON or Beater's scoped protobuf endpoint; Beater normalizes them into canonical trace views. | Billing feature, Stripe config, hosted account |
+| Tempo | Send browser/session spans through collector-style OTLP/JSON or Beater's scoped protobuf endpoint; Beater normalizes them into canonical trace views. | Stripe config, hosted account |
 | beater.js | Export agent runs and tool calls through `BEATER_OTLP_EXPORT_URL`, `BEATER_TRACE_EXPORT_URL`, collector-style OTLP/JSON, Beater's scoped OTLP/protobuf, or native canonical ingest; Beater displays them as `agent.run`, `llm.call`, and `tool.call` spans. | Billing feature, hosted dashboard, live model credentials |
 | beaterOS | Export receipts, journals, and audit spans as traces or artifacts; Beater observes and gates outcomes. | Hosted billing as local payment authority |
 | Aether | Anchor agent settlement evidence by carrying run, step, receipt, and `PaymentEnvelope` identifiers as trace attributes; Beater can evaluate and retain off-chain evidence for disputes. | Beater billing as an AIC/SWR wallet, escrow, paymaster, or settlement authority |
 
 beaterOS owns local authority: grants, spend limits, payment mandates, receipts,
-and journal verification. Beater billing may meter hosted Beater usage, but it
-must not authorize or block local beaterOS actions.
+and journal verification. Central Tempera billing may meter hosted Beater usage,
+but it must not authorize or block local beaterOS actions.
 
 Aether owns settlement authority for AIC/SWR escrow, agent authorization, and
 payment-envelope verification. Beater may retain OTLP/native trace evidence such
@@ -68,21 +69,23 @@ as `beateros.payment_mandate_id`, `beateros.receipt_requirement`,
 those fields are observed metadata. They must not cause the OSS Beater runtime
 to release funds, enforce payment mandates, or require Aether.
 
-## Billing Overlay
+## Billing Boundary
 
-Billing integration is hosted-only:
+Billing integration is control-plane-owned:
 
-- `crates/beater-billing` owns plans, subscriptions, invoices, and Stripe sync.
-- `beater-api` exposes billing routes only under `--features billing`.
-- `beaterd` opens `billing.sqlite` and wires Stripe only under that feature.
+- `crates/beater-billing` may retain internal billing primitives for future
+  hosted workers and migrations.
+- `beater-api` exposes no billing, subscription, invoice, plan, or Stripe
+  webhook routes.
+- `beaterd` opens no billing store and wires no Stripe webhook route.
 - The usage ledger remains append-only; refunds are compensating entries that
   net down invoice quantities.
 - Payment mandates, `PaymentEnvelope` signatures, AIC/SWR escrow, x402-style
   commerce flows, and beaterOS payment receipts remain external authority inputs
   that Beater may observe in traces but never treats as hosted billing state.
 
-This preserves self-hosted operation while giving hosted deployments a coherent
-path to metered billing.
+This preserves self-hosted operation while giving hosted deployments one
+central path to metered billing.
 
 ## Verification
 
@@ -93,5 +96,5 @@ coverage lives in:
 - `cargo test -p beater-api --test openapi_coverage`
 - `cargo test -p beater-api api_accepts_collector_otlp_json_and_reads_canonical_trace`
 - `cargo test -p beater-otlp --lib`
-- `cargo test -p beater-api --features billing --test billing_api`
+- `cargo test -p beater-api --test route_inventory`
 - `cargo test -p beater-billing`

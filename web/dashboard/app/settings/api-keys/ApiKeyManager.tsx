@@ -16,15 +16,15 @@ import { CopyButton, CopyField } from "../../../components/CopyButton";
 type Scope = { id: string; name: string; desc: string };
 
 const SCOPES: Scope[] = [
-  { id: "trace_read", name: "trace:read", desc: "Read traces, spans, and span I/O." },
-  { id: "trace_write", name: "trace:write", desc: "Ingest traces via OTLP and the native API." },
-  { id: "dataset_write", name: "dataset:write", desc: "Create and version datasets." },
-  { id: "eval_run", name: "eval:run", desc: "Run evals and judges over candidates." },
-  { id: "pii_unmask", name: "pii:unmask", desc: "Reveal redacted I/O — every use is audited." },
+  { id: "trace:read", name: "trace:read", desc: "Read traces, spans, and span I/O." },
+  { id: "trace:write", name: "trace:write", desc: "Ingest traces via OTLP and the native API." },
+  { id: "dataset:write", name: "dataset:write", desc: "Create and version datasets." },
+  { id: "eval:run", name: "eval:run", desc: "Run evals and judges over candidates." },
+  { id: "pii:unmask", name: "pii:unmask", desc: "Reveal redacted I/O — every use is audited." },
   { id: "admin", name: "admin", desc: "Full access, including minting new keys." },
 ];
 
-const DEFAULT_SCOPES = ["trace_read"];
+const DEFAULT_SCOPES = ["trace:read"];
 
 type CreatedKey = {
   api_key_id: string;

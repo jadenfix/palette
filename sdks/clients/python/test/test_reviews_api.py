@@ -26,32 +26,32 @@ class TestReviewsApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_create_review_queue(self) -> None:
-        """Test case for create_review_queue
+    def test_reviews_create_review_queue(self) -> None:
+        """Test case for reviews_create_review_queue
 
         """
         pass
 
-    def test_enqueue_review_task_from_trace(self) -> None:
-        """Test case for enqueue_review_task_from_trace
+    def test_reviews_enqueue_review_task_from_trace(self) -> None:
+        """Test case for reviews_enqueue_review_task_from_trace
 
         """
         pass
 
-    def test_list_review_tasks(self) -> None:
-        """Test case for list_review_tasks
+    def test_reviews_list_review_tasks(self) -> None:
+        """Test case for reviews_list_review_tasks
 
         """
         pass
 
-    def test_promote_review_annotation(self) -> None:
-        """Test case for promote_review_annotation
+    def test_reviews_promote_review_annotation(self) -> None:
+        """Test case for reviews_promote_review_annotation
 
         """
         pass
 
-    def test_submit_review_annotation(self) -> None:
-        """Test case for submit_review_annotation
+    def test_reviews_submit_review_annotation(self) -> None:
+        """Test case for reviews_submit_review_annotation
 
         """
         pass

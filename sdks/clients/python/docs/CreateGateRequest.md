@@ -5,11 +5,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**dataset_id** | **str** |  | [optional] 
-**evaluator_version_id** | **str** |  | [optional] 
-**gate_id** | **str** |  | 
-**inconclusive_policy** | [**InconclusivePolicy**](InconclusivePolicy.md) |  | [optional] 
-**name** | **str** |  | 
+**dataset_id** | **str** |  | [optional]
+**evaluator_version_id** | **str** |  | [optional]
+**gate_id** | **str** |  |
+**inconclusive_policy** | [**InconclusivePolicy**](InconclusivePolicy.md) |  | [optional]
+**name** | **str** |  |
 
 ## Example
 
@@ -29,5 +29,3 @@ create_gate_request_dict = create_gate_request_instance.to_dict()
 create_gate_request_from_dict = CreateGateRequest.from_dict(create_gate_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

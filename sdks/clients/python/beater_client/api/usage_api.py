@@ -40,7 +40,7 @@ class UsageApi:
 
 
     @validate_call
-    def get_usage_summary(
+    def usage_get_usage_summary(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -61,7 +61,7 @@ class UsageApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> UsageSummary:
-        """get_usage_summary
+        """usage_get_usage_summary
 
 
         :param tenant_id: tenant_id (required)
@@ -98,7 +98,7 @@ class UsageApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_usage_summary_serialize(
+        _param = self._usage_get_usage_summary_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -129,7 +129,7 @@ class UsageApi:
 
 
     @validate_call
-    def get_usage_summary_with_http_info(
+    def usage_get_usage_summary_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -150,7 +150,7 @@ class UsageApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[UsageSummary]:
-        """get_usage_summary
+        """usage_get_usage_summary
 
 
         :param tenant_id: tenant_id (required)
@@ -187,7 +187,7 @@ class UsageApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_usage_summary_serialize(
+        _param = self._usage_get_usage_summary_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -218,7 +218,7 @@ class UsageApi:
 
 
     @validate_call
-    def get_usage_summary_without_preload_content(
+    def usage_get_usage_summary_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -239,7 +239,7 @@ class UsageApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """get_usage_summary
+        """usage_get_usage_summary
 
 
         :param tenant_id: tenant_id (required)
@@ -276,7 +276,7 @@ class UsageApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_usage_summary_serialize(
+        _param = self._usage_get_usage_summary_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -302,7 +302,7 @@ class UsageApi:
         return response_data.response
 
 
-    def _get_usage_summary_serialize(
+    def _usage_get_usage_summary_serialize(
         self,
         tenant_id,
         project_id,

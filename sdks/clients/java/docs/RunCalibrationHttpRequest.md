@@ -10,6 +10,3 @@
 |**evalReportId** | **String** |  |  [optional] |
 |**evaluatorVersionId** | **String** |  |  [optional] |
 |**passThreshold** | **Double** |  |  [optional] |
-
-
-

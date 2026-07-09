@@ -14,6 +14,3 @@
 |**invalidMessages** | **Integer** |  |  |
 |**retried** | **Integer** |  |  |
 |**traceRefs** | [**List&lt;QueuedTraceWork&gt;**](QueuedTraceWork.md) |  |  |
-
-
-

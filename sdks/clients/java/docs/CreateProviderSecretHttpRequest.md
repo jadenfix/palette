@@ -10,6 +10,3 @@
 |**displayName** | **String** |  |  |
 |**provider** | **String** |  |  |
 |**secretValue** | **String** |  |  |
-
-
-

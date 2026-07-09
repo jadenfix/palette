@@ -3,16 +3,19 @@ mod metrics_http;
 
 use anyhow::Context;
 use beater_accounts::SqliteAccountStore;
-use beater_api::{ApiState, router};
+use beater_api::{
+    ApiState, HttpCentralTokenIntrospector, HttpControlPlaneUsageReporter,
+    HttpJwksCentralTokenVerifier, router,
+};
 use beater_archive::ParquetTraceArchive;
 use beater_audit::SqliteAuditStore;
 use beater_auth::SqliteApiKeyStore;
-#[cfg(feature = "billing")]
-use beater_billing::SqliteBillingStore;
 use beater_bus::{DeadLetter, DurableBus, InMemoryBus, SqliteDurableBus};
 use beater_calibration::SqliteCalibrationStore;
 use beater_composio::{ConnectorToolPolicy, HttpComposioClient};
-use beater_core::{IdempotencyKey, Money, Page, PageRequest, ProjectId, TenantId, TraceId};
+use beater_core::{
+    EnvironmentId, IdempotencyKey, Money, Page, PageRequest, ProjectId, TenantId, TraceId,
+};
 use beater_datasets::SqliteDatasetStore;
 use beater_experiments::SqliteExperimentStore;
 use beater_gates::SqliteGateStore;
@@ -81,6 +84,24 @@ struct Args {
     /// with ?return_to=<authorize-url>.
     #[arg(long, env = "BEATER_LOGIN_URL")]
     login_url: Option<String>,
+    /// Central control-plane OAuth introspection endpoint for hosted Palette.
+    #[arg(long, env = "TEMPERA_TOKEN_INTROSPECTION_URL")]
+    token_introspection_url: Option<String>,
+    /// Optional bearer secret for the central token introspection endpoint.
+    #[arg(long, env = "TEMPERA_TOKEN_INTROSPECTION_SECRET")]
+    token_introspection_secret: Option<String>,
+    /// Central control-plane JWKS URL for validating hosted RS256 access tokens.
+    #[arg(long, env = "TEMPERA_AUTH_JWKS_URL")]
+    auth_jwks_url: Option<String>,
+    /// Expected central control-plane issuer for hosted RS256 access tokens.
+    #[arg(long, env = "TEMPERA_AUTH_ISSUER_URL")]
+    auth_issuer_url: Option<String>,
+    /// Central control-plane usage-event endpoint for hosted billing meters.
+    #[arg(long, env = "TEMPERA_USAGE_EVENTS_URL")]
+    usage_events_url: Option<String>,
+    /// Bearer token used when reporting hosted billing usage events.
+    #[arg(long, env = "TEMPERA_USAGE_REPORT_TOKEN")]
+    usage_report_token: Option<String>,
     #[arg(long, default_value = ".beater")]
     data_dir: PathBuf,
     /// Maximum bytes accepted for one filesystem artifact write.
@@ -127,17 +148,6 @@ struct Args {
     judge_provider: JudgeProviderArg,
     #[arg(long, env = "BEATER_JUDGE_BUDGET_MICROS", default_value_t = 1_000_000)]
     judge_budget_micros: i64,
-    /// Stripe webhook signing secret (HMAC). When set, the
-    /// `/v1/billing/webhooks/stripe` route verifies inbound deliveries against
-    /// it. Hosted-only: available only in builds compiled with the `billing`
-    /// feature.
-    #[cfg(feature = "billing")]
-    #[arg(
-        long,
-        env = "BEATER_STRIPE_WEBHOOK_SECRET",
-        default_value = "whsec_local_dev"
-    )]
-    stripe_webhook_secret: String,
     #[arg(
         long,
         env = "BEATER_TRACE_WRITE_DRAIN_INTERVAL_MS",
@@ -294,8 +304,6 @@ async fn main() -> anyhow::Result<()> {
     let review_db_path = args.data_dir.join("reviews.sqlite");
     let calibration_db_path = args.data_dir.join("calibrations.sqlite");
     let usage_db_path = args.data_dir.join("usage.sqlite");
-    #[cfg(feature = "billing")]
-    let billing_db_path = args.data_dir.join("billing.sqlite");
     let audit_db_path = args.data_dir.join("audit.sqlite");
     let provider_secret_db_path = args.data_dir.join("provider-secrets.sqlite");
     let judge_db_path = args.data_dir.join("judge.sqlite");
@@ -318,8 +326,6 @@ async fn main() -> anyhow::Result<()> {
         judge_db_path.clone(),
         prompt_db_path.clone(),
     ];
-    #[cfg(feature = "billing")]
-    sqlite_store_paths.push(billing_db_path.clone());
     if matches!(args.bus_backend, BusBackendArg::Sqlite) {
         sqlite_store_paths.push(bus_db_path.clone());
     }
@@ -358,8 +364,6 @@ async fn main() -> anyhow::Result<()> {
     let human_reviews = Arc::new(SqliteHumanReviewStore::open(review_db_path)?);
     let calibrations = Arc::new(SqliteCalibrationStore::open(calibration_db_path)?);
     let usage = Arc::new(SqliteUsageLedger::open(usage_db_path)?);
-    #[cfg(feature = "billing")]
-    let billing = Arc::new(SqliteBillingStore::open(billing_db_path)?);
     let audit = Arc::new(SqliteAuditStore::open(audit_db_path)?);
     let provider_secret_keyring = match args.provider_secret_key.as_deref() {
         Some(encoded) => SecretKeyring::from_base64("env-v1", encoded)?,
@@ -497,13 +501,6 @@ async fn main() -> anyhow::Result<()> {
                     .with_allowed_tools(args.connector_allow_tools.clone())
                     .with_denied_tools(args.connector_deny_tools.clone()),
             );
-    // Billing/Stripe is hosted-only and compiled in only under the `billing`
-    // feature; the OSS daemon neither opens a billing store nor wires the
-    // Stripe webhook route.
-    #[cfg(feature = "billing")]
-    {
-        state = state.with_billing(billing, args.stripe_webhook_secret.clone().into_bytes());
-    }
     // Composio-backed connectors are opt-in: only when `COMPOSIO_API_KEY` is set
     // does the `/v1/connectors` surface come online. Unset → the endpoints report
     // 501 and beaterd runs with zero third-party cloud dependency (OSS default).
@@ -556,6 +553,30 @@ async fn main() -> anyhow::Result<()> {
         Some(oauth_metadata_url),
         issuer.clone(),
     );
+    if let Some(url) = args.token_introspection_url.clone() {
+        state = state.with_central_token_introspector(Arc::new(HttpCentralTokenIntrospector::new(
+            url,
+            args.token_introspection_secret.clone(),
+        )));
+    } else if let (Some(jwks_url), Some(auth_issuer)) =
+        (args.auth_jwks_url.clone(), args.auth_issuer_url.clone())
+    {
+        state = state.with_central_token_introspector(Arc::new(HttpJwksCentralTokenVerifier::new(
+            jwks_url,
+            auth_issuer,
+        )));
+    }
+    if let (Some(url), Some(token)) = (
+        args.usage_events_url.clone(),
+        args.usage_report_token.clone(),
+    ) {
+        state =
+            state.with_control_plane_usage_reporter(Arc::new(HttpControlPlaneUsageReporter::new(
+                url,
+                token,
+                EnvironmentId::new(args.default_environment_id.clone())?,
+            )));
+    }
     let oauth_state = OAuthServerState {
         oauth: oauth_store,
         accounts: account_store,

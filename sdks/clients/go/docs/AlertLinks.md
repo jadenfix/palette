@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ClusterUrl** | Pointer to **NullableString** |  | [optional] 
-**DatasetUrl** | Pointer to **NullableString** |  | [optional] 
-**GateUrl** | Pointer to **NullableString** |  | [optional] 
-**TraceUrl** | **string** |  | 
+**ClusterUrl** | Pointer to **NullableString** |  | [optional]
+**DatasetUrl** | Pointer to **NullableString** |  | [optional]
+**GateUrl** | Pointer to **NullableString** |  | [optional]
+**TraceUrl** | **string** |  |
 
 ## Methods
 
@@ -155,5 +155,3 @@ SetTraceUrl sets TraceUrl field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

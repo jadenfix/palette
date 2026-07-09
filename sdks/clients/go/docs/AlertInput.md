@@ -4,15 +4,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**BaselineScore** | Pointer to **NullableFloat64** |  | [optional] 
-**GroupKey** | **string** |  | 
-**Links** | [**AlertLinks**](AlertLinks.md) |  | 
-**Now** | **time.Time** |  | 
-**ProjectId** | **string** |  | 
-**Score** | **float64** |  | 
-**TenantId** | **string** |  | 
-**Title** | **string** |  | 
-**TraceId** | **string** |  | 
+**BaselineScore** | Pointer to **NullableFloat64** |  | [optional]
+**GroupKey** | **string** |  |
+**Links** | [**AlertLinks**](AlertLinks.md) |  |
+**Now** | **time.Time** |  |
+**ProjectId** | **string** |  |
+**Score** | **float64** |  |
+**TenantId** | **string** |  |
+**Title** | **string** |  |
+**TraceId** | **string** |  |
 
 ## Methods
 
@@ -230,5 +230,3 @@ SetTraceId sets TraceId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

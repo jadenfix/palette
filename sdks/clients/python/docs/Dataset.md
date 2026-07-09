@@ -5,11 +5,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**created_at** | **datetime** |  | 
-**dataset_id** | **str** |  | 
-**name** | **str** |  | 
-**project_id** | **str** |  | 
-**tenant_id** | **str** |  | 
+**created_at** | **datetime** |  |
+**dataset_id** | **str** |  |
+**name** | **str** |  |
+**project_id** | **str** |  |
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -29,5 +29,3 @@ dataset_dict = dataset_instance.to_dict()
 dataset_from_dict = Dataset.from_dict(dataset_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

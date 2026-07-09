@@ -23,6 +23,3 @@
 |**traceSchemaVersion** | **Integer** |  |  |
 |**wasiAbiVersion** | **String** |  |  [optional] |
 |**wasmHash** | **String** |  |  [optional] |
-
-
-

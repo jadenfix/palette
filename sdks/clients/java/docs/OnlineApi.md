@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**decideOnlineSampling**](OnlineApi.md#decideOnlineSampling) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling |  |
-| [**decideOnlineSamplingWithHttpInfo**](OnlineApi.md#decideOnlineSamplingWithHttpInfo) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling |  |
+| [**onlineDecideOnlineSampling**](OnlineApi.md#onlineDecideOnlineSampling) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling |  |
+| [**onlineDecideOnlineSamplingWithHttpInfo**](OnlineApi.md#onlineDecideOnlineSamplingWithHttpInfo) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling |  |
 
 
 
-## decideOnlineSampling
+## onlineDecideOnlineSampling
 
-> SamplingDecision decideOnlineSampling(tenantId, projectId, traceId, onlineSamplingPolicy, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> SamplingDecision onlineDecideOnlineSampling(tenantId, projectId, traceId, onlineSamplingPolicy, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -34,16 +34,16 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String traceId = "traceId_example"; // String | trace_id
-        OnlineSamplingPolicy onlineSamplingPolicy = new OnlineSamplingPolicy(); // OnlineSamplingPolicy | 
+        OnlineSamplingPolicy onlineSamplingPolicy = new OnlineSamplingPolicy(); // OnlineSamplingPolicy |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            SamplingDecision result = apiInstance.decideOnlineSampling(tenantId, projectId, traceId, onlineSamplingPolicy, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            SamplingDecision result = apiInstance.onlineDecideOnlineSampling(tenantId, projectId, traceId, onlineSamplingPolicy, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling OnlineApi#decideOnlineSampling");
+            System.err.println("Exception when calling OnlineApi#onlineDecideOnlineSampling");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -89,9 +89,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## decideOnlineSamplingWithHttpInfo
+## onlineDecideOnlineSamplingWithHttpInfo
 
-> ApiResponse<SamplingDecision> decideOnlineSampling decideOnlineSamplingWithHttpInfo(tenantId, projectId, traceId, onlineSamplingPolicy, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<SamplingDecision> onlineDecideOnlineSampling onlineDecideOnlineSamplingWithHttpInfo(tenantId, projectId, traceId, onlineSamplingPolicy, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -115,18 +115,18 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String traceId = "traceId_example"; // String | trace_id
-        OnlineSamplingPolicy onlineSamplingPolicy = new OnlineSamplingPolicy(); // OnlineSamplingPolicy | 
+        OnlineSamplingPolicy onlineSamplingPolicy = new OnlineSamplingPolicy(); // OnlineSamplingPolicy |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<SamplingDecision> response = apiInstance.decideOnlineSamplingWithHttpInfo(tenantId, projectId, traceId, onlineSamplingPolicy, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<SamplingDecision> response = apiInstance.onlineDecideOnlineSamplingWithHttpInfo(tenantId, projectId, traceId, onlineSamplingPolicy, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling OnlineApi#decideOnlineSampling");
+            System.err.println("Exception when calling OnlineApi#onlineDecideOnlineSampling");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -171,4 +171,3 @@ No authorization required
 | **400** | Invalid request, scope, or filter |  -  |
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
-

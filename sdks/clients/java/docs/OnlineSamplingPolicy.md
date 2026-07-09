@@ -11,6 +11,3 @@
 |**keepErrors** | **Boolean** |  |  |
 |**sampleRatePerMille** | **Integer** |  |  |
 |**slowMsThreshold** | **Long** |  |  [optional] |
-
-
-

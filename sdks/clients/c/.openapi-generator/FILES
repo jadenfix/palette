@@ -13,6 +13,8 @@ api/AuditAPI.c
 api/AuditAPI.h
 api/CalibrationsAPI.c
 api/CalibrationsAPI.h
+api/ConnectAPI.c
+api/ConnectAPI.h
 api/ConnectorsAPI.c
 api/ConnectorsAPI.h
 api/DatasetsAPI.c
@@ -52,6 +54,7 @@ docs/ApiKeysAPI.md
 docs/ArchiveAPI.md
 docs/AuditAPI.md
 docs/CalibrationsAPI.md
+docs/ConnectAPI.md
 docs/ConnectorsAPI.md
 docs/DatasetsAPI.md
 docs/EvalsAPI.md
@@ -163,6 +166,8 @@ docs/online_sampling_policy.md
 docs/otlp_ingest_outcome.md
 docs/page_run_summary.md
 docs/page_run_summary_items_inner.md
+docs/palette_connect_status.md
+docs/palette_connect_status_response.md
 docs/perturbation_knobs.md
 docs/promote_review_annotation_http_request.md
 docs/promote_trace_case_request.md
@@ -422,6 +427,10 @@ model/page_run_summary.c
 model/page_run_summary.h
 model/page_run_summary_items_inner.c
 model/page_run_summary_items_inner.h
+model/palette_connect_status.c
+model/palette_connect_status.h
+model/palette_connect_status_response.c
+model/palette_connect_status_response.h
 model/perturbation_knobs.c
 model/perturbation_knobs.h
 model/promote_review_annotation_http_request.c
@@ -641,6 +650,8 @@ unit-test/test_online_sampling_policy.c
 unit-test/test_otlp_ingest_outcome.c
 unit-test/test_page_run_summary.c
 unit-test/test_page_run_summary_items_inner.c
+unit-test/test_palette_connect_status.c
+unit-test/test_palette_connect_status_response.c
 unit-test/test_perturbation_knobs.c
 unit-test/test_promote_review_annotation_http_request.c
 unit-test/test_promote_trace_case_request.c

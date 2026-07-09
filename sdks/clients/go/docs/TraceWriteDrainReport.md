@@ -4,19 +4,19 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Consumed** | **int32** |  | 
-**DeadLettered** | **int32** |  | 
-**DownstreamPublished** | **int32** |  | 
-**DuplicateRaw** | **int32** |  | 
-**DuplicateSpans** | **int32** |  | 
-**FailedDownstreamPublishes** | **int32** |  | 
-**FailedWrites** | **int32** |  | 
-**InvalidMessages** | **int32** |  | 
-**Retried** | **int32** |  | 
-**TraceIds** | **[]string** |  | 
-**TraceRefs** | [**[]QueuedTraceWork**](QueuedTraceWork.md) |  | 
-**WrittenRaw** | **int32** |  | 
-**WrittenSpans** | **int32** |  | 
+**Consumed** | **int32** |  |
+**DeadLettered** | **int32** |  |
+**DownstreamPublished** | **int32** |  |
+**DuplicateRaw** | **int32** |  |
+**DuplicateSpans** | **int32** |  |
+**FailedDownstreamPublishes** | **int32** |  |
+**FailedWrites** | **int32** |  |
+**InvalidMessages** | **int32** |  |
+**Retried** | **int32** |  |
+**TraceIds** | **[]string** |  |
+**TraceRefs** | [**[]QueuedTraceWork**](QueuedTraceWork.md) |  |
+**WrittenRaw** | **int32** |  |
+**WrittenSpans** | **int32** |  |
 
 ## Methods
 
@@ -299,5 +299,3 @@ SetWrittenSpans sets WrittenSpans field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

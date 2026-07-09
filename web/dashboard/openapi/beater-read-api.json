@@ -15,7 +15,7 @@
         "tags": [
           "health"
         ],
-        "operationId": "health",
+        "operationId": "health.health",
         "responses": {
           "200": {
             "description": "Runtime is accepting requests",
@@ -35,7 +35,7 @@
         "tags": [
           "alerts"
         ],
-        "operationId": "evaluateAlert",
+        "operationId": "alerts.evaluate-alert",
         "parameters": [
           {
             "name": "tenant_id",
@@ -172,7 +172,7 @@
         "tags": [
           "apiKeys"
         ],
-        "operationId": "createApiKey",
+        "operationId": "apiKeys.create-api-key",
         "parameters": [
           {
             "name": "tenant_id",
@@ -309,7 +309,7 @@
         "tags": [
           "apiKeys"
         ],
-        "operationId": "revokeApiKey",
+        "operationId": "apiKeys.revoke-api-key",
         "parameters": [
           {
             "name": "tenant_id",
@@ -455,7 +455,7 @@
         "tags": [
           "archive"
         ],
-        "operationId": "queryArchiveSpans",
+        "operationId": "archive.query-archive-spans",
         "parameters": [
           {
             "name": "tenant_id",
@@ -622,7 +622,7 @@
         "tags": [
           "archive"
         ],
-        "operationId": "archiveTrace",
+        "operationId": "archive.archive-trace",
         "parameters": [
           {
             "name": "tenant_id",
@@ -759,7 +759,7 @@
         "tags": [
           "audit"
         ],
-        "operationId": "listAuditEvents",
+        "operationId": "audit.list-audit-events",
         "parameters": [
           {
             "name": "tenant_id",
@@ -880,7 +880,7 @@
         "tags": [
           "calibrations"
         ],
-        "operationId": "runCalibration",
+        "operationId": "calibrations.run-calibration",
         "parameters": [
           {
             "name": "tenant_id",
@@ -1031,12 +1031,130 @@
         }
       }
     },
+    "/v1/connect/status/{tenant_id}/{project_id}": {
+      "get": {
+        "tags": [
+          "connect"
+        ],
+        "operationId": "connect.get-palette-connect-status",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "description": "tenant_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "description": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer API token for strict auth",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-api-key",
+            "in": "header",
+            "description": "API key alternative for strict auth",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-project-id",
+            "in": "header",
+            "description": "Strict-auth project scope",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "x-beater-environment-id",
+            "in": "header",
+            "description": "Strict-auth environment scope",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Palette product connection status for account-console setup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaletteConnectStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, scope, or filter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Credentials lack the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/connectors/{tenant_id}/{project_id}": {
       "get": {
         "tags": [
           "connectors"
         ],
-        "operationId": "listConnectors",
+        "operationId": "connectors.list-connectors",
         "parameters": [
           {
             "name": "tenant_id",
@@ -1178,7 +1296,7 @@
         "tags": [
           "connectors"
         ],
-        "operationId": "connectConnector",
+        "operationId": "connectors.connect-connector",
         "parameters": [
           {
             "name": "tenant_id",
@@ -1316,7 +1434,7 @@
         "tags": [
           "connectors"
         ],
-        "operationId": "invokeConnectorTool",
+        "operationId": "connectors.invoke-connector-tool",
         "parameters": [
           {
             "name": "tenant_id",
@@ -1454,7 +1572,7 @@
         "tags": [
           "connectors"
         ],
-        "operationId": "getConnectorSkills",
+        "operationId": "connectors.get-connector-skills",
         "parameters": [
           {
             "name": "tenant_id",
@@ -1591,7 +1709,7 @@
         "tags": [
           "connectors"
         ],
-        "operationId": "connectorStatus",
+        "operationId": "connectors.connector-status",
         "parameters": [
           {
             "name": "tenant_id",
@@ -1728,7 +1846,7 @@
         "tags": [
           "connectors"
         ],
-        "operationId": "listConnectorTools",
+        "operationId": "connectors.list-connector-tools",
         "parameters": [
           {
             "name": "tenant_id",
@@ -1879,7 +1997,7 @@
         "tags": [
           "datasets"
         ],
-        "operationId": "createDataset",
+        "operationId": "datasets.create-dataset",
         "parameters": [
           {
             "name": "tenant_id",
@@ -2007,7 +2125,7 @@
         "tags": [
           "datasets"
         ],
-        "operationId": "promoteDatasetCaseFromTrace",
+        "operationId": "datasets.promote-dataset-case-from-trace",
         "parameters": [
           {
             "name": "tenant_id",
@@ -2154,7 +2272,7 @@
         "tags": [
           "datasets"
         ],
-        "operationId": "createDatasetVersion",
+        "operationId": "datasets.create-dataset-version",
         "parameters": [
           {
             "name": "tenant_id",
@@ -2301,7 +2419,7 @@
         "tags": [
           "evals"
         ],
-        "operationId": "runDeterministicEval",
+        "operationId": "evals.run-deterministic-eval",
         "parameters": [
           {
             "name": "tenant_id",
@@ -2457,7 +2575,7 @@
         "tags": [
           "evals"
         ],
-        "operationId": "runJudgeEval",
+        "operationId": "evals.run-judge-eval",
         "parameters": [
           {
             "name": "tenant_id",
@@ -2613,7 +2731,7 @@
         "tags": [
           "experiments"
         ],
-        "operationId": "runDeterministicExperiment",
+        "operationId": "experiments.run-deterministic-experiment",
         "parameters": [
           {
             "name": "tenant_id",
@@ -2769,7 +2887,7 @@
         "tags": [
           "experiments"
         ],
-        "operationId": "runJudgeExperiment",
+        "operationId": "experiments.run-judge-experiment",
         "parameters": [
           {
             "name": "tenant_id",
@@ -2925,7 +3043,7 @@
         "tags": [
           "gates"
         ],
-        "operationId": "createGate",
+        "operationId": "gates.create-gate",
         "parameters": [
           {
             "name": "tenant_id",
@@ -3053,7 +3171,7 @@
         "tags": [
           "gates"
         ],
-        "operationId": "runGate",
+        "operationId": "gates.run-gate",
         "parameters": [
           {
             "name": "tenant_id",
@@ -3200,7 +3318,7 @@
         "tags": [
           "ingest"
         ],
-        "operationId": "importSource",
+        "operationId": "ingest.import-source",
         "parameters": [
           {
             "name": "tenant_id",
@@ -3341,7 +3459,7 @@
         "tags": [
           "ingest"
         ],
-        "operationId": "replayDeadLetter",
+        "operationId": "ingest.replay-dead-letter",
         "parameters": [
           {
             "name": "tenant_id",
@@ -3486,7 +3604,7 @@
         "tags": [
           "ingest"
         ],
-        "operationId": "getIngestQueueStatus",
+        "operationId": "ingest.get-ingest-queue-status",
         "parameters": [
           {
             "name": "tenant_id",
@@ -3604,7 +3722,7 @@
         "tags": [
           "ingest"
         ],
-        "operationId": "drainTraceIngested",
+        "operationId": "ingest.drain-trace-ingested",
         "parameters": [
           {
             "name": "tenant_id",
@@ -3741,7 +3859,7 @@
         "tags": [
           "ingest"
         ],
-        "operationId": "drainTraceWrites",
+        "operationId": "ingest.drain-trace-writes",
         "parameters": [
           {
             "name": "tenant_id",
@@ -3878,7 +3996,7 @@
         "tags": [
           "ingest"
         ],
-        "operationId": "reconcileTrace",
+        "operationId": "ingest.reconcile-trace",
         "parameters": [
           {
             "name": "tenant_id",
@@ -4015,7 +4133,7 @@
         "tags": [
           "judge"
         ],
-        "operationId": "evaluateJudge",
+        "operationId": "judge.evaluate-judge",
         "parameters": [
           {
             "name": "tenant_id",
@@ -4143,7 +4261,7 @@
         "tags": [
           "judge"
         ],
-        "operationId": "listJudgeLedger",
+        "operationId": "judge.list-judge-ledger",
         "parameters": [
           {
             "name": "tenant_id",
@@ -4264,7 +4382,7 @@
         "tags": [
           "online"
         ],
-        "operationId": "decideOnlineSampling",
+        "operationId": "online.decide-online-sampling",
         "parameters": [
           {
             "name": "tenant_id",
@@ -4401,7 +4519,7 @@
         "tags": [
           "ingest"
         ],
-        "operationId": "ingestOtlp",
+        "operationId": "ingest.ingest-otlp",
         "parameters": [
           {
             "name": "tenant_id",
@@ -4556,7 +4674,7 @@
         "tags": [
           "prompts"
         ],
-        "operationId": "listPrompts",
+        "operationId": "prompts.list-prompts",
         "parameters": [
           {
             "name": "tenant_id",
@@ -4672,7 +4790,7 @@
         "tags": [
           "prompts"
         ],
-        "operationId": "createPrompt",
+        "operationId": "prompts.create-prompt",
         "parameters": [
           {
             "name": "tenant_id",
@@ -4800,7 +4918,7 @@
         "tags": [
           "prompts"
         ],
-        "operationId": "getPrompt",
+        "operationId": "prompts.get-prompt",
         "parameters": [
           {
             "name": "tenant_id",
@@ -4937,7 +5055,7 @@
         "tags": [
           "prompts"
         ],
-        "operationId": "diffPromptVersions",
+        "operationId": "prompts.diff-prompt-versions",
         "parameters": [
           {
             "name": "tenant_id",
@@ -5090,7 +5208,7 @@
         "tags": [
           "prompts"
         ],
-        "operationId": "listPromptVersions",
+        "operationId": "prompts.list-prompt-versions",
         "parameters": [
           {
             "name": "tenant_id",
@@ -5225,7 +5343,7 @@
         "tags": [
           "prompts"
         ],
-        "operationId": "addPromptVersion",
+        "operationId": "prompts.add-prompt-version",
         "parameters": [
           {
             "name": "tenant_id",
@@ -5372,7 +5490,7 @@
         "tags": [
           "providerSecrets"
         ],
-        "operationId": "listProviderSecrets",
+        "operationId": "providerSecrets.list-provider-secrets",
         "parameters": [
           {
             "name": "tenant_id",
@@ -5491,7 +5609,7 @@
         "tags": [
           "providerSecrets"
         ],
-        "operationId": "createProviderSecret",
+        "operationId": "providerSecrets.create-provider-secret",
         "parameters": [
           {
             "name": "tenant_id",
@@ -5619,7 +5737,7 @@
         "tags": [
           "providerSecrets"
         ],
-        "operationId": "revokeProviderSecret",
+        "operationId": "providerSecrets.revoke-provider-secret",
         "parameters": [
           {
             "name": "tenant_id",
@@ -5756,7 +5874,7 @@
         "tags": [
           "reviews"
         ],
-        "operationId": "createReviewQueue",
+        "operationId": "reviews.create-review-queue",
         "parameters": [
           {
             "name": "tenant_id",
@@ -5884,7 +6002,7 @@
         "tags": [
           "reviews"
         ],
-        "operationId": "listReviewTasks",
+        "operationId": "reviews.list-review-tasks",
         "parameters": [
           {
             "name": "tenant_id",
@@ -6032,7 +6150,7 @@
         "tags": [
           "reviews"
         ],
-        "operationId": "enqueueReviewTaskFromTrace",
+        "operationId": "reviews.enqueue-review-task-from-trace",
         "parameters": [
           {
             "name": "tenant_id",
@@ -6179,7 +6297,7 @@
         "tags": [
           "reviews"
         ],
-        "operationId": "submitReviewAnnotation",
+        "operationId": "reviews.submit-review-annotation",
         "parameters": [
           {
             "name": "tenant_id",
@@ -6335,7 +6453,7 @@
         "tags": [
           "reviews"
         ],
-        "operationId": "promoteReviewAnnotation",
+        "operationId": "reviews.promote-review-annotation",
         "parameters": [
           {
             "name": "tenant_id",
@@ -6500,7 +6618,7 @@
         "tags": [
           "scenarios"
         ],
-        "operationId": "listScenarios",
+        "operationId": "scenarios.list-scenarios",
         "parameters": [
           {
             "name": "tenant_id",
@@ -6634,7 +6752,7 @@
         "tags": [
           "scenarios"
         ],
-        "operationId": "createScenario",
+        "operationId": "scenarios.create-scenario",
         "parameters": [
           {
             "name": "tenant_id",
@@ -6762,7 +6880,7 @@
         "tags": [
           "scenarios"
         ],
-        "operationId": "mineScenarios",
+        "operationId": "scenarios.mine-scenarios",
         "parameters": [
           {
             "name": "tenant_id",
@@ -6900,7 +7018,7 @@
         "tags": [
           "scenarios"
         ],
-        "operationId": "getScenario",
+        "operationId": "scenarios.get-scenario",
         "parameters": [
           {
             "name": "tenant_id",
@@ -7037,7 +7155,7 @@
         "tags": [
           "search"
         ],
-        "operationId": "searchSpans",
+        "operationId": "search.search-spans",
         "parameters": [
           {
             "name": "tenant_id",
@@ -7228,7 +7346,7 @@
         "tags": [
           "spans"
         ],
-        "operationId": "getSpan",
+        "operationId": "spans.get-span",
         "parameters": [
           {
             "name": "tenant_id",
@@ -7381,7 +7499,7 @@
         "tags": [
           "spans"
         ],
-        "operationId": "getSpanIo",
+        "operationId": "spans.get-span-io",
         "parameters": [
           {
             "name": "tenant_id",
@@ -7534,7 +7652,7 @@
         "tags": [
           "ingest"
         ],
-        "operationId": "ingestOtlpJsonCollector",
+        "operationId": "ingest.ingest-otlp-json-collector",
         "parameters": [
           {
             "name": "durability",
@@ -7674,7 +7792,7 @@
         "tags": [
           "ingest"
         ],
-        "operationId": "ingestNative",
+        "operationId": "ingest.ingest-native",
         "parameters": [
           {
             "name": "durability",
@@ -7812,7 +7930,7 @@
         "tags": [
           "traces"
         ],
-        "operationId": "listTraces",
+        "operationId": "traces.list-traces",
         "parameters": [
           {
             "name": "tenant_id",
@@ -8047,7 +8165,7 @@
         "tags": [
           "traces"
         ],
-        "operationId": "getTrace",
+        "operationId": "traces.get-trace",
         "parameters": [
           {
             "name": "tenant_id",
@@ -8191,7 +8309,7 @@
         "tags": [
           "usage"
         ],
-        "operationId": "getUsageSummary",
+        "operationId": "usage.get-usage-summary",
         "parameters": [
           {
             "name": "tenant_id",
@@ -8546,13 +8664,13 @@
       "ApiScope": {
         "type": "string",
         "enum": [
-          "trace_write",
-          "trace_read",
-          "dataset_write",
-          "scenario_write",
-          "scenario_read",
-          "eval_run",
-          "pii_unmask",
+          "trace:write",
+          "trace:read",
+          "dataset:write",
+          "scenario:write",
+          "scenario:read",
+          "eval:run",
+          "pii:unmask",
           "admin"
         ]
       },
@@ -10057,18 +10175,22 @@
         "description": "Error envelope returned by every fallible endpoint.",
         "required": [
           "error",
+          "message",
           "status"
         ],
         "properties": {
           "error": {
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          },
+          "message": {
             "type": "string",
             "description": "Human-readable error message."
           },
           "status": {
             "type": "integer",
             "format": "int32",
-            "description": "HTTP status code, duplicated in the body for convenience.",
-            "minimum": 0
+            "description": "Deprecated compatibility HTTP status code for older `/v1` clients."
           }
         }
       },
@@ -11451,6 +11573,60 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "PaletteConnectStatus": {
+        "type": "string",
+        "enum": [
+          "connected",
+          "waiting_for_trace",
+          "waiting_for_eval",
+          "misconfigured"
+        ]
+      },
+      "PaletteConnectStatusResponse": {
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "project_id",
+          "ok",
+          "status",
+          "usage_configured",
+          "first_trace_received",
+          "first_eval_run",
+          "totals"
+        ],
+        "properties": {
+          "first_eval_run": {
+            "type": "boolean"
+          },
+          "first_trace_received": {
+            "type": "boolean"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ProjectId"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaletteConnectStatus"
+          },
+          "tenant_id": {
+            "$ref": "#/components/schemas/TenantId"
+          },
+          "totals": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/UsageTotal"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "usage_configured": {
+            "type": "boolean"
           }
         }
       },
@@ -13271,6 +13447,10 @@
     {
       "name": "usage",
       "description": "Usage summaries"
+    },
+    {
+      "name": "connect",
+      "description": "Hosted product setup and readiness"
     },
     {
       "name": "audit",

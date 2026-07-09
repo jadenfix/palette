@@ -4,8 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Hash** | **string** | Stable sha256 hash of the ordered shingles. | 
-**Shingles** | **[]string** | Ordered &#x60;(kind|status)&#x60; shingles of failing spans. | 
+**Hash** | **string** | Stable sha256 hash of the ordered shingles. |
+**Shingles** | **[]string** | Ordered &#x60;(kind|status)&#x60; shingles of failing spans. |
 
 ## Methods
 
@@ -68,5 +68,3 @@ SetShingles sets Shingles field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

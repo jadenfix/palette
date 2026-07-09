@@ -41,7 +41,7 @@ class TestApiKeyCreatedResponse(unittest.TestCase):
                 environment_id = '',
                 project_id = '',
                 scopes = [
-                    'trace_write'
+                    'trace:write'
                     ],
                 secret = '',
                 tenant_id = ''
@@ -54,7 +54,7 @@ class TestApiKeyCreatedResponse(unittest.TestCase):
                 environment_id = '',
                 project_id = '',
                 scopes = [
-                    'trace_write'
+                    'trace:write'
                     ],
                 secret = '',
                 tenant_id = '',

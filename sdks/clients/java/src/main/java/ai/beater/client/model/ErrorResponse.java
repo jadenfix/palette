@@ -34,6 +34,7 @@ import ai.beater.client.ApiClient;
  */
 @JsonPropertyOrder({
   ErrorResponse.JSON_PROPERTY_ERROR,
+  ErrorResponse.JSON_PROPERTY_MESSAGE,
   ErrorResponse.JSON_PROPERTY_STATUS
 })
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
@@ -41,6 +42,10 @@ public class ErrorResponse {
   public static final String JSON_PROPERTY_ERROR = "error";
   @javax.annotation.Nonnull
   private String error;
+
+  public static final String JSON_PROPERTY_MESSAGE = "message";
+  @javax.annotation.Nonnull
+  private String message;
 
   public static final String JSON_PROPERTY_STATUS = "status";
   @javax.annotation.Nonnull
@@ -55,7 +60,7 @@ public class ErrorResponse {
   }
 
   /**
-   * Human-readable error message.
+   * Stable machine-readable error code.
    * @return error
    */
   @javax.annotation.Nonnull
@@ -73,14 +78,37 @@ public class ErrorResponse {
   }
 
 
+  public ErrorResponse message(@javax.annotation.Nonnull String message) {
+    this.message = message;
+    return this;
+  }
+
+  /**
+   * Human-readable error message.
+   * @return message
+   */
+  @javax.annotation.Nonnull
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getMessage() {
+    return message;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMessage(@javax.annotation.Nonnull String message) {
+    this.message = message;
+  }
+
+
   public ErrorResponse status(@javax.annotation.Nonnull Integer status) {
     this.status = status;
     return this;
   }
 
   /**
-   * HTTP status code, duplicated in the body for convenience.
-   * minimum: 0
+   * Deprecated compatibility HTTP status code for older &#x60;/v1&#x60; clients.
    * @return status
    */
   @javax.annotation.Nonnull
@@ -111,12 +139,13 @@ public class ErrorResponse {
     }
     ErrorResponse errorResponse = (ErrorResponse) o;
     return Objects.equals(this.error, errorResponse.error) &&
+        Objects.equals(this.message, errorResponse.message) &&
         Objects.equals(this.status, errorResponse.status);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(error, status);
+    return Objects.hash(error, message, status);
   }
 
   @Override
@@ -124,6 +153,7 @@ public class ErrorResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class ErrorResponse {\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
+    sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -175,6 +205,11 @@ public class ErrorResponse {
     // add `error` to the URL query string
     if (getError() != null) {
       joiner.add(String.format("%serror%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getError()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
+    }
+
+    // add `message` to the URL query string
+    if (getMessage() != null) {
+      joiner.add(String.format("%smessage%s=%s", prefix, suffix, URLEncoder.encode(ApiClient.valueToString(getMessage()), StandardCharsets.UTF_8).replaceAll("\\+", "%20")));
     }
 
     // add `status` to the URL query string

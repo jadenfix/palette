@@ -4,16 +4,16 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**getSpan**](SpansApi.md#getSpan) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} |  |
-| [**getSpanWithHttpInfo**](SpansApi.md#getSpanWithHttpInfo) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} |  |
-| [**getSpanIo**](SpansApi.md#getSpanIo) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io |  |
-| [**getSpanIoWithHttpInfo**](SpansApi.md#getSpanIoWithHttpInfo) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io |  |
+| [**spansGetSpan**](SpansApi.md#spansGetSpan) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} |  |
+| [**spansGetSpanWithHttpInfo**](SpansApi.md#spansGetSpanWithHttpInfo) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} |  |
+| [**spansGetSpanIo**](SpansApi.md#spansGetSpanIo) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io |  |
+| [**spansGetSpanIoWithHttpInfo**](SpansApi.md#spansGetSpanIoWithHttpInfo) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io |  |
 
 
 
-## getSpan
+## spansGetSpan
 
-> CanonicalSpan getSpan(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> CanonicalSpan spansGetSpan(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -36,17 +36,17 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String traceId = "traceId_example"; // String | trace_id
         String spanId = "spanId_example"; // String | span_id
-        Boolean unmask = true; // Boolean | 
-        String reason = "reason_example"; // String | 
+        Boolean unmask = true; // Boolean |
+        String reason = "reason_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            CanonicalSpan result = apiInstance.getSpan(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            CanonicalSpan result = apiInstance.spansGetSpan(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling SpansApi#getSpan");
+            System.err.println("Exception when calling SpansApi#spansGetSpan");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -94,9 +94,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## getSpanWithHttpInfo
+## spansGetSpanWithHttpInfo
 
-> ApiResponse<CanonicalSpan> getSpan getSpanWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<CanonicalSpan> spansGetSpan spansGetSpanWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -120,19 +120,19 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String traceId = "traceId_example"; // String | trace_id
         String spanId = "spanId_example"; // String | span_id
-        Boolean unmask = true; // Boolean | 
-        String reason = "reason_example"; // String | 
+        Boolean unmask = true; // Boolean |
+        String reason = "reason_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<CanonicalSpan> response = apiInstance.getSpanWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<CanonicalSpan> response = apiInstance.spansGetSpanWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling SpansApi#getSpan");
+            System.err.println("Exception when calling SpansApi#spansGetSpan");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -181,9 +181,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## getSpanIo
+## spansGetSpanIo
 
-> SpanIoResponse getSpanIo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> SpanIoResponse spansGetSpanIo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -206,17 +206,17 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String traceId = "traceId_example"; // String | trace_id
         String spanId = "spanId_example"; // String | span_id
-        Boolean unmask = true; // Boolean | 
-        String reason = "reason_example"; // String | 
+        Boolean unmask = true; // Boolean |
+        String reason = "reason_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            SpanIoResponse result = apiInstance.getSpanIo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            SpanIoResponse result = apiInstance.spansGetSpanIo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling SpansApi#getSpanIo");
+            System.err.println("Exception when calling SpansApi#spansGetSpanIo");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -264,9 +264,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## getSpanIoWithHttpInfo
+## spansGetSpanIoWithHttpInfo
 
-> ApiResponse<SpanIoResponse> getSpanIo getSpanIoWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<SpanIoResponse> spansGetSpanIo spansGetSpanIoWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -290,19 +290,19 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String traceId = "traceId_example"; // String | trace_id
         String spanId = "spanId_example"; // String | span_id
-        Boolean unmask = true; // Boolean | 
-        String reason = "reason_example"; // String | 
+        Boolean unmask = true; // Boolean |
+        String reason = "reason_example"; // String |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<SpanIoResponse> response = apiInstance.getSpanIoWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<SpanIoResponse> response = apiInstance.spansGetSpanIoWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling SpansApi#getSpanIo");
+            System.err.println("Exception when calling SpansApi#spansGetSpanIo");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -349,4 +349,3 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
-

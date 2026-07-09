@@ -31,7 +31,7 @@ import {
     RunJudgeEvalHttpRequestToJSON,
 } from '../models/index';
 
-export interface EvaluateJudgeRequest {
+export interface JudgeEvaluateJudgeRequest {
     tenantId: string;
     projectId: string;
     runJudgeEvalHttpRequest: RunJudgeEvalHttpRequest;
@@ -41,7 +41,7 @@ export interface EvaluateJudgeRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface ListJudgeLedgerRequest {
+export interface JudgeListJudgeLedgerRequest {
     tenantId: string;
     projectId: string;
     authorization?: string | null;
@@ -57,25 +57,25 @@ export class JudgeApi extends runtime.BaseAPI {
 
     /**
      */
-    async evaluateJudgeRaw(requestParameters: EvaluateJudgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<JudgeBrokerOutcome>> {
+    async judgeEvaluateJudgeRaw(requestParameters: JudgeEvaluateJudgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<JudgeBrokerOutcome>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling evaluateJudge().'
+                'Required parameter "tenantId" was null or undefined when calling judgeEvaluateJudge().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling evaluateJudge().'
+                'Required parameter "projectId" was null or undefined when calling judgeEvaluateJudge().'
             );
         }
 
         if (requestParameters['runJudgeEvalHttpRequest'] == null) {
             throw new runtime.RequiredError(
                 'runJudgeEvalHttpRequest',
-                'Required parameter "runJudgeEvalHttpRequest" was null or undefined when calling evaluateJudge().'
+                'Required parameter "runJudgeEvalHttpRequest" was null or undefined when calling judgeEvaluateJudge().'
             );
         }
 
@@ -114,25 +114,25 @@ export class JudgeApi extends runtime.BaseAPI {
 
     /**
      */
-    async evaluateJudge(requestParameters: EvaluateJudgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<JudgeBrokerOutcome> {
-        const response = await this.evaluateJudgeRaw(requestParameters, initOverrides);
+    async judgeEvaluateJudge(requestParameters: JudgeEvaluateJudgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<JudgeBrokerOutcome> {
+        const response = await this.judgeEvaluateJudgeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async listJudgeLedgerRaw(requestParameters: ListJudgeLedgerRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<JudgeAuditRecord>>> {
+    async judgeListJudgeLedgerRaw(requestParameters: JudgeListJudgeLedgerRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<JudgeAuditRecord>>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling listJudgeLedger().'
+                'Required parameter "tenantId" was null or undefined when calling judgeListJudgeLedger().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling listJudgeLedger().'
+                'Required parameter "projectId" was null or undefined when calling judgeListJudgeLedger().'
             );
         }
 
@@ -168,8 +168,8 @@ export class JudgeApi extends runtime.BaseAPI {
 
     /**
      */
-    async listJudgeLedger(requestParameters: ListJudgeLedgerRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<JudgeAuditRecord>> {
-        const response = await this.listJudgeLedgerRaw(requestParameters, initOverrides);
+    async judgeListJudgeLedger(requestParameters: JudgeListJudgeLedgerRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<JudgeAuditRecord>> {
+        const response = await this.judgeListJudgeLedgerRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

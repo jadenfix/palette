@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**from_version_id** | **str** |  | 
-**lines** | [**List[DiffLine]**](DiffLine.md) |  | 
-**to_version_id** | **str** |  | 
+**from_version_id** | **str** |  |
+**lines** | [**List[DiffLine]**](DiffLine.md) |  |
+**to_version_id** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ prompt_version_diff_dict = prompt_version_diff_instance.to_dict()
 prompt_version_diff_from_dict = PromptVersionDiff.from_dict(prompt_version_diff_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

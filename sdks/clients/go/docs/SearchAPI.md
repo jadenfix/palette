@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**SearchSpans**](SearchAPI.md#SearchSpans) | **Get** /v1/search/{tenant_id}/spans | 
+[**SearchSearchSpans**](SearchAPI.md#SearchSearchSpans) | **Get** /v1/search/{tenant_id}/spans |
 
 
 
-## SearchSpans
+## SearchSearchSpans
 
-> SearchResponse SearchSpans(ctx, tenantId).Q(q).ProjectId(projectId).EnvironmentId(environmentId).TraceId(traceId).SpanId(spanId).Kind(kind).Status(status).Model(model).Tool(tool).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> SearchResponse SearchSearchSpans(ctx, tenantId).Q(q).ProjectId(projectId).EnvironmentId(environmentId).TraceId(traceId).SpanId(spanId).Kind(kind).Status(status).Model(model).Tool(tool).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -45,13 +45,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.SearchAPI.SearchSpans(context.Background(), tenantId).Q(q).ProjectId(projectId).EnvironmentId(environmentId).TraceId(traceId).SpanId(spanId).Kind(kind).Status(status).Model(model).Tool(tool).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.SearchAPI.SearchSearchSpans(context.Background(), tenantId).Q(q).ProjectId(projectId).EnvironmentId(environmentId).TraceId(traceId).SpanId(spanId).Kind(kind).Status(status).Model(model).Tool(tool).Limit(limit).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `SearchAPI.SearchSpans``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `SearchAPI.SearchSearchSpans``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `SearchSpans`: SearchResponse
-	fmt.Fprintf(os.Stdout, "Response from `SearchAPI.SearchSpans`: %v\n", resp)
+	// response from `SearchSearchSpans`: SearchResponse
+	fmt.Fprintf(os.Stdout, "Response from `SearchAPI.SearchSearchSpans`: %v\n", resp)
 }
 ```
 
@@ -61,30 +61,30 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
+**tenantId** | **string** | tenant_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiSearchSpansRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiSearchSearchSpansRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
- **q** | **string** |  | 
- **projectId** | **string** |  | 
- **environmentId** | **string** |  | 
- **traceId** | **string** |  | 
- **spanId** | **string** |  | 
- **kind** | **string** |  | 
- **status** | **string** |  | 
- **model** | **string** |  | 
- **tool** | **string** |  | 
- **limit** | **int32** |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **q** | **string** |  |
+ **projectId** | **string** |  |
+ **environmentId** | **string** |  |
+ **traceId** | **string** |  |
+ **spanId** | **string** |  |
+ **kind** | **string** |  |
+ **status** | **string** |  |
+ **model** | **string** |  |
+ **tool** | **string** |  |
+ **limit** | **int32** |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -102,4 +102,3 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

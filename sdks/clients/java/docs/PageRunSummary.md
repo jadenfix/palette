@@ -9,6 +9,3 @@
 |------------ | ------------- | ------------- | -------------|
 |**items** | [**List&lt;PageRunSummaryItemsInner&gt;**](PageRunSummaryItemsInner.md) |  |  |
 |**nextCursor** | **String** |  |  [optional] |
-
-
-

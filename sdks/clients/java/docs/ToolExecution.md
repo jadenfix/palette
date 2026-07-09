@@ -12,6 +12,3 @@ Result of executing a tool — Composio's `{successful, data, error}` envelope.
 |**error** | **String** | Error message when &#x60;successful&#x60; is false. |  [optional] |
 |**logId** | **String** | Composio execution log id, for tracing. |  [optional] |
 |**successful** | **Boolean** | Whether the tool reported success. |  |
-
-
-

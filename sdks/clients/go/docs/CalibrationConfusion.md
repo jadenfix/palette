@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**HumanFailJudgeFail** | **int32** |  | 
-**HumanFailJudgePass** | **int32** |  | 
-**HumanPassJudgeFail** | **int32** |  | 
-**HumanPassJudgePass** | **int32** |  | 
+**HumanFailJudgeFail** | **int32** |  |
+**HumanFailJudgePass** | **int32** |  |
+**HumanPassJudgeFail** | **int32** |  |
+**HumanPassJudgePass** | **int32** |  |
 
 ## Methods
 
@@ -110,5 +110,3 @@ SetHumanPassJudgePass sets HumanPassJudgePass field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

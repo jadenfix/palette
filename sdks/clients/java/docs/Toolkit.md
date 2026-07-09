@@ -14,6 +14,3 @@ A connectable third-party app (Composio \"toolkit\"), flattened from the v3 `GET
 |**noAuth** | **Boolean** | &#x60;true&#x60; when the toolkit needs no OAuth/connection to execute. |  [optional] |
 |**slug** | **String** | Stable slug used everywhere else (e.g. &#x60;github&#x60;, &#x60;gmail&#x60;). |  |
 |**toolsCount** | **Integer** | Number of tools the toolkit exposes, if known. |  [optional] |
-
-
-

@@ -14,6 +14,3 @@
 |**judgeLabel** | **CalibrationLabel** |  |  |
 |**judgeResultLabel** | **String** |  |  [optional] |
 |**judgeScore** | **Double** |  |  |
-
-
-

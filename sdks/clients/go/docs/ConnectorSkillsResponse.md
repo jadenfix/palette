@@ -4,8 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Skills** | **string** | Markdown document: one skill card per tool, ready to splice into an agent&#39;s system prompt. | 
-**Toolkit** | **string** | Toolkit the skills document covers. | 
+**Skills** | **string** | Markdown document: one skill card per tool, ready to splice into an agent&#39;s system prompt. |
+**Toolkit** | **string** | Toolkit the skills document covers. |
 
 ## Methods
 
@@ -68,5 +68,3 @@ SetToolkit sets Toolkit field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

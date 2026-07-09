@@ -41,7 +41,7 @@ class CalibrationsApi:
 
 
     @validate_call
-    def run_calibration(
+    def calibrations_run_calibration(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -65,7 +65,7 @@ class CalibrationsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> CalibrationReport:
-        """run_calibration
+        """calibrations_run_calibration
 
 
         :param tenant_id: tenant_id (required)
@@ -108,7 +108,7 @@ class CalibrationsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._run_calibration_serialize(
+        _param = self._calibrations_run_calibration_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             dataset_id=dataset_id,
@@ -143,7 +143,7 @@ class CalibrationsApi:
 
 
     @validate_call
-    def run_calibration_with_http_info(
+    def calibrations_run_calibration_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -167,7 +167,7 @@ class CalibrationsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[CalibrationReport]:
-        """run_calibration
+        """calibrations_run_calibration
 
 
         :param tenant_id: tenant_id (required)
@@ -210,7 +210,7 @@ class CalibrationsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._run_calibration_serialize(
+        _param = self._calibrations_run_calibration_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             dataset_id=dataset_id,
@@ -245,7 +245,7 @@ class CalibrationsApi:
 
 
     @validate_call
-    def run_calibration_without_preload_content(
+    def calibrations_run_calibration_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -269,7 +269,7 @@ class CalibrationsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """run_calibration
+        """calibrations_run_calibration
 
 
         :param tenant_id: tenant_id (required)
@@ -312,7 +312,7 @@ class CalibrationsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._run_calibration_serialize(
+        _param = self._calibrations_run_calibration_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             dataset_id=dataset_id,
@@ -342,7 +342,7 @@ class CalibrationsApi:
         return response_data.response
 
 
-    def _run_calibration_serialize(
+    def _calibrations_run_calibration_serialize(
         self,
         tenant_id,
         project_id,

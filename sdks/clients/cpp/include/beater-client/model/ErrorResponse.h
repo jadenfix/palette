@@ -57,7 +57,7 @@ public:
 
 
     /// <summary>
-    /// Human-readable error message.
+    /// Stable machine-readable error code.
     /// </summary>
     utility::string_t getError() const;
     bool errorIsSet() const;
@@ -65,7 +65,15 @@ public:
     void setError(const utility::string_t& value);
 
     /// <summary>
-    /// HTTP status code, duplicated in the body for convenience.
+    /// Human-readable error message.
+    /// </summary>
+    utility::string_t getMessage() const;
+    bool messageIsSet() const;
+    void unsetMessage();
+    void setMessage(const utility::string_t& value);
+
+    /// <summary>
+    /// Deprecated compatibility HTTP status code for older &#x60;/v1&#x60; clients.
     /// </summary>
     int32_t getStatus() const;
     bool statusIsSet() const;
@@ -76,6 +84,9 @@ public:
 protected:
     utility::string_t m_Error;
     bool m_ErrorIsSet;
+
+    utility::string_t m_Message;
+    bool m_MessageIsSet;
 
     int32_t m_Status;
     bool m_StatusIsSet;

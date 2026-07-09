@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**evaluate_alert**](AlertsApi.md#evaluate_alert) | **POST** /v1/alerts/{tenant_id}/{project_id}/traces/{trace_id}/webhook | 
+[**alerts_period_evaluate_alert**](AlertsApi.md#alerts_period_evaluate_alert) | **POST** /v1/alerts/{tenant_id}/{project_id}/traces/{trace_id}/webhook |
 
 
 
-## evaluate_alert
+## alerts_period_evaluate_alert
 
-> models::AlertDecision evaluate_alert(tenant_id, project_id, trace_id, evaluate_alert_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::AlertDecision alerts_period_evaluate_alert(tenant_id, project_id, trace_id, evaluate_alert_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -41,4 +41,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -4,8 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**NextCursor** | Pointer to **NullableString** |  | [optional] 
-**Scenarios** | [**[]Scenario**](Scenario.md) |  | 
+**NextCursor** | Pointer to **NullableString** |  | [optional]
+**Scenarios** | [**[]Scenario**](Scenario.md) |  |
 
 ## Methods
 
@@ -83,5 +83,3 @@ SetScenarios sets Scenarios field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

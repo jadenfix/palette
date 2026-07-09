@@ -12,10 +12,10 @@
 
 
 judge_broker_outcome_t*
-JudgeAPI_evaluateJudge(apiClient_t *apiClient, char *tenant_id, char *project_id, run_judge_eval_http_request_t *run_judge_eval_http_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+JudgeAPI_judgeEvaluateJudge(apiClient_t *apiClient, char *tenant_id, char *project_id, run_judge_eval_http_request_t *run_judge_eval_http_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 
 list_t*
-JudgeAPI_listJudgeLedger(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+JudgeAPI_judgeListJudgeLedger(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 

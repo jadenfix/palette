@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**getUsageSummary**](UsageApi.md#getUsageSummary) | **GET** /v1/usage/{tenant_id}/{project_id} |  |
-| [**getUsageSummaryWithHttpInfo**](UsageApi.md#getUsageSummaryWithHttpInfo) | **GET** /v1/usage/{tenant_id}/{project_id} |  |
+| [**usageGetUsageSummary**](UsageApi.md#usageGetUsageSummary) | **GET** /v1/usage/{tenant_id}/{project_id} |  |
+| [**usageGetUsageSummaryWithHttpInfo**](UsageApi.md#usageGetUsageSummaryWithHttpInfo) | **GET** /v1/usage/{tenant_id}/{project_id} |  |
 
 
 
-## getUsageSummary
+## usageGetUsageSummary
 
-> UsageSummary getUsageSummary(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> UsageSummary usageGetUsageSummary(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -38,10 +38,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            UsageSummary result = apiInstance.getUsageSummary(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            UsageSummary result = apiInstance.usageGetUsageSummary(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling UsageApi#getUsageSummary");
+            System.err.println("Exception when calling UsageApi#usageGetUsageSummary");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -85,9 +85,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## getUsageSummaryWithHttpInfo
+## usageGetUsageSummaryWithHttpInfo
 
-> ApiResponse<UsageSummary> getUsageSummary getUsageSummaryWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<UsageSummary> usageGetUsageSummary usageGetUsageSummaryWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -115,12 +115,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<UsageSummary> response = apiInstance.getUsageSummaryWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<UsageSummary> response = apiInstance.usageGetUsageSummaryWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling UsageApi#getUsageSummary");
+            System.err.println("Exception when calling UsageApi#usageGetUsageSummary");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -163,4 +163,3 @@ No authorization required
 | **400** | Invalid request, scope, or filter |  -  |
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
-

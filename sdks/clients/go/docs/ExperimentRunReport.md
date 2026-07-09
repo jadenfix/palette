@@ -4,19 +4,19 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**BaselineReleaseId** | **string** |  | 
-**CandidateReleaseId** | **string** |  | 
-**CaseScores** | [**[]CaseExperimentScore**](CaseExperimentScore.md) |  | 
-**Comparison** | [**ExperimentComparison**](ExperimentComparison.md) |  | 
-**CreatedAt** | **time.Time** |  | 
-**DatasetId** | **string** |  | 
-**DatasetVersionId** | **string** |  | 
-**Decision** | [**GateDecision**](GateDecision.md) |  | 
-**EvaluatorVersionId** | **string** |  | 
-**ExperimentRunId** | **string** |  | 
-**GatePolicy** | Pointer to [**GatePolicy**](GatePolicy.md) |  | [optional] 
-**ProjectId** | **string** |  | 
-**TenantId** | **string** |  | 
+**BaselineReleaseId** | **string** |  |
+**CandidateReleaseId** | **string** |  |
+**CaseScores** | [**[]CaseExperimentScore**](CaseExperimentScore.md) |  |
+**Comparison** | [**ExperimentComparison**](ExperimentComparison.md) |  |
+**CreatedAt** | **time.Time** |  |
+**DatasetId** | **string** |  |
+**DatasetVersionId** | **string** |  |
+**Decision** | [**GateDecision**](GateDecision.md) |  |
+**EvaluatorVersionId** | **string** |  |
+**ExperimentRunId** | **string** |  |
+**GatePolicy** | Pointer to [**GatePolicy**](GatePolicy.md) |  | [optional]
+**ProjectId** | **string** |  |
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -304,5 +304,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

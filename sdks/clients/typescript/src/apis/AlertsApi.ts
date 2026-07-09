@@ -28,7 +28,7 @@ import {
     EvaluateAlertRequestToJSON,
 } from '../models/index';
 
-export interface EvaluateAlertOperationRequest {
+export interface AlertsEvaluateAlertRequest {
     tenantId: string;
     projectId: string;
     traceId: string;
@@ -46,32 +46,32 @@ export class AlertsApi extends runtime.BaseAPI {
 
     /**
      */
-    async evaluateAlertRaw(requestParameters: EvaluateAlertOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AlertDecision>> {
+    async alertsEvaluateAlertRaw(requestParameters: AlertsEvaluateAlertRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AlertDecision>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling evaluateAlert().'
+                'Required parameter "tenantId" was null or undefined when calling alertsEvaluateAlert().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling evaluateAlert().'
+                'Required parameter "projectId" was null or undefined when calling alertsEvaluateAlert().'
             );
         }
 
         if (requestParameters['traceId'] == null) {
             throw new runtime.RequiredError(
                 'traceId',
-                'Required parameter "traceId" was null or undefined when calling evaluateAlert().'
+                'Required parameter "traceId" was null or undefined when calling alertsEvaluateAlert().'
             );
         }
 
         if (requestParameters['evaluateAlertRequest'] == null) {
             throw new runtime.RequiredError(
                 'evaluateAlertRequest',
-                'Required parameter "evaluateAlertRequest" was null or undefined when calling evaluateAlert().'
+                'Required parameter "evaluateAlertRequest" was null or undefined when calling alertsEvaluateAlert().'
             );
         }
 
@@ -110,8 +110,8 @@ export class AlertsApi extends runtime.BaseAPI {
 
     /**
      */
-    async evaluateAlert(requestParameters: EvaluateAlertOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AlertDecision> {
-        const response = await this.evaluateAlertRaw(requestParameters, initOverrides);
+    async alertsEvaluateAlert(requestParameters: AlertsEvaluateAlertRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AlertDecision> {
+        const response = await this.alertsEvaluateAlertRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -3,9 +3,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**prompt** | [**prompt_t**](prompt.md) \* |  | 
-**version** | [**prompt_version_t**](prompt_version.md) \* |  | 
+**prompt** | [**prompt_t**](prompt.md) \* |  |
+**version** | [**prompt_version_t**](prompt_version.md) \* |  |
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

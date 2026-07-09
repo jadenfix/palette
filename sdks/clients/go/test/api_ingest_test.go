@@ -22,14 +22,14 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test IngestAPIService DrainTraceIngested", func(t *testing.T) {
+	t.Run("Test IngestAPIService IngestDrainTraceIngested", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.IngestAPI.DrainTraceIngested(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.IngestAPI.IngestDrainTraceIngested(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -37,14 +37,14 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test IngestAPIService DrainTraceWrites", func(t *testing.T) {
+	t.Run("Test IngestAPIService IngestDrainTraceWrites", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.IngestAPI.DrainTraceWrites(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.IngestAPI.IngestDrainTraceWrites(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -52,14 +52,14 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test IngestAPIService GetIngestQueueStatus", func(t *testing.T) {
+	t.Run("Test IngestAPIService IngestGetIngestQueueStatus", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.IngestAPI.GetIngestQueueStatus(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.IngestAPI.IngestGetIngestQueueStatus(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -67,35 +67,7 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test IngestAPIService ImportSource", func(t *testing.T) {
-
-		t.Skip("skip test")  // remove to run test
-
-		var tenantId string
-		var projectId string
-		var environmentId string
-
-		resp, httpRes, err := apiClient.IngestAPI.ImportSource(context.Background(), tenantId, projectId, environmentId).Execute()
-
-		require.Nil(t, err)
-		require.NotNil(t, resp)
-		assert.Equal(t, 200, httpRes.StatusCode)
-
-	})
-
-	t.Run("Test IngestAPIService IngestNative", func(t *testing.T) {
-
-		t.Skip("skip test")  // remove to run test
-
-		resp, httpRes, err := apiClient.IngestAPI.IngestNative(context.Background()).Execute()
-
-		require.Nil(t, err)
-		require.NotNil(t, resp)
-		assert.Equal(t, 200, httpRes.StatusCode)
-
-	})
-
-	t.Run("Test IngestAPIService IngestOtlp", func(t *testing.T) {
+	t.Run("Test IngestAPIService IngestImportSource", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -103,7 +75,7 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 		var projectId string
 		var environmentId string
 
-		resp, httpRes, err := apiClient.IngestAPI.IngestOtlp(context.Background(), tenantId, projectId, environmentId).Execute()
+		resp, httpRes, err := apiClient.IngestAPI.IngestImportSource(context.Background(), tenantId, projectId, environmentId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -111,11 +83,11 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test IngestAPIService IngestOtlpJsonCollector", func(t *testing.T) {
+	t.Run("Test IngestAPIService IngestIngestNative", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
-		resp, httpRes, err := apiClient.IngestAPI.IngestOtlpJsonCollector(context.Background()).Execute()
+		resp, httpRes, err := apiClient.IngestAPI.IngestIngestNative(context.Background()).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -123,7 +95,35 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test IngestAPIService ReconcileTrace", func(t *testing.T) {
+	t.Run("Test IngestAPIService IngestIngestOtlp", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var tenantId string
+		var projectId string
+		var environmentId string
+
+		resp, httpRes, err := apiClient.IngestAPI.IngestIngestOtlp(context.Background(), tenantId, projectId, environmentId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test IngestAPIService IngestIngestOtlpJsonCollector", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		resp, httpRes, err := apiClient.IngestAPI.IngestIngestOtlpJsonCollector(context.Background()).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test IngestAPIService IngestReconcileTrace", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -131,7 +131,7 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 		var projectId string
 		var traceId string
 
-		resp, httpRes, err := apiClient.IngestAPI.ReconcileTrace(context.Background(), tenantId, projectId, traceId).Execute()
+		resp, httpRes, err := apiClient.IngestAPI.IngestReconcileTrace(context.Background(), tenantId, projectId, traceId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -139,7 +139,7 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test IngestAPIService ReplayDeadLetter", func(t *testing.T) {
+	t.Run("Test IngestAPIService IngestReplayDeadLetter", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -147,7 +147,7 @@ func Test_beaterclient_IngestAPIService(t *testing.T) {
 		var projectId string
 		var messageId string
 
-		resp, httpRes, err := apiClient.IngestAPI.ReplayDeadLetter(context.Background(), tenantId, projectId, messageId).Execute()
+		resp, httpRes, err := apiClient.IngestAPI.IngestReplayDeadLetter(context.Background(), tenantId, projectId, messageId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

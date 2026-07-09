@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**decide_online_sampling**](OnlineApi.md#decide_online_sampling) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling | 
+[**online_period_decide_online_sampling**](OnlineApi.md#online_period_decide_online_sampling) | **POST** /v1/online/{tenant_id}/{project_id}/traces/{trace_id}/sampling |
 
 
 
-## decide_online_sampling
+## online_period_decide_online_sampling
 
-> models::SamplingDecision decide_online_sampling(tenant_id, project_id, trace_id, online_sampling_policy, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::SamplingDecision online_period_decide_online_sampling(tenant_id, project_id, trace_id, online_sampling_policy, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -41,4 +41,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

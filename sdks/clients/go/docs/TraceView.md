@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Spans** | [**[]CanonicalSpan**](CanonicalSpan.md) |  | 
-**TenantId** | **string** |  | 
-**TraceId** | **string** |  | 
+**Spans** | [**[]CanonicalSpan**](CanonicalSpan.md) |  |
+**TenantId** | **string** |  |
+**TraceId** | **string** |  |
 
 ## Methods
 
@@ -89,5 +89,3 @@ SetTraceId sets TraceId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**evidence** | **object** |  | 
-**label** | **str** |  | [optional] 
-**score** | **float** |  | 
+**evidence** | **object** |  |
+**label** | **str** |  | [optional]
+**score** | **float** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ score_result_dict = score_result_instance.to_dict()
 score_result_from_dict = ScoreResult.from_dict(score_result_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

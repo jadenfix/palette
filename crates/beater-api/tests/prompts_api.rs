@@ -178,7 +178,13 @@ async fn get_unknown_prompt_returns_404() {
     )
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND, "body: {body}");
+    assert_eq!(body.pointer("/error"), Some(&json!("not_found")));
     assert_eq!(body.pointer("/status"), Some(&json!(404)));
+    assert!(
+        body.pointer("/message")
+            .and_then(|value| value.as_str())
+            .is_some()
+    );
 }
 
 #[tokio::test]

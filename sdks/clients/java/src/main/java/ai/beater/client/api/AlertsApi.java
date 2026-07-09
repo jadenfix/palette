@@ -97,8 +97,8 @@ public class AlertsApi {
    * @return AlertDecision
    * @throws ApiException if fails to make API call
    */
-  public AlertDecision evaluateAlert(String tenantId, String projectId, String traceId, EvaluateAlertRequest evaluateAlertRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<AlertDecision> localVarResponse = evaluateAlertWithHttpInfo(tenantId, projectId, traceId, evaluateAlertRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public AlertDecision alertsEvaluateAlert(String tenantId, String projectId, String traceId, EvaluateAlertRequest evaluateAlertRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<AlertDecision> localVarResponse = alertsEvaluateAlertWithHttpInfo(tenantId, projectId, traceId, evaluateAlertRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -116,8 +116,8 @@ public class AlertsApi {
    * @return ApiResponse&lt;AlertDecision&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<AlertDecision> evaluateAlertWithHttpInfo(String tenantId, String projectId, String traceId, EvaluateAlertRequest evaluateAlertRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = evaluateAlertRequestBuilder(tenantId, projectId, traceId, evaluateAlertRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<AlertDecision> alertsEvaluateAlertWithHttpInfo(String tenantId, String projectId, String traceId, EvaluateAlertRequest evaluateAlertRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = alertsEvaluateAlertRequestBuilder(tenantId, projectId, traceId, evaluateAlertRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -127,7 +127,7 @@ public class AlertsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("evaluateAlert", localVarResponse);
+          throw getApiException("alertsEvaluateAlert", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<AlertDecision>(
@@ -156,22 +156,22 @@ public class AlertsApi {
     }
   }
 
-  private HttpRequest.Builder evaluateAlertRequestBuilder(String tenantId, String projectId, String traceId, EvaluateAlertRequest evaluateAlertRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder alertsEvaluateAlertRequestBuilder(String tenantId, String projectId, String traceId, EvaluateAlertRequest evaluateAlertRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling evaluateAlert");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling alertsEvaluateAlert");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling evaluateAlert");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling alertsEvaluateAlert");
     }
     // verify the required parameter 'traceId' is set
     if (traceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'traceId' when calling evaluateAlert");
+      throw new ApiException(400, "Missing the required parameter 'traceId' when calling alertsEvaluateAlert");
     }
     // verify the required parameter 'evaluateAlertRequest' is set
     if (evaluateAlertRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'evaluateAlertRequest' when calling evaluateAlert");
+      throw new ApiException(400, "Missing the required parameter 'evaluateAlertRequest' when calling alertsEvaluateAlert");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

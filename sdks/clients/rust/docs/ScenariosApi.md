@@ -4,16 +4,16 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_scenario**](ScenariosApi.md#create_scenario) | **POST** /v1/scenarios/{tenant_id}/{project_id} | 
-[**get_scenario**](ScenariosApi.md#get_scenario) | **GET** /v1/scenarios/{tenant_id}/{project_id}/{scenario_id} | 
-[**list_scenarios**](ScenariosApi.md#list_scenarios) | **GET** /v1/scenarios/{tenant_id}/{project_id} | 
-[**mine_scenarios**](ScenariosApi.md#mine_scenarios) | **POST** /v1/scenarios/{tenant_id}/{project_id}/mine | 
+[**scenarios_period_create_scenario**](ScenariosApi.md#scenarios_period_create_scenario) | **POST** /v1/scenarios/{tenant_id}/{project_id} |
+[**scenarios_period_get_scenario**](ScenariosApi.md#scenarios_period_get_scenario) | **GET** /v1/scenarios/{tenant_id}/{project_id}/{scenario_id} |
+[**scenarios_period_list_scenarios**](ScenariosApi.md#scenarios_period_list_scenarios) | **GET** /v1/scenarios/{tenant_id}/{project_id} |
+[**scenarios_period_mine_scenarios**](ScenariosApi.md#scenarios_period_mine_scenarios) | **POST** /v1/scenarios/{tenant_id}/{project_id}/mine |
 
 
 
-## create_scenario
+## scenarios_period_create_scenario
 
-> models::Scenario create_scenario(tenant_id, project_id, create_scenario_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::Scenario scenarios_period_create_scenario(tenant_id, project_id, create_scenario_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -45,9 +45,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## get_scenario
+## scenarios_period_get_scenario
 
-> models::Scenario get_scenario(tenant_id, project_id, scenario_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::Scenario scenarios_period_get_scenario(tenant_id, project_id, scenario_id, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -79,9 +79,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## list_scenarios
+## scenarios_period_list_scenarios
 
-> models::ListScenariosResponse list_scenarios(tenant_id, project_id, limit, cursor, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::ListScenariosResponse scenarios_period_list_scenarios(tenant_id, project_id, limit, cursor, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -114,9 +114,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## mine_scenarios
+## scenarios_period_mine_scenarios
 
-> models::MineScenariosResponse mine_scenarios(tenant_id, project_id, mine_scenarios_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::MineScenariosResponse scenarios_period_mine_scenarios(tenant_id, project_id, mine_scenarios_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -146,4 +146,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -6,10 +6,10 @@ Result of executing a tool — Composio's `{successful, data, error}` envelope.
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**data** | **object** | Tool output payload (shape is tool-specific). | [optional] 
-**error** | **str** | Error message when &#x60;successful&#x60; is false. | [optional] 
-**log_id** | **str** | Composio execution log id, for tracing. | [optional] 
-**successful** | **bool** | Whether the tool reported success. | 
+**data** | **object** | Tool output payload (shape is tool-specific). | [optional]
+**error** | **str** | Error message when &#x60;successful&#x60; is false. | [optional]
+**log_id** | **str** | Composio execution log id, for tracing. | [optional]
+**successful** | **bool** | Whether the tool reported success. |
 
 ## Example
 
@@ -29,5 +29,3 @@ tool_execution_dict = tool_execution_instance.to_dict()
 tool_execution_from_dict = ToolExecution.from_dict(tool_execution_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

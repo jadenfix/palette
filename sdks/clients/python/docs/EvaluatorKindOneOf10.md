@@ -6,7 +6,7 @@ Browser recovery: passes when the run either hit no errors or recovered to a suc
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**type** | **str** |  | 
+**type** | **str** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ evaluator_kind_one_of10_dict = evaluator_kind_one_of10_instance.to_dict()
 evaluator_kind_one_of10_from_dict = EvaluatorKindOneOf10.from_dict(evaluator_kind_one_of10_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

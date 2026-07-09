@@ -4,18 +4,18 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**DurationMs** | Pointer to **NullableInt64** |  | [optional] 
-**EndedAt** | Pointer to **NullableTime** |  | [optional] 
-**FirstSpanName** | **string** |  | 
-**Models** | [**[]ModelRef**](ModelRef.md) |  | 
-**ProjectId** | **string** |  | 
-**ReleaseIds** | **[]string** |  | 
-**SpanCount** | **int32** |  | 
-**StartedAt** | **time.Time** |  | 
-**Status** | [**SpanStatus**](SpanStatus.md) |  | 
-**TenantId** | **string** |  | 
-**TotalCost** | Pointer to [**NullableMoney**](Money.md) |  | [optional] 
-**TraceId** | **string** |  | 
+**DurationMs** | Pointer to **NullableInt64** |  | [optional]
+**EndedAt** | Pointer to **NullableTime** |  | [optional]
+**FirstSpanName** | **string** |  |
+**Models** | [**[]ModelRef**](ModelRef.md) |  |
+**ProjectId** | **string** |  |
+**ReleaseIds** | **[]string** |  |
+**SpanCount** | **int32** |  |
+**StartedAt** | **time.Time** |  |
+**Status** | [**SpanStatus**](SpanStatus.md) |  |
+**TenantId** | **string** |  |
+**TotalCost** | Pointer to [**NullableMoney**](Money.md) |  | [optional]
+**TraceId** | **string** |  |
 
 ## Methods
 
@@ -323,5 +323,3 @@ SetTraceId sets TraceId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -11,6 +11,6 @@
 
 
 calibration_report_t*
-CalibrationsAPI_runCalibration(apiClient_t *apiClient, char *tenant_id, char *project_id, char *dataset_id, char *version_id, run_calibration_http_request_t *run_calibration_http_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+CalibrationsAPI_calibrationsRunCalibration(apiClient_t *apiClient, char *tenant_id, char *project_id, char *dataset_id, char *version_id, run_calibration_http_request_t *run_calibration_http_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 

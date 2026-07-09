@@ -62,7 +62,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<Dataset>> createDataset(
+    pplx::task<std::shared_ptr<Dataset>> datasets_createDataset(
         utility::string_t tenantId,
         utility::string_t projectId,
         std::shared_ptr<CreateDatasetRequest> createDatasetRequest,
@@ -85,7 +85,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<DatasetVersionSnapshot>> createDatasetVersion(
+    pplx::task<std::shared_ptr<DatasetVersionSnapshot>> datasets_createDatasetVersion(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t datasetId,
@@ -109,7 +109,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<DatasetCase>> promoteDatasetCaseFromTrace(
+    pplx::task<std::shared_ptr<DatasetCase>> datasets_promoteDatasetCaseFromTrace(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t datasetId,

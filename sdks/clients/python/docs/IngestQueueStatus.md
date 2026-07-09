@@ -5,12 +5,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**dead_letters** | [**List[DeadLetter]**](DeadLetter.md) |  | 
-**project_id** | **str** |  | 
-**tenant_id** | **str** |  | 
-**total_depth** | **int** |  | 
-**trace_ingested_depth** | **int** |  | 
-**trace_write_depth** | **int** |  | 
+**dead_letters** | [**List[DeadLetter]**](DeadLetter.md) |  |
+**project_id** | **str** |  |
+**tenant_id** | **str** |  |
+**total_depth** | **int** |  |
+**trace_ingested_depth** | **int** |  |
+**trace_write_depth** | **int** |  |
 
 ## Example
 
@@ -30,5 +30,3 @@ ingest_queue_status_dict = ingest_queue_status_instance.to_dict()
 ingest_queue_status_from_dict = IngestQueueStatus.from_dict(ingest_queue_status_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

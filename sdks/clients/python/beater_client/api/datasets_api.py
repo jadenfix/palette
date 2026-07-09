@@ -45,7 +45,7 @@ class DatasetsApi:
 
 
     @validate_call
-    def create_dataset(
+    def datasets_create_dataset(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -67,7 +67,7 @@ class DatasetsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> Dataset:
-        """create_dataset
+        """datasets_create_dataset
 
 
         :param tenant_id: tenant_id (required)
@@ -106,7 +106,7 @@ class DatasetsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_dataset_serialize(
+        _param = self._datasets_create_dataset_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_dataset_request=create_dataset_request,
@@ -138,7 +138,7 @@ class DatasetsApi:
 
 
     @validate_call
-    def create_dataset_with_http_info(
+    def datasets_create_dataset_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -160,7 +160,7 @@ class DatasetsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[Dataset]:
-        """create_dataset
+        """datasets_create_dataset
 
 
         :param tenant_id: tenant_id (required)
@@ -199,7 +199,7 @@ class DatasetsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_dataset_serialize(
+        _param = self._datasets_create_dataset_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_dataset_request=create_dataset_request,
@@ -231,7 +231,7 @@ class DatasetsApi:
 
 
     @validate_call
-    def create_dataset_without_preload_content(
+    def datasets_create_dataset_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -253,7 +253,7 @@ class DatasetsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """create_dataset
+        """datasets_create_dataset
 
 
         :param tenant_id: tenant_id (required)
@@ -292,7 +292,7 @@ class DatasetsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_dataset_serialize(
+        _param = self._datasets_create_dataset_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_dataset_request=create_dataset_request,
@@ -319,7 +319,7 @@ class DatasetsApi:
         return response_data.response
 
 
-    def _create_dataset_serialize(
+    def _datasets_create_dataset_serialize(
         self,
         tenant_id,
         project_id,
@@ -414,7 +414,7 @@ class DatasetsApi:
 
 
     @validate_call
-    def create_dataset_version(
+    def datasets_create_dataset_version(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -437,7 +437,7 @@ class DatasetsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> DatasetVersionSnapshot:
-        """create_dataset_version
+        """datasets_create_dataset_version
 
 
         :param tenant_id: tenant_id (required)
@@ -478,7 +478,7 @@ class DatasetsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_dataset_version_serialize(
+        _param = self._datasets_create_dataset_version_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             dataset_id=dataset_id,
@@ -512,7 +512,7 @@ class DatasetsApi:
 
 
     @validate_call
-    def create_dataset_version_with_http_info(
+    def datasets_create_dataset_version_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -535,7 +535,7 @@ class DatasetsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[DatasetVersionSnapshot]:
-        """create_dataset_version
+        """datasets_create_dataset_version
 
 
         :param tenant_id: tenant_id (required)
@@ -576,7 +576,7 @@ class DatasetsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_dataset_version_serialize(
+        _param = self._datasets_create_dataset_version_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             dataset_id=dataset_id,
@@ -610,7 +610,7 @@ class DatasetsApi:
 
 
     @validate_call
-    def create_dataset_version_without_preload_content(
+    def datasets_create_dataset_version_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -633,7 +633,7 @@ class DatasetsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """create_dataset_version
+        """datasets_create_dataset_version
 
 
         :param tenant_id: tenant_id (required)
@@ -674,7 +674,7 @@ class DatasetsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_dataset_version_serialize(
+        _param = self._datasets_create_dataset_version_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             dataset_id=dataset_id,
@@ -703,7 +703,7 @@ class DatasetsApi:
         return response_data.response
 
 
-    def _create_dataset_version_serialize(
+    def _datasets_create_dataset_version_serialize(
         self,
         tenant_id,
         project_id,
@@ -801,7 +801,7 @@ class DatasetsApi:
 
 
     @validate_call
-    def promote_dataset_case_from_trace(
+    def datasets_promote_dataset_case_from_trace(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -824,7 +824,7 @@ class DatasetsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> DatasetCase:
-        """promote_dataset_case_from_trace
+        """datasets_promote_dataset_case_from_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -865,7 +865,7 @@ class DatasetsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._promote_dataset_case_from_trace_serialize(
+        _param = self._datasets_promote_dataset_case_from_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             dataset_id=dataset_id,
@@ -899,7 +899,7 @@ class DatasetsApi:
 
 
     @validate_call
-    def promote_dataset_case_from_trace_with_http_info(
+    def datasets_promote_dataset_case_from_trace_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -922,7 +922,7 @@ class DatasetsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[DatasetCase]:
-        """promote_dataset_case_from_trace
+        """datasets_promote_dataset_case_from_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -963,7 +963,7 @@ class DatasetsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._promote_dataset_case_from_trace_serialize(
+        _param = self._datasets_promote_dataset_case_from_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             dataset_id=dataset_id,
@@ -997,7 +997,7 @@ class DatasetsApi:
 
 
     @validate_call
-    def promote_dataset_case_from_trace_without_preload_content(
+    def datasets_promote_dataset_case_from_trace_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1020,7 +1020,7 @@ class DatasetsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """promote_dataset_case_from_trace
+        """datasets_promote_dataset_case_from_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -1061,7 +1061,7 @@ class DatasetsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._promote_dataset_case_from_trace_serialize(
+        _param = self._datasets_promote_dataset_case_from_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             dataset_id=dataset_id,
@@ -1090,7 +1090,7 @@ class DatasetsApi:
         return response_data.response
 
 
-    def _promote_dataset_case_from_trace_serialize(
+    def _datasets_promote_dataset_case_from_trace_serialize(
         self,
         tenant_id,
         project_id,

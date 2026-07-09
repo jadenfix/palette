@@ -36,6 +36,7 @@ use utoipa::OpenApi;
         crate::run_judge_eval_route,
         crate::list_judge_ledger_route,
         crate::get_usage_summary_route,
+        crate::get_palette_connect_status_route,
         crate::list_audit_events_route,
         crate::get_ingest_queue_status_route,
         crate::reconcile_trace_ingested_route,
@@ -96,6 +97,7 @@ use utoipa::OpenApi;
         (name = "online", description = "Online sampling decisions"),
         (name = "alerts", description = "Alert policy evaluation"),
         (name = "usage", description = "Usage summaries"),
+        (name = "connect", description = "Hosted product setup and readiness"),
         (name = "audit", description = "Audit events"),
         (name = "apiKeys", description = "API key management"),
         (name = "providerSecrets", description = "Provider secret management"),
@@ -104,43 +106,67 @@ use utoipa::OpenApi;
 )]
 pub struct BeaterApi;
 
-/// Billing/Stripe is a hosted concern. Its paths, schemas, and tag live in this
-/// separate document that is only compiled — and only merged into the public
-/// contract — under the non-default `billing` cargo feature, so the open-source
-/// API contract never advertises Stripe endpoints.
-#[cfg(feature = "billing")]
-#[derive(OpenApi)]
-#[openapi(
-    paths(
-        crate::get_plans_route,
-        crate::get_plan_route,
-        crate::get_subscription_route,
-        crate::create_subscription_route,
-        crate::change_subscription_plan_route,
-        crate::get_org_invoices_route,
-        crate::get_invoice_route,
-        crate::stripe_webhook_route,
-    ),
-    tags(
-        (name = "billing", description = "Plans, subscriptions, invoices, and Stripe billing"),
-    )
-)]
-pub struct BillingApi;
-
 /// Build the OpenAPI document, stamping the live crate version at runtime.
 ///
 /// The utoipa derive requires a literal `version`, so we override it here with
 /// the actual `CARGO_PKG_VERSION` to keep the spec in lockstep with the crate.
 pub fn openapi() -> utoipa::openapi::OpenApi {
     let mut doc = BeaterApi::openapi();
-    #[cfg(feature = "billing")]
-    doc.merge(BillingApi::openapi());
     doc.info.version = env!("CARGO_PKG_VERSION").to_string();
+    normalize_operation_ids(&mut doc);
     doc
 }
 
 pub fn openapi_json_pretty() -> Result<String, serde_json::Error> {
     openapi().to_pretty_json()
+}
+
+fn normalize_operation_ids(doc: &mut utoipa::openapi::OpenApi) {
+    for item in doc.paths.paths.values_mut() {
+        for operation in [
+            item.get.as_mut(),
+            item.put.as_mut(),
+            item.post.as_mut(),
+            item.delete.as_mut(),
+            item.options.as_mut(),
+            item.head.as_mut(),
+            item.patch.as_mut(),
+            item.trace.as_mut(),
+        ]
+        .into_iter()
+        .flatten()
+        {
+            let Some(operation_id) = operation.operation_id.as_deref() else {
+                continue;
+            };
+            if operation_id.contains('.') {
+                continue;
+            }
+            let tag = operation
+                .tags
+                .as_ref()
+                .and_then(|tags| tags.first())
+                .map(String::as_str)
+                .unwrap_or("api");
+            operation.operation_id =
+                Some(format!("{}.{}", tag, lower_camel_to_kebab(operation_id)));
+        }
+    }
+}
+
+fn lower_camel_to_kebab(value: &str) -> String {
+    let mut output = String::new();
+    for (index, ch) in value.chars().enumerate() {
+        if ch.is_ascii_uppercase() {
+            if index > 0 {
+                output.push('-');
+            }
+            output.push(ch.to_ascii_lowercase());
+        } else {
+            output.push(ch);
+        }
+    }
+    output
 }
 
 /// Percent-encode a value for safe interpolation into a request path segment or

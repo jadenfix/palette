@@ -47,7 +47,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def connect_connector(
+    def connectors_connect_connector(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -69,7 +69,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ConnectionLink:
-        """connect_connector
+        """connectors_connect_connector
 
 
         :param tenant_id: tenant_id (required)
@@ -108,7 +108,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._connect_connector_serialize(
+        _param = self._connectors_connect_connector_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             connect_connector_request=connect_connector_request,
@@ -141,7 +141,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def connect_connector_with_http_info(
+    def connectors_connect_connector_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -163,7 +163,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ConnectionLink]:
-        """connect_connector
+        """connectors_connect_connector
 
 
         :param tenant_id: tenant_id (required)
@@ -202,7 +202,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._connect_connector_serialize(
+        _param = self._connectors_connect_connector_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             connect_connector_request=connect_connector_request,
@@ -235,7 +235,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def connect_connector_without_preload_content(
+    def connectors_connect_connector_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -257,7 +257,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """connect_connector
+        """connectors_connect_connector
 
 
         :param tenant_id: tenant_id (required)
@@ -296,7 +296,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._connect_connector_serialize(
+        _param = self._connectors_connect_connector_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             connect_connector_request=connect_connector_request,
@@ -324,7 +324,7 @@ class ConnectorsApi:
         return response_data.response
 
 
-    def _connect_connector_serialize(
+    def _connectors_connect_connector_serialize(
         self,
         tenant_id,
         project_id,
@@ -419,7 +419,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def connector_status(
+    def connectors_connector_status(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -441,7 +441,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ConnectionStatus:
-        """connector_status
+        """connectors_connector_status
 
 
         :param tenant_id: tenant_id (required)
@@ -480,7 +480,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._connector_status_serialize(
+        _param = self._connectors_connector_status_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             toolkit=toolkit,
@@ -513,7 +513,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def connector_status_with_http_info(
+    def connectors_connector_status_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -535,7 +535,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ConnectionStatus]:
-        """connector_status
+        """connectors_connector_status
 
 
         :param tenant_id: tenant_id (required)
@@ -574,7 +574,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._connector_status_serialize(
+        _param = self._connectors_connector_status_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             toolkit=toolkit,
@@ -607,7 +607,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def connector_status_without_preload_content(
+    def connectors_connector_status_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -629,7 +629,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """connector_status
+        """connectors_connector_status
 
 
         :param tenant_id: tenant_id (required)
@@ -668,7 +668,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._connector_status_serialize(
+        _param = self._connectors_connector_status_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             toolkit=toolkit,
@@ -696,7 +696,7 @@ class ConnectorsApi:
         return response_data.response
 
 
-    def _connector_status_serialize(
+    def _connectors_connector_status_serialize(
         self,
         tenant_id,
         project_id,
@@ -780,7 +780,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def get_connector_skills(
+    def connectors_get_connector_skills(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -802,7 +802,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ConnectorSkillsResponse:
-        """get_connector_skills
+        """connectors_get_connector_skills
 
 
         :param tenant_id: tenant_id (required)
@@ -841,7 +841,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_connector_skills_serialize(
+        _param = self._connectors_get_connector_skills_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             toolkit=toolkit,
@@ -874,7 +874,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def get_connector_skills_with_http_info(
+    def connectors_get_connector_skills_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -896,7 +896,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ConnectorSkillsResponse]:
-        """get_connector_skills
+        """connectors_get_connector_skills
 
 
         :param tenant_id: tenant_id (required)
@@ -935,7 +935,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_connector_skills_serialize(
+        _param = self._connectors_get_connector_skills_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             toolkit=toolkit,
@@ -968,7 +968,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def get_connector_skills_without_preload_content(
+    def connectors_get_connector_skills_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -990,7 +990,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """get_connector_skills
+        """connectors_get_connector_skills
 
 
         :param tenant_id: tenant_id (required)
@@ -1029,7 +1029,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_connector_skills_serialize(
+        _param = self._connectors_get_connector_skills_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             toolkit=toolkit,
@@ -1057,7 +1057,7 @@ class ConnectorsApi:
         return response_data.response
 
 
-    def _get_connector_skills_serialize(
+    def _connectors_get_connector_skills_serialize(
         self,
         tenant_id,
         project_id,
@@ -1141,7 +1141,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def invoke_connector_tool(
+    def connectors_invoke_connector_tool(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1163,7 +1163,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ToolExecution:
-        """invoke_connector_tool
+        """connectors_invoke_connector_tool
 
 
         :param tenant_id: tenant_id (required)
@@ -1202,7 +1202,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._invoke_connector_tool_serialize(
+        _param = self._connectors_invoke_connector_tool_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             invoke_connector_request=invoke_connector_request,
@@ -1235,7 +1235,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def invoke_connector_tool_with_http_info(
+    def connectors_invoke_connector_tool_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1257,7 +1257,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ToolExecution]:
-        """invoke_connector_tool
+        """connectors_invoke_connector_tool
 
 
         :param tenant_id: tenant_id (required)
@@ -1296,7 +1296,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._invoke_connector_tool_serialize(
+        _param = self._connectors_invoke_connector_tool_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             invoke_connector_request=invoke_connector_request,
@@ -1329,7 +1329,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def invoke_connector_tool_without_preload_content(
+    def connectors_invoke_connector_tool_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1351,7 +1351,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """invoke_connector_tool
+        """connectors_invoke_connector_tool
 
 
         :param tenant_id: tenant_id (required)
@@ -1390,7 +1390,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._invoke_connector_tool_serialize(
+        _param = self._connectors_invoke_connector_tool_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             invoke_connector_request=invoke_connector_request,
@@ -1418,7 +1418,7 @@ class ConnectorsApi:
         return response_data.response
 
 
-    def _invoke_connector_tool_serialize(
+    def _connectors_invoke_connector_tool_serialize(
         self,
         tenant_id,
         project_id,
@@ -1513,7 +1513,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def list_connector_tools(
+    def connectors_list_connector_tools(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1536,7 +1536,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> List[ConnectorTool]:
-        """list_connector_tools
+        """connectors_list_connector_tools
 
 
         :param tenant_id: tenant_id (required)
@@ -1577,7 +1577,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_connector_tools_serialize(
+        _param = self._connectors_list_connector_tools_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             toolkit=toolkit,
@@ -1611,7 +1611,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def list_connector_tools_with_http_info(
+    def connectors_list_connector_tools_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1634,7 +1634,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[List[ConnectorTool]]:
-        """list_connector_tools
+        """connectors_list_connector_tools
 
 
         :param tenant_id: tenant_id (required)
@@ -1675,7 +1675,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_connector_tools_serialize(
+        _param = self._connectors_list_connector_tools_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             toolkit=toolkit,
@@ -1709,7 +1709,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def list_connector_tools_without_preload_content(
+    def connectors_list_connector_tools_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1732,7 +1732,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """list_connector_tools
+        """connectors_list_connector_tools
 
 
         :param tenant_id: tenant_id (required)
@@ -1773,7 +1773,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_connector_tools_serialize(
+        _param = self._connectors_list_connector_tools_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             toolkit=toolkit,
@@ -1802,7 +1802,7 @@ class ConnectorsApi:
         return response_data.response
 
 
-    def _list_connector_tools_serialize(
+    def _connectors_list_connector_tools_serialize(
         self,
         tenant_id,
         project_id,
@@ -1891,7 +1891,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def list_connectors(
+    def connectors_list_connectors(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1913,7 +1913,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> List[Toolkit]:
-        """list_connectors
+        """connectors_list_connectors
 
 
         :param tenant_id: tenant_id (required)
@@ -1952,7 +1952,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_connectors_serialize(
+        _param = self._connectors_list_connectors_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -1985,7 +1985,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def list_connectors_with_http_info(
+    def connectors_list_connectors_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -2007,7 +2007,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[List[Toolkit]]:
-        """list_connectors
+        """connectors_list_connectors
 
 
         :param tenant_id: tenant_id (required)
@@ -2046,7 +2046,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_connectors_serialize(
+        _param = self._connectors_list_connectors_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -2079,7 +2079,7 @@ class ConnectorsApi:
 
 
     @validate_call
-    def list_connectors_without_preload_content(
+    def connectors_list_connectors_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -2101,7 +2101,7 @@ class ConnectorsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """list_connectors
+        """connectors_list_connectors
 
 
         :param tenant_id: tenant_id (required)
@@ -2140,7 +2140,7 @@ class ConnectorsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_connectors_serialize(
+        _param = self._connectors_list_connectors_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             limit=limit,
@@ -2168,7 +2168,7 @@ class ConnectorsApi:
         return response_data.response
 
 
-    def _list_connectors_serialize(
+    def _connectors_list_connectors_serialize(
         self,
         tenant_id,
         project_id,

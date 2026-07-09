@@ -8,7 +8,7 @@
 
 
 alert_decision_t*
-AlertsAPI_evaluateAlert(apiClient_t *apiClient, char *tenant_id, char *project_id, char *trace_id, evaluate_alert_request_t *evaluate_alert_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+AlertsAPI_alertsEvaluateAlert(apiClient_t *apiClient, char *tenant_id, char *project_id, char *trace_id, evaluate_alert_request_t *evaluate_alert_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();

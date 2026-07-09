@@ -22,6 +22,7 @@ from beater_client.api.api_keys_api import ApiKeysApi
 from beater_client.api.archive_api import ArchiveApi
 from beater_client.api.audit_api import AuditApi
 from beater_client.api.calibrations_api import CalibrationsApi
+from beater_client.api.connect_api import ConnectApi
 from beater_client.api.connectors_api import ConnectorsApi
 from beater_client.api.datasets_api import DatasetsApi
 from beater_client.api.evals_api import EvalsApi
@@ -146,6 +147,8 @@ from beater_client.models.online_sampling_policy import OnlineSamplingPolicy
 from beater_client.models.otlp_ingest_outcome import OtlpIngestOutcome
 from beater_client.models.page_run_summary import PageRunSummary
 from beater_client.models.page_run_summary_items_inner import PageRunSummaryItemsInner
+from beater_client.models.palette_connect_status import PaletteConnectStatus
+from beater_client.models.palette_connect_status_response import PaletteConnectStatusResponse
 from beater_client.models.perturbation_knobs import PerturbationKnobs
 from beater_client.models.promote_review_annotation_http_request import PromoteReviewAnnotationHttpRequest
 from beater_client.models.promote_trace_case_request import PromoteTraceCaseRequest

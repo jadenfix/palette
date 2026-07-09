@@ -4,26 +4,26 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**ArchiveAPI_archiveTrace**](ArchiveAPI.md#ArchiveAPI_archiveTrace) | **POST** /v1/archive/{tenant_id}/{project_id}/{trace_id} | 
-[**ArchiveAPI_queryArchiveSpans**](ArchiveAPI.md#ArchiveAPI_queryArchiveSpans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans | 
+[**ArchiveAPI_archiveArchiveTrace**](ArchiveAPI.md#ArchiveAPI_archiveArchiveTrace) | **POST** /v1/archive/{tenant_id}/{project_id}/{trace_id} |
+[**ArchiveAPI_archiveQueryArchiveSpans**](ArchiveAPI.md#ArchiveAPI_archiveQueryArchiveSpans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans |
 
 
-# **ArchiveAPI_archiveTrace**
+# **ArchiveAPI_archiveArchiveTrace**
 ```c
-archive_manifest_t* ArchiveAPI_archiveTrace(apiClient_t *apiClient, char *tenant_id, char *project_id, char *trace_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+archive_manifest_t* ArchiveAPI_archiveArchiveTrace(apiClient_t *apiClient, char *tenant_id, char *project_id, char *trace_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **apiClient** | **apiClient_t \*** | context containing the client configuration |
-**tenant_id** | **char \*** | tenant_id | 
-**project_id** | **char \*** | project_id | 
-**trace_id** | **char \*** | trace_id | 
-**authorization** | **char \*** | Bearer API token for strict auth | [optional] 
-**x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional] 
-**x_beater_project_id** | **char \*** | Strict-auth project scope | [optional] 
-**x_beater_environment_id** | **char \*** | Strict-auth environment scope | [optional] 
+**tenant_id** | **char \*** | tenant_id |
+**project_id** | **char \*** | project_id |
+**trace_id** | **char \*** | trace_id |
+**authorization** | **char \*** | Bearer API token for strict auth | [optional]
+**x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional]
+**x_beater_project_id** | **char \*** | Strict-auth project scope | [optional]
+**x_beater_environment_id** | **char \*** | Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -41,27 +41,27 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **ArchiveAPI_queryArchiveSpans**
+# **ArchiveAPI_archiveQueryArchiveSpans**
 ```c
-archive_query_response_t* ArchiveAPI_queryArchiveSpans(apiClient_t *apiClient, char *tenant_id, char *project_id, char *environment_id, char *trace_id, char *span_id, char *kind, char *status, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+archive_query_response_t* ArchiveAPI_archiveQueryArchiveSpans(apiClient_t *apiClient, char *tenant_id, char *project_id, char *environment_id, char *trace_id, char *span_id, char *kind, char *status, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **apiClient** | **apiClient_t \*** | context containing the client configuration |
-**tenant_id** | **char \*** | tenant_id | 
-**project_id** | **char \*** | project_id | 
-**environment_id** | **char \*** |  | [optional] 
-**trace_id** | **char \*** |  | [optional] 
-**span_id** | **char \*** |  | [optional] 
-**kind** | **char \*** |  | [optional] 
-**status** | **char \*** |  | [optional] 
-**limit** | **int \*** |  | [optional] 
-**authorization** | **char \*** | Bearer API token for strict auth | [optional] 
-**x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional] 
-**x_beater_project_id** | **char \*** | Strict-auth project scope | [optional] 
-**x_beater_environment_id** | **char \*** | Strict-auth environment scope | [optional] 
+**tenant_id** | **char \*** | tenant_id |
+**project_id** | **char \*** | project_id |
+**environment_id** | **char \*** |  | [optional]
+**trace_id** | **char \*** |  | [optional]
+**span_id** | **char \*** |  | [optional]
+**kind** | **char \*** |  | [optional]
+**status** | **char \*** |  | [optional]
+**limit** | **int \*** |  | [optional]
+**authorization** | **char \*** | Bearer API token for strict auth | [optional]
+**x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional]
+**x_beater_project_id** | **char \*** | Strict-auth project scope | [optional]
+**x_beater_environment_id** | **char \*** | Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -78,4 +78,3 @@ No authorization required
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

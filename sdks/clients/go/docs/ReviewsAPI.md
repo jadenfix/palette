@@ -4,17 +4,17 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**CreateReviewQueue**](ReviewsAPI.md#CreateReviewQueue) | **Post** /v1/review-queues/{tenant_id}/{project_id} | 
-[**EnqueueReviewTaskFromTrace**](ReviewsAPI.md#EnqueueReviewTaskFromTrace) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace | 
-[**ListReviewTasks**](ReviewsAPI.md#ListReviewTasks) | **Get** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks | 
-[**PromoteReviewAnnotation**](ReviewsAPI.md#PromoteReviewAnnotation) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote | 
-[**SubmitReviewAnnotation**](ReviewsAPI.md#SubmitReviewAnnotation) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations | 
+[**ReviewsCreateReviewQueue**](ReviewsAPI.md#ReviewsCreateReviewQueue) | **Post** /v1/review-queues/{tenant_id}/{project_id} |
+[**ReviewsEnqueueReviewTaskFromTrace**](ReviewsAPI.md#ReviewsEnqueueReviewTaskFromTrace) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace |
+[**ReviewsListReviewTasks**](ReviewsAPI.md#ReviewsListReviewTasks) | **Get** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks |
+[**ReviewsPromoteReviewAnnotation**](ReviewsAPI.md#ReviewsPromoteReviewAnnotation) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote |
+[**ReviewsSubmitReviewAnnotation**](ReviewsAPI.md#ReviewsSubmitReviewAnnotation) | **Post** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations |
 
 
 
-## CreateReviewQueue
+## ReviewsCreateReviewQueue
 
-> ReviewQueue CreateReviewQueue(ctx, tenantId, projectId).CreateReviewQueueHttpRequest(createReviewQueueHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> ReviewQueue ReviewsCreateReviewQueue(ctx, tenantId, projectId).CreateReviewQueueHttpRequest(createReviewQueueHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -33,7 +33,7 @@ import (
 func main() {
 	tenantId := "tenantId_example" // string | tenant_id
 	projectId := "projectId_example" // string | project_id
-	createReviewQueueHttpRequest := *openapiclient.NewCreateReviewQueueHttpRequest(interface{}(123), "Name_example") // CreateReviewQueueHttpRequest | 
+	createReviewQueueHttpRequest := *openapiclient.NewCreateReviewQueueHttpRequest(interface{}(123), "Name_example") // CreateReviewQueueHttpRequest |
 	authorization := "authorization_example" // string | Bearer API token for strict auth (optional)
 	xBeaterApiKey := "xBeaterApiKey_example" // string | API key alternative for strict auth (optional)
 	xBeaterProjectId := "xBeaterProjectId_example" // string | Strict-auth project scope (optional)
@@ -41,13 +41,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ReviewsAPI.CreateReviewQueue(context.Background(), tenantId, projectId).CreateReviewQueueHttpRequest(createReviewQueueHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ReviewsAPI.ReviewsCreateReviewQueue(context.Background(), tenantId, projectId).CreateReviewQueueHttpRequest(createReviewQueueHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ReviewsAPI.CreateReviewQueue``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ReviewsAPI.ReviewsCreateReviewQueue``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `CreateReviewQueue`: ReviewQueue
-	fmt.Fprintf(os.Stdout, "Response from `ReviewsAPI.CreateReviewQueue`: %v\n", resp)
+	// response from `ReviewsCreateReviewQueue`: ReviewQueue
+	fmt.Fprintf(os.Stdout, "Response from `ReviewsAPI.ReviewsCreateReviewQueue`: %v\n", resp)
 }
 ```
 
@@ -57,23 +57,23 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiCreateReviewQueueRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiReviewsCreateReviewQueueRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **createReviewQueueHttpRequest** | [**CreateReviewQueueHttpRequest**](CreateReviewQueueHttpRequest.md) |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **createReviewQueueHttpRequest** | [**CreateReviewQueueHttpRequest**](CreateReviewQueueHttpRequest.md) |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -93,9 +93,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## EnqueueReviewTaskFromTrace
+## ReviewsEnqueueReviewTaskFromTrace
 
-> ReviewTask EnqueueReviewTaskFromTrace(ctx, tenantId, projectId, queueId).EnqueueReviewTaskFromTraceHttpRequest(enqueueReviewTaskFromTraceHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> ReviewTask ReviewsEnqueueReviewTaskFromTrace(ctx, tenantId, projectId, queueId).EnqueueReviewTaskFromTraceHttpRequest(enqueueReviewTaskFromTraceHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -115,7 +115,7 @@ func main() {
 	tenantId := "tenantId_example" // string | tenant_id
 	projectId := "projectId_example" // string | project_id
 	queueId := "queueId_example" // string | queue_id
-	enqueueReviewTaskFromTraceHttpRequest := *openapiclient.NewEnqueueReviewTaskFromTraceHttpRequest("TraceId_example") // EnqueueReviewTaskFromTraceHttpRequest | 
+	enqueueReviewTaskFromTraceHttpRequest := *openapiclient.NewEnqueueReviewTaskFromTraceHttpRequest("TraceId_example") // EnqueueReviewTaskFromTraceHttpRequest |
 	authorization := "authorization_example" // string | Bearer API token for strict auth (optional)
 	xBeaterApiKey := "xBeaterApiKey_example" // string | API key alternative for strict auth (optional)
 	xBeaterProjectId := "xBeaterProjectId_example" // string | Strict-auth project scope (optional)
@@ -123,13 +123,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ReviewsAPI.EnqueueReviewTaskFromTrace(context.Background(), tenantId, projectId, queueId).EnqueueReviewTaskFromTraceHttpRequest(enqueueReviewTaskFromTraceHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ReviewsAPI.ReviewsEnqueueReviewTaskFromTrace(context.Background(), tenantId, projectId, queueId).EnqueueReviewTaskFromTraceHttpRequest(enqueueReviewTaskFromTraceHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ReviewsAPI.EnqueueReviewTaskFromTrace``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ReviewsAPI.ReviewsEnqueueReviewTaskFromTrace``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `EnqueueReviewTaskFromTrace`: ReviewTask
-	fmt.Fprintf(os.Stdout, "Response from `ReviewsAPI.EnqueueReviewTaskFromTrace`: %v\n", resp)
+	// response from `ReviewsEnqueueReviewTaskFromTrace`: ReviewTask
+	fmt.Fprintf(os.Stdout, "Response from `ReviewsAPI.ReviewsEnqueueReviewTaskFromTrace`: %v\n", resp)
 }
 ```
 
@@ -139,13 +139,13 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
-**queueId** | **string** | queue_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
+**queueId** | **string** | queue_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiEnqueueReviewTaskFromTraceRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiReviewsEnqueueReviewTaskFromTraceRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -153,11 +153,11 @@ Name | Type | Description  | Notes
 
 
 
- **enqueueReviewTaskFromTraceHttpRequest** | [**EnqueueReviewTaskFromTraceHttpRequest**](EnqueueReviewTaskFromTraceHttpRequest.md) |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **enqueueReviewTaskFromTraceHttpRequest** | [**EnqueueReviewTaskFromTraceHttpRequest**](EnqueueReviewTaskFromTraceHttpRequest.md) |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -177,9 +177,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## ListReviewTasks
+## ReviewsListReviewTasks
 
-> []ReviewTask ListReviewTasks(ctx, tenantId, projectId, queueId).State(state).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> []ReviewTask ReviewsListReviewTasks(ctx, tenantId, projectId, queueId).State(state).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -207,13 +207,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ReviewsAPI.ListReviewTasks(context.Background(), tenantId, projectId, queueId).State(state).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ReviewsAPI.ReviewsListReviewTasks(context.Background(), tenantId, projectId, queueId).State(state).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ReviewsAPI.ListReviewTasks``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ReviewsAPI.ReviewsListReviewTasks``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ListReviewTasks`: []ReviewTask
-	fmt.Fprintf(os.Stdout, "Response from `ReviewsAPI.ListReviewTasks`: %v\n", resp)
+	// response from `ReviewsListReviewTasks`: []ReviewTask
+	fmt.Fprintf(os.Stdout, "Response from `ReviewsAPI.ReviewsListReviewTasks`: %v\n", resp)
 }
 ```
 
@@ -223,13 +223,13 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
-**queueId** | **string** | queue_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
+**queueId** | **string** | queue_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiListReviewTasksRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiReviewsListReviewTasksRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -237,11 +237,11 @@ Name | Type | Description  | Notes
 
 
 
- **state** | [**ReviewTaskState**](ReviewTaskState.md) |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **state** | [**ReviewTaskState**](ReviewTaskState.md) |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -261,9 +261,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## PromoteReviewAnnotation
+## ReviewsPromoteReviewAnnotation
 
-> DatasetCase PromoteReviewAnnotation(ctx, tenantId, projectId, queueId, taskId, annotationId).PromoteReviewAnnotationHttpRequest(promoteReviewAnnotationHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> DatasetCase ReviewsPromoteReviewAnnotation(ctx, tenantId, projectId, queueId, taskId, annotationId).PromoteReviewAnnotationHttpRequest(promoteReviewAnnotationHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -285,7 +285,7 @@ func main() {
 	queueId := "queueId_example" // string | queue_id
 	taskId := "taskId_example" // string | task_id
 	annotationId := "annotationId_example" // string | annotation_id
-	promoteReviewAnnotationHttpRequest := *openapiclient.NewPromoteReviewAnnotationHttpRequest("DatasetId_example") // PromoteReviewAnnotationHttpRequest | 
+	promoteReviewAnnotationHttpRequest := *openapiclient.NewPromoteReviewAnnotationHttpRequest("DatasetId_example") // PromoteReviewAnnotationHttpRequest |
 	authorization := "authorization_example" // string | Bearer API token for strict auth (optional)
 	xBeaterApiKey := "xBeaterApiKey_example" // string | API key alternative for strict auth (optional)
 	xBeaterProjectId := "xBeaterProjectId_example" // string | Strict-auth project scope (optional)
@@ -293,13 +293,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ReviewsAPI.PromoteReviewAnnotation(context.Background(), tenantId, projectId, queueId, taskId, annotationId).PromoteReviewAnnotationHttpRequest(promoteReviewAnnotationHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ReviewsAPI.ReviewsPromoteReviewAnnotation(context.Background(), tenantId, projectId, queueId, taskId, annotationId).PromoteReviewAnnotationHttpRequest(promoteReviewAnnotationHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ReviewsAPI.PromoteReviewAnnotation``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ReviewsAPI.ReviewsPromoteReviewAnnotation``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `PromoteReviewAnnotation`: DatasetCase
-	fmt.Fprintf(os.Stdout, "Response from `ReviewsAPI.PromoteReviewAnnotation`: %v\n", resp)
+	// response from `ReviewsPromoteReviewAnnotation`: DatasetCase
+	fmt.Fprintf(os.Stdout, "Response from `ReviewsAPI.ReviewsPromoteReviewAnnotation`: %v\n", resp)
 }
 ```
 
@@ -309,15 +309,15 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
-**queueId** | **string** | queue_id | 
-**taskId** | **string** | task_id | 
-**annotationId** | **string** | annotation_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
+**queueId** | **string** | queue_id |
+**taskId** | **string** | task_id |
+**annotationId** | **string** | annotation_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiPromoteReviewAnnotationRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiReviewsPromoteReviewAnnotationRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -327,11 +327,11 @@ Name | Type | Description  | Notes
 
 
 
- **promoteReviewAnnotationHttpRequest** | [**PromoteReviewAnnotationHttpRequest**](PromoteReviewAnnotationHttpRequest.md) |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **promoteReviewAnnotationHttpRequest** | [**PromoteReviewAnnotationHttpRequest**](PromoteReviewAnnotationHttpRequest.md) |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -351,9 +351,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## SubmitReviewAnnotation
+## ReviewsSubmitReviewAnnotation
 
-> ReviewAnnotation SubmitReviewAnnotation(ctx, tenantId, projectId, queueId, taskId).SubmitReviewAnnotationHttpRequest(submitReviewAnnotationHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> ReviewAnnotation ReviewsSubmitReviewAnnotation(ctx, tenantId, projectId, queueId, taskId).SubmitReviewAnnotationHttpRequest(submitReviewAnnotationHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -374,7 +374,7 @@ func main() {
 	projectId := "projectId_example" // string | project_id
 	queueId := "queueId_example" // string | queue_id
 	taskId := "taskId_example" // string | task_id
-	submitReviewAnnotationHttpRequest := *openapiclient.NewSubmitReviewAnnotationHttpRequest(interface{}(123), "ReviewerId_example", openapiclient.ReviewVerdict("pass")) // SubmitReviewAnnotationHttpRequest | 
+	submitReviewAnnotationHttpRequest := *openapiclient.NewSubmitReviewAnnotationHttpRequest(interface{}(123), "ReviewerId_example", openapiclient.ReviewVerdict("pass")) // SubmitReviewAnnotationHttpRequest |
 	authorization := "authorization_example" // string | Bearer API token for strict auth (optional)
 	xBeaterApiKey := "xBeaterApiKey_example" // string | API key alternative for strict auth (optional)
 	xBeaterProjectId := "xBeaterProjectId_example" // string | Strict-auth project scope (optional)
@@ -382,13 +382,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.ReviewsAPI.SubmitReviewAnnotation(context.Background(), tenantId, projectId, queueId, taskId).SubmitReviewAnnotationHttpRequest(submitReviewAnnotationHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.ReviewsAPI.ReviewsSubmitReviewAnnotation(context.Background(), tenantId, projectId, queueId, taskId).SubmitReviewAnnotationHttpRequest(submitReviewAnnotationHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ReviewsAPI.SubmitReviewAnnotation``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `ReviewsAPI.ReviewsSubmitReviewAnnotation``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `SubmitReviewAnnotation`: ReviewAnnotation
-	fmt.Fprintf(os.Stdout, "Response from `ReviewsAPI.SubmitReviewAnnotation`: %v\n", resp)
+	// response from `ReviewsSubmitReviewAnnotation`: ReviewAnnotation
+	fmt.Fprintf(os.Stdout, "Response from `ReviewsAPI.ReviewsSubmitReviewAnnotation`: %v\n", resp)
 }
 ```
 
@@ -398,14 +398,14 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
-**queueId** | **string** | queue_id | 
-**taskId** | **string** | task_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
+**queueId** | **string** | queue_id |
+**taskId** | **string** | task_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiSubmitReviewAnnotationRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiReviewsSubmitReviewAnnotationRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -414,11 +414,11 @@ Name | Type | Description  | Notes
 
 
 
- **submitReviewAnnotationHttpRequest** | [**SubmitReviewAnnotationHttpRequest**](SubmitReviewAnnotationHttpRequest.md) |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **submitReviewAnnotationHttpRequest** | [**SubmitReviewAnnotationHttpRequest**](SubmitReviewAnnotationHttpRequest.md) |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -436,4 +436,3 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

@@ -5,19 +5,19 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**cost** | [**Money**](Money.md) |  | [optional] 
-**created_at** | **datetime** |  | 
-**eval_result_id** | **str** |  | 
-**evidence** | **object** |  | 
-**label** | **str** |  | [optional] 
-**non_reproducible_reason** | **str** |  | [optional] 
-**project_id** | **str** |  | 
-**reproducibility** | [**EvalReproducibility**](EvalReproducibility.md) |  | 
-**score** | **float** |  | 
-**span_id** | **str** |  | [optional] 
-**tenant_id** | **str** |  | 
-**tokens** | [**TokenCounts**](TokenCounts.md) |  | [optional] 
-**trace_id** | **str** |  | 
+**cost** | [**Money**](Money.md) |  | [optional]
+**created_at** | **datetime** |  |
+**eval_result_id** | **str** |  |
+**evidence** | **object** |  |
+**label** | **str** |  | [optional]
+**non_reproducible_reason** | **str** |  | [optional]
+**project_id** | **str** |  |
+**reproducibility** | [**EvalReproducibility**](EvalReproducibility.md) |  |
+**score** | **float** |  |
+**span_id** | **str** |  | [optional]
+**tenant_id** | **str** |  |
+**tokens** | [**TokenCounts**](TokenCounts.md) |  | [optional]
+**trace_id** | **str** |  |
 
 ## Example
 
@@ -37,5 +37,3 @@ eval_result_dict = eval_result_instance.to_dict()
 eval_result_from_dict = EvalResult.from_dict(eval_result_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

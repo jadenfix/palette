@@ -10,6 +10,3 @@
 |**reference** | **Object** |  |  [optional] |
 |**spanId** | **String** |  |  [optional] |
 |**traceId** | **String** |  |  |
-
-
-

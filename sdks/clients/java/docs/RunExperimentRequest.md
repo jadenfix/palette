@@ -15,6 +15,3 @@
 |**evaluatorVersionId** | **String** |  |  |
 |**gatePolicy** | [**GatePolicy**](GatePolicy.md) |  |  [optional] |
 |**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |  |
-
-
-

@@ -16,6 +16,3 @@
 |**taskId** | **String** |  |  |
 |**tenantId** | **String** |  |  |
 |**verdict** | **ReviewVerdict** |  |  |
-
-
-

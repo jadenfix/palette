@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**GetTrace**](TracesAPI.md#GetTrace) | **Get** /v1/traces/{tenant_id}/{trace_id} | 
-[**ListTraces**](TracesAPI.md#ListTraces) | **Get** /v1/traces/{tenant_id} | 
+[**TracesGetTrace**](TracesAPI.md#TracesGetTrace) | **Get** /v1/traces/{tenant_id}/{trace_id} |
+[**TracesListTraces**](TracesAPI.md#TracesListTraces) | **Get** /v1/traces/{tenant_id} |
 
 
 
-## GetTrace
+## TracesGetTrace
 
-> TraceView GetTrace(ctx, tenantId, traceId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> TraceView TracesGetTrace(ctx, tenantId, traceId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -39,13 +39,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.TracesAPI.GetTrace(context.Background(), tenantId, traceId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.TracesAPI.TracesGetTrace(context.Background(), tenantId, traceId).Unmask(unmask).Reason(reason).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `TracesAPI.GetTrace``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `TracesAPI.TracesGetTrace``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `GetTrace`: TraceView
-	fmt.Fprintf(os.Stdout, "Response from `TracesAPI.GetTrace`: %v\n", resp)
+	// response from `TracesGetTrace`: TraceView
+	fmt.Fprintf(os.Stdout, "Response from `TracesAPI.TracesGetTrace`: %v\n", resp)
 }
 ```
 
@@ -55,24 +55,24 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**traceId** | **string** | trace_id | 
+**tenantId** | **string** | tenant_id |
+**traceId** | **string** | trace_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiGetTraceRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiTracesGetTraceRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **unmask** | **bool** |  | 
- **reason** | **string** |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **unmask** | **bool** |  |
+ **reason** | **string** |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -92,9 +92,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## ListTraces
+## TracesListTraces
 
-> PageRunSummary ListTraces(ctx, tenantId).ProjectId(projectId).EnvironmentId(environmentId).TraceId(traceId).Kind(kind).Status(status).StartedAfter(startedAfter).StartedBefore(startedBefore).Model(model).Release(release).MinCostMicros(minCostMicros).MaxCostMicros(maxCostMicros).MinLatencyMs(minLatencyMs).MaxLatencyMs(maxLatencyMs).Limit(limit).Cursor(cursor).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> PageRunSummary TracesListTraces(ctx, tenantId).ProjectId(projectId).EnvironmentId(environmentId).TraceId(traceId).Kind(kind).Status(status).StartedAfter(startedAfter).StartedBefore(startedBefore).Model(model).Release(release).MinCostMicros(minCostMicros).MaxCostMicros(maxCostMicros).MinLatencyMs(minLatencyMs).MaxLatencyMs(maxLatencyMs).Limit(limit).Cursor(cursor).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -134,13 +134,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.TracesAPI.ListTraces(context.Background(), tenantId).ProjectId(projectId).EnvironmentId(environmentId).TraceId(traceId).Kind(kind).Status(status).StartedAfter(startedAfter).StartedBefore(startedBefore).Model(model).Release(release).MinCostMicros(minCostMicros).MaxCostMicros(maxCostMicros).MinLatencyMs(minLatencyMs).MaxLatencyMs(maxLatencyMs).Limit(limit).Cursor(cursor).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.TracesAPI.TracesListTraces(context.Background(), tenantId).ProjectId(projectId).EnvironmentId(environmentId).TraceId(traceId).Kind(kind).Status(status).StartedAfter(startedAfter).StartedBefore(startedBefore).Model(model).Release(release).MinCostMicros(minCostMicros).MaxCostMicros(maxCostMicros).MinLatencyMs(minLatencyMs).MaxLatencyMs(maxLatencyMs).Limit(limit).Cursor(cursor).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `TracesAPI.ListTraces``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `TracesAPI.TracesListTraces``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ListTraces`: PageRunSummary
-	fmt.Fprintf(os.Stdout, "Response from `TracesAPI.ListTraces`: %v\n", resp)
+	// response from `TracesListTraces`: PageRunSummary
+	fmt.Fprintf(os.Stdout, "Response from `TracesAPI.TracesListTraces`: %v\n", resp)
 }
 ```
 
@@ -150,35 +150,35 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
+**tenantId** | **string** | tenant_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiListTracesRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiTracesListTracesRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
- **projectId** | **string** |  | 
- **environmentId** | **string** |  | 
- **traceId** | **string** |  | 
- **kind** | **string** |  | 
- **status** | **string** |  | 
- **startedAfter** | **string** |  | 
- **startedBefore** | **string** |  | 
- **model** | **string** |  | 
- **release** | **string** |  | 
- **minCostMicros** | **int64** |  | 
- **maxCostMicros** | **int64** |  | 
- **minLatencyMs** | **int64** |  | 
- **maxLatencyMs** | **int64** |  | 
- **limit** | **int32** |  | 
- **cursor** | **string** |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **projectId** | **string** |  |
+ **environmentId** | **string** |  |
+ **traceId** | **string** |  |
+ **kind** | **string** |  |
+ **status** | **string** |  |
+ **startedAfter** | **string** |  |
+ **startedBefore** | **string** |  |
+ **model** | **string** |  |
+ **release** | **string** |  |
+ **minCostMicros** | **int64** |  |
+ **maxCostMicros** | **int64** |  |
+ **minLatencyMs** | **int64** |  |
+ **maxLatencyMs** | **int64** |  |
+ **limit** | **int32** |  |
+ **cursor** | **string** |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -196,4 +196,3 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

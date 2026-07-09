@@ -8,7 +8,7 @@
 
 
 scenario_t*
-ScenariosAPI_createScenario(apiClient_t *apiClient, char *tenant_id, char *project_id, create_scenario_request_t *create_scenario_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+ScenariosAPI_scenariosCreateScenario(apiClient_t *apiClient, char *tenant_id, char *project_id, create_scenario_request_t *create_scenario_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();
@@ -212,7 +212,7 @@ end:
 }
 
 scenario_t*
-ScenariosAPI_getScenario(apiClient_t *apiClient, char *tenant_id, char *project_id, char *scenario_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+ScenariosAPI_scenariosGetScenario(apiClient_t *apiClient, char *tenant_id, char *project_id, char *scenario_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();
@@ -417,7 +417,7 @@ end:
 }
 
 list_scenarios_response_t*
-ScenariosAPI_listScenarios(apiClient_t *apiClient, char *tenant_id, char *project_id, int *limit, char *cursor, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+ScenariosAPI_scenariosListScenarios(apiClient_t *apiClient, char *tenant_id, char *project_id, int *limit, char *cursor, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = list_createList();
     list_t    *localVarHeaderParameters = list_createList();
@@ -654,7 +654,7 @@ end:
 }
 
 mine_scenarios_response_t*
-ScenariosAPI_mineScenarios(apiClient_t *apiClient, char *tenant_id, char *project_id, mine_scenarios_request_t *mine_scenarios_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+ScenariosAPI_scenariosMineScenarios(apiClient_t *apiClient, char *tenant_id, char *project_id, mine_scenarios_request_t *mine_scenarios_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();

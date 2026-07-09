@@ -46,6 +46,14 @@ class ErrorResponseTest {
     }
 
     /**
+     * Test the property 'message'
+     */
+    @Test
+    void messageTest() {
+        // TODO: test message
+    }
+
+    /**
      * Test the property 'status'
      */
     @Test

@@ -22,14 +22,14 @@ func Test_beaterclient_ReviewsAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test ReviewsAPIService CreateReviewQueue", func(t *testing.T) {
+	t.Run("Test ReviewsAPIService ReviewsCreateReviewQueue", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ReviewsAPI.CreateReviewQueue(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ReviewsAPI.ReviewsCreateReviewQueue(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -37,23 +37,7 @@ func Test_beaterclient_ReviewsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ReviewsAPIService EnqueueReviewTaskFromTrace", func(t *testing.T) {
-
-		t.Skip("skip test")  // remove to run test
-
-		var tenantId string
-		var projectId string
-		var queueId string
-
-		resp, httpRes, err := apiClient.ReviewsAPI.EnqueueReviewTaskFromTrace(context.Background(), tenantId, projectId, queueId).Execute()
-
-		require.Nil(t, err)
-		require.NotNil(t, resp)
-		assert.Equal(t, 200, httpRes.StatusCode)
-
-	})
-
-	t.Run("Test ReviewsAPIService ListReviewTasks", func(t *testing.T) {
+	t.Run("Test ReviewsAPIService ReviewsEnqueueReviewTaskFromTrace", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -61,7 +45,7 @@ func Test_beaterclient_ReviewsAPIService(t *testing.T) {
 		var projectId string
 		var queueId string
 
-		resp, httpRes, err := apiClient.ReviewsAPI.ListReviewTasks(context.Background(), tenantId, projectId, queueId).Execute()
+		resp, httpRes, err := apiClient.ReviewsAPI.ReviewsEnqueueReviewTaskFromTrace(context.Background(), tenantId, projectId, queueId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -69,7 +53,23 @@ func Test_beaterclient_ReviewsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ReviewsAPIService PromoteReviewAnnotation", func(t *testing.T) {
+	t.Run("Test ReviewsAPIService ReviewsListReviewTasks", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var tenantId string
+		var projectId string
+		var queueId string
+
+		resp, httpRes, err := apiClient.ReviewsAPI.ReviewsListReviewTasks(context.Background(), tenantId, projectId, queueId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test ReviewsAPIService ReviewsPromoteReviewAnnotation", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -79,7 +79,7 @@ func Test_beaterclient_ReviewsAPIService(t *testing.T) {
 		var taskId string
 		var annotationId string
 
-		resp, httpRes, err := apiClient.ReviewsAPI.PromoteReviewAnnotation(context.Background(), tenantId, projectId, queueId, taskId, annotationId).Execute()
+		resp, httpRes, err := apiClient.ReviewsAPI.ReviewsPromoteReviewAnnotation(context.Background(), tenantId, projectId, queueId, taskId, annotationId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -87,7 +87,7 @@ func Test_beaterclient_ReviewsAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ReviewsAPIService SubmitReviewAnnotation", func(t *testing.T) {
+	t.Run("Test ReviewsAPIService ReviewsSubmitReviewAnnotation", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -96,7 +96,7 @@ func Test_beaterclient_ReviewsAPIService(t *testing.T) {
 		var queueId string
 		var taskId string
 
-		resp, httpRes, err := apiClient.ReviewsAPI.SubmitReviewAnnotation(context.Background(), tenantId, projectId, queueId, taskId).Execute()
+		resp, httpRes, err := apiClient.ReviewsAPI.ReviewsSubmitReviewAnnotation(context.Background(), tenantId, projectId, queueId, taskId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

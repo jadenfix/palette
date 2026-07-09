@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**project_id** | **str** |  | 
-**tenant_id** | **str** |  | 
-**trace_id** | **str** |  | 
+**project_id** | **str** |  |
+**tenant_id** | **str** |  |
+**trace_id** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ queued_trace_work_dict = queued_trace_work_instance.to_dict()
 queued_trace_work_from_dict = QueuedTraceWork.from_dict(queued_trace_work_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

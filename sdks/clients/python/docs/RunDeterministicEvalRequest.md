@@ -5,13 +5,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**agent_release_id** | **str** |  | 
-**code_hash** | **str** |  | [optional] 
-**evaluator_id** | **str** |  | 
-**evaluator_version_id** | **str** |  | 
-**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  | 
-**prompt_version_id** | **str** |  | [optional] 
-**wasm_hash** | **str** |  | [optional] 
+**agent_release_id** | **str** |  |
+**code_hash** | **str** |  | [optional]
+**evaluator_id** | **str** |  |
+**evaluator_version_id** | **str** |  |
+**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |
+**prompt_version_id** | **str** |  | [optional]
+**wasm_hash** | **str** |  | [optional]
 
 ## Example
 
@@ -31,5 +31,3 @@ run_deterministic_eval_request_dict = run_deterministic_eval_request_instance.to
 run_deterministic_eval_request_from_dict = RunDeterministicEvalRequest.from_dict(run_deterministic_eval_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

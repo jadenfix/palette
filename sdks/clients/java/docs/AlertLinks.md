@@ -11,6 +11,3 @@
 |**datasetUrl** | **String** |  |  [optional] |
 |**gateUrl** | **String** |  |  [optional] |
 |**traceUrl** | **String** |  |  |
-
-
-

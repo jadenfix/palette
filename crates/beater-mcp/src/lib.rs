@@ -50,7 +50,7 @@ const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26", "2024
 
 /// Server-wide guidance returned from `initialize`. Codex and other MCP clients
 /// can use this before choosing tools, so keep the opening self-contained.
-const SERVER_INSTRUCTIONS: &str = "Beater MCP exposes the Beater /v1 API as tools for agent trace, dataset, review, eval, and admin workflows. Start with the help tool when unsure. Use the narrowest OAuth scopes possible: mcp:invoke plus trace:read for inspection, dataset:write for dataset/review writes, eval:run for eval execution, and admin only for administrative actions. OAuth tokens are bound to tenant/project/environment; do not invent ids.";
+const SERVER_INSTRUCTIONS: &str = "Beater MCP exposes the Beater /v1 API as tools for agent trace, dataset, review, eval, and admin workflows. Start with the help tool when unsure. Use the narrowest OAuth scopes possible: mcp:invoke plus trace:read for inspection, dataset:read for dataset inspection, dataset:write for dataset/review writes, eval:run for eval execution, and admin only for administrative actions. OAuth tokens are bound to tenant/project/environment; do not invent ids.";
 
 /// Maximum response body size we will buffer from a dispatched handler.
 const MAX_BODY_BYTES: usize = 32 * 1024 * 1024;
@@ -395,17 +395,20 @@ fn tool_to_json(tool: &ToolSpec, advertise_oauth: bool) -> Value {
 /// always destructive; these are the `POST`s that are too. Membership is keyed on
 /// `operationId` (validated against the live spec in tests), not the HTTP method,
 /// because most `POST`s are additive writes that are *not* destructive.
-const DESTRUCTIVE_POST_OPERATIONS: &[&str] = &["revokeApiKey", "revokeProviderSecret"];
+const DESTRUCTIVE_POST_OPERATIONS: &[&str] = &[
+    "apiKeys.revoke-api-key",
+    "providerSecrets.revoke-provider-secret",
+];
 
 /// `POST` operations that reach an **open world** of external entities — the
 /// judge broker's model providers, or an external source import — so a client
 /// should treat them as having side effects beyond Beater's own store (cost, rate
 /// limits, third-party calls), not just a local write.
 const OPEN_WORLD_POST_OPERATIONS: &[&str] = &[
-    "evaluateJudge",
-    "runJudgeEval",
-    "runJudgeExperiment",
-    "importSource",
+    "judge.evaluate-judge",
+    "evals.run-judge-eval",
+    "experiments.run-judge-experiment",
+    "ingest.import-source",
 ];
 
 /// Behavioural hints for an MCP tool. `readOnly`/`idempotent` follow HTTP-method
@@ -440,50 +443,52 @@ fn required_oauth_scopes(tool: &ToolSpec) -> Vec<&'static str> {
 
 fn required_api_scope(operation_id: &str, method: &str) -> &'static str {
     match operation_id {
-        "createApiKey"
-        | "revokeApiKey"
-        | "connectConnector"
-        | "listProviderSecrets"
-        | "createProviderSecret"
-        | "revokeProviderSecret"
-        | "getUsageSummary"
-        | "getIngestQueueStatus"
-        | "listAuditEvents"
-        | "createPrompt"
-        | "addPromptVersion" => "admin",
+        "apiKeys.create-api-key"
+        | "apiKeys.revoke-api-key"
+        | "connectors.connect-connector"
+        | "providerSecrets.list-provider-secrets"
+        | "providerSecrets.create-provider-secret"
+        | "providerSecrets.revoke-provider-secret"
+        | "usage.get-usage-summary"
+        | "ingest.get-ingest-queue-status"
+        | "audit.list-audit-events"
+        | "prompts.create-prompt"
+        | "prompts.add-prompt-version" => "admin",
 
-        "createReviewQueue"
-        | "enqueueReviewTaskFromTrace"
-        | "submitReviewAnnotation"
-        | "promoteReviewAnnotation" => "dataset:write",
+        "reviews.create-review-queue"
+        | "reviews.enqueue-review-task-from-trace"
+        | "reviews.submit-review-annotation"
+        | "reviews.promote-review-annotation" => "dataset:write",
 
-        "createDataset" | "createDatasetVersion" | "promoteDatasetCaseFromTrace" => "dataset:write",
+        "datasets.create-dataset"
+        | "datasets.create-dataset-version"
+        | "datasets.promote-dataset-case-from-trace" => "dataset:write",
 
-        "runCalibration" => "eval:run",
+        "calibrations.run-calibration" => "eval:run",
 
-        "createScenario" | "mineScenarios" => "scenario:write",
-        "listScenarios" | "getScenario" => "scenario:read",
+        "scenarios.create-scenario" | "scenarios.mine-scenarios" => "scenario:write",
+        "scenarios.list-scenarios" | "scenarios.get-scenario" => "scenario:read",
 
-        "evaluateJudge"
-        | "runDeterministicEval"
-        | "runJudgeEval"
-        | "runDeterministicExperiment"
-        | "runJudgeExperiment"
-        | "createGate"
-        | "runGate"
-        | "invokeConnectorTool" => "eval:run",
+        "judge.evaluate-judge"
+        | "evals.run-deterministic-eval"
+        | "evals.run-judge-eval"
+        | "experiments.run-deterministic-experiment"
+        | "experiments.run-judge-experiment"
+        | "gates.create-gate"
+        | "gates.run-gate"
+        | "connectors.invoke-connector-tool" => "eval:run",
 
-        "evaluateAlert" | "decideOnlineSampling" => "trace:read",
+        "alerts.evaluate-alert" | "online.decide-online-sampling" => "trace:read",
 
-        "ingestNative"
-        | "ingestOtlp"
-        | "ingestOtlpJsonCollector"
-        | "importSource"
-        | "replayDeadLetter"
-        | "drainTraceWrites"
-        | "drainTraceIngested"
-        | "reconcileTrace"
-        | "archiveTrace" => "trace:write",
+        "ingest.ingest-native"
+        | "ingest.ingest-otlp"
+        | "ingest.ingest-otlp-json-collector"
+        | "ingest.import-source"
+        | "ingest.replay-dead-letter"
+        | "ingest.drain-trace-writes"
+        | "ingest.drain-trace-ingested"
+        | "ingest.reconcile-trace"
+        | "archive.archive-trace" => "trace:write",
 
         _ if method == "GET" => "trace:read",
         _ => "trace:write",
@@ -1147,11 +1152,18 @@ mod tests {
     /// is not.
     #[test]
     fn destructive_post_operations_are_flagged() {
-        for op in ["revokeApiKey", "revokeProviderSecret"] {
+        for op in [
+            "apiKeys.revoke-api-key",
+            "providerSecrets.revoke-provider-secret",
+        ] {
             let a = annotations_for("POST", op, "t");
             assert_eq!(a["destructiveHint"], Value::Bool(true), "{op} destructive");
         }
-        for op in ["createDataset", "ingestNative", "submitReviewAnnotation"] {
+        for op in [
+            "datasets.create-dataset",
+            "ingest.ingest-native",
+            "reviews.submit-review-annotation",
+        ] {
             let a = annotations_for("POST", op, "t");
             assert_eq!(
                 a["destructiveHint"],
@@ -1166,15 +1178,19 @@ mod tests {
     #[test]
     fn open_world_post_operations_are_flagged() {
         for op in [
-            "evaluateJudge",
-            "runJudgeEval",
-            "runJudgeExperiment",
-            "importSource",
+            "judge.evaluate-judge",
+            "evals.run-judge-eval",
+            "experiments.run-judge-experiment",
+            "ingest.import-source",
         ] {
             let a = annotations_for("POST", op, "t");
             assert_eq!(a["openWorldHint"], Value::Bool(true), "{op} open world");
         }
-        for op in ["createDataset", "runDeterministicEval", "revokeApiKey"] {
+        for op in [
+            "datasets.create-dataset",
+            "evals.run-deterministic-eval",
+            "apiKeys.revoke-api-key",
+        ] {
             let a = annotations_for("POST", op, "t");
             assert_eq!(a["openWorldHint"], Value::Bool(false), "{op} local");
         }
@@ -1359,8 +1375,8 @@ mod tests {
     fn tool_to_json_advertises_mcp_oauth_scopes_when_enabled() {
         let tool = tools()
             .iter()
-            .find(|tool| tool.name == "getSpan")
-            .expect("getSpan tool present");
+            .find(|tool| tool.name == "spans.get-span")
+            .expect("spans.get-span tool present");
         let without = tool_to_json(tool, false);
         assert!(
             without.get("securitySchemes").is_none(),
@@ -1390,16 +1406,20 @@ mod tests {
     #[test]
     fn oauth_scope_map_matches_non_obvious_api_scopes() {
         let cases = [
-            ("listProviderSecrets", "GET", "admin"),
-            ("getUsageSummary", "GET", "admin"),
-            ("getIngestQueueStatus", "GET", "admin"),
-            ("runCalibration", "POST", "eval:run"),
-            ("createReviewQueue", "POST", "dataset:write"),
-            ("enqueueReviewTaskFromTrace", "POST", "dataset:write"),
-            ("submitReviewAnnotation", "POST", "dataset:write"),
-            ("promoteReviewAnnotation", "POST", "dataset:write"),
-            ("decideOnlineSampling", "POST", "trace:read"),
-            ("evaluateAlert", "POST", "trace:read"),
+            ("providerSecrets.list-provider-secrets", "GET", "admin"),
+            ("usage.get-usage-summary", "GET", "admin"),
+            ("ingest.get-ingest-queue-status", "GET", "admin"),
+            ("calibrations.run-calibration", "POST", "eval:run"),
+            ("reviews.create-review-queue", "POST", "dataset:write"),
+            (
+                "reviews.enqueue-review-task-from-trace",
+                "POST",
+                "dataset:write",
+            ),
+            ("reviews.submit-review-annotation", "POST", "dataset:write"),
+            ("reviews.promote-review-annotation", "POST", "dataset:write"),
+            ("online.decide-online-sampling", "POST", "trace:read"),
+            ("alerts.evaluate-alert", "POST", "trace:read"),
         ];
         for (operation_id, method, expected_scope) in cases {
             assert_eq!(
@@ -1415,12 +1435,12 @@ mod tests {
     #[test]
     fn output_schemas_are_object_rooted_or_absent() {
         let array_ops = [
-            "listAuditEvents",
-            "listJudgeLedger",
-            "listProviderSecrets",
-            "listReviewTasks",
-            "listConnectors",
-            "listConnectorTools",
+            "audit.list-audit-events",
+            "judge.list-judge-ledger",
+            "providerSecrets.list-provider-secrets",
+            "reviews.list-review-tasks",
+            "connectors.list-connectors",
+            "connectors.list-connector-tools",
         ];
         for tool in tools() {
             match &tool.output_schema {
@@ -1496,10 +1516,10 @@ mod tests {
 
         // Describe one tool.
         let mut one = Map::new();
-        one.insert("tool".to_string(), json!("listTraces"));
+        one.insert("tool".to_string(), json!("traces.list-traces"));
         let described = handle_help(&one, false).unwrap();
         let t = &described["structuredContent"]["tool"];
-        assert_eq!(t["name"], "listTraces");
+        assert_eq!(t["name"], "traces.list-traces");
         assert_eq!(t["method"], "GET");
         assert!(t["path"].as_str().unwrap().starts_with("/v1/"));
 

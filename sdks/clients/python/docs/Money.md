@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**amount_micros** | **int** |  | 
-**currency** | [**Currency**](Currency.md) |  | 
+**amount_micros** | **int** |  |
+**currency** | [**Currency**](Currency.md) |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ money_dict = money_instance.to_dict()
 money_from_dict = Money.from_dict(money_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

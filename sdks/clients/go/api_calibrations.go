@@ -23,7 +23,7 @@ import (
 // CalibrationsAPIService CalibrationsAPI service
 type CalibrationsAPIService service
 
-type ApiRunCalibrationRequest struct {
+type ApiCalibrationsRunCalibrationRequest struct {
 	ctx context.Context
 	ApiService *CalibrationsAPIService
 	tenantId string
@@ -37,51 +37,51 @@ type ApiRunCalibrationRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiRunCalibrationRequest) RunCalibrationHttpRequest(runCalibrationHttpRequest RunCalibrationHttpRequest) ApiRunCalibrationRequest {
+func (r ApiCalibrationsRunCalibrationRequest) RunCalibrationHttpRequest(runCalibrationHttpRequest RunCalibrationHttpRequest) ApiCalibrationsRunCalibrationRequest {
 	r.runCalibrationHttpRequest = &runCalibrationHttpRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiRunCalibrationRequest) Authorization(authorization string) ApiRunCalibrationRequest {
+func (r ApiCalibrationsRunCalibrationRequest) Authorization(authorization string) ApiCalibrationsRunCalibrationRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiRunCalibrationRequest) XBeaterApiKey(xBeaterApiKey string) ApiRunCalibrationRequest {
+func (r ApiCalibrationsRunCalibrationRequest) XBeaterApiKey(xBeaterApiKey string) ApiCalibrationsRunCalibrationRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiRunCalibrationRequest) XBeaterProjectId(xBeaterProjectId string) ApiRunCalibrationRequest {
+func (r ApiCalibrationsRunCalibrationRequest) XBeaterProjectId(xBeaterProjectId string) ApiCalibrationsRunCalibrationRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiRunCalibrationRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiRunCalibrationRequest {
+func (r ApiCalibrationsRunCalibrationRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiCalibrationsRunCalibrationRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiRunCalibrationRequest) Execute() (*CalibrationReport, *http.Response, error) {
-	return r.ApiService.RunCalibrationExecute(r)
+func (r ApiCalibrationsRunCalibrationRequest) Execute() (*CalibrationReport, *http.Response, error) {
+	return r.ApiService.CalibrationsRunCalibrationExecute(r)
 }
 
 /*
-RunCalibration Method for RunCalibration
+CalibrationsRunCalibration Method for CalibrationsRunCalibration
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param datasetId dataset_id
  @param versionId version_id
- @return ApiRunCalibrationRequest
+ @return ApiCalibrationsRunCalibrationRequest
 */
-func (a *CalibrationsAPIService) RunCalibration(ctx context.Context, tenantId string, projectId string, datasetId string, versionId string) ApiRunCalibrationRequest {
-	return ApiRunCalibrationRequest{
+func (a *CalibrationsAPIService) CalibrationsRunCalibration(ctx context.Context, tenantId string, projectId string, datasetId string, versionId string) ApiCalibrationsRunCalibrationRequest {
+	return ApiCalibrationsRunCalibrationRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -93,7 +93,7 @@ func (a *CalibrationsAPIService) RunCalibration(ctx context.Context, tenantId st
 
 // Execute executes the request
 //  @return CalibrationReport
-func (a *CalibrationsAPIService) RunCalibrationExecute(r ApiRunCalibrationRequest) (*CalibrationReport, *http.Response, error) {
+func (a *CalibrationsAPIService) CalibrationsRunCalibrationExecute(r ApiCalibrationsRunCalibrationRequest) (*CalibrationReport, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -101,7 +101,7 @@ func (a *CalibrationsAPIService) RunCalibrationExecute(r ApiRunCalibrationReques
 		localVarReturnValue  *CalibrationReport
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "CalibrationsAPIService.RunCalibration")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "CalibrationsAPIService.CalibrationsRunCalibration")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

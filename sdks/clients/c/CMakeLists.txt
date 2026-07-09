@@ -142,6 +142,8 @@ set(SRCS
     model/otlp_ingest_outcome.c
     model/page_run_summary.c
     model/page_run_summary_items_inner.c
+    model/palette_connect_status.c
+    model/palette_connect_status_response.c
     model/perturbation_knobs.c
     model/promote_review_annotation_http_request.c
     model/promote_trace_case_request.c
@@ -207,6 +209,7 @@ set(SRCS
     api/ArchiveAPI.c
     api/AuditAPI.c
     api/CalibrationsAPI.c
+    api/ConnectAPI.c
     api/ConnectorsAPI.c
     api/DatasetsAPI.c
     api/EvalsAPI.c
@@ -329,6 +332,8 @@ set(HDRS
     model/otlp_ingest_outcome.h
     model/page_run_summary.h
     model/page_run_summary_items_inner.h
+    model/palette_connect_status.h
+    model/palette_connect_status_response.h
     model/perturbation_knobs.h
     model/promote_review_annotation_http_request.h
     model/promote_trace_case_request.h
@@ -394,6 +399,7 @@ set(HDRS
     api/ArchiveAPI.h
     api/AuditAPI.h
     api/CalibrationsAPI.h
+    api/ConnectAPI.h
     api/ConnectorsAPI.h
     api/DatasetsAPI.h
     api/EvalsAPI.h
@@ -497,6 +503,7 @@ set(HDRS "")
 #    unit-tests/manual-ArchiveAPI.c
 #    unit-tests/manual-AuditAPI.c
 #    unit-tests/manual-CalibrationsAPI.c
+#    unit-tests/manual-ConnectAPI.c
 #    unit-tests/manual-ConnectorsAPI.c
 #    unit-tests/manual-DatasetsAPI.c
 #    unit-tests/manual-EvalsAPI.c

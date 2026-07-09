@@ -5,15 +5,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**annotation_id** | **str** |  | 
-**created_at** | **datetime** |  | 
-**payload** | **object** |  | 
-**project_id** | **str** |  | 
-**queue_id** | **str** |  | 
-**reviewer_id** | **str** |  | 
-**task_id** | **str** |  | 
-**tenant_id** | **str** |  | 
-**verdict** | [**ReviewVerdict**](ReviewVerdict.md) |  | 
+**annotation_id** | **str** |  |
+**created_at** | **datetime** |  |
+**payload** | **object** |  |
+**project_id** | **str** |  |
+**queue_id** | **str** |  |
+**reviewer_id** | **str** |  |
+**task_id** | **str** |  |
+**tenant_id** | **str** |  |
+**verdict** | [**ReviewVerdict**](ReviewVerdict.md) |  |
 
 ## Example
 
@@ -33,5 +33,3 @@ review_annotation_dict = review_annotation_instance.to_dict()
 review_annotation_from_dict = ReviewAnnotation.from_dict(review_annotation_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

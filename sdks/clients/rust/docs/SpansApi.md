@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**get_span**](SpansApi.md#get_span) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} | 
-[**get_span_io**](SpansApi.md#get_span_io) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io | 
+[**spans_period_get_span**](SpansApi.md#spans_period_get_span) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id} |
+[**spans_period_get_span_io**](SpansApi.md#spans_period_get_span_io) | **GET** /v1/spans/{tenant_id}/{trace_id}/{span_id}/io |
 
 
 
-## get_span
+## spans_period_get_span
 
-> models::CanonicalSpan get_span(tenant_id, trace_id, span_id, unmask, reason, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::CanonicalSpan spans_period_get_span(tenant_id, trace_id, span_id, unmask, reason, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -45,9 +45,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## get_span_io
+## spans_period_get_span_io
 
-> models::SpanIoResponse get_span_io(tenant_id, trace_id, span_id, unmask, reason, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::SpanIoResponse spans_period_get_span_io(tenant_id, trace_id, span_id, unmask, reason, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -79,4 +79,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

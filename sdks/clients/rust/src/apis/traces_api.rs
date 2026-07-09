@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
-/// struct for passing parameters to the method [`get_trace`]
+/// struct for passing parameters to the method [`traces_period_get_trace`]
 #[derive(Clone, Debug)]
-pub struct GetTraceParams {
+pub struct TracesPeriodGetTraceParams {
     /// tenant_id
     pub tenant_id: String,
     /// trace_id
@@ -33,9 +33,9 @@ pub struct GetTraceParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`list_traces`]
+/// struct for passing parameters to the method [`traces_period_list_traces`]
 #[derive(Clone, Debug)]
-pub struct ListTracesParams {
+pub struct TracesPeriodListTracesParams {
     /// tenant_id
     pub tenant_id: String,
     pub project_id: Option<String>,
@@ -64,10 +64,10 @@ pub struct ListTracesParams {
 }
 
 
-/// struct for typed errors of method [`get_trace`]
+/// struct for typed errors of method [`traces_period_get_trace`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GetTraceError {
+pub enum TracesPeriodGetTraceError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -75,10 +75,10 @@ pub enum GetTraceError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`list_traces`]
+/// struct for typed errors of method [`traces_period_list_traces`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum ListTracesError {
+pub enum TracesPeriodListTracesError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -86,7 +86,7 @@ pub enum ListTracesError {
 }
 
 
-pub async fn get_trace(configuration: &configuration::Configuration, params: GetTraceParams) -> Result<models::TraceView, Error<GetTraceError>> {
+pub async fn traces_period_get_trace(configuration: &configuration::Configuration, params: TracesPeriodGetTraceParams) -> Result<models::TraceView, Error<TracesPeriodGetTraceError>> {
 
     let uri_str = format!("{}/v1/traces/{tenant_id}/{trace_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), trace_id=crate::apis::urlencode(params.trace_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -123,12 +123,12 @@ pub async fn get_trace(configuration: &configuration::Configuration, params: Get
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<GetTraceError> = serde_json::from_str(&content).ok();
+        let entity: Option<TracesPeriodGetTraceError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn list_traces(configuration: &configuration::Configuration, params: ListTracesParams) -> Result<models::PageRunSummary, Error<ListTracesError>> {
+pub async fn traces_period_list_traces(configuration: &configuration::Configuration, params: TracesPeriodListTracesParams) -> Result<models::PageRunSummary, Error<TracesPeriodListTracesError>> {
 
     let uri_str = format!("{}/v1/traces/{tenant_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -204,7 +204,7 @@ pub async fn list_traces(configuration: &configuration::Configuration, params: L
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<ListTracesError> = serde_json::from_str(&content).ok();
+        let entity: Option<TracesPeriodListTracesError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

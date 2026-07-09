@@ -44,7 +44,7 @@ public class UsageApiTest {
      *          if the Api call fails
      */
     @Test
-    public void getUsageSummaryTest() throws ApiException {
+    public void usageGetUsageSummaryTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String authorization = null;
@@ -52,7 +52,7 @@ public class UsageApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         UsageSummary response = 
-        api.getUsageSummary(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.usageGetUsageSummary(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

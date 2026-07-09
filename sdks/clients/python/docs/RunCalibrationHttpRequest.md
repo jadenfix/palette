@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**eval_report_id** | **str** |  | [optional] 
-**evaluator_version_id** | **str** |  | [optional] 
-**pass_threshold** | **float** |  | [optional] 
+**eval_report_id** | **str** |  | [optional]
+**evaluator_version_id** | **str** |  | [optional]
+**pass_threshold** | **float** |  | [optional]
 
 ## Example
 
@@ -27,5 +27,3 @@ run_calibration_http_request_dict = run_calibration_http_request_instance.to_dic
 run_calibration_http_request_from_dict = RunCalibrationHttpRequest.from_dict(run_calibration_http_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -10,6 +10,6 @@
 
 
 search_response_t*
-SearchAPI_searchSpans(apiClient_t *apiClient, char *tenant_id, char *q, char *project_id, char *environment_id, char *trace_id, char *span_id, char *kind, char *status, char *model, char *tool, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+SearchAPI_searchSearchSpans(apiClient_t *apiClient, char *tenant_id, char *q, char *project_id, char *environment_id, char *trace_id, char *span_id, char *kind, char *status, char *model, char *tool, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 

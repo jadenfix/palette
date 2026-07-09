@@ -42,7 +42,7 @@ class JudgeApi:
 
 
     @validate_call
-    def evaluate_judge(
+    def judge_evaluate_judge(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -64,7 +64,7 @@ class JudgeApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> JudgeBrokerOutcome:
-        """evaluate_judge
+        """judge_evaluate_judge
 
 
         :param tenant_id: tenant_id (required)
@@ -103,7 +103,7 @@ class JudgeApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._evaluate_judge_serialize(
+        _param = self._judge_evaluate_judge_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             run_judge_eval_http_request=run_judge_eval_http_request,
@@ -135,7 +135,7 @@ class JudgeApi:
 
 
     @validate_call
-    def evaluate_judge_with_http_info(
+    def judge_evaluate_judge_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -157,7 +157,7 @@ class JudgeApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[JudgeBrokerOutcome]:
-        """evaluate_judge
+        """judge_evaluate_judge
 
 
         :param tenant_id: tenant_id (required)
@@ -196,7 +196,7 @@ class JudgeApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._evaluate_judge_serialize(
+        _param = self._judge_evaluate_judge_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             run_judge_eval_http_request=run_judge_eval_http_request,
@@ -228,7 +228,7 @@ class JudgeApi:
 
 
     @validate_call
-    def evaluate_judge_without_preload_content(
+    def judge_evaluate_judge_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -250,7 +250,7 @@ class JudgeApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """evaluate_judge
+        """judge_evaluate_judge
 
 
         :param tenant_id: tenant_id (required)
@@ -289,7 +289,7 @@ class JudgeApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._evaluate_judge_serialize(
+        _param = self._judge_evaluate_judge_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             run_judge_eval_http_request=run_judge_eval_http_request,
@@ -316,7 +316,7 @@ class JudgeApi:
         return response_data.response
 
 
-    def _evaluate_judge_serialize(
+    def _judge_evaluate_judge_serialize(
         self,
         tenant_id,
         project_id,
@@ -411,7 +411,7 @@ class JudgeApi:
 
 
     @validate_call
-    def list_judge_ledger(
+    def judge_list_judge_ledger(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -432,7 +432,7 @@ class JudgeApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> List[JudgeAuditRecord]:
-        """list_judge_ledger
+        """judge_list_judge_ledger
 
 
         :param tenant_id: tenant_id (required)
@@ -469,7 +469,7 @@ class JudgeApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_judge_ledger_serialize(
+        _param = self._judge_list_judge_ledger_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -500,7 +500,7 @@ class JudgeApi:
 
 
     @validate_call
-    def list_judge_ledger_with_http_info(
+    def judge_list_judge_ledger_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -521,7 +521,7 @@ class JudgeApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[List[JudgeAuditRecord]]:
-        """list_judge_ledger
+        """judge_list_judge_ledger
 
 
         :param tenant_id: tenant_id (required)
@@ -558,7 +558,7 @@ class JudgeApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_judge_ledger_serialize(
+        _param = self._judge_list_judge_ledger_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -589,7 +589,7 @@ class JudgeApi:
 
 
     @validate_call
-    def list_judge_ledger_without_preload_content(
+    def judge_list_judge_ledger_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -610,7 +610,7 @@ class JudgeApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """list_judge_ledger
+        """judge_list_judge_ledger
 
 
         :param tenant_id: tenant_id (required)
@@ -647,7 +647,7 @@ class JudgeApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_judge_ledger_serialize(
+        _param = self._judge_list_judge_ledger_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -673,7 +673,7 @@ class JudgeApi:
         return response_data.response
 
 
-    def _list_judge_ledger_serialize(
+    def _judge_list_judge_ledger_serialize(
         self,
         tenant_id,
         project_id,

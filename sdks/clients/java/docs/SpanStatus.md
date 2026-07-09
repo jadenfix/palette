@@ -10,6 +10,3 @@
 * `ERROR` (value: `"error"`)
 
 * `UNSET` (value: `"unset"`)
-
-
-

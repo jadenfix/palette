@@ -47,7 +47,7 @@ public class GatesApiTest {
      *          if the Api call fails
      */
     @Test
-    public void createGateTest() throws ApiException {
+    public void gatesCreateGateTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         CreateGateRequest createGateRequest = null;
@@ -56,7 +56,7 @@ public class GatesApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         GateDefinition response = 
-        api.createGate(tenantId, projectId, createGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.gatesCreateGate(tenantId, projectId, createGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -70,7 +70,7 @@ public class GatesApiTest {
      *          if the Api call fails
      */
     @Test
-    public void runGateTest() throws ApiException {
+    public void gatesRunGateTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String gateId = null;
@@ -80,7 +80,7 @@ public class GatesApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         GateRunReport response = 
-        api.runGate(tenantId, projectId, gateId, runGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.gatesRunGate(tenantId, projectId, gateId, runGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

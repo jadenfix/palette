@@ -138,7 +138,7 @@ enum Command {
     /// in-process OpenAPI spec (the same contract the SDKs are generated from),
     /// so the CLI never drifts from the server surface.
     Api {
-        /// OpenAPI operationId, e.g. `listTraces`.
+        /// OpenAPI operationId, e.g. `traces.list-traces`.
         operation_id: String,
         /// Path/query parameters as `key=value`. Path params (matching
         /// `{name}` in the template) are substituted; the rest become query
@@ -3879,7 +3879,7 @@ mod tests {
 
     #[test]
     fn resolves_list_traces_operation() -> anyhow::Result<()> {
-        let op = resolve_operation(&spec()?, "listTraces")?;
+        let op = resolve_operation(&spec()?, "traces.list-traces")?;
         assert_eq!(op.method, "GET");
         assert_eq!(op.path_template, "/v1/traces/{tenant_id}");
         Ok(())
@@ -3896,7 +3896,7 @@ mod tests {
 
     #[test]
     fn end_to_end_url_for_list_traces() -> anyhow::Result<()> {
-        let op = resolve_operation(&spec()?, "listTraces")?;
+        let op = resolve_operation(&spec()?, "traces.list-traces")?;
         let params = parse_params(&["tenant_id=acme".to_string()])?;
         let (path, query) = fill_path_template(&op.path_template, &params)?;
         let url = build_request_url("http://127.0.0.1:8080/", &path, &query);

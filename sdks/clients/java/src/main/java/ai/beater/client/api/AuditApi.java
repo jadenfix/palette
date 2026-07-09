@@ -94,8 +94,8 @@ public class AuditApi {
    * @return List&lt;AuditEvent&gt;
    * @throws ApiException if fails to make API call
    */
-  public List<AuditEvent> listAuditEvents(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<List<AuditEvent>> localVarResponse = listAuditEventsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public List<AuditEvent> auditListAuditEvents(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<List<AuditEvent>> localVarResponse = auditListAuditEventsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -111,8 +111,8 @@ public class AuditApi {
    * @return ApiResponse&lt;List&lt;AuditEvent&gt;&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<List<AuditEvent>> listAuditEventsWithHttpInfo(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = listAuditEventsRequestBuilder(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<List<AuditEvent>> auditListAuditEventsWithHttpInfo(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = auditListAuditEventsRequestBuilder(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -122,7 +122,7 @@ public class AuditApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("listAuditEvents", localVarResponse);
+          throw getApiException("auditListAuditEvents", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<List<AuditEvent>>(
@@ -151,14 +151,14 @@ public class AuditApi {
     }
   }
 
-  private HttpRequest.Builder listAuditEventsRequestBuilder(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder auditListAuditEventsRequestBuilder(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling listAuditEvents");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling auditListAuditEvents");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling listAuditEvents");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling auditListAuditEvents");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

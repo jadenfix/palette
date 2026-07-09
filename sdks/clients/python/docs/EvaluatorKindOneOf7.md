@@ -6,9 +6,9 @@ Browser world-state success: asserts the final step's observed page (url and/or 
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**dom_contains** | **str** |  | [optional] 
-**type** | **str** |  | 
-**url_contains** | **str** |  | [optional] 
+**dom_contains** | **str** |  | [optional]
+**type** | **str** |  |
+**url_contains** | **str** |  | [optional]
 
 ## Example
 
@@ -28,5 +28,3 @@ evaluator_kind_one_of7_dict = evaluator_kind_one_of7_instance.to_dict()
 evaluator_kind_one_of7_from_dict = EvaluatorKindOneOf7.from_dict(evaluator_kind_one_of7_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

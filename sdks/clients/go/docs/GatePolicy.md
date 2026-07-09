@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Alpha** | **float64** |  | 
-**ComparisonCount** | **int32** |  | 
-**MaxRegression** | **float64** |  | 
-**MinSampleSize** | **int32** |  | 
+**Alpha** | **float64** |  |
+**ComparisonCount** | **int32** |  |
+**MaxRegression** | **float64** |  |
+**MinSampleSize** | **int32** |  |
 
 ## Methods
 
@@ -110,5 +110,3 @@ SetMinSampleSize sets MinSampleSize field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

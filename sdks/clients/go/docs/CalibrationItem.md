@@ -4,13 +4,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Agreed** | **bool** |  | 
-**DatasetCaseId** | **string** |  | 
-**Evidence** | **interface{}** |  | 
-**HumanLabel** | [**CalibrationLabel**](CalibrationLabel.md) |  | 
-**JudgeLabel** | [**CalibrationLabel**](CalibrationLabel.md) |  | 
-**JudgeResultLabel** | Pointer to **NullableString** |  | [optional] 
-**JudgeScore** | **float64** |  | 
+**Agreed** | **bool** |  |
+**DatasetCaseId** | **string** |  |
+**Evidence** | **interface{}** |  |
+**HumanLabel** | [**CalibrationLabel**](CalibrationLabel.md) |  |
+**JudgeLabel** | [**CalibrationLabel**](CalibrationLabel.md) |  |
+**JudgeResultLabel** | Pointer to **NullableString** |  | [optional]
+**JudgeScore** | **float64** |  |
 
 ## Methods
 
@@ -198,5 +198,3 @@ SetJudgeScore sets JudgeScore field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

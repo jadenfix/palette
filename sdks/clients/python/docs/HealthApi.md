@@ -4,11 +4,11 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**health**](HealthApi.md#health) | **GET** /health | 
+[**health_health**](HealthApi.md#health_health) | **GET** /health |
 
 
-# **health**
-> HealthResponse health()
+# **health_health**
+> HealthResponse health_health()
 
 
 
@@ -34,11 +34,11 @@ with beater_client.ApiClient(configuration) as api_client:
     api_instance = beater_client.HealthApi(api_client)
 
     try:
-        api_response = api_instance.health()
-        print("The response of HealthApi->health:\n")
+        api_response = api_instance.health_health()
+        print("The response of HealthApi->health_health:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling HealthApi->health: %s\n" % e)
+        print("Exception when calling HealthApi->health_health: %s\n" % e)
 ```
 
 
@@ -67,4 +67,3 @@ No authorization required
 **200** | Runtime is accepting requests |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

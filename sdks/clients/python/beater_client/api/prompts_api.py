@@ -47,7 +47,7 @@ class PromptsApi:
 
 
     @validate_call
-    def add_prompt_version(
+    def prompts_add_prompt_version(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -70,7 +70,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> PromptVersion:
-        """add_prompt_version
+        """prompts_add_prompt_version
 
 
         :param tenant_id: tenant_id (required)
@@ -111,7 +111,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._add_prompt_version_serialize(
+        _param = self._prompts_add_prompt_version_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -145,7 +145,7 @@ class PromptsApi:
 
 
     @validate_call
-    def add_prompt_version_with_http_info(
+    def prompts_add_prompt_version_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -168,7 +168,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[PromptVersion]:
-        """add_prompt_version
+        """prompts_add_prompt_version
 
 
         :param tenant_id: tenant_id (required)
@@ -209,7 +209,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._add_prompt_version_serialize(
+        _param = self._prompts_add_prompt_version_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -243,7 +243,7 @@ class PromptsApi:
 
 
     @validate_call
-    def add_prompt_version_without_preload_content(
+    def prompts_add_prompt_version_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -266,7 +266,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """add_prompt_version
+        """prompts_add_prompt_version
 
 
         :param tenant_id: tenant_id (required)
@@ -307,7 +307,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._add_prompt_version_serialize(
+        _param = self._prompts_add_prompt_version_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -336,7 +336,7 @@ class PromptsApi:
         return response_data.response
 
 
-    def _add_prompt_version_serialize(
+    def _prompts_add_prompt_version_serialize(
         self,
         tenant_id,
         project_id,
@@ -434,7 +434,7 @@ class PromptsApi:
 
 
     @validate_call
-    def create_prompt(
+    def prompts_create_prompt(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -456,7 +456,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> CreatedPrompt:
-        """create_prompt
+        """prompts_create_prompt
 
 
         :param tenant_id: tenant_id (required)
@@ -495,7 +495,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_prompt_serialize(
+        _param = self._prompts_create_prompt_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_prompt_request=create_prompt_request,
@@ -527,7 +527,7 @@ class PromptsApi:
 
 
     @validate_call
-    def create_prompt_with_http_info(
+    def prompts_create_prompt_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -549,7 +549,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[CreatedPrompt]:
-        """create_prompt
+        """prompts_create_prompt
 
 
         :param tenant_id: tenant_id (required)
@@ -588,7 +588,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_prompt_serialize(
+        _param = self._prompts_create_prompt_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_prompt_request=create_prompt_request,
@@ -620,7 +620,7 @@ class PromptsApi:
 
 
     @validate_call
-    def create_prompt_without_preload_content(
+    def prompts_create_prompt_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -642,7 +642,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """create_prompt
+        """prompts_create_prompt
 
 
         :param tenant_id: tenant_id (required)
@@ -681,7 +681,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_prompt_serialize(
+        _param = self._prompts_create_prompt_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_prompt_request=create_prompt_request,
@@ -708,7 +708,7 @@ class PromptsApi:
         return response_data.response
 
 
-    def _create_prompt_serialize(
+    def _prompts_create_prompt_serialize(
         self,
         tenant_id,
         project_id,
@@ -803,7 +803,7 @@ class PromptsApi:
 
 
     @validate_call
-    def diff_prompt_versions(
+    def prompts_diff_prompt_versions(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -827,7 +827,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> PromptVersionDiff:
-        """diff_prompt_versions
+        """prompts_diff_prompt_versions
 
 
         :param tenant_id: tenant_id (required)
@@ -870,7 +870,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._diff_prompt_versions_serialize(
+        _param = self._prompts_diff_prompt_versions_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -905,7 +905,7 @@ class PromptsApi:
 
 
     @validate_call
-    def diff_prompt_versions_with_http_info(
+    def prompts_diff_prompt_versions_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -929,7 +929,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[PromptVersionDiff]:
-        """diff_prompt_versions
+        """prompts_diff_prompt_versions
 
 
         :param tenant_id: tenant_id (required)
@@ -972,7 +972,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._diff_prompt_versions_serialize(
+        _param = self._prompts_diff_prompt_versions_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -1007,7 +1007,7 @@ class PromptsApi:
 
 
     @validate_call
-    def diff_prompt_versions_without_preload_content(
+    def prompts_diff_prompt_versions_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1031,7 +1031,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """diff_prompt_versions
+        """prompts_diff_prompt_versions
 
 
         :param tenant_id: tenant_id (required)
@@ -1074,7 +1074,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._diff_prompt_versions_serialize(
+        _param = self._prompts_diff_prompt_versions_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -1104,7 +1104,7 @@ class PromptsApi:
         return response_data.response
 
 
-    def _diff_prompt_versions_serialize(
+    def _prompts_diff_prompt_versions_serialize(
         self,
         tenant_id,
         project_id,
@@ -1196,7 +1196,7 @@ class PromptsApi:
 
 
     @validate_call
-    def get_prompt(
+    def prompts_get_prompt(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1218,7 +1218,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> Prompt:
-        """get_prompt
+        """prompts_get_prompt
 
 
         :param tenant_id: tenant_id (required)
@@ -1257,7 +1257,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_prompt_serialize(
+        _param = self._prompts_get_prompt_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -1290,7 +1290,7 @@ class PromptsApi:
 
 
     @validate_call
-    def get_prompt_with_http_info(
+    def prompts_get_prompt_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1312,7 +1312,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[Prompt]:
-        """get_prompt
+        """prompts_get_prompt
 
 
         :param tenant_id: tenant_id (required)
@@ -1351,7 +1351,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_prompt_serialize(
+        _param = self._prompts_get_prompt_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -1384,7 +1384,7 @@ class PromptsApi:
 
 
     @validate_call
-    def get_prompt_without_preload_content(
+    def prompts_get_prompt_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1406,7 +1406,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """get_prompt
+        """prompts_get_prompt
 
 
         :param tenant_id: tenant_id (required)
@@ -1445,7 +1445,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._get_prompt_serialize(
+        _param = self._prompts_get_prompt_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -1473,7 +1473,7 @@ class PromptsApi:
         return response_data.response
 
 
-    def _get_prompt_serialize(
+    def _prompts_get_prompt_serialize(
         self,
         tenant_id,
         project_id,
@@ -1555,7 +1555,7 @@ class PromptsApi:
 
 
     @validate_call
-    def list_prompt_versions(
+    def prompts_list_prompt_versions(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1577,7 +1577,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> PromptVersionListResponse:
-        """list_prompt_versions
+        """prompts_list_prompt_versions
 
 
         :param tenant_id: tenant_id (required)
@@ -1616,7 +1616,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_prompt_versions_serialize(
+        _param = self._prompts_list_prompt_versions_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -1649,7 +1649,7 @@ class PromptsApi:
 
 
     @validate_call
-    def list_prompt_versions_with_http_info(
+    def prompts_list_prompt_versions_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1671,7 +1671,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[PromptVersionListResponse]:
-        """list_prompt_versions
+        """prompts_list_prompt_versions
 
 
         :param tenant_id: tenant_id (required)
@@ -1710,7 +1710,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_prompt_versions_serialize(
+        _param = self._prompts_list_prompt_versions_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -1743,7 +1743,7 @@ class PromptsApi:
 
 
     @validate_call
-    def list_prompt_versions_without_preload_content(
+    def prompts_list_prompt_versions_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1765,7 +1765,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """list_prompt_versions
+        """prompts_list_prompt_versions
 
 
         :param tenant_id: tenant_id (required)
@@ -1804,7 +1804,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_prompt_versions_serialize(
+        _param = self._prompts_list_prompt_versions_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             prompt_id=prompt_id,
@@ -1832,7 +1832,7 @@ class PromptsApi:
         return response_data.response
 
 
-    def _list_prompt_versions_serialize(
+    def _prompts_list_prompt_versions_serialize(
         self,
         tenant_id,
         project_id,
@@ -1914,7 +1914,7 @@ class PromptsApi:
 
 
     @validate_call
-    def list_prompts(
+    def prompts_list_prompts(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1935,7 +1935,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> PromptListResponse:
-        """list_prompts
+        """prompts_list_prompts
 
 
         :param tenant_id: tenant_id (required)
@@ -1972,7 +1972,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_prompts_serialize(
+        _param = self._prompts_list_prompts_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -2003,7 +2003,7 @@ class PromptsApi:
 
 
     @validate_call
-    def list_prompts_with_http_info(
+    def prompts_list_prompts_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -2024,7 +2024,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[PromptListResponse]:
-        """list_prompts
+        """prompts_list_prompts
 
 
         :param tenant_id: tenant_id (required)
@@ -2061,7 +2061,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_prompts_serialize(
+        _param = self._prompts_list_prompts_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -2092,7 +2092,7 @@ class PromptsApi:
 
 
     @validate_call
-    def list_prompts_without_preload_content(
+    def prompts_list_prompts_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -2113,7 +2113,7 @@ class PromptsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """list_prompts
+        """prompts_list_prompts
 
 
         :param tenant_id: tenant_id (required)
@@ -2150,7 +2150,7 @@ class PromptsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_prompts_serialize(
+        _param = self._prompts_list_prompts_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             authorization=authorization,
@@ -2176,7 +2176,7 @@ class PromptsApi:
         return response_data.response
 
 
-    def _list_prompts_serialize(
+    def _prompts_list_prompts_serialize(
         self,
         tenant_id,
         project_id,

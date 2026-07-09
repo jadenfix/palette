@@ -14,19 +14,23 @@ use serde::{Deserialize, Serialize};
 /// ErrorResponse : Error envelope returned by every fallible endpoint.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ErrorResponse {
-    /// Human-readable error message.
+    /// Stable machine-readable error code.
     #[serde(rename = "error")]
     pub error: String,
-    /// HTTP status code, duplicated in the body for convenience.
+    /// Human-readable error message.
+    #[serde(rename = "message")]
+    pub message: String,
+    /// Deprecated compatibility HTTP status code for older `/v1` clients.
     #[serde(rename = "status")]
     pub status: i32,
 }
 
 impl ErrorResponse {
     /// Error envelope returned by every fallible endpoint.
-    pub fn new(error: String, status: i32) -> ErrorResponse {
+    pub fn new(error: String, message: String, status: i32) -> ErrorResponse {
         ErrorResponse {
             error,
+            message,
             status,
         }
     }

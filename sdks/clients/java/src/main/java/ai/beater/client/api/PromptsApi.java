@@ -103,8 +103,8 @@ public class PromptsApi {
    * @return PromptVersion
    * @throws ApiException if fails to make API call
    */
-  public PromptVersion addPromptVersion(String tenantId, String projectId, String promptId, AddPromptVersionRequest addPromptVersionRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<PromptVersion> localVarResponse = addPromptVersionWithHttpInfo(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public PromptVersion promptsAddPromptVersion(String tenantId, String projectId, String promptId, AddPromptVersionRequest addPromptVersionRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<PromptVersion> localVarResponse = promptsAddPromptVersionWithHttpInfo(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -122,8 +122,8 @@ public class PromptsApi {
    * @return ApiResponse&lt;PromptVersion&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<PromptVersion> addPromptVersionWithHttpInfo(String tenantId, String projectId, String promptId, AddPromptVersionRequest addPromptVersionRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = addPromptVersionRequestBuilder(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<PromptVersion> promptsAddPromptVersionWithHttpInfo(String tenantId, String projectId, String promptId, AddPromptVersionRequest addPromptVersionRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = promptsAddPromptVersionRequestBuilder(tenantId, projectId, promptId, addPromptVersionRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -133,7 +133,7 @@ public class PromptsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("addPromptVersion", localVarResponse);
+          throw getApiException("promptsAddPromptVersion", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<PromptVersion>(
@@ -162,22 +162,22 @@ public class PromptsApi {
     }
   }
 
-  private HttpRequest.Builder addPromptVersionRequestBuilder(String tenantId, String projectId, String promptId, AddPromptVersionRequest addPromptVersionRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder promptsAddPromptVersionRequestBuilder(String tenantId, String projectId, String promptId, AddPromptVersionRequest addPromptVersionRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling addPromptVersion");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling promptsAddPromptVersion");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling addPromptVersion");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling promptsAddPromptVersion");
     }
     // verify the required parameter 'promptId' is set
     if (promptId == null) {
-      throw new ApiException(400, "Missing the required parameter 'promptId' when calling addPromptVersion");
+      throw new ApiException(400, "Missing the required parameter 'promptId' when calling promptsAddPromptVersion");
     }
     // verify the required parameter 'addPromptVersionRequest' is set
     if (addPromptVersionRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'addPromptVersionRequest' when calling addPromptVersion");
+      throw new ApiException(400, "Missing the required parameter 'addPromptVersionRequest' when calling promptsAddPromptVersion");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -232,8 +232,8 @@ public class PromptsApi {
    * @return CreatedPrompt
    * @throws ApiException if fails to make API call
    */
-  public CreatedPrompt createPrompt(String tenantId, String projectId, CreatePromptRequest createPromptRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<CreatedPrompt> localVarResponse = createPromptWithHttpInfo(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public CreatedPrompt promptsCreatePrompt(String tenantId, String projectId, CreatePromptRequest createPromptRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<CreatedPrompt> localVarResponse = promptsCreatePromptWithHttpInfo(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -250,8 +250,8 @@ public class PromptsApi {
    * @return ApiResponse&lt;CreatedPrompt&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<CreatedPrompt> createPromptWithHttpInfo(String tenantId, String projectId, CreatePromptRequest createPromptRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = createPromptRequestBuilder(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<CreatedPrompt> promptsCreatePromptWithHttpInfo(String tenantId, String projectId, CreatePromptRequest createPromptRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = promptsCreatePromptRequestBuilder(tenantId, projectId, createPromptRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -261,7 +261,7 @@ public class PromptsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("createPrompt", localVarResponse);
+          throw getApiException("promptsCreatePrompt", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<CreatedPrompt>(
@@ -290,18 +290,18 @@ public class PromptsApi {
     }
   }
 
-  private HttpRequest.Builder createPromptRequestBuilder(String tenantId, String projectId, CreatePromptRequest createPromptRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder promptsCreatePromptRequestBuilder(String tenantId, String projectId, CreatePromptRequest createPromptRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling createPrompt");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling promptsCreatePrompt");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling createPrompt");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling promptsCreatePrompt");
     }
     // verify the required parameter 'createPromptRequest' is set
     if (createPromptRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'createPromptRequest' when calling createPrompt");
+      throw new ApiException(400, "Missing the required parameter 'createPromptRequest' when calling promptsCreatePrompt");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -357,8 +357,8 @@ public class PromptsApi {
    * @return PromptVersionDiff
    * @throws ApiException if fails to make API call
    */
-  public PromptVersionDiff diffPromptVersions(String tenantId, String projectId, String promptId, String from, String to, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<PromptVersionDiff> localVarResponse = diffPromptVersionsWithHttpInfo(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public PromptVersionDiff promptsDiffPromptVersions(String tenantId, String projectId, String promptId, String from, String to, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<PromptVersionDiff> localVarResponse = promptsDiffPromptVersionsWithHttpInfo(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -377,8 +377,8 @@ public class PromptsApi {
    * @return ApiResponse&lt;PromptVersionDiff&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<PromptVersionDiff> diffPromptVersionsWithHttpInfo(String tenantId, String projectId, String promptId, String from, String to, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = diffPromptVersionsRequestBuilder(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<PromptVersionDiff> promptsDiffPromptVersionsWithHttpInfo(String tenantId, String projectId, String promptId, String from, String to, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = promptsDiffPromptVersionsRequestBuilder(tenantId, projectId, promptId, from, to, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -388,7 +388,7 @@ public class PromptsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("diffPromptVersions", localVarResponse);
+          throw getApiException("promptsDiffPromptVersions", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<PromptVersionDiff>(
@@ -417,26 +417,26 @@ public class PromptsApi {
     }
   }
 
-  private HttpRequest.Builder diffPromptVersionsRequestBuilder(String tenantId, String projectId, String promptId, String from, String to, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder promptsDiffPromptVersionsRequestBuilder(String tenantId, String projectId, String promptId, String from, String to, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling diffPromptVersions");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling promptsDiffPromptVersions");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling diffPromptVersions");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling promptsDiffPromptVersions");
     }
     // verify the required parameter 'promptId' is set
     if (promptId == null) {
-      throw new ApiException(400, "Missing the required parameter 'promptId' when calling diffPromptVersions");
+      throw new ApiException(400, "Missing the required parameter 'promptId' when calling promptsDiffPromptVersions");
     }
     // verify the required parameter 'from' is set
     if (from == null) {
-      throw new ApiException(400, "Missing the required parameter 'from' when calling diffPromptVersions");
+      throw new ApiException(400, "Missing the required parameter 'from' when calling promptsDiffPromptVersions");
     }
     // verify the required parameter 'to' is set
     if (to == null) {
-      throw new ApiException(400, "Missing the required parameter 'to' when calling diffPromptVersions");
+      throw new ApiException(400, "Missing the required parameter 'to' when calling promptsDiffPromptVersions");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -502,8 +502,8 @@ public class PromptsApi {
    * @return Prompt
    * @throws ApiException if fails to make API call
    */
-  public Prompt getPrompt(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<Prompt> localVarResponse = getPromptWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public Prompt promptsGetPrompt(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<Prompt> localVarResponse = promptsGetPromptWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -520,8 +520,8 @@ public class PromptsApi {
    * @return ApiResponse&lt;Prompt&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<Prompt> getPromptWithHttpInfo(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = getPromptRequestBuilder(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<Prompt> promptsGetPromptWithHttpInfo(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = promptsGetPromptRequestBuilder(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -531,7 +531,7 @@ public class PromptsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("getPrompt", localVarResponse);
+          throw getApiException("promptsGetPrompt", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<Prompt>(
@@ -560,18 +560,18 @@ public class PromptsApi {
     }
   }
 
-  private HttpRequest.Builder getPromptRequestBuilder(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder promptsGetPromptRequestBuilder(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling getPrompt");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling promptsGetPrompt");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling getPrompt");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling promptsGetPrompt");
     }
     // verify the required parameter 'promptId' is set
     if (promptId == null) {
-      throw new ApiException(400, "Missing the required parameter 'promptId' when calling getPrompt");
+      throw new ApiException(400, "Missing the required parameter 'promptId' when calling promptsGetPrompt");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -620,8 +620,8 @@ public class PromptsApi {
    * @return PromptVersionListResponse
    * @throws ApiException if fails to make API call
    */
-  public PromptVersionListResponse listPromptVersions(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<PromptVersionListResponse> localVarResponse = listPromptVersionsWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public PromptVersionListResponse promptsListPromptVersions(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<PromptVersionListResponse> localVarResponse = promptsListPromptVersionsWithHttpInfo(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -638,8 +638,8 @@ public class PromptsApi {
    * @return ApiResponse&lt;PromptVersionListResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<PromptVersionListResponse> listPromptVersionsWithHttpInfo(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = listPromptVersionsRequestBuilder(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<PromptVersionListResponse> promptsListPromptVersionsWithHttpInfo(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = promptsListPromptVersionsRequestBuilder(tenantId, projectId, promptId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -649,7 +649,7 @@ public class PromptsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("listPromptVersions", localVarResponse);
+          throw getApiException("promptsListPromptVersions", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<PromptVersionListResponse>(
@@ -678,18 +678,18 @@ public class PromptsApi {
     }
   }
 
-  private HttpRequest.Builder listPromptVersionsRequestBuilder(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder promptsListPromptVersionsRequestBuilder(String tenantId, String projectId, String promptId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling listPromptVersions");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling promptsListPromptVersions");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling listPromptVersions");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling promptsListPromptVersions");
     }
     // verify the required parameter 'promptId' is set
     if (promptId == null) {
-      throw new ApiException(400, "Missing the required parameter 'promptId' when calling listPromptVersions");
+      throw new ApiException(400, "Missing the required parameter 'promptId' when calling promptsListPromptVersions");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -737,8 +737,8 @@ public class PromptsApi {
    * @return PromptListResponse
    * @throws ApiException if fails to make API call
    */
-  public PromptListResponse listPrompts(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<PromptListResponse> localVarResponse = listPromptsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public PromptListResponse promptsListPrompts(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<PromptListResponse> localVarResponse = promptsListPromptsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -754,8 +754,8 @@ public class PromptsApi {
    * @return ApiResponse&lt;PromptListResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<PromptListResponse> listPromptsWithHttpInfo(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = listPromptsRequestBuilder(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<PromptListResponse> promptsListPromptsWithHttpInfo(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = promptsListPromptsRequestBuilder(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -765,7 +765,7 @@ public class PromptsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("listPrompts", localVarResponse);
+          throw getApiException("promptsListPrompts", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<PromptListResponse>(
@@ -794,14 +794,14 @@ public class PromptsApi {
     }
   }
 
-  private HttpRequest.Builder listPromptsRequestBuilder(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder promptsListPromptsRequestBuilder(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling listPrompts");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling promptsListPrompts");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling listPrompts");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling promptsListPrompts");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

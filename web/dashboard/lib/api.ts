@@ -2,11 +2,11 @@ import type { components, operations } from "./generated/api-types";
 import { apiSpanIoLabels } from "./span-kinds";
 import { applyFilterParams } from "./dashboard-query";
 
-type TraceListOperation = operations["listTraces"];
-type TraceOperation = operations["getTrace"];
-type SpanOperation = operations["getSpan"];
-type SpanIoOperation = operations["getSpanIo"];
-type SearchOperation = operations["searchSpans"];
+type TraceListOperation = operations["traces.list-traces"];
+type TraceOperation = operations["traces.get-trace"];
+type SpanOperation = operations["spans.get-span"];
+type SpanIoOperation = operations["spans.get-span-io"];
+type SearchOperation = operations["search.search-spans"];
 type TraceListQuery = NonNullable<TraceListOperation["parameters"]["query"]>;
 type TraceListPathParams = TraceListOperation["parameters"]["path"];
 type TracePathParams = TraceOperation["parameters"]["path"];
@@ -318,7 +318,7 @@ function apiErrorDetail(body: string): string {
     if (typeof parsed === "string") return truncateApiError(parsed);
     if (parsed && typeof parsed === "object") {
       const record = parsed as Record<string, unknown>;
-      for (const key of ["error", "message", "detail", "title"]) {
+      for (const key of ["message", "error", "detail", "title"]) {
         const value = record[key];
         if (typeof value === "string" && value.trim()) {
           return truncateApiError(value);

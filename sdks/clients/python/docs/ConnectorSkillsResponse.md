@@ -6,8 +6,8 @@ Generated prompting scaffold (\"skills.md\") for a toolkit's tools.
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**skills** | **str** | Markdown document: one skill card per tool, ready to splice into an agent&#39;s system prompt. | 
-**toolkit** | **str** | Toolkit the skills document covers. | 
+**skills** | **str** | Markdown document: one skill card per tool, ready to splice into an agent&#39;s system prompt. |
+**toolkit** | **str** | Toolkit the skills document covers. |
 
 ## Example
 
@@ -27,5 +27,3 @@ connector_skills_response_dict = connector_skills_response_instance.to_dict()
 connector_skills_response_from_dict = ConnectorSkillsResponse.from_dict(connector_skills_response_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -98,8 +98,8 @@ public class GatesApi {
    * @return GateDefinition
    * @throws ApiException if fails to make API call
    */
-  public GateDefinition createGate(String tenantId, String projectId, CreateGateRequest createGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<GateDefinition> localVarResponse = createGateWithHttpInfo(tenantId, projectId, createGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public GateDefinition gatesCreateGate(String tenantId, String projectId, CreateGateRequest createGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<GateDefinition> localVarResponse = gatesCreateGateWithHttpInfo(tenantId, projectId, createGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -116,8 +116,8 @@ public class GatesApi {
    * @return ApiResponse&lt;GateDefinition&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<GateDefinition> createGateWithHttpInfo(String tenantId, String projectId, CreateGateRequest createGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = createGateRequestBuilder(tenantId, projectId, createGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<GateDefinition> gatesCreateGateWithHttpInfo(String tenantId, String projectId, CreateGateRequest createGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = gatesCreateGateRequestBuilder(tenantId, projectId, createGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -127,7 +127,7 @@ public class GatesApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("createGate", localVarResponse);
+          throw getApiException("gatesCreateGate", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<GateDefinition>(
@@ -156,18 +156,18 @@ public class GatesApi {
     }
   }
 
-  private HttpRequest.Builder createGateRequestBuilder(String tenantId, String projectId, CreateGateRequest createGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder gatesCreateGateRequestBuilder(String tenantId, String projectId, CreateGateRequest createGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling createGate");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling gatesCreateGate");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling createGate");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling gatesCreateGate");
     }
     // verify the required parameter 'createGateRequest' is set
     if (createGateRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'createGateRequest' when calling createGate");
+      throw new ApiException(400, "Missing the required parameter 'createGateRequest' when calling gatesCreateGate");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -222,8 +222,8 @@ public class GatesApi {
    * @return GateRunReport
    * @throws ApiException if fails to make API call
    */
-  public GateRunReport runGate(String tenantId, String projectId, String gateId, RunGateRequest runGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<GateRunReport> localVarResponse = runGateWithHttpInfo(tenantId, projectId, gateId, runGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public GateRunReport gatesRunGate(String tenantId, String projectId, String gateId, RunGateRequest runGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<GateRunReport> localVarResponse = gatesRunGateWithHttpInfo(tenantId, projectId, gateId, runGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -241,8 +241,8 @@ public class GatesApi {
    * @return ApiResponse&lt;GateRunReport&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<GateRunReport> runGateWithHttpInfo(String tenantId, String projectId, String gateId, RunGateRequest runGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = runGateRequestBuilder(tenantId, projectId, gateId, runGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<GateRunReport> gatesRunGateWithHttpInfo(String tenantId, String projectId, String gateId, RunGateRequest runGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = gatesRunGateRequestBuilder(tenantId, projectId, gateId, runGateRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -252,7 +252,7 @@ public class GatesApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("runGate", localVarResponse);
+          throw getApiException("gatesRunGate", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<GateRunReport>(
@@ -281,22 +281,22 @@ public class GatesApi {
     }
   }
 
-  private HttpRequest.Builder runGateRequestBuilder(String tenantId, String projectId, String gateId, RunGateRequest runGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder gatesRunGateRequestBuilder(String tenantId, String projectId, String gateId, RunGateRequest runGateRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling runGate");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling gatesRunGate");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling runGate");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling gatesRunGate");
     }
     // verify the required parameter 'gateId' is set
     if (gateId == null) {
-      throw new ApiException(400, "Missing the required parameter 'gateId' when calling runGate");
+      throw new ApiException(400, "Missing the required parameter 'gateId' when calling gatesRunGate");
     }
     // verify the required parameter 'runGateRequest' is set
     if (runGateRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'runGateRequest' when calling runGate");
+      throw new ApiException(400, "Missing the required parameter 'runGateRequest' when calling gatesRunGate");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

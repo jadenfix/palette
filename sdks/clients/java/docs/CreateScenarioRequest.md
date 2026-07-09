@@ -12,6 +12,3 @@
 |**failureMode** | **FailureMode** |  |  [optional] |
 |**sourceTraceIds** | **List&lt;String&gt;** |  |  |
 |**title** | **String** |  |  |
-
-
-

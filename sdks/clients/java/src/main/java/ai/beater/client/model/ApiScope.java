@@ -30,19 +30,19 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum ApiScope {
   
-  TRACE_WRITE("trace_write"),
+  TRACE_WRITE("trace:write"),
   
-  TRACE_READ("trace_read"),
+  TRACE_READ("trace:read"),
   
-  DATASET_WRITE("dataset_write"),
+  DATASET_WRITE("dataset:write"),
   
-  SCENARIO_WRITE("scenario_write"),
+  SCENARIO_WRITE("scenario:write"),
   
-  SCENARIO_READ("scenario_read"),
+  SCENARIO_READ("scenario:read"),
   
-  EVAL_RUN("eval_run"),
+  EVAL_RUN("eval:run"),
   
-  PII_UNMASK("pii_unmask"),
+  PII_UNMASK("pii:unmask"),
   
   ADMIN("admin");
 

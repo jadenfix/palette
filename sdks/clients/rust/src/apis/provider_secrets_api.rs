@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
-/// struct for passing parameters to the method [`create_provider_secret`]
+/// struct for passing parameters to the method [`provider_secrets_period_create_provider_secret`]
 #[derive(Clone, Debug)]
-pub struct CreateProviderSecretParams {
+pub struct ProviderSecretsPeriodCreateProviderSecretParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -32,9 +32,9 @@ pub struct CreateProviderSecretParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`list_provider_secrets`]
+/// struct for passing parameters to the method [`provider_secrets_period_list_provider_secrets`]
 #[derive(Clone, Debug)]
-pub struct ListProviderSecretsParams {
+pub struct ProviderSecretsPeriodListProviderSecretsParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -49,9 +49,9 @@ pub struct ListProviderSecretsParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`revoke_provider_secret`]
+/// struct for passing parameters to the method [`provider_secrets_period_revoke_provider_secret`]
 #[derive(Clone, Debug)]
-pub struct RevokeProviderSecretParams {
+pub struct ProviderSecretsPeriodRevokeProviderSecretParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -69,30 +69,30 @@ pub struct RevokeProviderSecretParams {
 }
 
 
-/// struct for typed errors of method [`create_provider_secret`]
+/// struct for typed errors of method [`provider_secrets_period_create_provider_secret`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum CreateProviderSecretError {
+pub enum ProviderSecretsPeriodCreateProviderSecretError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`list_provider_secrets`]
+/// struct for typed errors of method [`provider_secrets_period_list_provider_secrets`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum ListProviderSecretsError {
+pub enum ProviderSecretsPeriodListProviderSecretsError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`revoke_provider_secret`]
+/// struct for typed errors of method [`provider_secrets_period_revoke_provider_secret`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum RevokeProviderSecretError {
+pub enum ProviderSecretsPeriodRevokeProviderSecretError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -101,7 +101,7 @@ pub enum RevokeProviderSecretError {
 }
 
 
-pub async fn create_provider_secret(configuration: &configuration::Configuration, params: CreateProviderSecretParams) -> Result<models::ProviderSecretMetadata, Error<CreateProviderSecretError>> {
+pub async fn provider_secrets_period_create_provider_secret(configuration: &configuration::Configuration, params: ProviderSecretsPeriodCreateProviderSecretParams) -> Result<models::ProviderSecretMetadata, Error<ProviderSecretsPeriodCreateProviderSecretError>> {
 
     let uri_str = format!("{}/v1/provider-secrets/{tenant_id}/{project_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -133,12 +133,12 @@ pub async fn create_provider_secret(configuration: &configuration::Configuration
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<CreateProviderSecretError> = serde_json::from_str(&content).ok();
+        let entity: Option<ProviderSecretsPeriodCreateProviderSecretError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn list_provider_secrets(configuration: &configuration::Configuration, params: ListProviderSecretsParams) -> Result<Vec<models::ProviderSecretMetadata>, Error<ListProviderSecretsError>> {
+pub async fn provider_secrets_period_list_provider_secrets(configuration: &configuration::Configuration, params: ProviderSecretsPeriodListProviderSecretsParams) -> Result<Vec<models::ProviderSecretMetadata>, Error<ProviderSecretsPeriodListProviderSecretsError>> {
 
     let uri_str = format!("{}/v1/provider-secrets/{tenant_id}/{project_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -169,12 +169,12 @@ pub async fn list_provider_secrets(configuration: &configuration::Configuration,
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<ListProviderSecretsError> = serde_json::from_str(&content).ok();
+        let entity: Option<ProviderSecretsPeriodListProviderSecretsError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn revoke_provider_secret(configuration: &configuration::Configuration, params: RevokeProviderSecretParams) -> Result<models::RevokedProviderSecret, Error<RevokeProviderSecretError>> {
+pub async fn provider_secrets_period_revoke_provider_secret(configuration: &configuration::Configuration, params: ProviderSecretsPeriodRevokeProviderSecretParams) -> Result<models::RevokedProviderSecret, Error<ProviderSecretsPeriodRevokeProviderSecretError>> {
 
     let uri_str = format!("{}/v1/provider-secrets/{tenant_id}/{project_id}/{provider_secret_id}/revoke", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), provider_secret_id=crate::apis::urlencode(params.provider_secret_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -205,7 +205,7 @@ pub async fn revoke_provider_secret(configuration: &configuration::Configuration
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<RevokeProviderSecretError> = serde_json::from_str(&content).ok();
+        let entity: Option<ProviderSecretsPeriodRevokeProviderSecretError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

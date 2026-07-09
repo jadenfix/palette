@@ -11,6 +11,3 @@
 |**comparisonCount** | **Integer** |  |  |
 |**maxRegression** | **Double** |  |  |
 |**minSampleSize** | **Integer** |  |  |
-
-
-

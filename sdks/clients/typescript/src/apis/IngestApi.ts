@@ -49,7 +49,7 @@ import {
     TraceWriteDrainReportToJSON,
 } from '../models/index';
 
-export interface DrainTraceIngestedRequest {
+export interface IngestDrainTraceIngestedRequest {
     tenantId: string;
     projectId: string;
     limit?: number;
@@ -59,7 +59,7 @@ export interface DrainTraceIngestedRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface DrainTraceWritesRequest {
+export interface IngestDrainTraceWritesRequest {
     tenantId: string;
     projectId: string;
     limit?: number;
@@ -69,7 +69,7 @@ export interface DrainTraceWritesRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface GetIngestQueueStatusRequest {
+export interface IngestGetIngestQueueStatusRequest {
     tenantId: string;
     projectId: string;
     authorization?: string | null;
@@ -78,7 +78,7 @@ export interface GetIngestQueueStatusRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface ImportSourceRequest {
+export interface IngestImportSourceRequest {
     tenantId: string;
     projectId: string;
     environmentId: string;
@@ -88,7 +88,7 @@ export interface ImportSourceRequest {
     xBeaterApiKey?: string | null;
 }
 
-export interface IngestNativeRequest {
+export interface IngestIngestNativeRequest {
     nativeIngestRequest: NativeIngestRequest;
     durability?: string;
     authorization?: string | null;
@@ -97,7 +97,7 @@ export interface IngestNativeRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface IngestOtlpRequest {
+export interface IngestIngestOtlpRequest {
     tenantId: string;
     projectId: string;
     environmentId: string;
@@ -108,7 +108,7 @@ export interface IngestOtlpRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface IngestOtlpJsonCollectorRequest {
+export interface IngestIngestOtlpJsonCollectorRequest {
     durability?: string;
     authorization?: string | null;
     xBeaterApiKey?: string | null;
@@ -117,7 +117,7 @@ export interface IngestOtlpJsonCollectorRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface ReconcileTraceRequest {
+export interface IngestReconcileTraceRequest {
     tenantId: string;
     projectId: string;
     traceId: string;
@@ -127,7 +127,7 @@ export interface ReconcileTraceRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface ReplayDeadLetterRequest {
+export interface IngestReplayDeadLetterRequest {
     tenantId: string;
     projectId: string;
     messageId: string;
@@ -145,18 +145,18 @@ export class IngestApi extends runtime.BaseAPI {
 
     /**
      */
-    async drainTraceIngestedRaw(requestParameters: DrainTraceIngestedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TraceIngestedDrainReport>> {
+    async ingestDrainTraceIngestedRaw(requestParameters: IngestDrainTraceIngestedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TraceIngestedDrainReport>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling drainTraceIngested().'
+                'Required parameter "tenantId" was null or undefined when calling ingestDrainTraceIngested().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling drainTraceIngested().'
+                'Required parameter "projectId" was null or undefined when calling ingestDrainTraceIngested().'
             );
         }
 
@@ -196,25 +196,25 @@ export class IngestApi extends runtime.BaseAPI {
 
     /**
      */
-    async drainTraceIngested(requestParameters: DrainTraceIngestedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TraceIngestedDrainReport> {
-        const response = await this.drainTraceIngestedRaw(requestParameters, initOverrides);
+    async ingestDrainTraceIngested(requestParameters: IngestDrainTraceIngestedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TraceIngestedDrainReport> {
+        const response = await this.ingestDrainTraceIngestedRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async drainTraceWritesRaw(requestParameters: DrainTraceWritesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TraceWriteDrainReport>> {
+    async ingestDrainTraceWritesRaw(requestParameters: IngestDrainTraceWritesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TraceWriteDrainReport>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling drainTraceWrites().'
+                'Required parameter "tenantId" was null or undefined when calling ingestDrainTraceWrites().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling drainTraceWrites().'
+                'Required parameter "projectId" was null or undefined when calling ingestDrainTraceWrites().'
             );
         }
 
@@ -254,25 +254,25 @@ export class IngestApi extends runtime.BaseAPI {
 
     /**
      */
-    async drainTraceWrites(requestParameters: DrainTraceWritesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TraceWriteDrainReport> {
-        const response = await this.drainTraceWritesRaw(requestParameters, initOverrides);
+    async ingestDrainTraceWrites(requestParameters: IngestDrainTraceWritesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TraceWriteDrainReport> {
+        const response = await this.ingestDrainTraceWritesRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async getIngestQueueStatusRaw(requestParameters: GetIngestQueueStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IngestQueueStatus>> {
+    async ingestGetIngestQueueStatusRaw(requestParameters: IngestGetIngestQueueStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IngestQueueStatus>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling getIngestQueueStatus().'
+                'Required parameter "tenantId" was null or undefined when calling ingestGetIngestQueueStatus().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling getIngestQueueStatus().'
+                'Required parameter "projectId" was null or undefined when calling ingestGetIngestQueueStatus().'
             );
         }
 
@@ -308,39 +308,39 @@ export class IngestApi extends runtime.BaseAPI {
 
     /**
      */
-    async getIngestQueueStatus(requestParameters: GetIngestQueueStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IngestQueueStatus> {
-        const response = await this.getIngestQueueStatusRaw(requestParameters, initOverrides);
+    async ingestGetIngestQueueStatus(requestParameters: IngestGetIngestQueueStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IngestQueueStatus> {
+        const response = await this.ingestGetIngestQueueStatusRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async importSourceRaw(requestParameters: ImportSourceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IngestOutcome>> {
+    async ingestImportSourceRaw(requestParameters: IngestImportSourceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IngestOutcome>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling importSource().'
+                'Required parameter "tenantId" was null or undefined when calling ingestImportSource().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling importSource().'
+                'Required parameter "projectId" was null or undefined when calling ingestImportSource().'
             );
         }
 
         if (requestParameters['environmentId'] == null) {
             throw new runtime.RequiredError(
                 'environmentId',
-                'Required parameter "environmentId" was null or undefined when calling importSource().'
+                'Required parameter "environmentId" was null or undefined when calling ingestImportSource().'
             );
         }
 
         if (requestParameters['importSourceHttpRequest'] == null) {
             throw new runtime.RequiredError(
                 'importSourceHttpRequest',
-                'Required parameter "importSourceHttpRequest" was null or undefined when calling importSource().'
+                'Required parameter "importSourceHttpRequest" was null or undefined when calling ingestImportSource().'
             );
         }
 
@@ -375,18 +375,18 @@ export class IngestApi extends runtime.BaseAPI {
 
     /**
      */
-    async importSource(requestParameters: ImportSourceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IngestOutcome> {
-        const response = await this.importSourceRaw(requestParameters, initOverrides);
+    async ingestImportSource(requestParameters: IngestImportSourceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IngestOutcome> {
+        const response = await this.ingestImportSourceRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async ingestNativeRaw(requestParameters: IngestNativeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IngestOutcome>> {
+    async ingestIngestNativeRaw(requestParameters: IngestIngestNativeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IngestOutcome>> {
         if (requestParameters['nativeIngestRequest'] == null) {
             throw new runtime.RequiredError(
                 'nativeIngestRequest',
-                'Required parameter "nativeIngestRequest" was null or undefined when calling ingestNative().'
+                'Required parameter "nativeIngestRequest" was null or undefined when calling ingestIngestNative().'
             );
         }
 
@@ -429,32 +429,32 @@ export class IngestApi extends runtime.BaseAPI {
 
     /**
      */
-    async ingestNative(requestParameters: IngestNativeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IngestOutcome> {
-        const response = await this.ingestNativeRaw(requestParameters, initOverrides);
+    async ingestIngestNative(requestParameters: IngestIngestNativeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IngestOutcome> {
+        const response = await this.ingestIngestNativeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async ingestOtlpRaw(requestParameters: IngestOtlpRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OtlpIngestOutcome>> {
+    async ingestIngestOtlpRaw(requestParameters: IngestIngestOtlpRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OtlpIngestOutcome>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling ingestOtlp().'
+                'Required parameter "tenantId" was null or undefined when calling ingestIngestOtlp().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling ingestOtlp().'
+                'Required parameter "projectId" was null or undefined when calling ingestIngestOtlp().'
             );
         }
 
         if (requestParameters['environmentId'] == null) {
             throw new runtime.RequiredError(
                 'environmentId',
-                'Required parameter "environmentId" was null or undefined when calling ingestOtlp().'
+                'Required parameter "environmentId" was null or undefined when calling ingestIngestOtlp().'
             );
         }
 
@@ -494,14 +494,14 @@ export class IngestApi extends runtime.BaseAPI {
 
     /**
      */
-    async ingestOtlp(requestParameters: IngestOtlpRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OtlpIngestOutcome> {
-        const response = await this.ingestOtlpRaw(requestParameters, initOverrides);
+    async ingestIngestOtlp(requestParameters: IngestIngestOtlpRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OtlpIngestOutcome> {
+        const response = await this.ingestIngestOtlpRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async ingestOtlpJsonCollectorRaw(requestParameters: IngestOtlpJsonCollectorRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OtlpIngestOutcome>> {
+    async ingestIngestOtlpJsonCollectorRaw(requestParameters: IngestIngestOtlpJsonCollectorRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OtlpIngestOutcome>> {
         const queryParameters: any = {};
 
         if (requestParameters['durability'] != null) {
@@ -542,32 +542,32 @@ export class IngestApi extends runtime.BaseAPI {
 
     /**
      */
-    async ingestOtlpJsonCollector(requestParameters: IngestOtlpJsonCollectorRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OtlpIngestOutcome> {
-        const response = await this.ingestOtlpJsonCollectorRaw(requestParameters, initOverrides);
+    async ingestIngestOtlpJsonCollector(requestParameters: IngestIngestOtlpJsonCollectorRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OtlpIngestOutcome> {
+        const response = await this.ingestIngestOtlpJsonCollectorRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async reconcileTraceRaw(requestParameters: ReconcileTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TraceIngestedReconcileReport>> {
+    async ingestReconcileTraceRaw(requestParameters: IngestReconcileTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TraceIngestedReconcileReport>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling reconcileTrace().'
+                'Required parameter "tenantId" was null or undefined when calling ingestReconcileTrace().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling reconcileTrace().'
+                'Required parameter "projectId" was null or undefined when calling ingestReconcileTrace().'
             );
         }
 
         if (requestParameters['traceId'] == null) {
             throw new runtime.RequiredError(
                 'traceId',
-                'Required parameter "traceId" was null or undefined when calling reconcileTrace().'
+                'Required parameter "traceId" was null or undefined when calling ingestReconcileTrace().'
             );
         }
 
@@ -603,32 +603,32 @@ export class IngestApi extends runtime.BaseAPI {
 
     /**
      */
-    async reconcileTrace(requestParameters: ReconcileTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TraceIngestedReconcileReport> {
-        const response = await this.reconcileTraceRaw(requestParameters, initOverrides);
+    async ingestReconcileTrace(requestParameters: IngestReconcileTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TraceIngestedReconcileReport> {
+        const response = await this.ingestReconcileTraceRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async replayDeadLetterRaw(requestParameters: ReplayDeadLetterRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DeadLetterReplayReport>> {
+    async ingestReplayDeadLetterRaw(requestParameters: IngestReplayDeadLetterRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DeadLetterReplayReport>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling replayDeadLetter().'
+                'Required parameter "tenantId" was null or undefined when calling ingestReplayDeadLetter().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling replayDeadLetter().'
+                'Required parameter "projectId" was null or undefined when calling ingestReplayDeadLetter().'
             );
         }
 
         if (requestParameters['messageId'] == null) {
             throw new runtime.RequiredError(
                 'messageId',
-                'Required parameter "messageId" was null or undefined when calling replayDeadLetter().'
+                'Required parameter "messageId" was null or undefined when calling ingestReplayDeadLetter().'
             );
         }
 
@@ -668,8 +668,8 @@ export class IngestApi extends runtime.BaseAPI {
 
     /**
      */
-    async replayDeadLetter(requestParameters: ReplayDeadLetterRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<DeadLetterReplayReport> {
-        const response = await this.replayDeadLetterRaw(requestParameters, initOverrides);
+    async ingestReplayDeadLetter(requestParameters: IngestReplayDeadLetterRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<DeadLetterReplayReport> {
+        const response = await this.ingestReplayDeadLetterRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

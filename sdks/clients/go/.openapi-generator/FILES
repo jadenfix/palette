@@ -8,6 +8,7 @@ api_api_keys.go
 api_archive.go
 api_audit.go
 api_calibrations.go
+api_connect.go
 api_connectors.go
 api_datasets.go
 api_evals.go
@@ -57,6 +58,7 @@ docs/CalibrationsAPI.md
 docs/CanonicalSpan.md
 docs/CaseExperimentScore.md
 docs/CaseOutputOverrideRequest.md
+docs/ConnectAPI.md
 docs/ConnectConnectorRequest.md
 docs/ConnectionLink.md
 docs/ConnectionStatus.md
@@ -135,6 +137,8 @@ docs/OnlineSamplingPolicy.md
 docs/OtlpIngestOutcome.md
 docs/PageRunSummary.md
 docs/PageRunSummaryItemsInner.md
+docs/PaletteConnectStatus.md
+docs/PaletteConnectStatusResponse.md
 docs/PerturbationKnobs.md
 docs/PromoteReviewAnnotationHttpRequest.md
 docs/PromoteTraceCaseRequest.md
@@ -300,6 +304,8 @@ model_online_sampling_policy.go
 model_otlp_ingest_outcome.go
 model_page_run_summary.go
 model_page_run_summary_items_inner.go
+model_palette_connect_status.go
+model_palette_connect_status_response.go
 model_perturbation_knobs.go
 model_promote_review_annotation_http_request.go
 model_promote_trace_case_request.go
@@ -366,6 +372,7 @@ test/api_api_keys_test.go
 test/api_archive_test.go
 test/api_audit_test.go
 test/api_calibrations_test.go
+test/api_connect_test.go
 test/api_connectors_test.go
 test/api_datasets_test.go
 test/api_evals_test.go

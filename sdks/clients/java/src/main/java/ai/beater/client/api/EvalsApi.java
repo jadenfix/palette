@@ -99,8 +99,8 @@ public class EvalsApi {
    * @return DatasetEvalReport
    * @throws ApiException if fails to make API call
    */
-  public DatasetEvalReport runDeterministicEval(String tenantId, String projectId, String datasetId, String versionId, RunDeterministicEvalRequest runDeterministicEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<DatasetEvalReport> localVarResponse = runDeterministicEvalWithHttpInfo(tenantId, projectId, datasetId, versionId, runDeterministicEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public DatasetEvalReport evalsRunDeterministicEval(String tenantId, String projectId, String datasetId, String versionId, RunDeterministicEvalRequest runDeterministicEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<DatasetEvalReport> localVarResponse = evalsRunDeterministicEvalWithHttpInfo(tenantId, projectId, datasetId, versionId, runDeterministicEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -119,8 +119,8 @@ public class EvalsApi {
    * @return ApiResponse&lt;DatasetEvalReport&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<DatasetEvalReport> runDeterministicEvalWithHttpInfo(String tenantId, String projectId, String datasetId, String versionId, RunDeterministicEvalRequest runDeterministicEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = runDeterministicEvalRequestBuilder(tenantId, projectId, datasetId, versionId, runDeterministicEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<DatasetEvalReport> evalsRunDeterministicEvalWithHttpInfo(String tenantId, String projectId, String datasetId, String versionId, RunDeterministicEvalRequest runDeterministicEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = evalsRunDeterministicEvalRequestBuilder(tenantId, projectId, datasetId, versionId, runDeterministicEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -130,7 +130,7 @@ public class EvalsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("runDeterministicEval", localVarResponse);
+          throw getApiException("evalsRunDeterministicEval", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<DatasetEvalReport>(
@@ -159,26 +159,26 @@ public class EvalsApi {
     }
   }
 
-  private HttpRequest.Builder runDeterministicEvalRequestBuilder(String tenantId, String projectId, String datasetId, String versionId, RunDeterministicEvalRequest runDeterministicEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder evalsRunDeterministicEvalRequestBuilder(String tenantId, String projectId, String datasetId, String versionId, RunDeterministicEvalRequest runDeterministicEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling runDeterministicEval");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling evalsRunDeterministicEval");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling runDeterministicEval");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling evalsRunDeterministicEval");
     }
     // verify the required parameter 'datasetId' is set
     if (datasetId == null) {
-      throw new ApiException(400, "Missing the required parameter 'datasetId' when calling runDeterministicEval");
+      throw new ApiException(400, "Missing the required parameter 'datasetId' when calling evalsRunDeterministicEval");
     }
     // verify the required parameter 'versionId' is set
     if (versionId == null) {
-      throw new ApiException(400, "Missing the required parameter 'versionId' when calling runDeterministicEval");
+      throw new ApiException(400, "Missing the required parameter 'versionId' when calling evalsRunDeterministicEval");
     }
     // verify the required parameter 'runDeterministicEvalRequest' is set
     if (runDeterministicEvalRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'runDeterministicEvalRequest' when calling runDeterministicEval");
+      throw new ApiException(400, "Missing the required parameter 'runDeterministicEvalRequest' when calling evalsRunDeterministicEval");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -236,8 +236,8 @@ public class EvalsApi {
    * @return DatasetEvalReport
    * @throws ApiException if fails to make API call
    */
-  public DatasetEvalReport runJudgeEval(String tenantId, String projectId, String datasetId, String versionId, RunJudgeDatasetEvalRequest runJudgeDatasetEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<DatasetEvalReport> localVarResponse = runJudgeEvalWithHttpInfo(tenantId, projectId, datasetId, versionId, runJudgeDatasetEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public DatasetEvalReport evalsRunJudgeEval(String tenantId, String projectId, String datasetId, String versionId, RunJudgeDatasetEvalRequest runJudgeDatasetEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<DatasetEvalReport> localVarResponse = evalsRunJudgeEvalWithHttpInfo(tenantId, projectId, datasetId, versionId, runJudgeDatasetEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -256,8 +256,8 @@ public class EvalsApi {
    * @return ApiResponse&lt;DatasetEvalReport&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<DatasetEvalReport> runJudgeEvalWithHttpInfo(String tenantId, String projectId, String datasetId, String versionId, RunJudgeDatasetEvalRequest runJudgeDatasetEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = runJudgeEvalRequestBuilder(tenantId, projectId, datasetId, versionId, runJudgeDatasetEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<DatasetEvalReport> evalsRunJudgeEvalWithHttpInfo(String tenantId, String projectId, String datasetId, String versionId, RunJudgeDatasetEvalRequest runJudgeDatasetEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = evalsRunJudgeEvalRequestBuilder(tenantId, projectId, datasetId, versionId, runJudgeDatasetEvalRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -267,7 +267,7 @@ public class EvalsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("runJudgeEval", localVarResponse);
+          throw getApiException("evalsRunJudgeEval", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<DatasetEvalReport>(
@@ -296,26 +296,26 @@ public class EvalsApi {
     }
   }
 
-  private HttpRequest.Builder runJudgeEvalRequestBuilder(String tenantId, String projectId, String datasetId, String versionId, RunJudgeDatasetEvalRequest runJudgeDatasetEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder evalsRunJudgeEvalRequestBuilder(String tenantId, String projectId, String datasetId, String versionId, RunJudgeDatasetEvalRequest runJudgeDatasetEvalRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling runJudgeEval");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling evalsRunJudgeEval");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling runJudgeEval");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling evalsRunJudgeEval");
     }
     // verify the required parameter 'datasetId' is set
     if (datasetId == null) {
-      throw new ApiException(400, "Missing the required parameter 'datasetId' when calling runJudgeEval");
+      throw new ApiException(400, "Missing the required parameter 'datasetId' when calling evalsRunJudgeEval");
     }
     // verify the required parameter 'versionId' is set
     if (versionId == null) {
-      throw new ApiException(400, "Missing the required parameter 'versionId' when calling runJudgeEval");
+      throw new ApiException(400, "Missing the required parameter 'versionId' when calling evalsRunJudgeEval");
     }
     // verify the required parameter 'runJudgeDatasetEvalRequest' is set
     if (runJudgeDatasetEvalRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'runJudgeDatasetEvalRequest' when calling runJudgeEval");
+      throw new ApiException(400, "Missing the required parameter 'runJudgeDatasetEvalRequest' when calling evalsRunJudgeEval");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

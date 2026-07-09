@@ -15,6 +15,3 @@
 |**scopes** | **Set&lt;ApiScope&gt;** |  |  |
 |**secret** | **String** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

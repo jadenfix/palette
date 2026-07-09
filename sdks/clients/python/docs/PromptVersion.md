@@ -5,13 +5,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**metadata** | [**PromptVersionMetadata**](PromptVersionMetadata.md) |  | 
-**project_id** | **str** |  | 
-**prompt_id** | **str** |  | 
-**template** | [**PromptTemplate**](PromptTemplate.md) |  | 
-**tenant_id** | **str** |  | 
-**version_id** | **str** |  | 
-**version_number** | **int** |  | 
+**metadata** | [**PromptVersionMetadata**](PromptVersionMetadata.md) |  |
+**project_id** | **str** |  |
+**prompt_id** | **str** |  |
+**template** | [**PromptTemplate**](PromptTemplate.md) |  |
+**tenant_id** | **str** |  |
+**version_id** | **str** |  |
+**version_number** | **int** |  |
 
 ## Example
 
@@ -31,5 +31,3 @@ prompt_version_dict = prompt_version_instance.to_dict()
 prompt_version_from_dict = PromptVersion.from_dict(prompt_version_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

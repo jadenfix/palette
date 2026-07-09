@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**reference** | **object** |  | [optional] 
-**span_id** | **str** |  | [optional] 
-**trace_id** | **str** |  | 
+**reference** | **object** |  | [optional]
+**span_id** | **str** |  | [optional]
+**trace_id** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ promote_trace_case_request_dict = promote_trace_case_request_instance.to_dict()
 promote_trace_case_request_from_dict = PromoteTraceCaseRequest.from_dict(promote_trace_case_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

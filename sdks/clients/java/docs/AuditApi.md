@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**listAuditEvents**](AuditApi.md#listAuditEvents) | **GET** /v1/audit/{tenant_id}/{project_id} |  |
-| [**listAuditEventsWithHttpInfo**](AuditApi.md#listAuditEventsWithHttpInfo) | **GET** /v1/audit/{tenant_id}/{project_id} |  |
+| [**auditListAuditEvents**](AuditApi.md#auditListAuditEvents) | **GET** /v1/audit/{tenant_id}/{project_id} |  |
+| [**auditListAuditEventsWithHttpInfo**](AuditApi.md#auditListAuditEventsWithHttpInfo) | **GET** /v1/audit/{tenant_id}/{project_id} |  |
 
 
 
-## listAuditEvents
+## auditListAuditEvents
 
-> List<AuditEvent> listAuditEvents(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> List<AuditEvent> auditListAuditEvents(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -38,10 +38,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            List<AuditEvent> result = apiInstance.listAuditEvents(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            List<AuditEvent> result = apiInstance.auditListAuditEvents(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling AuditApi#listAuditEvents");
+            System.err.println("Exception when calling AuditApi#auditListAuditEvents");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -85,9 +85,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## listAuditEventsWithHttpInfo
+## auditListAuditEventsWithHttpInfo
 
-> ApiResponse<List<AuditEvent>> listAuditEvents listAuditEventsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<List<AuditEvent>> auditListAuditEvents auditListAuditEventsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -115,12 +115,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<List<AuditEvent>> response = apiInstance.listAuditEventsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<List<AuditEvent>> response = apiInstance.auditListAuditEventsWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling AuditApi#listAuditEvents");
+            System.err.println("Exception when calling AuditApi#auditListAuditEvents");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -163,4 +163,3 @@ No authorization required
 | **400** | Invalid request, scope, or filter |  -  |
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
-

@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**scopes** | [**List[ApiScope]**](ApiScope.md) |  | 
+**scopes** | [**List[ApiScope]**](ApiScope.md) |  |
 
 ## Example
 
@@ -25,5 +25,3 @@ create_api_key_http_request_dict = create_api_key_http_request_instance.to_dict(
 create_api_key_http_request_from_dict = CreateApiKeyHttpRequest.from_dict(create_api_key_http_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

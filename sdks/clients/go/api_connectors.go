@@ -23,7 +23,7 @@ import (
 // ConnectorsAPIService ConnectorsAPI service
 type ConnectorsAPIService service
 
-type ApiConnectConnectorRequest struct {
+type ApiConnectorsConnectConnectorRequest struct {
 	ctx context.Context
 	ApiService *ConnectorsAPIService
 	tenantId string
@@ -35,49 +35,49 @@ type ApiConnectConnectorRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiConnectConnectorRequest) ConnectConnectorRequest(connectConnectorRequest ConnectConnectorRequest) ApiConnectConnectorRequest {
+func (r ApiConnectorsConnectConnectorRequest) ConnectConnectorRequest(connectConnectorRequest ConnectConnectorRequest) ApiConnectorsConnectConnectorRequest {
 	r.connectConnectorRequest = &connectConnectorRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiConnectConnectorRequest) Authorization(authorization string) ApiConnectConnectorRequest {
+func (r ApiConnectorsConnectConnectorRequest) Authorization(authorization string) ApiConnectorsConnectConnectorRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiConnectConnectorRequest) XBeaterApiKey(xBeaterApiKey string) ApiConnectConnectorRequest {
+func (r ApiConnectorsConnectConnectorRequest) XBeaterApiKey(xBeaterApiKey string) ApiConnectorsConnectConnectorRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiConnectConnectorRequest) XBeaterProjectId(xBeaterProjectId string) ApiConnectConnectorRequest {
+func (r ApiConnectorsConnectConnectorRequest) XBeaterProjectId(xBeaterProjectId string) ApiConnectorsConnectConnectorRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiConnectConnectorRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiConnectConnectorRequest {
+func (r ApiConnectorsConnectConnectorRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiConnectorsConnectConnectorRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiConnectConnectorRequest) Execute() (*ConnectionLink, *http.Response, error) {
-	return r.ApiService.ConnectConnectorExecute(r)
+func (r ApiConnectorsConnectConnectorRequest) Execute() (*ConnectionLink, *http.Response, error) {
+	return r.ApiService.ConnectorsConnectConnectorExecute(r)
 }
 
 /*
-ConnectConnector Method for ConnectConnector
+ConnectorsConnectConnector Method for ConnectorsConnectConnector
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiConnectConnectorRequest
+ @return ApiConnectorsConnectConnectorRequest
 */
-func (a *ConnectorsAPIService) ConnectConnector(ctx context.Context, tenantId string, projectId string) ApiConnectConnectorRequest {
-	return ApiConnectConnectorRequest{
+func (a *ConnectorsAPIService) ConnectorsConnectConnector(ctx context.Context, tenantId string, projectId string) ApiConnectorsConnectConnectorRequest {
+	return ApiConnectorsConnectConnectorRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -87,7 +87,7 @@ func (a *ConnectorsAPIService) ConnectConnector(ctx context.Context, tenantId st
 
 // Execute executes the request
 //  @return ConnectionLink
-func (a *ConnectorsAPIService) ConnectConnectorExecute(r ApiConnectConnectorRequest) (*ConnectionLink, *http.Response, error) {
+func (a *ConnectorsAPIService) ConnectorsConnectConnectorExecute(r ApiConnectorsConnectConnectorRequest) (*ConnectionLink, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -95,7 +95,7 @@ func (a *ConnectorsAPIService) ConnectConnectorExecute(r ApiConnectConnectorRequ
 		localVarReturnValue  *ConnectionLink
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.ConnectConnector")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.ConnectorsConnectConnector")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -222,7 +222,7 @@ func (a *ConnectorsAPIService) ConnectConnectorExecute(r ApiConnectConnectorRequ
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiConnectorStatusRequest struct {
+type ApiConnectorsConnectorStatusRequest struct {
 	ctx context.Context
 	ApiService *ConnectorsAPIService
 	tenantId string
@@ -235,49 +235,49 @@ type ApiConnectorStatusRequest struct {
 }
 
 // Toolkit slug to scope the request to.
-func (r ApiConnectorStatusRequest) Toolkit(toolkit string) ApiConnectorStatusRequest {
+func (r ApiConnectorsConnectorStatusRequest) Toolkit(toolkit string) ApiConnectorsConnectorStatusRequest {
 	r.toolkit = &toolkit
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiConnectorStatusRequest) Authorization(authorization string) ApiConnectorStatusRequest {
+func (r ApiConnectorsConnectorStatusRequest) Authorization(authorization string) ApiConnectorsConnectorStatusRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiConnectorStatusRequest) XBeaterApiKey(xBeaterApiKey string) ApiConnectorStatusRequest {
+func (r ApiConnectorsConnectorStatusRequest) XBeaterApiKey(xBeaterApiKey string) ApiConnectorsConnectorStatusRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiConnectorStatusRequest) XBeaterProjectId(xBeaterProjectId string) ApiConnectorStatusRequest {
+func (r ApiConnectorsConnectorStatusRequest) XBeaterProjectId(xBeaterProjectId string) ApiConnectorsConnectorStatusRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiConnectorStatusRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiConnectorStatusRequest {
+func (r ApiConnectorsConnectorStatusRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiConnectorsConnectorStatusRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiConnectorStatusRequest) Execute() (*ConnectionStatus, *http.Response, error) {
-	return r.ApiService.ConnectorStatusExecute(r)
+func (r ApiConnectorsConnectorStatusRequest) Execute() (*ConnectionStatus, *http.Response, error) {
+	return r.ApiService.ConnectorsConnectorStatusExecute(r)
 }
 
 /*
-ConnectorStatus Method for ConnectorStatus
+ConnectorsConnectorStatus Method for ConnectorsConnectorStatus
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiConnectorStatusRequest
+ @return ApiConnectorsConnectorStatusRequest
 */
-func (a *ConnectorsAPIService) ConnectorStatus(ctx context.Context, tenantId string, projectId string) ApiConnectorStatusRequest {
-	return ApiConnectorStatusRequest{
+func (a *ConnectorsAPIService) ConnectorsConnectorStatus(ctx context.Context, tenantId string, projectId string) ApiConnectorsConnectorStatusRequest {
+	return ApiConnectorsConnectorStatusRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -287,7 +287,7 @@ func (a *ConnectorsAPIService) ConnectorStatus(ctx context.Context, tenantId str
 
 // Execute executes the request
 //  @return ConnectionStatus
-func (a *ConnectorsAPIService) ConnectorStatusExecute(r ApiConnectorStatusRequest) (*ConnectionStatus, *http.Response, error) {
+func (a *ConnectorsAPIService) ConnectorsConnectorStatusExecute(r ApiConnectorsConnectorStatusRequest) (*ConnectionStatus, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -295,7 +295,7 @@ func (a *ConnectorsAPIService) ConnectorStatusExecute(r ApiConnectorStatusReques
 		localVarReturnValue  *ConnectionStatus
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.ConnectorStatus")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.ConnectorsConnectorStatus")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -421,7 +421,7 @@ func (a *ConnectorsAPIService) ConnectorStatusExecute(r ApiConnectorStatusReques
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiGetConnectorSkillsRequest struct {
+type ApiConnectorsGetConnectorSkillsRequest struct {
 	ctx context.Context
 	ApiService *ConnectorsAPIService
 	tenantId string
@@ -434,49 +434,49 @@ type ApiGetConnectorSkillsRequest struct {
 }
 
 // Toolkit slug to scope the request to.
-func (r ApiGetConnectorSkillsRequest) Toolkit(toolkit string) ApiGetConnectorSkillsRequest {
+func (r ApiConnectorsGetConnectorSkillsRequest) Toolkit(toolkit string) ApiConnectorsGetConnectorSkillsRequest {
 	r.toolkit = &toolkit
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiGetConnectorSkillsRequest) Authorization(authorization string) ApiGetConnectorSkillsRequest {
+func (r ApiConnectorsGetConnectorSkillsRequest) Authorization(authorization string) ApiConnectorsGetConnectorSkillsRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiGetConnectorSkillsRequest) XBeaterApiKey(xBeaterApiKey string) ApiGetConnectorSkillsRequest {
+func (r ApiConnectorsGetConnectorSkillsRequest) XBeaterApiKey(xBeaterApiKey string) ApiConnectorsGetConnectorSkillsRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiGetConnectorSkillsRequest) XBeaterProjectId(xBeaterProjectId string) ApiGetConnectorSkillsRequest {
+func (r ApiConnectorsGetConnectorSkillsRequest) XBeaterProjectId(xBeaterProjectId string) ApiConnectorsGetConnectorSkillsRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiGetConnectorSkillsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiGetConnectorSkillsRequest {
+func (r ApiConnectorsGetConnectorSkillsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiConnectorsGetConnectorSkillsRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiGetConnectorSkillsRequest) Execute() (*ConnectorSkillsResponse, *http.Response, error) {
-	return r.ApiService.GetConnectorSkillsExecute(r)
+func (r ApiConnectorsGetConnectorSkillsRequest) Execute() (*ConnectorSkillsResponse, *http.Response, error) {
+	return r.ApiService.ConnectorsGetConnectorSkillsExecute(r)
 }
 
 /*
-GetConnectorSkills Method for GetConnectorSkills
+ConnectorsGetConnectorSkills Method for ConnectorsGetConnectorSkills
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiGetConnectorSkillsRequest
+ @return ApiConnectorsGetConnectorSkillsRequest
 */
-func (a *ConnectorsAPIService) GetConnectorSkills(ctx context.Context, tenantId string, projectId string) ApiGetConnectorSkillsRequest {
-	return ApiGetConnectorSkillsRequest{
+func (a *ConnectorsAPIService) ConnectorsGetConnectorSkills(ctx context.Context, tenantId string, projectId string) ApiConnectorsGetConnectorSkillsRequest {
+	return ApiConnectorsGetConnectorSkillsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -486,7 +486,7 @@ func (a *ConnectorsAPIService) GetConnectorSkills(ctx context.Context, tenantId 
 
 // Execute executes the request
 //  @return ConnectorSkillsResponse
-func (a *ConnectorsAPIService) GetConnectorSkillsExecute(r ApiGetConnectorSkillsRequest) (*ConnectorSkillsResponse, *http.Response, error) {
+func (a *ConnectorsAPIService) ConnectorsGetConnectorSkillsExecute(r ApiConnectorsGetConnectorSkillsRequest) (*ConnectorSkillsResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -494,7 +494,7 @@ func (a *ConnectorsAPIService) GetConnectorSkillsExecute(r ApiGetConnectorSkills
 		localVarReturnValue  *ConnectorSkillsResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.GetConnectorSkills")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.ConnectorsGetConnectorSkills")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -620,7 +620,7 @@ func (a *ConnectorsAPIService) GetConnectorSkillsExecute(r ApiGetConnectorSkills
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiInvokeConnectorToolRequest struct {
+type ApiConnectorsInvokeConnectorToolRequest struct {
 	ctx context.Context
 	ApiService *ConnectorsAPIService
 	tenantId string
@@ -632,49 +632,49 @@ type ApiInvokeConnectorToolRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiInvokeConnectorToolRequest) InvokeConnectorRequest(invokeConnectorRequest InvokeConnectorRequest) ApiInvokeConnectorToolRequest {
+func (r ApiConnectorsInvokeConnectorToolRequest) InvokeConnectorRequest(invokeConnectorRequest InvokeConnectorRequest) ApiConnectorsInvokeConnectorToolRequest {
 	r.invokeConnectorRequest = &invokeConnectorRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiInvokeConnectorToolRequest) Authorization(authorization string) ApiInvokeConnectorToolRequest {
+func (r ApiConnectorsInvokeConnectorToolRequest) Authorization(authorization string) ApiConnectorsInvokeConnectorToolRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiInvokeConnectorToolRequest) XBeaterApiKey(xBeaterApiKey string) ApiInvokeConnectorToolRequest {
+func (r ApiConnectorsInvokeConnectorToolRequest) XBeaterApiKey(xBeaterApiKey string) ApiConnectorsInvokeConnectorToolRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiInvokeConnectorToolRequest) XBeaterProjectId(xBeaterProjectId string) ApiInvokeConnectorToolRequest {
+func (r ApiConnectorsInvokeConnectorToolRequest) XBeaterProjectId(xBeaterProjectId string) ApiConnectorsInvokeConnectorToolRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiInvokeConnectorToolRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiInvokeConnectorToolRequest {
+func (r ApiConnectorsInvokeConnectorToolRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiConnectorsInvokeConnectorToolRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiInvokeConnectorToolRequest) Execute() (*ToolExecution, *http.Response, error) {
-	return r.ApiService.InvokeConnectorToolExecute(r)
+func (r ApiConnectorsInvokeConnectorToolRequest) Execute() (*ToolExecution, *http.Response, error) {
+	return r.ApiService.ConnectorsInvokeConnectorToolExecute(r)
 }
 
 /*
-InvokeConnectorTool Method for InvokeConnectorTool
+ConnectorsInvokeConnectorTool Method for ConnectorsInvokeConnectorTool
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiInvokeConnectorToolRequest
+ @return ApiConnectorsInvokeConnectorToolRequest
 */
-func (a *ConnectorsAPIService) InvokeConnectorTool(ctx context.Context, tenantId string, projectId string) ApiInvokeConnectorToolRequest {
-	return ApiInvokeConnectorToolRequest{
+func (a *ConnectorsAPIService) ConnectorsInvokeConnectorTool(ctx context.Context, tenantId string, projectId string) ApiConnectorsInvokeConnectorToolRequest {
+	return ApiConnectorsInvokeConnectorToolRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -684,7 +684,7 @@ func (a *ConnectorsAPIService) InvokeConnectorTool(ctx context.Context, tenantId
 
 // Execute executes the request
 //  @return ToolExecution
-func (a *ConnectorsAPIService) InvokeConnectorToolExecute(r ApiInvokeConnectorToolRequest) (*ToolExecution, *http.Response, error) {
+func (a *ConnectorsAPIService) ConnectorsInvokeConnectorToolExecute(r ApiConnectorsInvokeConnectorToolRequest) (*ToolExecution, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -692,7 +692,7 @@ func (a *ConnectorsAPIService) InvokeConnectorToolExecute(r ApiInvokeConnectorTo
 		localVarReturnValue  *ToolExecution
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.InvokeConnectorTool")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.ConnectorsInvokeConnectorTool")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -819,7 +819,7 @@ func (a *ConnectorsAPIService) InvokeConnectorToolExecute(r ApiInvokeConnectorTo
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiListConnectorToolsRequest struct {
+type ApiConnectorsListConnectorToolsRequest struct {
 	ctx context.Context
 	ApiService *ConnectorsAPIService
 	tenantId string
@@ -833,55 +833,55 @@ type ApiListConnectorToolsRequest struct {
 }
 
 // Toolkit slug to list tools for.
-func (r ApiListConnectorToolsRequest) Toolkit(toolkit string) ApiListConnectorToolsRequest {
+func (r ApiConnectorsListConnectorToolsRequest) Toolkit(toolkit string) ApiConnectorsListConnectorToolsRequest {
 	r.toolkit = &toolkit
 	return r
 }
 
 // Maximum number of tools to return (page size).
-func (r ApiListConnectorToolsRequest) Limit(limit int32) ApiListConnectorToolsRequest {
+func (r ApiConnectorsListConnectorToolsRequest) Limit(limit int32) ApiConnectorsListConnectorToolsRequest {
 	r.limit = &limit
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiListConnectorToolsRequest) Authorization(authorization string) ApiListConnectorToolsRequest {
+func (r ApiConnectorsListConnectorToolsRequest) Authorization(authorization string) ApiConnectorsListConnectorToolsRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiListConnectorToolsRequest) XBeaterApiKey(xBeaterApiKey string) ApiListConnectorToolsRequest {
+func (r ApiConnectorsListConnectorToolsRequest) XBeaterApiKey(xBeaterApiKey string) ApiConnectorsListConnectorToolsRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiListConnectorToolsRequest) XBeaterProjectId(xBeaterProjectId string) ApiListConnectorToolsRequest {
+func (r ApiConnectorsListConnectorToolsRequest) XBeaterProjectId(xBeaterProjectId string) ApiConnectorsListConnectorToolsRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiListConnectorToolsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiListConnectorToolsRequest {
+func (r ApiConnectorsListConnectorToolsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiConnectorsListConnectorToolsRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiListConnectorToolsRequest) Execute() ([]ConnectorTool, *http.Response, error) {
-	return r.ApiService.ListConnectorToolsExecute(r)
+func (r ApiConnectorsListConnectorToolsRequest) Execute() ([]ConnectorTool, *http.Response, error) {
+	return r.ApiService.ConnectorsListConnectorToolsExecute(r)
 }
 
 /*
-ListConnectorTools Method for ListConnectorTools
+ConnectorsListConnectorTools Method for ConnectorsListConnectorTools
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiListConnectorToolsRequest
+ @return ApiConnectorsListConnectorToolsRequest
 */
-func (a *ConnectorsAPIService) ListConnectorTools(ctx context.Context, tenantId string, projectId string) ApiListConnectorToolsRequest {
-	return ApiListConnectorToolsRequest{
+func (a *ConnectorsAPIService) ConnectorsListConnectorTools(ctx context.Context, tenantId string, projectId string) ApiConnectorsListConnectorToolsRequest {
+	return ApiConnectorsListConnectorToolsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -891,7 +891,7 @@ func (a *ConnectorsAPIService) ListConnectorTools(ctx context.Context, tenantId 
 
 // Execute executes the request
 //  @return []ConnectorTool
-func (a *ConnectorsAPIService) ListConnectorToolsExecute(r ApiListConnectorToolsRequest) ([]ConnectorTool, *http.Response, error) {
+func (a *ConnectorsAPIService) ConnectorsListConnectorToolsExecute(r ApiConnectorsListConnectorToolsRequest) ([]ConnectorTool, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -899,7 +899,7 @@ func (a *ConnectorsAPIService) ListConnectorToolsExecute(r ApiListConnectorTools
 		localVarReturnValue  []ConnectorTool
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.ListConnectorTools")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.ConnectorsListConnectorTools")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -1028,7 +1028,7 @@ func (a *ConnectorsAPIService) ListConnectorToolsExecute(r ApiListConnectorTools
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiListConnectorsRequest struct {
+type ApiConnectorsListConnectorsRequest struct {
 	ctx context.Context
 	ApiService *ConnectorsAPIService
 	tenantId string
@@ -1041,49 +1041,49 @@ type ApiListConnectorsRequest struct {
 }
 
 // Maximum number of apps to return (page size).
-func (r ApiListConnectorsRequest) Limit(limit int32) ApiListConnectorsRequest {
+func (r ApiConnectorsListConnectorsRequest) Limit(limit int32) ApiConnectorsListConnectorsRequest {
 	r.limit = &limit
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiListConnectorsRequest) Authorization(authorization string) ApiListConnectorsRequest {
+func (r ApiConnectorsListConnectorsRequest) Authorization(authorization string) ApiConnectorsListConnectorsRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiListConnectorsRequest) XBeaterApiKey(xBeaterApiKey string) ApiListConnectorsRequest {
+func (r ApiConnectorsListConnectorsRequest) XBeaterApiKey(xBeaterApiKey string) ApiConnectorsListConnectorsRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiListConnectorsRequest) XBeaterProjectId(xBeaterProjectId string) ApiListConnectorsRequest {
+func (r ApiConnectorsListConnectorsRequest) XBeaterProjectId(xBeaterProjectId string) ApiConnectorsListConnectorsRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiListConnectorsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiListConnectorsRequest {
+func (r ApiConnectorsListConnectorsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiConnectorsListConnectorsRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiListConnectorsRequest) Execute() ([]Toolkit, *http.Response, error) {
-	return r.ApiService.ListConnectorsExecute(r)
+func (r ApiConnectorsListConnectorsRequest) Execute() ([]Toolkit, *http.Response, error) {
+	return r.ApiService.ConnectorsListConnectorsExecute(r)
 }
 
 /*
-ListConnectors Method for ListConnectors
+ConnectorsListConnectors Method for ConnectorsListConnectors
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiListConnectorsRequest
+ @return ApiConnectorsListConnectorsRequest
 */
-func (a *ConnectorsAPIService) ListConnectors(ctx context.Context, tenantId string, projectId string) ApiListConnectorsRequest {
-	return ApiListConnectorsRequest{
+func (a *ConnectorsAPIService) ConnectorsListConnectors(ctx context.Context, tenantId string, projectId string) ApiConnectorsListConnectorsRequest {
+	return ApiConnectorsListConnectorsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -1093,7 +1093,7 @@ func (a *ConnectorsAPIService) ListConnectors(ctx context.Context, tenantId stri
 
 // Execute executes the request
 //  @return []Toolkit
-func (a *ConnectorsAPIService) ListConnectorsExecute(r ApiListConnectorsRequest) ([]Toolkit, *http.Response, error) {
+func (a *ConnectorsAPIService) ConnectorsListConnectorsExecute(r ApiConnectorsListConnectorsRequest) ([]Toolkit, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -1101,7 +1101,7 @@ func (a *ConnectorsAPIService) ListConnectorsExecute(r ApiListConnectorsRequest)
 		localVarReturnValue  []Toolkit
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.ListConnectors")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ConnectorsAPIService.ConnectorsListConnectors")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

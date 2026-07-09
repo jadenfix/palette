@@ -97,8 +97,8 @@ public class JudgeApi {
    * @return JudgeBrokerOutcome
    * @throws ApiException if fails to make API call
    */
-  public JudgeBrokerOutcome evaluateJudge(String tenantId, String projectId, RunJudgeEvalHttpRequest runJudgeEvalHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<JudgeBrokerOutcome> localVarResponse = evaluateJudgeWithHttpInfo(tenantId, projectId, runJudgeEvalHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public JudgeBrokerOutcome judgeEvaluateJudge(String tenantId, String projectId, RunJudgeEvalHttpRequest runJudgeEvalHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<JudgeBrokerOutcome> localVarResponse = judgeEvaluateJudgeWithHttpInfo(tenantId, projectId, runJudgeEvalHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -115,8 +115,8 @@ public class JudgeApi {
    * @return ApiResponse&lt;JudgeBrokerOutcome&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<JudgeBrokerOutcome> evaluateJudgeWithHttpInfo(String tenantId, String projectId, RunJudgeEvalHttpRequest runJudgeEvalHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = evaluateJudgeRequestBuilder(tenantId, projectId, runJudgeEvalHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<JudgeBrokerOutcome> judgeEvaluateJudgeWithHttpInfo(String tenantId, String projectId, RunJudgeEvalHttpRequest runJudgeEvalHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = judgeEvaluateJudgeRequestBuilder(tenantId, projectId, runJudgeEvalHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -126,7 +126,7 @@ public class JudgeApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("evaluateJudge", localVarResponse);
+          throw getApiException("judgeEvaluateJudge", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<JudgeBrokerOutcome>(
@@ -155,18 +155,18 @@ public class JudgeApi {
     }
   }
 
-  private HttpRequest.Builder evaluateJudgeRequestBuilder(String tenantId, String projectId, RunJudgeEvalHttpRequest runJudgeEvalHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder judgeEvaluateJudgeRequestBuilder(String tenantId, String projectId, RunJudgeEvalHttpRequest runJudgeEvalHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling evaluateJudge");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling judgeEvaluateJudge");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling evaluateJudge");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling judgeEvaluateJudge");
     }
     // verify the required parameter 'runJudgeEvalHttpRequest' is set
     if (runJudgeEvalHttpRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'runJudgeEvalHttpRequest' when calling evaluateJudge");
+      throw new ApiException(400, "Missing the required parameter 'runJudgeEvalHttpRequest' when calling judgeEvaluateJudge");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -219,8 +219,8 @@ public class JudgeApi {
    * @return List&lt;JudgeAuditRecord&gt;
    * @throws ApiException if fails to make API call
    */
-  public List<JudgeAuditRecord> listJudgeLedger(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<List<JudgeAuditRecord>> localVarResponse = listJudgeLedgerWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public List<JudgeAuditRecord> judgeListJudgeLedger(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<List<JudgeAuditRecord>> localVarResponse = judgeListJudgeLedgerWithHttpInfo(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -236,8 +236,8 @@ public class JudgeApi {
    * @return ApiResponse&lt;List&lt;JudgeAuditRecord&gt;&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<List<JudgeAuditRecord>> listJudgeLedgerWithHttpInfo(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = listJudgeLedgerRequestBuilder(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<List<JudgeAuditRecord>> judgeListJudgeLedgerWithHttpInfo(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = judgeListJudgeLedgerRequestBuilder(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -247,7 +247,7 @@ public class JudgeApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("listJudgeLedger", localVarResponse);
+          throw getApiException("judgeListJudgeLedger", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<List<JudgeAuditRecord>>(
@@ -276,14 +276,14 @@ public class JudgeApi {
     }
   }
 
-  private HttpRequest.Builder listJudgeLedgerRequestBuilder(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder judgeListJudgeLedgerRequestBuilder(String tenantId, String projectId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling listJudgeLedger");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling judgeListJudgeLedger");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling listJudgeLedger");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling judgeListJudgeLedger");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

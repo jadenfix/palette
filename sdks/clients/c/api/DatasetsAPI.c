@@ -8,7 +8,7 @@
 
 
 dataset_t*
-DatasetsAPI_createDataset(apiClient_t *apiClient, char *tenant_id, char *project_id, create_dataset_request_t *create_dataset_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+DatasetsAPI_datasetsCreateDataset(apiClient_t *apiClient, char *tenant_id, char *project_id, create_dataset_request_t *create_dataset_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();
@@ -212,7 +212,7 @@ end:
 }
 
 dataset_version_snapshot_t*
-DatasetsAPI_createDatasetVersion(apiClient_t *apiClient, char *tenant_id, char *project_id, char *dataset_id, create_dataset_version_request_t *create_dataset_version_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+DatasetsAPI_datasetsCreateDatasetVersion(apiClient_t *apiClient, char *tenant_id, char *project_id, char *dataset_id, create_dataset_version_request_t *create_dataset_version_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();
@@ -433,7 +433,7 @@ end:
 }
 
 dataset_case_t*
-DatasetsAPI_promoteDatasetCaseFromTrace(apiClient_t *apiClient, char *tenant_id, char *project_id, char *dataset_id, promote_trace_case_request_t *promote_trace_case_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
+DatasetsAPI_datasetsPromoteDatasetCaseFromTrace(apiClient_t *apiClient, char *tenant_id, char *project_id, char *dataset_id, promote_trace_case_request_t *promote_trace_case_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id)
 {
     list_t    *localVarQueryParameters = NULL;
     list_t    *localVarHeaderParameters = list_createList();

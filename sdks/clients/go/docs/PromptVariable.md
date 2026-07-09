@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Default** | Pointer to **NullableString** |  | [optional] 
-**Description** | Pointer to **NullableString** |  | [optional] 
-**Name** | **string** |  | 
-**Required** | **bool** |  | 
+**Default** | Pointer to **NullableString** |  | [optional]
+**Description** | Pointer to **NullableString** |  | [optional]
+**Name** | **string** |  |
+**Required** | **bool** |  |
 
 ## Methods
 
@@ -140,5 +140,3 @@ SetRequired sets Required field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

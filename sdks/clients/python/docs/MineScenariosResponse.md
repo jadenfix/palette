@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**clusters** | [**List[ScenarioCluster]**](ScenarioCluster.md) |  | 
+**clusters** | [**List[ScenarioCluster]**](ScenarioCluster.md) |  |
 
 ## Example
 
@@ -25,5 +25,3 @@ mine_scenarios_response_dict = mine_scenarios_response_instance.to_dict()
 mine_scenarios_response_from_dict = MineScenariosResponse.from_dict(mine_scenarios_response_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

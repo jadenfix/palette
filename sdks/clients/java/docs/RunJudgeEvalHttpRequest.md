@@ -11,6 +11,3 @@
 |**_case** | [**EvaluationCase**](EvaluationCase.md) |  |  |
 |**evaluator** | [**EvaluatorSpec**](EvaluatorSpec.md) |  |  |
 |**providerSecretId** | **String** |  |  |
-
-
-

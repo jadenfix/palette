@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**accepted** | **bool** |  | 
-**duplicate** | **bool** |  | 
+**accepted** | **bool** |  |
+**duplicate** | **bool** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ publish_ack_dict = publish_ack_instance.to_dict()
 publish_ack_from_dict = PublishAck.from_dict(publish_ack_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

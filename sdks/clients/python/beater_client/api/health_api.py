@@ -37,7 +37,7 @@ class HealthApi:
 
 
     @validate_call
-    def health(
+    def health_health(
         self,
         _request_timeout: Union[
             None,
@@ -52,7 +52,7 @@ class HealthApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> HealthResponse:
-        """health
+        """health_health
 
 
         :param _request_timeout: timeout setting for this request. If one
@@ -77,7 +77,7 @@ class HealthApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._health_serialize(
+        _param = self._health_health_serialize(
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -99,7 +99,7 @@ class HealthApi:
 
 
     @validate_call
-    def health_with_http_info(
+    def health_health_with_http_info(
         self,
         _request_timeout: Union[
             None,
@@ -114,7 +114,7 @@ class HealthApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[HealthResponse]:
-        """health
+        """health_health
 
 
         :param _request_timeout: timeout setting for this request. If one
@@ -139,7 +139,7 @@ class HealthApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._health_serialize(
+        _param = self._health_health_serialize(
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -161,7 +161,7 @@ class HealthApi:
 
 
     @validate_call
-    def health_without_preload_content(
+    def health_health_without_preload_content(
         self,
         _request_timeout: Union[
             None,
@@ -176,7 +176,7 @@ class HealthApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """health
+        """health_health
 
 
         :param _request_timeout: timeout setting for this request. If one
@@ -201,7 +201,7 @@ class HealthApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._health_serialize(
+        _param = self._health_health_serialize(
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -218,7 +218,7 @@ class HealthApi:
         return response_data.response
 
 
-    def _health_serialize(
+    def _health_health_serialize(
         self,
         _request_auth,
         _content_type,

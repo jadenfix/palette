@@ -6,8 +6,8 @@ Browser grounding: fraction of element-targeted steps that resolved to their int
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**min_ratio** | **float** |  | 
-**type** | **str** |  | 
+**min_ratio** | **float** |  |
+**type** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ evaluator_kind_one_of9_dict = evaluator_kind_one_of9_instance.to_dict()
 evaluator_kind_one_of9_from_dict = EvaluatorKindOneOf9.from_dict(evaluator_kind_one_of9_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

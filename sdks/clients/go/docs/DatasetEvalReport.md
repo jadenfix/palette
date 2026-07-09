@@ -4,16 +4,16 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**AggregateScore** | **float64** |  | 
-**CreatedAt** | **time.Time** |  | 
-**DatasetId** | **string** |  | 
-**DatasetVersionId** | **string** |  | 
-**EvaluatorVersionId** | **string** |  | 
-**ProjectId** | **string** |  | 
-**ReportId** | **string** |  | 
-**ResultCount** | **int32** |  | 
-**Results** | [**[]EvalResult**](EvalResult.md) |  | 
-**TenantId** | **string** |  | 
+**AggregateScore** | **float64** |  |
+**CreatedAt** | **time.Time** |  |
+**DatasetId** | **string** |  |
+**DatasetVersionId** | **string** |  |
+**EvaluatorVersionId** | **string** |  |
+**ProjectId** | **string** |  |
+**ReportId** | **string** |  |
+**ResultCount** | **int32** |  |
+**Results** | [**[]EvalResult**](EvalResult.md) |  |
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -236,5 +236,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

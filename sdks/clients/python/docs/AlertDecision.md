@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**delivery** | [**WebhookDelivery**](WebhookDelivery.md) |  | [optional] 
-**emitted** | **bool** |  | 
-**suppressed_reason** | **str** |  | [optional] 
+**delivery** | [**WebhookDelivery**](WebhookDelivery.md) |  | [optional]
+**emitted** | **bool** |  |
+**suppressed_reason** | **str** |  | [optional]
 
 ## Example
 
@@ -27,5 +27,3 @@ alert_decision_dict = alert_decision_instance.to_dict()
 alert_decision_from_dict = AlertDecision.from_dict(alert_decision_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

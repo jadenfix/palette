@@ -4,13 +4,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**CreatedAt** | **time.Time** |  | 
-**Description** | Pointer to **NullableString** |  | [optional] 
-**Name** | **string** |  | 
-**ProjectId** | **string** |  | 
-**PromptId** | **string** |  | 
-**TenantId** | **string** |  | 
-**UpdatedAt** | **time.Time** |  | 
+**CreatedAt** | **time.Time** |  |
+**Description** | Pointer to **NullableString** |  | [optional]
+**Name** | **string** |  |
+**ProjectId** | **string** |  |
+**PromptId** | **string** |  |
+**TenantId** | **string** |  |
+**UpdatedAt** | **time.Time** |  |
 
 ## Methods
 
@@ -188,5 +188,3 @@ SetUpdatedAt sets UpdatedAt field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

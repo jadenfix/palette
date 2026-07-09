@@ -6,6 +6,7 @@ from beater_client.api.api_keys_api import ApiKeysApi
 from beater_client.api.archive_api import ArchiveApi
 from beater_client.api.audit_api import AuditApi
 from beater_client.api.calibrations_api import CalibrationsApi
+from beater_client.api.connect_api import ConnectApi
 from beater_client.api.connectors_api import ConnectorsApi
 from beater_client.api.datasets_api import DatasetsApi
 from beater_client.api.evals_api import EvalsApi

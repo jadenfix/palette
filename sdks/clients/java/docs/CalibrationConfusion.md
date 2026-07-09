@@ -11,6 +11,3 @@
 |**humanFailJudgePass** | **Integer** |  |  |
 |**humanPassJudgeFail** | **Integer** |  |  |
 |**humanPassJudgePass** | **Integer** |  |  |
-
-
-

@@ -98,8 +98,8 @@ public class SpansApi {
    * @return CanonicalSpan
    * @throws ApiException if fails to make API call
    */
-  public CanonicalSpan getSpan(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<CanonicalSpan> localVarResponse = getSpanWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public CanonicalSpan spansGetSpan(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<CanonicalSpan> localVarResponse = spansGetSpanWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -118,8 +118,8 @@ public class SpansApi {
    * @return ApiResponse&lt;CanonicalSpan&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<CanonicalSpan> getSpanWithHttpInfo(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = getSpanRequestBuilder(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<CanonicalSpan> spansGetSpanWithHttpInfo(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = spansGetSpanRequestBuilder(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -129,7 +129,7 @@ public class SpansApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("getSpan", localVarResponse);
+          throw getApiException("spansGetSpan", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<CanonicalSpan>(
@@ -158,18 +158,18 @@ public class SpansApi {
     }
   }
 
-  private HttpRequest.Builder getSpanRequestBuilder(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder spansGetSpanRequestBuilder(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling getSpan");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling spansGetSpan");
     }
     // verify the required parameter 'traceId' is set
     if (traceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'traceId' when calling getSpan");
+      throw new ApiException(400, "Missing the required parameter 'traceId' when calling spansGetSpan");
     }
     // verify the required parameter 'spanId' is set
     if (spanId == null) {
-      throw new ApiException(400, "Missing the required parameter 'spanId' when calling getSpan");
+      throw new ApiException(400, "Missing the required parameter 'spanId' when calling spansGetSpan");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -237,8 +237,8 @@ public class SpansApi {
    * @return SpanIoResponse
    * @throws ApiException if fails to make API call
    */
-  public SpanIoResponse getSpanIo(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<SpanIoResponse> localVarResponse = getSpanIoWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public SpanIoResponse spansGetSpanIo(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<SpanIoResponse> localVarResponse = spansGetSpanIoWithHttpInfo(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -257,8 +257,8 @@ public class SpansApi {
    * @return ApiResponse&lt;SpanIoResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<SpanIoResponse> getSpanIoWithHttpInfo(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = getSpanIoRequestBuilder(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<SpanIoResponse> spansGetSpanIoWithHttpInfo(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = spansGetSpanIoRequestBuilder(tenantId, traceId, spanId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -268,7 +268,7 @@ public class SpansApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("getSpanIo", localVarResponse);
+          throw getApiException("spansGetSpanIo", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<SpanIoResponse>(
@@ -297,18 +297,18 @@ public class SpansApi {
     }
   }
 
-  private HttpRequest.Builder getSpanIoRequestBuilder(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder spansGetSpanIoRequestBuilder(String tenantId, String traceId, String spanId, Boolean unmask, String reason, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling getSpanIo");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling spansGetSpanIo");
     }
     // verify the required parameter 'traceId' is set
     if (traceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'traceId' when calling getSpanIo");
+      throw new ApiException(400, "Missing the required parameter 'traceId' when calling spansGetSpanIo");
     }
     // verify the required parameter 'spanId' is set
     if (spanId == null) {
-      throw new ApiException(400, "Missing the required parameter 'spanId' when calling getSpanIo");
+      throw new ApiException(400, "Missing the required parameter 'spanId' when calling spansGetSpanIo");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

@@ -26,56 +26,56 @@ class TestIngestApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_drain_trace_ingested(self) -> None:
-        """Test case for drain_trace_ingested
+    def test_ingest_drain_trace_ingested(self) -> None:
+        """Test case for ingest_drain_trace_ingested
 
         """
         pass
 
-    def test_drain_trace_writes(self) -> None:
-        """Test case for drain_trace_writes
+    def test_ingest_drain_trace_writes(self) -> None:
+        """Test case for ingest_drain_trace_writes
 
         """
         pass
 
-    def test_get_ingest_queue_status(self) -> None:
-        """Test case for get_ingest_queue_status
+    def test_ingest_get_ingest_queue_status(self) -> None:
+        """Test case for ingest_get_ingest_queue_status
 
         """
         pass
 
-    def test_import_source(self) -> None:
-        """Test case for import_source
+    def test_ingest_import_source(self) -> None:
+        """Test case for ingest_import_source
 
         """
         pass
 
-    def test_ingest_native(self) -> None:
-        """Test case for ingest_native
+    def test_ingest_ingest_native(self) -> None:
+        """Test case for ingest_ingest_native
 
         """
         pass
 
-    def test_ingest_otlp(self) -> None:
-        """Test case for ingest_otlp
+    def test_ingest_ingest_otlp(self) -> None:
+        """Test case for ingest_ingest_otlp
 
         """
         pass
 
-    def test_ingest_otlp_json_collector(self) -> None:
-        """Test case for ingest_otlp_json_collector
+    def test_ingest_ingest_otlp_json_collector(self) -> None:
+        """Test case for ingest_ingest_otlp_json_collector
 
         """
         pass
 
-    def test_reconcile_trace(self) -> None:
-        """Test case for reconcile_trace
+    def test_ingest_reconcile_trace(self) -> None:
+        """Test case for ingest_reconcile_trace
 
         """
         pass
 
-    def test_replay_dead_letter(self) -> None:
-        """Test case for replay_dead_letter
+    def test_ingest_replay_dead_letter(self) -> None:
+        """Test case for ingest_replay_dead_letter
 
         """
         pass

@@ -17,26 +17,26 @@
 
 
 connection_link_t*
-ConnectorsAPI_connectConnector(apiClient_t *apiClient, char *tenant_id, char *project_id, connect_connector_request_t *connect_connector_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+ConnectorsAPI_connectorsConnectConnector(apiClient_t *apiClient, char *tenant_id, char *project_id, connect_connector_request_t *connect_connector_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 
 connection_status_t*
-ConnectorsAPI_connectorStatus(apiClient_t *apiClient, char *tenant_id, char *project_id, char *toolkit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+ConnectorsAPI_connectorsConnectorStatus(apiClient_t *apiClient, char *tenant_id, char *project_id, char *toolkit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 
 connector_skills_response_t*
-ConnectorsAPI_getConnectorSkills(apiClient_t *apiClient, char *tenant_id, char *project_id, char *toolkit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+ConnectorsAPI_connectorsGetConnectorSkills(apiClient_t *apiClient, char *tenant_id, char *project_id, char *toolkit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 
 tool_execution_t*
-ConnectorsAPI_invokeConnectorTool(apiClient_t *apiClient, char *tenant_id, char *project_id, invoke_connector_request_t *invoke_connector_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+ConnectorsAPI_connectorsInvokeConnectorTool(apiClient_t *apiClient, char *tenant_id, char *project_id, invoke_connector_request_t *invoke_connector_request, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 
 list_t*
-ConnectorsAPI_listConnectorTools(apiClient_t *apiClient, char *tenant_id, char *project_id, char *toolkit, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+ConnectorsAPI_connectorsListConnectorTools(apiClient_t *apiClient, char *tenant_id, char *project_id, char *toolkit, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 
 list_t*
-ConnectorsAPI_listConnectors(apiClient_t *apiClient, char *tenant_id, char *project_id, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+ConnectorsAPI_connectorsListConnectors(apiClient_t *apiClient, char *tenant_id, char *project_id, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 

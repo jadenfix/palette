@@ -36,12 +36,14 @@ class TestErrorResponse(unittest.TestCase):
         if include_optional:
             return ErrorResponse(
                 error = '',
-                status = 0
+                message = '',
+                status = 56
             )
         else:
             return ErrorResponse(
                 error = '',
-                status = 0,
+                message = '',
+                status = 56,
         )
         """
 

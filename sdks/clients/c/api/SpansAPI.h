@@ -11,10 +11,10 @@
 
 
 canonical_span_t*
-SpansAPI_getSpan(apiClient_t *apiClient, char *tenant_id, char *trace_id, char *span_id, int *unmask, char *reason, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+SpansAPI_spansGetSpan(apiClient_t *apiClient, char *tenant_id, char *trace_id, char *span_id, int *unmask, char *reason, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 
 span_io_response_t*
-SpansAPI_getSpanIo(apiClient_t *apiClient, char *tenant_id, char *trace_id, char *span_id, int *unmask, char *reason, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+SpansAPI_spansGetSpanIo(apiClient_t *apiClient, char *tenant_id, char *trace_id, char *span_id, int *unmask, char *reason, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 
 

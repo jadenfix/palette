@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**api_key_id** | **str** |  | [optional] 
-**scopes** | **List[str]** |  | 
+**api_key_id** | **str** |  | [optional]
+**scopes** | **List[str]** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ auth_context_dict = auth_context_instance.to_dict()
 auth_context_from_dict = AuthContext.from_dict(auth_context_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

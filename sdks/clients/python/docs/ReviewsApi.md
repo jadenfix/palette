@@ -4,15 +4,15 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_review_queue**](ReviewsApi.md#create_review_queue) | **POST** /v1/review-queues/{tenant_id}/{project_id} | 
-[**enqueue_review_task_from_trace**](ReviewsApi.md#enqueue_review_task_from_trace) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace | 
-[**list_review_tasks**](ReviewsApi.md#list_review_tasks) | **GET** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks | 
-[**promote_review_annotation**](ReviewsApi.md#promote_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote | 
-[**submit_review_annotation**](ReviewsApi.md#submit_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations | 
+[**reviews_create_review_queue**](ReviewsApi.md#reviews_create_review_queue) | **POST** /v1/review-queues/{tenant_id}/{project_id} |
+[**reviews_enqueue_review_task_from_trace**](ReviewsApi.md#reviews_enqueue_review_task_from_trace) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace |
+[**reviews_list_review_tasks**](ReviewsApi.md#reviews_list_review_tasks) | **GET** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks |
+[**reviews_promote_review_annotation**](ReviewsApi.md#reviews_promote_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote |
+[**reviews_submit_review_annotation**](ReviewsApi.md#reviews_submit_review_annotation) | **POST** /v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations |
 
 
-# **create_review_queue**
-> ReviewQueue create_review_queue(tenant_id, project_id, create_review_queue_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **reviews_create_review_queue**
+> ReviewQueue reviews_create_review_queue(tenant_id, project_id, create_review_queue_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -39,18 +39,18 @@ with beater_client.ApiClient(configuration) as api_client:
     api_instance = beater_client.ReviewsApi(api_client)
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
-    create_review_queue_http_request = beater_client.CreateReviewQueueHttpRequest() # CreateReviewQueueHttpRequest | 
+    create_review_queue_http_request = beater_client.CreateReviewQueueHttpRequest() # CreateReviewQueueHttpRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.create_review_queue(tenant_id, project_id, create_review_queue_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ReviewsApi->create_review_queue:\n")
+        api_response = api_instance.reviews_create_review_queue(tenant_id, project_id, create_review_queue_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ReviewsApi->reviews_create_review_queue:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ReviewsApi->create_review_queue: %s\n" % e)
+        print("Exception when calling ReviewsApi->reviews_create_review_queue: %s\n" % e)
 ```
 
 
@@ -60,13 +60,13 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **create_review_queue_http_request** | [**CreateReviewQueueHttpRequest**](CreateReviewQueueHttpRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **create_review_queue_http_request** | [**CreateReviewQueueHttpRequest**](CreateReviewQueueHttpRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -92,8 +92,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **enqueue_review_task_from_trace**
-> ReviewTask enqueue_review_task_from_trace(tenant_id, project_id, queue_id, enqueue_review_task_from_trace_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **reviews_enqueue_review_task_from_trace**
+> ReviewTask reviews_enqueue_review_task_from_trace(tenant_id, project_id, queue_id, enqueue_review_task_from_trace_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -121,18 +121,18 @@ with beater_client.ApiClient(configuration) as api_client:
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
     queue_id = 'queue_id_example' # str | queue_id
-    enqueue_review_task_from_trace_http_request = beater_client.EnqueueReviewTaskFromTraceHttpRequest() # EnqueueReviewTaskFromTraceHttpRequest | 
+    enqueue_review_task_from_trace_http_request = beater_client.EnqueueReviewTaskFromTraceHttpRequest() # EnqueueReviewTaskFromTraceHttpRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.enqueue_review_task_from_trace(tenant_id, project_id, queue_id, enqueue_review_task_from_trace_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ReviewsApi->enqueue_review_task_from_trace:\n")
+        api_response = api_instance.reviews_enqueue_review_task_from_trace(tenant_id, project_id, queue_id, enqueue_review_task_from_trace_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ReviewsApi->reviews_enqueue_review_task_from_trace:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ReviewsApi->enqueue_review_task_from_trace: %s\n" % e)
+        print("Exception when calling ReviewsApi->reviews_enqueue_review_task_from_trace: %s\n" % e)
 ```
 
 
@@ -142,14 +142,14 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **queue_id** | **str**| queue_id | 
- **enqueue_review_task_from_trace_http_request** | [**EnqueueReviewTaskFromTraceHttpRequest**](EnqueueReviewTaskFromTraceHttpRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **queue_id** | **str**| queue_id |
+ **enqueue_review_task_from_trace_http_request** | [**EnqueueReviewTaskFromTraceHttpRequest**](EnqueueReviewTaskFromTraceHttpRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -176,8 +176,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_review_tasks**
-> List[ReviewTask] list_review_tasks(tenant_id, project_id, queue_id, state=state, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **reviews_list_review_tasks**
+> List[ReviewTask] reviews_list_review_tasks(tenant_id, project_id, queue_id, state=state, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -212,11 +212,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.list_review_tasks(tenant_id, project_id, queue_id, state=state, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ReviewsApi->list_review_tasks:\n")
+        api_response = api_instance.reviews_list_review_tasks(tenant_id, project_id, queue_id, state=state, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ReviewsApi->reviews_list_review_tasks:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ReviewsApi->list_review_tasks: %s\n" % e)
+        print("Exception when calling ReviewsApi->reviews_list_review_tasks: %s\n" % e)
 ```
 
 
@@ -226,14 +226,14 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **queue_id** | **str**| queue_id | 
- **state** | [**ReviewTaskState**](.md)|  | [optional] 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **queue_id** | **str**| queue_id |
+ **state** | [**ReviewTaskState**](.md)|  | [optional]
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -260,8 +260,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **promote_review_annotation**
-> DatasetCase promote_review_annotation(tenant_id, project_id, queue_id, task_id, annotation_id, promote_review_annotation_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **reviews_promote_review_annotation**
+> DatasetCase reviews_promote_review_annotation(tenant_id, project_id, queue_id, task_id, annotation_id, promote_review_annotation_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -291,18 +291,18 @@ with beater_client.ApiClient(configuration) as api_client:
     queue_id = 'queue_id_example' # str | queue_id
     task_id = 'task_id_example' # str | task_id
     annotation_id = 'annotation_id_example' # str | annotation_id
-    promote_review_annotation_http_request = beater_client.PromoteReviewAnnotationHttpRequest() # PromoteReviewAnnotationHttpRequest | 
+    promote_review_annotation_http_request = beater_client.PromoteReviewAnnotationHttpRequest() # PromoteReviewAnnotationHttpRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.promote_review_annotation(tenant_id, project_id, queue_id, task_id, annotation_id, promote_review_annotation_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ReviewsApi->promote_review_annotation:\n")
+        api_response = api_instance.reviews_promote_review_annotation(tenant_id, project_id, queue_id, task_id, annotation_id, promote_review_annotation_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ReviewsApi->reviews_promote_review_annotation:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ReviewsApi->promote_review_annotation: %s\n" % e)
+        print("Exception when calling ReviewsApi->reviews_promote_review_annotation: %s\n" % e)
 ```
 
 
@@ -312,16 +312,16 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **queue_id** | **str**| queue_id | 
- **task_id** | **str**| task_id | 
- **annotation_id** | **str**| annotation_id | 
- **promote_review_annotation_http_request** | [**PromoteReviewAnnotationHttpRequest**](PromoteReviewAnnotationHttpRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **queue_id** | **str**| queue_id |
+ **task_id** | **str**| task_id |
+ **annotation_id** | **str**| annotation_id |
+ **promote_review_annotation_http_request** | [**PromoteReviewAnnotationHttpRequest**](PromoteReviewAnnotationHttpRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -348,8 +348,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **submit_review_annotation**
-> ReviewAnnotation submit_review_annotation(tenant_id, project_id, queue_id, task_id, submit_review_annotation_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **reviews_submit_review_annotation**
+> ReviewAnnotation reviews_submit_review_annotation(tenant_id, project_id, queue_id, task_id, submit_review_annotation_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -378,18 +378,18 @@ with beater_client.ApiClient(configuration) as api_client:
     project_id = 'project_id_example' # str | project_id
     queue_id = 'queue_id_example' # str | queue_id
     task_id = 'task_id_example' # str | task_id
-    submit_review_annotation_http_request = beater_client.SubmitReviewAnnotationHttpRequest() # SubmitReviewAnnotationHttpRequest | 
+    submit_review_annotation_http_request = beater_client.SubmitReviewAnnotationHttpRequest() # SubmitReviewAnnotationHttpRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.submit_review_annotation(tenant_id, project_id, queue_id, task_id, submit_review_annotation_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of ReviewsApi->submit_review_annotation:\n")
+        api_response = api_instance.reviews_submit_review_annotation(tenant_id, project_id, queue_id, task_id, submit_review_annotation_http_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of ReviewsApi->reviews_submit_review_annotation:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ReviewsApi->submit_review_annotation: %s\n" % e)
+        print("Exception when calling ReviewsApi->reviews_submit_review_annotation: %s\n" % e)
 ```
 
 
@@ -399,15 +399,15 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **queue_id** | **str**| queue_id | 
- **task_id** | **str**| task_id | 
- **submit_review_annotation_http_request** | [**SubmitReviewAnnotationHttpRequest**](SubmitReviewAnnotationHttpRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **queue_id** | **str**| queue_id |
+ **task_id** | **str**| task_id |
+ **submit_review_annotation_http_request** | [**SubmitReviewAnnotationHttpRequest**](SubmitReviewAnnotationHttpRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -433,4 +433,3 @@ No authorization required
 **404** | Resource not found |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

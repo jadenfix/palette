@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**run_calibration**](CalibrationsApi.md#run_calibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} | 
+[**calibrations_period_run_calibration**](CalibrationsApi.md#calibrations_period_run_calibration) | **POST** /v1/calibrations/{tenant_id}/{project_id}/{dataset_id}/versions/{version_id} |
 
 
 
-## run_calibration
+## calibrations_period_run_calibration
 
-> models::CalibrationReport run_calibration(tenant_id, project_id, dataset_id, version_id, run_calibration_http_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::CalibrationReport calibrations_period_run_calibration(tenant_id, project_id, dataset_id, version_id, run_calibration_http_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -42,4 +42,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

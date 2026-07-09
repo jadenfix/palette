@@ -98,8 +98,8 @@ public class ApiKeysApi {
    * @return ApiKeyCreatedResponse
    * @throws ApiException if fails to make API call
    */
-  public ApiKeyCreatedResponse createApiKey(String tenantId, String projectId, String environmentId, CreateApiKeyHttpRequest createApiKeyHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<ApiKeyCreatedResponse> localVarResponse = createApiKeyWithHttpInfo(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiKeyCreatedResponse apiKeysCreateApiKey(String tenantId, String projectId, String environmentId, CreateApiKeyHttpRequest createApiKeyHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<ApiKeyCreatedResponse> localVarResponse = apiKeysCreateApiKeyWithHttpInfo(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -117,8 +117,8 @@ public class ApiKeysApi {
    * @return ApiResponse&lt;ApiKeyCreatedResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ApiKeyCreatedResponse> createApiKeyWithHttpInfo(String tenantId, String projectId, String environmentId, CreateApiKeyHttpRequest createApiKeyHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = createApiKeyRequestBuilder(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<ApiKeyCreatedResponse> apiKeysCreateApiKeyWithHttpInfo(String tenantId, String projectId, String environmentId, CreateApiKeyHttpRequest createApiKeyHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = apiKeysCreateApiKeyRequestBuilder(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -128,7 +128,7 @@ public class ApiKeysApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("createApiKey", localVarResponse);
+          throw getApiException("apiKeysCreateApiKey", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<ApiKeyCreatedResponse>(
@@ -157,22 +157,22 @@ public class ApiKeysApi {
     }
   }
 
-  private HttpRequest.Builder createApiKeyRequestBuilder(String tenantId, String projectId, String environmentId, CreateApiKeyHttpRequest createApiKeyHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder apiKeysCreateApiKeyRequestBuilder(String tenantId, String projectId, String environmentId, CreateApiKeyHttpRequest createApiKeyHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling createApiKey");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling apiKeysCreateApiKey");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling createApiKey");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling apiKeysCreateApiKey");
     }
     // verify the required parameter 'environmentId' is set
     if (environmentId == null) {
-      throw new ApiException(400, "Missing the required parameter 'environmentId' when calling createApiKey");
+      throw new ApiException(400, "Missing the required parameter 'environmentId' when calling apiKeysCreateApiKey");
     }
     // verify the required parameter 'createApiKeyHttpRequest' is set
     if (createApiKeyHttpRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'createApiKeyHttpRequest' when calling createApiKey");
+      throw new ApiException(400, "Missing the required parameter 'createApiKeyHttpRequest' when calling apiKeysCreateApiKey");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -228,8 +228,8 @@ public class ApiKeysApi {
    * @return RevokedApiKey
    * @throws ApiException if fails to make API call
    */
-  public RevokedApiKey revokeApiKey(String tenantId, String projectId, String environmentId, String apiKeyId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<RevokedApiKey> localVarResponse = revokeApiKeyWithHttpInfo(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public RevokedApiKey apiKeysRevokeApiKey(String tenantId, String projectId, String environmentId, String apiKeyId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<RevokedApiKey> localVarResponse = apiKeysRevokeApiKeyWithHttpInfo(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -247,8 +247,8 @@ public class ApiKeysApi {
    * @return ApiResponse&lt;RevokedApiKey&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<RevokedApiKey> revokeApiKeyWithHttpInfo(String tenantId, String projectId, String environmentId, String apiKeyId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = revokeApiKeyRequestBuilder(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<RevokedApiKey> apiKeysRevokeApiKeyWithHttpInfo(String tenantId, String projectId, String environmentId, String apiKeyId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = apiKeysRevokeApiKeyRequestBuilder(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -258,7 +258,7 @@ public class ApiKeysApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("revokeApiKey", localVarResponse);
+          throw getApiException("apiKeysRevokeApiKey", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<RevokedApiKey>(
@@ -287,22 +287,22 @@ public class ApiKeysApi {
     }
   }
 
-  private HttpRequest.Builder revokeApiKeyRequestBuilder(String tenantId, String projectId, String environmentId, String apiKeyId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder apiKeysRevokeApiKeyRequestBuilder(String tenantId, String projectId, String environmentId, String apiKeyId, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling revokeApiKey");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling apiKeysRevokeApiKey");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling revokeApiKey");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling apiKeysRevokeApiKey");
     }
     // verify the required parameter 'environmentId' is set
     if (environmentId == null) {
-      throw new ApiException(400, "Missing the required parameter 'environmentId' when calling revokeApiKey");
+      throw new ApiException(400, "Missing the required parameter 'environmentId' when calling apiKeysRevokeApiKey");
     }
     // verify the required parameter 'apiKeyId' is set
     if (apiKeyId == null) {
-      throw new ApiException(400, "Missing the required parameter 'apiKeyId' when calling revokeApiKey");
+      throw new ApiException(400, "Missing the required parameter 'apiKeyId' when calling apiKeysRevokeApiKey");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

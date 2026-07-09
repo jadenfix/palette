@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**model** | **str** |  | 
-**rubric** | **str** |  | 
-**type** | **str** |  | 
+**model** | **str** |  |
+**rubric** | **str** |  |
+**type** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ evaluator_kind_one_of6_dict = evaluator_kind_one_of6_instance.to_dict()
 evaluator_kind_one_of6_from_dict = EvaluatorKindOneOf6.from_dict(evaluator_kind_one_of6_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

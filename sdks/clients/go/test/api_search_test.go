@@ -22,13 +22,13 @@ func Test_beaterclient_SearchAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test SearchAPIService SearchSpans", func(t *testing.T) {
+	t.Run("Test SearchAPIService SearchSearchSpans", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 
-		resp, httpRes, err := apiClient.SearchAPI.SearchSpans(context.Background(), tenantId).Execute()
+		resp, httpRes, err := apiClient.SearchAPI.SearchSearchSpans(context.Background(), tenantId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

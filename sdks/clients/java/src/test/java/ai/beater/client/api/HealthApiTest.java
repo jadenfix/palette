@@ -43,9 +43,9 @@ public class HealthApiTest {
      *          if the Api call fails
      */
     @Test
-    public void healthTest() throws ApiException {
+    public void healthHealthTest() throws ApiException {
         HealthResponse response = 
-        api.health();
+        api.healthHealth();
         
         // TODO: test validations
     }

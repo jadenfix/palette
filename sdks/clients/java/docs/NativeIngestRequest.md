@@ -26,6 +26,3 @@
 |**status** | **SpanStatus** |  |  |
 |**tokens** | [**TokenCounts**](TokenCounts.md) |  |  [optional] |
 |**traceId** | **String** |  |  |
-
-
-

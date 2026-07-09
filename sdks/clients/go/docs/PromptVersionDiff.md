@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**FromVersionId** | **string** |  | 
-**Lines** | [**[]DiffLine**](DiffLine.md) |  | 
-**ToVersionId** | **string** |  | 
+**FromVersionId** | **string** |  |
+**Lines** | [**[]DiffLine**](DiffLine.md) |  |
+**ToVersionId** | **string** |  |
 
 ## Methods
 
@@ -89,5 +89,3 @@ SetToVersionId sets ToVersionId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

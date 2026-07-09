@@ -46,7 +46,7 @@ import {
     PromptVersionListResponseToJSON,
 } from '../models/index';
 
-export interface AddPromptVersionOperationRequest {
+export interface PromptsAddPromptVersionRequest {
     tenantId: string;
     projectId: string;
     promptId: string;
@@ -57,7 +57,7 @@ export interface AddPromptVersionOperationRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface CreatePromptOperationRequest {
+export interface PromptsCreatePromptRequest {
     tenantId: string;
     projectId: string;
     createPromptRequest: CreatePromptRequest;
@@ -67,7 +67,7 @@ export interface CreatePromptOperationRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface DiffPromptVersionsRequest {
+export interface PromptsDiffPromptVersionsRequest {
     tenantId: string;
     projectId: string;
     promptId: string;
@@ -79,7 +79,7 @@ export interface DiffPromptVersionsRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface GetPromptRequest {
+export interface PromptsGetPromptRequest {
     tenantId: string;
     projectId: string;
     promptId: string;
@@ -89,7 +89,7 @@ export interface GetPromptRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface ListPromptVersionsRequest {
+export interface PromptsListPromptVersionsRequest {
     tenantId: string;
     projectId: string;
     promptId: string;
@@ -99,7 +99,7 @@ export interface ListPromptVersionsRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface ListPromptsRequest {
+export interface PromptsListPromptsRequest {
     tenantId: string;
     projectId: string;
     authorization?: string | null;
@@ -115,32 +115,32 @@ export class PromptsApi extends runtime.BaseAPI {
 
     /**
      */
-    async addPromptVersionRaw(requestParameters: AddPromptVersionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PromptVersion>> {
+    async promptsAddPromptVersionRaw(requestParameters: PromptsAddPromptVersionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PromptVersion>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling addPromptVersion().'
+                'Required parameter "tenantId" was null or undefined when calling promptsAddPromptVersion().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling addPromptVersion().'
+                'Required parameter "projectId" was null or undefined when calling promptsAddPromptVersion().'
             );
         }
 
         if (requestParameters['promptId'] == null) {
             throw new runtime.RequiredError(
                 'promptId',
-                'Required parameter "promptId" was null or undefined when calling addPromptVersion().'
+                'Required parameter "promptId" was null or undefined when calling promptsAddPromptVersion().'
             );
         }
 
         if (requestParameters['addPromptVersionRequest'] == null) {
             throw new runtime.RequiredError(
                 'addPromptVersionRequest',
-                'Required parameter "addPromptVersionRequest" was null or undefined when calling addPromptVersion().'
+                'Required parameter "addPromptVersionRequest" was null or undefined when calling promptsAddPromptVersion().'
             );
         }
 
@@ -179,32 +179,32 @@ export class PromptsApi extends runtime.BaseAPI {
 
     /**
      */
-    async addPromptVersion(requestParameters: AddPromptVersionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PromptVersion> {
-        const response = await this.addPromptVersionRaw(requestParameters, initOverrides);
+    async promptsAddPromptVersion(requestParameters: PromptsAddPromptVersionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PromptVersion> {
+        const response = await this.promptsAddPromptVersionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async createPromptRaw(requestParameters: CreatePromptOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CreatedPrompt>> {
+    async promptsCreatePromptRaw(requestParameters: PromptsCreatePromptRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CreatedPrompt>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling createPrompt().'
+                'Required parameter "tenantId" was null or undefined when calling promptsCreatePrompt().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling createPrompt().'
+                'Required parameter "projectId" was null or undefined when calling promptsCreatePrompt().'
             );
         }
 
         if (requestParameters['createPromptRequest'] == null) {
             throw new runtime.RequiredError(
                 'createPromptRequest',
-                'Required parameter "createPromptRequest" was null or undefined when calling createPrompt().'
+                'Required parameter "createPromptRequest" was null or undefined when calling promptsCreatePrompt().'
             );
         }
 
@@ -243,46 +243,46 @@ export class PromptsApi extends runtime.BaseAPI {
 
     /**
      */
-    async createPrompt(requestParameters: CreatePromptOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CreatedPrompt> {
-        const response = await this.createPromptRaw(requestParameters, initOverrides);
+    async promptsCreatePrompt(requestParameters: PromptsCreatePromptRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CreatedPrompt> {
+        const response = await this.promptsCreatePromptRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async diffPromptVersionsRaw(requestParameters: DiffPromptVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PromptVersionDiff>> {
+    async promptsDiffPromptVersionsRaw(requestParameters: PromptsDiffPromptVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PromptVersionDiff>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling diffPromptVersions().'
+                'Required parameter "tenantId" was null or undefined when calling promptsDiffPromptVersions().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling diffPromptVersions().'
+                'Required parameter "projectId" was null or undefined when calling promptsDiffPromptVersions().'
             );
         }
 
         if (requestParameters['promptId'] == null) {
             throw new runtime.RequiredError(
                 'promptId',
-                'Required parameter "promptId" was null or undefined when calling diffPromptVersions().'
+                'Required parameter "promptId" was null or undefined when calling promptsDiffPromptVersions().'
             );
         }
 
         if (requestParameters['from'] == null) {
             throw new runtime.RequiredError(
                 'from',
-                'Required parameter "from" was null or undefined when calling diffPromptVersions().'
+                'Required parameter "from" was null or undefined when calling promptsDiffPromptVersions().'
             );
         }
 
         if (requestParameters['to'] == null) {
             throw new runtime.RequiredError(
                 'to',
-                'Required parameter "to" was null or undefined when calling diffPromptVersions().'
+                'Required parameter "to" was null or undefined when calling promptsDiffPromptVersions().'
             );
         }
 
@@ -326,32 +326,32 @@ export class PromptsApi extends runtime.BaseAPI {
 
     /**
      */
-    async diffPromptVersions(requestParameters: DiffPromptVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PromptVersionDiff> {
-        const response = await this.diffPromptVersionsRaw(requestParameters, initOverrides);
+    async promptsDiffPromptVersions(requestParameters: PromptsDiffPromptVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PromptVersionDiff> {
+        const response = await this.promptsDiffPromptVersionsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async getPromptRaw(requestParameters: GetPromptRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Prompt>> {
+    async promptsGetPromptRaw(requestParameters: PromptsGetPromptRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Prompt>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling getPrompt().'
+                'Required parameter "tenantId" was null or undefined when calling promptsGetPrompt().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling getPrompt().'
+                'Required parameter "projectId" was null or undefined when calling promptsGetPrompt().'
             );
         }
 
         if (requestParameters['promptId'] == null) {
             throw new runtime.RequiredError(
                 'promptId',
-                'Required parameter "promptId" was null or undefined when calling getPrompt().'
+                'Required parameter "promptId" was null or undefined when calling promptsGetPrompt().'
             );
         }
 
@@ -387,32 +387,32 @@ export class PromptsApi extends runtime.BaseAPI {
 
     /**
      */
-    async getPrompt(requestParameters: GetPromptRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Prompt> {
-        const response = await this.getPromptRaw(requestParameters, initOverrides);
+    async promptsGetPrompt(requestParameters: PromptsGetPromptRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Prompt> {
+        const response = await this.promptsGetPromptRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async listPromptVersionsRaw(requestParameters: ListPromptVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PromptVersionListResponse>> {
+    async promptsListPromptVersionsRaw(requestParameters: PromptsListPromptVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PromptVersionListResponse>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling listPromptVersions().'
+                'Required parameter "tenantId" was null or undefined when calling promptsListPromptVersions().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling listPromptVersions().'
+                'Required parameter "projectId" was null or undefined when calling promptsListPromptVersions().'
             );
         }
 
         if (requestParameters['promptId'] == null) {
             throw new runtime.RequiredError(
                 'promptId',
-                'Required parameter "promptId" was null or undefined when calling listPromptVersions().'
+                'Required parameter "promptId" was null or undefined when calling promptsListPromptVersions().'
             );
         }
 
@@ -448,25 +448,25 @@ export class PromptsApi extends runtime.BaseAPI {
 
     /**
      */
-    async listPromptVersions(requestParameters: ListPromptVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PromptVersionListResponse> {
-        const response = await this.listPromptVersionsRaw(requestParameters, initOverrides);
+    async promptsListPromptVersions(requestParameters: PromptsListPromptVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PromptVersionListResponse> {
+        const response = await this.promptsListPromptVersionsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async listPromptsRaw(requestParameters: ListPromptsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PromptListResponse>> {
+    async promptsListPromptsRaw(requestParameters: PromptsListPromptsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PromptListResponse>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling listPrompts().'
+                'Required parameter "tenantId" was null or undefined when calling promptsListPrompts().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling listPrompts().'
+                'Required parameter "projectId" was null or undefined when calling promptsListPrompts().'
             );
         }
 
@@ -502,8 +502,8 @@ export class PromptsApi extends runtime.BaseAPI {
 
     /**
      */
-    async listPrompts(requestParameters: ListPromptsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PromptListResponse> {
-        const response = await this.listPromptsRaw(requestParameters, initOverrides);
+    async promptsListPrompts(requestParameters: PromptsListPromptsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PromptListResponse> {
+        const response = await this.promptsListPromptsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

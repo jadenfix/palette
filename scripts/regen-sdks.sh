@@ -23,6 +23,7 @@ trap cleanup EXIT
 
 # Pin the generator for reproducible output.
 GENERATOR_IMAGE="openapitools/openapi-generator-cli:v7.11.0"
+GENERATOR_JAR="${BEATER_OPENAPI_GENERATOR_JAR:-}"
 SPEC="sdks/openapi/beater-api.json"
 LANGS=(rust python typescript go java c cpp)
 
@@ -70,6 +71,19 @@ normalize_generated_text_files() {
   done
 }
 
+normalize_generated_markdown_files() {
+  local out="$1"
+  local file
+  while IFS= read -r -d '' file; do
+    perl -0pi -e 's/[ \t]+$//mg; s/\n+\z/\n/' "$file"
+  done < <(
+    find "$out" -type f \( \
+      -name README.md -o \
+      -path "$out/docs/*.md" \
+    \) -print0
+  )
+}
+
 # Optional release version for the generated clients (default keeps configs' 0.1.0).
 VERSION="${BEATER_SDK_VERSION:-}"
 version_props=()
@@ -85,8 +99,12 @@ mv "$tmp_spec" "$SPEC"
 # Keep the dashboard snapshot identical to the canonical spec.
 cp "$SPEC" web/dashboard/openapi/beater-read-api.json
 
-echo "==> Pulling generator image ($GENERATOR_IMAGE)"
-docker pull -q "$GENERATOR_IMAGE" >/dev/null
+if [[ -n "$GENERATOR_JAR" ]]; then
+  echo "==> Using generator jar ($GENERATOR_JAR)"
+else
+  echo "==> Pulling generator image ($GENERATOR_IMAGE)"
+  docker pull -q "$GENERATOR_IMAGE" >/dev/null
+fi
 
 for lang in "${LANGS[@]}"; do
   out="sdks/clients/$lang"
@@ -96,15 +114,24 @@ for lang in "${LANGS[@]}"; do
   # Run the generator as the host user so output isn't root-owned/read-only on Linux
   # CI runners (where the daemon runs as root); otherwise the patch step below cannot
   # write its temp files. No-op on Docker Desktop, which already maps to the host user.
-  docker run --rm \
-    --user "$(id -u):$(id -g)" \
-    -v "$root:/local" \
-    "$GENERATOR_IMAGE" generate \
-    -i "/local/$SPEC" \
-    -c "/local/sdks/config/$lang.yaml" \
-    ${version_props[@]+"${version_props[@]}"} \
-    -o "/local/$out" \
-    >/dev/null
+  if [[ -n "$GENERATOR_JAR" ]]; then
+    java -jar "$GENERATOR_JAR" generate \
+      -i "$SPEC" \
+      -c "sdks/config/$lang.yaml" \
+      ${version_props[@]+"${version_props[@]}"} \
+      -o "$out" \
+      >/dev/null
+  else
+    docker run --rm \
+      --user "$(id -u):$(id -g)" \
+      -v "$root:/local" \
+      "$GENERATOR_IMAGE" generate \
+      -i "/local/$SPEC" \
+      -c "/local/sdks/config/$lang.yaml" \
+      ${version_props[@]+"${version_props[@]}"} \
+      -o "/local/$out" \
+      >/dev/null
+  fi
 
   # Reproducibly re-apply committed fixes for known openapi-generator output bugs
   # (C/C++ only). This keeps the generated clients buildable WITHOUT hand-editing
@@ -123,16 +150,19 @@ for lang in "${LANGS[@]}"; do
   # method stubs, and comments for the touched ingest operation. Normalize
   # those files so `regen --check` and `git diff --check` agree without
   # hand-editing generated clients or churning unrelated generated output.
+  normalize_generated_markdown_files "$out"
   case "$lang" in
     c)
       normalize_generated_text_files "$out" \
         README.md \
+        model/error_response.c \
         api/IngestAPI.c \
         api/IngestAPI.h \
         docs/IngestAPI.md
       ;;
     cpp)
       normalize_generated_text_files "$out" \
+        src/model/ErrorResponse.cpp \
         include/beater-client/api/IngestApi.h
       ;;
     go)

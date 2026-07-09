@@ -23,7 +23,7 @@ import (
 // ApiKeysAPIService ApiKeysAPI service
 type ApiKeysAPIService service
 
-type ApiCreateApiKeyRequest struct {
+type ApiApiKeysCreateApiKeyRequest struct {
 	ctx context.Context
 	ApiService *ApiKeysAPIService
 	tenantId string
@@ -36,50 +36,50 @@ type ApiCreateApiKeyRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiCreateApiKeyRequest) CreateApiKeyHttpRequest(createApiKeyHttpRequest CreateApiKeyHttpRequest) ApiCreateApiKeyRequest {
+func (r ApiApiKeysCreateApiKeyRequest) CreateApiKeyHttpRequest(createApiKeyHttpRequest CreateApiKeyHttpRequest) ApiApiKeysCreateApiKeyRequest {
 	r.createApiKeyHttpRequest = &createApiKeyHttpRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiCreateApiKeyRequest) Authorization(authorization string) ApiCreateApiKeyRequest {
+func (r ApiApiKeysCreateApiKeyRequest) Authorization(authorization string) ApiApiKeysCreateApiKeyRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiCreateApiKeyRequest) XBeaterApiKey(xBeaterApiKey string) ApiCreateApiKeyRequest {
+func (r ApiApiKeysCreateApiKeyRequest) XBeaterApiKey(xBeaterApiKey string) ApiApiKeysCreateApiKeyRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiCreateApiKeyRequest) XBeaterProjectId(xBeaterProjectId string) ApiCreateApiKeyRequest {
+func (r ApiApiKeysCreateApiKeyRequest) XBeaterProjectId(xBeaterProjectId string) ApiApiKeysCreateApiKeyRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiCreateApiKeyRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiCreateApiKeyRequest {
+func (r ApiApiKeysCreateApiKeyRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiApiKeysCreateApiKeyRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiCreateApiKeyRequest) Execute() (*ApiKeyCreatedResponse, *http.Response, error) {
-	return r.ApiService.CreateApiKeyExecute(r)
+func (r ApiApiKeysCreateApiKeyRequest) Execute() (*ApiKeyCreatedResponse, *http.Response, error) {
+	return r.ApiService.ApiKeysCreateApiKeyExecute(r)
 }
 
 /*
-CreateApiKey Method for CreateApiKey
+ApiKeysCreateApiKey Method for ApiKeysCreateApiKey
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param environmentId environment_id
- @return ApiCreateApiKeyRequest
+ @return ApiApiKeysCreateApiKeyRequest
 */
-func (a *ApiKeysAPIService) CreateApiKey(ctx context.Context, tenantId string, projectId string, environmentId string) ApiCreateApiKeyRequest {
-	return ApiCreateApiKeyRequest{
+func (a *ApiKeysAPIService) ApiKeysCreateApiKey(ctx context.Context, tenantId string, projectId string, environmentId string) ApiApiKeysCreateApiKeyRequest {
+	return ApiApiKeysCreateApiKeyRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -90,7 +90,7 @@ func (a *ApiKeysAPIService) CreateApiKey(ctx context.Context, tenantId string, p
 
 // Execute executes the request
 //  @return ApiKeyCreatedResponse
-func (a *ApiKeysAPIService) CreateApiKeyExecute(r ApiCreateApiKeyRequest) (*ApiKeyCreatedResponse, *http.Response, error) {
+func (a *ApiKeysAPIService) ApiKeysCreateApiKeyExecute(r ApiApiKeysCreateApiKeyRequest) (*ApiKeyCreatedResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -98,7 +98,7 @@ func (a *ApiKeysAPIService) CreateApiKeyExecute(r ApiCreateApiKeyRequest) (*ApiK
 		localVarReturnValue  *ApiKeyCreatedResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ApiKeysAPIService.CreateApiKey")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ApiKeysAPIService.ApiKeysCreateApiKey")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -215,7 +215,7 @@ func (a *ApiKeysAPIService) CreateApiKeyExecute(r ApiCreateApiKeyRequest) (*ApiK
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiRevokeApiKeyRequest struct {
+type ApiApiKeysRevokeApiKeyRequest struct {
 	ctx context.Context
 	ApiService *ApiKeysAPIService
 	tenantId string
@@ -229,45 +229,45 @@ type ApiRevokeApiKeyRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiRevokeApiKeyRequest) Authorization(authorization string) ApiRevokeApiKeyRequest {
+func (r ApiApiKeysRevokeApiKeyRequest) Authorization(authorization string) ApiApiKeysRevokeApiKeyRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiRevokeApiKeyRequest) XBeaterApiKey(xBeaterApiKey string) ApiRevokeApiKeyRequest {
+func (r ApiApiKeysRevokeApiKeyRequest) XBeaterApiKey(xBeaterApiKey string) ApiApiKeysRevokeApiKeyRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiRevokeApiKeyRequest) XBeaterProjectId(xBeaterProjectId string) ApiRevokeApiKeyRequest {
+func (r ApiApiKeysRevokeApiKeyRequest) XBeaterProjectId(xBeaterProjectId string) ApiApiKeysRevokeApiKeyRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiRevokeApiKeyRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiRevokeApiKeyRequest {
+func (r ApiApiKeysRevokeApiKeyRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiApiKeysRevokeApiKeyRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiRevokeApiKeyRequest) Execute() (*RevokedApiKey, *http.Response, error) {
-	return r.ApiService.RevokeApiKeyExecute(r)
+func (r ApiApiKeysRevokeApiKeyRequest) Execute() (*RevokedApiKey, *http.Response, error) {
+	return r.ApiService.ApiKeysRevokeApiKeyExecute(r)
 }
 
 /*
-RevokeApiKey Method for RevokeApiKey
+ApiKeysRevokeApiKey Method for ApiKeysRevokeApiKey
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param environmentId environment_id
  @param apiKeyId api_key_id
- @return ApiRevokeApiKeyRequest
+ @return ApiApiKeysRevokeApiKeyRequest
 */
-func (a *ApiKeysAPIService) RevokeApiKey(ctx context.Context, tenantId string, projectId string, environmentId string, apiKeyId string) ApiRevokeApiKeyRequest {
-	return ApiRevokeApiKeyRequest{
+func (a *ApiKeysAPIService) ApiKeysRevokeApiKey(ctx context.Context, tenantId string, projectId string, environmentId string, apiKeyId string) ApiApiKeysRevokeApiKeyRequest {
+	return ApiApiKeysRevokeApiKeyRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -279,7 +279,7 @@ func (a *ApiKeysAPIService) RevokeApiKey(ctx context.Context, tenantId string, p
 
 // Execute executes the request
 //  @return RevokedApiKey
-func (a *ApiKeysAPIService) RevokeApiKeyExecute(r ApiRevokeApiKeyRequest) (*RevokedApiKey, *http.Response, error) {
+func (a *ApiKeysAPIService) ApiKeysRevokeApiKeyExecute(r ApiApiKeysRevokeApiKeyRequest) (*RevokedApiKey, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -287,7 +287,7 @@ func (a *ApiKeysAPIService) RevokeApiKeyExecute(r ApiRevokeApiKeyRequest) (*Revo
 		localVarReturnValue  *RevokedApiKey
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ApiKeysAPIService.RevokeApiKey")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ApiKeysAPIService.ApiKeysRevokeApiKey")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

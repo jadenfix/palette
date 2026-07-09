@@ -4,8 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Input** | [**AlertInput**](AlertInput.md) |  | 
-**Policy** | [**AlertPolicy**](AlertPolicy.md) |  | 
+**Input** | [**AlertInput**](AlertInput.md) |  |
+**Policy** | [**AlertPolicy**](AlertPolicy.md) |  |
 
 ## Methods
 
@@ -68,5 +68,3 @@ SetPolicy sets Policy field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

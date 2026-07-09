@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**HighCostMicrosThreshold** | Pointer to **NullableInt64** |  | [optional] 
-**KeepErrors** | **bool** |  | 
-**SampleRatePerMille** | **int32** |  | 
-**SlowMsThreshold** | Pointer to **NullableInt64** |  | [optional] 
+**HighCostMicrosThreshold** | Pointer to **NullableInt64** |  | [optional]
+**KeepErrors** | **bool** |  |
+**SampleRatePerMille** | **int32** |  |
+**SlowMsThreshold** | Pointer to **NullableInt64** |  | [optional]
 
 ## Methods
 
@@ -140,5 +140,3 @@ HasSlowMsThreshold returns a boolean if a field has been set.
 UnsetSlowMsThreshold ensures that no value is present for SlowMsThreshold, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

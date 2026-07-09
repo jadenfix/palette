@@ -103,8 +103,8 @@ public class SearchApi {
    * @return SearchResponse
    * @throws ApiException if fails to make API call
    */
-  public SearchResponse searchSpans(String tenantId, String q, String projectId, String environmentId, String traceId, String spanId, String kind, String status, String model, String tool, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<SearchResponse> localVarResponse = searchSpansWithHttpInfo(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public SearchResponse searchSearchSpans(String tenantId, String q, String projectId, String environmentId, String traceId, String spanId, String kind, String status, String model, String tool, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<SearchResponse> localVarResponse = searchSearchSpansWithHttpInfo(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -129,8 +129,8 @@ public class SearchApi {
    * @return ApiResponse&lt;SearchResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<SearchResponse> searchSpansWithHttpInfo(String tenantId, String q, String projectId, String environmentId, String traceId, String spanId, String kind, String status, String model, String tool, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = searchSpansRequestBuilder(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<SearchResponse> searchSearchSpansWithHttpInfo(String tenantId, String q, String projectId, String environmentId, String traceId, String spanId, String kind, String status, String model, String tool, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = searchSearchSpansRequestBuilder(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -140,7 +140,7 @@ public class SearchApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("searchSpans", localVarResponse);
+          throw getApiException("searchSearchSpans", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<SearchResponse>(
@@ -169,10 +169,10 @@ public class SearchApi {
     }
   }
 
-  private HttpRequest.Builder searchSpansRequestBuilder(String tenantId, String q, String projectId, String environmentId, String traceId, String spanId, String kind, String status, String model, String tool, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder searchSearchSpansRequestBuilder(String tenantId, String q, String projectId, String environmentId, String traceId, String spanId, String kind, String status, String model, String tool, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling searchSpans");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling searchSearchSpans");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

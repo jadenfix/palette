@@ -10,6 +10,3 @@
 |**id** | **String** |  |  |
 |**kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |  |
 |**lane** | **EvaluatorLane** |  |  |
-
-
-

@@ -14,6 +14,3 @@
 |**policyId** | **String** |  |  |
 |**severity** | **AlertSeverity** |  |  |
 |**signingSecret** | **String** |  |  |
-
-
-

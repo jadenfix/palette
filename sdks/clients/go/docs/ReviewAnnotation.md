@@ -4,15 +4,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**AnnotationId** | **string** |  | 
-**CreatedAt** | **time.Time** |  | 
-**Payload** | **interface{}** |  | 
-**ProjectId** | **string** |  | 
-**QueueId** | **string** |  | 
-**ReviewerId** | **string** |  | 
-**TaskId** | **string** |  | 
-**TenantId** | **string** |  | 
-**Verdict** | [**ReviewVerdict**](ReviewVerdict.md) |  | 
+**AnnotationId** | **string** |  |
+**CreatedAt** | **time.Time** |  |
+**Payload** | **interface{}** |  |
+**ProjectId** | **string** |  |
+**QueueId** | **string** |  |
+**ReviewerId** | **string** |  |
+**TaskId** | **string** |  |
+**TenantId** | **string** |  |
+**Verdict** | [**ReviewVerdict**](ReviewVerdict.md) |  |
 
 ## Methods
 
@@ -225,5 +225,3 @@ SetVerdict sets Verdict field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

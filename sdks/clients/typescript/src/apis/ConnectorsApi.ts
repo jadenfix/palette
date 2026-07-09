@@ -46,7 +46,7 @@ import {
     ToolkitToJSON,
 } from '../models/index';
 
-export interface ConnectConnectorOperationRequest {
+export interface ConnectorsConnectConnectorRequest {
     tenantId: string;
     projectId: string;
     connectConnectorRequest: ConnectConnectorRequest;
@@ -56,7 +56,7 @@ export interface ConnectConnectorOperationRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface ConnectorStatusRequest {
+export interface ConnectorsConnectorStatusRequest {
     tenantId: string;
     projectId: string;
     toolkit: string;
@@ -66,7 +66,7 @@ export interface ConnectorStatusRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface GetConnectorSkillsRequest {
+export interface ConnectorsGetConnectorSkillsRequest {
     tenantId: string;
     projectId: string;
     toolkit: string;
@@ -76,7 +76,7 @@ export interface GetConnectorSkillsRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface InvokeConnectorToolRequest {
+export interface ConnectorsInvokeConnectorToolRequest {
     tenantId: string;
     projectId: string;
     invokeConnectorRequest: InvokeConnectorRequest;
@@ -86,7 +86,7 @@ export interface InvokeConnectorToolRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface ListConnectorToolsRequest {
+export interface ConnectorsListConnectorToolsRequest {
     tenantId: string;
     projectId: string;
     toolkit: string;
@@ -97,7 +97,7 @@ export interface ListConnectorToolsRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface ListConnectorsRequest {
+export interface ConnectorsListConnectorsRequest {
     tenantId: string;
     projectId: string;
     limit?: number;
@@ -114,25 +114,25 @@ export class ConnectorsApi extends runtime.BaseAPI {
 
     /**
      */
-    async connectConnectorRaw(requestParameters: ConnectConnectorOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ConnectionLink>> {
+    async connectorsConnectConnectorRaw(requestParameters: ConnectorsConnectConnectorRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ConnectionLink>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling connectConnector().'
+                'Required parameter "tenantId" was null or undefined when calling connectorsConnectConnector().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling connectConnector().'
+                'Required parameter "projectId" was null or undefined when calling connectorsConnectConnector().'
             );
         }
 
         if (requestParameters['connectConnectorRequest'] == null) {
             throw new runtime.RequiredError(
                 'connectConnectorRequest',
-                'Required parameter "connectConnectorRequest" was null or undefined when calling connectConnector().'
+                'Required parameter "connectConnectorRequest" was null or undefined when calling connectorsConnectConnector().'
             );
         }
 
@@ -171,32 +171,32 @@ export class ConnectorsApi extends runtime.BaseAPI {
 
     /**
      */
-    async connectConnector(requestParameters: ConnectConnectorOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ConnectionLink> {
-        const response = await this.connectConnectorRaw(requestParameters, initOverrides);
+    async connectorsConnectConnector(requestParameters: ConnectorsConnectConnectorRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ConnectionLink> {
+        const response = await this.connectorsConnectConnectorRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async connectorStatusRaw(requestParameters: ConnectorStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ConnectionStatus>> {
+    async connectorsConnectorStatusRaw(requestParameters: ConnectorsConnectorStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ConnectionStatus>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling connectorStatus().'
+                'Required parameter "tenantId" was null or undefined when calling connectorsConnectorStatus().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling connectorStatus().'
+                'Required parameter "projectId" was null or undefined when calling connectorsConnectorStatus().'
             );
         }
 
         if (requestParameters['toolkit'] == null) {
             throw new runtime.RequiredError(
                 'toolkit',
-                'Required parameter "toolkit" was null or undefined when calling connectorStatus().'
+                'Required parameter "toolkit" was null or undefined when calling connectorsConnectorStatus().'
             );
         }
 
@@ -236,32 +236,32 @@ export class ConnectorsApi extends runtime.BaseAPI {
 
     /**
      */
-    async connectorStatus(requestParameters: ConnectorStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ConnectionStatus> {
-        const response = await this.connectorStatusRaw(requestParameters, initOverrides);
+    async connectorsConnectorStatus(requestParameters: ConnectorsConnectorStatusRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ConnectionStatus> {
+        const response = await this.connectorsConnectorStatusRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async getConnectorSkillsRaw(requestParameters: GetConnectorSkillsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ConnectorSkillsResponse>> {
+    async connectorsGetConnectorSkillsRaw(requestParameters: ConnectorsGetConnectorSkillsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ConnectorSkillsResponse>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling getConnectorSkills().'
+                'Required parameter "tenantId" was null or undefined when calling connectorsGetConnectorSkills().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling getConnectorSkills().'
+                'Required parameter "projectId" was null or undefined when calling connectorsGetConnectorSkills().'
             );
         }
 
         if (requestParameters['toolkit'] == null) {
             throw new runtime.RequiredError(
                 'toolkit',
-                'Required parameter "toolkit" was null or undefined when calling getConnectorSkills().'
+                'Required parameter "toolkit" was null or undefined when calling connectorsGetConnectorSkills().'
             );
         }
 
@@ -301,32 +301,32 @@ export class ConnectorsApi extends runtime.BaseAPI {
 
     /**
      */
-    async getConnectorSkills(requestParameters: GetConnectorSkillsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ConnectorSkillsResponse> {
-        const response = await this.getConnectorSkillsRaw(requestParameters, initOverrides);
+    async connectorsGetConnectorSkills(requestParameters: ConnectorsGetConnectorSkillsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ConnectorSkillsResponse> {
+        const response = await this.connectorsGetConnectorSkillsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async invokeConnectorToolRaw(requestParameters: InvokeConnectorToolRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ToolExecution>> {
+    async connectorsInvokeConnectorToolRaw(requestParameters: ConnectorsInvokeConnectorToolRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ToolExecution>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling invokeConnectorTool().'
+                'Required parameter "tenantId" was null or undefined when calling connectorsInvokeConnectorTool().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling invokeConnectorTool().'
+                'Required parameter "projectId" was null or undefined when calling connectorsInvokeConnectorTool().'
             );
         }
 
         if (requestParameters['invokeConnectorRequest'] == null) {
             throw new runtime.RequiredError(
                 'invokeConnectorRequest',
-                'Required parameter "invokeConnectorRequest" was null or undefined when calling invokeConnectorTool().'
+                'Required parameter "invokeConnectorRequest" was null or undefined when calling connectorsInvokeConnectorTool().'
             );
         }
 
@@ -365,32 +365,32 @@ export class ConnectorsApi extends runtime.BaseAPI {
 
     /**
      */
-    async invokeConnectorTool(requestParameters: InvokeConnectorToolRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ToolExecution> {
-        const response = await this.invokeConnectorToolRaw(requestParameters, initOverrides);
+    async connectorsInvokeConnectorTool(requestParameters: ConnectorsInvokeConnectorToolRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ToolExecution> {
+        const response = await this.connectorsInvokeConnectorToolRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async listConnectorToolsRaw(requestParameters: ListConnectorToolsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ConnectorTool>>> {
+    async connectorsListConnectorToolsRaw(requestParameters: ConnectorsListConnectorToolsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ConnectorTool>>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling listConnectorTools().'
+                'Required parameter "tenantId" was null or undefined when calling connectorsListConnectorTools().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling listConnectorTools().'
+                'Required parameter "projectId" was null or undefined when calling connectorsListConnectorTools().'
             );
         }
 
         if (requestParameters['toolkit'] == null) {
             throw new runtime.RequiredError(
                 'toolkit',
-                'Required parameter "toolkit" was null or undefined when calling listConnectorTools().'
+                'Required parameter "toolkit" was null or undefined when calling connectorsListConnectorTools().'
             );
         }
 
@@ -434,25 +434,25 @@ export class ConnectorsApi extends runtime.BaseAPI {
 
     /**
      */
-    async listConnectorTools(requestParameters: ListConnectorToolsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ConnectorTool>> {
-        const response = await this.listConnectorToolsRaw(requestParameters, initOverrides);
+    async connectorsListConnectorTools(requestParameters: ConnectorsListConnectorToolsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ConnectorTool>> {
+        const response = await this.connectorsListConnectorToolsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async listConnectorsRaw(requestParameters: ListConnectorsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<Toolkit>>> {
+    async connectorsListConnectorsRaw(requestParameters: ConnectorsListConnectorsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<Toolkit>>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling listConnectors().'
+                'Required parameter "tenantId" was null or undefined when calling connectorsListConnectors().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling listConnectors().'
+                'Required parameter "projectId" was null or undefined when calling connectorsListConnectors().'
             );
         }
 
@@ -492,8 +492,8 @@ export class ConnectorsApi extends runtime.BaseAPI {
 
     /**
      */
-    async listConnectors(requestParameters: ListConnectorsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<Toolkit>> {
-        const response = await this.listConnectorsRaw(requestParameters, initOverrides);
+    async connectorsListConnectors(requestParameters: ConnectorsListConnectorsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<Toolkit>> {
+        const response = await this.connectorsListConnectorsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -10,6 +10,3 @@
 |**reason** | **SamplingReason** |  |  |
 |**selected** | **Boolean** |  |  |
 |**stableScorePerMille** | **Integer** |  |  |
-
-
-

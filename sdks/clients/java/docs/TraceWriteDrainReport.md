@@ -20,6 +20,3 @@
 |**traceRefs** | [**List&lt;QueuedTraceWork&gt;**](QueuedTraceWork.md) |  |  |
 |**writtenRaw** | **Integer** |  |  |
 |**writtenSpans** | **Integer** |  |  |
-
-
-

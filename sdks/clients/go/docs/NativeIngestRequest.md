@@ -4,25 +4,25 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Attributes** | **map[string]interface{}** |  | 
-**AuthContext** | Pointer to [**NullableAuthContext**](AuthContext.md) |  | [optional] 
-**Cost** | Pointer to [**NullableMoney**](Money.md) |  | [optional] 
-**EndTime** | Pointer to **NullableTime** |  | [optional] 
-**IdempotencyKey** | Pointer to **string** |  | [optional] 
-**Input** | Pointer to **interface{}** |  | [optional] 
-**Kind** | **string** | Canonical agent span kind such as agent.run or llm.call | 
-**Model** | Pointer to [**NullableModelRef**](ModelRef.md) |  | [optional] 
-**Name** | **string** |  | 
-**Output** | Pointer to **interface{}** |  | [optional] 
-**ParentSpanId** | Pointer to **string** |  | [optional] 
-**RedactionClass** | [**RedactionClass**](RedactionClass.md) |  | 
-**Scope** | [**TenantScope**](TenantScope.md) |  | 
-**Seq** | **int64** |  | 
-**SpanId** | **string** |  | 
-**StartTime** | Pointer to **NullableTime** |  | [optional] 
-**Status** | [**SpanStatus**](SpanStatus.md) |  | 
-**Tokens** | Pointer to [**NullableTokenCounts**](TokenCounts.md) |  | [optional] 
-**TraceId** | **string** |  | 
+**Attributes** | **map[string]interface{}** |  |
+**AuthContext** | Pointer to [**NullableAuthContext**](AuthContext.md) |  | [optional]
+**Cost** | Pointer to [**NullableMoney**](Money.md) |  | [optional]
+**EndTime** | Pointer to **NullableTime** |  | [optional]
+**IdempotencyKey** | Pointer to **string** |  | [optional]
+**Input** | Pointer to **interface{}** |  | [optional]
+**Kind** | **string** | Canonical agent span kind such as agent.run or llm.call |
+**Model** | Pointer to [**NullableModelRef**](ModelRef.md) |  | [optional]
+**Name** | **string** |  |
+**Output** | Pointer to **interface{}** |  | [optional]
+**ParentSpanId** | Pointer to **string** |  | [optional]
+**RedactionClass** | [**RedactionClass**](RedactionClass.md) |  |
+**Scope** | [**TenantScope**](TenantScope.md) |  |
+**Seq** | **int64** |  |
+**SpanId** | **string** |  |
+**StartTime** | Pointer to **NullableTime** |  | [optional]
+**Status** | [**SpanStatus**](SpanStatus.md) |  |
+**Tokens** | Pointer to [**NullableTokenCounts**](TokenCounts.md) |  | [optional]
+**TraceId** | **string** |  |
 
 ## Methods
 
@@ -555,5 +555,3 @@ SetTraceId sets TraceId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

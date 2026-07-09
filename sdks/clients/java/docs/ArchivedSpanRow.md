@@ -31,6 +31,3 @@
 |**tenantId** | **String** |  |  |
 |**traceId** | **String** |  |  |
 |**unmappedJson** | **String** |  |  |
-
-
-

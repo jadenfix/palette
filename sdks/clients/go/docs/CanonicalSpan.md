@@ -4,28 +4,28 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Attributes** | **map[string]interface{}** |  | 
-**Cost** | Pointer to [**NullableMoney**](Money.md) |  | [optional] 
-**EndTime** | Pointer to **NullableTime** |  | [optional] 
-**EnvironmentId** | **string** |  | 
-**InputRef** | Pointer to [**NullableArtifactRef**](ArtifactRef.md) |  | [optional] 
-**Kind** | **string** | Canonical agent span kind such as agent.run or llm.call | 
-**Model** | Pointer to [**NullableModelRef**](ModelRef.md) |  | [optional] 
-**Name** | **string** |  | 
-**NormalizerVersion** | **string** |  | 
-**OutputRef** | Pointer to [**NullableArtifactRef**](ArtifactRef.md) |  | [optional] 
-**ParentSpanId** | Pointer to **string** |  | [optional] 
-**ProjectId** | **string** |  | 
-**RawRef** | [**ArtifactRef**](ArtifactRef.md) |  | 
-**SchemaVersion** | **int32** |  | 
-**Seq** | **int64** |  | 
-**SpanId** | **string** |  | 
-**StartTime** | **time.Time** |  | 
-**Status** | [**SpanStatus**](SpanStatus.md) |  | 
-**TenantId** | **string** |  | 
-**Tokens** | Pointer to [**NullableTokenCounts**](TokenCounts.md) |  | [optional] 
-**TraceId** | **string** |  | 
-**UnmappedAttrs** | **interface{}** |  | 
+**Attributes** | **map[string]interface{}** |  |
+**Cost** | Pointer to [**NullableMoney**](Money.md) |  | [optional]
+**EndTime** | Pointer to **NullableTime** |  | [optional]
+**EnvironmentId** | **string** |  |
+**InputRef** | Pointer to [**NullableArtifactRef**](ArtifactRef.md) |  | [optional]
+**Kind** | **string** | Canonical agent span kind such as agent.run or llm.call |
+**Model** | Pointer to [**NullableModelRef**](ModelRef.md) |  | [optional]
+**Name** | **string** |  |
+**NormalizerVersion** | **string** |  |
+**OutputRef** | Pointer to [**NullableArtifactRef**](ArtifactRef.md) |  | [optional]
+**ParentSpanId** | Pointer to **string** |  | [optional]
+**ProjectId** | **string** |  |
+**RawRef** | [**ArtifactRef**](ArtifactRef.md) |  |
+**SchemaVersion** | **int32** |  |
+**Seq** | **int64** |  |
+**SpanId** | **string** |  |
+**StartTime** | **time.Time** |  |
+**Status** | [**SpanStatus**](SpanStatus.md) |  |
+**TenantId** | **string** |  |
+**Tokens** | Pointer to [**NullableTokenCounts**](TokenCounts.md) |  | [optional]
+**TraceId** | **string** |  |
+**UnmappedAttrs** | **interface{}** |  |
 
 ## Methods
 
@@ -593,5 +593,3 @@ SetUnmappedAttrs sets UnmappedAttrs field to given value.
 UnsetUnmappedAttrs ensures that no value is present for UnmappedAttrs, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

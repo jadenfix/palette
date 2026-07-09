@@ -4,23 +4,23 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**BaselineCached** | Pointer to **NullableBool** |  | [optional] 
-**BaselineCost** | Pointer to [**NullableMoney**](Money.md) |  | [optional] 
-**BaselineEvidence** | **interface{}** |  | 
-**BaselineJudgeCallId** | Pointer to **string** |  | [optional] 
-**BaselineOutput** | **interface{}** |  | 
-**BaselineScore** | **float64** |  | 
-**BaselineTrace** | Pointer to **interface{}** |  | [optional] 
-**CandidateCached** | Pointer to **NullableBool** |  | [optional] 
-**CandidateCost** | Pointer to [**NullableMoney**](Money.md) |  | [optional] 
-**CandidateEvidence** | **interface{}** |  | 
-**CandidateJudgeCallId** | Pointer to **string** |  | [optional] 
-**CandidateOutput** | **interface{}** |  | 
-**CandidateScore** | **float64** |  | 
-**CandidateTrace** | Pointer to **interface{}** |  | [optional] 
-**CaseId** | **string** |  | 
-**Delta** | **float64** |  | 
-**Reference** | Pointer to **interface{}** |  | [optional] 
+**BaselineCached** | Pointer to **NullableBool** |  | [optional]
+**BaselineCost** | Pointer to [**NullableMoney**](Money.md) |  | [optional]
+**BaselineEvidence** | **interface{}** |  |
+**BaselineJudgeCallId** | Pointer to **string** |  | [optional]
+**BaselineOutput** | **interface{}** |  |
+**BaselineScore** | **float64** |  |
+**BaselineTrace** | Pointer to **interface{}** |  | [optional]
+**CandidateCached** | Pointer to **NullableBool** |  | [optional]
+**CandidateCost** | Pointer to [**NullableMoney**](Money.md) |  | [optional]
+**CandidateEvidence** | **interface{}** |  |
+**CandidateJudgeCallId** | Pointer to **string** |  | [optional]
+**CandidateOutput** | **interface{}** |  |
+**CandidateScore** | **float64** |  |
+**CandidateTrace** | Pointer to **interface{}** |  | [optional]
+**CaseId** | **string** |  |
+**Delta** | **float64** |  |
+**Reference** | Pointer to **interface{}** |  | [optional]
 
 ## Methods
 
@@ -538,5 +538,3 @@ HasReference returns a boolean if a field has been set.
 UnsetReference ensures that no value is present for Reference, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

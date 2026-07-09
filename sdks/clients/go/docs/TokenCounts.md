@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**CacheRead** | **int64** |  | 
-**Input** | **int64** |  | 
-**Output** | **int64** |  | 
-**Reasoning** | **int64** |  | 
+**CacheRead** | **int64** |  |
+**Input** | **int64** |  |
+**Output** | **int64** |  |
+**Reasoning** | **int64** |  |
 
 ## Methods
 
@@ -110,5 +110,3 @@ SetReasoning sets Reasoning field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

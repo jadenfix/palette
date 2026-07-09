@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**ListAuditEvents**](AuditAPI.md#ListAuditEvents) | **Get** /v1/audit/{tenant_id}/{project_id} | 
+[**AuditListAuditEvents**](AuditAPI.md#AuditListAuditEvents) | **Get** /v1/audit/{tenant_id}/{project_id} |
 
 
 
-## ListAuditEvents
+## AuditListAuditEvents
 
-> []AuditEvent ListAuditEvents(ctx, tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> []AuditEvent AuditListAuditEvents(ctx, tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -36,13 +36,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.AuditAPI.ListAuditEvents(context.Background(), tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.AuditAPI.AuditListAuditEvents(context.Background(), tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `AuditAPI.ListAuditEvents``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `AuditAPI.AuditListAuditEvents``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ListAuditEvents`: []AuditEvent
-	fmt.Fprintf(os.Stdout, "Response from `AuditAPI.ListAuditEvents`: %v\n", resp)
+	// response from `AuditListAuditEvents`: []AuditEvent
+	fmt.Fprintf(os.Stdout, "Response from `AuditAPI.AuditListAuditEvents`: %v\n", resp)
 }
 ```
 
@@ -52,22 +52,22 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiListAuditEventsRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiAuditListAuditEventsRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -85,4 +85,3 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

@@ -14,6 +14,3 @@
 |**spanCount** | **Integer** |  |  |
 |**tenantId** | **String** |  |  |
 |**traceId** | **String** |  |  |
-
-
-

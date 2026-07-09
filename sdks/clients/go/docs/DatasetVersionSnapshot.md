@@ -4,13 +4,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Cases** | [**[]DatasetCase**](DatasetCase.md) |  | 
-**CorpusRoot** | **string** | A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string. | 
-**CreatedAt** | **time.Time** |  | 
-**DatasetId** | **string** |  | 
-**ProjectId** | **string** |  | 
-**TenantId** | **string** |  | 
-**VersionId** | **string** |  | 
+**Cases** | [**[]DatasetCase**](DatasetCase.md) |  |
+**CorpusRoot** | **string** | A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string. |
+**CreatedAt** | **time.Time** |  |
+**DatasetId** | **string** |  |
+**ProjectId** | **string** |  |
+**TenantId** | **string** |  |
+**VersionId** | **string** |  |
 
 ## Methods
 
@@ -173,5 +173,3 @@ SetVersionId sets VersionId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

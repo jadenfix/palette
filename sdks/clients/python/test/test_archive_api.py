@@ -26,14 +26,14 @@ class TestArchiveApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_archive_trace(self) -> None:
-        """Test case for archive_trace
+    def test_archive_archive_trace(self) -> None:
+        """Test case for archive_archive_trace
 
         """
         pass
 
-    def test_query_archive_spans(self) -> None:
-        """Test case for query_archive_spans
+    def test_archive_query_archive_spans(self) -> None:
+        """Test case for archive_query_archive_spans
 
         """
         pass

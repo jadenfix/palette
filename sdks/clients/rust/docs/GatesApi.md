@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_gate**](GatesApi.md#create_gate) | **POST** /v1/gates/{tenant_id}/{project_id} | 
-[**run_gate**](GatesApi.md#run_gate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run | 
+[**gates_period_create_gate**](GatesApi.md#gates_period_create_gate) | **POST** /v1/gates/{tenant_id}/{project_id} |
+[**gates_period_run_gate**](GatesApi.md#gates_period_run_gate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run |
 
 
 
-## create_gate
+## gates_period_create_gate
 
-> models::GateDefinition create_gate(tenant_id, project_id, create_gate_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::GateDefinition gates_period_create_gate(tenant_id, project_id, create_gate_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -43,9 +43,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## run_gate
+## gates_period_run_gate
 
-> models::GateRunReport run_gate(tenant_id, project_id, gate_id, run_gate_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::GateRunReport gates_period_run_gate(tenant_id, project_id, gate_id, run_gate_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -76,4 +76,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

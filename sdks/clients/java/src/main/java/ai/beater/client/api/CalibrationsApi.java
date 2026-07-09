@@ -98,8 +98,8 @@ public class CalibrationsApi {
    * @return CalibrationReport
    * @throws ApiException if fails to make API call
    */
-  public CalibrationReport runCalibration(String tenantId, String projectId, String datasetId, String versionId, RunCalibrationHttpRequest runCalibrationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<CalibrationReport> localVarResponse = runCalibrationWithHttpInfo(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public CalibrationReport calibrationsRunCalibration(String tenantId, String projectId, String datasetId, String versionId, RunCalibrationHttpRequest runCalibrationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<CalibrationReport> localVarResponse = calibrationsRunCalibrationWithHttpInfo(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -118,8 +118,8 @@ public class CalibrationsApi {
    * @return ApiResponse&lt;CalibrationReport&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<CalibrationReport> runCalibrationWithHttpInfo(String tenantId, String projectId, String datasetId, String versionId, RunCalibrationHttpRequest runCalibrationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = runCalibrationRequestBuilder(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<CalibrationReport> calibrationsRunCalibrationWithHttpInfo(String tenantId, String projectId, String datasetId, String versionId, RunCalibrationHttpRequest runCalibrationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = calibrationsRunCalibrationRequestBuilder(tenantId, projectId, datasetId, versionId, runCalibrationHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -129,7 +129,7 @@ public class CalibrationsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("runCalibration", localVarResponse);
+          throw getApiException("calibrationsRunCalibration", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<CalibrationReport>(
@@ -158,26 +158,26 @@ public class CalibrationsApi {
     }
   }
 
-  private HttpRequest.Builder runCalibrationRequestBuilder(String tenantId, String projectId, String datasetId, String versionId, RunCalibrationHttpRequest runCalibrationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder calibrationsRunCalibrationRequestBuilder(String tenantId, String projectId, String datasetId, String versionId, RunCalibrationHttpRequest runCalibrationHttpRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling runCalibration");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling calibrationsRunCalibration");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling runCalibration");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling calibrationsRunCalibration");
     }
     // verify the required parameter 'datasetId' is set
     if (datasetId == null) {
-      throw new ApiException(400, "Missing the required parameter 'datasetId' when calling runCalibration");
+      throw new ApiException(400, "Missing the required parameter 'datasetId' when calling calibrationsRunCalibration");
     }
     // verify the required parameter 'versionId' is set
     if (versionId == null) {
-      throw new ApiException(400, "Missing the required parameter 'versionId' when calling runCalibration");
+      throw new ApiException(400, "Missing the required parameter 'versionId' when calling calibrationsRunCalibration");
     }
     // verify the required parameter 'runCalibrationHttpRequest' is set
     if (runCalibrationHttpRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'runCalibrationHttpRequest' when calling runCalibration");
+      throw new ApiException(400, "Missing the required parameter 'runCalibrationHttpRequest' when calling calibrationsRunCalibration");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

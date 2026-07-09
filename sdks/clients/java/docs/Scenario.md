@@ -19,6 +19,3 @@ A reusable failure scenario mined from production traces.
 |**scope** | [**TenantScope**](TenantScope.md) | Tenant/project/environment scope this scenario belongs to. |  |
 |**sourceTraceIds** | **List&lt;String&gt;** | Trace ids the scenario was mined from, sorted ascending. |  |
 |**title** | **String** | Human-readable title. |  |
-
-
-

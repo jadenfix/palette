@@ -5,19 +5,19 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**baseline_release_id** | **str** |  | 
-**candidate_release_id** | **str** |  | 
-**case_scores** | [**List[CaseExperimentScore]**](CaseExperimentScore.md) |  | 
-**comparison** | [**ExperimentComparison**](ExperimentComparison.md) |  | 
-**created_at** | **datetime** |  | 
-**dataset_id** | **str** |  | 
-**dataset_version_id** | **str** |  | 
-**decision** | [**GateDecision**](GateDecision.md) |  | 
-**evaluator_version_id** | **str** |  | 
-**experiment_run_id** | **str** |  | 
-**gate_policy** | [**GatePolicy**](GatePolicy.md) |  | [optional] 
-**project_id** | **str** |  | 
-**tenant_id** | **str** |  | 
+**baseline_release_id** | **str** |  |
+**candidate_release_id** | **str** |  |
+**case_scores** | [**List[CaseExperimentScore]**](CaseExperimentScore.md) |  |
+**comparison** | [**ExperimentComparison**](ExperimentComparison.md) |  |
+**created_at** | **datetime** |  |
+**dataset_id** | **str** |  |
+**dataset_version_id** | **str** |  |
+**decision** | [**GateDecision**](GateDecision.md) |  |
+**evaluator_version_id** | **str** |  |
+**experiment_run_id** | **str** |  |
+**gate_policy** | [**GatePolicy**](GatePolicy.md) |  | [optional]
+**project_id** | **str** |  |
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -37,5 +37,3 @@ experiment_run_report_dict = experiment_run_report_instance.to_dict()
 experiment_run_report_from_dict = ExperimentRunReport.from_dict(experiment_run_report_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

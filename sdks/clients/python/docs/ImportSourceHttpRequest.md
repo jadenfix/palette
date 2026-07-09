@@ -6,8 +6,8 @@ Request body for the unified import endpoint. The `source` field selects a regis
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**payload** | **object** |  | [optional] 
-**source** | **str** | Registered importer key, e.g. &#x60;temporal_history&#x60; or &#x60;native&#x60;. | 
+**payload** | **object** |  | [optional]
+**source** | **str** | Registered importer key, e.g. &#x60;temporal_history&#x60; or &#x60;native&#x60;. |
 
 ## Example
 
@@ -27,5 +27,3 @@ import_source_http_request_dict = import_source_http_request_instance.to_dict()
 import_source_http_request_from_dict = ImportSourceHttpRequest.from_dict(import_source_http_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

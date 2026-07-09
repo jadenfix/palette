@@ -23,7 +23,7 @@ import (
 // ScenariosAPIService ScenariosAPI service
 type ScenariosAPIService service
 
-type ApiCreateScenarioRequest struct {
+type ApiScenariosCreateScenarioRequest struct {
 	ctx context.Context
 	ApiService *ScenariosAPIService
 	tenantId string
@@ -35,49 +35,49 @@ type ApiCreateScenarioRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiCreateScenarioRequest) CreateScenarioRequest(createScenarioRequest CreateScenarioRequest) ApiCreateScenarioRequest {
+func (r ApiScenariosCreateScenarioRequest) CreateScenarioRequest(createScenarioRequest CreateScenarioRequest) ApiScenariosCreateScenarioRequest {
 	r.createScenarioRequest = &createScenarioRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiCreateScenarioRequest) Authorization(authorization string) ApiCreateScenarioRequest {
+func (r ApiScenariosCreateScenarioRequest) Authorization(authorization string) ApiScenariosCreateScenarioRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiCreateScenarioRequest) XBeaterApiKey(xBeaterApiKey string) ApiCreateScenarioRequest {
+func (r ApiScenariosCreateScenarioRequest) XBeaterApiKey(xBeaterApiKey string) ApiScenariosCreateScenarioRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiCreateScenarioRequest) XBeaterProjectId(xBeaterProjectId string) ApiCreateScenarioRequest {
+func (r ApiScenariosCreateScenarioRequest) XBeaterProjectId(xBeaterProjectId string) ApiScenariosCreateScenarioRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiCreateScenarioRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiCreateScenarioRequest {
+func (r ApiScenariosCreateScenarioRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiScenariosCreateScenarioRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiCreateScenarioRequest) Execute() (*Scenario, *http.Response, error) {
-	return r.ApiService.CreateScenarioExecute(r)
+func (r ApiScenariosCreateScenarioRequest) Execute() (*Scenario, *http.Response, error) {
+	return r.ApiService.ScenariosCreateScenarioExecute(r)
 }
 
 /*
-CreateScenario Method for CreateScenario
+ScenariosCreateScenario Method for ScenariosCreateScenario
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiCreateScenarioRequest
+ @return ApiScenariosCreateScenarioRequest
 */
-func (a *ScenariosAPIService) CreateScenario(ctx context.Context, tenantId string, projectId string) ApiCreateScenarioRequest {
-	return ApiCreateScenarioRequest{
+func (a *ScenariosAPIService) ScenariosCreateScenario(ctx context.Context, tenantId string, projectId string) ApiScenariosCreateScenarioRequest {
+	return ApiScenariosCreateScenarioRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -87,7 +87,7 @@ func (a *ScenariosAPIService) CreateScenario(ctx context.Context, tenantId strin
 
 // Execute executes the request
 //  @return Scenario
-func (a *ScenariosAPIService) CreateScenarioExecute(r ApiCreateScenarioRequest) (*Scenario, *http.Response, error) {
+func (a *ScenariosAPIService) ScenariosCreateScenarioExecute(r ApiScenariosCreateScenarioRequest) (*Scenario, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -95,7 +95,7 @@ func (a *ScenariosAPIService) CreateScenarioExecute(r ApiCreateScenarioRequest) 
 		localVarReturnValue  *Scenario
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ScenariosAPIService.CreateScenario")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ScenariosAPIService.ScenariosCreateScenario")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -211,7 +211,7 @@ func (a *ScenariosAPIService) CreateScenarioExecute(r ApiCreateScenarioRequest) 
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiGetScenarioRequest struct {
+type ApiScenariosGetScenarioRequest struct {
 	ctx context.Context
 	ApiService *ScenariosAPIService
 	tenantId string
@@ -224,44 +224,44 @@ type ApiGetScenarioRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiGetScenarioRequest) Authorization(authorization string) ApiGetScenarioRequest {
+func (r ApiScenariosGetScenarioRequest) Authorization(authorization string) ApiScenariosGetScenarioRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiGetScenarioRequest) XBeaterApiKey(xBeaterApiKey string) ApiGetScenarioRequest {
+func (r ApiScenariosGetScenarioRequest) XBeaterApiKey(xBeaterApiKey string) ApiScenariosGetScenarioRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiGetScenarioRequest) XBeaterProjectId(xBeaterProjectId string) ApiGetScenarioRequest {
+func (r ApiScenariosGetScenarioRequest) XBeaterProjectId(xBeaterProjectId string) ApiScenariosGetScenarioRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiGetScenarioRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiGetScenarioRequest {
+func (r ApiScenariosGetScenarioRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiScenariosGetScenarioRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiGetScenarioRequest) Execute() (*Scenario, *http.Response, error) {
-	return r.ApiService.GetScenarioExecute(r)
+func (r ApiScenariosGetScenarioRequest) Execute() (*Scenario, *http.Response, error) {
+	return r.ApiService.ScenariosGetScenarioExecute(r)
 }
 
 /*
-GetScenario Method for GetScenario
+ScenariosGetScenario Method for ScenariosGetScenario
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param scenarioId scenario_id
- @return ApiGetScenarioRequest
+ @return ApiScenariosGetScenarioRequest
 */
-func (a *ScenariosAPIService) GetScenario(ctx context.Context, tenantId string, projectId string, scenarioId string) ApiGetScenarioRequest {
-	return ApiGetScenarioRequest{
+func (a *ScenariosAPIService) ScenariosGetScenario(ctx context.Context, tenantId string, projectId string, scenarioId string) ApiScenariosGetScenarioRequest {
+	return ApiScenariosGetScenarioRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -272,7 +272,7 @@ func (a *ScenariosAPIService) GetScenario(ctx context.Context, tenantId string, 
 
 // Execute executes the request
 //  @return Scenario
-func (a *ScenariosAPIService) GetScenarioExecute(r ApiGetScenarioRequest) (*Scenario, *http.Response, error) {
+func (a *ScenariosAPIService) ScenariosGetScenarioExecute(r ApiScenariosGetScenarioRequest) (*Scenario, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -280,7 +280,7 @@ func (a *ScenariosAPIService) GetScenarioExecute(r ApiGetScenarioRequest) (*Scen
 		localVarReturnValue  *Scenario
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ScenariosAPIService.GetScenario")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ScenariosAPIService.ScenariosGetScenario")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -403,7 +403,7 @@ func (a *ScenariosAPIService) GetScenarioExecute(r ApiGetScenarioRequest) (*Scen
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiListScenariosRequest struct {
+type ApiScenariosListScenariosRequest struct {
 	ctx context.Context
 	ApiService *ScenariosAPIService
 	tenantId string
@@ -416,54 +416,54 @@ type ApiListScenariosRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiListScenariosRequest) Limit(limit int32) ApiListScenariosRequest {
+func (r ApiScenariosListScenariosRequest) Limit(limit int32) ApiScenariosListScenariosRequest {
 	r.limit = &limit
 	return r
 }
 
-func (r ApiListScenariosRequest) Cursor(cursor string) ApiListScenariosRequest {
+func (r ApiScenariosListScenariosRequest) Cursor(cursor string) ApiScenariosListScenariosRequest {
 	r.cursor = &cursor
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiListScenariosRequest) Authorization(authorization string) ApiListScenariosRequest {
+func (r ApiScenariosListScenariosRequest) Authorization(authorization string) ApiScenariosListScenariosRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiListScenariosRequest) XBeaterApiKey(xBeaterApiKey string) ApiListScenariosRequest {
+func (r ApiScenariosListScenariosRequest) XBeaterApiKey(xBeaterApiKey string) ApiScenariosListScenariosRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiListScenariosRequest) XBeaterProjectId(xBeaterProjectId string) ApiListScenariosRequest {
+func (r ApiScenariosListScenariosRequest) XBeaterProjectId(xBeaterProjectId string) ApiScenariosListScenariosRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiListScenariosRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiListScenariosRequest {
+func (r ApiScenariosListScenariosRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiScenariosListScenariosRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiListScenariosRequest) Execute() (*ListScenariosResponse, *http.Response, error) {
-	return r.ApiService.ListScenariosExecute(r)
+func (r ApiScenariosListScenariosRequest) Execute() (*ListScenariosResponse, *http.Response, error) {
+	return r.ApiService.ScenariosListScenariosExecute(r)
 }
 
 /*
-ListScenarios Method for ListScenarios
+ScenariosListScenarios Method for ScenariosListScenarios
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiListScenariosRequest
+ @return ApiScenariosListScenariosRequest
 */
-func (a *ScenariosAPIService) ListScenarios(ctx context.Context, tenantId string, projectId string) ApiListScenariosRequest {
-	return ApiListScenariosRequest{
+func (a *ScenariosAPIService) ScenariosListScenarios(ctx context.Context, tenantId string, projectId string) ApiScenariosListScenariosRequest {
+	return ApiScenariosListScenariosRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -473,7 +473,7 @@ func (a *ScenariosAPIService) ListScenarios(ctx context.Context, tenantId string
 
 // Execute executes the request
 //  @return ListScenariosResponse
-func (a *ScenariosAPIService) ListScenariosExecute(r ApiListScenariosRequest) (*ListScenariosResponse, *http.Response, error) {
+func (a *ScenariosAPIService) ScenariosListScenariosExecute(r ApiScenariosListScenariosRequest) (*ListScenariosResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -481,7 +481,7 @@ func (a *ScenariosAPIService) ListScenariosExecute(r ApiListScenariosRequest) (*
 		localVarReturnValue  *ListScenariosResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ScenariosAPIService.ListScenarios")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ScenariosAPIService.ScenariosListScenarios")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -598,7 +598,7 @@ func (a *ScenariosAPIService) ListScenariosExecute(r ApiListScenariosRequest) (*
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiMineScenariosRequest struct {
+type ApiScenariosMineScenariosRequest struct {
 	ctx context.Context
 	ApiService *ScenariosAPIService
 	tenantId string
@@ -610,49 +610,49 @@ type ApiMineScenariosRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiMineScenariosRequest) MineScenariosRequest(mineScenariosRequest MineScenariosRequest) ApiMineScenariosRequest {
+func (r ApiScenariosMineScenariosRequest) MineScenariosRequest(mineScenariosRequest MineScenariosRequest) ApiScenariosMineScenariosRequest {
 	r.mineScenariosRequest = &mineScenariosRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiMineScenariosRequest) Authorization(authorization string) ApiMineScenariosRequest {
+func (r ApiScenariosMineScenariosRequest) Authorization(authorization string) ApiScenariosMineScenariosRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiMineScenariosRequest) XBeaterApiKey(xBeaterApiKey string) ApiMineScenariosRequest {
+func (r ApiScenariosMineScenariosRequest) XBeaterApiKey(xBeaterApiKey string) ApiScenariosMineScenariosRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiMineScenariosRequest) XBeaterProjectId(xBeaterProjectId string) ApiMineScenariosRequest {
+func (r ApiScenariosMineScenariosRequest) XBeaterProjectId(xBeaterProjectId string) ApiScenariosMineScenariosRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiMineScenariosRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiMineScenariosRequest {
+func (r ApiScenariosMineScenariosRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiScenariosMineScenariosRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiMineScenariosRequest) Execute() (*MineScenariosResponse, *http.Response, error) {
-	return r.ApiService.MineScenariosExecute(r)
+func (r ApiScenariosMineScenariosRequest) Execute() (*MineScenariosResponse, *http.Response, error) {
+	return r.ApiService.ScenariosMineScenariosExecute(r)
 }
 
 /*
-MineScenarios Method for MineScenarios
+ScenariosMineScenarios Method for ScenariosMineScenarios
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiMineScenariosRequest
+ @return ApiScenariosMineScenariosRequest
 */
-func (a *ScenariosAPIService) MineScenarios(ctx context.Context, tenantId string, projectId string) ApiMineScenariosRequest {
-	return ApiMineScenariosRequest{
+func (a *ScenariosAPIService) ScenariosMineScenarios(ctx context.Context, tenantId string, projectId string) ApiScenariosMineScenariosRequest {
+	return ApiScenariosMineScenariosRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -662,7 +662,7 @@ func (a *ScenariosAPIService) MineScenarios(ctx context.Context, tenantId string
 
 // Execute executes the request
 //  @return MineScenariosResponse
-func (a *ScenariosAPIService) MineScenariosExecute(r ApiMineScenariosRequest) (*MineScenariosResponse, *http.Response, error) {
+func (a *ScenariosAPIService) ScenariosMineScenariosExecute(r ApiScenariosMineScenariosRequest) (*MineScenariosResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -670,7 +670,7 @@ func (a *ScenariosAPIService) MineScenariosExecute(r ApiMineScenariosRequest) (*
 		localVarReturnValue  *MineScenariosResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ScenariosAPIService.MineScenarios")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ScenariosAPIService.ScenariosMineScenarios")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

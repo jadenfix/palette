@@ -35,7 +35,7 @@ TracesApi::~TracesApi()
 {
 }
 
-pplx::task<std::shared_ptr<TraceView>> TracesApi::getTrace(utility::string_t tenantId, utility::string_t traceId, boost::optional<bool> unmask, boost::optional<utility::string_t> reason, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<TraceView>> TracesApi::traces_getTrace(utility::string_t tenantId, utility::string_t traceId, boost::optional<bool> unmask, boost::optional<utility::string_t> reason, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -71,7 +71,7 @@ pplx::task<std::shared_ptr<TraceView>> TracesApi::getTrace(utility::string_t ten
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("TracesApi->getTrace does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("TracesApi->traces_getTrace does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -122,7 +122,7 @@ pplx::task<std::shared_ptr<TraceView>> TracesApi::getTrace(utility::string_t ten
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("TracesApi->getTrace does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("TracesApi->traces_getTrace does not consume any supported media type"));
     }
 
 
@@ -142,7 +142,7 @@ pplx::task<std::shared_ptr<TraceView>> TracesApi::getTrace(utility::string_t ten
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling getTrace: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling traces_getTrace: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -153,7 +153,7 @@ pplx::task<std::shared_ptr<TraceView>> TracesApi::getTrace(utility::string_t ten
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling getTrace: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling traces_getTrace: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -177,13 +177,13 @@ pplx::task<std::shared_ptr<TraceView>> TracesApi::getTrace(utility::string_t ten
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling getTrace: unsupported response type"));
+                , utility::conversions::to_string_t("error calling traces_getTrace: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<Page_RunSummary>> TracesApi::listTraces(utility::string_t tenantId, boost::optional<utility::string_t> projectId, boost::optional<utility::string_t> environmentId, boost::optional<utility::string_t> traceId, boost::optional<utility::string_t> kind, boost::optional<utility::string_t> status, boost::optional<utility::string_t> startedAfter, boost::optional<utility::string_t> startedBefore, boost::optional<utility::string_t> model, boost::optional<utility::string_t> release, boost::optional<int64_t> minCostMicros, boost::optional<int64_t> maxCostMicros, boost::optional<int64_t> minLatencyMs, boost::optional<int64_t> maxLatencyMs, boost::optional<int32_t> limit, boost::optional<utility::string_t> cursor, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<Page_RunSummary>> TracesApi::traces_listTraces(utility::string_t tenantId, boost::optional<utility::string_t> projectId, boost::optional<utility::string_t> environmentId, boost::optional<utility::string_t> traceId, boost::optional<utility::string_t> kind, boost::optional<utility::string_t> status, boost::optional<utility::string_t> startedAfter, boost::optional<utility::string_t> startedBefore, boost::optional<utility::string_t> model, boost::optional<utility::string_t> release, boost::optional<int64_t> minCostMicros, boost::optional<int64_t> maxCostMicros, boost::optional<int64_t> minLatencyMs, boost::optional<int64_t> maxLatencyMs, boost::optional<int32_t> limit, boost::optional<utility::string_t> cursor, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -218,7 +218,7 @@ pplx::task<std::shared_ptr<Page_RunSummary>> TracesApi::listTraces(utility::stri
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("TracesApi->listTraces does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("TracesApi->traces_listTraces does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -321,7 +321,7 @@ pplx::task<std::shared_ptr<Page_RunSummary>> TracesApi::listTraces(utility::stri
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("TracesApi->listTraces does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("TracesApi->traces_listTraces does not consume any supported media type"));
     }
 
 
@@ -341,7 +341,7 @@ pplx::task<std::shared_ptr<Page_RunSummary>> TracesApi::listTraces(utility::stri
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling listTraces: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling traces_listTraces: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -352,7 +352,7 @@ pplx::task<std::shared_ptr<Page_RunSummary>> TracesApi::listTraces(utility::stri
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling listTraces: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling traces_listTraces: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -376,7 +376,7 @@ pplx::task<std::shared_ptr<Page_RunSummary>> TracesApi::listTraces(utility::stri
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling listTraces: unsupported response type"));
+                , utility::conversions::to_string_t("error calling traces_listTraces: unsupported response type"));
         }
 
         return localVarResult;

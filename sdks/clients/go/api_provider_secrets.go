@@ -23,7 +23,7 @@ import (
 // ProviderSecretsAPIService ProviderSecretsAPI service
 type ProviderSecretsAPIService service
 
-type ApiCreateProviderSecretRequest struct {
+type ApiProviderSecretsCreateProviderSecretRequest struct {
 	ctx context.Context
 	ApiService *ProviderSecretsAPIService
 	tenantId string
@@ -35,49 +35,49 @@ type ApiCreateProviderSecretRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiCreateProviderSecretRequest) CreateProviderSecretHttpRequest(createProviderSecretHttpRequest CreateProviderSecretHttpRequest) ApiCreateProviderSecretRequest {
+func (r ApiProviderSecretsCreateProviderSecretRequest) CreateProviderSecretHttpRequest(createProviderSecretHttpRequest CreateProviderSecretHttpRequest) ApiProviderSecretsCreateProviderSecretRequest {
 	r.createProviderSecretHttpRequest = &createProviderSecretHttpRequest
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiCreateProviderSecretRequest) Authorization(authorization string) ApiCreateProviderSecretRequest {
+func (r ApiProviderSecretsCreateProviderSecretRequest) Authorization(authorization string) ApiProviderSecretsCreateProviderSecretRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiCreateProviderSecretRequest) XBeaterApiKey(xBeaterApiKey string) ApiCreateProviderSecretRequest {
+func (r ApiProviderSecretsCreateProviderSecretRequest) XBeaterApiKey(xBeaterApiKey string) ApiProviderSecretsCreateProviderSecretRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiCreateProviderSecretRequest) XBeaterProjectId(xBeaterProjectId string) ApiCreateProviderSecretRequest {
+func (r ApiProviderSecretsCreateProviderSecretRequest) XBeaterProjectId(xBeaterProjectId string) ApiProviderSecretsCreateProviderSecretRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiCreateProviderSecretRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiCreateProviderSecretRequest {
+func (r ApiProviderSecretsCreateProviderSecretRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiProviderSecretsCreateProviderSecretRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiCreateProviderSecretRequest) Execute() (*ProviderSecretMetadata, *http.Response, error) {
-	return r.ApiService.CreateProviderSecretExecute(r)
+func (r ApiProviderSecretsCreateProviderSecretRequest) Execute() (*ProviderSecretMetadata, *http.Response, error) {
+	return r.ApiService.ProviderSecretsCreateProviderSecretExecute(r)
 }
 
 /*
-CreateProviderSecret Method for CreateProviderSecret
+ProviderSecretsCreateProviderSecret Method for ProviderSecretsCreateProviderSecret
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiCreateProviderSecretRequest
+ @return ApiProviderSecretsCreateProviderSecretRequest
 */
-func (a *ProviderSecretsAPIService) CreateProviderSecret(ctx context.Context, tenantId string, projectId string) ApiCreateProviderSecretRequest {
-	return ApiCreateProviderSecretRequest{
+func (a *ProviderSecretsAPIService) ProviderSecretsCreateProviderSecret(ctx context.Context, tenantId string, projectId string) ApiProviderSecretsCreateProviderSecretRequest {
+	return ApiProviderSecretsCreateProviderSecretRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -87,7 +87,7 @@ func (a *ProviderSecretsAPIService) CreateProviderSecret(ctx context.Context, te
 
 // Execute executes the request
 //  @return ProviderSecretMetadata
-func (a *ProviderSecretsAPIService) CreateProviderSecretExecute(r ApiCreateProviderSecretRequest) (*ProviderSecretMetadata, *http.Response, error) {
+func (a *ProviderSecretsAPIService) ProviderSecretsCreateProviderSecretExecute(r ApiProviderSecretsCreateProviderSecretRequest) (*ProviderSecretMetadata, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -95,7 +95,7 @@ func (a *ProviderSecretsAPIService) CreateProviderSecretExecute(r ApiCreateProvi
 		localVarReturnValue  *ProviderSecretMetadata
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ProviderSecretsAPIService.CreateProviderSecret")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ProviderSecretsAPIService.ProviderSecretsCreateProviderSecret")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -211,7 +211,7 @@ func (a *ProviderSecretsAPIService) CreateProviderSecretExecute(r ApiCreateProvi
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiListProviderSecretsRequest struct {
+type ApiProviderSecretsListProviderSecretsRequest struct {
 	ctx context.Context
 	ApiService *ProviderSecretsAPIService
 	tenantId string
@@ -223,43 +223,43 @@ type ApiListProviderSecretsRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiListProviderSecretsRequest) Authorization(authorization string) ApiListProviderSecretsRequest {
+func (r ApiProviderSecretsListProviderSecretsRequest) Authorization(authorization string) ApiProviderSecretsListProviderSecretsRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiListProviderSecretsRequest) XBeaterApiKey(xBeaterApiKey string) ApiListProviderSecretsRequest {
+func (r ApiProviderSecretsListProviderSecretsRequest) XBeaterApiKey(xBeaterApiKey string) ApiProviderSecretsListProviderSecretsRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiListProviderSecretsRequest) XBeaterProjectId(xBeaterProjectId string) ApiListProviderSecretsRequest {
+func (r ApiProviderSecretsListProviderSecretsRequest) XBeaterProjectId(xBeaterProjectId string) ApiProviderSecretsListProviderSecretsRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiListProviderSecretsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiListProviderSecretsRequest {
+func (r ApiProviderSecretsListProviderSecretsRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiProviderSecretsListProviderSecretsRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiListProviderSecretsRequest) Execute() ([]ProviderSecretMetadata, *http.Response, error) {
-	return r.ApiService.ListProviderSecretsExecute(r)
+func (r ApiProviderSecretsListProviderSecretsRequest) Execute() ([]ProviderSecretMetadata, *http.Response, error) {
+	return r.ApiService.ProviderSecretsListProviderSecretsExecute(r)
 }
 
 /*
-ListProviderSecrets Method for ListProviderSecrets
+ProviderSecretsListProviderSecrets Method for ProviderSecretsListProviderSecrets
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiListProviderSecretsRequest
+ @return ApiProviderSecretsListProviderSecretsRequest
 */
-func (a *ProviderSecretsAPIService) ListProviderSecrets(ctx context.Context, tenantId string, projectId string) ApiListProviderSecretsRequest {
-	return ApiListProviderSecretsRequest{
+func (a *ProviderSecretsAPIService) ProviderSecretsListProviderSecrets(ctx context.Context, tenantId string, projectId string) ApiProviderSecretsListProviderSecretsRequest {
+	return ApiProviderSecretsListProviderSecretsRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -269,7 +269,7 @@ func (a *ProviderSecretsAPIService) ListProviderSecrets(ctx context.Context, ten
 
 // Execute executes the request
 //  @return []ProviderSecretMetadata
-func (a *ProviderSecretsAPIService) ListProviderSecretsExecute(r ApiListProviderSecretsRequest) ([]ProviderSecretMetadata, *http.Response, error) {
+func (a *ProviderSecretsAPIService) ProviderSecretsListProviderSecretsExecute(r ApiProviderSecretsListProviderSecretsRequest) ([]ProviderSecretMetadata, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -277,7 +277,7 @@ func (a *ProviderSecretsAPIService) ListProviderSecretsExecute(r ApiListProvider
 		localVarReturnValue  []ProviderSecretMetadata
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ProviderSecretsAPIService.ListProviderSecrets")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ProviderSecretsAPIService.ProviderSecretsListProviderSecrets")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -388,7 +388,7 @@ func (a *ProviderSecretsAPIService) ListProviderSecretsExecute(r ApiListProvider
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiRevokeProviderSecretRequest struct {
+type ApiProviderSecretsRevokeProviderSecretRequest struct {
 	ctx context.Context
 	ApiService *ProviderSecretsAPIService
 	tenantId string
@@ -401,44 +401,44 @@ type ApiRevokeProviderSecretRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiRevokeProviderSecretRequest) Authorization(authorization string) ApiRevokeProviderSecretRequest {
+func (r ApiProviderSecretsRevokeProviderSecretRequest) Authorization(authorization string) ApiProviderSecretsRevokeProviderSecretRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiRevokeProviderSecretRequest) XBeaterApiKey(xBeaterApiKey string) ApiRevokeProviderSecretRequest {
+func (r ApiProviderSecretsRevokeProviderSecretRequest) XBeaterApiKey(xBeaterApiKey string) ApiProviderSecretsRevokeProviderSecretRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiRevokeProviderSecretRequest) XBeaterProjectId(xBeaterProjectId string) ApiRevokeProviderSecretRequest {
+func (r ApiProviderSecretsRevokeProviderSecretRequest) XBeaterProjectId(xBeaterProjectId string) ApiProviderSecretsRevokeProviderSecretRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiRevokeProviderSecretRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiRevokeProviderSecretRequest {
+func (r ApiProviderSecretsRevokeProviderSecretRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiProviderSecretsRevokeProviderSecretRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiRevokeProviderSecretRequest) Execute() (*RevokedProviderSecret, *http.Response, error) {
-	return r.ApiService.RevokeProviderSecretExecute(r)
+func (r ApiProviderSecretsRevokeProviderSecretRequest) Execute() (*RevokedProviderSecret, *http.Response, error) {
+	return r.ApiService.ProviderSecretsRevokeProviderSecretExecute(r)
 }
 
 /*
-RevokeProviderSecret Method for RevokeProviderSecret
+ProviderSecretsRevokeProviderSecret Method for ProviderSecretsRevokeProviderSecret
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param providerSecretId provider_secret_id
- @return ApiRevokeProviderSecretRequest
+ @return ApiProviderSecretsRevokeProviderSecretRequest
 */
-func (a *ProviderSecretsAPIService) RevokeProviderSecret(ctx context.Context, tenantId string, projectId string, providerSecretId string) ApiRevokeProviderSecretRequest {
-	return ApiRevokeProviderSecretRequest{
+func (a *ProviderSecretsAPIService) ProviderSecretsRevokeProviderSecret(ctx context.Context, tenantId string, projectId string, providerSecretId string) ApiProviderSecretsRevokeProviderSecretRequest {
+	return ApiProviderSecretsRevokeProviderSecretRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -449,7 +449,7 @@ func (a *ProviderSecretsAPIService) RevokeProviderSecret(ctx context.Context, te
 
 // Execute executes the request
 //  @return RevokedProviderSecret
-func (a *ProviderSecretsAPIService) RevokeProviderSecretExecute(r ApiRevokeProviderSecretRequest) (*RevokedProviderSecret, *http.Response, error) {
+func (a *ProviderSecretsAPIService) ProviderSecretsRevokeProviderSecretExecute(r ApiProviderSecretsRevokeProviderSecretRequest) (*RevokedProviderSecret, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -457,7 +457,7 @@ func (a *ProviderSecretsAPIService) RevokeProviderSecretExecute(r ApiRevokeProvi
 		localVarReturnValue  *RevokedProviderSecret
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ProviderSecretsAPIService.RevokeProviderSecret")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ProviderSecretsAPIService.ProviderSecretsRevokeProviderSecret")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

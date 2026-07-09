@@ -4,11 +4,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ExemplarTraceId** | Pointer to **NullableString** |  | [optional] 
-**ExpectedOutcome** | Pointer to **NullableString** |  | [optional] 
-**FailureMode** | Pointer to [**NullableFailureMode**](FailureMode.md) |  | [optional] 
-**SourceTraceIds** | **[]string** |  | 
-**Title** | **string** |  | 
+**ExemplarTraceId** | Pointer to **NullableString** |  | [optional]
+**ExpectedOutcome** | Pointer to **NullableString** |  | [optional]
+**FailureMode** | Pointer to [**NullableFailureMode**](FailureMode.md) |  | [optional]
+**SourceTraceIds** | **[]string** |  |
+**Title** | **string** |  |
 
 ## Methods
 
@@ -176,5 +176,3 @@ SetTitle sets Title field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

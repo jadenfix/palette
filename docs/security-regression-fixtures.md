@@ -19,7 +19,7 @@ out in `ARCHITECTURE.md`. It does not change any Covered/GAP status below.
 | AuthZ / RBAC scope escalation | §20.7 #5.2 enforced RBAC; A20 tenant isolation | A non-owner must be denied mutating routes; scoped keys are not a substitute for enforced role resolution. |
 | Tenant cross-talk / IDOR | §20.7 #5.4 storage-layer tenant isolation; A20 tenant isolation | App-layer scoping is built today; DB-layer RLS is still planned, so API and store tests both matter. |
 | API-key leakage / scope and secret storage | §14 security; §20.7 #5.7 tamper-evident audit; §20.7 #5.12 BYOK/key rotation | Key material must stay scoped, rotatable, encrypted, and auditable across API responses and storage. |
-| PII redaction | §14 redaction and audited PII access | `pii_unmask` must remain separate from ordinary trace reads, and sensitive-data access must emit audit evidence. |
+| PII redaction | §14 redaction and audited PII access | `pii:unmask` must remain separate from ordinary trace reads, and sensitive-data access must emit audit evidence. |
 | Data deletion / crypto-shred | §20.7 #5.5 crypto-shred | Unreadable-after-delete is planned contract work; fixture gaps should not be marked Covered until a deletion path exists. |
 
 ## Catalog
@@ -40,11 +40,11 @@ Can an authenticated caller acquire permissions beyond those on their key?
 
 | Threat | Test (file :: function) | What it asserts | Status |
 |---|---|---|---|
-| Wrong scope → `MissingScope` error | `crates/beater-security/src/lib.rs :: api_keys_are_hashed_scoped_and_rotatable` | `verify_api_key` with `trace_write` key checked for `pii_unmask` returns `Err(MissingScope)` | Covered |
+| Wrong scope → `MissingScope` error | `crates/beater-security/src/lib.rs :: api_keys_are_hashed_scoped_and_rotatable` | `verify_api_key` with `trace:write` key checked for `pii:unmask` returns `Err(MissingScope)` | Covered |
 | Scope forgery in payload body overwritten | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | Client-supplied `auth_context` with forged `"admin"` scope is discarded; server-side auth context written to the stored artifact with the actual verified scopes | Covered |
 | Trace key blocked from read routes missing scope headers | same test | `GET /v1/traces/{tenant}/{trace}` with a trace-scoped key and no `x-beater-project-id` returns `400 Bad Request` | Covered |
-| `pii_unmask` scope gate on unmask param | same test | `GET /v1/traces/{tenant}/{trace}?unmask=true` with a `trace_write+trace_read` key (no `pii_unmask`) returns `403 Forbidden`; same request with a `pii_unmask` key returns `200` with unredacted data | Covered |
-| `trace_write` key attempting admin-only endpoints | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | A same-tenant `trace_write`-only key is rejected with `403 Forbidden` by `POST /v1/api-keys/…`, `GET /v1/audit/…`, and `GET /v1/usage/…`. | Covered |
+| `pii:unmask` scope gate on unmask param | same test | `GET /v1/traces/{tenant}/{trace}?unmask=true` with a `trace:write+trace:read` key (no `pii:unmask`) returns `403 Forbidden`; same request with a `pii:unmask` key returns `200` with unredacted data | Covered |
+| `trace:write` key attempting admin-only endpoints | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | A same-tenant `trace:write`-only key is rejected with `403 Forbidden` by `POST /v1/api-keys/…`, `GET /v1/audit/…`, and `GET /v1/usage/…`. | Covered |
 
 ### Tenant cross-talk / IDOR
 
@@ -55,7 +55,7 @@ Can tenant A access or modify tenant B's resources using tenant A's own valid ke
 | Cross-tenant key revoke returns 404 | `crates/beater-api/tests/full_stack.rs :: api_key_revoke_is_scoped_to_path_tenant_project_environment` | Admin key scoped to `tenant-a/project-a` attempts to revoke a key belonging to `tenant-b/project-b`; returns `404 Not Found`; victim key is still active | Covered |
 | Environment mismatch on archive route → 403 | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | Archive span query with `environment_id=dev` on a key scoped to `prod` returns `403 Forbidden` | Covered |
 | Store-layer scoped revoke does not cross tenants | `crates/beater-auth/src/lib.rs :: sqlite_store_scoped_revoke_does_not_revoke_other_scope` | `revoke_key_in_scope(tenant-a, project-a, …)` on a key owned by `tenant-b/project-b` returns `None`; victim key's `active` and `rotated_at` fields unchanged | Covered |
-| Cross-tenant trace read (IDOR on read path) | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | A valid `trace_read` key for `other-tenant/project/prod` receives `403 Forbidden` when it attempts `GET /v1/traces/tenant/trace` with matching project/environment scope headers. | Covered |
+| Cross-tenant trace read (IDOR on read path) | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | A valid `trace:read` key for `other-tenant/project/prod` receives `403 Forbidden` when it attempts `GET /v1/traces/tenant/trace` with matching project/environment scope headers. | Covered |
 
 ### API-key leakage / scope
 
@@ -92,13 +92,13 @@ Can attacker-controlled input alter query semantics?
 
 ### PII redaction
 
-Is sensitive data correctly withheld from callers lacking the `pii_unmask` scope?
+Is sensitive data correctly withheld from callers lacking the `pii:unmask` scope?
 
 | Threat | Test (file :: function) | What it asserts | Status |
 |---|---|---|---|
-| `Sensitive`-class trace redacted for `trace_read` key | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | Trace with `RedactionClass::Sensitive` returns `"[redacted]"` for `input.value`/`output.value`/`raw_ref.uri` when retrieved with a `trace_read`-only key; unmasked values returned after `pii_unmask` grant | Covered |
-| External source ingest raw payloads are redacted | `crates/beater-api/src/lib.rs :: api_accepts_otlp_http_protobuf_and_reads_canonical_trace`; `crates/beater-api/src/lib.rs :: api_accepts_collector_otlp_json_and_reads_canonical_trace`; `crates/beater-ingest/src/lib.rs :: native_importer_preserves_raw_bytes_as_sensitive`; `crates/beater-api/tests/import_mapping.rs :: import_source_mapping_projects_foreign_trace` | OTLP protobuf, collector OTLP JSON, native-importer, and mapping-importer paths mark raw payloads `Sensitive`; non-`pii_unmask` reads return redacted raw refs/values while stored raw bytes remain durable for authorized access. Direct `/v1/traces/native` remains caller-classified by request contract. | Covered |
-| Browser-captured DOM / console / prompt redacted | `crates/beater-browser-capture/src/lib.rs :: sensitive_dom_console_and_prompt_payloads_are_artifacts_not_span_attributes`; `crates/beater-api/src/lib.rs :: redact_trace_view_redacts_sensitive_attribute_values_and_provenance` | Capture stores DOM snapshots, console-bearing step triples, screenshots, and LLM prompt artifacts as `Sensitive`; canonical span JSON carries artifact IDs/metadata without raw DOM, console text, or prompt contents. API redaction then withholds `Sensitive` artifact refs and sensitive span attributes from callers lacking `pii_unmask`. | Covered |
+| `Sensitive`-class trace redacted for `trace:read` key | `crates/beater-api/tests/full_stack.rs :: strict_auth_enforces_scoped_keys_and_overwrites_ingest_auth_context` | Trace with `RedactionClass::Sensitive` returns `"[redacted]"` for `input.value`/`output.value`/`raw_ref.uri` when retrieved with a `trace:read`-only key; unmasked values returned after `pii:unmask` grant | Covered |
+| External source ingest raw payloads are redacted | `crates/beater-api/src/lib.rs :: api_accepts_otlp_http_protobuf_and_reads_canonical_trace`; `crates/beater-api/src/lib.rs :: api_accepts_collector_otlp_json_and_reads_canonical_trace`; `crates/beater-ingest/src/lib.rs :: native_importer_preserves_raw_bytes_as_sensitive`; `crates/beater-api/tests/import_mapping.rs :: import_source_mapping_projects_foreign_trace` | OTLP protobuf, collector OTLP JSON, native-importer, and mapping-importer paths mark raw payloads `Sensitive`; non-`pii:unmask` reads return redacted raw refs/values while stored raw bytes remain durable for authorized access. Direct `/v1/traces/native` remains caller-classified by request contract. | Covered |
+| Browser-captured DOM / console / prompt redacted | `crates/beater-browser-capture/src/lib.rs :: sensitive_dom_console_and_prompt_payloads_are_artifacts_not_span_attributes`; `crates/beater-api/src/lib.rs :: redact_trace_view_redacts_sensitive_attribute_values_and_provenance` | Capture stores DOM snapshots, console-bearing step triples, screenshots, and LLM prompt artifacts as `Sensitive`; canonical span JSON carries artifact IDs/metadata without raw DOM, console text, or prompt contents. API redaction then withholds `Sensitive` artifact refs and sensitive span attributes from callers lacking `pii:unmask`. | Covered |
 
 ### SSRF / path traversal
 

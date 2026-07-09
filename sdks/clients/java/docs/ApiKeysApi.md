@@ -4,16 +4,16 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**createApiKey**](ApiKeysApi.md#createApiKey) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} |  |
-| [**createApiKeyWithHttpInfo**](ApiKeysApi.md#createApiKeyWithHttpInfo) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} |  |
-| [**revokeApiKey**](ApiKeysApi.md#revokeApiKey) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke |  |
-| [**revokeApiKeyWithHttpInfo**](ApiKeysApi.md#revokeApiKeyWithHttpInfo) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke |  |
+| [**apiKeysCreateApiKey**](ApiKeysApi.md#apiKeysCreateApiKey) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} |  |
+| [**apiKeysCreateApiKeyWithHttpInfo**](ApiKeysApi.md#apiKeysCreateApiKeyWithHttpInfo) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id} |  |
+| [**apiKeysRevokeApiKey**](ApiKeysApi.md#apiKeysRevokeApiKey) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke |  |
+| [**apiKeysRevokeApiKeyWithHttpInfo**](ApiKeysApi.md#apiKeysRevokeApiKeyWithHttpInfo) | **POST** /v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke |  |
 
 
 
-## createApiKey
+## apiKeysCreateApiKey
 
-> ApiKeyCreatedResponse createApiKey(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiKeyCreatedResponse apiKeysCreateApiKey(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -36,16 +36,16 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String environmentId = "environmentId_example"; // String | environment_id
-        CreateApiKeyHttpRequest createApiKeyHttpRequest = new CreateApiKeyHttpRequest(); // CreateApiKeyHttpRequest | 
+        CreateApiKeyHttpRequest createApiKeyHttpRequest = new CreateApiKeyHttpRequest(); // CreateApiKeyHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiKeyCreatedResponse result = apiInstance.createApiKey(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiKeyCreatedResponse result = apiInstance.apiKeysCreateApiKey(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ApiKeysApi#createApiKey");
+            System.err.println("Exception when calling ApiKeysApi#apiKeysCreateApiKey");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -91,9 +91,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## createApiKeyWithHttpInfo
+## apiKeysCreateApiKeyWithHttpInfo
 
-> ApiResponse<ApiKeyCreatedResponse> createApiKey createApiKeyWithHttpInfo(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ApiKeyCreatedResponse> apiKeysCreateApiKey apiKeysCreateApiKeyWithHttpInfo(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -117,18 +117,18 @@ public class Example {
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
         String environmentId = "environmentId_example"; // String | environment_id
-        CreateApiKeyHttpRequest createApiKeyHttpRequest = new CreateApiKeyHttpRequest(); // CreateApiKeyHttpRequest | 
+        CreateApiKeyHttpRequest createApiKeyHttpRequest = new CreateApiKeyHttpRequest(); // CreateApiKeyHttpRequest |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ApiKeyCreatedResponse> response = apiInstance.createApiKeyWithHttpInfo(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ApiKeyCreatedResponse> response = apiInstance.apiKeysCreateApiKeyWithHttpInfo(tenantId, projectId, environmentId, createApiKeyHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ApiKeysApi#createApiKey");
+            System.err.println("Exception when calling ApiKeysApi#apiKeysCreateApiKey");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -175,9 +175,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 
 
-## revokeApiKey
+## apiKeysRevokeApiKey
 
-> RevokedApiKey revokeApiKey(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> RevokedApiKey apiKeysRevokeApiKey(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -206,10 +206,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            RevokedApiKey result = apiInstance.revokeApiKey(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            RevokedApiKey result = apiInstance.apiKeysRevokeApiKey(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ApiKeysApi#revokeApiKey");
+            System.err.println("Exception when calling ApiKeysApi#apiKeysRevokeApiKey");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -256,9 +256,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## revokeApiKeyWithHttpInfo
+## apiKeysRevokeApiKeyWithHttpInfo
 
-> ApiResponse<RevokedApiKey> revokeApiKey revokeApiKeyWithHttpInfo(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<RevokedApiKey> apiKeysRevokeApiKey apiKeysRevokeApiKeyWithHttpInfo(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -288,12 +288,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<RevokedApiKey> response = apiInstance.revokeApiKeyWithHttpInfo(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<RevokedApiKey> response = apiInstance.apiKeysRevokeApiKeyWithHttpInfo(tenantId, projectId, environmentId, apiKeyId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ApiKeysApi#revokeApiKey");
+            System.err.println("Exception when calling ApiKeysApi#apiKeysRevokeApiKey");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -339,4 +339,3 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
-

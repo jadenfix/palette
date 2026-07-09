@@ -35,7 +35,7 @@ HealthApi::~HealthApi()
 {
 }
 
-pplx::task<std::shared_ptr<HealthResponse>> HealthApi::health() const
+pplx::task<std::shared_ptr<HealthResponse>> HealthApi::health_health() const
 {
 
 
@@ -69,7 +69,7 @@ pplx::task<std::shared_ptr<HealthResponse>> HealthApi::health() const
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("HealthApi->health does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("HealthApi->health_health does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -96,7 +96,7 @@ pplx::task<std::shared_ptr<HealthResponse>> HealthApi::health() const
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("HealthApi->health does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("HealthApi->health_health does not consume any supported media type"));
     }
 
 
@@ -116,7 +116,7 @@ pplx::task<std::shared_ptr<HealthResponse>> HealthApi::health() const
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling health: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling health_health: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -127,7 +127,7 @@ pplx::task<std::shared_ptr<HealthResponse>> HealthApi::health() const
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling health: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling health_health: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -151,7 +151,7 @@ pplx::task<std::shared_ptr<HealthResponse>> HealthApi::health() const
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling health: unsupported response type"));
+                , utility::conversions::to_string_t("error calling health_health: unsupported response type"));
         }
 
         return localVarResult;

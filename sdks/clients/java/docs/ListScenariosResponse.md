@@ -9,6 +9,3 @@
 |------------ | ------------- | ------------- | -------------|
 |**nextCursor** | **String** |  |  [optional] |
 |**scenarios** | [**List&lt;Scenario&gt;**](Scenario.md) |  |  |
-
-
-

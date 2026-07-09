@@ -26,20 +26,20 @@ class TestDatasetsApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_create_dataset(self) -> None:
-        """Test case for create_dataset
+    def test_datasets_create_dataset(self) -> None:
+        """Test case for datasets_create_dataset
 
         """
         pass
 
-    def test_create_dataset_version(self) -> None:
-        """Test case for create_dataset_version
+    def test_datasets_create_dataset_version(self) -> None:
+        """Test case for datasets_create_dataset_version
 
         """
         pass
 
-    def test_promote_dataset_case_from_trace(self) -> None:
-        """Test case for promote_dataset_case_from_trace
+    def test_datasets_promote_dataset_case_from_trace(self) -> None:
+        """Test case for datasets_promote_dataset_case_from_trace
 
         """
         pass

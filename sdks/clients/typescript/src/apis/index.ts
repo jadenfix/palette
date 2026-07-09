@@ -5,6 +5,7 @@ export * from './ApiKeysApi';
 export * from './ArchiveApi';
 export * from './AuditApi';
 export * from './CalibrationsApi';
+export * from './ConnectApi';
 export * from './ConnectorsApi';
 export * from './DatasetsApi';
 export * from './EvalsApi';

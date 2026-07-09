@@ -14,14 +14,6 @@ use beater_audit::{
     pii_unmask_event,
 };
 use beater_auth::{ApiKeyStore, CreateApiKeyRequest, RevokedApiKey};
-#[cfg(feature = "billing")]
-use beater_billing::store::BillingStore;
-#[cfg(feature = "billing")]
-use beater_billing::stripe::{EventApplication, StripeError, StripeSync};
-#[cfg(feature = "billing")]
-use beater_billing::{
-    Billing, BillingError, Invoice, Plan, PlanChange, PlanId, Subscription, SubscriptionStatus,
-};
 use beater_calibration::{
     CalibrationPolicy, CalibrationReport, CalibrationStore, calibrate_eval_report,
 };
@@ -29,13 +21,11 @@ use beater_composio::{
     ComposioClient, ComposioError, ConnectionLink, ConnectionStatus, ConnectorTool,
     ConnectorToolPolicy, ConnectorToolPolicyDecision, ToolExecution, Toolkit, skill,
 };
-#[cfg(feature = "billing")]
-use beater_core::OrganizationId;
 use beater_core::{
     AgentReleaseId, AnnotationId, ApiKeyId, ArtifactId, DatasetCaseId, DatasetId, DatasetVersionId,
     EnvironmentId, EvaluatorVersionId, ExperimentRunId, GateId, Page, PageRequest, ProjectId,
     PromptId, PromptVersionId, ProviderSecretId, ReviewQueueId, ReviewTaskId, Sha256Hash, SpanId,
-    TenantId, TenantScope, TraceId, sha256_json_hash,
+    TenantId, TenantScope, Timestamp, TraceId, sha256_json_hash,
 };
 use beater_datasets::{
     Dataset, DatasetEvalReport, DatasetEvalSpec, DatasetJudgeEvalSpec, DatasetStore,
@@ -61,7 +51,7 @@ use beater_ingest::{
 use beater_judge::{
     JudgeBroker, JudgeBrokerError, JudgeBrokerOutcome, JudgeBrokerRequest, JudgeLedgerStore,
 };
-use beater_oauth::OAuthStore;
+use beater_oauth::{AccessTokenClaims, OAuthStore};
 use beater_otlp::{
     OtlpScopeHints, decode_export_trace_request, decode_export_trace_request_json,
     export_scope_hints, export_to_raw_trace_ingest_request,
@@ -91,14 +81,17 @@ use beater_security::{
 use beater_store::{MetadataStore, StoreError, TraceStore};
 use beater_store_memory::InMemoryMetadataStore;
 use beater_usage::{
-    UsageLedgerStore, UsageRecordInsert, UsageSummary, judge_usage_from_dataset_eval_report,
-    judge_usage_from_experiment_report, judge_usage_from_outcome, record_usage_batch,
+    UsageLedgerStore, UsageMeter, UsageRecordInsert, UsageSummary, UsageTotal,
+    judge_usage_from_dataset_eval_report, judge_usage_from_experiment_report,
+    judge_usage_from_outcome, record_usage_batch,
 };
 use chrono::Utc;
 use http::header::{HeaderName, HeaderValue, RETRY_AFTER};
 use http::{HeaderMap, StatusCode};
+use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode, decode_header};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use utoipa::{IntoParams, ToSchema};
 
@@ -108,6 +101,350 @@ const API_KEY_HEADER: &str = "x-beater-api-key";
 const TENANT_ID_HEADER: &str = "x-beater-tenant-id";
 const PROJECT_ID_HEADER: &str = "x-beater-project-id";
 const ENVIRONMENT_ID_HEADER: &str = "x-beater-environment-id";
+const CENTRAL_TOKEN_AUDIENCE: &str = "palette";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IntrospectedTokenClaims {
+    pub issuer: String,
+    pub audience: String,
+    pub subject: String,
+    pub client_id: String,
+    pub token_id: String,
+    pub scope: BTreeSet<String>,
+    pub tenant_scope: TenantScope,
+    pub expires_at: Timestamp,
+}
+
+#[async_trait::async_trait]
+pub trait CentralTokenIntrospector: Send + Sync {
+    async fn introspect(&self, token: &str) -> anyhow::Result<IntrospectedTokenClaims>;
+}
+
+pub struct HttpCentralTokenIntrospector {
+    endpoint: String,
+    bearer_secret: Option<String>,
+    http: reqwest::Client,
+}
+
+impl HttpCentralTokenIntrospector {
+    pub fn new(endpoint: impl Into<String>, bearer_secret: Option<String>) -> Self {
+        Self {
+            endpoint: endpoint.into(),
+            bearer_secret,
+            http: reqwest::Client::new(),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct IntrospectionResponse {
+    active: bool,
+    iss: Option<String>,
+    aud: Option<String>,
+    sub: Option<String>,
+    client_id: Option<String>,
+    org_id: Option<String>,
+    project_id: Option<String>,
+    environment_id: Option<String>,
+    scope: Option<String>,
+    exp: Option<i64>,
+    jti: Option<String>,
+    token_type: Option<String>,
+    api_key_id: Option<String>,
+}
+
+#[async_trait::async_trait]
+impl CentralTokenIntrospector for HttpCentralTokenIntrospector {
+    async fn introspect(&self, token: &str) -> anyhow::Result<IntrospectedTokenClaims> {
+        let mut body = serde_json::json!({ "token": token });
+        if token.starts_with("tp_") {
+            body["token_type_hint"] = serde_json::json!("api_key");
+        }
+        let mut request = self.http.post(&self.endpoint).json(&body);
+        if let Some(secret) = &self.bearer_secret {
+            request = request.bearer_auth(secret);
+        }
+        let response = request.send().await?.error_for_status()?;
+        let body = response.json::<IntrospectionResponse>().await?;
+        if !body.active {
+            anyhow::bail!("inactive token");
+        }
+        let audience = required_introspection_field(body.aud, "aud")?;
+        if audience != CENTRAL_TOKEN_AUDIENCE {
+            anyhow::bail!("token audience {audience} is not {CENTRAL_TOKEN_AUDIENCE}");
+        }
+        let token_type = body
+            .token_type
+            .unwrap_or_else(|| "access_token".to_string());
+        Ok(IntrospectedTokenClaims {
+            issuer: required_introspection_field(body.iss, "iss")?,
+            audience: audience.clone(),
+            subject: required_introspection_field(body.sub, "sub")?,
+            client_id: body.client_id.unwrap_or(audience),
+            token_id: body
+                .jti
+                .or(body.api_key_id)
+                .ok_or_else(|| anyhow::anyhow!("introspection response missing jti/api_key_id"))?,
+            scope: body
+                .scope
+                .unwrap_or_default()
+                .split_whitespace()
+                .map(ToString::to_string)
+                .collect(),
+            tenant_scope: TenantScope::new(
+                TenantId::new(required_introspection_field(body.org_id, "org_id")?)?,
+                ProjectId::new(required_introspection_field(body.project_id, "project_id")?)?,
+                EnvironmentId::new(required_introspection_field(
+                    body.environment_id,
+                    "environment_id",
+                )?)?,
+            ),
+            expires_at: introspection_expires_at(body.exp, &token_type)?,
+        })
+    }
+}
+
+pub struct HttpJwksCentralTokenVerifier {
+    jwks_url: String,
+    issuer: String,
+    http: reqwest::Client,
+}
+
+impl HttpJwksCentralTokenVerifier {
+    pub fn new(jwks_url: impl Into<String>, issuer: impl Into<String>) -> Self {
+        Self {
+            jwks_url: jwks_url.into(),
+            issuer: issuer.into(),
+            http: reqwest::Client::new(),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct JwksDocument {
+    keys: Vec<JwkKey>,
+}
+
+#[derive(Deserialize)]
+struct JwkKey {
+    kid: Option<String>,
+    kty: String,
+    alg: Option<String>,
+    n: Option<String>,
+    e: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+struct JwtTokenClaims {
+    iss: String,
+    aud: String,
+    sub: String,
+    client_id: Option<String>,
+    org_id: String,
+    project_id: String,
+    environment_id: String,
+    scope: String,
+    exp: i64,
+    jti: String,
+}
+
+#[async_trait::async_trait]
+impl CentralTokenIntrospector for HttpJwksCentralTokenVerifier {
+    async fn introspect(&self, token: &str) -> anyhow::Result<IntrospectedTokenClaims> {
+        let header = decode_header(token)?;
+        if header.alg != Algorithm::RS256 {
+            anyhow::bail!("unsupported token algorithm {:?}", header.alg);
+        }
+        let kid = header
+            .kid
+            .ok_or_else(|| anyhow::anyhow!("token missing kid"))?;
+        let jwks = self
+            .http
+            .get(&self.jwks_url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<JwksDocument>()
+            .await?;
+        let key = jwks
+            .keys
+            .iter()
+            .find(|key| {
+                key.kid.as_deref() == Some(kid.as_str())
+                    && key.kty == "RSA"
+                    && key.alg.as_deref().unwrap_or("RS256") == "RS256"
+            })
+            .ok_or_else(|| anyhow::anyhow!("JWKS does not contain kid {kid}"))?;
+        let decoding_key = DecodingKey::from_rsa_components(
+            required_jwk_component(key.n.as_deref(), "n")?,
+            required_jwk_component(key.e.as_deref(), "e")?,
+        )?;
+        let mut validation = Validation::new(Algorithm::RS256);
+        validation.set_audience(&[CENTRAL_TOKEN_AUDIENCE]);
+        validation.set_issuer(&[self.issuer.as_str()]);
+        let claims = decode::<JwtTokenClaims>(token, &decoding_key, &validation)?.claims;
+        Ok(IntrospectedTokenClaims {
+            issuer: claims.iss,
+            audience: claims.aud.clone(),
+            subject: claims.sub,
+            client_id: claims.client_id.unwrap_or(claims.aud),
+            token_id: claims.jti,
+            scope: claims
+                .scope
+                .split_whitespace()
+                .map(ToString::to_string)
+                .collect(),
+            tenant_scope: TenantScope::new(
+                TenantId::new(claims.org_id)?,
+                ProjectId::new(claims.project_id)?,
+                EnvironmentId::new(claims.environment_id)?,
+            ),
+            expires_at: chrono::DateTime::from_timestamp(claims.exp, 0)
+                .ok_or_else(|| anyhow::anyhow!("invalid exp timestamp"))?,
+        })
+    }
+}
+
+fn introspection_expires_at(exp: Option<i64>, token_type: &str) -> anyhow::Result<Timestamp> {
+    match exp {
+        Some(exp) => chrono::DateTime::from_timestamp(exp, 0)
+            .ok_or_else(|| anyhow::anyhow!("invalid exp timestamp")),
+        None if token_type == "api_key" => Ok(Utc::now() + chrono::Duration::hours(1)),
+        None => Err(anyhow::anyhow!("introspection response missing exp")),
+    }
+}
+
+fn required_jwk_component<'a>(value: Option<&'a str>, name: &str) -> anyhow::Result<&'a str> {
+    value.ok_or_else(|| anyhow::anyhow!("JWKS key missing {name}"))
+}
+
+fn required_introspection_field<T>(value: Option<T>, name: &str) -> anyhow::Result<T> {
+    value.ok_or_else(|| anyhow::anyhow!("introspection response missing {name}"))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ControlPlaneUsageMetric {
+    TraceEvents,
+    EvalRuns,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct ControlPlaneUsageEvent {
+    #[serde(rename = "org_id")]
+    pub tenant_id: TenantId,
+    pub project_id: ProjectId,
+    pub environment_id: EnvironmentId,
+    pub metric: ControlPlaneUsageMetric,
+    pub quantity: i64,
+    pub source_kind: String,
+    pub source_id: String,
+}
+
+#[async_trait::async_trait]
+pub trait ControlPlaneUsageReporter: Send + Sync {
+    async fn report_usage(&self, inserts: &[UsageRecordInsert]) -> anyhow::Result<()>;
+}
+
+pub struct HttpControlPlaneUsageReporter {
+    endpoint: String,
+    bearer_token: String,
+    environment_id: EnvironmentId,
+    http: reqwest::Client,
+}
+
+impl HttpControlPlaneUsageReporter {
+    pub fn new(
+        endpoint: impl Into<String>,
+        bearer_token: impl Into<String>,
+        environment_id: EnvironmentId,
+    ) -> Self {
+        Self {
+            endpoint: endpoint.into(),
+            bearer_token: bearer_token.into(),
+            environment_id,
+            http: reqwest::Client::new(),
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl ControlPlaneUsageReporter for HttpControlPlaneUsageReporter {
+    async fn report_usage(&self, inserts: &[UsageRecordInsert]) -> anyhow::Result<()> {
+        for event in control_plane_usage_events(inserts, &self.environment_id) {
+            let response = self
+                .http
+                .post(&self.endpoint)
+                .bearer_auth(&self.bearer_token)
+                .json(&event)
+                .send()
+                .await?;
+            let status = response.status();
+            if !status.is_success() {
+                let body = response.text().await.unwrap_or_default();
+                return Err(ControlPlaneUsageRejected {
+                    status: StatusCode::from_u16(status.as_u16())
+                        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+                    message: if body.is_empty() {
+                        format!("control-plane usage event rejected with {status}")
+                    } else {
+                        format!("control-plane usage event rejected with {status}: {body}")
+                    },
+                }
+                .into());
+            }
+        }
+        Ok(())
+    }
+}
+
+fn control_plane_usage_events(
+    inserts: &[UsageRecordInsert],
+    environment_id: &EnvironmentId,
+) -> Vec<ControlPlaneUsageEvent> {
+    inserts
+        .iter()
+        .filter_map(|insert| control_plane_usage_event(insert, environment_id))
+        .collect()
+}
+
+fn control_plane_usage_event(
+    insert: &UsageRecordInsert,
+    environment_id: &EnvironmentId,
+) -> Option<ControlPlaneUsageEvent> {
+    if insert.quantity <= 0 {
+        return None;
+    }
+    let (metric, quantity) = match insert.meter {
+        UsageMeter::IngestSpans => (ControlPlaneUsageMetric::TraceEvents, insert.quantity),
+        UsageMeter::EvalCasesScored => (ControlPlaneUsageMetric::EvalRuns, insert.quantity),
+        UsageMeter::JudgeCostMicros => (ControlPlaneUsageMetric::EvalRuns, 1),
+        UsageMeter::IngestBytes | UsageMeter::StoredArtifactBytes => return None,
+    };
+    Some(ControlPlaneUsageEvent {
+        tenant_id: insert.tenant_id.clone(),
+        project_id: insert.project_id.clone(),
+        environment_id: environment_id.clone(),
+        metric,
+        quantity,
+        source_kind: insert.source_kind.as_str().to_string(),
+        source_id: insert.source_id.clone(),
+    })
+}
+
+#[derive(Debug)]
+struct ControlPlaneUsageRejected {
+    status: StatusCode,
+    message: String,
+}
+
+impl Display for ControlPlaneUsageRejected {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for ControlPlaneUsageRejected {}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AuthMode {
@@ -140,12 +477,6 @@ pub struct ApiState {
     judge_broker: Option<Arc<dyn JudgeBroker>>,
     judge_ledger: Option<Arc<dyn JudgeLedgerStore>>,
     usage: Option<Arc<dyn UsageLedgerStore>>,
-    #[cfg(feature = "billing")]
-    billing: Option<Arc<dyn BillingStore>>,
-    /// Stripe webhook signing secret (HMAC). Required for the Stripe webhook
-    /// route to verify inbound deliveries.
-    #[cfg(feature = "billing")]
-    stripe_webhook_secret: Option<Vec<u8>>,
     audit: Option<Arc<dyn AuditStore>>,
     /// Composio-backed third-party tool provider. When set, the `/v1/connectors`
     /// endpoints broker managed-OAuth connections and tool execution; when unset
@@ -157,6 +488,13 @@ pub struct ApiState {
     /// accepts OAuth access tokens (`bao_...`) as bearer credentials, mapping
     /// the token's tenant scope + OAuth scopes onto the request.
     oauth: Option<Arc<dyn OAuthStore>>,
+    /// Central control-plane token introspector. Hosted Palette uses this to
+    /// validate RS256 JWTs or centrally issued API keys and map their workspace
+    /// claims onto product authorization.
+    central_token_introspector: Option<Arc<dyn CentralTokenIntrospector>>,
+    /// Optional hosted usage reporter. Local usage remains append-only; this
+    /// adapter forwards billable events to the central account control plane.
+    control_plane_usage_reporter: Option<Arc<dyn ControlPlaneUsageReporter>>,
     /// URL of the OAuth protected-resource metadata document, surfaced in the
     /// `WWW-Authenticate` challenge on 401 (RFC 9728 / MCP auth discovery).
     oauth_metadata_url: Option<String>,
@@ -190,14 +528,12 @@ impl ApiState {
             judge_broker: None,
             judge_ledger: None,
             usage: None,
-            #[cfg(feature = "billing")]
-            billing: None,
-            #[cfg(feature = "billing")]
-            stripe_webhook_secret: None,
             audit: None,
             connectors: None,
             prompts: None,
             oauth: None,
+            central_token_introspector: None,
+            control_plane_usage_reporter: None,
             oauth_metadata_url: None,
             oauth_resource: None,
         }
@@ -215,6 +551,22 @@ impl ApiState {
         self.oauth = Some(oauth);
         self.oauth_metadata_url = metadata_url;
         self.oauth_resource = Some(resource);
+        self
+    }
+
+    pub fn with_central_token_introspector(
+        mut self,
+        introspector: Arc<dyn CentralTokenIntrospector>,
+    ) -> Self {
+        self.central_token_introspector = Some(introspector);
+        self
+    }
+
+    pub fn with_control_plane_usage_reporter(
+        mut self,
+        reporter: Arc<dyn ControlPlaneUsageReporter>,
+    ) -> Self {
+        self.control_plane_usage_reporter = Some(reporter);
         self
     }
 
@@ -335,24 +687,6 @@ impl ApiState {
         self
     }
 
-    /// Wire the billing store and the Stripe webhook signing secret. Enables the
-    /// `/v1/plans`, `/v1/subscriptions`, `/v1/billing/invoices` and
-    /// `/v1/billing/webhooks/stripe` routes.
-    ///
-    /// Billing is a hosted concern and is gated behind the non-default `billing`
-    /// cargo feature so the open-source build neither compiles billing code nor
-    /// advertises Stripe endpoints in the OSS API contract.
-    #[cfg(feature = "billing")]
-    pub fn with_billing(
-        mut self,
-        billing: Arc<dyn BillingStore>,
-        stripe_webhook_secret: impl Into<Vec<u8>>,
-    ) -> Self {
-        self.billing = Some(billing);
-        self.stripe_webhook_secret = Some(stripe_webhook_secret.into());
-        self
-    }
-
     pub fn with_audit(mut self, audit: Arc<dyn AuditStore>) -> Self {
         self.audit = Some(audit);
         self
@@ -383,12 +717,9 @@ impl ApiState {
 ///
 /// Update this when adding or removing a `/v1` route in [`router`].
 ///
-/// Billing/Stripe routes are hosted-only and compiled in only under the
-/// `billing` feature, so the count is feature-aware: the open-source default
-/// build registers 58 `/v1` routes (42 base + 6 always-on `/v1/connectors`
-/// routes + 6 `/v1/prompts` routes + 4 `/v1/scenarios` routes); the hosted
-/// `billing` build adds 8.
-pub const V1_ROUTE_COUNT: usize = if cfg!(feature = "billing") { 66 } else { 58 };
+/// The product API deliberately excludes billing/checkout/subscription routes;
+/// those are owned by the central Tempera control plane.
+pub const V1_ROUTE_COUNT: usize = 59;
 
 /// See [`V1_ROUTE_COUNT`].
 pub fn v1_route_count() -> usize {
@@ -450,6 +781,10 @@ pub fn router(state: ApiState) -> Router {
             get(list_judge_ledger_route),
         )
         .route("/v1/usage/:tenant_id/:project_id", get(get_usage_summary_route))
+        .route(
+            "/v1/connect/status/:tenant_id/:project_id",
+            get(get_palette_connect_status_route),
+        )
         .route("/v1/audit/:tenant_id/:project_id", get(list_audit_events_route))
         .route(
             "/v1/ingest/:tenant_id/:project_id/queue",
@@ -588,28 +923,6 @@ pub fn router(state: ApiState) -> Router {
             post(import_source_route),
         )
         .route("/v1/traces/:tenant_id/:trace_id", get(get_trace));
-
-    // Billing/Stripe is a hosted concern gated behind the non-default `billing`
-    // feature; the OSS build neither registers these routes nor advertises them
-    // in the API contract.
-    #[cfg(feature = "billing")]
-    let router = router
-        .route("/v1/plans", get(get_plans_route))
-        .route("/v1/plans/:plan_id", get(get_plan_route))
-        .route(
-            "/v1/subscriptions/:org_id",
-            get(get_subscription_route).post(create_subscription_route),
-        )
-        .route(
-            "/v1/subscriptions/:org_id/change-plan",
-            post(change_subscription_plan_route),
-        )
-        .route("/v1/billing/invoices/:org_id", get(get_org_invoices_route))
-        .route(
-            "/v1/billing/invoices/:org_id/:period_key",
-            get(get_invoice_route),
-        )
-        .route("/v1/billing/webhooks/stripe", post(stripe_webhook_route));
 
     router.with_state(state)
 }
@@ -1526,337 +1839,107 @@ async fn get_usage_summary_route(
     Ok(Json(summary))
 }
 
-// ---------------------------------------------------------------------------
-// Billing (Bandwidth, §20.7 #5.8 / §21.7 / R15)
-// ---------------------------------------------------------------------------
-
-/// Request body for creating a subscription.
-#[cfg(feature = "billing")]
-#[derive(Clone, Debug, Deserialize, ToSchema)]
-struct CreateSubscriptionRequest {
-    /// Plan to subscribe the org to.
-    plan_id: String,
-    /// RFC3339 period start.
-    period_start: String,
-    /// RFC3339 period end.
-    period_end: String,
-    /// Optional initial status (`active` default).
-    status: Option<String>,
-}
-
-/// Request body for changing an org's plan with proration.
-#[cfg(feature = "billing")]
-#[derive(Clone, Debug, Deserialize, ToSchema)]
-struct ChangePlanRequest {
-    /// New plan id.
-    new_plan_id: String,
-    /// RFC3339 instant at which the change takes effect (defaults to now).
-    at: Option<String>,
-}
-
-/// Acknowledgement for an inbound Stripe webhook delivery.
-#[cfg(feature = "billing")]
 #[derive(Clone, Debug, Serialize, ToSchema)]
-struct StripeWebhookAck {
-    /// `applied`, `duplicate`, or `stale`.
-    outcome: String,
+#[serde(rename_all = "snake_case")]
+enum PaletteConnectStatus {
+    Connected,
+    WaitingForTrace,
+    WaitingForEval,
+    Misconfigured,
 }
 
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    get,
-    path = "/v1/plans",
-    tag = "billing",
-    operation_id = "getPlans",
-    responses(
-        (status = 200, description = "List billing plans", body = Vec < Plan >),
-        (status = 400, description = "Invalid request", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-    )
-)]
-async fn get_plans_route(State(state): State<ApiState>) -> Result<Json<Vec<Plan>>, ApiError> {
-    let billing = billing_store(&state)?;
-    let plans = billing.list_plans().await?;
-    Ok(Json(plans))
+#[derive(Clone, Debug, Serialize, ToSchema)]
+struct PaletteConnectStatusResponse {
+    tenant_id: TenantId,
+    project_id: ProjectId,
+    ok: bool,
+    status: PaletteConnectStatus,
+    usage_configured: bool,
+    first_trace_received: bool,
+    first_eval_run: bool,
+    totals: BTreeMap<String, UsageTotal>,
 }
 
-#[cfg(feature = "billing")]
 #[utoipa::path(
     get,
-    path = "/v1/plans/{plan_id}",
-    tag = "billing",
-    operation_id = "getPlan",
-    params(("plan_id" = String, Path, description = "plan_id")),
-    responses(
-        (status = 200, description = "Get a billing plan", body = Plan),
-        (status = 400, description = "Invalid request", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-    )
-)]
-async fn get_plan_route(
-    State(state): State<ApiState>,
-    Path(plan_id): Path<String>,
-) -> Result<Json<Plan>, ApiError> {
-    let billing = billing_store(&state)?;
-    let plan_id = PlanId::new(plan_id).map_err(ApiError::from)?;
-    let plan = billing
-        .get_plan(&plan_id)
-        .await?
-        .ok_or_else(|| ApiError::not_found(format!("plan {} not found", plan_id.as_str())))?;
-    Ok(Json(plan))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    get,
-    path = "/v1/subscriptions/{org_id}",
-    tag = "billing",
-    operation_id = "getSubscription",
+    path = "/v1/connect/status/{tenant_id}/{project_id}",
+    tag = "connect",
+    operation_id = "getPaletteConnectStatus",
     params(
-        ("org_id" = String, Path, description = "org_id"),
+        ("tenant_id" = String, Path, description = "tenant_id"),
+        ("project_id" = String, Path, description = "project_id"),
         ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
         ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
         ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
         ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
     ),
     responses(
-        (status = 200, description = "Get an org subscription", body = Subscription),
+        (status = 200, description = "Palette product connection status for account-console setup", body = PaletteConnectStatusResponse),
         (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
         (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
         (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
     )
 )]
-async fn get_subscription_route(
+async fn get_palette_connect_status_route(
     State(state): State<ApiState>,
     headers: HeaderMap,
-    Path(org_id): Path<String>,
-) -> Result<Json<Subscription>, ApiError> {
-    let billing = billing_store(&state)?;
-    let org_id = OrganizationId::new(org_id)?;
-    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
-    let subscription = billing.get_subscription(&org_id).await?.ok_or_else(|| {
-        ApiError::not_found(format!(
-            "subscription for org {} not found",
-            org_id.as_str()
-        ))
-    })?;
-    Ok(Json(subscription))
-}
+    Path((tenant_id, project_id)): Path<(String, String)>,
+) -> Result<Json<PaletteConnectStatusResponse>, ApiError> {
+    let tenant_id = TenantId::new(tenant_id)?;
+    let project_id = ProjectId::new(project_id)?;
+    authorize_project_route(
+        &state,
+        &headers,
+        &tenant_id,
+        &project_id,
+        ApiScope::TraceRead,
+    )
+    .await?;
 
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    post,
-    path = "/v1/subscriptions/{org_id}",
-    tag = "billing",
-    operation_id = "createSubscription",
-    params(
-        ("org_id" = String, Path, description = "org_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    request_body = CreateSubscriptionRequest,
-    responses(
-        (status = 200, description = "Create an org subscription", body = Subscription),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-        (status = 409, description = "Subscription already exists", body = ErrorResponse),
-    )
-)]
-async fn create_subscription_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path(org_id): Path<String>,
-    Json(request): Json<CreateSubscriptionRequest>,
-) -> Result<Json<Subscription>, ApiError> {
-    let billing = billing_store(&state)?;
-    let org_id = OrganizationId::new(org_id)?;
-    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
-    let plan_id = PlanId::new(request.plan_id).map_err(ApiError::from)?;
-    let period_start = parse_required_timestamp(&request.period_start, "period_start")?;
-    let period_end = parse_required_timestamp(&request.period_end, "period_end")?;
-    if period_end <= period_start {
-        return Err(ApiError::bad_request(
-            "period_end must be after period_start".to_string(),
-        ));
-    }
-    if billing.get_plan(&plan_id).await?.is_none() {
-        return Err(ApiError::not_found(format!(
-            "plan {} not found",
-            plan_id.as_str()
-        )));
-    }
-    let status = match request.status.as_deref() {
-        None | Some("active") => SubscriptionStatus::Active,
-        Some(other) => SubscriptionStatus::parse(other).ok_or_else(|| {
-            ApiError::bad_request(format!("unknown subscription status: {other}"))
-        })?,
+    let summary = if let Some(usage) = state.usage.clone() {
+        Some(
+            usage
+                .summarize_usage(tenant_id.clone(), project_id.clone())
+                .await?,
+        )
+    } else {
+        None
     };
-    let subscription = billing
-        .create_subscription(Subscription {
-            org_id,
-            plan_id,
-            status,
-            period_start,
-            period_end,
-            version: 1,
-        })
-        .await?;
-    Ok(Json(subscription))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    post,
-    path = "/v1/subscriptions/{org_id}/change-plan",
-    tag = "billing",
-    operation_id = "changeSubscriptionPlan",
-    params(
-        ("org_id" = String, Path, description = "org_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    request_body = ChangePlanRequest,
-    responses(
-        (status = 200, description = "Change an org plan with proration", body = PlanChange),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-        (status = 409, description = "Concurrent modification", body = ErrorResponse),
-    )
-)]
-async fn change_subscription_plan_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path(org_id): Path<String>,
-    Json(request): Json<ChangePlanRequest>,
-) -> Result<Json<PlanChange>, ApiError> {
-    let billing = billing_service(&state)?;
-    let org_id = OrganizationId::new(org_id)?;
-    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
-    let new_plan_id = PlanId::new(request.new_plan_id).map_err(ApiError::from)?;
-    let at = match request.at {
-        Some(value) => parse_required_timestamp(&value, "at")?,
-        None => Utc::now(),
+    let totals = summary
+        .as_ref()
+        .map(|summary| summary.totals.clone())
+        .unwrap_or_default();
+    let first_trace_received = usage_total_positive(&totals, UsageMeter::IngestSpans);
+    let first_eval_run = usage_total_positive(&totals, UsageMeter::EvalCasesScored)
+        || usage_total_positive(&totals, UsageMeter::JudgeCostMicros);
+    let usage_configured = summary.is_some();
+    let status = if !usage_configured {
+        PaletteConnectStatus::Misconfigured
+    } else if !first_trace_received {
+        PaletteConnectStatus::WaitingForTrace
+    } else if !first_eval_run {
+        PaletteConnectStatus::WaitingForEval
+    } else {
+        PaletteConnectStatus::Connected
     };
-    let change = billing.change_plan(&org_id, &new_plan_id, at).await?;
-    Ok(Json(change))
-}
 
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    get,
-    path = "/v1/billing/invoices/{org_id}",
-    tag = "billing",
-    operation_id = "getOrgInvoices",
-    params(
-        ("org_id" = String, Path, description = "org_id"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    responses(
-        (status = 200, description = "List org invoices", body = Vec < Invoice >),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-    )
-)]
-async fn get_org_invoices_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path(org_id): Path<String>,
-) -> Result<Json<Vec<Invoice>>, ApiError> {
-    let billing = billing_store(&state)?;
-    let org_id = OrganizationId::new(org_id)?;
-    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
-    let invoices = billing.list_invoices(&org_id).await?;
-    Ok(Json(invoices))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    get,
-    path = "/v1/billing/invoices/{org_id}/{period_key}",
-    tag = "billing",
-    operation_id = "getInvoice",
-    params(
-        ("org_id" = String, Path, description = "org_id"),
-        ("period_key" = String, Path, description = "period_key (YYYY-MM)"),
-        ("authorization" = Option<String>, Header, description = "Bearer API token for strict auth"),
-        ("x-beater-api-key" = Option<String>, Header, description = "API key alternative for strict auth"),
-        ("x-beater-project-id" = Option<String>, Header, description = "Strict-auth project scope"),
-        ("x-beater-environment-id" = Option<String>, Header, description = "Strict-auth environment scope"),
-    ),
-    responses(
-        (status = 200, description = "Get an org invoice for a period", body = Invoice),
-        (status = 400, description = "Invalid request, scope, or filter", body = ErrorResponse),
-        (status = 401, description = "Missing or invalid credentials", body = ErrorResponse),
-        (status = 403, description = "Credentials lack the required scope", body = ErrorResponse),
-        (status = 404, description = "Resource not found", body = ErrorResponse),
-    )
-)]
-async fn get_invoice_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    Path((org_id, period_key)): Path<(String, String)>,
-) -> Result<Json<Invoice>, ApiError> {
-    let billing = billing_store(&state)?;
-    let org_id = OrganizationId::new(org_id)?;
-    authorize_org_route(&state, &headers, &org_id, ApiScope::Admin).await?;
-    let invoice = billing
-        .get_invoice(&org_id, &period_key)
-        .await?
-        .ok_or_else(|| {
-            ApiError::not_found(format!(
-                "invoice for org {} period {period_key} not found",
-                org_id.as_str()
-            ))
-        })?;
-    Ok(Json(invoice))
-}
-
-#[cfg(feature = "billing")]
-#[utoipa::path(
-    post,
-    path = "/v1/billing/webhooks/stripe",
-    tag = "billing",
-    operation_id = "handleStripeWebhook",
-    params(
-        ("stripe-signature" = String, Header, description = "Stripe signed-webhook header (t=...,v1=...)"),
-    ),
-    request_body(content = String, description = "Raw Stripe event JSON (signature-verified)"),
-    responses(
-        (status = 200, description = "Webhook accepted (applied/duplicate/stale)", body = StripeWebhookAck),
-        (status = 400, description = "Invalid signature or malformed event", body = ErrorResponse),
-    )
-)]
-async fn stripe_webhook_route(
-    State(state): State<ApiState>,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Json<StripeWebhookAck>, ApiError> {
-    let sync = stripe_sync(&state)?;
-    let signature = headers
-        .get("stripe-signature")
-        .and_then(|value| value.to_str().ok())
-        .ok_or_else(|| ApiError::bad_request("missing stripe-signature header".to_string()))?;
-    let outcome = sync.apply_event(&body, signature).await?;
-    let outcome = match outcome {
-        EventApplication::Applied => "applied",
-        EventApplication::Duplicate => "duplicate",
-        EventApplication::Stale => "stale",
-    };
-    Ok(Json(StripeWebhookAck {
-        outcome: outcome.to_string(),
+    Ok(Json(PaletteConnectStatusResponse {
+        tenant_id,
+        project_id,
+        ok: usage_configured,
+        status,
+        usage_configured,
+        first_trace_received,
+        first_eval_run,
+        totals,
     }))
+}
+
+fn usage_total_positive(totals: &BTreeMap<String, UsageTotal>, meter: UsageMeter) -> bool {
+    totals
+        .get(meter.as_str())
+        .map(|total| total.quantity > 0)
+        .unwrap_or(false)
 }
 
 #[utoipa::path(
@@ -4375,28 +4458,6 @@ fn usage_ledger(state: &ApiState) -> Result<Arc<dyn UsageLedgerStore>, ApiError>
     require(&state.usage, "usage ledger")
 }
 
-#[cfg(feature = "billing")]
-fn billing_store(state: &ApiState) -> Result<Arc<dyn BillingStore>, ApiError> {
-    require(&state.billing, "billing store")
-}
-
-/// Build the [`Billing`] service from the wired billing + usage stores.
-#[cfg(feature = "billing")]
-fn billing_service(state: &ApiState) -> Result<Billing, ApiError> {
-    let billing = billing_store(state)?;
-    let usage = usage_ledger(state)?;
-    Ok(Billing::new(billing, usage))
-}
-
-#[cfg(feature = "billing")]
-fn stripe_sync(state: &ApiState) -> Result<StripeSync, ApiError> {
-    let billing = billing_store(state)?;
-    let secret = state.stripe_webhook_secret.clone().ok_or_else(|| {
-        ApiError::not_implemented("stripe webhook secret is not configured".to_string())
-    })?;
-    Ok(StripeSync::new(billing, secret))
-}
-
 fn audit_store(state: &ApiState) -> Result<Arc<dyn AuditStore>, ApiError> {
     require(&state.audit, "audit store")
 }
@@ -4416,7 +4477,12 @@ async fn record_usage_if_configured(
     inserts: Vec<UsageRecordInsert>,
 ) -> Result<(), ApiError> {
     if let Some(usage) = state.usage.clone() {
-        record_usage_batch(usage.as_ref(), inserts).await?;
+        record_usage_batch(usage.as_ref(), inserts.clone()).await?;
+    }
+    if let Some(reporter) = state.control_plane_usage_reporter.clone()
+        && !inserts.is_empty()
+    {
+        reporter.report_usage(&inserts).await?;
     }
     Ok(())
 }
@@ -4444,10 +4510,12 @@ struct HealthResponse {
 /// Error envelope returned by every fallible endpoint.
 #[derive(Clone, Debug, Serialize, ToSchema)]
 struct ErrorResponse {
-    /// Human-readable error message.
+    /// Stable machine-readable error code.
     error: String,
-    /// HTTP status code, duplicated in the body for convenience.
-    status: u16,
+    /// Human-readable error message.
+    message: String,
+    /// Deprecated compatibility HTTP status code for older `/v1` clients.
+    status: i32,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -4813,7 +4881,7 @@ async fn authorize_project_route(
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
     }
-    let token_scope = oauth_tenant_scope_from_headers(state, headers).await?;
+    let token_scope = hosted_tenant_scope_from_headers(state, headers).await?;
     let environment_id = match optional_environment_id_from_header(headers)? {
         Some(environment_id) => environment_id,
         None => match token_scope {
@@ -4841,7 +4909,7 @@ async fn authorize_tenant_route(
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
     }
-    let token_scope = oauth_tenant_scope_from_headers(state, headers).await?;
+    let token_scope = hosted_tenant_scope_from_headers(state, headers).await?;
     let project_id = match optional_project_id_from_header(headers)? {
         Some(project_id) => project_id,
         None => match token_scope.as_ref() {
@@ -4867,23 +4935,6 @@ async fn authorize_tenant_route(
     .await
 }
 
-/// Authorize an org-scoped billing route. Billing is org-scoped; auth is
-/// project-scoped, so we map the organization id onto the tenant scope for the
-/// credential check. A no-op when auth is disabled.
-#[cfg(feature = "billing")]
-async fn authorize_org_route(
-    state: &ApiState,
-    headers: &HeaderMap,
-    org_id: &OrganizationId,
-    required_scope: ApiScope,
-) -> Result<AuthDecision, ApiError> {
-    if !state.auth_required() {
-        return Ok(AuthDecision::anonymous());
-    }
-    let tenant_id = TenantId::new(org_id.as_str())?;
-    authorize_tenant_route(state, headers, &tenant_id, required_scope).await
-}
-
 async fn authorize_query_scope(
     state: &ApiState,
     headers: &HeaderMap,
@@ -4895,7 +4946,7 @@ async fn authorize_query_scope(
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
     }
-    let token_scope = oauth_tenant_scope_from_headers(state, headers).await?;
+    let token_scope = hosted_tenant_scope_from_headers(state, headers).await?;
     let token_project_id;
     let project_id = match project_id {
         Some(project_id) => project_id,
@@ -4937,10 +4988,23 @@ async fn authorize_query_scope(
     .await
 }
 
-async fn oauth_tenant_scope_from_headers(
+async fn hosted_tenant_scope_from_headers(
     state: &ApiState,
     headers: &HeaderMap,
 ) -> Result<Option<TenantScope>, ApiError> {
+    if let Some(claims) = presented_oauth_claims(state, headers).await? {
+        return Ok(Some(claims.tenant_scope));
+    }
+    if let Some(claims) = presented_central_claims(state, headers).await? {
+        return Ok(Some(claims.tenant_scope));
+    }
+    Ok(None)
+}
+
+async fn presented_oauth_claims(
+    state: &ApiState,
+    headers: &HeaderMap,
+) -> Result<Option<AccessTokenClaims>, ApiError> {
     let Some(secret) = bearer_secret(headers)? else {
         return Ok(None);
     };
@@ -4962,7 +5026,44 @@ async fn oauth_tenant_scope_from_headers(
             "access token audience does not match this resource".to_string(),
         ));
     }
-    Ok(Some(claims.tenant_scope))
+    Ok(Some(claims))
+}
+
+async fn presented_central_claims(
+    state: &ApiState,
+    headers: &HeaderMap,
+) -> Result<Option<IntrospectedTokenClaims>, ApiError> {
+    let Some(secret) = central_token_candidate(headers)? else {
+        return Ok(None);
+    };
+    let Some(introspector) = state.central_token_introspector.as_ref() else {
+        return Ok(None);
+    };
+    let claims = introspector
+        .introspect(secret)
+        .await
+        .map_err(|_| ApiError::unauthorized("invalid or expired access token".to_string()))?;
+    Ok(Some(claims))
+}
+
+fn central_token_candidate(headers: &HeaderMap) -> Result<Option<&str>, ApiError> {
+    if let Some(secret) = bearer_secret(headers)?
+        && central_token_shape(secret)
+    {
+        return Ok(Some(secret));
+    }
+    if let Some(secret) = headers
+        .get(API_KEY_HEADER)
+        .and_then(|value| value.to_str().ok())
+        && central_token_shape(secret)
+    {
+        return Ok(Some(secret));
+    }
+    Ok(None)
+}
+
+fn central_token_shape(secret: &str) -> bool {
+    secret.contains('.') || secret.starts_with("tp_")
 }
 
 fn bearer_secret(headers: &HeaderMap) -> Result<Option<&str>, ApiError> {
@@ -4990,6 +5091,15 @@ async fn authorize(
 ) -> Result<AuthDecision, ApiError> {
     if !state.auth_required() {
         return Ok(AuthDecision::anonymous());
+    }
+    if let Some(claims) = presented_central_claims(state, headers).await? {
+        return authorize_central_claims(
+            claims,
+            tenant_id,
+            project_id,
+            environment_id,
+            required_scope,
+        );
     }
     let secret = presented_api_key(headers)?;
     // OAuth access tokens (`bao_...`) are accepted when an OAuth store is wired.
@@ -5047,7 +5157,7 @@ async fn authorize(
 /// Authorize via an OAuth 2.1 access token (`bao_...`). Validates the token,
 /// checks it is bound to the requested tenant/project/environment, and maps the
 /// OAuth scopes (which use the same names as [`ApiScope::as_str`]) onto the
-/// required scope. `admin` satisfies any scope.
+/// required scope.
 async fn authorize_oauth(
     oauth: &dyn OAuthStore,
     secret: &str,
@@ -5061,6 +5171,24 @@ async fn authorize_oauth(
         .validate_access_token(secret, Utc::now())
         .await
         .map_err(|_| ApiError::unauthorized("invalid or expired access token".to_string()))?;
+    authorize_oauth_claims(
+        claims,
+        expected_resource,
+        tenant_id,
+        project_id,
+        environment_id,
+        required_scope,
+    )
+}
+
+fn authorize_oauth_claims(
+    claims: AccessTokenClaims,
+    expected_resource: Option<&str>,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+    environment_id: &EnvironmentId,
+    required_scope: ApiScope,
+) -> Result<AuthDecision, ApiError> {
     if expected_resource.is_none_or(|resource| claims.resource != resource) {
         return Err(ApiError::unauthorized(
             "access token audience does not match this resource".to_string(),
@@ -5079,8 +5207,54 @@ async fn authorize_oauth(
             "access token is missing scope mcp:invoke".to_string(),
         ));
     }
-    let is_admin = claims.scope.contains(ApiScope::Admin.as_str());
-    let has_scope = claims.scope.contains(required_scope.as_str()) || is_admin;
+    let has_scope = claims.scope.contains(required_scope.as_str());
+    if !has_scope {
+        return Err(ApiError::forbidden(format!(
+            "access token is missing scope {}",
+            required_scope.as_str()
+        )));
+    }
+    Ok(AuthDecision {
+        context: AuthContext {
+            api_key_id: None,
+            scopes: claims.scope,
+        },
+        project_id: Some(claims.tenant_scope.project_id),
+        environment_id: Some(claims.tenant_scope.environment_id),
+    })
+}
+
+fn authorize_central_claims(
+    claims: IntrospectedTokenClaims,
+    tenant_id: &TenantId,
+    project_id: &ProjectId,
+    environment_id: &EnvironmentId,
+    required_scope: ApiScope,
+) -> Result<AuthDecision, ApiError> {
+    if claims.audience != CENTRAL_TOKEN_AUDIENCE {
+        return Err(ApiError::unauthorized(
+            "access token audience does not match this resource".to_string(),
+        ));
+    }
+    if claims.expires_at <= Utc::now() {
+        return Err(ApiError::unauthorized(
+            "invalid or expired access token".to_string(),
+        ));
+    }
+    if &claims.tenant_scope.tenant_id != tenant_id
+        || &claims.tenant_scope.project_id != project_id
+        || &claims.tenant_scope.environment_id != environment_id
+    {
+        return Err(ApiError::forbidden(
+            "access token is not scoped to this tenant/project/environment".to_string(),
+        ));
+    }
+    if claims.client_id != "raw-api" && !claims.scope.contains("mcp:invoke") {
+        return Err(ApiError::forbidden(
+            "access token is missing scope mcp:invoke".to_string(),
+        ));
+    }
+    let has_scope = claims.scope.contains(required_scope.as_str());
     if !has_scope {
         return Err(ApiError::forbidden(format!(
             "access token is missing scope {}",
@@ -5555,16 +5729,6 @@ fn parse_optional_timestamp(
         .transpose()
 }
 
-#[cfg(feature = "billing")]
-fn parse_required_timestamp(
-    value: &str,
-    field_name: &str,
-) -> Result<beater_core::Timestamp, ApiError> {
-    chrono::DateTime::parse_from_rfc3339(value)
-        .map(|timestamp| timestamp.with_timezone(&Utc))
-        .map_err(|err| ApiError::bad_request(format!("{field_name} must be RFC3339: {err}")))
-}
-
 fn parse_span_status(value: String) -> Result<SpanStatus, ApiError> {
     SpanStatus::parse(&value)
         .ok_or_else(|| ApiError::bad_request(format!("unsupported span status: {value}")))
@@ -5627,6 +5791,9 @@ fn invalid_otlp_export(error: impl std::fmt::Display) -> ApiError {
 
 impl From<anyhow::Error> for ApiError {
     fn from(error: anyhow::Error) -> Self {
+        if let Some(rejected) = error.downcast_ref::<ControlPlaneUsageRejected>() {
+            return Self::with_status(rejected.status, rejected.message.clone());
+        }
         Self::internal(error.to_string())
     }
 }
@@ -5701,49 +5868,18 @@ impl From<StoreError> for ApiError {
     }
 }
 
-#[cfg(feature = "billing")]
-impl From<BillingError> for ApiError {
-    fn from(error: BillingError) -> Self {
-        match error {
-            BillingError::NotFound(_) => {
-                Self::with_status(StatusCode::NOT_FOUND, error.to_string())
-            }
-            BillingError::Conflict(_) | BillingError::ConcurrentModification(_) => {
-                Self::with_status(StatusCode::CONFLICT, error.to_string())
-            }
-            BillingError::InvalidPlan(_)
-            | BillingError::InvalidPeriod(_)
-            | BillingError::Money(_)
-            | BillingError::Overflow => Self::bad_request(error.to_string()),
-            BillingError::Store(store) => store.into(),
-            BillingError::Backend(_) => Self::internal(error.to_string()),
-        }
-    }
-}
-
-#[cfg(feature = "billing")]
-impl From<StripeError> for ApiError {
-    fn from(error: StripeError) -> Self {
-        match error {
-            StripeError::Signature(_) | StripeError::Malformed(_) => {
-                Self::bad_request(error.to_string())
-            }
-            StripeError::Store(store) => store.into(),
-            StripeError::Billing(message) => Self::bad_request(message),
-            StripeError::Transport(_) => {
-                Self::with_status(StatusCode::BAD_GATEWAY, error.to_string())
-            }
-        }
-    }
-}
-
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
+        let status = self.status;
+        let message = self.message;
+        let reason = status.canonical_reason().unwrap_or("Error");
+        let error = reason.to_ascii_lowercase().replace(' ', "_");
         let body = Json(serde_json::json!({
-            "error": self.message,
-            "status": self.status.as_u16()
+            "error": error,
+            "message": message,
+            "status": i32::from(status.as_u16())
         }));
-        let mut response = (self.status, body).into_response();
+        let mut response = (status, body).into_response();
         for (name, value) in self.headers {
             response.headers_mut().insert(name, value);
         }
@@ -5777,6 +5913,167 @@ mod tests {
     use serde_json::json;
     use std::collections::BTreeMap;
     use tower::ServiceExt;
+
+    #[test]
+    fn control_plane_usage_events_map_only_hosted_billable_meters() {
+        use beater_usage::UsageRecordSourceKind;
+
+        let tenant_id = TenantId::new("org_demo").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("proj_demo").unwrap_or_else(|err| panic!("{err}"));
+        let environment_id =
+            EnvironmentId::new("env_preview").unwrap_or_else(|err| panic!("{err}"));
+        let insert = |meter, quantity, source_id: &str| UsageRecordInsert {
+            tenant_id: tenant_id.clone(),
+            project_id: project_id.clone(),
+            meter,
+            quantity,
+            unit: "count".to_string(),
+            source_kind: UsageRecordSourceKind::TraceIngest,
+            source_id: source_id.to_string(),
+            attributes: json!({}),
+        };
+
+        let events = control_plane_usage_events(
+            &[
+                insert(UsageMeter::IngestSpans, 42, "trace-1"),
+                insert(UsageMeter::IngestBytes, 10_000, "trace-1"),
+                insert(UsageMeter::StoredArtifactBytes, 2048, "artifact-1"),
+                insert(UsageMeter::EvalCasesScored, 3, "eval-1"),
+                insert(UsageMeter::JudgeCostMicros, 1200, "judge-1"),
+                insert(UsageMeter::IngestSpans, -1, "refund-1"),
+            ],
+            &environment_id,
+        );
+
+        assert_eq!(events.len(), 3);
+        assert_eq!(events[0].metric, ControlPlaneUsageMetric::TraceEvents);
+        assert_eq!(events[0].quantity, 42);
+        assert_eq!(events[0].environment_id, environment_id);
+        assert_eq!(events[1].metric, ControlPlaneUsageMetric::EvalRuns);
+        assert_eq!(events[1].quantity, 3);
+        assert_eq!(events[2].metric, ControlPlaneUsageMetric::EvalRuns);
+        assert_eq!(events[2].quantity, 1);
+    }
+
+    struct RejectingControlPlaneUsageReporter;
+
+    #[async_trait::async_trait]
+    impl ControlPlaneUsageReporter for RejectingControlPlaneUsageReporter {
+        async fn report_usage(&self, _inserts: &[UsageRecordInsert]) -> anyhow::Result<()> {
+            Err(ControlPlaneUsageRejected {
+                status: StatusCode::PAYMENT_REQUIRED,
+                message: "plan limit exceeded".to_string(),
+            }
+            .into())
+        }
+    }
+
+    #[tokio::test]
+    async fn control_plane_usage_rejection_preserves_status() {
+        use beater_usage::UsageRecordSourceKind;
+
+        let (ingest, traces, _tempdir) = api_state_fixture();
+        let state = ApiState::new(ingest, traces)
+            .with_control_plane_usage_reporter(Arc::new(RejectingControlPlaneUsageReporter));
+        let error = match record_usage_if_configured(
+            &state,
+            vec![UsageRecordInsert {
+                tenant_id: TenantId::new("org_demo").unwrap_or_else(|err| panic!("{err}")),
+                project_id: ProjectId::new("proj_demo").unwrap_or_else(|err| panic!("{err}")),
+                meter: UsageMeter::EvalCasesScored,
+                quantity: 1,
+                unit: "case".to_string(),
+                source_kind: UsageRecordSourceKind::DatasetEvalReport,
+                source_id: "eval-1".to_string(),
+                attributes: json!({}),
+            }],
+        )
+        .await
+        {
+            Ok(()) => panic!("control-plane usage rejection should fail"),
+            Err(error) => error,
+        };
+
+        assert_eq!(error.status, StatusCode::PAYMENT_REQUIRED);
+        assert_eq!(error.message, "plan limit exceeded");
+    }
+
+    #[tokio::test]
+    async fn palette_connect_status_reports_first_trace_and_eval_readiness() {
+        use beater_usage::{SqliteUsageLedger, UsageRecordSourceKind};
+
+        let (ingest, traces, _tempdir) = api_state_fixture();
+        let usage = Arc::new(SqliteUsageLedger::in_memory().unwrap_or_else(|err| panic!("{err}")));
+        let tenant_id = TenantId::new("org_demo").unwrap_or_else(|err| panic!("{err}"));
+        let project_id = ProjectId::new("proj_demo").unwrap_or_else(|err| panic!("{err}"));
+        usage
+            .record_usage(UsageRecordInsert {
+                tenant_id: tenant_id.clone(),
+                project_id: project_id.clone(),
+                meter: UsageMeter::IngestSpans,
+                quantity: 1,
+                unit: "span".to_string(),
+                source_kind: UsageRecordSourceKind::TraceIngest,
+                source_id: "trace-1".to_string(),
+                attributes: json!({}),
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
+        let app = router(ApiState::new(ingest, traces).with_usage(usage.clone()));
+
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/connect/status/org_demo/proj_demo")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let body: serde_json::Value =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(body["status"], serde_json::json!("waiting_for_eval"));
+        assert_eq!(body["first_trace_received"], serde_json::json!(true));
+        assert_eq!(body["first_eval_run"], serde_json::json!(false));
+
+        usage
+            .record_usage(UsageRecordInsert {
+                tenant_id,
+                project_id,
+                meter: UsageMeter::JudgeCostMicros,
+                quantity: 250,
+                unit: "usd_micros".to_string(),
+                source_kind: UsageRecordSourceKind::JudgeCall,
+                source_id: "judge-1".to_string(),
+                attributes: json!({}),
+            })
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/v1/connect/status/org_demo/proj_demo")
+                    .body(Body::empty())
+                    .unwrap_or_else(|err| panic!("{err}")),
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap_or_else(|err| panic!("{err}"));
+        let body: serde_json::Value =
+            serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(body["status"], serde_json::json!("connected"));
+        assert_eq!(body["first_eval_run"], serde_json::json!(true));
+    }
 
     #[tokio::test]
     async fn oauth_access_token_authorizes_only_for_its_tenant_and_scope() {
@@ -5889,9 +6186,37 @@ mod tests {
             )
             .await
             .unwrap_or_else(|err| panic!("{err:?}"));
+        assert!(
+            authorize_oauth(
+                &store,
+                &admin_with_mcp.access_token,
+                Some(resource),
+                &tenant,
+                &project,
+                &environment,
+                ApiScope::TraceWrite,
+            )
+            .await
+            .is_err(),
+            "admin+mcp must not satisfy product operation scopes without explicit permission"
+        );
+
+        let trace_write_with_mcp = store
+            .issue_token_pair(
+                OAuthClientId::new("client").unwrap_or_else(|err| panic!("{err}")),
+                UserId::new("user").unwrap_or_else(|err| panic!("{err}")),
+                BTreeSet::from(["mcp:invoke".to_string(), "trace:write".to_string()]),
+                resource.to_string(),
+                TenantScope::new(tenant.clone(), project.clone(), environment.clone()),
+                TokenFamilyId::new("fam-trace-write-mcp").unwrap_or_else(|err| panic!("{err}")),
+                true,
+                now,
+            )
+            .await
+            .unwrap_or_else(|err| panic!("{err:?}"));
         authorize_oauth(
             &store,
-            &admin_with_mcp.access_token,
+            &trace_write_with_mcp.access_token,
             Some(resource),
             &tenant,
             &project,
@@ -5899,7 +6224,7 @@ mod tests {
             ApiScope::TraceWrite,
         )
         .await
-        .unwrap_or_else(|err| panic!("admin+mcp should satisfy operation scope: {err:?}"));
+        .unwrap_or_else(|err| panic!("mcp+trace:write should satisfy operation scope: {err:?}"));
 
         // Wrong tenant -> forbidden (token is bound to its tenant scope).
         let other = TenantId::new("evil").unwrap_or_else(|err| panic!("{err}"));
@@ -6437,9 +6762,10 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         let error: serde_json::Value =
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(error["error"], serde_json::json!("bad_request"));
         assert_eq!(error["status"], serde_json::json!(400));
         assert!(
-            error["error"]
+            error["message"]
                 .as_str()
                 .unwrap_or_default()
                 .contains("invalid OTLP trace export")
@@ -6474,9 +6800,10 @@ mod tests {
             .unwrap_or_else(|err| panic!("{err}"));
         let error: serde_json::Value =
             serde_json::from_slice(&body).unwrap_or_else(|err| panic!("{err}"));
+        assert_eq!(error["error"], serde_json::json!("bad_request"));
         assert_eq!(error["status"], serde_json::json!(400));
         assert!(
-            error["error"]
+            error["message"]
                 .as_str()
                 .unwrap_or_default()
                 .contains("invalid OTLP trace export")
@@ -6567,6 +6894,8 @@ mod tests {
         assert!(state.judge_ledger.is_none());
         assert!(state.usage.is_none());
         assert!(state.audit.is_none());
+        assert!(state.central_token_introspector.is_none());
+        assert!(state.control_plane_usage_reporter.is_none());
         assert!(!state.auth_required());
         assert!(state.api_keys.is_none());
     }

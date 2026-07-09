@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**hits** | [**List[SearchHit]**](SearchHit.md) |  | 
+**hits** | [**List[SearchHit]**](SearchHit.md) |  |
 
 ## Example
 
@@ -25,5 +25,3 @@ search_response_dict = search_response_instance.to_dict()
 search_response_from_dict = SearchResponse.from_dict(search_response_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

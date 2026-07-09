@@ -65,7 +65,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ConnectionLink>> connectConnector(
+    pplx::task<std::shared_ptr<ConnectionLink>> connectors_connectConnector(
         utility::string_t tenantId,
         utility::string_t projectId,
         std::shared_ptr<ConnectConnectorRequest> connectConnectorRequest,
@@ -87,7 +87,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ConnectionStatus>> connectorStatus(
+    pplx::task<std::shared_ptr<ConnectionStatus>> connectors_connectorStatus(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t toolkit,
@@ -109,7 +109,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ConnectorSkillsResponse>> getConnectorSkills(
+    pplx::task<std::shared_ptr<ConnectorSkillsResponse>> connectors_getConnectorSkills(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t toolkit,
@@ -131,7 +131,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<ToolExecution>> invokeConnectorTool(
+    pplx::task<std::shared_ptr<ToolExecution>> connectors_invokeConnectorTool(
         utility::string_t tenantId,
         utility::string_t projectId,
         std::shared_ptr<InvokeConnectorRequest> invokeConnectorRequest,
@@ -154,7 +154,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::vector<std::shared_ptr<ConnectorTool>>> listConnectorTools(
+    pplx::task<std::vector<std::shared_ptr<ConnectorTool>>> connectors_listConnectorTools(
         utility::string_t tenantId,
         utility::string_t projectId,
         utility::string_t toolkit,
@@ -177,7 +177,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::vector<std::shared_ptr<Toolkit>>> listConnectors(
+    pplx::task<std::vector<std::shared_ptr<Toolkit>>> connectors_listConnectors(
         utility::string_t tenantId,
         utility::string_t projectId,
         boost::optional<int32_t> limit,

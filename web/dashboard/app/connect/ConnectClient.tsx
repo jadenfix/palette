@@ -165,7 +165,7 @@ function apiKeyFallback(origin: string) {
     `  -H "x-beater-api-key: $BEATER_API_KEY" \\`,
     `  -H "x-beater-project-id: $BEATER_PROJECT" \\`,
     `  -H "x-beater-environment-id: $BEATER_ENVIRONMENT" \\`,
-    `  --data "{\\"jsonrpc\\":\\"2.0\\",\\"id\\":1,\\"method\\":\\"tools/call\\",\\"params\\":{\\"name\\":\\"listTraces\\",\\"arguments\\":{\\"tenant_id\\":\\"$BEATER_TENANT\\"}}}"`,
+    `  --data "{\\"jsonrpc\\":\\"2.0\\",\\"id\\":1,\\"method\\":\\"tools/call\\",\\"params\\":{\\"name\\":\\"traces.list-traces\\",\\"arguments\\":{\\"tenant_id\\":\\"$BEATER_TENANT\\"}}}"`,
   ].join("\n");
 }
 

@@ -56,14 +56,14 @@ def valid_contract_spec() -> dict:
             "/health": {
                 "get": {
                     "tags": ["health"],
-                    "operationId": "health",
+                    "operationId": "health.health",
                     "responses": {"200": json_response("HealthResponse")},
                 }
             },
             "/v1/traces": {
                 "get": {
                     "tags": ["traces"],
-                    "operationId": "listTraces",
+                    "operationId": "traces.list-traces",
                     "parameters": [
                         {
                             "name": "limit",
@@ -78,7 +78,7 @@ def valid_contract_spec() -> dict:
                 },
                 "post": {
                     "tags": ["traces"],
-                    "operationId": "createTrace",
+                    "operationId": "traces.create-trace",
                     "responses": {
                         "201": json_response("CreateTraceResponse"),
                         "400": json_response("ErrorResponse"),
@@ -131,7 +131,10 @@ def test_rejects_operation_identity_and_tag_drift() -> None:
 
     violations = violations_for(spec)
 
-    assert "GET /v1/traces: operationId 'ListTraces' is not camelCase" in violations
+    assert (
+        "GET /v1/traces: operationId 'ListTraces' is not dotted resource.operation"
+        in violations
+    )
     assert (
         "GET /v1/traces: expected exactly 1 tag, got ['traces', 'runs']"
     ) in violations
@@ -139,13 +142,13 @@ def test_rejects_operation_identity_and_tag_drift() -> None:
 
 def test_rejects_duplicate_operation_ids() -> None:
     spec = valid_contract_spec()
-    spec["paths"]["/v1/traces"]["post"]["operationId"] = "listTraces"
+    spec["paths"]["/v1/traces"]["post"]["operationId"] = "traces.list-traces"
     spec["paths"]["/v1/traces"]["post"]["parameters"] = [{"name": "cursor"}]
 
     violations = violations_for(spec)
 
     assert (
-        "operationId 'listTraces' is duplicated: "
+        "operationId 'traces.list-traces' is duplicated: "
         "['GET /v1/traces', 'POST /v1/traces']"
     ) in violations
 
@@ -184,14 +187,14 @@ def test_requires_pagination_for_list_contracts() -> None:
     violations = violations_for(spec)
 
     assert (
-        "GET /v1/traces: list op 'listTraces' lacks pagination params"
+        "GET /v1/traces: list op 'traces.list-traces' lacks pagination params"
     ) in violations
 
 
 def test_keeps_documented_list_pagination_exemptions() -> None:
     spec = valid_contract_spec()
     list_op = spec["paths"]["/v1/traces"]["get"]
-    list_op["operationId"] = "listAuditEvents"
+    list_op["operationId"] = "audit.list-audit-events"
     list_op.pop("parameters")
 
     assert violations_for(spec) == []
@@ -212,7 +215,7 @@ def test_main_reports_failure_for_cli_gate() -> None:
     assert code == 1
     assert "audited 3 operations, 3 unique operationIds, 6 schemas" in stdout.getvalue()
     assert "CONSISTENCY VIOLATIONS" in stdout.getvalue()
-    assert "list op 'listTraces' lacks pagination params" in stdout.getvalue()
+    assert "list op 'traces.list-traces' lacks pagination params" in stdout.getvalue()
 
 
 def main() -> None:

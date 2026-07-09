@@ -16,6 +16,3 @@
 | Name | Value |
 |---- | -----|
 | JSON_OBJECT | &quot;json_object&quot; |
-
-
-

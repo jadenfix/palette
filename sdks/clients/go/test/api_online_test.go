@@ -22,7 +22,7 @@ func Test_beaterclient_OnlineAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test OnlineAPIService DecideOnlineSampling", func(t *testing.T) {
+	t.Run("Test OnlineAPIService OnlineDecideOnlineSampling", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -30,7 +30,7 @@ func Test_beaterclient_OnlineAPIService(t *testing.T) {
 		var projectId string
 		var traceId string
 
-		resp, httpRes, err := apiClient.OnlineAPI.DecideOnlineSampling(context.Background(), tenantId, projectId, traceId).Execute()
+		resp, httpRes, err := apiClient.OnlineAPI.OnlineDecideOnlineSampling(context.Background(), tenantId, projectId, traceId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

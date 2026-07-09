@@ -17,6 +17,3 @@
 | Name | Value |
 |---- | -----|
 | INLINE | &quot;inline&quot; |
-
-
-

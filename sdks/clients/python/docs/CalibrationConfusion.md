@@ -5,10 +5,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**human_fail_judge_fail** | **int** |  | 
-**human_fail_judge_pass** | **int** |  | 
-**human_pass_judge_fail** | **int** |  | 
-**human_pass_judge_pass** | **int** |  | 
+**human_fail_judge_fail** | **int** |  |
+**human_fail_judge_pass** | **int** |  |
+**human_pass_judge_fail** | **int** |  |
+**human_pass_judge_pass** | **int** |  |
 
 ## Example
 
@@ -28,5 +28,3 @@ calibration_confusion_dict = calibration_confusion_instance.to_dict()
 calibration_confusion_from_dict = CalibrationConfusion.from_dict(calibration_confusion_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

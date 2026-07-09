@@ -4,12 +4,12 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_gate**](GatesApi.md#create_gate) | **POST** /v1/gates/{tenant_id}/{project_id} | 
-[**run_gate**](GatesApi.md#run_gate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run | 
+[**gates_create_gate**](GatesApi.md#gates_create_gate) | **POST** /v1/gates/{tenant_id}/{project_id} |
+[**gates_run_gate**](GatesApi.md#gates_run_gate) | **POST** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run |
 
 
-# **create_gate**
-> GateDefinition create_gate(tenant_id, project_id, create_gate_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **gates_create_gate**
+> GateDefinition gates_create_gate(tenant_id, project_id, create_gate_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -36,18 +36,18 @@ with beater_client.ApiClient(configuration) as api_client:
     api_instance = beater_client.GatesApi(api_client)
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
-    create_gate_request = beater_client.CreateGateRequest() # CreateGateRequest | 
+    create_gate_request = beater_client.CreateGateRequest() # CreateGateRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.create_gate(tenant_id, project_id, create_gate_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of GatesApi->create_gate:\n")
+        api_response = api_instance.gates_create_gate(tenant_id, project_id, create_gate_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of GatesApi->gates_create_gate:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling GatesApi->create_gate: %s\n" % e)
+        print("Exception when calling GatesApi->gates_create_gate: %s\n" % e)
 ```
 
 
@@ -57,13 +57,13 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **create_gate_request** | [**CreateGateRequest**](CreateGateRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **create_gate_request** | [**CreateGateRequest**](CreateGateRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -89,8 +89,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **run_gate**
-> GateRunReport run_gate(tenant_id, project_id, gate_id, run_gate_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **gates_run_gate**
+> GateRunReport gates_run_gate(tenant_id, project_id, gate_id, run_gate_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -118,18 +118,18 @@ with beater_client.ApiClient(configuration) as api_client:
     tenant_id = 'tenant_id_example' # str | tenant_id
     project_id = 'project_id_example' # str | project_id
     gate_id = 'gate_id_example' # str | gate_id
-    run_gate_request = beater_client.RunGateRequest() # RunGateRequest | 
+    run_gate_request = beater_client.RunGateRequest() # RunGateRequest |
     authorization = 'authorization_example' # str | Bearer API token for strict auth (optional)
     x_beater_api_key = 'x_beater_api_key_example' # str | API key alternative for strict auth (optional)
     x_beater_project_id = 'x_beater_project_id_example' # str | Strict-auth project scope (optional)
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.run_gate(tenant_id, project_id, gate_id, run_gate_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of GatesApi->run_gate:\n")
+        api_response = api_instance.gates_run_gate(tenant_id, project_id, gate_id, run_gate_request, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of GatesApi->gates_run_gate:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling GatesApi->run_gate: %s\n" % e)
+        print("Exception when calling GatesApi->gates_run_gate: %s\n" % e)
 ```
 
 
@@ -139,14 +139,14 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**| project_id | 
- **gate_id** | **str**| gate_id | 
- **run_gate_request** | [**RunGateRequest**](RunGateRequest.md)|  | 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**| project_id |
+ **gate_id** | **str**| gate_id |
+ **run_gate_request** | [**RunGateRequest**](RunGateRequest.md)|  |
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -172,4 +172,3 @@ No authorization required
 **404** | Resource not found |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

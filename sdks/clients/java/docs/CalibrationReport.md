@@ -29,6 +29,3 @@
 |**reliabilityBins** | [**List&lt;ReliabilityBin&gt;**](ReliabilityBin.md) |  |  |
 |**sampleCount** | **Integer** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

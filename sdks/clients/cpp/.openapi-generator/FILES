@@ -19,6 +19,7 @@ include/beater-client/api/ApiKeysApi.h
 include/beater-client/api/ArchiveApi.h
 include/beater-client/api/AuditApi.h
 include/beater-client/api/CalibrationsApi.h
+include/beater-client/api/ConnectApi.h
 include/beater-client/api/ConnectorsApi.h
 include/beater-client/api/DatasetsApi.h
 include/beater-client/api/EvalsApi.h
@@ -130,6 +131,8 @@ include/beater-client/model/OnlineSamplingPolicy.h
 include/beater-client/model/OtlpIngestOutcome.h
 include/beater-client/model/Page_RunSummary.h
 include/beater-client/model/Page_RunSummary_items_inner.h
+include/beater-client/model/PaletteConnectStatus.h
+include/beater-client/model/PaletteConnectStatusResponse.h
 include/beater-client/model/PerturbationKnobs.h
 include/beater-client/model/PromoteReviewAnnotationHttpRequest.h
 include/beater-client/model/PromoteTraceCaseRequest.h
@@ -204,6 +207,7 @@ src/api/ApiKeysApi.cpp
 src/api/ArchiveApi.cpp
 src/api/AuditApi.cpp
 src/api/CalibrationsApi.cpp
+src/api/ConnectApi.cpp
 src/api/ConnectorsApi.cpp
 src/api/DatasetsApi.cpp
 src/api/EvalsApi.cpp
@@ -315,6 +319,8 @@ src/model/OnlineSamplingPolicy.cpp
 src/model/OtlpIngestOutcome.cpp
 src/model/Page_RunSummary.cpp
 src/model/Page_RunSummary_items_inner.cpp
+src/model/PaletteConnectStatus.cpp
+src/model/PaletteConnectStatusResponse.cpp
 src/model/PerturbationKnobs.cpp
 src/model/PromoteReviewAnnotationHttpRequest.cpp
 src/model/PromoteTraceCaseRequest.cpp

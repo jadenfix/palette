@@ -4,15 +4,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Attempts** | **int32** |  | 
-**EnqueuedAt** | **time.Time** |  | 
-**IdempotencyKey** | **string** |  | 
-**Kind** | **string** |  | 
-**MaxAttempts** | **int32** |  | 
-**MessageId** | **string** |  | 
-**Payload** | **[]int32** |  | 
-**ProjectId** | **string** |  | 
-**TenantId** | **string** |  | 
+**Attempts** | **int32** |  |
+**EnqueuedAt** | **time.Time** |  |
+**IdempotencyKey** | **string** |  |
+**Kind** | **string** |  |
+**MaxAttempts** | **int32** |  |
+**MessageId** | **string** |  |
+**Payload** | **[]int32** |  |
+**ProjectId** | **string** |  |
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -215,5 +215,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

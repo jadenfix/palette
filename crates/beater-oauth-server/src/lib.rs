@@ -141,8 +141,8 @@ pub fn router(state: OAuthServerState) -> Router {
 
 #[derive(Debug, Deserialize)]
 struct CreateApiKeyBody {
-    /// Scope names (`trace_read`, `trace_write`, `dataset_write`, `eval_run`,
-    /// `pii_unmask`, `admin`).
+    /// Canonical scope names (`trace:read`, `trace:write`, `dataset:write`,
+    /// `eval:run`, `pii:unmask`, `admin`).
     scopes: Vec<String>,
     #[serde(default)]
     project_id: Option<String>,
@@ -163,11 +163,11 @@ struct CreateApiKeyResult {
 
 fn parse_api_scope(value: &str) -> Option<ApiScope> {
     match value {
-        "trace_write" => Some(ApiScope::TraceWrite),
-        "trace_read" => Some(ApiScope::TraceRead),
-        "dataset_write" => Some(ApiScope::DatasetWrite),
-        "eval_run" => Some(ApiScope::EvalRun),
-        "pii_unmask" => Some(ApiScope::PiiUnmask),
+        "trace:write" => Some(ApiScope::TraceWrite),
+        "trace:read" => Some(ApiScope::TraceRead),
+        "dataset:write" => Some(ApiScope::DatasetWrite),
+        "eval:run" => Some(ApiScope::EvalRun),
+        "pii:unmask" => Some(ApiScope::PiiUnmask),
         "admin" => Some(ApiScope::Admin),
         _ => None,
     }
@@ -897,7 +897,7 @@ fn role_allows_scopes(role: OrgRole, scopes: &BTreeSet<String>) -> bool {
 
 fn required_role_for_scope(scope: &str) -> OrgRole {
     match scope {
-        "admin" | "pii:unmask" | "pii_unmask" => OrgRole::Admin,
+        "admin" | "pii:unmask" => OrgRole::Admin,
         _ => OrgRole::Member,
     }
 }
@@ -1089,11 +1089,8 @@ fn default_oauth_scopes(scopes_supported: &[String]) -> BTreeSet<String> {
     if scopes_supported.iter().any(|s| s == "mcp:invoke") {
         scopes.insert("mcp:invoke".to_string());
     }
-    for candidate in ["trace:read", "traces:read", "trace_read"] {
-        if scopes_supported.iter().any(|s| s == candidate) {
-            scopes.insert(candidate.to_string());
-            break;
-        }
+    if scopes_supported.iter().any(|s| s == "trace:read") {
+        scopes.insert("trace:read".to_string());
     }
     scopes
 }
@@ -1242,15 +1239,13 @@ fn consent_page(
 fn scope_label(scope: &str) -> String {
     match scope {
         "mcp:invoke" => "Use the Beater MCP tools".to_string(),
-        "trace:read" | "traces:read" | "trace_read" => {
-            "Read traces and evaluation data".to_string()
-        }
-        "trace:write" | "trace_write" => "Write traces".to_string(),
-        "dataset:write" | "dataset_write" => "Create and update datasets".to_string(),
-        "scenario:read" | "scenario_read" => "Read scenarios".to_string(),
-        "scenario:write" | "scenario_write" => "Create and update scenarios".to_string(),
-        "eval:run" | "eval_run" => "Run evaluations".to_string(),
-        "pii:unmask" | "pii_unmask" => "Unmask sensitive trace data".to_string(),
+        "trace:read" => "Read traces and evaluation data".to_string(),
+        "trace:write" => "Write traces".to_string(),
+        "dataset:write" => "Create and update datasets".to_string(),
+        "scenario:read" => "Read scenarios".to_string(),
+        "scenario:write" => "Create and update scenarios".to_string(),
+        "eval:run" => "Run evaluations".to_string(),
+        "pii:unmask" => "Unmask sensitive trace data".to_string(),
         "admin" => "Administer this tenant".to_string(),
         other => other.to_string(),
     }
@@ -1372,7 +1367,7 @@ mod tests {
             accounts: Arc::new(ok(SqliteAccountStore::in_memory())),
             issuer: "https://api.example.test".to_string(),
             login_url: Some("https://app.example.test/login".to_string()),
-            scopes_supported: vec!["traces:read".to_string(), "mcp:invoke".to_string()],
+            scopes_supported: vec!["trace:read".to_string(), "mcp:invoke".to_string()],
             api_keys: Some(Arc::new(ok(beater_auth::SqliteApiKeyStore::in_memory()))),
             consents: Default::default(),
         }
@@ -1597,7 +1592,7 @@ mod tests {
         let resp = post_json(
             &app,
             "/auth/api-keys",
-            json!({"scopes": ["trace_read", "trace_write"]}),
+            json!({"scopes": ["trace:read", "trace:write"]}),
             Some(&cookie),
         )
         .await;
@@ -1611,7 +1606,7 @@ mod tests {
         let resp = post_json(
             &app,
             "/auth/api-keys",
-            json!({"scopes": ["trace_read"]}),
+            json!({"scopes": ["trace:read"]}),
             None,
         )
         .await;
@@ -1711,7 +1706,7 @@ mod tests {
             "client_name": "mcp",
             "redirect_uris": ["https://app.example.test/cb"],
             "token_endpoint_auth_method": "none",
-            "scope": "traces:read mcp:invoke"
+            "scope": "trace:read mcp:invoke"
         });
         let resp = ok(app
             .oneshot(
@@ -1726,7 +1721,7 @@ mod tests {
         assert_eq!(resp.status(), StatusCode::OK);
         let body = body_json(resp).await;
         assert!(body["client_id"].as_str().is_some());
-        assert_eq!(body["scope"], "mcp:invoke traces:read");
+        assert_eq!(body["scope"], "mcp:invoke trace:read");
         assert!(
             body.get("client_secret").is_none(),
             "public client has no secret"
@@ -1753,7 +1748,7 @@ mod tests {
             .await);
         assert_eq!(resp.status(), StatusCode::OK);
         let body = body_json(resp).await;
-        assert_eq!(body["scope"], "mcp:invoke traces:read");
+        assert_eq!(body["scope"], "mcp:invoke trace:read");
         assert_eq!(body["token_endpoint_auth_method"], "none");
     }
 
@@ -1764,7 +1759,7 @@ mod tests {
             "client_name": "mcp",
             "redirect_uris": ["https://app.example.test/cb"],
             "token_endpoint_auth_method": "none",
-            "scope": "traces:read traces:delete"
+            "scope": "trace:read trace:delete"
         });
         let resp = ok(app
             .oneshot(
@@ -1779,7 +1774,7 @@ mod tests {
         assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
         let body = body_json(resp).await;
         assert_eq!(body["error"], "invalid_scope");
-        assert_eq!(body["error_description"], "traces:delete");
+        assert_eq!(body["error_description"], "trace:delete");
     }
 
     #[tokio::test]
@@ -1801,7 +1796,7 @@ mod tests {
                     "client_name": "mcp",
                     "redirect_uris": [redirect_uri],
                     "token_endpoint_auth_method": "none",
-                    "scope": "traces:read"
+                    "scope": "trace:read"
                 }),
                 None,
             )
@@ -1827,7 +1822,7 @@ mod tests {
                 client_name: "legacy-client".to_string(),
                 redirect_uris: vec!["http://app.example.test/cb".to_string()],
                 grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
-                scopes: BTreeSet::from(["traces:read".to_string()]),
+                scopes: BTreeSet::from(["trace:read".to_string()]),
                 token_endpoint_auth_method: ClientAuthMethod::None,
                 created_at: now,
             })
@@ -1868,7 +1863,7 @@ mod tests {
                     client_name: "mcp".to_string(),
                     redirect_uris: vec!["https://app.example.test/cb".to_string()],
                     grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
-                    scopes: BTreeSet::from(["mcp:invoke".to_string(), "traces:read".to_string()]),
+                    scopes: BTreeSet::from(["mcp:invoke".to_string(), "trace:read".to_string()]),
                     token_endpoint_auth_method: ClientAuthMethod::None,
                 },
                 Utc::now(),
@@ -1922,7 +1917,7 @@ mod tests {
                     client_name: "mcp".to_string(),
                     redirect_uris: vec!["https://app.example.test/cb".to_string()],
                     grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
-                    scopes: BTreeSet::from(["mcp:invoke".to_string(), "traces:read".to_string()]),
+                    scopes: BTreeSet::from(["mcp:invoke".to_string(), "trace:read".to_string()]),
                     token_endpoint_auth_method: ClientAuthMethod::None,
                 },
                 now,
@@ -1985,10 +1980,7 @@ mod tests {
                     client_name: "mcp".to_string(),
                     redirect_uris: vec!["https://app.example.test/cb".to_string()],
                     grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
-                    scopes: BTreeSet::from([
-                        "traces:read".to_string(),
-                        "traces:delete".to_string(),
-                    ]),
+                    scopes: BTreeSet::from(["trace:read".to_string(), "trace:delete".to_string()]),
                     token_endpoint_auth_method: ClientAuthMethod::None,
                 },
                 now,
@@ -2206,7 +2198,7 @@ mod tests {
                     grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
                     scopes: BTreeSet::from([
                         "mcp:invoke".to_string(),
-                        "traces:read".to_string(),
+                        "trace:read".to_string(),
                         "admin".to_string(),
                     ]),
                     token_endpoint_auth_method: ClientAuthMethod::None,
@@ -2255,7 +2247,7 @@ mod tests {
             beater_accounts::OrgRole::Admin
         );
         assert_eq!(
-            required_role_for_scope("pii_unmask"),
+            required_role_for_scope("pii:unmask"),
             beater_accounts::OrgRole::Admin
         );
         assert_eq!(
@@ -2295,7 +2287,7 @@ mod tests {
                         GrantType::AuthorizationCode,
                         GrantType::RefreshToken,
                     ]),
-                    scopes: BTreeSet::from(["mcp:invoke".to_string(), "traces:read".to_string()]),
+                    scopes: BTreeSet::from(["mcp:invoke".to_string(), "trace:read".to_string()]),
                     token_endpoint_auth_method: ClientAuthMethod::None,
                 },
                 now,
@@ -2345,7 +2337,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .uri(format!(
-                        "{base_uri}&scope=mcp%3Ainvoke%20traces%3Aread&consent_nonce={nonce}&approve=1"
+                        "{base_uri}&scope=mcp%3Ainvoke%20trace%3Aread&consent_nonce={nonce}&approve=1"
                     ))
                     .header(
                         http::header::COOKIE,
@@ -2396,7 +2388,7 @@ mod tests {
                     client_name: "Codex".to_string(),
                     redirect_uris: vec!["http://127.0.0.1:8811/callback".to_string()],
                     grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
-                    scopes: BTreeSet::from(["mcp:invoke".to_string(), "traces:read".to_string()]),
+                    scopes: BTreeSet::from(["mcp:invoke".to_string(), "trace:read".to_string()]),
                     token_endpoint_auth_method: ClientAuthMethod::None,
                 },
                 now,
@@ -2463,7 +2455,7 @@ mod tests {
                         GrantType::AuthorizationCode,
                         GrantType::RefreshToken,
                     ]),
-                    scopes: BTreeSet::from(["mcp:invoke".to_string(), "traces:read".to_string()]),
+                    scopes: BTreeSet::from(["mcp:invoke".to_string(), "trace:read".to_string()]),
                     token_endpoint_auth_method: ClientAuthMethod::None,
                 },
                 now,
@@ -2475,7 +2467,7 @@ mod tests {
         // GET /oauth/authorize shows consent, then approval with the one-time
         // nonce redirects to redirect_uri?code=...
         let uri = format!(
-            "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={}&scope=mcp%3Ainvoke%20traces%3Aread&state=xyz&tenant_id=demo&project_id=demo&environment_id=local&code_challenge={}&code_challenge_method=S256",
+            "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={}&scope=mcp%3Ainvoke%20trace%3Aread&state=xyz&tenant_id=demo&project_id=demo&environment_id=local&code_challenge={}&code_challenge_method=S256",
             utf8_percent_encode("https://app.example.test/cb", NON_ALPHANUMERIC),
             challenge()
         );
@@ -2562,7 +2554,7 @@ mod tests {
                 .unwrap_or("")
                 .starts_with("bro_")
         );
-        assert_eq!(body["scope"], "mcp:invoke traces:read");
+        assert_eq!(body["scope"], "mcp:invoke trace:read");
     }
 
     #[tokio::test]
@@ -2575,7 +2567,7 @@ mod tests {
                     client_name: "mcp".to_string(),
                     redirect_uris: vec!["https://app.example.test/cb".to_string()],
                     grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
-                    scopes: BTreeSet::from(["traces:read".to_string()]),
+                    scopes: BTreeSet::from(["trace:read".to_string()]),
                     token_endpoint_auth_method: ClientAuthMethod::None,
                 },
                 Utc::now(),
@@ -2613,7 +2605,7 @@ mod tests {
                     client_name: "mcp".to_string(),
                     redirect_uris: vec!["https://app.example.test/cb".to_string()],
                     grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
-                    scopes: BTreeSet::from(["traces:read".to_string()]),
+                    scopes: BTreeSet::from(["trace:read".to_string()]),
                     token_endpoint_auth_method: ClientAuthMethod::None,
                 },
                 now,
@@ -2633,7 +2625,7 @@ mod tests {
                     client_id: client_id.clone(),
                     user_id: ok(UserId::new("user-1")),
                     redirect_uri: "https://app.example.test/cb".to_string(),
-                    scope: BTreeSet::from(["traces:read".to_string()]),
+                    scope: BTreeSet::from(["trace:read".to_string()]),
                     resource: "https://api.example.test".to_string(),
                     tenant_scope: tenant_scope.clone(),
                     code_challenge: challenge(),
@@ -2648,7 +2640,7 @@ mod tests {
                     client_id: client_id.clone(),
                     user_id: ok(UserId::new("user-1")),
                     redirect_uri: "https://app.example.test/cb".to_string(),
-                    scope: BTreeSet::from(["traces:read".to_string()]),
+                    scope: BTreeSet::from(["trace:read".to_string()]),
                     resource: "https://api.example.test".to_string(),
                     tenant_scope,
                     code_challenge: challenge(),
@@ -2724,7 +2716,7 @@ mod tests {
                     client_name: "mcp".to_string(),
                     redirect_uris: vec!["https://app.example.test/cb".to_string()],
                     grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
-                    scopes: BTreeSet::from(["traces:read".to_string()]),
+                    scopes: BTreeSet::from(["trace:read".to_string()]),
                     token_endpoint_auth_method: ClientAuthMethod::None,
                 },
                 now,

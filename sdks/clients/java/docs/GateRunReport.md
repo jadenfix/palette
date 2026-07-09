@@ -27,6 +27,3 @@
 |**projectId** | **String** |  |  |
 |**reason** | **String** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**environment_id** | **str** |  | 
-**project_id** | **str** |  | 
-**tenant_id** | **str** |  | 
+**environment_id** | **str** |  |
+**project_id** | **str** |  |
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ tenant_scope_dict = tenant_scope_instance.to_dict()
 tenant_scope_from_dict = TenantScope.from_dict(tenant_scope_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

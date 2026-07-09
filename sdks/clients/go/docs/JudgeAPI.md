@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**EvaluateJudge**](JudgeAPI.md#EvaluateJudge) | **Post** /v1/judge/{tenant_id}/{project_id}/evaluate | 
-[**ListJudgeLedger**](JudgeAPI.md#ListJudgeLedger) | **Get** /v1/judge/{tenant_id}/{project_id}/ledger | 
+[**JudgeEvaluateJudge**](JudgeAPI.md#JudgeEvaluateJudge) | **Post** /v1/judge/{tenant_id}/{project_id}/evaluate |
+[**JudgeListJudgeLedger**](JudgeAPI.md#JudgeListJudgeLedger) | **Get** /v1/judge/{tenant_id}/{project_id}/ledger |
 
 
 
-## EvaluateJudge
+## JudgeEvaluateJudge
 
-> JudgeBrokerOutcome EvaluateJudge(ctx, tenantId, projectId).RunJudgeEvalHttpRequest(runJudgeEvalHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> JudgeBrokerOutcome JudgeEvaluateJudge(ctx, tenantId, projectId).RunJudgeEvalHttpRequest(runJudgeEvalHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -30,7 +30,7 @@ import (
 func main() {
 	tenantId := "tenantId_example" // string | tenant_id
 	projectId := "projectId_example" // string | project_id
-	runJudgeEvalHttpRequest := *openapiclient.NewRunJudgeEvalHttpRequest(*openapiclient.NewEvaluationCase(interface{}(123), interface{}(123)), *openapiclient.NewEvaluatorSpec("Id_example", openapiclient.EvaluatorKind{EvaluatorKindOneOf: openapiclient.NewEvaluatorKindOneOf("Type_example")}, openapiclient.EvaluatorLane("deterministic_wasi")), "ProviderSecretId_example") // RunJudgeEvalHttpRequest | 
+	runJudgeEvalHttpRequest := *openapiclient.NewRunJudgeEvalHttpRequest(*openapiclient.NewEvaluationCase(interface{}(123), interface{}(123)), *openapiclient.NewEvaluatorSpec("Id_example", openapiclient.EvaluatorKind{EvaluatorKindOneOf: openapiclient.NewEvaluatorKindOneOf("Type_example")}, openapiclient.EvaluatorLane("deterministic_wasi")), "ProviderSecretId_example") // RunJudgeEvalHttpRequest |
 	authorization := "authorization_example" // string | Bearer API token for strict auth (optional)
 	xBeaterApiKey := "xBeaterApiKey_example" // string | API key alternative for strict auth (optional)
 	xBeaterProjectId := "xBeaterProjectId_example" // string | Strict-auth project scope (optional)
@@ -38,13 +38,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.JudgeAPI.EvaluateJudge(context.Background(), tenantId, projectId).RunJudgeEvalHttpRequest(runJudgeEvalHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.JudgeAPI.JudgeEvaluateJudge(context.Background(), tenantId, projectId).RunJudgeEvalHttpRequest(runJudgeEvalHttpRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `JudgeAPI.EvaluateJudge``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `JudgeAPI.JudgeEvaluateJudge``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `EvaluateJudge`: JudgeBrokerOutcome
-	fmt.Fprintf(os.Stdout, "Response from `JudgeAPI.EvaluateJudge`: %v\n", resp)
+	// response from `JudgeEvaluateJudge`: JudgeBrokerOutcome
+	fmt.Fprintf(os.Stdout, "Response from `JudgeAPI.JudgeEvaluateJudge`: %v\n", resp)
 }
 ```
 
@@ -54,23 +54,23 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiEvaluateJudgeRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiJudgeEvaluateJudgeRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **runJudgeEvalHttpRequest** | [**RunJudgeEvalHttpRequest**](RunJudgeEvalHttpRequest.md) |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **runJudgeEvalHttpRequest** | [**RunJudgeEvalHttpRequest**](RunJudgeEvalHttpRequest.md) |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -90,9 +90,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## ListJudgeLedger
+## JudgeListJudgeLedger
 
-> []JudgeAuditRecord ListJudgeLedger(ctx, tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> []JudgeAuditRecord JudgeListJudgeLedger(ctx, tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -118,13 +118,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.JudgeAPI.ListJudgeLedger(context.Background(), tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.JudgeAPI.JudgeListJudgeLedger(context.Background(), tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `JudgeAPI.ListJudgeLedger``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `JudgeAPI.JudgeListJudgeLedger``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `ListJudgeLedger`: []JudgeAuditRecord
-	fmt.Fprintf(os.Stdout, "Response from `JudgeAPI.ListJudgeLedger`: %v\n", resp)
+	// response from `JudgeListJudgeLedger`: []JudgeAuditRecord
+	fmt.Fprintf(os.Stdout, "Response from `JudgeAPI.JudgeListJudgeLedger`: %v\n", resp)
 }
 ```
 
@@ -134,22 +134,22 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiListJudgeLedgerRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiJudgeListJudgeLedgerRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -167,4 +167,3 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

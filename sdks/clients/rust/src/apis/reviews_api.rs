@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
-/// struct for passing parameters to the method [`create_review_queue`]
+/// struct for passing parameters to the method [`reviews_period_create_review_queue`]
 #[derive(Clone, Debug)]
-pub struct CreateReviewQueueParams {
+pub struct ReviewsPeriodCreateReviewQueueParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -32,9 +32,9 @@ pub struct CreateReviewQueueParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`enqueue_review_task_from_trace`]
+/// struct for passing parameters to the method [`reviews_period_enqueue_review_task_from_trace`]
 #[derive(Clone, Debug)]
-pub struct EnqueueReviewTaskFromTraceParams {
+pub struct ReviewsPeriodEnqueueReviewTaskFromTraceParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -52,9 +52,9 @@ pub struct EnqueueReviewTaskFromTraceParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`list_review_tasks`]
+/// struct for passing parameters to the method [`reviews_period_list_review_tasks`]
 #[derive(Clone, Debug)]
-pub struct ListReviewTasksParams {
+pub struct ReviewsPeriodListReviewTasksParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -72,9 +72,9 @@ pub struct ListReviewTasksParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`promote_review_annotation`]
+/// struct for passing parameters to the method [`reviews_period_promote_review_annotation`]
 #[derive(Clone, Debug)]
-pub struct PromoteReviewAnnotationParams {
+pub struct ReviewsPeriodPromoteReviewAnnotationParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -96,9 +96,9 @@ pub struct PromoteReviewAnnotationParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`submit_review_annotation`]
+/// struct for passing parameters to the method [`reviews_period_submit_review_annotation`]
 #[derive(Clone, Debug)]
-pub struct SubmitReviewAnnotationParams {
+pub struct ReviewsPeriodSubmitReviewAnnotationParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -119,31 +119,20 @@ pub struct SubmitReviewAnnotationParams {
 }
 
 
-/// struct for typed errors of method [`create_review_queue`]
+/// struct for typed errors of method [`reviews_period_create_review_queue`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum CreateReviewQueueError {
+pub enum ReviewsPeriodCreateReviewQueueError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`enqueue_review_task_from_trace`]
+/// struct for typed errors of method [`reviews_period_enqueue_review_task_from_trace`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum EnqueueReviewTaskFromTraceError {
-    Status400(models::ErrorResponse),
-    Status401(models::ErrorResponse),
-    Status403(models::ErrorResponse),
-    Status404(models::ErrorResponse),
-    UnknownValue(serde_json::Value),
-}
-
-/// struct for typed errors of method [`list_review_tasks`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum ListReviewTasksError {
+pub enum ReviewsPeriodEnqueueReviewTaskFromTraceError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -151,10 +140,10 @@ pub enum ListReviewTasksError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`promote_review_annotation`]
+/// struct for typed errors of method [`reviews_period_list_review_tasks`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum PromoteReviewAnnotationError {
+pub enum ReviewsPeriodListReviewTasksError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -162,10 +151,21 @@ pub enum PromoteReviewAnnotationError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`submit_review_annotation`]
+/// struct for typed errors of method [`reviews_period_promote_review_annotation`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum SubmitReviewAnnotationError {
+pub enum ReviewsPeriodPromoteReviewAnnotationError {
+    Status400(models::ErrorResponse),
+    Status401(models::ErrorResponse),
+    Status403(models::ErrorResponse),
+    Status404(models::ErrorResponse),
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`reviews_period_submit_review_annotation`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ReviewsPeriodSubmitReviewAnnotationError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -174,7 +174,7 @@ pub enum SubmitReviewAnnotationError {
 }
 
 
-pub async fn create_review_queue(configuration: &configuration::Configuration, params: CreateReviewQueueParams) -> Result<models::ReviewQueue, Error<CreateReviewQueueError>> {
+pub async fn reviews_period_create_review_queue(configuration: &configuration::Configuration, params: ReviewsPeriodCreateReviewQueueParams) -> Result<models::ReviewQueue, Error<ReviewsPeriodCreateReviewQueueError>> {
 
     let uri_str = format!("{}/v1/review-queues/{tenant_id}/{project_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -206,12 +206,12 @@ pub async fn create_review_queue(configuration: &configuration::Configuration, p
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<CreateReviewQueueError> = serde_json::from_str(&content).ok();
+        let entity: Option<ReviewsPeriodCreateReviewQueueError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn enqueue_review_task_from_trace(configuration: &configuration::Configuration, params: EnqueueReviewTaskFromTraceParams) -> Result<models::ReviewTask, Error<EnqueueReviewTaskFromTraceError>> {
+pub async fn reviews_period_enqueue_review_task_from_trace(configuration: &configuration::Configuration, params: ReviewsPeriodEnqueueReviewTaskFromTraceParams) -> Result<models::ReviewTask, Error<ReviewsPeriodEnqueueReviewTaskFromTraceError>> {
 
     let uri_str = format!("{}/v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/from-trace", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), queue_id=crate::apis::urlencode(params.queue_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -243,12 +243,12 @@ pub async fn enqueue_review_task_from_trace(configuration: &configuration::Confi
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<EnqueueReviewTaskFromTraceError> = serde_json::from_str(&content).ok();
+        let entity: Option<ReviewsPeriodEnqueueReviewTaskFromTraceError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn list_review_tasks(configuration: &configuration::Configuration, params: ListReviewTasksParams) -> Result<Vec<models::ReviewTask>, Error<ListReviewTasksError>> {
+pub async fn reviews_period_list_review_tasks(configuration: &configuration::Configuration, params: ReviewsPeriodListReviewTasksParams) -> Result<Vec<models::ReviewTask>, Error<ReviewsPeriodListReviewTasksError>> {
 
     let uri_str = format!("{}/v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), queue_id=crate::apis::urlencode(params.queue_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -282,12 +282,12 @@ pub async fn list_review_tasks(configuration: &configuration::Configuration, par
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<ListReviewTasksError> = serde_json::from_str(&content).ok();
+        let entity: Option<ReviewsPeriodListReviewTasksError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn promote_review_annotation(configuration: &configuration::Configuration, params: PromoteReviewAnnotationParams) -> Result<models::DatasetCase, Error<PromoteReviewAnnotationError>> {
+pub async fn reviews_period_promote_review_annotation(configuration: &configuration::Configuration, params: ReviewsPeriodPromoteReviewAnnotationParams) -> Result<models::DatasetCase, Error<ReviewsPeriodPromoteReviewAnnotationError>> {
 
     let uri_str = format!("{}/v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations/{annotation_id}/promote", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), queue_id=crate::apis::urlencode(params.queue_id), task_id=crate::apis::urlencode(params.task_id), annotation_id=crate::apis::urlencode(params.annotation_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -319,12 +319,12 @@ pub async fn promote_review_annotation(configuration: &configuration::Configurat
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<PromoteReviewAnnotationError> = serde_json::from_str(&content).ok();
+        let entity: Option<ReviewsPeriodPromoteReviewAnnotationError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn submit_review_annotation(configuration: &configuration::Configuration, params: SubmitReviewAnnotationParams) -> Result<models::ReviewAnnotation, Error<SubmitReviewAnnotationError>> {
+pub async fn reviews_period_submit_review_annotation(configuration: &configuration::Configuration, params: ReviewsPeriodSubmitReviewAnnotationParams) -> Result<models::ReviewAnnotation, Error<ReviewsPeriodSubmitReviewAnnotationError>> {
 
     let uri_str = format!("{}/v1/review-queues/{tenant_id}/{project_id}/{queue_id}/tasks/{task_id}/annotations", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), queue_id=crate::apis::urlencode(params.queue_id), task_id=crate::apis::urlencode(params.task_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -356,7 +356,7 @@ pub async fn submit_review_annotation(configuration: &configuration::Configurati
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<SubmitReviewAnnotationError> = serde_json::from_str(&content).ok();
+        let entity: Option<ReviewsPeriodSubmitReviewAnnotationError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

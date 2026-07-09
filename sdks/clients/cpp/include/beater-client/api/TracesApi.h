@@ -59,7 +59,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<TraceView>> getTrace(
+    pplx::task<std::shared_ptr<TraceView>> traces_getTrace(
         utility::string_t tenantId,
         utility::string_t traceId,
         boost::optional<bool> unmask,
@@ -95,7 +95,7 @@ public:
     /// <param name="xBeaterApiKey">API key alternative for strict auth (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterProjectId">Strict-auth project scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
     /// <param name="xBeaterEnvironmentId">Strict-auth environment scope (optional, default to utility::conversions::to_string_t(&quot;&quot;))</param>
-    pplx::task<std::shared_ptr<Page_RunSummary>> listTraces(
+    pplx::task<std::shared_ptr<Page_RunSummary>> traces_listTraces(
         utility::string_t tenantId,
         boost::optional<utility::string_t> projectId,
         boost::optional<utility::string_t> environmentId,

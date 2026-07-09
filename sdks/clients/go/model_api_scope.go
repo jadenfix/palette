@@ -20,25 +20,25 @@ type ApiScope string
 
 // List of ApiScope
 const (
-	APISCOPE_TRACE_WRITE ApiScope = "trace_write"
-	APISCOPE_TRACE_READ ApiScope = "trace_read"
-	APISCOPE_DATASET_WRITE ApiScope = "dataset_write"
-	APISCOPE_SCENARIO_WRITE ApiScope = "scenario_write"
-	APISCOPE_SCENARIO_READ ApiScope = "scenario_read"
-	APISCOPE_EVAL_RUN ApiScope = "eval_run"
-	APISCOPE_PII_UNMASK ApiScope = "pii_unmask"
+	APISCOPE_TRACE_WRITE ApiScope = "trace:write"
+	APISCOPE_TRACE_READ ApiScope = "trace:read"
+	APISCOPE_DATASET_WRITE ApiScope = "dataset:write"
+	APISCOPE_SCENARIO_WRITE ApiScope = "scenario:write"
+	APISCOPE_SCENARIO_READ ApiScope = "scenario:read"
+	APISCOPE_EVAL_RUN ApiScope = "eval:run"
+	APISCOPE_PII_UNMASK ApiScope = "pii:unmask"
 	APISCOPE_ADMIN ApiScope = "admin"
 )
 
 // All allowed values of ApiScope enum
 var AllowedApiScopeEnumValues = []ApiScope{
-	"trace_write",
-	"trace_read",
-	"dataset_write",
-	"scenario_write",
-	"scenario_read",
-	"eval_run",
-	"pii_unmask",
+	"trace:write",
+	"trace:read",
+	"dataset:write",
+	"scenario:write",
+	"scenario:read",
+	"eval:run",
+	"pii:unmask",
 	"admin",
 }
 

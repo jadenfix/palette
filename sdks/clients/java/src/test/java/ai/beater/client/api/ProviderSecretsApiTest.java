@@ -46,7 +46,7 @@ public class ProviderSecretsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void createProviderSecretTest() throws ApiException {
+    public void providerSecretsCreateProviderSecretTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         CreateProviderSecretHttpRequest createProviderSecretHttpRequest = null;
@@ -55,7 +55,7 @@ public class ProviderSecretsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         ProviderSecretMetadata response = 
-        api.createProviderSecret(tenantId, projectId, createProviderSecretHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.providerSecretsCreateProviderSecret(tenantId, projectId, createProviderSecretHttpRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -69,7 +69,7 @@ public class ProviderSecretsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void listProviderSecretsTest() throws ApiException {
+    public void providerSecretsListProviderSecretsTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String authorization = null;
@@ -77,7 +77,7 @@ public class ProviderSecretsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         List<ProviderSecretMetadata> response = 
-        api.listProviderSecrets(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.providerSecretsListProviderSecrets(tenantId, projectId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -91,7 +91,7 @@ public class ProviderSecretsApiTest {
      *          if the Api call fails
      */
     @Test
-    public void revokeProviderSecretTest() throws ApiException {
+    public void providerSecretsRevokeProviderSecretTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String providerSecretId = null;
@@ -100,7 +100,7 @@ public class ProviderSecretsApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         RevokedProviderSecret response = 
-        api.revokeProviderSecret(tenantId, projectId, providerSecretId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.providerSecretsRevokeProviderSecret(tenantId, projectId, providerSecretId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

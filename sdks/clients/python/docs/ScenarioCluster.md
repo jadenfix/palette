@@ -6,11 +6,11 @@ A cluster of failing traces that share a similar failure signature.
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**dominant_failure_mode** | [**FailureMode**](FailureMode.md) | The most common failure mode across members. | 
-**exemplar_trace_id** | **str** |  | 
-**member_trace_ids** | **List[str]** | All member trace ids, sorted ascending. | 
-**signature** | [**Signature**](Signature.md) | The signature of the cluster&#39;s exemplar. | 
-**size** | **int** | Number of member traces. | 
+**dominant_failure_mode** | [**FailureMode**](FailureMode.md) | The most common failure mode across members. |
+**exemplar_trace_id** | **str** |  |
+**member_trace_ids** | **List[str]** | All member trace ids, sorted ascending. |
+**signature** | [**Signature**](Signature.md) | The signature of the cluster&#39;s exemplar. |
+**size** | **int** | Number of member traces. |
 
 ## Example
 
@@ -30,5 +30,3 @@ scenario_cluster_dict = scenario_cluster_instance.to_dict()
 scenario_cluster_from_dict = ScenarioCluster.from_dict(scenario_cluster_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

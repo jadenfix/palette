@@ -35,13 +35,13 @@ PromptsApi::~PromptsApi()
 {
 }
 
-pplx::task<std::shared_ptr<PromptVersion>> PromptsApi::addPromptVersion(utility::string_t tenantId, utility::string_t projectId, utility::string_t promptId, std::shared_ptr<AddPromptVersionRequest> addPromptVersionRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<PromptVersion>> PromptsApi::prompts_addPromptVersion(utility::string_t tenantId, utility::string_t projectId, utility::string_t promptId, std::shared_ptr<AddPromptVersionRequest> addPromptVersionRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'addPromptVersionRequest' is set
     if (addPromptVersionRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'addPromptVersionRequest' when calling PromptsApi->addPromptVersion"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'addPromptVersionRequest' when calling PromptsApi->prompts_addPromptVersion"));
     }
 
 
@@ -78,7 +78,7 @@ pplx::task<std::shared_ptr<PromptVersion>> PromptsApi::addPromptVersion(utility:
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->addPromptVersion does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->prompts_addPromptVersion does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -138,7 +138,7 @@ pplx::task<std::shared_ptr<PromptVersion>> PromptsApi::addPromptVersion(utility:
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->addPromptVersion does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->prompts_addPromptVersion does not consume any supported media type"));
     }
 
 
@@ -158,7 +158,7 @@ pplx::task<std::shared_ptr<PromptVersion>> PromptsApi::addPromptVersion(utility:
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling addPromptVersion: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling prompts_addPromptVersion: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -169,7 +169,7 @@ pplx::task<std::shared_ptr<PromptVersion>> PromptsApi::addPromptVersion(utility:
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling addPromptVersion: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling prompts_addPromptVersion: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -193,19 +193,19 @@ pplx::task<std::shared_ptr<PromptVersion>> PromptsApi::addPromptVersion(utility:
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling addPromptVersion: unsupported response type"));
+                , utility::conversions::to_string_t("error calling prompts_addPromptVersion: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<CreatedPrompt>> PromptsApi::createPrompt(utility::string_t tenantId, utility::string_t projectId, std::shared_ptr<CreatePromptRequest> createPromptRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<CreatedPrompt>> PromptsApi::prompts_createPrompt(utility::string_t tenantId, utility::string_t projectId, std::shared_ptr<CreatePromptRequest> createPromptRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'createPromptRequest' is set
     if (createPromptRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'createPromptRequest' when calling PromptsApi->createPrompt"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'createPromptRequest' when calling PromptsApi->prompts_createPrompt"));
     }
 
 
@@ -241,7 +241,7 @@ pplx::task<std::shared_ptr<CreatedPrompt>> PromptsApi::createPrompt(utility::str
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->createPrompt does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->prompts_createPrompt does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -301,7 +301,7 @@ pplx::task<std::shared_ptr<CreatedPrompt>> PromptsApi::createPrompt(utility::str
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->createPrompt does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->prompts_createPrompt does not consume any supported media type"));
     }
 
 
@@ -321,7 +321,7 @@ pplx::task<std::shared_ptr<CreatedPrompt>> PromptsApi::createPrompt(utility::str
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling createPrompt: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling prompts_createPrompt: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -332,7 +332,7 @@ pplx::task<std::shared_ptr<CreatedPrompt>> PromptsApi::createPrompt(utility::str
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling createPrompt: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling prompts_createPrompt: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -356,13 +356,13 @@ pplx::task<std::shared_ptr<CreatedPrompt>> PromptsApi::createPrompt(utility::str
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling createPrompt: unsupported response type"));
+                , utility::conversions::to_string_t("error calling prompts_createPrompt: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<PromptVersionDiff>> PromptsApi::diffPromptVersions(utility::string_t tenantId, utility::string_t projectId, utility::string_t promptId, utility::string_t from, utility::string_t to, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<PromptVersionDiff>> PromptsApi::prompts_diffPromptVersions(utility::string_t tenantId, utility::string_t projectId, utility::string_t promptId, utility::string_t from, utility::string_t to, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -399,7 +399,7 @@ pplx::task<std::shared_ptr<PromptVersionDiff>> PromptsApi::diffPromptVersions(ut
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->diffPromptVersions does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->prompts_diffPromptVersions does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -448,7 +448,7 @@ pplx::task<std::shared_ptr<PromptVersionDiff>> PromptsApi::diffPromptVersions(ut
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->diffPromptVersions does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->prompts_diffPromptVersions does not consume any supported media type"));
     }
 
 
@@ -468,7 +468,7 @@ pplx::task<std::shared_ptr<PromptVersionDiff>> PromptsApi::diffPromptVersions(ut
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling diffPromptVersions: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling prompts_diffPromptVersions: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -479,7 +479,7 @@ pplx::task<std::shared_ptr<PromptVersionDiff>> PromptsApi::diffPromptVersions(ut
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling diffPromptVersions: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling prompts_diffPromptVersions: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -503,13 +503,13 @@ pplx::task<std::shared_ptr<PromptVersionDiff>> PromptsApi::diffPromptVersions(ut
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling diffPromptVersions: unsupported response type"));
+                , utility::conversions::to_string_t("error calling prompts_diffPromptVersions: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<Prompt>> PromptsApi::getPrompt(utility::string_t tenantId, utility::string_t projectId, utility::string_t promptId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<Prompt>> PromptsApi::prompts_getPrompt(utility::string_t tenantId, utility::string_t projectId, utility::string_t promptId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -546,7 +546,7 @@ pplx::task<std::shared_ptr<Prompt>> PromptsApi::getPrompt(utility::string_t tena
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->getPrompt does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->prompts_getPrompt does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -589,7 +589,7 @@ pplx::task<std::shared_ptr<Prompt>> PromptsApi::getPrompt(utility::string_t tena
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->getPrompt does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->prompts_getPrompt does not consume any supported media type"));
     }
 
 
@@ -609,7 +609,7 @@ pplx::task<std::shared_ptr<Prompt>> PromptsApi::getPrompt(utility::string_t tena
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling getPrompt: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling prompts_getPrompt: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -620,7 +620,7 @@ pplx::task<std::shared_ptr<Prompt>> PromptsApi::getPrompt(utility::string_t tena
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling getPrompt: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling prompts_getPrompt: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -644,13 +644,13 @@ pplx::task<std::shared_ptr<Prompt>> PromptsApi::getPrompt(utility::string_t tena
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling getPrompt: unsupported response type"));
+                , utility::conversions::to_string_t("error calling prompts_getPrompt: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<PromptVersionListResponse>> PromptsApi::listPromptVersions(utility::string_t tenantId, utility::string_t projectId, utility::string_t promptId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<PromptVersionListResponse>> PromptsApi::prompts_listPromptVersions(utility::string_t tenantId, utility::string_t projectId, utility::string_t promptId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -687,7 +687,7 @@ pplx::task<std::shared_ptr<PromptVersionListResponse>> PromptsApi::listPromptVer
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->listPromptVersions does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->prompts_listPromptVersions does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -730,7 +730,7 @@ pplx::task<std::shared_ptr<PromptVersionListResponse>> PromptsApi::listPromptVer
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->listPromptVersions does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->prompts_listPromptVersions does not consume any supported media type"));
     }
 
 
@@ -750,7 +750,7 @@ pplx::task<std::shared_ptr<PromptVersionListResponse>> PromptsApi::listPromptVer
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling listPromptVersions: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling prompts_listPromptVersions: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -761,7 +761,7 @@ pplx::task<std::shared_ptr<PromptVersionListResponse>> PromptsApi::listPromptVer
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling listPromptVersions: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling prompts_listPromptVersions: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -785,13 +785,13 @@ pplx::task<std::shared_ptr<PromptVersionListResponse>> PromptsApi::listPromptVer
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling listPromptVersions: unsupported response type"));
+                , utility::conversions::to_string_t("error calling prompts_listPromptVersions: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<PromptListResponse>> PromptsApi::listPrompts(utility::string_t tenantId, utility::string_t projectId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<PromptListResponse>> PromptsApi::prompts_listPrompts(utility::string_t tenantId, utility::string_t projectId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -827,7 +827,7 @@ pplx::task<std::shared_ptr<PromptListResponse>> PromptsApi::listPrompts(utility:
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->listPrompts does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("PromptsApi->prompts_listPrompts does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -870,7 +870,7 @@ pplx::task<std::shared_ptr<PromptListResponse>> PromptsApi::listPrompts(utility:
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->listPrompts does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("PromptsApi->prompts_listPrompts does not consume any supported media type"));
     }
 
 
@@ -890,7 +890,7 @@ pplx::task<std::shared_ptr<PromptListResponse>> PromptsApi::listPrompts(utility:
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling listPrompts: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling prompts_listPrompts: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -901,7 +901,7 @@ pplx::task<std::shared_ptr<PromptListResponse>> PromptsApi::listPrompts(utility:
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling listPrompts: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling prompts_listPrompts: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -925,7 +925,7 @@ pplx::task<std::shared_ptr<PromptListResponse>> PromptsApi::listPrompts(utility:
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling listPrompts: unsupported response type"));
+                , utility::conversions::to_string_t("error calling prompts_listPrompts: unsupported response type"));
         }
 
         return localVarResult;

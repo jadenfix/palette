@@ -34,7 +34,7 @@ import {
     RunGateRequestToJSON,
 } from '../models/index';
 
-export interface CreateGateOperationRequest {
+export interface GatesCreateGateRequest {
     tenantId: string;
     projectId: string;
     createGateRequest: CreateGateRequest;
@@ -44,7 +44,7 @@ export interface CreateGateOperationRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface RunGateOperationRequest {
+export interface GatesRunGateRequest {
     tenantId: string;
     projectId: string;
     gateId: string;
@@ -62,25 +62,25 @@ export class GatesApi extends runtime.BaseAPI {
 
     /**
      */
-    async createGateRaw(requestParameters: CreateGateOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GateDefinition>> {
+    async gatesCreateGateRaw(requestParameters: GatesCreateGateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GateDefinition>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling createGate().'
+                'Required parameter "tenantId" was null or undefined when calling gatesCreateGate().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling createGate().'
+                'Required parameter "projectId" was null or undefined when calling gatesCreateGate().'
             );
         }
 
         if (requestParameters['createGateRequest'] == null) {
             throw new runtime.RequiredError(
                 'createGateRequest',
-                'Required parameter "createGateRequest" was null or undefined when calling createGate().'
+                'Required parameter "createGateRequest" was null or undefined when calling gatesCreateGate().'
             );
         }
 
@@ -119,39 +119,39 @@ export class GatesApi extends runtime.BaseAPI {
 
     /**
      */
-    async createGate(requestParameters: CreateGateOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GateDefinition> {
-        const response = await this.createGateRaw(requestParameters, initOverrides);
+    async gatesCreateGate(requestParameters: GatesCreateGateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GateDefinition> {
+        const response = await this.gatesCreateGateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async runGateRaw(requestParameters: RunGateOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GateRunReport>> {
+    async gatesRunGateRaw(requestParameters: GatesRunGateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GateRunReport>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling runGate().'
+                'Required parameter "tenantId" was null or undefined when calling gatesRunGate().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling runGate().'
+                'Required parameter "projectId" was null or undefined when calling gatesRunGate().'
             );
         }
 
         if (requestParameters['gateId'] == null) {
             throw new runtime.RequiredError(
                 'gateId',
-                'Required parameter "gateId" was null or undefined when calling runGate().'
+                'Required parameter "gateId" was null or undefined when calling gatesRunGate().'
             );
         }
 
         if (requestParameters['runGateRequest'] == null) {
             throw new runtime.RequiredError(
                 'runGateRequest',
-                'Required parameter "runGateRequest" was null or undefined when calling runGate().'
+                'Required parameter "runGateRequest" was null or undefined when calling gatesRunGate().'
             );
         }
 
@@ -190,8 +190,8 @@ export class GatesApi extends runtime.BaseAPI {
 
     /**
      */
-    async runGate(requestParameters: RunGateOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GateRunReport> {
-        const response = await this.runGateRaw(requestParameters, initOverrides);
+    async gatesRunGate(requestParameters: GatesRunGateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GateRunReport> {
+        const response = await this.gatesRunGateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -4,30 +4,30 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**AttributesJson** | **string** |  | 
-**CostAmountMicros** | Pointer to **NullableString** |  | [optional] 
-**CostCurrency** | Pointer to **NullableString** |  | [optional] 
-**EndTime** | Pointer to **NullableString** |  | [optional] 
-**EnvironmentId** | **string** |  | 
-**InputTokens** | Pointer to **NullableString** |  | [optional] 
-**InputUri** | Pointer to **NullableString** |  | [optional] 
-**Kind** | **string** |  | 
-**ModelName** | Pointer to **NullableString** |  | [optional] 
-**ModelProvider** | Pointer to **NullableString** |  | [optional] 
-**Name** | **string** |  | 
-**OutputTokens** | Pointer to **NullableString** |  | [optional] 
-**OutputUri** | Pointer to **NullableString** |  | [optional] 
-**ParentSpanId** | Pointer to **NullableString** |  | [optional] 
-**ProjectId** | **string** |  | 
-**RawUri** | **string** |  | 
-**ReasoningTokens** | Pointer to **NullableString** |  | [optional] 
-**Seq** | **int64** |  | 
-**SpanId** | **string** |  | 
-**StartTime** | **string** |  | 
-**Status** | **string** |  | 
-**TenantId** | **string** |  | 
-**TraceId** | **string** |  | 
-**UnmappedJson** | **string** |  | 
+**AttributesJson** | **string** |  |
+**CostAmountMicros** | Pointer to **NullableString** |  | [optional]
+**CostCurrency** | Pointer to **NullableString** |  | [optional]
+**EndTime** | Pointer to **NullableString** |  | [optional]
+**EnvironmentId** | **string** |  |
+**InputTokens** | Pointer to **NullableString** |  | [optional]
+**InputUri** | Pointer to **NullableString** |  | [optional]
+**Kind** | **string** |  |
+**ModelName** | Pointer to **NullableString** |  | [optional]
+**ModelProvider** | Pointer to **NullableString** |  | [optional]
+**Name** | **string** |  |
+**OutputTokens** | Pointer to **NullableString** |  | [optional]
+**OutputUri** | Pointer to **NullableString** |  | [optional]
+**ParentSpanId** | Pointer to **NullableString** |  | [optional]
+**ProjectId** | **string** |  |
+**RawUri** | **string** |  |
+**ReasoningTokens** | Pointer to **NullableString** |  | [optional]
+**Seq** | **int64** |  |
+**SpanId** | **string** |  |
+**StartTime** | **string** |  |
+**Status** | **string** |  |
+**TenantId** | **string** |  |
+**TraceId** | **string** |  |
+**UnmappedJson** | **string** |  |
 
 ## Methods
 
@@ -695,5 +695,3 @@ SetUnmappedJson sets UnmappedJson field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

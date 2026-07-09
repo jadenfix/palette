@@ -12,6 +12,3 @@
 |**projectId** | **String** |  |  |
 |**spanCount** | **Integer** |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

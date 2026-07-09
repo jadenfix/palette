@@ -4,11 +4,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**CreatedAt** | **time.Time** |  | 
-**DatasetId** | **string** |  | 
-**Name** | **string** |  | 
-**ProjectId** | **string** |  | 
-**TenantId** | **string** |  | 
+**CreatedAt** | **time.Time** |  |
+**DatasetId** | **string** |  |
+**Name** | **string** |  |
+**ProjectId** | **string** |  |
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -131,5 +131,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

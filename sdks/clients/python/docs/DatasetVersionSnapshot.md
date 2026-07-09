@@ -5,13 +5,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**cases** | [**List[DatasetCase]**](DatasetCase.md) |  | 
-**corpus_root** | **str** | A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string. | 
-**created_at** | **datetime** |  | 
-**dataset_id** | **str** |  | 
-**project_id** | **str** |  | 
-**tenant_id** | **str** |  | 
-**version_id** | **str** |  | 
+**cases** | [**List[DatasetCase]**](DatasetCase.md) |  |
+**corpus_root** | **str** | A content-addressed Merkle root naming the exact contents of a corpus.  Serialized as its lowercase-hex SHA-256 string. |
+**created_at** | **datetime** |  |
+**dataset_id** | **str** |  |
+**project_id** | **str** |  |
+**tenant_id** | **str** |  |
+**version_id** | **str** |  |
 
 ## Example
 
@@ -31,5 +31,3 @@ dataset_version_snapshot_dict = dataset_version_snapshot_instance.to_dict()
 dataset_version_snapshot_from_dict = DatasetVersionSnapshot.from_dict(dataset_version_snapshot_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -4,33 +4,33 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**SearchAPI_searchSpans**](SearchAPI.md#SearchAPI_searchSpans) | **GET** /v1/search/{tenant_id}/spans | 
+[**SearchAPI_searchSearchSpans**](SearchAPI.md#SearchAPI_searchSearchSpans) | **GET** /v1/search/{tenant_id}/spans |
 
 
-# **SearchAPI_searchSpans**
+# **SearchAPI_searchSearchSpans**
 ```c
-search_response_t* SearchAPI_searchSpans(apiClient_t *apiClient, char *tenant_id, char *q, char *project_id, char *environment_id, char *trace_id, char *span_id, char *kind, char *status, char *model, char *tool, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+search_response_t* SearchAPI_searchSearchSpans(apiClient_t *apiClient, char *tenant_id, char *q, char *project_id, char *environment_id, char *trace_id, char *span_id, char *kind, char *status, char *model, char *tool, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **apiClient** | **apiClient_t \*** | context containing the client configuration |
-**tenant_id** | **char \*** | tenant_id | 
-**q** | **char \*** |  | [optional] 
-**project_id** | **char \*** |  | [optional] 
-**environment_id** | **char \*** |  | [optional] 
-**trace_id** | **char \*** |  | [optional] 
-**span_id** | **char \*** |  | [optional] 
-**kind** | **char \*** |  | [optional] 
-**status** | **char \*** |  | [optional] 
-**model** | **char \*** |  | [optional] 
-**tool** | **char \*** |  | [optional] 
-**limit** | **int \*** |  | [optional] 
-**authorization** | **char \*** | Bearer API token for strict auth | [optional] 
-**x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional] 
-**x_beater_project_id** | **char \*** | Strict-auth project scope | [optional] 
-**x_beater_environment_id** | **char \*** | Strict-auth environment scope | [optional] 
+**tenant_id** | **char \*** | tenant_id |
+**q** | **char \*** |  | [optional]
+**project_id** | **char \*** |  | [optional]
+**environment_id** | **char \*** |  | [optional]
+**trace_id** | **char \*** |  | [optional]
+**span_id** | **char \*** |  | [optional]
+**kind** | **char \*** |  | [optional]
+**status** | **char \*** |  | [optional]
+**model** | **char \*** |  | [optional]
+**tool** | **char \*** |  | [optional]
+**limit** | **int \*** |  | [optional]
+**authorization** | **char \*** | Bearer API token for strict auth | [optional]
+**x_beater_api_key** | **char \*** | API key alternative for strict auth | [optional]
+**x_beater_project_id** | **char \*** | Strict-auth project scope | [optional]
+**x_beater_environment_id** | **char \*** | Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -47,4 +47,3 @@ No authorization required
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

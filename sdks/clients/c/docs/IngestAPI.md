@@ -4,20 +4,20 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**IngestAPI_drainTraceIngested**](IngestAPI.md#IngestAPI_drainTraceIngested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
-[**IngestAPI_drainTraceWrites**](IngestAPI.md#IngestAPI_drainTraceWrites) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
-[**IngestAPI_getIngestQueueStatus**](IngestAPI.md#IngestAPI_getIngestQueueStatus) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |
-[**IngestAPI_importSource**](IngestAPI.md#IngestAPI_importSource) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |
-[**IngestAPI_ingestNative**](IngestAPI.md#IngestAPI_ingestNative) | **POST** /v1/traces/native |
-[**IngestAPI_ingestOtlp**](IngestAPI.md#IngestAPI_ingestOtlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
-[**IngestAPI_ingestOtlpJsonCollector**](IngestAPI.md#IngestAPI_ingestOtlpJsonCollector) | **POST** /v1/traces |
-[**IngestAPI_reconcileTrace**](IngestAPI.md#IngestAPI_reconcileTrace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
-[**IngestAPI_replayDeadLetter**](IngestAPI.md#IngestAPI_replayDeadLetter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
+[**IngestAPI_ingestDrainTraceIngested**](IngestAPI.md#IngestAPI_ingestDrainTraceIngested) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-ingested/drain |
+[**IngestAPI_ingestDrainTraceWrites**](IngestAPI.md#IngestAPI_ingestDrainTraceWrites) | **POST** /v1/ingest/{tenant_id}/{project_id}/trace-writes/drain |
+[**IngestAPI_ingestGetIngestQueueStatus**](IngestAPI.md#IngestAPI_ingestGetIngestQueueStatus) | **GET** /v1/ingest/{tenant_id}/{project_id}/queue |
+[**IngestAPI_ingestImportSource**](IngestAPI.md#IngestAPI_ingestImportSource) | **POST** /v1/import/{tenant_id}/{project_id}/{environment_id} |
+[**IngestAPI_ingestIngestNative**](IngestAPI.md#IngestAPI_ingestIngestNative) | **POST** /v1/traces/native |
+[**IngestAPI_ingestIngestOtlp**](IngestAPI.md#IngestAPI_ingestIngestOtlp) | **POST** /v1/otlp/{tenant_id}/{project_id}/{environment_id}/v1/traces |
+[**IngestAPI_ingestIngestOtlpJsonCollector**](IngestAPI.md#IngestAPI_ingestIngestOtlpJsonCollector) | **POST** /v1/traces |
+[**IngestAPI_ingestReconcileTrace**](IngestAPI.md#IngestAPI_ingestReconcileTrace) | **POST** /v1/ingest/{tenant_id}/{project_id}/traces/{trace_id}/reconcile |
+[**IngestAPI_ingestReplayDeadLetter**](IngestAPI.md#IngestAPI_ingestReplayDeadLetter) | **POST** /v1/ingest/{tenant_id}/{project_id}/dead-letters/{message_id}/replay |
 
 
-# **IngestAPI_drainTraceIngested**
+# **IngestAPI_ingestDrainTraceIngested**
 ```c
-trace_ingested_drain_report_t* IngestAPI_drainTraceIngested(apiClient_t *apiClient, char *tenant_id, char *project_id, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+trace_ingested_drain_report_t* IngestAPI_ingestDrainTraceIngested(apiClient_t *apiClient, char *tenant_id, char *project_id, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
@@ -48,9 +48,9 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **IngestAPI_drainTraceWrites**
+# **IngestAPI_ingestDrainTraceWrites**
 ```c
-trace_write_drain_report_t* IngestAPI_drainTraceWrites(apiClient_t *apiClient, char *tenant_id, char *project_id, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+trace_write_drain_report_t* IngestAPI_ingestDrainTraceWrites(apiClient_t *apiClient, char *tenant_id, char *project_id, int *limit, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
@@ -81,9 +81,9 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **IngestAPI_getIngestQueueStatus**
+# **IngestAPI_ingestGetIngestQueueStatus**
 ```c
-ingest_queue_status_t* IngestAPI_getIngestQueueStatus(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+ingest_queue_status_t* IngestAPI_ingestGetIngestQueueStatus(apiClient_t *apiClient, char *tenant_id, char *project_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
@@ -113,9 +113,9 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **IngestAPI_importSource**
+# **IngestAPI_ingestImportSource**
 ```c
-ingest_outcome_t* IngestAPI_importSource(apiClient_t *apiClient, char *tenant_id, char *project_id, char *environment_id, import_source_http_request_t *import_source_http_request, char *durability, char *authorization, char *x_beater_api_key);
+ingest_outcome_t* IngestAPI_ingestImportSource(apiClient_t *apiClient, char *tenant_id, char *project_id, char *environment_id, import_source_http_request_t *import_source_http_request, char *durability, char *authorization, char *x_beater_api_key);
 ```
 
 ### Parameters
@@ -146,9 +146,9 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **IngestAPI_ingestNative**
+# **IngestAPI_ingestIngestNative**
 ```c
-ingest_outcome_t* IngestAPI_ingestNative(apiClient_t *apiClient, native_ingest_request_t *native_ingest_request, char *durability, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+ingest_outcome_t* IngestAPI_ingestIngestNative(apiClient_t *apiClient, native_ingest_request_t *native_ingest_request, char *durability, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
@@ -178,9 +178,9 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **IngestAPI_ingestOtlp**
+# **IngestAPI_ingestIngestOtlp**
 ```c
-otlp_ingest_outcome_t* IngestAPI_ingestOtlp(apiClient_t *apiClient, char *tenant_id, char *project_id, char *environment_id, char *durability, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+otlp_ingest_outcome_t* IngestAPI_ingestIngestOtlp(apiClient_t *apiClient, char *tenant_id, char *project_id, char *environment_id, char *durability, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
@@ -212,9 +212,9 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **IngestAPI_ingestOtlpJsonCollector**
+# **IngestAPI_ingestIngestOtlpJsonCollector**
 ```c
-otlp_ingest_outcome_t* IngestAPI_ingestOtlpJsonCollector(apiClient_t *apiClient, char *durability, char *authorization, char *x_beater_api_key, char *x_beater_tenant_id, char *x_beater_project_id, char *x_beater_environment_id);
+otlp_ingest_outcome_t* IngestAPI_ingestIngestOtlpJsonCollector(apiClient_t *apiClient, char *durability, char *authorization, char *x_beater_api_key, char *x_beater_tenant_id, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
@@ -244,9 +244,9 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **IngestAPI_reconcileTrace**
+# **IngestAPI_ingestReconcileTrace**
 ```c
-trace_ingested_reconcile_report_t* IngestAPI_reconcileTrace(apiClient_t *apiClient, char *tenant_id, char *project_id, char *trace_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+trace_ingested_reconcile_report_t* IngestAPI_ingestReconcileTrace(apiClient_t *apiClient, char *tenant_id, char *project_id, char *trace_id, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters
@@ -277,9 +277,9 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **IngestAPI_replayDeadLetter**
+# **IngestAPI_ingestReplayDeadLetter**
 ```c
-dead_letter_replay_report_t* IngestAPI_replayDeadLetter(apiClient_t *apiClient, char *tenant_id, char *project_id, char *message_id, int *reset_attempts, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
+dead_letter_replay_report_t* IngestAPI_ingestReplayDeadLetter(apiClient_t *apiClient, char *tenant_id, char *project_id, char *message_id, int *reset_attempts, char *authorization, char *x_beater_api_key, char *x_beater_project_id, char *x_beater_environment_id);
 ```
 
 ### Parameters

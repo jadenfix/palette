@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**health**](HealthApi.md#health) | **GET** /health |  |
-| [**healthWithHttpInfo**](HealthApi.md#healthWithHttpInfo) | **GET** /health |  |
+| [**healthHealth**](HealthApi.md#healthHealth) | **GET** /health |  |
+| [**healthHealthWithHttpInfo**](HealthApi.md#healthHealthWithHttpInfo) | **GET** /health |  |
 
 
 
-## health
+## healthHealth
 
-> HealthResponse health()
+> HealthResponse healthHealth()
 
 
 
@@ -32,10 +32,10 @@ public class Example {
 
         HealthApi apiInstance = new HealthApi(defaultClient);
         try {
-            HealthResponse result = apiInstance.health();
+            HealthResponse result = apiInstance.healthHealth();
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling HealthApi#health");
+            System.err.println("Exception when calling HealthApi#healthHealth");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -68,9 +68,9 @@ No authorization required
 |-------------|-------------|------------------|
 | **200** | Runtime is accepting requests |  -  |
 
-## healthWithHttpInfo
+## healthHealthWithHttpInfo
 
-> ApiResponse<HealthResponse> health healthWithHttpInfo()
+> ApiResponse<HealthResponse> healthHealth healthHealthWithHttpInfo()
 
 
 
@@ -92,12 +92,12 @@ public class Example {
 
         HealthApi apiInstance = new HealthApi(defaultClient);
         try {
-            ApiResponse<HealthResponse> response = apiInstance.healthWithHttpInfo();
+            ApiResponse<HealthResponse> response = apiInstance.healthHealthWithHttpInfo();
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling HealthApi#health");
+            System.err.println("Exception when calling HealthApi#healthHealth");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -129,4 +129,3 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | Runtime is accepting requests |  -  |
-

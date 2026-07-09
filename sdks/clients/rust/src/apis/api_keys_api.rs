@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
-/// struct for passing parameters to the method [`create_api_key`]
+/// struct for passing parameters to the method [`api_keys_period_create_api_key`]
 #[derive(Clone, Debug)]
-pub struct CreateApiKeyParams {
+pub struct ApiKeysPeriodCreateApiKeyParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -34,9 +34,9 @@ pub struct CreateApiKeyParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`revoke_api_key`]
+/// struct for passing parameters to the method [`api_keys_period_revoke_api_key`]
 #[derive(Clone, Debug)]
-pub struct RevokeApiKeyParams {
+pub struct ApiKeysPeriodRevokeApiKeyParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -56,20 +56,20 @@ pub struct RevokeApiKeyParams {
 }
 
 
-/// struct for typed errors of method [`create_api_key`]
+/// struct for typed errors of method [`api_keys_period_create_api_key`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum CreateApiKeyError {
+pub enum ApiKeysPeriodCreateApiKeyError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`revoke_api_key`]
+/// struct for typed errors of method [`api_keys_period_revoke_api_key`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum RevokeApiKeyError {
+pub enum ApiKeysPeriodRevokeApiKeyError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -78,7 +78,7 @@ pub enum RevokeApiKeyError {
 }
 
 
-pub async fn create_api_key(configuration: &configuration::Configuration, params: CreateApiKeyParams) -> Result<models::ApiKeyCreatedResponse, Error<CreateApiKeyError>> {
+pub async fn api_keys_period_create_api_key(configuration: &configuration::Configuration, params: ApiKeysPeriodCreateApiKeyParams) -> Result<models::ApiKeyCreatedResponse, Error<ApiKeysPeriodCreateApiKeyError>> {
 
     let uri_str = format!("{}/v1/api-keys/{tenant_id}/{project_id}/{environment_id}", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), environment_id=crate::apis::urlencode(params.environment_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -110,12 +110,12 @@ pub async fn create_api_key(configuration: &configuration::Configuration, params
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<CreateApiKeyError> = serde_json::from_str(&content).ok();
+        let entity: Option<ApiKeysPeriodCreateApiKeyError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn revoke_api_key(configuration: &configuration::Configuration, params: RevokeApiKeyParams) -> Result<models::RevokedApiKey, Error<RevokeApiKeyError>> {
+pub async fn api_keys_period_revoke_api_key(configuration: &configuration::Configuration, params: ApiKeysPeriodRevokeApiKeyParams) -> Result<models::RevokedApiKey, Error<ApiKeysPeriodRevokeApiKeyError>> {
 
     let uri_str = format!("{}/v1/api-keys/{tenant_id}/{project_id}/{environment_id}/{api_key_id}/revoke", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id), environment_id=crate::apis::urlencode(params.environment_id), api_key_id=crate::apis::urlencode(params.api_key_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -146,7 +146,7 @@ pub async fn revoke_api_key(configuration: &configuration::Configuration, params
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<RevokeApiKeyError> = serde_json::from_str(&content).ok();
+        let entity: Option<ApiKeysPeriodRevokeApiKeyError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

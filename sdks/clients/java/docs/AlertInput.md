@@ -16,6 +16,3 @@
 |**tenantId** | **String** |  |  |
 |**title** | **String** |  |  |
 |**traceId** | **String** |  |  |
-
-
-

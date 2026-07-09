@@ -4,12 +4,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**DatasetCaseId** | Pointer to **NullableString** |  | [optional] 
-**DatasetId** | Pointer to **NullableString** |  | [optional] 
-**Priority** | Pointer to **NullableInt64** |  | [optional] 
-**SpanId** | Pointer to **NullableString** |  | [optional] 
-**TaskId** | Pointer to **NullableString** |  | [optional] 
-**TraceId** | **string** |  | 
+**DatasetCaseId** | Pointer to **NullableString** |  | [optional]
+**DatasetId** | Pointer to **NullableString** |  | [optional]
+**Priority** | Pointer to **NullableInt64** |  | [optional]
+**SpanId** | Pointer to **NullableString** |  | [optional]
+**TaskId** | Pointer to **NullableString** |  | [optional]
+**TraceId** | **string** |  |
 
 ## Methods
 
@@ -227,5 +227,3 @@ SetTraceId sets TraceId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

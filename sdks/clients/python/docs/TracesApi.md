@@ -4,12 +4,12 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**get_trace**](TracesApi.md#get_trace) | **GET** /v1/traces/{tenant_id}/{trace_id} | 
-[**list_traces**](TracesApi.md#list_traces) | **GET** /v1/traces/{tenant_id} | 
+[**traces_get_trace**](TracesApi.md#traces_get_trace) | **GET** /v1/traces/{tenant_id}/{trace_id} |
+[**traces_list_traces**](TracesApi.md#traces_list_traces) | **GET** /v1/traces/{tenant_id} |
 
 
-# **get_trace**
-> TraceView get_trace(tenant_id, trace_id, unmask=unmask, reason=reason, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **traces_get_trace**
+> TraceView traces_get_trace(tenant_id, trace_id, unmask=unmask, reason=reason, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -43,11 +43,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.get_trace(tenant_id, trace_id, unmask=unmask, reason=reason, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of TracesApi->get_trace:\n")
+        api_response = api_instance.traces_get_trace(tenant_id, trace_id, unmask=unmask, reason=reason, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of TracesApi->traces_get_trace:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling TracesApi->get_trace: %s\n" % e)
+        print("Exception when calling TracesApi->traces_get_trace: %s\n" % e)
 ```
 
 
@@ -57,14 +57,14 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **trace_id** | **str**| trace_id | 
- **unmask** | **bool**|  | [optional] 
- **reason** | **str**|  | [optional] 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **trace_id** | **str**| trace_id |
+ **unmask** | **bool**|  | [optional]
+ **reason** | **str**|  | [optional]
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -91,8 +91,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **list_traces**
-> PageRunSummary list_traces(tenant_id, project_id=project_id, environment_id=environment_id, trace_id=trace_id, kind=kind, status=status, started_after=started_after, started_before=started_before, model=model, release=release, min_cost_micros=min_cost_micros, max_cost_micros=max_cost_micros, min_latency_ms=min_latency_ms, max_latency_ms=max_latency_ms, limit=limit, cursor=cursor, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+# **traces_list_traces**
+> PageRunSummary traces_list_traces(tenant_id, project_id=project_id, environment_id=environment_id, trace_id=trace_id, kind=kind, status=status, started_after=started_after, started_before=started_before, model=model, release=release, min_cost_micros=min_cost_micros, max_cost_micros=max_cost_micros, min_latency_ms=min_latency_ms, max_latency_ms=max_latency_ms, limit=limit, cursor=cursor, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
 
 
 
@@ -138,11 +138,11 @@ with beater_client.ApiClient(configuration) as api_client:
     x_beater_environment_id = 'x_beater_environment_id_example' # str | Strict-auth environment scope (optional)
 
     try:
-        api_response = api_instance.list_traces(tenant_id, project_id=project_id, environment_id=environment_id, trace_id=trace_id, kind=kind, status=status, started_after=started_after, started_before=started_before, model=model, release=release, min_cost_micros=min_cost_micros, max_cost_micros=max_cost_micros, min_latency_ms=min_latency_ms, max_latency_ms=max_latency_ms, limit=limit, cursor=cursor, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
-        print("The response of TracesApi->list_traces:\n")
+        api_response = api_instance.traces_list_traces(tenant_id, project_id=project_id, environment_id=environment_id, trace_id=trace_id, kind=kind, status=status, started_after=started_after, started_before=started_before, model=model, release=release, min_cost_micros=min_cost_micros, max_cost_micros=max_cost_micros, min_latency_ms=min_latency_ms, max_latency_ms=max_latency_ms, limit=limit, cursor=cursor, authorization=authorization, x_beater_api_key=x_beater_api_key, x_beater_project_id=x_beater_project_id, x_beater_environment_id=x_beater_environment_id)
+        print("The response of TracesApi->traces_list_traces:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling TracesApi->list_traces: %s\n" % e)
+        print("Exception when calling TracesApi->traces_list_traces: %s\n" % e)
 ```
 
 
@@ -152,26 +152,26 @@ with beater_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tenant_id** | **str**| tenant_id | 
- **project_id** | **str**|  | [optional] 
- **environment_id** | **str**|  | [optional] 
- **trace_id** | **str**|  | [optional] 
- **kind** | **str**|  | [optional] 
- **status** | **str**|  | [optional] 
- **started_after** | **str**|  | [optional] 
- **started_before** | **str**|  | [optional] 
- **model** | **str**|  | [optional] 
- **release** | **str**|  | [optional] 
- **min_cost_micros** | **int**|  | [optional] 
- **max_cost_micros** | **int**|  | [optional] 
- **min_latency_ms** | **int**|  | [optional] 
- **max_latency_ms** | **int**|  | [optional] 
- **limit** | **int**|  | [optional] 
- **cursor** | **str**|  | [optional] 
- **authorization** | **str**| Bearer API token for strict auth | [optional] 
- **x_beater_api_key** | **str**| API key alternative for strict auth | [optional] 
- **x_beater_project_id** | **str**| Strict-auth project scope | [optional] 
- **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional] 
+ **tenant_id** | **str**| tenant_id |
+ **project_id** | **str**|  | [optional]
+ **environment_id** | **str**|  | [optional]
+ **trace_id** | **str**|  | [optional]
+ **kind** | **str**|  | [optional]
+ **status** | **str**|  | [optional]
+ **started_after** | **str**|  | [optional]
+ **started_before** | **str**|  | [optional]
+ **model** | **str**|  | [optional]
+ **release** | **str**|  | [optional]
+ **min_cost_micros** | **int**|  | [optional]
+ **max_cost_micros** | **int**|  | [optional]
+ **min_latency_ms** | **int**|  | [optional]
+ **max_latency_ms** | **int**|  | [optional]
+ **limit** | **int**|  | [optional]
+ **cursor** | **str**|  | [optional]
+ **authorization** | **str**| Bearer API token for strict auth | [optional]
+ **x_beater_api_key** | **str**| API key alternative for strict auth | [optional]
+ **x_beater_project_id** | **str**| Strict-auth project scope | [optional]
+ **x_beater_environment_id** | **str**| Strict-auth environment scope | [optional]
 
 ### Return type
 
@@ -196,4 +196,3 @@ No authorization required
 **403** | Credentials lack the required scope |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

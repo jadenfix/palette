@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**DomContains** | Pointer to **NullableString** |  | [optional] 
-**Type** | **string** |  | 
-**UrlContains** | Pointer to **NullableString** |  | [optional] 
+**DomContains** | Pointer to **NullableString** |  | [optional]
+**Type** | **string** |  |
+**UrlContains** | Pointer to **NullableString** |  | [optional]
 
 ## Methods
 
@@ -119,5 +119,3 @@ HasUrlContains returns a boolean if a field has been set.
 UnsetUrlContains ensures that no value is present for UrlContains, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -11,6 +11,3 @@
 |**payload** | **Object** |  |  |
 |**reviewerId** | **String** |  |  |
 |**verdict** | **ReviewVerdict** |  |  |
-
-
-

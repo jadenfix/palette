@@ -22,14 +22,14 @@ func Test_beaterclient_TracesAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test TracesAPIService GetTrace", func(t *testing.T) {
+	t.Run("Test TracesAPIService TracesGetTrace", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var traceId string
 
-		resp, httpRes, err := apiClient.TracesAPI.GetTrace(context.Background(), tenantId, traceId).Execute()
+		resp, httpRes, err := apiClient.TracesAPI.TracesGetTrace(context.Background(), tenantId, traceId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -37,13 +37,13 @@ func Test_beaterclient_TracesAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test TracesAPIService ListTraces", func(t *testing.T) {
+	t.Run("Test TracesAPIService TracesListTraces", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 
-		resp, httpRes, err := apiClient.TracesAPI.ListTraces(context.Background(), tenantId).Execute()
+		resp, httpRes, err := apiClient.TracesAPI.TracesListTraces(context.Background(), tenantId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

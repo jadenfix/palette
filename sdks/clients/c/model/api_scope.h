@@ -18,7 +18,7 @@ typedef struct api_scope_t api_scope_t;
 
 // Enum  for api_scope
 
-typedef enum { beater_api_api_scope__NULL = 0, beater_api_api_scope__trace_write, beater_api_api_scope__trace_read, beater_api_api_scope__dataset_write, beater_api_api_scope__scenario_write, beater_api_api_scope__scenario_read, beater_api_api_scope__eval_run, beater_api_api_scope__pii_unmask, beater_api_api_scope__admin } beater_api_api_scope__e;
+typedef enum { beater_api_api_scope__NULL = 0, beater_api_api_scope__trace:write, beater_api_api_scope__trace:read, beater_api_api_scope__dataset:write, beater_api_api_scope__scenario:write, beater_api_api_scope__scenario:read, beater_api_api_scope__eval:run, beater_api_api_scope__pii:unmask, beater_api_api_scope__admin } beater_api_api_scope__e;
 
 char* api_scope_api_scope_ToString(beater_api_api_scope__e api_scope);
 

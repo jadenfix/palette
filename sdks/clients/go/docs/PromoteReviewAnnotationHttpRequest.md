@@ -4,8 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**DatasetId** | **string** |  | 
-**Reference** | Pointer to **interface{}** |  | [optional] 
+**DatasetId** | **string** |  |
+**Reference** | Pointer to **interface{}** |  | [optional]
 
 ## Methods
 
@@ -83,5 +83,3 @@ HasReference returns a boolean if a field has been set.
 UnsetReference ensures that no value is present for Reference, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

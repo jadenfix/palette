@@ -4,12 +4,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**AuthSchemes** | Pointer to **[]string** | Supported auth schemes (e.g. &#x60;OAUTH2&#x60;, &#x60;API_KEY&#x60;, &#x60;NO_AUTH&#x60;). | [optional] 
-**Description** | Pointer to **NullableString** | Short description, if the catalog provides one. | [optional] 
-**Name** | **string** | Human display name. | 
-**NoAuth** | Pointer to **bool** | &#x60;true&#x60; when the toolkit needs no OAuth/connection to execute. | [optional] 
-**Slug** | **string** | Stable slug used everywhere else (e.g. &#x60;github&#x60;, &#x60;gmail&#x60;). | 
-**ToolsCount** | Pointer to **NullableInt32** | Number of tools the toolkit exposes, if known. | [optional] 
+**AuthSchemes** | Pointer to **[]string** | Supported auth schemes (e.g. &#x60;OAUTH2&#x60;, &#x60;API_KEY&#x60;, &#x60;NO_AUTH&#x60;). | [optional]
+**Description** | Pointer to **NullableString** | Short description, if the catalog provides one. | [optional]
+**Name** | **string** | Human display name. |
+**NoAuth** | Pointer to **bool** | &#x60;true&#x60; when the toolkit needs no OAuth/connection to execute. | [optional]
+**Slug** | **string** | Stable slug used everywhere else (e.g. &#x60;github&#x60;, &#x60;gmail&#x60;). |
+**ToolsCount** | Pointer to **NullableInt32** | Number of tools the toolkit exposes, if known. | [optional]
 
 ## Methods
 
@@ -192,5 +192,3 @@ HasToolsCount returns a boolean if a field has been set.
 UnsetToolsCount ensures that no value is present for ToolsCount, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -17,6 +17,3 @@
 | Name | Value |
 |---- | -----|
 | COST_BUDGET | &quot;cost_budget&quot; |
-
-
-

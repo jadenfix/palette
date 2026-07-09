@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**pass_threshold** | **float** |  | 
+**pass_threshold** | **float** |  |
 
 ## Example
 
@@ -25,5 +25,3 @@ calibration_policy_dict = calibration_policy_instance.to_dict()
 calibration_policy_from_dict = CalibrationPolicy.from_dict(calibration_policy_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

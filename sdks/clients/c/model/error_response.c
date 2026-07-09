@@ -7,6 +7,7 @@
 
 static error_response_t *error_response_create_internal(
     char *error,
+    char *message,
     int status
     ) {
     error_response_t *error_response_local_var = malloc(sizeof(error_response_t));
@@ -14,6 +15,7 @@ static error_response_t *error_response_create_internal(
         return NULL;
     }
     error_response_local_var->error = error;
+    error_response_local_var->message = message;
     error_response_local_var->status = status;
 
     error_response_local_var->_library_owned = 1;
@@ -22,10 +24,12 @@ static error_response_t *error_response_create_internal(
 
 __attribute__((deprecated)) error_response_t *error_response_create(
     char *error,
+    char *message,
     int status
     ) {
     return error_response_create_internal (
         error,
+        message,
         status
         );
 }
@@ -43,6 +47,10 @@ void error_response_free(error_response_t *error_response) {
         free(error_response->error);
         error_response->error = NULL;
     }
+    if (error_response->message) {
+        free(error_response->message);
+        error_response->message = NULL;
+    }
     free(error_response);
 }
 
@@ -54,6 +62,15 @@ cJSON *error_response_convertToJSON(error_response_t *error_response) {
         goto fail;
     }
     if(cJSON_AddStringToObject(item, "error", error_response->error) == NULL) {
+    goto fail; //String
+    }
+
+
+    // error_response->message
+    if (!error_response->message) {
+        goto fail;
+    }
+    if(cJSON_AddStringToObject(item, "message", error_response->message) == NULL) {
     goto fail; //String
     }
 
@@ -87,8 +104,23 @@ error_response_t *error_response_parseFromJSON(cJSON *error_responseJSON){
         goto end;
     }
 
-    
+
     if(!cJSON_IsString(error))
+    {
+    goto end; //String
+    }
+
+    // error_response->message
+    cJSON *message = cJSON_GetObjectItemCaseSensitive(error_responseJSON, "message");
+    if (cJSON_IsNull(message)) {
+        message = NULL;
+    }
+    if (!message) {
+        goto end;
+    }
+
+
+    if(!cJSON_IsString(message))
     {
     goto end; //String
     }
@@ -102,7 +134,7 @@ error_response_t *error_response_parseFromJSON(cJSON *error_responseJSON){
         goto end;
     }
 
-    
+
     if(!cJSON_IsNumber(status))
     {
     goto end; //Numeric
@@ -111,6 +143,7 @@ error_response_t *error_response_parseFromJSON(cJSON *error_responseJSON){
 
     error_response_local_var = error_response_create_internal (
         strdup(error->valuestring),
+        strdup(message->valuestring),
         status->valuedouble
         );
 

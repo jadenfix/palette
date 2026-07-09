@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**searchSpans**](SearchApi.md#searchSpans) | **GET** /v1/search/{tenant_id}/spans |  |
-| [**searchSpansWithHttpInfo**](SearchApi.md#searchSpansWithHttpInfo) | **GET** /v1/search/{tenant_id}/spans |  |
+| [**searchSearchSpans**](SearchApi.md#searchSearchSpans) | **GET** /v1/search/{tenant_id}/spans |  |
+| [**searchSearchSpansWithHttpInfo**](SearchApi.md#searchSearchSpansWithHttpInfo) | **GET** /v1/search/{tenant_id}/spans |  |
 
 
 
-## searchSpans
+## searchSearchSpans
 
-> SearchResponse searchSpans(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> SearchResponse searchSearchSpans(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -32,25 +32,25 @@ public class Example {
 
         SearchApi apiInstance = new SearchApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
-        String q = "q_example"; // String | 
-        String projectId = "projectId_example"; // String | 
-        String environmentId = "environmentId_example"; // String | 
-        String traceId = "traceId_example"; // String | 
-        String spanId = "spanId_example"; // String | 
-        String kind = "kind_example"; // String | 
-        String status = "status_example"; // String | 
-        String model = "model_example"; // String | 
-        String tool = "tool_example"; // String | 
-        Integer limit = 56; // Integer | 
+        String q = "q_example"; // String |
+        String projectId = "projectId_example"; // String |
+        String environmentId = "environmentId_example"; // String |
+        String traceId = "traceId_example"; // String |
+        String spanId = "spanId_example"; // String |
+        String kind = "kind_example"; // String |
+        String status = "status_example"; // String |
+        String model = "model_example"; // String |
+        String tool = "tool_example"; // String |
+        Integer limit = 56; // Integer |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            SearchResponse result = apiInstance.searchSpans(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            SearchResponse result = apiInstance.searchSearchSpans(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling SearchApi#searchSpans");
+            System.err.println("Exception when calling SearchApi#searchSearchSpans");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -103,9 +103,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## searchSpansWithHttpInfo
+## searchSearchSpansWithHttpInfo
 
-> ApiResponse<SearchResponse> searchSpans searchSpansWithHttpInfo(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<SearchResponse> searchSearchSpans searchSearchSpansWithHttpInfo(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -127,27 +127,27 @@ public class Example {
 
         SearchApi apiInstance = new SearchApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
-        String q = "q_example"; // String | 
-        String projectId = "projectId_example"; // String | 
-        String environmentId = "environmentId_example"; // String | 
-        String traceId = "traceId_example"; // String | 
-        String spanId = "spanId_example"; // String | 
-        String kind = "kind_example"; // String | 
-        String status = "status_example"; // String | 
-        String model = "model_example"; // String | 
-        String tool = "tool_example"; // String | 
-        Integer limit = 56; // Integer | 
+        String q = "q_example"; // String |
+        String projectId = "projectId_example"; // String |
+        String environmentId = "environmentId_example"; // String |
+        String traceId = "traceId_example"; // String |
+        String spanId = "spanId_example"; // String |
+        String kind = "kind_example"; // String |
+        String status = "status_example"; // String |
+        String model = "model_example"; // String |
+        String tool = "tool_example"; // String |
+        Integer limit = 56; // Integer |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<SearchResponse> response = apiInstance.searchSpansWithHttpInfo(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<SearchResponse> response = apiInstance.searchSearchSpansWithHttpInfo(tenantId, q, projectId, environmentId, traceId, spanId, kind, status, model, tool, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling SearchApi#searchSpans");
+            System.err.println("Exception when calling SearchApi#searchSearchSpans");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -199,4 +199,3 @@ No authorization required
 | **400** | Invalid request, scope, or filter |  -  |
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
-

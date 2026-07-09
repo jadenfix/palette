@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**search_spans**](SearchApi.md#search_spans) | **GET** /v1/search/{tenant_id}/spans | 
+[**search_period_search_spans**](SearchApi.md#search_period_search_spans) | **GET** /v1/search/{tenant_id}/spans |
 
 
 
-## search_spans
+## search_period_search_spans
 
-> models::SearchResponse search_spans(tenant_id, q, project_id, environment_id, trace_id, span_id, kind, status, model, tool, limit, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::SearchResponse search_period_search_spans(tenant_id, q, project_id, environment_id, trace_id, span_id, kind, status, model, tool, limit, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -48,4 +48,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

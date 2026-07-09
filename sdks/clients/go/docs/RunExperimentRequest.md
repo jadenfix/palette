@@ -4,14 +4,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**BaselineOutputs** | [**[]CaseOutputOverrideRequest**](CaseOutputOverrideRequest.md) |  | 
-**BaselineReleaseId** | **string** |  | 
-**CandidateOutputs** | [**[]CaseOutputOverrideRequest**](CaseOutputOverrideRequest.md) |  | 
-**CandidateReleaseId** | **string** |  | 
-**EvaluatorId** | **string** |  | 
-**EvaluatorVersionId** | **string** |  | 
-**GatePolicy** | Pointer to [**NullableGatePolicy**](GatePolicy.md) |  | [optional] 
-**Kind** | [**EvaluatorKind**](EvaluatorKind.md) |  | 
+**BaselineOutputs** | [**[]CaseOutputOverrideRequest**](CaseOutputOverrideRequest.md) |  |
+**BaselineReleaseId** | **string** |  |
+**CandidateOutputs** | [**[]CaseOutputOverrideRequest**](CaseOutputOverrideRequest.md) |  |
+**CandidateReleaseId** | **string** |  |
+**EvaluatorId** | **string** |  |
+**EvaluatorVersionId** | **string** |  |
+**GatePolicy** | Pointer to [**NullableGatePolicy**](GatePolicy.md) |  | [optional]
+**Kind** | [**EvaluatorKind**](EvaluatorKind.md) |  |
 
 ## Methods
 
@@ -209,5 +209,3 @@ SetKind sets Kind field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

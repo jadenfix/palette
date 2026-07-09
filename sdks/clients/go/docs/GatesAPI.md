@@ -4,14 +4,14 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**CreateGate**](GatesAPI.md#CreateGate) | **Post** /v1/gates/{tenant_id}/{project_id} | 
-[**RunGate**](GatesAPI.md#RunGate) | **Post** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run | 
+[**GatesCreateGate**](GatesAPI.md#GatesCreateGate) | **Post** /v1/gates/{tenant_id}/{project_id} |
+[**GatesRunGate**](GatesAPI.md#GatesRunGate) | **Post** /v1/gates/{tenant_id}/{project_id}/{gate_id}/run |
 
 
 
-## CreateGate
+## GatesCreateGate
 
-> GateDefinition CreateGate(ctx, tenantId, projectId).CreateGateRequest(createGateRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> GateDefinition GatesCreateGate(ctx, tenantId, projectId).CreateGateRequest(createGateRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -30,7 +30,7 @@ import (
 func main() {
 	tenantId := "tenantId_example" // string | tenant_id
 	projectId := "projectId_example" // string | project_id
-	createGateRequest := *openapiclient.NewCreateGateRequest("GateId_example", "Name_example") // CreateGateRequest | 
+	createGateRequest := *openapiclient.NewCreateGateRequest("GateId_example", "Name_example") // CreateGateRequest |
 	authorization := "authorization_example" // string | Bearer API token for strict auth (optional)
 	xBeaterApiKey := "xBeaterApiKey_example" // string | API key alternative for strict auth (optional)
 	xBeaterProjectId := "xBeaterProjectId_example" // string | Strict-auth project scope (optional)
@@ -38,13 +38,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.GatesAPI.CreateGate(context.Background(), tenantId, projectId).CreateGateRequest(createGateRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.GatesAPI.GatesCreateGate(context.Background(), tenantId, projectId).CreateGateRequest(createGateRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `GatesAPI.CreateGate``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `GatesAPI.GatesCreateGate``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `CreateGate`: GateDefinition
-	fmt.Fprintf(os.Stdout, "Response from `GatesAPI.CreateGate`: %v\n", resp)
+	// response from `GatesCreateGate`: GateDefinition
+	fmt.Fprintf(os.Stdout, "Response from `GatesAPI.GatesCreateGate`: %v\n", resp)
 }
 ```
 
@@ -54,23 +54,23 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiCreateGateRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiGatesCreateGateRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **createGateRequest** | [**CreateGateRequest**](CreateGateRequest.md) |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **createGateRequest** | [**CreateGateRequest**](CreateGateRequest.md) |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -90,9 +90,9 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## RunGate
+## GatesRunGate
 
-> GateRunReport RunGate(ctx, tenantId, projectId, gateId).RunGateRequest(runGateRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> GateRunReport GatesRunGate(ctx, tenantId, projectId, gateId).RunGateRequest(runGateRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -112,7 +112,7 @@ func main() {
 	tenantId := "tenantId_example" // string | tenant_id
 	projectId := "projectId_example" // string | project_id
 	gateId := "gateId_example" // string | gate_id
-	runGateRequest := *openapiclient.NewRunGateRequest() // RunGateRequest | 
+	runGateRequest := *openapiclient.NewRunGateRequest() // RunGateRequest |
 	authorization := "authorization_example" // string | Bearer API token for strict auth (optional)
 	xBeaterApiKey := "xBeaterApiKey_example" // string | API key alternative for strict auth (optional)
 	xBeaterProjectId := "xBeaterProjectId_example" // string | Strict-auth project scope (optional)
@@ -120,13 +120,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.GatesAPI.RunGate(context.Background(), tenantId, projectId, gateId).RunGateRequest(runGateRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.GatesAPI.GatesRunGate(context.Background(), tenantId, projectId, gateId).RunGateRequest(runGateRequest).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `GatesAPI.RunGate``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `GatesAPI.GatesRunGate``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `RunGate`: GateRunReport
-	fmt.Fprintf(os.Stdout, "Response from `GatesAPI.RunGate`: %v\n", resp)
+	// response from `GatesRunGate`: GateRunReport
+	fmt.Fprintf(os.Stdout, "Response from `GatesAPI.GatesRunGate`: %v\n", resp)
 }
 ```
 
@@ -136,13 +136,13 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
-**gateId** | **string** | gate_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
+**gateId** | **string** | gate_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiRunGateRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiGatesRunGateRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -150,11 +150,11 @@ Name | Type | Description  | Notes
 
 
 
- **runGateRequest** | [**RunGateRequest**](RunGateRequest.md) |  | 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **runGateRequest** | [**RunGateRequest**](RunGateRequest.md) |  |
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -172,4 +172,3 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

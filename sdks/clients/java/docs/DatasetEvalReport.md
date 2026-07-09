@@ -17,6 +17,3 @@
 |**resultCount** | **Integer** |  |  |
 |**results** | [**List&lt;EvalResult&gt;**](EvalResult.md) |  |  |
 |**tenantId** | **String** |  |  |
-
-
-

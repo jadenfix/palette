@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Kind** | **string** |  | 
-**Value** | **interface{}** |  | 
-**ArtifactRef** | [**ArtifactRef**](ArtifactRef.md) |  | 
-**Reason** | **string** |  | 
+**Kind** | **string** |  |
+**Value** | **interface{}** |  |
+**ArtifactRef** | [**ArtifactRef**](ArtifactRef.md) |  |
+**Reason** | **string** |  |
 
 ## Methods
 
@@ -120,5 +120,3 @@ SetReason sets Reason field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

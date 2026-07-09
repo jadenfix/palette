@@ -6,9 +6,9 @@ One-time login link returned when initiating a managed-OAuth connection.
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**connected_account_id** | **str** | Composio connection id (&#x60;ca_…&#x60;) created for this handshake. | 
-**expires_at** | **str** | When the link expires (RFC 3339), if provided. | [optional] 
-**redirect_url** | **str** | URL the end user opens once to authorize the app. | 
+**connected_account_id** | **str** | Composio connection id (&#x60;ca_…&#x60;) created for this handshake. |
+**expires_at** | **str** | When the link expires (RFC 3339), if provided. | [optional]
+**redirect_url** | **str** | URL the end user opens once to authorize the app. |
 
 ## Example
 
@@ -28,5 +28,3 @@ connection_link_dict = connection_link_instance.to_dict()
 connection_link_from_dict = ConnectionLink.from_dict(connection_link_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

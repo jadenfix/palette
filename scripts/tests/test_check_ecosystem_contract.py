@@ -94,20 +94,37 @@ def test_rejects_missing_payment_trace_metadata_fixture() -> None:
         assert "missing marker 'aether.payment_envelope_id'" in result.stderr
 
 
-def test_rejects_unprotected_billing_route_contract() -> None:
+def test_rejects_product_billing_route_contract() -> None:
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         copy_contract_inputs(root)
         api = root / "crates" / "beater-api" / "src" / "lib.rs"
         api.write_text(
-            api.read_text(encoding="utf-8").replace("#[cfg(feature = \"billing\")]", ""),
+            api.read_text(encoding="utf-8") + '\n.route("/v1/billing/webhooks/stripe")\n',
             encoding="utf-8",
         )
 
         result = run(root)
 
         assert result.returncode == 1
-        assert "crates/beater-api/src/lib.rs missing marker" in result.stderr
+        assert "crates/beater-api/src/lib.rs must not contain marker" in result.stderr
+
+
+def test_rejects_daemon_billing_store_contract() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        copy_contract_inputs(root)
+        daemon = root / "bins" / "beaterd" / "src" / "main.rs"
+        daemon.write_text(
+            daemon.read_text(encoding="utf-8")
+            + '\nlet billing_db_path = data_dir.join("billing.sqlite");\n',
+            encoding="utf-8",
+        )
+
+        result = run(root)
+
+        assert result.returncode == 1
+        assert "bins/beaterd/src/main.rs must not contain marker" in result.stderr
 
 
 def test_rejects_missing_import_ingress_route() -> None:
@@ -138,7 +155,8 @@ if __name__ == "__main__":
         test_rejects_missing_neighbor_repo_boundary,
         test_rejects_missing_aether_payment_boundary,
         test_rejects_missing_payment_trace_metadata_fixture,
-        test_rejects_unprotected_billing_route_contract,
+        test_rejects_product_billing_route_contract,
+        test_rejects_daemon_billing_store_contract,
         test_rejects_missing_import_ingress_route,
     ):
         test()

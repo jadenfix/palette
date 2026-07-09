@@ -22,14 +22,14 @@ func Test_beaterclient_UsageAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test UsageAPIService GetUsageSummary", func(t *testing.T) {
+	t.Run("Test UsageAPIService UsageGetUsageSummary", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.UsageAPI.GetUsageSummary(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.UsageAPI.UsageGetUsageSummary(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

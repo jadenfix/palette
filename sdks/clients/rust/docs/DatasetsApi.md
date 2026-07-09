@@ -4,15 +4,15 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_dataset**](DatasetsApi.md#create_dataset) | **POST** /v1/datasets/{tenant_id}/{project_id} | 
-[**create_dataset_version**](DatasetsApi.md#create_dataset_version) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions | 
-[**promote_dataset_case_from_trace**](DatasetsApi.md#promote_dataset_case_from_trace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace | 
+[**datasets_period_create_dataset**](DatasetsApi.md#datasets_period_create_dataset) | **POST** /v1/datasets/{tenant_id}/{project_id} |
+[**datasets_period_create_dataset_version**](DatasetsApi.md#datasets_period_create_dataset_version) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/versions |
+[**datasets_period_promote_dataset_case_from_trace**](DatasetsApi.md#datasets_period_promote_dataset_case_from_trace) | **POST** /v1/datasets/{tenant_id}/{project_id}/{dataset_id}/cases/from-trace |
 
 
 
-## create_dataset
+## datasets_period_create_dataset
 
-> models::Dataset create_dataset(tenant_id, project_id, create_dataset_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::Dataset datasets_period_create_dataset(tenant_id, project_id, create_dataset_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -44,9 +44,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## create_dataset_version
+## datasets_period_create_dataset_version
 
-> models::DatasetVersionSnapshot create_dataset_version(tenant_id, project_id, dataset_id, create_dataset_version_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::DatasetVersionSnapshot datasets_period_create_dataset_version(tenant_id, project_id, dataset_id, create_dataset_version_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -79,9 +79,9 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## promote_dataset_case_from_trace
+## datasets_period_promote_dataset_case_from_trace
 
-> models::DatasetCase promote_dataset_case_from_trace(tenant_id, project_id, dataset_id, promote_trace_case_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
+> models::DatasetCase datasets_period_promote_dataset_case_from_trace(tenant_id, project_id, dataset_id, promote_trace_case_request, authorization, x_beater_api_key, x_beater_project_id, x_beater_environment_id)
 
 
 ### Parameters
@@ -112,4 +112,3 @@ No authorization required
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

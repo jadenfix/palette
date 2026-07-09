@@ -102,8 +102,8 @@ public class ConnectorsApi {
    * @return ConnectionLink
    * @throws ApiException if fails to make API call
    */
-  public ConnectionLink connectConnector(String tenantId, String projectId, ConnectConnectorRequest connectConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<ConnectionLink> localVarResponse = connectConnectorWithHttpInfo(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ConnectionLink connectorsConnectConnector(String tenantId, String projectId, ConnectConnectorRequest connectConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<ConnectionLink> localVarResponse = connectorsConnectConnectorWithHttpInfo(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -120,8 +120,8 @@ public class ConnectorsApi {
    * @return ApiResponse&lt;ConnectionLink&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ConnectionLink> connectConnectorWithHttpInfo(String tenantId, String projectId, ConnectConnectorRequest connectConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = connectConnectorRequestBuilder(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<ConnectionLink> connectorsConnectConnectorWithHttpInfo(String tenantId, String projectId, ConnectConnectorRequest connectConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = connectorsConnectConnectorRequestBuilder(tenantId, projectId, connectConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -131,7 +131,7 @@ public class ConnectorsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("connectConnector", localVarResponse);
+          throw getApiException("connectorsConnectConnector", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<ConnectionLink>(
@@ -160,18 +160,18 @@ public class ConnectorsApi {
     }
   }
 
-  private HttpRequest.Builder connectConnectorRequestBuilder(String tenantId, String projectId, ConnectConnectorRequest connectConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder connectorsConnectConnectorRequestBuilder(String tenantId, String projectId, ConnectConnectorRequest connectConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling connectConnector");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling connectorsConnectConnector");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling connectConnector");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling connectorsConnectConnector");
     }
     // verify the required parameter 'connectConnectorRequest' is set
     if (connectConnectorRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'connectConnectorRequest' when calling connectConnector");
+      throw new ApiException(400, "Missing the required parameter 'connectConnectorRequest' when calling connectorsConnectConnector");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -225,8 +225,8 @@ public class ConnectorsApi {
    * @return ConnectionStatus
    * @throws ApiException if fails to make API call
    */
-  public ConnectionStatus connectorStatus(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<ConnectionStatus> localVarResponse = connectorStatusWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ConnectionStatus connectorsConnectorStatus(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<ConnectionStatus> localVarResponse = connectorsConnectorStatusWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -243,8 +243,8 @@ public class ConnectorsApi {
    * @return ApiResponse&lt;ConnectionStatus&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ConnectionStatus> connectorStatusWithHttpInfo(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = connectorStatusRequestBuilder(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<ConnectionStatus> connectorsConnectorStatusWithHttpInfo(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = connectorsConnectorStatusRequestBuilder(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -254,7 +254,7 @@ public class ConnectorsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("connectorStatus", localVarResponse);
+          throw getApiException("connectorsConnectorStatus", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<ConnectionStatus>(
@@ -283,18 +283,18 @@ public class ConnectorsApi {
     }
   }
 
-  private HttpRequest.Builder connectorStatusRequestBuilder(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder connectorsConnectorStatusRequestBuilder(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling connectorStatus");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling connectorsConnectorStatus");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling connectorStatus");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling connectorsConnectorStatus");
     }
     // verify the required parameter 'toolkit' is set
     if (toolkit == null) {
-      throw new ApiException(400, "Missing the required parameter 'toolkit' when calling connectorStatus");
+      throw new ApiException(400, "Missing the required parameter 'toolkit' when calling connectorsConnectorStatus");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -357,8 +357,8 @@ public class ConnectorsApi {
    * @return ConnectorSkillsResponse
    * @throws ApiException if fails to make API call
    */
-  public ConnectorSkillsResponse getConnectorSkills(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<ConnectorSkillsResponse> localVarResponse = getConnectorSkillsWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ConnectorSkillsResponse connectorsGetConnectorSkills(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<ConnectorSkillsResponse> localVarResponse = connectorsGetConnectorSkillsWithHttpInfo(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -375,8 +375,8 @@ public class ConnectorsApi {
    * @return ApiResponse&lt;ConnectorSkillsResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ConnectorSkillsResponse> getConnectorSkillsWithHttpInfo(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = getConnectorSkillsRequestBuilder(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<ConnectorSkillsResponse> connectorsGetConnectorSkillsWithHttpInfo(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = connectorsGetConnectorSkillsRequestBuilder(tenantId, projectId, toolkit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -386,7 +386,7 @@ public class ConnectorsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("getConnectorSkills", localVarResponse);
+          throw getApiException("connectorsGetConnectorSkills", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<ConnectorSkillsResponse>(
@@ -415,18 +415,18 @@ public class ConnectorsApi {
     }
   }
 
-  private HttpRequest.Builder getConnectorSkillsRequestBuilder(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder connectorsGetConnectorSkillsRequestBuilder(String tenantId, String projectId, String toolkit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling getConnectorSkills");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling connectorsGetConnectorSkills");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling getConnectorSkills");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling connectorsGetConnectorSkills");
     }
     // verify the required parameter 'toolkit' is set
     if (toolkit == null) {
-      throw new ApiException(400, "Missing the required parameter 'toolkit' when calling getConnectorSkills");
+      throw new ApiException(400, "Missing the required parameter 'toolkit' when calling connectorsGetConnectorSkills");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -489,8 +489,8 @@ public class ConnectorsApi {
    * @return ToolExecution
    * @throws ApiException if fails to make API call
    */
-  public ToolExecution invokeConnectorTool(String tenantId, String projectId, InvokeConnectorRequest invokeConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<ToolExecution> localVarResponse = invokeConnectorToolWithHttpInfo(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ToolExecution connectorsInvokeConnectorTool(String tenantId, String projectId, InvokeConnectorRequest invokeConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<ToolExecution> localVarResponse = connectorsInvokeConnectorToolWithHttpInfo(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -507,8 +507,8 @@ public class ConnectorsApi {
    * @return ApiResponse&lt;ToolExecution&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<ToolExecution> invokeConnectorToolWithHttpInfo(String tenantId, String projectId, InvokeConnectorRequest invokeConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = invokeConnectorToolRequestBuilder(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<ToolExecution> connectorsInvokeConnectorToolWithHttpInfo(String tenantId, String projectId, InvokeConnectorRequest invokeConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = connectorsInvokeConnectorToolRequestBuilder(tenantId, projectId, invokeConnectorRequest, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -518,7 +518,7 @@ public class ConnectorsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("invokeConnectorTool", localVarResponse);
+          throw getApiException("connectorsInvokeConnectorTool", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<ToolExecution>(
@@ -547,18 +547,18 @@ public class ConnectorsApi {
     }
   }
 
-  private HttpRequest.Builder invokeConnectorToolRequestBuilder(String tenantId, String projectId, InvokeConnectorRequest invokeConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder connectorsInvokeConnectorToolRequestBuilder(String tenantId, String projectId, InvokeConnectorRequest invokeConnectorRequest, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling invokeConnectorTool");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling connectorsInvokeConnectorTool");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling invokeConnectorTool");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling connectorsInvokeConnectorTool");
     }
     // verify the required parameter 'invokeConnectorRequest' is set
     if (invokeConnectorRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'invokeConnectorRequest' when calling invokeConnectorTool");
+      throw new ApiException(400, "Missing the required parameter 'invokeConnectorRequest' when calling connectorsInvokeConnectorTool");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -613,8 +613,8 @@ public class ConnectorsApi {
    * @return List&lt;ConnectorTool&gt;
    * @throws ApiException if fails to make API call
    */
-  public List<ConnectorTool> listConnectorTools(String tenantId, String projectId, String toolkit, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<List<ConnectorTool>> localVarResponse = listConnectorToolsWithHttpInfo(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public List<ConnectorTool> connectorsListConnectorTools(String tenantId, String projectId, String toolkit, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<List<ConnectorTool>> localVarResponse = connectorsListConnectorToolsWithHttpInfo(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -632,8 +632,8 @@ public class ConnectorsApi {
    * @return ApiResponse&lt;List&lt;ConnectorTool&gt;&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<List<ConnectorTool>> listConnectorToolsWithHttpInfo(String tenantId, String projectId, String toolkit, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = listConnectorToolsRequestBuilder(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<List<ConnectorTool>> connectorsListConnectorToolsWithHttpInfo(String tenantId, String projectId, String toolkit, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = connectorsListConnectorToolsRequestBuilder(tenantId, projectId, toolkit, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -643,7 +643,7 @@ public class ConnectorsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("listConnectorTools", localVarResponse);
+          throw getApiException("connectorsListConnectorTools", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<List<ConnectorTool>>(
@@ -672,18 +672,18 @@ public class ConnectorsApi {
     }
   }
 
-  private HttpRequest.Builder listConnectorToolsRequestBuilder(String tenantId, String projectId, String toolkit, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder connectorsListConnectorToolsRequestBuilder(String tenantId, String projectId, String toolkit, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling listConnectorTools");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling connectorsListConnectorTools");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling listConnectorTools");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling connectorsListConnectorTools");
     }
     // verify the required parameter 'toolkit' is set
     if (toolkit == null) {
-      throw new ApiException(400, "Missing the required parameter 'toolkit' when calling listConnectorTools");
+      throw new ApiException(400, "Missing the required parameter 'toolkit' when calling connectorsListConnectorTools");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
@@ -748,8 +748,8 @@ public class ConnectorsApi {
    * @return List&lt;Toolkit&gt;
    * @throws ApiException if fails to make API call
    */
-  public List<Toolkit> listConnectors(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    ApiResponse<List<Toolkit>> localVarResponse = listConnectorsWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public List<Toolkit> connectorsListConnectors(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    ApiResponse<List<Toolkit>> localVarResponse = connectorsListConnectorsWithHttpInfo(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     return localVarResponse.getData();
   }
 
@@ -766,8 +766,8 @@ public class ConnectorsApi {
    * @return ApiResponse&lt;List&lt;Toolkit&gt;&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<List<Toolkit>> listConnectorsWithHttpInfo(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = listConnectorsRequestBuilder(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+  public ApiResponse<List<Toolkit>> connectorsListConnectorsWithHttpInfo(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = connectorsListConnectorsRequestBuilder(tenantId, projectId, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -777,7 +777,7 @@ public class ConnectorsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("listConnectors", localVarResponse);
+          throw getApiException("connectorsListConnectors", localVarResponse);
         }
         if (localVarResponse.body() == null) {
           return new ApiResponse<List<Toolkit>>(
@@ -806,14 +806,14 @@ public class ConnectorsApi {
     }
   }
 
-  private HttpRequest.Builder listConnectorsRequestBuilder(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
+  private HttpRequest.Builder connectorsListConnectorsRequestBuilder(String tenantId, String projectId, Integer limit, String authorization, String xBeaterApiKey, String xBeaterProjectId, String xBeaterEnvironmentId) throws ApiException {
     // verify the required parameter 'tenantId' is set
     if (tenantId == null) {
-      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling listConnectors");
+      throw new ApiException(400, "Missing the required parameter 'tenantId' when calling connectorsListConnectors");
     }
     // verify the required parameter 'projectId' is set
     if (projectId == null) {
-      throw new ApiException(400, "Missing the required parameter 'projectId' when calling listConnectors");
+      throw new ApiException(400, "Missing the required parameter 'projectId' when calling connectorsListConnectors");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();

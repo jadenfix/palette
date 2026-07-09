@@ -24,6 +24,3 @@
 |**caseId** | **String** |  |  |
 |**delta** | **Double** |  |  |
 |**reference** | **Object** |  |  [optional] |
-
-
-

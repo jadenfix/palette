@@ -23,12 +23,14 @@ error_response_t* instantiate_error_response(int include_optional) {
   if (include_optional) {
     error_response = error_response_create(
       "0",
-      0
+      "0",
+      56
     );
   } else {
     error_response = error_response_create(
       "0",
-      0
+      "0",
+      56
     );
   }
 

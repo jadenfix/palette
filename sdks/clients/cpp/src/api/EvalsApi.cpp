@@ -35,13 +35,13 @@ EvalsApi::~EvalsApi()
 {
 }
 
-pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runDeterministicEval(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, utility::string_t versionId, std::shared_ptr<RunDeterministicEvalRequest> runDeterministicEvalRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::evals_runDeterministicEval(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, utility::string_t versionId, std::shared_ptr<RunDeterministicEvalRequest> runDeterministicEvalRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'runDeterministicEvalRequest' is set
     if (runDeterministicEvalRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runDeterministicEvalRequest' when calling EvalsApi->runDeterministicEval"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runDeterministicEvalRequest' when calling EvalsApi->evals_runDeterministicEval"));
     }
 
 
@@ -79,7 +79,7 @@ pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runDeterministicEval(ut
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("EvalsApi->runDeterministicEval does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("EvalsApi->evals_runDeterministicEval does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -139,7 +139,7 @@ pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runDeterministicEval(ut
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("EvalsApi->runDeterministicEval does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("EvalsApi->evals_runDeterministicEval does not consume any supported media type"));
     }
 
 
@@ -159,7 +159,7 @@ pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runDeterministicEval(ut
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling runDeterministicEval: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling evals_runDeterministicEval: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -170,7 +170,7 @@ pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runDeterministicEval(ut
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling runDeterministicEval: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling evals_runDeterministicEval: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -194,19 +194,19 @@ pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runDeterministicEval(ut
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling runDeterministicEval: unsupported response type"));
+                , utility::conversions::to_string_t("error calling evals_runDeterministicEval: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runJudgeEval(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, utility::string_t versionId, std::shared_ptr<RunJudgeDatasetEvalRequest> runJudgeDatasetEvalRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::evals_runJudgeEval(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, utility::string_t versionId, std::shared_ptr<RunJudgeDatasetEvalRequest> runJudgeDatasetEvalRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'runJudgeDatasetEvalRequest' is set
     if (runJudgeDatasetEvalRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runJudgeDatasetEvalRequest' when calling EvalsApi->runJudgeEval"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runJudgeDatasetEvalRequest' when calling EvalsApi->evals_runJudgeEval"));
     }
 
 
@@ -244,7 +244,7 @@ pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runJudgeEval(utility::s
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("EvalsApi->runJudgeEval does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("EvalsApi->evals_runJudgeEval does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -304,7 +304,7 @@ pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runJudgeEval(utility::s
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("EvalsApi->runJudgeEval does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("EvalsApi->evals_runJudgeEval does not consume any supported media type"));
     }
 
 
@@ -324,7 +324,7 @@ pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runJudgeEval(utility::s
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling runJudgeEval: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling evals_runJudgeEval: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -335,7 +335,7 @@ pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runJudgeEval(utility::s
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling runJudgeEval: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling evals_runJudgeEval: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -359,7 +359,7 @@ pplx::task<std::shared_ptr<DatasetEvalReport>> EvalsApi::runJudgeEval(utility::s
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling runJudgeEval: unsupported response type"));
+                , utility::conversions::to_string_t("error calling evals_runJudgeEval: unsupported response type"));
         }
 
         return localVarResult;

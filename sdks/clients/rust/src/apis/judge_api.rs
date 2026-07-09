@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 use crate::{apis::ResponseContent, models};
 use super::{Error, configuration};
 
-/// struct for passing parameters to the method [`evaluate_judge`]
+/// struct for passing parameters to the method [`judge_period_evaluate_judge`]
 #[derive(Clone, Debug)]
-pub struct EvaluateJudgeParams {
+pub struct JudgePeriodEvaluateJudgeParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -32,9 +32,9 @@ pub struct EvaluateJudgeParams {
     pub x_beater_environment_id: Option<String>
 }
 
-/// struct for passing parameters to the method [`list_judge_ledger`]
+/// struct for passing parameters to the method [`judge_period_list_judge_ledger`]
 #[derive(Clone, Debug)]
-pub struct ListJudgeLedgerParams {
+pub struct JudgePeriodListJudgeLedgerParams {
     /// tenant_id
     pub tenant_id: String,
     /// project_id
@@ -50,20 +50,20 @@ pub struct ListJudgeLedgerParams {
 }
 
 
-/// struct for typed errors of method [`evaluate_judge`]
+/// struct for typed errors of method [`judge_period_evaluate_judge`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum EvaluateJudgeError {
+pub enum JudgePeriodEvaluateJudgeError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`list_judge_ledger`]
+/// struct for typed errors of method [`judge_period_list_judge_ledger`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum ListJudgeLedgerError {
+pub enum JudgePeriodListJudgeLedgerError {
     Status400(models::ErrorResponse),
     Status401(models::ErrorResponse),
     Status403(models::ErrorResponse),
@@ -71,7 +71,7 @@ pub enum ListJudgeLedgerError {
 }
 
 
-pub async fn evaluate_judge(configuration: &configuration::Configuration, params: EvaluateJudgeParams) -> Result<models::JudgeBrokerOutcome, Error<EvaluateJudgeError>> {
+pub async fn judge_period_evaluate_judge(configuration: &configuration::Configuration, params: JudgePeriodEvaluateJudgeParams) -> Result<models::JudgeBrokerOutcome, Error<JudgePeriodEvaluateJudgeError>> {
 
     let uri_str = format!("{}/v1/judge/{tenant_id}/{project_id}/evaluate", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -103,12 +103,12 @@ pub async fn evaluate_judge(configuration: &configuration::Configuration, params
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<EvaluateJudgeError> = serde_json::from_str(&content).ok();
+        let entity: Option<JudgePeriodEvaluateJudgeError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn list_judge_ledger(configuration: &configuration::Configuration, params: ListJudgeLedgerParams) -> Result<Vec<models::JudgeAuditRecord>, Error<ListJudgeLedgerError>> {
+pub async fn judge_period_list_judge_ledger(configuration: &configuration::Configuration, params: JudgePeriodListJudgeLedgerParams) -> Result<Vec<models::JudgeAuditRecord>, Error<JudgePeriodListJudgeLedgerError>> {
 
     let uri_str = format!("{}/v1/judge/{tenant_id}/{project_id}/ledger", configuration.base_path, tenant_id=crate::apis::urlencode(params.tenant_id), project_id=crate::apis::urlencode(params.project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -139,7 +139,7 @@ pub async fn list_judge_ledger(configuration: &configuration::Configuration, par
         serde_json::from_str(&content).map_err(Error::from)
     } else {
         let content = resp.text().await?;
-        let entity: Option<ListJudgeLedgerError> = serde_json::from_str(&content).ok();
+        let entity: Option<JudgePeriodListJudgeLedgerError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

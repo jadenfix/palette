@@ -41,7 +41,7 @@ class ArchiveApi:
 
 
     @validate_call
-    def archive_trace(
+    def archive_archive_trace(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -63,7 +63,7 @@ class ArchiveApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ArchiveManifest:
-        """archive_trace
+        """archive_archive_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -102,7 +102,7 @@ class ArchiveApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._archive_trace_serialize(
+        _param = self._archive_archive_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -135,7 +135,7 @@ class ArchiveApi:
 
 
     @validate_call
-    def archive_trace_with_http_info(
+    def archive_archive_trace_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -157,7 +157,7 @@ class ArchiveApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ArchiveManifest]:
-        """archive_trace
+        """archive_archive_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -196,7 +196,7 @@ class ArchiveApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._archive_trace_serialize(
+        _param = self._archive_archive_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -229,7 +229,7 @@ class ArchiveApi:
 
 
     @validate_call
-    def archive_trace_without_preload_content(
+    def archive_archive_trace_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -251,7 +251,7 @@ class ArchiveApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """archive_trace
+        """archive_archive_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -290,7 +290,7 @@ class ArchiveApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._archive_trace_serialize(
+        _param = self._archive_archive_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -318,7 +318,7 @@ class ArchiveApi:
         return response_data.response
 
 
-    def _archive_trace_serialize(
+    def _archive_archive_trace_serialize(
         self,
         tenant_id,
         project_id,
@@ -400,7 +400,7 @@ class ArchiveApi:
 
 
     @validate_call
-    def query_archive_spans(
+    def archive_query_archive_spans(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -427,7 +427,7 @@ class ArchiveApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ArchiveQueryResponse:
-        """query_archive_spans
+        """archive_query_archive_spans
 
 
         :param tenant_id: tenant_id (required)
@@ -476,7 +476,7 @@ class ArchiveApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._query_archive_spans_serialize(
+        _param = self._archive_query_archive_spans_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -513,7 +513,7 @@ class ArchiveApi:
 
 
     @validate_call
-    def query_archive_spans_with_http_info(
+    def archive_query_archive_spans_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -540,7 +540,7 @@ class ArchiveApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ArchiveQueryResponse]:
-        """query_archive_spans
+        """archive_query_archive_spans
 
 
         :param tenant_id: tenant_id (required)
@@ -589,7 +589,7 @@ class ArchiveApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._query_archive_spans_serialize(
+        _param = self._archive_query_archive_spans_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -626,7 +626,7 @@ class ArchiveApi:
 
 
     @validate_call
-    def query_archive_spans_without_preload_content(
+    def archive_query_archive_spans_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -653,7 +653,7 @@ class ArchiveApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """query_archive_spans
+        """archive_query_archive_spans
 
 
         :param tenant_id: tenant_id (required)
@@ -702,7 +702,7 @@ class ArchiveApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._query_archive_spans_serialize(
+        _param = self._archive_query_archive_spans_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             environment_id=environment_id,
@@ -734,7 +734,7 @@ class ArchiveApi:
         return response_data.response
 
 
-    def _query_archive_spans_serialize(
+    def _archive_query_archive_spans_serialize(
         self,
         tenant_id,
         project_id,

@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**PassThreshold** | **float64** |  | 
+**PassThreshold** | **float64** |  |
 
 ## Methods
 
@@ -47,5 +47,3 @@ SetPassThreshold sets PassThreshold field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

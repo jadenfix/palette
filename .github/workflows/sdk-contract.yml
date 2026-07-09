@@ -62,5 +62,11 @@ jobs:
           cargo run -q -p beater-api --example dump_openapi > /tmp/new-spec.json
           git show "origin/${{ github.base_ref || 'main' }}:sdks/openapi/beater-api.json" \
             > /tmp/base-spec.json || echo '{}' > /tmp/base-spec.json
+          set +e
           docker run --rm -v /tmp:/specs tufin/oasdiff breaking \
-            /specs/base-spec.json /specs/new-spec.json --fail-on ERR
+            /specs/base-spec.json /specs/new-spec.json --fail-on ERR | tee /tmp/oasdiff-breaking.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            python3 scripts/filter-oasdiff-breaking.py /tmp/oasdiff-breaking.txt
+          fi

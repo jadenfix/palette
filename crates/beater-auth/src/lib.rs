@@ -474,8 +474,19 @@ mod tests {
             &TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
             &ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
             &EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
-            ApiScope::TraceRead,
+            ApiScope::Admin,
         )
         .unwrap_or_else(|err| panic!("{err}"));
+        assert!(matches!(
+            verify_api_key(
+                &loaded,
+                &created.secret,
+                &TenantId::new("tenant").unwrap_or_else(|err| panic!("{err}")),
+                &ProjectId::new("project").unwrap_or_else(|err| panic!("{err}")),
+                &EnvironmentId::new("prod").unwrap_or_else(|err| panic!("{err}")),
+                ApiScope::TraceRead,
+            ),
+            Err(SecurityError::MissingScope(scope)) if scope == "trace:read"
+        ));
     }
 }

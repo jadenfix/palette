@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ack** | [**WriteAck**](WriteAck.md) |  | 
-**downstream_queued** | **bool** |  | 
+**ack** | [**WriteAck**](WriteAck.md) |  |
+**downstream_queued** | **bool** |  |
 
 ## Example
 
@@ -26,5 +26,3 @@ ingest_outcome_dict = ingest_outcome_instance.to_dict()
 ingest_outcome_from_dict = IngestOutcome.from_dict(ingest_outcome_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

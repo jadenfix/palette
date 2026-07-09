@@ -5,13 +5,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**created_at** | **datetime** |  | 
-**description** | **str** |  | [optional] 
-**name** | **str** |  | 
-**project_id** | **str** |  | 
-**prompt_id** | **str** |  | 
-**tenant_id** | **str** |  | 
-**updated_at** | **datetime** |  | 
+**created_at** | **datetime** |  |
+**description** | **str** |  | [optional]
+**name** | **str** |  |
+**project_id** | **str** |  |
+**prompt_id** | **str** |  |
+**tenant_id** | **str** |  |
+**updated_at** | **datetime** |  |
 
 ## Example
 
@@ -31,5 +31,3 @@ prompt_dict = prompt_instance.to_dict()
 prompt_from_dict = Prompt.from_dict(prompt_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

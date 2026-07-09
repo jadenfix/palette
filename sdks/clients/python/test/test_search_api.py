@@ -26,8 +26,8 @@ class TestSearchApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_search_spans(self) -> None:
-        """Test case for search_spans
+    def test_search_search_spans(self) -> None:
+        """Test case for search_search_spans
 
         """
         pass

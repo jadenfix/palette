@@ -17,9 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List
-from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,9 +26,10 @@ class ErrorResponse(BaseModel):
     """
     Error envelope returned by every fallible endpoint.
     """ # noqa: E501
-    error: StrictStr = Field(description="Human-readable error message.")
-    status: Annotated[int, Field(strict=True, ge=0)] = Field(description="HTTP status code, duplicated in the body for convenience.")
-    __properties: ClassVar[List[str]] = ["error", "status"]
+    error: StrictStr = Field(description="Stable machine-readable error code.")
+    message: StrictStr = Field(description="Human-readable error message.")
+    status: StrictInt = Field(description="Deprecated compatibility HTTP status code for older `/v1` clients.")
+    __properties: ClassVar[List[str]] = ["error", "message", "status"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -83,6 +83,7 @@ class ErrorResponse(BaseModel):
 
         _obj = cls.model_validate({
             "error": obj.get("error"),
+            "message": obj.get("message"),
             "status": obj.get("status")
         })
         return _obj

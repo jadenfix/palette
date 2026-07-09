@@ -4,11 +4,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**CreatedAt** | **time.Time** |  | 
-**Path** | **string** |  | 
-**ProjectId** | **string** |  | 
-**SpanCount** | **int32** |  | 
-**TenantId** | **string** |  | 
+**CreatedAt** | **time.Time** |  |
+**Path** | **string** |  |
+**ProjectId** | **string** |  |
+**SpanCount** | **int32** |  |
+**TenantId** | **string** |  |
 
 ## Methods
 
@@ -131,5 +131,3 @@ SetTenantId sets TenantId field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

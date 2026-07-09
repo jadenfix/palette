@@ -45,7 +45,7 @@ public class TracesApiTest {
      *          if the Api call fails
      */
     @Test
-    public void getTraceTest() throws ApiException {
+    public void tracesGetTraceTest() throws ApiException {
         String tenantId = null;
         String traceId = null;
         Boolean unmask = null;
@@ -55,7 +55,7 @@ public class TracesApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         TraceView response = 
-        api.getTrace(tenantId, traceId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.tracesGetTrace(tenantId, traceId, unmask, reason, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }
@@ -69,7 +69,7 @@ public class TracesApiTest {
      *          if the Api call fails
      */
     @Test
-    public void listTracesTest() throws ApiException {
+    public void tracesListTracesTest() throws ApiException {
         String tenantId = null;
         String projectId = null;
         String environmentId = null;
@@ -91,7 +91,7 @@ public class TracesApiTest {
         String xBeaterProjectId = null;
         String xBeaterEnvironmentId = null;
         PageRunSummary response = 
-        api.listTraces(tenantId, projectId, environmentId, traceId, kind, status, startedAfter, startedBefore, model, release, minCostMicros, maxCostMicros, minLatencyMs, maxLatencyMs, limit, cursor, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+        api.tracesListTraces(tenantId, projectId, environmentId, traceId, kind, status, startedAfter, startedBefore, model, release, minCostMicros, maxCostMicros, minLatencyMs, maxLatencyMs, limit, cursor, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
         
         // TODO: test validations
     }

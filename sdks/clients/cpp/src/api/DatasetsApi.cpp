@@ -35,13 +35,13 @@ DatasetsApi::~DatasetsApi()
 {
 }
 
-pplx::task<std::shared_ptr<Dataset>> DatasetsApi::createDataset(utility::string_t tenantId, utility::string_t projectId, std::shared_ptr<CreateDatasetRequest> createDatasetRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<Dataset>> DatasetsApi::datasets_createDataset(utility::string_t tenantId, utility::string_t projectId, std::shared_ptr<CreateDatasetRequest> createDatasetRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'createDatasetRequest' is set
     if (createDatasetRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'createDatasetRequest' when calling DatasetsApi->createDataset"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'createDatasetRequest' when calling DatasetsApi->datasets_createDataset"));
     }
 
 
@@ -77,7 +77,7 @@ pplx::task<std::shared_ptr<Dataset>> DatasetsApi::createDataset(utility::string_
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("DatasetsApi->createDataset does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("DatasetsApi->datasets_createDataset does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -137,7 +137,7 @@ pplx::task<std::shared_ptr<Dataset>> DatasetsApi::createDataset(utility::string_
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("DatasetsApi->createDataset does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("DatasetsApi->datasets_createDataset does not consume any supported media type"));
     }
 
 
@@ -157,7 +157,7 @@ pplx::task<std::shared_ptr<Dataset>> DatasetsApi::createDataset(utility::string_
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling createDataset: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling datasets_createDataset: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -168,7 +168,7 @@ pplx::task<std::shared_ptr<Dataset>> DatasetsApi::createDataset(utility::string_
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling createDataset: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling datasets_createDataset: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -192,19 +192,19 @@ pplx::task<std::shared_ptr<Dataset>> DatasetsApi::createDataset(utility::string_
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling createDataset: unsupported response type"));
+                , utility::conversions::to_string_t("error calling datasets_createDataset: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<DatasetVersionSnapshot>> DatasetsApi::createDatasetVersion(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, std::shared_ptr<CreateDatasetVersionRequest> createDatasetVersionRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<DatasetVersionSnapshot>> DatasetsApi::datasets_createDatasetVersion(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, std::shared_ptr<CreateDatasetVersionRequest> createDatasetVersionRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'createDatasetVersionRequest' is set
     if (createDatasetVersionRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'createDatasetVersionRequest' when calling DatasetsApi->createDatasetVersion"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'createDatasetVersionRequest' when calling DatasetsApi->datasets_createDatasetVersion"));
     }
 
 
@@ -241,7 +241,7 @@ pplx::task<std::shared_ptr<DatasetVersionSnapshot>> DatasetsApi::createDatasetVe
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("DatasetsApi->createDatasetVersion does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("DatasetsApi->datasets_createDatasetVersion does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -301,7 +301,7 @@ pplx::task<std::shared_ptr<DatasetVersionSnapshot>> DatasetsApi::createDatasetVe
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("DatasetsApi->createDatasetVersion does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("DatasetsApi->datasets_createDatasetVersion does not consume any supported media type"));
     }
 
 
@@ -321,7 +321,7 @@ pplx::task<std::shared_ptr<DatasetVersionSnapshot>> DatasetsApi::createDatasetVe
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling createDatasetVersion: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling datasets_createDatasetVersion: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -332,7 +332,7 @@ pplx::task<std::shared_ptr<DatasetVersionSnapshot>> DatasetsApi::createDatasetVe
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling createDatasetVersion: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling datasets_createDatasetVersion: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -356,19 +356,19 @@ pplx::task<std::shared_ptr<DatasetVersionSnapshot>> DatasetsApi::createDatasetVe
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling createDatasetVersion: unsupported response type"));
+                , utility::conversions::to_string_t("error calling datasets_createDatasetVersion: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::shared_ptr<DatasetCase>> DatasetsApi::promoteDatasetCaseFromTrace(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, std::shared_ptr<PromoteTraceCaseRequest> promoteTraceCaseRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<DatasetCase>> DatasetsApi::datasets_promoteDatasetCaseFromTrace(utility::string_t tenantId, utility::string_t projectId, utility::string_t datasetId, std::shared_ptr<PromoteTraceCaseRequest> promoteTraceCaseRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'promoteTraceCaseRequest' is set
     if (promoteTraceCaseRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'promoteTraceCaseRequest' when calling DatasetsApi->promoteDatasetCaseFromTrace"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'promoteTraceCaseRequest' when calling DatasetsApi->datasets_promoteDatasetCaseFromTrace"));
     }
 
 
@@ -405,7 +405,7 @@ pplx::task<std::shared_ptr<DatasetCase>> DatasetsApi::promoteDatasetCaseFromTrac
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("DatasetsApi->promoteDatasetCaseFromTrace does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("DatasetsApi->datasets_promoteDatasetCaseFromTrace does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -465,7 +465,7 @@ pplx::task<std::shared_ptr<DatasetCase>> DatasetsApi::promoteDatasetCaseFromTrac
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("DatasetsApi->promoteDatasetCaseFromTrace does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("DatasetsApi->datasets_promoteDatasetCaseFromTrace does not consume any supported media type"));
     }
 
 
@@ -485,7 +485,7 @@ pplx::task<std::shared_ptr<DatasetCase>> DatasetsApi::promoteDatasetCaseFromTrac
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling promoteDatasetCaseFromTrace: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling datasets_promoteDatasetCaseFromTrace: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -496,7 +496,7 @@ pplx::task<std::shared_ptr<DatasetCase>> DatasetsApi::promoteDatasetCaseFromTrac
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling promoteDatasetCaseFromTrace: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling datasets_promoteDatasetCaseFromTrace: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -520,7 +520,7 @@ pplx::task<std::shared_ptr<DatasetCase>> DatasetsApi::promoteDatasetCaseFromTrac
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling promoteDatasetCaseFromTrace: unsupported response type"));
+                , utility::conversions::to_string_t("error calling datasets_promoteDatasetCaseFromTrace: unsupported response type"));
         }
 
         return localVarResult;

@@ -22,7 +22,7 @@ func Test_beaterclient_CalibrationsAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test CalibrationsAPIService RunCalibration", func(t *testing.T) {
+	t.Run("Test CalibrationsAPIService CalibrationsRunCalibration", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -31,7 +31,7 @@ func Test_beaterclient_CalibrationsAPIService(t *testing.T) {
 		var datasetId string
 		var versionId string
 
-		resp, httpRes, err := apiClient.CalibrationsAPI.RunCalibration(context.Background(), tenantId, projectId, datasetId, versionId).Execute()
+		resp, httpRes, err := apiClient.CalibrationsAPI.CalibrationsRunCalibration(context.Background(), tenantId, projectId, datasetId, versionId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

@@ -14,6 +14,3 @@
 |**promptId** | **String** |  |  |
 |**tenantId** | **String** |  |  |
 |**updatedAt** | **OffsetDateTime** |  |  |
-
-
-

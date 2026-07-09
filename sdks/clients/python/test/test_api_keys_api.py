@@ -26,14 +26,14 @@ class TestApiKeysApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_create_api_key(self) -> None:
-        """Test case for create_api_key
+    def test_api_keys_create_api_key(self) -> None:
+        """Test case for api_keys_create_api_key
 
         """
         pass
 
-    def test_revoke_api_key(self) -> None:
-        """Test case for revoke_api_key
+    def test_api_keys_revoke_api_key(self) -> None:
+        """Test case for api_keys_revoke_api_key
 
         """
         pass

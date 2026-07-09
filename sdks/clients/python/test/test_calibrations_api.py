@@ -26,8 +26,8 @@ class TestCalibrationsApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_run_calibration(self) -> None:
-        """Test case for run_calibration
+    def test_calibrations_run_calibration(self) -> None:
+        """Test case for calibrations_run_calibration
 
         """
         pass

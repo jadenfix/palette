@@ -10,6 +10,3 @@ Request body for the unified import endpoint. The `source` field selects a regis
 |------------ | ------------- | ------------- | -------------|
 |**payload** | **Object** |  |  [optional] |
 |**source** | **String** | Registered importer key, e.g. &#x60;temporal_history&#x60; or &#x60;native&#x60;. |  |
-
-
-

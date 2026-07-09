@@ -22,7 +22,7 @@ func Test_beaterclient_ArchiveAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
-	t.Run("Test ArchiveAPIService ArchiveTrace", func(t *testing.T) {
+	t.Run("Test ArchiveAPIService ArchiveArchiveTrace", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
@@ -30,7 +30,7 @@ func Test_beaterclient_ArchiveAPIService(t *testing.T) {
 		var projectId string
 		var traceId string
 
-		resp, httpRes, err := apiClient.ArchiveAPI.ArchiveTrace(context.Background(), tenantId, projectId, traceId).Execute()
+		resp, httpRes, err := apiClient.ArchiveAPI.ArchiveArchiveTrace(context.Background(), tenantId, projectId, traceId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -38,14 +38,14 @@ func Test_beaterclient_ArchiveAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test ArchiveAPIService QueryArchiveSpans", func(t *testing.T) {
+	t.Run("Test ArchiveAPIService ArchiveQueryArchiveSpans", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		var tenantId string
 		var projectId string
 
-		resp, httpRes, err := apiClient.ArchiveAPI.QueryArchiveSpans(context.Background(), tenantId, projectId).Execute()
+		resp, httpRes, err := apiClient.ArchiveAPI.ArchiveQueryArchiveSpans(context.Background(), tenantId, projectId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

@@ -4,13 +4,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Completed** | **int32** |  | 
-**Consumed** | **int32** |  | 
-**DeadLettered** | **int32** |  | 
-**FailedWork** | **int32** |  | 
-**InvalidMessages** | **int32** |  | 
-**Retried** | **int32** |  | 
-**TraceRefs** | [**[]QueuedTraceWork**](QueuedTraceWork.md) |  | 
+**Completed** | **int32** |  |
+**Consumed** | **int32** |  |
+**DeadLettered** | **int32** |  |
+**FailedWork** | **int32** |  |
+**InvalidMessages** | **int32** |  |
+**Retried** | **int32** |  |
+**TraceRefs** | [**[]QueuedTraceWork**](QueuedTraceWork.md) |  |
 
 ## Methods
 
@@ -173,5 +173,3 @@ SetTraceRefs sets TraceRefs field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -5,11 +5,11 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**exemplar_trace_id** | **str** |  | [optional] 
-**expected_outcome** | **str** |  | [optional] 
-**failure_mode** | [**FailureMode**](FailureMode.md) |  | [optional] 
-**source_trace_ids** | **List[str]** |  | 
-**title** | **str** |  | 
+**exemplar_trace_id** | **str** |  | [optional]
+**expected_outcome** | **str** |  | [optional]
+**failure_mode** | [**FailureMode**](FailureMode.md) |  | [optional]
+**source_trace_ids** | **List[str]** |  |
+**title** | **str** |  |
 
 ## Example
 
@@ -29,5 +29,3 @@ create_scenario_request_dict = create_scenario_request_instance.to_dict()
 create_scenario_request_from_dict = CreateScenarioRequest.from_dict(create_scenario_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

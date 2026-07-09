@@ -11,6 +11,3 @@
 |**input** | **Long** |  |  |
 |**output** | **Long** |  |  |
 |**reasoning** | **Long** |  |  |
-
-
-

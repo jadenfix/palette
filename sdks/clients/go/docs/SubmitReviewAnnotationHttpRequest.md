@@ -4,10 +4,10 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**AnnotationId** | Pointer to **NullableString** |  | [optional] 
-**Payload** | **interface{}** |  | 
-**ReviewerId** | **string** |  | 
-**Verdict** | [**ReviewVerdict**](ReviewVerdict.md) |  | 
+**AnnotationId** | Pointer to **NullableString** |  | [optional]
+**Payload** | **interface{}** |  |
+**ReviewerId** | **string** |  |
+**Verdict** | [**ReviewVerdict**](ReviewVerdict.md) |  |
 
 ## Methods
 
@@ -135,5 +135,3 @@ SetVerdict sets Verdict field to given value.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

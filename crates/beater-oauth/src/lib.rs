@@ -1391,7 +1391,7 @@ mod tests {
             client_name: "mcp-client".to_string(),
             redirect_uris: vec!["https://app.example.com/cb".to_string()],
             grant_types: BTreeSet::from([GrantType::AuthorizationCode, GrantType::RefreshToken]),
-            scopes: BTreeSet::from(["traces:read".to_string(), "mcp:invoke".to_string()]),
+            scopes: BTreeSet::from(["trace:read".to_string(), "mcp:invoke".to_string()]),
             token_endpoint_auth_method: ClientAuthMethod::None,
         }
     }
@@ -1408,7 +1408,7 @@ mod tests {
                     client_id: client_id.clone(),
                     user_id: ok(UserId::new("user-1")),
                     redirect_uri: "https://app.example.com/cb".to_string(),
-                    scope: BTreeSet::from(["traces:read".to_string()]),
+                    scope: BTreeSet::from(["trace:read".to_string()]),
                     resource: "https://api.example.com".to_string(),
                     tenant_scope: test_tenant_scope(),
                     code_challenge: challenge.to_string(),
@@ -1484,7 +1484,7 @@ mod tests {
                 client_name: "legacy-client".to_string(),
                 redirect_uris: vec!["http://app.example.com/cb".to_string()],
                 grant_types: BTreeSet::from([GrantType::AuthorizationCode]),
-                scopes: BTreeSet::from(["traces:read".to_string()]),
+                scopes: BTreeSet::from(["trace:read".to_string()]),
                 token_endpoint_auth_method: ClientAuthMethod::None,
                 created_at: now,
             })
@@ -1497,7 +1497,7 @@ mod tests {
                         client_id,
                         user_id: ok(UserId::new("user-1")),
                         redirect_uri: "http://app.example.com/cb".to_string(),
-                        scope: BTreeSet::from(["traces:read".to_string()]),
+                        scope: BTreeSet::from(["trace:read".to_string()]),
                         resource: "https://api.example.com".to_string(),
                         tenant_scope: test_tenant_scope(),
                         code_challenge: challenge_for(VERIFIER),
@@ -1545,7 +1545,7 @@ mod tests {
 
         let claims = ok(store.validate_access_token(&tokens.access_token, now).await);
         assert_eq!(claims.user_id.as_str(), "user-1");
-        assert!(claims.scope.contains("traces:read"));
+        assert!(claims.scope.contains("trace:read"));
         // The tenant scope chosen at authorize-time rides through to the token.
         assert_eq!(claims.tenant_scope, test_tenant_scope());
     }

@@ -36,13 +36,13 @@ class TestCreateApiKeyHttpRequest(unittest.TestCase):
         if include_optional:
             return CreateApiKeyHttpRequest(
                 scopes = [
-                    'trace_write'
+                    'trace:write'
                     ]
             )
         else:
             return CreateApiKeyHttpRequest(
                 scopes = [
-                    'trace_write'
+                    'trace:write'
                     ],
         )
         """

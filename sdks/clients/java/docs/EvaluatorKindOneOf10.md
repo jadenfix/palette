@@ -17,6 +17,3 @@ Browser recovery: passes when the run either hit no errors or recovered to a suc
 | Name | Value |
 |---- | -----|
 | BROWSER_RECOVERY | &quot;browser_recovery&quot; |
-
-
-

@@ -4,9 +4,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Delivery** | Pointer to [**NullableWebhookDelivery**](WebhookDelivery.md) |  | [optional] 
-**Emitted** | **bool** |  | 
-**SuppressedReason** | Pointer to **NullableString** |  | [optional] 
+**Delivery** | Pointer to [**NullableWebhookDelivery**](WebhookDelivery.md) |  | [optional]
+**Emitted** | **bool** |  |
+**SuppressedReason** | Pointer to **NullableString** |  | [optional]
 
 ## Methods
 
@@ -119,5 +119,3 @@ HasSuppressedReason returns a boolean if a field has been set.
 UnsetSuppressedReason ensures that no value is present for SuppressedReason, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -28,7 +28,7 @@ import {
     ErrorResponseToJSON,
 } from '../models/index';
 
-export interface ArchiveTraceRequest {
+export interface ArchiveArchiveTraceRequest {
     tenantId: string;
     projectId: string;
     traceId: string;
@@ -38,7 +38,7 @@ export interface ArchiveTraceRequest {
     xBeaterEnvironmentId?: string | null;
 }
 
-export interface QueryArchiveSpansRequest {
+export interface ArchiveQueryArchiveSpansRequest {
     tenantId: string;
     projectId: string;
     environmentId?: string;
@@ -60,25 +60,25 @@ export class ArchiveApi extends runtime.BaseAPI {
 
     /**
      */
-    async archiveTraceRaw(requestParameters: ArchiveTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArchiveManifest>> {
+    async archiveArchiveTraceRaw(requestParameters: ArchiveArchiveTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArchiveManifest>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling archiveTrace().'
+                'Required parameter "tenantId" was null or undefined when calling archiveArchiveTrace().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling archiveTrace().'
+                'Required parameter "projectId" was null or undefined when calling archiveArchiveTrace().'
             );
         }
 
         if (requestParameters['traceId'] == null) {
             throw new runtime.RequiredError(
                 'traceId',
-                'Required parameter "traceId" was null or undefined when calling archiveTrace().'
+                'Required parameter "traceId" was null or undefined when calling archiveArchiveTrace().'
             );
         }
 
@@ -114,25 +114,25 @@ export class ArchiveApi extends runtime.BaseAPI {
 
     /**
      */
-    async archiveTrace(requestParameters: ArchiveTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArchiveManifest> {
-        const response = await this.archiveTraceRaw(requestParameters, initOverrides);
+    async archiveArchiveTrace(requestParameters: ArchiveArchiveTraceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArchiveManifest> {
+        const response = await this.archiveArchiveTraceRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      */
-    async queryArchiveSpansRaw(requestParameters: QueryArchiveSpansRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArchiveQueryResponse>> {
+    async archiveQueryArchiveSpansRaw(requestParameters: ArchiveQueryArchiveSpansRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArchiveQueryResponse>> {
         if (requestParameters['tenantId'] == null) {
             throw new runtime.RequiredError(
                 'tenantId',
-                'Required parameter "tenantId" was null or undefined when calling queryArchiveSpans().'
+                'Required parameter "tenantId" was null or undefined when calling archiveQueryArchiveSpans().'
             );
         }
 
         if (requestParameters['projectId'] == null) {
             throw new runtime.RequiredError(
                 'projectId',
-                'Required parameter "projectId" was null or undefined when calling queryArchiveSpans().'
+                'Required parameter "projectId" was null or undefined when calling archiveQueryArchiveSpans().'
             );
         }
 
@@ -192,8 +192,8 @@ export class ArchiveApi extends runtime.BaseAPI {
 
     /**
      */
-    async queryArchiveSpans(requestParameters: QueryArchiveSpansRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArchiveQueryResponse> {
-        const response = await this.queryArchiveSpansRaw(requestParameters, initOverrides);
+    async archiveQueryArchiveSpans(requestParameters: ArchiveQueryArchiveSpansRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArchiveQueryResponse> {
+        const response = await this.archiveQueryArchiveSpansRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

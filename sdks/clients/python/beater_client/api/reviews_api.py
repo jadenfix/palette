@@ -48,7 +48,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def create_review_queue(
+    def reviews_create_review_queue(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -70,7 +70,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ReviewQueue:
-        """create_review_queue
+        """reviews_create_review_queue
 
 
         :param tenant_id: tenant_id (required)
@@ -109,7 +109,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_review_queue_serialize(
+        _param = self._reviews_create_review_queue_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_review_queue_http_request=create_review_queue_http_request,
@@ -141,7 +141,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def create_review_queue_with_http_info(
+    def reviews_create_review_queue_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -163,7 +163,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ReviewQueue]:
-        """create_review_queue
+        """reviews_create_review_queue
 
 
         :param tenant_id: tenant_id (required)
@@ -202,7 +202,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_review_queue_serialize(
+        _param = self._reviews_create_review_queue_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_review_queue_http_request=create_review_queue_http_request,
@@ -234,7 +234,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def create_review_queue_without_preload_content(
+    def reviews_create_review_queue_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -256,7 +256,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """create_review_queue
+        """reviews_create_review_queue
 
 
         :param tenant_id: tenant_id (required)
@@ -295,7 +295,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._create_review_queue_serialize(
+        _param = self._reviews_create_review_queue_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             create_review_queue_http_request=create_review_queue_http_request,
@@ -322,7 +322,7 @@ class ReviewsApi:
         return response_data.response
 
 
-    def _create_review_queue_serialize(
+    def _reviews_create_review_queue_serialize(
         self,
         tenant_id,
         project_id,
@@ -417,7 +417,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def enqueue_review_task_from_trace(
+    def reviews_enqueue_review_task_from_trace(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -440,7 +440,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ReviewTask:
-        """enqueue_review_task_from_trace
+        """reviews_enqueue_review_task_from_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -481,7 +481,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._enqueue_review_task_from_trace_serialize(
+        _param = self._reviews_enqueue_review_task_from_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -515,7 +515,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def enqueue_review_task_from_trace_with_http_info(
+    def reviews_enqueue_review_task_from_trace_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -538,7 +538,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ReviewTask]:
-        """enqueue_review_task_from_trace
+        """reviews_enqueue_review_task_from_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -579,7 +579,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._enqueue_review_task_from_trace_serialize(
+        _param = self._reviews_enqueue_review_task_from_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -613,7 +613,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def enqueue_review_task_from_trace_without_preload_content(
+    def reviews_enqueue_review_task_from_trace_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -636,7 +636,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """enqueue_review_task_from_trace
+        """reviews_enqueue_review_task_from_trace
 
 
         :param tenant_id: tenant_id (required)
@@ -677,7 +677,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._enqueue_review_task_from_trace_serialize(
+        _param = self._reviews_enqueue_review_task_from_trace_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -706,7 +706,7 @@ class ReviewsApi:
         return response_data.response
 
 
-    def _enqueue_review_task_from_trace_serialize(
+    def _reviews_enqueue_review_task_from_trace_serialize(
         self,
         tenant_id,
         project_id,
@@ -804,7 +804,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def list_review_tasks(
+    def reviews_list_review_tasks(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -827,7 +827,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> List[ReviewTask]:
-        """list_review_tasks
+        """reviews_list_review_tasks
 
 
         :param tenant_id: tenant_id (required)
@@ -868,7 +868,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_review_tasks_serialize(
+        _param = self._reviews_list_review_tasks_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -902,7 +902,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def list_review_tasks_with_http_info(
+    def reviews_list_review_tasks_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -925,7 +925,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[List[ReviewTask]]:
-        """list_review_tasks
+        """reviews_list_review_tasks
 
 
         :param tenant_id: tenant_id (required)
@@ -966,7 +966,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_review_tasks_serialize(
+        _param = self._reviews_list_review_tasks_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -1000,7 +1000,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def list_review_tasks_without_preload_content(
+    def reviews_list_review_tasks_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1023,7 +1023,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """list_review_tasks
+        """reviews_list_review_tasks
 
 
         :param tenant_id: tenant_id (required)
@@ -1064,7 +1064,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._list_review_tasks_serialize(
+        _param = self._reviews_list_review_tasks_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -1093,7 +1093,7 @@ class ReviewsApi:
         return response_data.response
 
 
-    def _list_review_tasks_serialize(
+    def _reviews_list_review_tasks_serialize(
         self,
         tenant_id,
         project_id,
@@ -1180,7 +1180,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def promote_review_annotation(
+    def reviews_promote_review_annotation(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1205,7 +1205,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> DatasetCase:
-        """promote_review_annotation
+        """reviews_promote_review_annotation
 
 
         :param tenant_id: tenant_id (required)
@@ -1250,7 +1250,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._promote_review_annotation_serialize(
+        _param = self._reviews_promote_review_annotation_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -1286,7 +1286,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def promote_review_annotation_with_http_info(
+    def reviews_promote_review_annotation_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1311,7 +1311,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[DatasetCase]:
-        """promote_review_annotation
+        """reviews_promote_review_annotation
 
 
         :param tenant_id: tenant_id (required)
@@ -1356,7 +1356,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._promote_review_annotation_serialize(
+        _param = self._reviews_promote_review_annotation_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -1392,7 +1392,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def promote_review_annotation_without_preload_content(
+    def reviews_promote_review_annotation_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1417,7 +1417,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """promote_review_annotation
+        """reviews_promote_review_annotation
 
 
         :param tenant_id: tenant_id (required)
@@ -1462,7 +1462,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._promote_review_annotation_serialize(
+        _param = self._reviews_promote_review_annotation_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -1493,7 +1493,7 @@ class ReviewsApi:
         return response_data.response
 
 
-    def _promote_review_annotation_serialize(
+    def _reviews_promote_review_annotation_serialize(
         self,
         tenant_id,
         project_id,
@@ -1597,7 +1597,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def submit_review_annotation(
+    def reviews_submit_review_annotation(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1621,7 +1621,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ReviewAnnotation:
-        """submit_review_annotation
+        """reviews_submit_review_annotation
 
 
         :param tenant_id: tenant_id (required)
@@ -1664,7 +1664,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._submit_review_annotation_serialize(
+        _param = self._reviews_submit_review_annotation_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -1699,7 +1699,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def submit_review_annotation_with_http_info(
+    def reviews_submit_review_annotation_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1723,7 +1723,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ReviewAnnotation]:
-        """submit_review_annotation
+        """reviews_submit_review_annotation
 
 
         :param tenant_id: tenant_id (required)
@@ -1766,7 +1766,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._submit_review_annotation_serialize(
+        _param = self._reviews_submit_review_annotation_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -1801,7 +1801,7 @@ class ReviewsApi:
 
 
     @validate_call
-    def submit_review_annotation_without_preload_content(
+    def reviews_submit_review_annotation_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -1825,7 +1825,7 @@ class ReviewsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """submit_review_annotation
+        """reviews_submit_review_annotation
 
 
         :param tenant_id: tenant_id (required)
@@ -1868,7 +1868,7 @@ class ReviewsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._submit_review_annotation_serialize(
+        _param = self._reviews_submit_review_annotation_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             queue_id=queue_id,
@@ -1898,7 +1898,7 @@ class ReviewsApi:
         return response_data.response
 
 
-    def _submit_review_annotation_serialize(
+    def _reviews_submit_review_annotation_serialize(
         self,
         tenant_id,
         project_id,

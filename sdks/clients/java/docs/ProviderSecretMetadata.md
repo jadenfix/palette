@@ -15,6 +15,3 @@
 |**providerSecretId** | **String** |  |  |
 |**rotatedAt** | **OffsetDateTime** |  |  [optional] |
 |**tenantId** | **String** |  |  |
-
-
-

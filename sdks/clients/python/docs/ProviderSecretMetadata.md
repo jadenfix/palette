@@ -5,14 +5,14 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**active** | **bool** |  | 
-**created_at** | **datetime** |  | 
-**display_name** | **str** |  | 
-**project_id** | **str** |  | 
-**provider** | **str** |  | 
-**provider_secret_id** | **str** |  | 
-**rotated_at** | **datetime** |  | [optional] 
-**tenant_id** | **str** |  | 
+**active** | **bool** |  |
+**created_at** | **datetime** |  |
+**display_name** | **str** |  |
+**project_id** | **str** |  |
+**provider** | **str** |  |
+**provider_secret_id** | **str** |  |
+**rotated_at** | **datetime** |  | [optional]
+**tenant_id** | **str** |  |
 
 ## Example
 
@@ -32,5 +32,3 @@ provider_secret_metadata_dict = provider_secret_metadata_instance.to_dict()
 provider_secret_metadata_from_dict = ProviderSecretMetadata.from_dict(provider_secret_metadata_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

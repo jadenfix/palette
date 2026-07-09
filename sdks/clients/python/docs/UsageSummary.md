@@ -5,9 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**project_id** | **str** |  | 
-**tenant_id** | **str** |  | 
-**totals** | [**Dict[str, UsageTotal]**](UsageTotal.md) |  | 
+**project_id** | **str** |  |
+**tenant_id** | **str** |  |
+**totals** | [**Dict[str, UsageTotal]**](UsageTotal.md) |  |
 
 ## Example
 
@@ -27,5 +27,3 @@ usage_summary_dict = usage_summary_instance.to_dict()
 usage_summary_from_dict = UsageSummary.from_dict(usage_summary_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

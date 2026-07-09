@@ -16,6 +16,3 @@
 | Name | Value |
 |---- | -----|
 | EXACT_MATCH | &quot;exact_match&quot; |
-
-
-

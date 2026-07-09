@@ -41,7 +41,7 @@ class AlertsApi:
 
 
     @validate_call
-    def evaluate_alert(
+    def alerts_evaluate_alert(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -64,7 +64,7 @@ class AlertsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> AlertDecision:
-        """evaluate_alert
+        """alerts_evaluate_alert
 
 
         :param tenant_id: tenant_id (required)
@@ -105,7 +105,7 @@ class AlertsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._evaluate_alert_serialize(
+        _param = self._alerts_evaluate_alert_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -138,7 +138,7 @@ class AlertsApi:
 
 
     @validate_call
-    def evaluate_alert_with_http_info(
+    def alerts_evaluate_alert_with_http_info(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -161,7 +161,7 @@ class AlertsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[AlertDecision]:
-        """evaluate_alert
+        """alerts_evaluate_alert
 
 
         :param tenant_id: tenant_id (required)
@@ -202,7 +202,7 @@ class AlertsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._evaluate_alert_serialize(
+        _param = self._alerts_evaluate_alert_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -235,7 +235,7 @@ class AlertsApi:
 
 
     @validate_call
-    def evaluate_alert_without_preload_content(
+    def alerts_evaluate_alert_without_preload_content(
         self,
         tenant_id: Annotated[StrictStr, Field(description="tenant_id")],
         project_id: Annotated[StrictStr, Field(description="project_id")],
@@ -258,7 +258,7 @@ class AlertsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """evaluate_alert
+        """alerts_evaluate_alert
 
 
         :param tenant_id: tenant_id (required)
@@ -299,7 +299,7 @@ class AlertsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._evaluate_alert_serialize(
+        _param = self._alerts_evaluate_alert_serialize(
             tenant_id=tenant_id,
             project_id=project_id,
             trace_id=trace_id,
@@ -327,7 +327,7 @@ class AlertsApi:
         return response_data.response
 
 
-    def _evaluate_alert_serialize(
+    def _alerts_evaluate_alert_serialize(
         self,
         tenant_id,
         project_id,

@@ -4,13 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**GetUsageSummary**](UsageAPI.md#GetUsageSummary) | **Get** /v1/usage/{tenant_id}/{project_id} | 
+[**UsageGetUsageSummary**](UsageAPI.md#UsageGetUsageSummary) | **Get** /v1/usage/{tenant_id}/{project_id} |
 
 
 
-## GetUsageSummary
+## UsageGetUsageSummary
 
-> UsageSummary GetUsageSummary(ctx, tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+> UsageSummary UsageGetUsageSummary(ctx, tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 
 
 
@@ -36,13 +36,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.UsageAPI.GetUsageSummary(context.Background(), tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
+	resp, r, err := apiClient.UsageAPI.UsageGetUsageSummary(context.Background(), tenantId, projectId).Authorization(authorization).XBeaterApiKey(xBeaterApiKey).XBeaterProjectId(xBeaterProjectId).XBeaterEnvironmentId(xBeaterEnvironmentId).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `UsageAPI.GetUsageSummary``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `UsageAPI.UsageGetUsageSummary``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `GetUsageSummary`: UsageSummary
-	fmt.Fprintf(os.Stdout, "Response from `UsageAPI.GetUsageSummary`: %v\n", resp)
+	// response from `UsageGetUsageSummary`: UsageSummary
+	fmt.Fprintf(os.Stdout, "Response from `UsageAPI.UsageGetUsageSummary`: %v\n", resp)
 }
 ```
 
@@ -52,22 +52,22 @@ func main() {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**tenantId** | **string** | tenant_id | 
-**projectId** | **string** | project_id | 
+**tenantId** | **string** | tenant_id |
+**projectId** | **string** | project_id |
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiGetUsageSummaryRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiUsageGetUsageSummaryRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
 
- **authorization** | **string** | Bearer API token for strict auth | 
- **xBeaterApiKey** | **string** | API key alternative for strict auth | 
- **xBeaterProjectId** | **string** | Strict-auth project scope | 
- **xBeaterEnvironmentId** | **string** | Strict-auth environment scope | 
+ **authorization** | **string** | Bearer API token for strict auth |
+ **xBeaterApiKey** | **string** | API key alternative for strict auth |
+ **xBeaterProjectId** | **string** | Strict-auth project scope |
+ **xBeaterEnvironmentId** | **string** | Strict-auth environment scope |
 
 ### Return type
 
@@ -85,4 +85,3 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

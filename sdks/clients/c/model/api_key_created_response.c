@@ -5,13 +5,13 @@
 
 
 char* api_key_created_response_scopes_ToString(beater_api_api_key_created_response__e scopes) {
-    char *scopesArray[] =  { "NULL", "trace_write", "trace_read", "dataset_write", "scenario_write", "scenario_read", "eval_run", "pii_unmask", "admin" };
+    char *scopesArray[] =  { "NULL", "trace:write", "trace:read", "dataset:write", "scenario:write", "scenario:read", "eval:run", "pii:unmask", "admin" };
     return scopesArray[scopes - 1];
 }
 
 beater_api_api_key_created_response__e api_key_created_response_scopes_FromString(char* scopes) {
     int stringToReturn = 0;
-    char *scopesArray[] =  { "NULL", "trace_write", "trace_read", "dataset_write", "scenario_write", "scenario_read", "eval_run", "pii_unmask", "admin" };
+    char *scopesArray[] =  { "NULL", "trace:write", "trace:read", "dataset:write", "scenario:write", "scenario:read", "eval:run", "pii:unmask", "admin" };
     size_t sizeofArray = sizeof(scopesArray) / sizeof(scopesArray[0]);
     while(stringToReturn < sizeofArray) {
         if(strcmp(scopes, scopesArray[stringToReturn]) == 0) {

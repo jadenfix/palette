@@ -23,7 +23,7 @@ import (
 // ArchiveAPIService ArchiveAPI service
 type ArchiveAPIService service
 
-type ApiArchiveTraceRequest struct {
+type ApiArchiveArchiveTraceRequest struct {
 	ctx context.Context
 	ApiService *ArchiveAPIService
 	tenantId string
@@ -36,44 +36,44 @@ type ApiArchiveTraceRequest struct {
 }
 
 // Bearer API token for strict auth
-func (r ApiArchiveTraceRequest) Authorization(authorization string) ApiArchiveTraceRequest {
+func (r ApiArchiveArchiveTraceRequest) Authorization(authorization string) ApiArchiveArchiveTraceRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiArchiveTraceRequest) XBeaterApiKey(xBeaterApiKey string) ApiArchiveTraceRequest {
+func (r ApiArchiveArchiveTraceRequest) XBeaterApiKey(xBeaterApiKey string) ApiArchiveArchiveTraceRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiArchiveTraceRequest) XBeaterProjectId(xBeaterProjectId string) ApiArchiveTraceRequest {
+func (r ApiArchiveArchiveTraceRequest) XBeaterProjectId(xBeaterProjectId string) ApiArchiveArchiveTraceRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiArchiveTraceRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiArchiveTraceRequest {
+func (r ApiArchiveArchiveTraceRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiArchiveArchiveTraceRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiArchiveTraceRequest) Execute() (*ArchiveManifest, *http.Response, error) {
-	return r.ApiService.ArchiveTraceExecute(r)
+func (r ApiArchiveArchiveTraceRequest) Execute() (*ArchiveManifest, *http.Response, error) {
+	return r.ApiService.ArchiveArchiveTraceExecute(r)
 }
 
 /*
-ArchiveTrace Method for ArchiveTrace
+ArchiveArchiveTrace Method for ArchiveArchiveTrace
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
  @param traceId trace_id
- @return ApiArchiveTraceRequest
+ @return ApiArchiveArchiveTraceRequest
 */
-func (a *ArchiveAPIService) ArchiveTrace(ctx context.Context, tenantId string, projectId string, traceId string) ApiArchiveTraceRequest {
-	return ApiArchiveTraceRequest{
+func (a *ArchiveAPIService) ArchiveArchiveTrace(ctx context.Context, tenantId string, projectId string, traceId string) ApiArchiveArchiveTraceRequest {
+	return ApiArchiveArchiveTraceRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -84,7 +84,7 @@ func (a *ArchiveAPIService) ArchiveTrace(ctx context.Context, tenantId string, p
 
 // Execute executes the request
 //  @return ArchiveManifest
-func (a *ArchiveAPIService) ArchiveTraceExecute(r ApiArchiveTraceRequest) (*ArchiveManifest, *http.Response, error) {
+func (a *ArchiveAPIService) ArchiveArchiveTraceExecute(r ApiArchiveArchiveTraceRequest) (*ArchiveManifest, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
@@ -92,7 +92,7 @@ func (a *ArchiveAPIService) ArchiveTraceExecute(r ApiArchiveTraceRequest) (*Arch
 		localVarReturnValue  *ArchiveManifest
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ArchiveAPIService.ArchiveTrace")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ArchiveAPIService.ArchiveArchiveTrace")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
@@ -215,7 +215,7 @@ func (a *ArchiveAPIService) ArchiveTraceExecute(r ApiArchiveTraceRequest) (*Arch
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiQueryArchiveSpansRequest struct {
+type ApiArchiveQueryArchiveSpansRequest struct {
 	ctx context.Context
 	ApiService *ArchiveAPIService
 	tenantId string
@@ -232,74 +232,74 @@ type ApiQueryArchiveSpansRequest struct {
 	xBeaterEnvironmentId *string
 }
 
-func (r ApiQueryArchiveSpansRequest) EnvironmentId(environmentId string) ApiQueryArchiveSpansRequest {
+func (r ApiArchiveQueryArchiveSpansRequest) EnvironmentId(environmentId string) ApiArchiveQueryArchiveSpansRequest {
 	r.environmentId = &environmentId
 	return r
 }
 
-func (r ApiQueryArchiveSpansRequest) TraceId(traceId string) ApiQueryArchiveSpansRequest {
+func (r ApiArchiveQueryArchiveSpansRequest) TraceId(traceId string) ApiArchiveQueryArchiveSpansRequest {
 	r.traceId = &traceId
 	return r
 }
 
-func (r ApiQueryArchiveSpansRequest) SpanId(spanId string) ApiQueryArchiveSpansRequest {
+func (r ApiArchiveQueryArchiveSpansRequest) SpanId(spanId string) ApiArchiveQueryArchiveSpansRequest {
 	r.spanId = &spanId
 	return r
 }
 
-func (r ApiQueryArchiveSpansRequest) Kind(kind string) ApiQueryArchiveSpansRequest {
+func (r ApiArchiveQueryArchiveSpansRequest) Kind(kind string) ApiArchiveQueryArchiveSpansRequest {
 	r.kind = &kind
 	return r
 }
 
-func (r ApiQueryArchiveSpansRequest) Status(status string) ApiQueryArchiveSpansRequest {
+func (r ApiArchiveQueryArchiveSpansRequest) Status(status string) ApiArchiveQueryArchiveSpansRequest {
 	r.status = &status
 	return r
 }
 
-func (r ApiQueryArchiveSpansRequest) Limit(limit int32) ApiQueryArchiveSpansRequest {
+func (r ApiArchiveQueryArchiveSpansRequest) Limit(limit int32) ApiArchiveQueryArchiveSpansRequest {
 	r.limit = &limit
 	return r
 }
 
 // Bearer API token for strict auth
-func (r ApiQueryArchiveSpansRequest) Authorization(authorization string) ApiQueryArchiveSpansRequest {
+func (r ApiArchiveQueryArchiveSpansRequest) Authorization(authorization string) ApiArchiveQueryArchiveSpansRequest {
 	r.authorization = &authorization
 	return r
 }
 
 // API key alternative for strict auth
-func (r ApiQueryArchiveSpansRequest) XBeaterApiKey(xBeaterApiKey string) ApiQueryArchiveSpansRequest {
+func (r ApiArchiveQueryArchiveSpansRequest) XBeaterApiKey(xBeaterApiKey string) ApiArchiveQueryArchiveSpansRequest {
 	r.xBeaterApiKey = &xBeaterApiKey
 	return r
 }
 
 // Strict-auth project scope
-func (r ApiQueryArchiveSpansRequest) XBeaterProjectId(xBeaterProjectId string) ApiQueryArchiveSpansRequest {
+func (r ApiArchiveQueryArchiveSpansRequest) XBeaterProjectId(xBeaterProjectId string) ApiArchiveQueryArchiveSpansRequest {
 	r.xBeaterProjectId = &xBeaterProjectId
 	return r
 }
 
 // Strict-auth environment scope
-func (r ApiQueryArchiveSpansRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiQueryArchiveSpansRequest {
+func (r ApiArchiveQueryArchiveSpansRequest) XBeaterEnvironmentId(xBeaterEnvironmentId string) ApiArchiveQueryArchiveSpansRequest {
 	r.xBeaterEnvironmentId = &xBeaterEnvironmentId
 	return r
 }
 
-func (r ApiQueryArchiveSpansRequest) Execute() (*ArchiveQueryResponse, *http.Response, error) {
-	return r.ApiService.QueryArchiveSpansExecute(r)
+func (r ApiArchiveQueryArchiveSpansRequest) Execute() (*ArchiveQueryResponse, *http.Response, error) {
+	return r.ApiService.ArchiveQueryArchiveSpansExecute(r)
 }
 
 /*
-QueryArchiveSpans Method for QueryArchiveSpans
+ArchiveQueryArchiveSpans Method for ArchiveQueryArchiveSpans
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param tenantId tenant_id
  @param projectId project_id
- @return ApiQueryArchiveSpansRequest
+ @return ApiArchiveQueryArchiveSpansRequest
 */
-func (a *ArchiveAPIService) QueryArchiveSpans(ctx context.Context, tenantId string, projectId string) ApiQueryArchiveSpansRequest {
-	return ApiQueryArchiveSpansRequest{
+func (a *ArchiveAPIService) ArchiveQueryArchiveSpans(ctx context.Context, tenantId string, projectId string) ApiArchiveQueryArchiveSpansRequest {
+	return ApiArchiveQueryArchiveSpansRequest{
 		ApiService: a,
 		ctx: ctx,
 		tenantId: tenantId,
@@ -309,7 +309,7 @@ func (a *ArchiveAPIService) QueryArchiveSpans(ctx context.Context, tenantId stri
 
 // Execute executes the request
 //  @return ArchiveQueryResponse
-func (a *ArchiveAPIService) QueryArchiveSpansExecute(r ApiQueryArchiveSpansRequest) (*ArchiveQueryResponse, *http.Response, error) {
+func (a *ArchiveAPIService) ArchiveQueryArchiveSpansExecute(r ApiArchiveQueryArchiveSpansRequest) (*ArchiveQueryResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
@@ -317,7 +317,7 @@ func (a *ArchiveAPIService) QueryArchiveSpansExecute(r ApiQueryArchiveSpansReque
 		localVarReturnValue  *ArchiveQueryResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ArchiveAPIService.QueryArchiveSpans")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ArchiveAPIService.ArchiveQueryArchiveSpans")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

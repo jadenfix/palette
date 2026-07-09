@@ -4,16 +4,16 @@ All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**archiveTrace**](ArchiveApi.md#archiveTrace) | **POST** /v1/archive/{tenant_id}/{project_id}/{trace_id} |  |
-| [**archiveTraceWithHttpInfo**](ArchiveApi.md#archiveTraceWithHttpInfo) | **POST** /v1/archive/{tenant_id}/{project_id}/{trace_id} |  |
-| [**queryArchiveSpans**](ArchiveApi.md#queryArchiveSpans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans |  |
-| [**queryArchiveSpansWithHttpInfo**](ArchiveApi.md#queryArchiveSpansWithHttpInfo) | **GET** /v1/archive/{tenant_id}/{project_id}/spans |  |
+| [**archiveArchiveTrace**](ArchiveApi.md#archiveArchiveTrace) | **POST** /v1/archive/{tenant_id}/{project_id}/{trace_id} |  |
+| [**archiveArchiveTraceWithHttpInfo**](ArchiveApi.md#archiveArchiveTraceWithHttpInfo) | **POST** /v1/archive/{tenant_id}/{project_id}/{trace_id} |  |
+| [**archiveQueryArchiveSpans**](ArchiveApi.md#archiveQueryArchiveSpans) | **GET** /v1/archive/{tenant_id}/{project_id}/spans |  |
+| [**archiveQueryArchiveSpansWithHttpInfo**](ArchiveApi.md#archiveQueryArchiveSpansWithHttpInfo) | **GET** /v1/archive/{tenant_id}/{project_id}/spans |  |
 
 
 
-## archiveTrace
+## archiveArchiveTrace
 
-> ArchiveManifest archiveTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ArchiveManifest archiveArchiveTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -41,10 +41,10 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ArchiveManifest result = apiInstance.archiveTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ArchiveManifest result = apiInstance.archiveArchiveTrace(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ArchiveApi#archiveTrace");
+            System.err.println("Exception when calling ArchiveApi#archiveArchiveTrace");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -90,9 +90,9 @@ No authorization required
 | **403** | Credentials lack the required scope |  -  |
 | **404** | Resource not found |  -  |
 
-## archiveTraceWithHttpInfo
+## archiveArchiveTraceWithHttpInfo
 
-> ApiResponse<ArchiveManifest> archiveTrace archiveTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ArchiveManifest> archiveArchiveTrace archiveArchiveTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -121,12 +121,12 @@ public class Example {
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ArchiveManifest> response = apiInstance.archiveTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ArchiveManifest> response = apiInstance.archiveArchiveTraceWithHttpInfo(tenantId, projectId, traceId, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ArchiveApi#archiveTrace");
+            System.err.println("Exception when calling ArchiveApi#archiveArchiveTrace");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -173,9 +173,9 @@ No authorization required
 | **404** | Resource not found |  -  |
 
 
-## queryArchiveSpans
+## archiveQueryArchiveSpans
 
-> ArchiveQueryResponse queryArchiveSpans(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ArchiveQueryResponse archiveQueryArchiveSpans(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -197,21 +197,21 @@ public class Example {
         ArchiveApi apiInstance = new ArchiveApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        String environmentId = "environmentId_example"; // String | 
-        String traceId = "traceId_example"; // String | 
-        String spanId = "spanId_example"; // String | 
-        String kind = "kind_example"; // String | 
-        String status = "status_example"; // String | 
-        Integer limit = 56; // Integer | 
+        String environmentId = "environmentId_example"; // String |
+        String traceId = "traceId_example"; // String |
+        String spanId = "spanId_example"; // String |
+        String kind = "kind_example"; // String |
+        String status = "status_example"; // String |
+        Integer limit = 56; // Integer |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ArchiveQueryResponse result = apiInstance.queryArchiveSpans(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ArchiveQueryResponse result = apiInstance.archiveQueryArchiveSpans(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling ArchiveApi#queryArchiveSpans");
+            System.err.println("Exception when calling ArchiveApi#archiveQueryArchiveSpans");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Reason: " + e.getResponseBody());
             System.err.println("Response headers: " + e.getResponseHeaders());
@@ -261,9 +261,9 @@ No authorization required
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
 
-## queryArchiveSpansWithHttpInfo
+## archiveQueryArchiveSpansWithHttpInfo
 
-> ApiResponse<ArchiveQueryResponse> queryArchiveSpans queryArchiveSpansWithHttpInfo(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
+> ApiResponse<ArchiveQueryResponse> archiveQueryArchiveSpans archiveQueryArchiveSpansWithHttpInfo(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId)
 
 
 
@@ -286,23 +286,23 @@ public class Example {
         ArchiveApi apiInstance = new ArchiveApi(defaultClient);
         String tenantId = "tenantId_example"; // String | tenant_id
         String projectId = "projectId_example"; // String | project_id
-        String environmentId = "environmentId_example"; // String | 
-        String traceId = "traceId_example"; // String | 
-        String spanId = "spanId_example"; // String | 
-        String kind = "kind_example"; // String | 
-        String status = "status_example"; // String | 
-        Integer limit = 56; // Integer | 
+        String environmentId = "environmentId_example"; // String |
+        String traceId = "traceId_example"; // String |
+        String spanId = "spanId_example"; // String |
+        String kind = "kind_example"; // String |
+        String status = "status_example"; // String |
+        Integer limit = 56; // Integer |
         String authorization = "authorization_example"; // String | Bearer API token for strict auth
         String xBeaterApiKey = "xBeaterApiKey_example"; // String | API key alternative for strict auth
         String xBeaterProjectId = "xBeaterProjectId_example"; // String | Strict-auth project scope
         String xBeaterEnvironmentId = "xBeaterEnvironmentId_example"; // String | Strict-auth environment scope
         try {
-            ApiResponse<ArchiveQueryResponse> response = apiInstance.queryArchiveSpansWithHttpInfo(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
+            ApiResponse<ArchiveQueryResponse> response = apiInstance.archiveQueryArchiveSpansWithHttpInfo(tenantId, projectId, environmentId, traceId, spanId, kind, status, limit, authorization, xBeaterApiKey, xBeaterProjectId, xBeaterEnvironmentId);
             System.out.println("Status code: " + response.getStatusCode());
             System.out.println("Response headers: " + response.getHeaders());
             System.out.println("Response body: " + response.getData());
         } catch (ApiException e) {
-            System.err.println("Exception when calling ArchiveApi#queryArchiveSpans");
+            System.err.println("Exception when calling ArchiveApi#archiveQueryArchiveSpans");
             System.err.println("Status code: " + e.getCode());
             System.err.println("Response headers: " + e.getResponseHeaders());
             System.err.println("Reason: " + e.getResponseBody());
@@ -351,4 +351,3 @@ No authorization required
 | **400** | Invalid request, scope, or filter |  -  |
 | **401** | Missing or invalid credentials |  -  |
 | **403** | Credentials lack the required scope |  -  |
-

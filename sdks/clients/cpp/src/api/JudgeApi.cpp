@@ -35,13 +35,13 @@ JudgeApi::~JudgeApi()
 {
 }
 
-pplx::task<std::shared_ptr<JudgeBrokerOutcome>> JudgeApi::evaluateJudge(utility::string_t tenantId, utility::string_t projectId, std::shared_ptr<RunJudgeEvalHttpRequest> runJudgeEvalHttpRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::shared_ptr<JudgeBrokerOutcome>> JudgeApi::judge_evaluateJudge(utility::string_t tenantId, utility::string_t projectId, std::shared_ptr<RunJudgeEvalHttpRequest> runJudgeEvalHttpRequest, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
     // verify the required parameter 'runJudgeEvalHttpRequest' is set
     if (runJudgeEvalHttpRequest == nullptr)
     {
-        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runJudgeEvalHttpRequest' when calling JudgeApi->evaluateJudge"));
+        throw ApiException(400, utility::conversions::to_string_t("Missing required parameter 'runJudgeEvalHttpRequest' when calling JudgeApi->judge_evaluateJudge"));
     }
 
 
@@ -77,7 +77,7 @@ pplx::task<std::shared_ptr<JudgeBrokerOutcome>> JudgeApi::evaluateJudge(utility:
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("JudgeApi->evaluateJudge does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("JudgeApi->judge_evaluateJudge does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -137,7 +137,7 @@ pplx::task<std::shared_ptr<JudgeBrokerOutcome>> JudgeApi::evaluateJudge(utility:
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("JudgeApi->evaluateJudge does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("JudgeApi->judge_evaluateJudge does not consume any supported media type"));
     }
 
 
@@ -157,7 +157,7 @@ pplx::task<std::shared_ptr<JudgeBrokerOutcome>> JudgeApi::evaluateJudge(utility:
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling evaluateJudge: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling judge_evaluateJudge: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -168,7 +168,7 @@ pplx::task<std::shared_ptr<JudgeBrokerOutcome>> JudgeApi::evaluateJudge(utility:
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling evaluateJudge: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling judge_evaluateJudge: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -192,13 +192,13 @@ pplx::task<std::shared_ptr<JudgeBrokerOutcome>> JudgeApi::evaluateJudge(utility:
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling evaluateJudge: unsupported response type"));
+                , utility::conversions::to_string_t("error calling judge_evaluateJudge: unsupported response type"));
         }
 
         return localVarResult;
     });
 }
-pplx::task<std::vector<std::shared_ptr<JudgeAuditRecord>>> JudgeApi::listJudgeLedger(utility::string_t tenantId, utility::string_t projectId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
+pplx::task<std::vector<std::shared_ptr<JudgeAuditRecord>>> JudgeApi::judge_listJudgeLedger(utility::string_t tenantId, utility::string_t projectId, boost::optional<utility::string_t> authorization, boost::optional<utility::string_t> xBeaterApiKey, boost::optional<utility::string_t> xBeaterProjectId, boost::optional<utility::string_t> xBeaterEnvironmentId) const
 {
 
 
@@ -234,7 +234,7 @@ pplx::task<std::vector<std::shared_ptr<JudgeAuditRecord>>> JudgeApi::listJudgeLe
     }
     else
     {
-        throw ApiException(400, utility::conversions::to_string_t("JudgeApi->listJudgeLedger does not produce any supported media type"));
+        throw ApiException(400, utility::conversions::to_string_t("JudgeApi->judge_listJudgeLedger does not produce any supported media type"));
     }
 
     localVarHeaderParams[utility::conversions::to_string_t("Accept")] = localVarResponseHttpContentType;
@@ -277,7 +277,7 @@ pplx::task<std::vector<std::shared_ptr<JudgeAuditRecord>>> JudgeApi::listJudgeLe
     }
     else
     {
-        throw ApiException(415, utility::conversions::to_string_t("JudgeApi->listJudgeLedger does not consume any supported media type"));
+        throw ApiException(415, utility::conversions::to_string_t("JudgeApi->judge_listJudgeLedger does not consume any supported media type"));
     }
 
 
@@ -297,7 +297,7 @@ pplx::task<std::vector<std::shared_ptr<JudgeAuditRecord>>> JudgeApi::listJudgeLe
         if (localVarResponse.status_code() >= 400)
         {
             throw ApiException(localVarResponse.status_code()
-                , utility::conversions::to_string_t("error calling listJudgeLedger: ") + localVarResponse.reason_phrase()
+                , utility::conversions::to_string_t("error calling judge_listJudgeLedger: ") + localVarResponse.reason_phrase()
                 , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
         }
 
@@ -308,7 +308,7 @@ pplx::task<std::vector<std::shared_ptr<JudgeAuditRecord>>> JudgeApi::listJudgeLe
             if( localVarContentType.find(localVarResponseHttpContentType) == std::string::npos )
             {
                 throw ApiException(500
-                    , utility::conversions::to_string_t("error calling listJudgeLedger: unexpected response type: ") + localVarContentType
+                    , utility::conversions::to_string_t("error calling judge_listJudgeLedger: unexpected response type: ") + localVarContentType
                     , std::make_shared<std::stringstream>(localVarResponse.extract_utf8string(true).get()));
             }
         }
@@ -336,7 +336,7 @@ pplx::task<std::vector<std::shared_ptr<JudgeAuditRecord>>> JudgeApi::listJudgeLe
         else
         {
             throw ApiException(500
-                , utility::conversions::to_string_t("error calling listJudgeLedger: unsupported response type"));
+                , utility::conversions::to_string_t("error calling judge_listJudgeLedger: unsupported response type"));
         }
 
         return localVarResult;
