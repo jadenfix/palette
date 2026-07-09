@@ -79,7 +79,7 @@ is the "full circle."
 
 ## 3. The concrete seams (cited from Palette's code)
 
-### 3a. INBOUND to Palette — the feedback path (already built)
+### 3a. INBOUND to Palette — the feedback path
 
 data-engine pushes cleaned artifacts back through Palette's pluggable importer
 seam, exactly like the Langfuse importer does today.
@@ -87,13 +87,25 @@ seam, exactly like the Langfuse importer does today.
 - **`SourceImporter` trait** — `crates/beater-ingest/src/lib.rs` (one method):
   `fn normalize(&self, scope: &TenantScope, raw_bytes: &[u8], auth: Option<AuthContext>) -> Result<RawTraceIngestRequest, ImportError>`. Pure, no IO.
 - **Register**: `IngestService::with_importer(Arc::new(YourImporter))`.
-- **Dispatch over HTTP**: `POST /v1/import/{tenant_id}/{project_id}/{environment_id}` with `{"source": "...", "payload": {...}}`.
+- **Legacy dispatch over HTTP (built today)**:
+  `POST /v1/import/{tenant_id}/{project_id}/{environment_id}` with
+  `{"source": "...", "payload": {...}}`. This is the existing importer seam, not
+  the stable data-engine feedback contract: it is tenant-leading, uses the
+  legacy `importSource` operationId in current OpenAPI, and must be treated as
+  compatibility surface only.
+- **Target feedback contract**:
+  `POST /v1/{parent=projects/*}/imports` with operationId
+  `projects.imports.create`, `Authorization: Bearer <token>`, required
+  `Idempotency-Key`, and the shared error envelope. The request body should keep
+  the current `source` + `payload` shape so `DataEngineImporter` can stay a thin
+  adapter over the existing `SourceImporter` trait.
 - **Output**: a `RawTraceIngestRequest` of `CanonicalSpanDraft`s; Palette keeps the raw bytes losslessly in a `RawEnvelope` and projects `CanonicalSpan`s.
 - **Template to copy**: `crates/beater-langfuse/src/lib.rs` (`LangfuseImporter`, source key `"langfuse"`, sets `RedactionClass::Sensitive`). End-to-end test recipe at `crates/beater-langfuse/tests/import.rs`.
 
 → data-engine ships a `DataEngineImporter` (source `"data_engine"`). This is the
-"full circle" mechanism. **No Palette change required** to enable it (the generic
-`mapping` importer works today; a reserved dialect seat is a nice-to-have, §4).
+"full circle" mechanism. The generic `mapping` importer can be used as a
+temporary bridge, but the AIP-shaped `projects.imports.create` endpoint is the
+uniform contract that data-engine should call long term.
 
 ### 3b. OUTBOUND from Palette — the collect path (partially built — this is the gap)
 
@@ -239,8 +251,10 @@ and can land in Palette independently, ahead of any data-engine code.
   standalone from a clean clone.
 - **Not Palette doing labeling** — that's data-engine's job (and its moat).
 - **Not data-engine doing observability/gates/RSI** — that's Palette's job.
-- **No new database, no new auth** — reuse ecosystem auth (Bearer) + Palette's
-  existing tenant/project/env isolation + `RedactionClass`.
+- **No new database, no new auth** — reuse ecosystem auth (`Authorization:
+  Bearer <token>` as canonical; legacy API-key headers only as deprecated
+  compatibility aliases) + Palette's existing tenant/project/env isolation +
+  `RedactionClass`.
 - **Not a rename ask** — Palette stays Palette (Beater crates/binaries); this doc
   uses both names since the code still says `beater*`.
 
