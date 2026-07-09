@@ -10072,8 +10072,7 @@
           "status": {
             "type": "integer",
             "format": "int32",
-            "description": "Deprecated compatibility HTTP status code for older `/v1` clients.",
-            "minimum": 0
+            "description": "Deprecated compatibility HTTP status code for older `/v1` clients."
           }
         }
       },

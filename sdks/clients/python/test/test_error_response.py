@@ -37,13 +37,13 @@ class TestErrorResponse(unittest.TestCase):
             return ErrorResponse(
                 error = '',
                 message = '',
-                status = 0
+                status = 56
             )
         else:
             return ErrorResponse(
                 error = '',
                 message = '',
-                status = 0,
+                status = 56,
         )
         """
 

@@ -4031,7 +4031,7 @@ struct ErrorResponse {
     /// Human-readable error message.
     message: String,
     /// Deprecated compatibility HTTP status code for older `/v1` clients.
-    status: u16,
+    status: i32,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -5266,7 +5266,7 @@ impl IntoResponse for ApiError {
         let body = Json(serde_json::json!({
             "error": error,
             "message": message,
-            "status": status.as_u16()
+            "status": i32::from(status.as_u16())
         }));
         let mut response = (status, body).into_response();
         for (name, value) in self.headers {

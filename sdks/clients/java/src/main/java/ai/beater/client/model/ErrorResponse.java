@@ -109,7 +109,6 @@ public class ErrorResponse {
 
   /**
    * Deprecated compatibility HTTP status code for older &#x60;/v1&#x60; clients.
-   * minimum: 0
    * @return status
    */
   @javax.annotation.Nonnull
