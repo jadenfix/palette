@@ -3,6 +3,7 @@ name = "beater-store-conformance"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
 beater-core = { path = "../beater-core" }
