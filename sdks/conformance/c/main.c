@@ -3,7 +3,7 @@
  *
  * This links the generated client sources directly (HealthAPI + apiClient +
  * cJSON + health_response model) and drives them against a live beaterd:
- *   - GET /health via the generated HealthAPI_health() -> typed health_response_t
+ *   - GET /health via the generated HealthAPI_healthHealth() -> typed health_response_t
  *
  * createDataset/listTraces are exercised over raw libcurl below (clearly
  * labeled): the generated DatasetsAPI/TracesAPI sources transitively include
@@ -76,9 +76,9 @@ int main(void) {
     /* ---- GENERATED CLIENT: typed GET /health ---- */
     apiClient_t *api = apiClient_create_with_base_path(base, NULL);
     if (!api) { fprintf(stderr, "FAIL: apiClient_create\n"); return 1; }
-    health_response_t *h = HealthAPI_health(api);
+    health_response_t *h = HealthAPI_healthHealth(api);
     if (!h) {
-        fprintf(stderr, "FAIL: HealthAPI_health returned NULL (status=%ld)\n",
+        fprintf(stderr, "FAIL: HealthAPI_healthHealth returned NULL (status=%ld)\n",
                 api->response_code);
         return 1;
     }

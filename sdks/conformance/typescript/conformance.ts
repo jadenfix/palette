@@ -9,21 +9,21 @@ async function main(): Promise<number> {
   const tenantId = "demo";
   const projectId = "demo";
 
-  const health = await new HealthApi(config).health();
+  const health = await new HealthApi(config).healthHealth();
   if (health.ok !== true) {
     console.error(`FAIL health: ${JSON.stringify(health)}`);
     return 1;
   }
   console.log(`  health ok=${health.ok}`);
 
-  await new DatasetsApi(config).createDataset({
+  await new DatasetsApi(config).datasetsCreateDataset({
     tenantId,
     projectId,
     createDatasetRequest: { name: "conformance-ts" },
   });
   console.log("  createDataset -> ok");
 
-  const page = await new TracesApi(config).listTraces({ tenantId });
+  const page = await new TracesApi(config).tracesListTraces({ tenantId });
   if (!Array.isArray(page.items)) {
     console.error(`FAIL traces.list missing items: ${JSON.stringify(page)}`);
     return 1;

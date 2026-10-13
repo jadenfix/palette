@@ -25,20 +25,20 @@ func main() {
 	client := bc.NewAPIClient(cfg)
 	ctx := context.Background()
 
-	h, _, err := client.HealthAPI.Health(ctx).Execute()
+	h, _, err := client.HealthAPI.HealthHealth(ctx).Execute()
 	if err != nil {
 		fail("health", err)
 	}
 	fmt.Printf("  health ok=%v\n", h.GetOk())
 
-	_, _, err = client.DatasetsAPI.CreateDataset(ctx, tenant, project).
+	_, _, err = client.DatasetsAPI.DatasetsCreateDataset(ctx, tenant, project).
 		CreateDatasetRequest(*bc.NewCreateDatasetRequest("conformance-go")).Execute()
 	if err != nil {
 		fail("createDataset", err)
 	}
 	fmt.Println("  createDataset -> ok")
 
-	page, _, err := client.TracesAPI.ListTraces(ctx, tenant).Execute()
+	page, _, err := client.TracesAPI.TracesListTraces(ctx, tenant).Execute()
 	if err != nil {
 		fail("traces.list", err)
 	}
