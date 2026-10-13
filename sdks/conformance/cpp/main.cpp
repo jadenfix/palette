@@ -36,7 +36,7 @@ int main() {
     try {
         // GET /health -> typed HealthResponse
         api::HealthApi healthApi(apiClient);
-        auto health = healthApi.health().get();
+        auto health = healthApi.health_health().get();
         if (!health->isOk()) {
             std::cerr << "FAIL: health ok != true\n";
             return 1;
@@ -47,7 +47,7 @@ int main() {
         api::DatasetsApi datasetsApi(apiClient);
         auto req = std::make_shared<model::CreateDatasetRequest>();
         req->setName(utility::conversions::to_string_t(std::string("conformance-cpp")));
-        auto ds = datasetsApi.createDataset(
+        auto ds = datasetsApi.datasets_createDataset(
                       utility::conversions::to_string_t(tenant),
                       utility::conversions::to_string_t(project),
                       req, boost::none, boost::none, boost::none, boost::none)
@@ -57,7 +57,7 @@ int main() {
 
         // GET /v1/traces/{tenant} -> typed Page_RunSummary
         api::TracesApi tracesApi(apiClient);
-        auto page = tracesApi.listTraces(
+        auto page = tracesApi.traces_listTraces(
                         utility::conversions::to_string_t(tenant),
                         boost::none, boost::none, boost::none, boost::none,
                         boost::none, boost::none, boost::none, boost::none,

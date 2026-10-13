@@ -30,7 +30,7 @@ public final class Conformance {
         client.updateBaseUri(base);
 
         try {
-            HealthResponse health = new HealthApi(client).health();
+            HealthResponse health = new HealthApi(client).healthHealth();
             if (health.getOk() == null || !health.getOk()) {
                 fail("health ok != true: " + health);
             }
@@ -39,13 +39,13 @@ public final class Conformance {
             CreateDatasetRequest req = new CreateDatasetRequest().name("conformance-java");
             // Optional auth/context headers are null in local auth mode.
             Dataset ds = new DatasetsApi(client)
-                    .createDataset(tenant, project, req, null, null, null, null);
+                    .datasetsCreateDataset(tenant, project, req, null, null, null, null);
             if (ds == null) {
                 fail("createDataset returned null");
             }
             System.out.println("  createDataset -> ok (" + ds.getName() + ")");
 
-            PageRunSummary page = new TracesApi(client).listTraces(
+            PageRunSummary page = new TracesApi(client).tracesListTraces(
                     tenant, null, null, null, null, null, null, null, null, null,
                     null, null, null, null, null, null, null, null, null, null);
             int items = page.getItems() == null ? 0 : page.getItems().size();

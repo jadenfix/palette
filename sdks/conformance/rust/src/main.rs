@@ -15,12 +15,12 @@ async fn main() {
     config.base_path = base;
 
     // 1. health -> typed response
-    let health = health_api::health(&config).await.expect("health call");
+    let health = health_api::health_period_health(&config).await.expect("health call");
     assert!(health.ok, "health.ok should be true");
     println!("  health ok={}", health.ok);
 
     // 2. create dataset -> typed request body + typed response (shape parity)
-    let params = datasets_api::CreateDatasetParams {
+    let params = datasets_api::DatasetsPeriodCreateDatasetParams {
         tenant_id: tenant,
         project_id: project,
         create_dataset_request: CreateDatasetRequest::new("conformance-rust".to_string()),
@@ -31,7 +31,7 @@ async fn main() {
         x_beater_project_id: None,
         x_beater_environment_id: None,
     };
-    let dataset = datasets_api::create_dataset(&config, params)
+    let dataset = datasets_api::datasets_period_create_dataset(&config, params)
         .await
         .expect("create_dataset call");
     println!("  createDataset -> dataset id present: {}", !format!("{dataset:?}").is_empty());
